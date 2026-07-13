@@ -205,3 +205,7 @@ No se comprometen fechas rígidas en v1 del maestro; el ritmo lo marca un solo d
 - Índice y formato: [00-indice.md](./00-indice.md)
 - Backlog: [99-backlog-post-mvp.md](./99-backlog-post-mvp.md)
 - Integración de acceso de referencia: proyecto Quark (`ba-quark-2.0`) como proveedor SSI vía adapter, no como ERP del gym.
+
+---
+
+[Índice](./00-indice.md) · [Siguiente: Glosario →](./02-glosario.md)

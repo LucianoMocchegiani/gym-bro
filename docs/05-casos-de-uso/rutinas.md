@@ -109,3 +109,7 @@
 **Flujo principal:** Marca rutina inactiva; deja de mostrarse como activa.
 
 **Reglas relacionadas:** RN-RUT-004
+
+---
+
+[Índice](../00-indice.md) · [Siguiente: Notificaciones →](./notificaciones.md)

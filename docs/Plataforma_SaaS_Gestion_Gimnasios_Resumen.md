@@ -197,3 +197,7 @@ Gym A  Gym B  Gym C
 El producto debe concebirse como un **ERP + CRM + App para gimnasios**,
 preparado para venderse como servicio a múltiples clientes y crecer
 mediante módulos e integraciones.
+
+---
+
+[Índice](./00-indice.md) · Antecedente — la fuente de verdad es el [Documento maestro](./01-documento-maestro.md)

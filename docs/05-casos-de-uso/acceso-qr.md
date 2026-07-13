@@ -133,3 +133,7 @@
 4. Guarda ConfiguracionGym.
 
 **Reglas relacionadas:** RN-TEN-004, RN-TEN-007, RN-RES-006
+
+---
+
+[Índice](../00-indice.md) · [Siguiente: Rutinas →](./rutinas.md)

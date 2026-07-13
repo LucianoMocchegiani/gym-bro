@@ -206,3 +206,7 @@ Cancelación/reembolso del pack → caen ambos componentes
 - Adapter de acceso: interfaz estable; Quark es la primera implementación.
 - Sucursal: FK lista desde MVP aunque la UI muestre una sola.
 - Roles afiliado vs staff: **no** mezclar en un solo perfil de app.
+
+---
+
+[Índice](./00-indice.md) · [Siguiente: Reglas de negocio →](./04-reglas-de-negocio.md)

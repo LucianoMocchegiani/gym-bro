@@ -271,3 +271,7 @@ Leyenda: `[ ]` input · `(btn)` botón · `{lista}` colección
 | Puerta / pase | CU-ACC-001/004 |
 | Super | CU-ROL-001/002 |
 | Config | CU-ACC-006/007, CU-PAG-006 |
+
+---
+
+[Índice](./00-indice.md) · [Siguiente: Casos de prueba manuales →](./08-casos-prueba-manuales.md)

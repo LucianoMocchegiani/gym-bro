@@ -93,3 +93,7 @@
 **Flujo principal:** Persiste EventoAuditoria (quién, qué, cuándo, antes/después).
 
 **Reglas relacionadas:** RN-ROL-008
+
+---
+
+[Índice](../00-indice.md) · [Siguiente: Arquitectura →](../06-arquitectura.md)

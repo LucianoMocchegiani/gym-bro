@@ -130,3 +130,7 @@ Leyenda resultado: `P` pass · `F` fail · `B` bloqueado · `-` no aplica
 ## Criterio de salida MVP (doc)
 
 Smoke S1–S10 en `P` + sin `F` abiertos en reglas críticas: RN-RES-001, RN-PAG-004/005, RN-ACC-005, RN-SER-009, RN-TEN-001.
+
+---
+
+[Índice](./00-indice.md) · [Siguiente: Método de definición →](./10-metodo-definicion-producto.md)

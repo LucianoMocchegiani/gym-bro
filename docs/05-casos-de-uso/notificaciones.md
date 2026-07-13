@@ -75,3 +75,7 @@
 **Flujo principal:** Abre notificación → `inAppLeida = true`.
 
 **Reglas relacionadas:** RN-NOT-001
+
+---
+
+[Índice](../00-indice.md) · [Siguiente: Roles y permisos →](./roles-permisos.md)

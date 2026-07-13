@@ -153,3 +153,7 @@ Formato: **RN-MODULO-NNN** — enunciado — excepciones.
 
 - Cambiar una RN exige actualizar este archivo y los CU/pruebas que la citan.
 - No reutilizar IDs con otro significado; deprecar con nota si hace falta.
+
+---
+
+[Índice](./00-indice.md) · [Siguiente: Casos de uso →](./05-casos-de-uso/README.md)

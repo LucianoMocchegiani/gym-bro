@@ -146,3 +146,7 @@ Preguntame por bloques; no codees ni escribas docs hasta que diga "escribí la d
 - Credencial SSI por pack (enfoque A/C)  
 
 Cada uno = una sesión (o más) con el prompt de la sección 5.
+
+---
+
+[Índice](./00-indice.md) · [Siguiente: Backlog post-MVP →](./99-backlog-post-mvp.md)

@@ -125,3 +125,7 @@
 **Postcondiciones:** Nueva referencia de credencial asociada al afiliado.
 
 **Reglas relacionadas:** RN-ACC-001, RN-ACC-002
+
+---
+
+[Índice](../00-indice.md) · [Siguiente: Servicios, sesiones y packs →](./servicios-sesiones-packs.md)

@@ -254,3 +254,7 @@
 3. Estado contratación `cancelada` / `reembolsada` según resultado de pago.
 
 **Reglas relacionadas:** RN-SER-009, RN-PAG-011, RN-PAG-012
+
+---
+
+[Índice](../00-indice.md) · [Siguiente: Pagos y caja →](./pagos-caja.md)

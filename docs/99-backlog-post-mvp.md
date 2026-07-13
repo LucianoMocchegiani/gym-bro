@@ -109,3 +109,7 @@
 1. Antes de sumar scope al MVP, revisar esta lista.  
 2. Al cerrar un ítem post-MVP, moverlo a un doc de módulo o marcarlo hecho con fecha.  
 3. No borrar historia: preferir estado `Hecho` / `Descartado` con nota.
+
+---
+
+[Índice](./00-indice.md) · Fin de la secuencia principal

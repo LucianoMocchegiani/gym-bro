@@ -50,7 +50,13 @@ Reglas relacionadas
 ## Orden de lectura recomendado
 
 1. Documento maestro  
-2. Backlog post-MVP (para no mezclar alcance)  
-3. Glosario → Dominio → Reglas  
-4. Casos de uso  
-5. Arquitectura → Wireframes → Pruebas manuales  
+2. Glosario → Dominio → Reglas  
+3. Casos de uso  
+4. Arquitectura → Wireframes → Pruebas manuales  
+5. Método de definición → Backlog post-MVP  
+
+Cada documento incluye al final: enlace al **índice** y al **siguiente** del flujo.
+
+---
+
+[Siguiente: Documento maestro →](./01-documento-maestro.md)

@@ -130,3 +130,7 @@
 3. Auditoría con motivo `doble_cobro`.
 
 **Reglas relacionadas:** RN-PAG-005, RN-PAG-006
+
+---
+
+[Índice](../00-indice.md) · [Siguiente: Acceso / QR →](./acceso-qr.md)

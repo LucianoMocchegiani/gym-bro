@@ -114,3 +114,7 @@ Términos usados en dominio, reglas y casos de uso. Una sola palabra canónica p
 | MP | Mercado Pago |
 | CU | Caso de uso |
 | S2 | Estrategia sucursales: modelo con entidad Sucursal, UI de una sede en MVP |
+
+---
+
+[Índice](./00-indice.md) · [Siguiente: Modelo de dominio →](./03-modelo-dominio.md)

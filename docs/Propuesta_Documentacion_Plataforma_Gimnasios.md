@@ -187,3 +187,7 @@ Este será el documento principal del proyecto.
 -   Historias de usuario.
 -   Casos de prueba.
 -   Roadmap de evolución.
+
+---
+
+[Índice](./00-indice.md) · [Siguiente: Resumen SaaS (antecedente) →](./Plataforma_SaaS_Gestion_Gimnasios_Resumen.md)

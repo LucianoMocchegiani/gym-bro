@@ -28,3 +28,7 @@ Los CU usan la plantilla de [00-indice.md](../00-indice.md) y citan IDs de [04-r
 ## Nota sobre política de crédito al cancelar reserva
 
 En CU-RES-003 se asume **default: devolver crédito** si la cancelación está dentro de la ventana. Si querés otro default (no devolver / configurable obligatorio), se ajusta en reglas + este CU.
+
+---
+
+[Índice](../00-indice.md) · [Siguiente: Afiliados →](./afiliados.md)

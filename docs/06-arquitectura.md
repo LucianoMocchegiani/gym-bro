@@ -285,3 +285,7 @@ Ver [99-backlog-post-mvp.md](./99-backlog-post-mvp.md). Impacto arquitectónico 
 - Módulo `shop` aislado.
 - Feature flags por plan.
 - Offline access = cola local + sync (no en MVP).
+
+---
+
+[Índice](./00-indice.md) · [Siguiente: Wireframes ASCII →](./07-wireframes-ascii.md)
