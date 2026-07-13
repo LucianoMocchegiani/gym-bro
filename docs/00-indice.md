@@ -45,7 +45,7 @@ Reglas relacionadas
 
 - [Propuesta_Documentacion_Plataforma_Gimnasios.md](./Propuesta_Documentacion_Plataforma_Gimnasios.md) — plan de trabajo original
 - [Plataforma_SaaS_Gestion_Gimnasios_Resumen.md](./Plataforma_SaaS_Gestion_Gimnasios_Resumen.md) — resumen previo (supersedido por el maestro)
-- Mockups / imágenes en `docs/` (referencia visual; la tienda es **post-MVP**)
+- Mockups / imágenes en [`docs/images/`](./images/) (referencia visual; la tienda es **post-MVP**)
 
 ## Orden de lectura recomendado
 
