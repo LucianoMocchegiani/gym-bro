@@ -9,7 +9,7 @@
 
 | Ítem | Notas |
 |------|--------|
-| Tienda / e-commerce (FitApp mockup) | Módulo después del MVP de gestión |
+| Tienda / e-commerce (FitApp mockup) | Módulo después del MVP de gestión. Ver idea: [checkout MP vs ML](./ideas/2026-07-13-stores-mp-vs-ml.md) — socios = MP propio; público = marketplace opcional |
 | White label (logo, colores, app “del gym”) | No al inicio |
 | Varios planes SaaS GymBro (Starter/Pro/…) | Arquitectura preparada; empaquetado comercial después |
 | Módulos acoplados a planes | Cuando existan más planes |

@@ -39,7 +39,16 @@ Reglas relacionadas
 | [07-wireframes-ascii.md](./07-wireframes-ascii.md) | Pantallas ASCII | Cerrado (v1) |
 | [08-casos-prueba-manuales.md](./08-casos-prueba-manuales.md) | QA manual (vos + socio) | Cerrado (v1) |
 | [10-metodo-definicion-producto.md](./10-metodo-definicion-producto.md) | Cómo repetir el proceso preguntas→docs (MVP y post-MVP) | Cerrado (v1) |
+| [11-roadmap-mvp.md](./11-roadmap-mvp.md) | Épicas y tareas título para terminar el MVP | Borrador v1 |
 | [99-backlog-post-mvp.md](./99-backlog-post-mvp.md) | Diferidos para no olvidar | Cerrado (v1) |
+| [ideas/](./ideas/) | Ideas crudas (charlas, notas) antes de definir módulo | Viva |
+| [tareas-terminadas/](./tareas-terminadas/) | Registro cronológico de tareas implementadas | Viva |
+
+## Flujo de trabajo del agente
+
+- Skills: [`.cursor/skills/`](../.cursor/skills/)
+- **Hook:** `gymbro-context` contextualiza y enruta a las skills de la tarea.
+- Flujo típico: contexto → cuestionario → aprobación → implementación → “¿todo ok?” → commit/push → registro de cierre (con hash).
 
 ## Antecedentes (no son la fuente de verdad)
 
@@ -53,7 +62,7 @@ Reglas relacionadas
 2. Glosario → Dominio → Reglas  
 3. Casos de uso  
 4. Arquitectura → Wireframes → Pruebas manuales  
-5. Método de definición → Backlog post-MVP  
+5. Método de definición → Roadmap MVP → Backlog post-MVP  
 
 Cada documento incluye al final: enlace al **índice** y al **siguiente** del flujo.
 

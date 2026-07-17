@@ -1,0 +1,23 @@
+#!/bin/sh
+# Strip Cursor co-author trailer injected by the agent environment.
+# Never keep: Co-authored-by: Cursor <cursoragent@cursor.com>
+
+MSG_FILE="$1"
+if [ ! -f "$MSG_FILE" ]; then
+  exit 0
+fi
+
+# Portable strip (works with Git Bash on Windows)
+tmp="${MSG_FILE}.tmp"
+grep -v -F 'Co-authored-by: Cursor <cursoragent@cursor.com>' "$MSG_FILE" > "$tmp" || true
+# Drop trailing blank lines left after removing trailer
+awk 'NF {p=1} p' "$tmp" | awk '
+  { lines[NR]=$0 }
+  END {
+    end=NR
+    while (end>0 && lines[end] ~ /^[[:space:]]*$/) end--
+    for (i=1; i<=end; i++) print lines[i]
+  }
+' > "$MSG_FILE"
+rm -f "$tmp"
+exit 0

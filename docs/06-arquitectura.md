@@ -1,8 +1,35 @@
 # GymBro — Arquitectura
 
-**Estado:** Cerrado (v1) — arquitectura conceptual de producto  
-**No prescribe** stack concreto (Node/Nest, .NET, etc.) salvo donde el negocio lo exige (MP, SSI/Quark).  
+**Estado:** Cerrado (v1) — arquitectura conceptual + stack MVP  
 **Fuentes:** [01-documento-maestro.md](./01-documento-maestro.md), [03-modelo-dominio.md](./03-modelo-dominio.md), [05-casos-de-uso/](./05-casos-de-uso/)
+
+---
+
+## 0. Stack elegido (MVP)
+
+| Capa | Tecnología | Notas |
+|------|------------|--------|
+| **API / backend** | **NestJS + TypeScript** | Monolito modular; Go descartado para el MVP |
+| **Web admin / Super Admin** | **Next.js (App Router) + TypeScript** | Panel del gym y plataforma |
+| **App móvil** | **Flutter** | Afiliado + acceso QR; alineado a Quark / identity-core-dart |
+| **Base de datos** | **PostgreSQL** | Multi-tenant por `tenant_id` |
+| **ORM** | A definir al scaffold (Prisma o Drizzle) | |
+| **Auth API** | JWT + refresh (propio) en MVP | Clerk/Auth0 opcional después |
+| **Jobs** | BullMQ + Redis (cuando haga falta) | Vencimientos, mails, recurrencias |
+| **Email N1** | Proveedor ESP (Resend/SES/similar) | |
+| **Storage** | Object storage S3-compatible | Fotos de progreso |
+| **Pagos** | Mercado Pago (cuenta del gym) | |
+| **Acceso** | Adapter SSI / Quark | Intercambiable |
+
+Estructura de repo sugerida:
+
+```text
+apps/
+  api/          # NestJS
+  admin-web/    # Next.js
+  mobile/       # Flutter
+docs/           # C-producto (ya existe)
+```
 
 ---
 
@@ -262,17 +289,16 @@ Todas las rutas de tenant validan membership/permiso + `tenant_id` del token.
 
 ---
 
-## 16. Decisiones abiertas (técnicas, no de negocio)
+## 16. Decisiones técnicas pendientes (detalle fino)
 
-Estas no bloquean la doc de producto; se cierran al iniciar código:
+Stack principal cerrado en §0. Queda por cerrar al scaffold:
 
-| Tema | Candidatos |
-|------|------------|
-| Backend language/framework | A elección del dev |
-| Mobile | Flutter / RN — alineable con SDK Quark Dart si se usa holder |
-| DB | PostgreSQL recomendado |
-| Auth provider | Own JWT vs Clerk/Auth0 |
-| Hosting | Un cloud simple (Railway/Fly/AWS) |
+| Tema | Estado |
+|------|--------|
+| ORM (Prisma vs Drizzle) | Pendiente |
+| Hosting (Railway / Fly / VPS / AWS) | Pendiente |
+| Monorepo tool (pnpm workspaces / Turborepo / separado) | Pendiente |
+| Proveedor exacto de email | Pendiente |
 
 ---
 
