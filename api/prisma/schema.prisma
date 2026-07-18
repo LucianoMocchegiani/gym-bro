@@ -1,0 +1,31 @@
+// GymBro — schema Prisma (PostgreSQL).
+// Dominio de negocio se modela por épicas; E0 solo ancla Tenant.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+/// Estado operativo del gym en la plataforma (RN-TEN-002 / CU-ROL-002).
+enum TenantStatus {
+  ACTIVE
+  SUSPENDED
+}
+
+/// Gimnasio / estudio = tenant SaaS.
+///
+/// @remarks Aislamiento row-level: el resto de tablas de negocio
+/// referenciarán `tenants.id` como `tenant_id` (RN-TEN-001).
+model Tenant {
+  id        String       @id @default(uuid()) @db.Uuid
+  name      String
+  status    TenantStatus @default(ACTIVE)
+  createdAt DateTime     @default(now()) @map("created_at")
+  updatedAt DateTime     @updatedAt @map("updated_at")
+
+  @@map("tenants")
+}

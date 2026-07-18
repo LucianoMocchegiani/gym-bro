@@ -9,11 +9,11 @@
 
 | Capa | Tecnología | Notas |
 |------|------------|--------|
-| **API / backend** | **NestJS + TypeScript** | Monolito modular; Go descartado para el MVP |
-| **Web admin / Super Admin** | **Next.js (App Router) + TypeScript** | App en `web/` |
+| **API / backend** | **NestJS 11 + TypeScript 5.9** | Monolito modular; runtime **Node 24** (Active LTS) |
+| **Web admin / Super Admin** | **Next.js 16 (App Router) + React 19** | App en `web/` |
 | **App móvil** | **Flutter** | Afiliado + acceso QR; alineado a Quark / identity-core-dart |
-| **Base de datos** | **PostgreSQL** | Multi-tenant por `tenant_id` |
-| **ORM** | A definir al scaffold (Prisma o Drizzle) | |
+| **Base de datos** | **PostgreSQL 16** | Multi-tenant por `tenant_id` |
+| **ORM** | **Prisma 6** (`api/prisma/`) | Migraciones manuales; modelo inicial `Tenant`. Prisma 7 diferido (ESM) |
 | **Auth API** | JWT + refresh (propio) en MVP | Clerk/Auth0 opcional después |
 | **Jobs** | BullMQ + Redis (cuando haga falta) | Vencimientos, mails, recurrencias |
 | **Email N1** | Proveedor ESP (Resend/SES/similar) | |
@@ -24,7 +24,7 @@
 Estructura de repo sugerida:
 
 ```text
-api/            # NestJS
+api/            # NestJS (+ prisma/)
 web/            # Next.js (Admin / Super Admin)
 mobile/         # Flutter
 docker-compose.yml
@@ -287,7 +287,8 @@ Stack principal cerrado en §0. Queda por cerrar al scaffold:
 
 | Tema | Estado |
 |------|--------|
-| ORM (Prisma vs Drizzle) | Pendiente |
+| ORM (Prisma vs Drizzle) | **Prisma 6** (Drizzle descartado; Prisma 7 diferido por ESM/Nest) |
+| Runtime Node | **24 Active LTS** (`node:24-alpine` en Docker) |
 | Hosting (Railway / Fly / VPS / AWS) | Pendiente (prod) |
 | Docker Compose local (postgres, redis, api, web) | Hecho (dev) |
 | Monorepo tool (pnpm workspaces / Turborepo / separado) | **Separado** — sin package.json raíz; cada app se instala sola |

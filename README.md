@@ -23,7 +23,7 @@ git-hooks/
 
 Cada app tiene su propio manifest y su propio `.env`. **No** hay `package.json` ni `.env` en la raíz.
 
-Requisitos: **Docker Desktop** (o Engine + Compose), **Node >= 20** / **Flutter** solo si corrés apps fuera de Docker.
+Requisitos: **Docker Desktop** (o Engine + Compose). Fuera de Docker: **Node.js 24 (Active LTS)** y **Flutter** si corrés apps en el host.
 
 ## Desarrollo con Docker (recomendado)
 
@@ -57,6 +57,23 @@ docker compose down
 
 Hot-reload: código de `api/` y `web/` montado como volumen. `node_modules` vive en volúmenes Docker.
 
+### Base de datos (Prisma)
+
+ORM: **Prisma 6** en `api/prisma/` (Prisma 7 queda diferido: exige ESM + driver adapters poco amigables con Nest CJS). Migraciones **manuales** en desarrollo:
+
+```powershell
+# Preferido con Compose levantado:
+docker compose exec api npm run prisma:migrate
+
+# Desde el host: en api/.env usá localhost (no el hostname `postgres`)
+cd api
+npm run prisma:migrate
+```
+
+Health con DB: `GET /api/health` → `{ status, database, checkedAt }`.
+
+> Nota: si en el host el puerto `5432` ya lo usa otro Postgres, la CLI de Prisma fallará con error de auth; usá el `exec` del contenedor.
+
 Mobile en el host:
 
 ```powershell
@@ -74,6 +91,7 @@ cd api
 Copy-Item .env.example .env
 # En .env usá localhost en DATABASE_URL / REDIS_URL si Postgres/Redis están en Docker
 npm install
+npm run prisma:migrate
 npm run start:dev
 ```
 

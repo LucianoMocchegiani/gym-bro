@@ -3,6 +3,7 @@ import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import { App } from 'supertest/types';
 import { AppModule } from './../src/app.module';
+import { PrismaService } from './../src/prisma/prisma.service';
 
 describe('HealthController (e2e)', () => {
   let app: INestApplication<App>;
@@ -10,7 +11,16 @@ describe('HealthController (e2e)', () => {
   beforeEach(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
-    }).compile();
+    })
+      .overrideProvider(PrismaService)
+      .useValue({
+        $connect: jest.fn(),
+        $disconnect: jest.fn(),
+        $queryRaw: jest.fn().mockResolvedValue([{ '?column?': 1 }]),
+        onModuleInit: jest.fn(),
+        onModuleDestroy: jest.fn(),
+      })
+      .compile();
 
     app = moduleFixture.createNestApplication();
     app.setGlobalPrefix('api');
@@ -27,6 +37,7 @@ describe('HealthController (e2e)', () => {
       .expect(200)
       .expect((res) => {
         expect(res.body.status).toBe('ok');
+        expect(res.body.database).toBe('up');
         expect(typeof res.body.checkedAt).toBe('string');
       });
   });

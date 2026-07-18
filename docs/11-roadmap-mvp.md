@@ -37,7 +37,7 @@
 ## E0 — Fundaciones
 
 - [x] Scaffold monorepo (`api` / `web` / `mobile` en la raíz)
-- [ ] PostgreSQL + ORM (Prisma o Drizzle) — Postgres en Docker listo; ORM pendiente
+- [x] PostgreSQL + ORM (Prisma 6 + modelo `Tenant`; migraciones manuales)
 - [x] Módulos Nest base + healthcheck
 - [ ] Auth JWT + refresh (staff / afiliado / super)
 - [ ] Middleware multi-tenant (`tenant_id`)

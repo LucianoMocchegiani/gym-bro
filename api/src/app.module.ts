@@ -1,13 +1,14 @@
 import { Module } from '@nestjs/common';
 import { HealthModule } from './health/health.module';
+import { PrismaModule } from './prisma/prisma.module';
 
 /**
  * Módulo raíz del monolito modular GymBro.
  *
- * @remarks En el scaffold solo importa infraestructura mínima (`HealthModule`).
- * Los bounded contexts de negocio se suman en épicas posteriores.
+ * @remarks Infraestructura base: Prisma + health. Los bounded contexts
+ * de negocio se suman en épicas posteriores.
  */
 @Module({
-  imports: [HealthModule],
+  imports: [PrismaModule, HealthModule],
 })
 export class AppModule {}
