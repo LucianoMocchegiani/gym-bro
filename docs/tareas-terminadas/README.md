@@ -16,6 +16,7 @@ La creación de registros sigue la skill:
 
 ## Índice
 
+- [2026-07-18 — CI mínimo (lint/build) api + web](./2026-07-18-ci-minimo-lint-build.md)
 - [2026-07-18 — TenantGuard multi-tenant + esquema DB vivo](./2026-07-18-tenant-guard-esquema-db.md)
 - [2026-07-18 — Auth JWT (super / staff / member) + colección Postman](./2026-07-18-auth-jwt-postman.md)
 - [2026-07-18 — Prisma Tenant + upgrade a Node 24 LTS](./2026-07-18-prisma-tenant-node24.md)
