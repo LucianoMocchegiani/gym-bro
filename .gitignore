@@ -20,6 +20,8 @@ build/
 coverage/
 .next/
 .turbo/
+.dart_tool/
+*.iml
 
 # Logs
 *.log

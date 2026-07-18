@@ -1,0 +1,23 @@
+{
+  "name": "gymbro",
+  "private": true,
+  "version": "0.0.1",
+  "description": "GymBro monorepo — API NestJS, web Next.js, mobile Flutter",
+  "workspaces": [
+    "api",
+    "web"
+  ],
+  "scripts": {
+    "dev:api": "npm run start:dev -w api",
+    "dev:web": "npm run dev -w web",
+    "build:api": "npm run build -w api",
+    "build:web": "npm run build -w web",
+    "lint:api": "npm run lint -w api",
+    "lint:web": "npm run lint -w web",
+    "test:api": "npm run test -w api",
+    "test:e2e:api": "npm run test:e2e -w api"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

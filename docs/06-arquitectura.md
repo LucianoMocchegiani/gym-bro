@@ -10,7 +10,7 @@
 | Capa | Tecnología | Notas |
 |------|------------|--------|
 | **API / backend** | **NestJS + TypeScript** | Monolito modular; Go descartado para el MVP |
-| **Web admin / Super Admin** | **Next.js (App Router) + TypeScript** | Panel del gym y plataforma |
+| **Web admin / Super Admin** | **Next.js (App Router) + TypeScript** | App en `web/` |
 | **App móvil** | **Flutter** | Afiliado + acceso QR; alineado a Quark / identity-core-dart |
 | **Base de datos** | **PostgreSQL** | Multi-tenant por `tenant_id` |
 | **ORM** | A definir al scaffold (Prisma o Drizzle) | |
@@ -24,10 +24,9 @@
 Estructura de repo sugerida:
 
 ```text
-apps/
-  api/          # NestJS
-  admin-web/    # Next.js
-  mobile/       # Flutter
+api/            # NestJS
+web/            # Next.js (Admin / Super Admin)
+mobile/         # Flutter
 docs/           # C-producto (ya existe)
 ```
 
@@ -80,19 +79,11 @@ docs/           # C-producto (ya existe)
 Estructura lógica interna:
 
 ```text
-apps/
-  api/
-  admin-web/
-  mobile/
-packages/ o modules/
-  identity-access/      # auth, roles, tenant context
-  members/              # afiliados
-  catalog/              # servicios, packs, sesiones
-  billing/              # pagos, caja, MP
-  access/               # adapter + evaluación de ingreso
-  routines/
-  notifications/
-  audit/
+api/                    # NestJS (módulos por dominio dentro de src/)
+web/                    # Next.js
+mobile/                 # Flutter
+# Dominios Nest (ejemplos, dentro de api/src):
+#   identity-access/, members/, catalog/, billing/, access/, ...
 ```
 
 ---

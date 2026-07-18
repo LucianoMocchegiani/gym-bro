@@ -36,9 +36,9 @@
 
 ## E0 — Fundaciones
 
-- [ ] Scaffold monorepo (`api` Nest / `admin-web` Next / `mobile` Flutter)
+- [x] Scaffold monorepo (`api` / `web` / `mobile` en la raíz)
 - [ ] PostgreSQL + ORM (Prisma o Drizzle)
-- [ ] Módulos Nest base + healthcheck
+- [x] Módulos Nest base + healthcheck
 - [ ] Auth JWT + refresh (staff / afiliado / super)
 - [ ] Middleware multi-tenant (`tenant_id`)
 - [ ] Config env + secrets
