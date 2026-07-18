@@ -42,7 +42,7 @@
 - [x] Auth JWT + refresh (staff / afiliado / super)
 - [x] Middleware multi-tenant (`tenant_id` vía `TenantGuard` / JWT; status en login-refresh)
 - [x] Config env + secrets (`.env.example` por app: `api/`, `web/`)
-- [ ] CI mínimo (lint/build)
+- [x] CI mínimo (lint/build)
 - [x] Deploy de desarrollo (Docker Compose local: postgres, redis, api, web)
 
 ---

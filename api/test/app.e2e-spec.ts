@@ -36,9 +36,14 @@ describe('HealthController (e2e)', () => {
       .get('/api/health')
       .expect(200)
       .expect((res) => {
-        expect(res.body.status).toBe('ok');
-        expect(res.body.database).toBe('up');
-        expect(typeof res.body.checkedAt).toBe('string');
+        const body = res.body as {
+          status: string;
+          database: string;
+          checkedAt: string;
+        };
+        expect(body.status).toBe('ok');
+        expect(body.database).toBe('up');
+        expect(typeof body.checkedAt).toBe('string');
       });
   });
 });

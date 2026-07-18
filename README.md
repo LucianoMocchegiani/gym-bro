@@ -140,6 +140,17 @@ npm install
 npm run dev
 ```
 
+## CI
+
+En push y PR a `main`, GitHub Actions corre lint + build de `api/` y `web/` (Node 24). Workflow: [`.github/workflows/ci.yml`](./.github/workflows/ci.yml). Ver el check en la pestaña **Actions** del repo o en el commit/PR.
+
+Local (mismo criterio que CI):
+
+```powershell
+cd api; npm ci; npm run lint:check; npm run build
+cd ../web; npm ci; npm run lint; npm run build
+```
+
 ## Flujo de trabajo para agentes
 
 - Skills: [`.cursor/skills/`](./.cursor/skills/)

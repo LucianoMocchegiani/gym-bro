@@ -10,11 +10,7 @@ import { AuthProfileType, TenantStatus } from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuthTokens, JwtAccessPayload } from './auth.types';
-import {
-  MemberLoginDto,
-  StaffLoginDto,
-  SuperLoginDto,
-} from './dto/auth.dto';
+import { MemberLoginDto, StaffLoginDto, SuperLoginDto } from './dto/auth.dto';
 
 type TokenOwner = {
   profileType: AuthProfileType;

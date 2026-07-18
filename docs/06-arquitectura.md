@@ -298,6 +298,7 @@ Stack principal cerrado en §0. Queda por cerrar al scaffold:
 | Runtime Node | **24 Active LTS** (`node:24-alpine` en Docker) |
 | Hosting (Railway / Fly / VPS / AWS) | Pendiente (prod) |
 | Docker Compose local (postgres, redis, api, web) | Hecho (dev) |
+| CI mínimo (GitHub Actions: lint + build api/web) | Hecho (`.github/workflows/ci.yml`) |
 | Monorepo tool (pnpm workspaces / Turborepo / separado) | **Separado** — sin package.json raíz; cada app se instala sola |
 | Proveedor exacto de email | Pendiente |
 
