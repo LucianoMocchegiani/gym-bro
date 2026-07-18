@@ -39,7 +39,7 @@
 - [x] Scaffold monorepo (`api` / `web` / `mobile` en la raíz)
 - [x] PostgreSQL + ORM (Prisma 6 + modelo `Tenant`; migraciones manuales)
 - [x] Módulos Nest base + healthcheck
-- [ ] Auth JWT + refresh (staff / afiliado / super)
+- [x] Auth JWT + refresh (staff / afiliado / super)
 - [ ] Middleware multi-tenant (`tenant_id`)
 - [x] Config env + secrets (`.env.example` por app: `api/`, `web/`)
 - [ ] CI mínimo (lint/build)

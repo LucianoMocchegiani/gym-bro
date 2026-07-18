@@ -16,6 +16,7 @@ Roadmap del MVP: [docs/11-roadmap-mvp.md](./docs/11-roadmap-mvp.md)
 api/                 # NestJS — puerto 3001 — GET /api/health
 web/                 # Next.js — puerto 3000
 mobile/              # Flutter (fuera de Docker)
+postman/             # Colección + environment de prueba
 docker-compose.yml   # postgres + redis + api + web (dev)
 docs/
 git-hooks/
@@ -46,6 +47,7 @@ Servicios:
 |----------|----------------|
 | Web | http://localhost:3000 |
 | API health | http://localhost:3001/api/health |
+| Postman | [`postman/`](./postman/) |
 | Postgres | `localhost:5432` (user/pass/db: `gymbro`) |
 | Redis | `localhost:6379` |
 
@@ -56,6 +58,21 @@ docker compose down
 ```
 
 Hot-reload: código de `api/` y `web/` montado como volumen. `node_modules` vive en volúmenes Docker.
+
+Si agregás dependencias nuevas en el host, sincronizá el contenedor:
+
+```powershell
+docker compose exec api npm install
+docker compose restart api
+```
+
+O regenerar volúmenes (borra también datos de Postgres/Redis):
+
+```powershell
+docker compose down -v
+docker compose up --build -d
+# Luego: migrate + seed otra vez
+```
 
 ### Base de datos (Prisma)
 
@@ -71,6 +88,22 @@ npm run prisma:migrate
 ```
 
 Health con DB: `GET /api/health` → `{ status, database, checkedAt }`.
+
+### Auth (JWT + refresh)
+
+```powershell
+docker compose exec api npm run prisma:seed
+```
+
+| Perfil | Endpoint | Seed |
+|--------|----------|------|
+| Super | `POST /api/auth/super/login` | `super@gymbro.local` / `ChangeMe123!` |
+| Staff | `POST /api/auth/staff/login` (+ `tenantId`) | `admin@demo.gym` / `ChangeMe123!` |
+| Afiliado | `POST /api/auth/member/login` (+ `tenantId`) | `socio@demo.gym` / `ChangeMe123!` |
+
+Tenant demo id: `00000000-0000-4000-8000-000000000001`. También: `POST /api/auth/refresh`, `POST /api/auth/logout`, `GET /api/auth/me` (Bearer).
+
+Probar con Postman: importá [`postman/`](./postman/) (colección + environment local). Los logins guardan `accessToken` / `refreshToken` vía scripts.
 
 > Nota: si en el host el puerto `5432` ya lo usa otro Postgres, la CLI de Prisma fallará con error de auth; usá el `exec` del contenedor.
 
@@ -92,6 +125,7 @@ Copy-Item .env.example .env
 # En .env usá localhost en DATABASE_URL / REDIS_URL si Postgres/Redis están en Docker
 npm install
 npm run prisma:migrate
+npm run prisma:seed
 npm run start:dev
 ```
 

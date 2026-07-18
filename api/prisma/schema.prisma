@@ -1,8 +1,8 @@
 // GymBro — schema Prisma (PostgreSQL).
-// Dominio de negocio se modela por épicas; E0 solo ancla Tenant.
 
 generator client {
-  provider = "prisma-client-js"
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
 }
 
 datasource db {
@@ -16,6 +16,13 @@ enum TenantStatus {
   SUSPENDED
 }
 
+/// Tipo de perfil autenticado. Staff y afiliado nunca comparten sesión (RN-ROL-005).
+enum AuthProfileType {
+  SUPER
+  STAFF
+  MEMBER
+}
+
 /// Gimnasio / estudio = tenant SaaS.
 ///
 /// @remarks Aislamiento row-level: el resto de tablas de negocio
@@ -27,5 +34,83 @@ model Tenant {
   createdAt DateTime     @default(now()) @map("created_at")
   updatedAt DateTime     @updatedAt @map("updated_at")
 
+  staffUsers StaffUser[]
+  members    Member[]
+
   @@map("tenants")
+}
+
+/// Super Admin de la plataforma GymBro (RN-ROL-001). Sin tenant.
+model SuperUser {
+  id           String   @id @default(uuid()) @db.Uuid
+  email        String   @unique
+  passwordHash String   @map("password_hash")
+  name         String?
+  active       Boolean  @default(true)
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  refreshTokens RefreshToken[]
+
+  @@map("super_users")
+}
+
+/// Usuario staff de un tenant (puede tener N roles en E1).
+model StaffUser {
+  id           String   @id @default(uuid()) @db.Uuid
+  tenantId     String   @map("tenant_id") @db.Uuid
+  email        String
+  passwordHash String   @map("password_hash")
+  name         String?
+  active       Boolean  @default(true)
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  tenant        Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  refreshTokens RefreshToken[]
+
+  @@unique([tenantId, email])
+  @@index([tenantId])
+  @@map("staff_users")
+}
+
+/// Afiliado (socio) de un tenant. Perfil separado del staff (RN-ROL-005).
+model Member {
+  id           String   @id @default(uuid()) @db.Uuid
+  tenantId     String   @map("tenant_id") @db.Uuid
+  email        String
+  passwordHash String   @map("password_hash")
+  name         String?
+  active       Boolean  @default(true)
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  tenant        Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  refreshTokens RefreshToken[]
+
+  @@unique([tenantId, email])
+  @@index([tenantId])
+  @@map("members")
+}
+
+/// Refresh token persistido (hash). Revocable en logout / rotación.
+model RefreshToken {
+  id          String          @id @default(uuid()) @db.Uuid
+  tokenHash   String          @unique @map("token_hash")
+  profileType AuthProfileType @map("profile_type")
+  superUserId String?         @map("super_user_id") @db.Uuid
+  staffUserId String?         @map("staff_user_id") @db.Uuid
+  memberId    String?         @map("member_id") @db.Uuid
+  expiresAt   DateTime        @map("expires_at")
+  revokedAt   DateTime?       @map("revoked_at")
+  createdAt   DateTime        @default(now()) @map("created_at")
+
+  superUser SuperUser? @relation(fields: [superUserId], references: [id], onDelete: Cascade)
+  staffUser StaffUser? @relation(fields: [staffUserId], references: [id], onDelete: Cascade)
+  member    Member?    @relation(fields: [memberId], references: [id], onDelete: Cascade)
+
+  @@index([superUserId])
+  @@index([staffUserId])
+  @@index([memberId])
+  @@map("refresh_tokens")
 }

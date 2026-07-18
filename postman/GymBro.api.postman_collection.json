@@ -1,0 +1,444 @@
+{
+  "info": {
+    "_postman_id": "gymbro-api-collection",
+    "name": "GymBro API",
+    "description": "Health + auth (SUPER / STAFF / MEMBER).\n\n**Setup**\n1. Importá esta colección y `GymBro.local.postman_environment.json`.\n2. Arriba a la derecha: environment **GymBro Local** (obligatorio).\n3. Seed: `docker compose exec api npm run prisma:seed`.\n\n**Runner (secuencia)**\nCorrer la carpeta `Auth flow (Collection Runner)` con Run. Los scripts guardan tokens y encadenan Login → Me → Refresh → Me → Logout.\n\n**Credenciales seed (también en el environment)**\n- Super: `super@gymbro.local` / `ChangeMe123!`\n- Staff: `admin@demo.gym` / `ChangeMe123!` + tenantId\n- Member: `socio@demo.gym` / `ChangeMe123!` + tenantId",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{accessToken}}",
+        "type": "string"
+      }
+    ]
+  },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Asegura baseUrl aunque no haya environment seleccionado",
+          "if (!pm.environment.get('baseUrl') && !pm.collectionVariables.get('baseUrl')) {",
+          "  pm.collectionVariables.set('baseUrl', 'http://localhost:3001');",
+          "}"
+        ]
+      }
+    }
+  ],
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:3001" },
+    { "key": "accessToken", "value": "" },
+    { "key": "refreshToken", "value": "" },
+    { "key": "profileType", "value": "" },
+    { "key": "userId", "value": "" },
+    { "key": "userEmail", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "Health",
+      "item": [
+        {
+          "name": "GET health",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('database up', () => pm.expect(body.database).to.eql('up'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/health"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Auth flow (Collection Runner)",
+      "description": "Usá Run folder. Secuencia: Login Super → Me → Refresh → Me (post-refresh) → Logout.",
+      "item": [
+        {
+          "name": "1. Login Super",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('profile SUPER', () => pm.expect(body.profileType).to.eql('SUPER'));",
+                  "",
+                  "function setVar(key, value) {",
+                  "  pm.collectionVariables.set(key, value);",
+                  "  pm.environment.set(key, value);",
+                  "}",
+                  "",
+                  "setVar('accessToken', body.accessToken);",
+                  "setVar('refreshToken', body.refreshToken);",
+                  "setVar('profileType', body.profileType);",
+                  "setVar('userId', body.user.id);",
+                  "setVar('userEmail', body.user.email);",
+                  "",
+                  "console.log('Saved tokens for', body.profileType, body.user.email);",
+                  "postman.setNextRequest('2. Me');"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{superEmail}}\",\n  \"password\": \"{{superPassword}}\"\n}"
+            },
+            "url": "{{baseUrl}}/api/auth/super/login"
+          }
+        },
+        {
+          "name": "2. Me",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const token = pm.environment.get('accessToken') || pm.collectionVariables.get('accessToken');",
+                  "if (!token) {",
+                  "  throw new Error('accessToken vacío: corré Login antes o seleccioná environment GymBro Local');",
+                  "}"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "const expected = pm.environment.get('profileType') || pm.collectionVariables.get('profileType');",
+                  "pm.test('profile matches', () => pm.expect(body.profileType).to.eql(expected));",
+                  "postman.setNextRequest('3. Refresh');"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/auth/me"
+          }
+        },
+        {
+          "name": "3. Refresh",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const refresh = pm.environment.get('refreshToken') || pm.collectionVariables.get('refreshToken');",
+                  "if (!refresh) {",
+                  "  throw new Error('refreshToken vacío: corré Login antes');",
+                  "}"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "function setVar(key, value) {",
+                  "  pm.collectionVariables.set(key, value);",
+                  "  pm.environment.set(key, value);",
+                  "}",
+                  "setVar('accessToken', body.accessToken);",
+                  "setVar('refreshToken', body.refreshToken);",
+                  "setVar('profileType', body.profileType);",
+                  "console.log('Rotated tokens');",
+                  "postman.setNextRequest('4. Me after refresh');"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}"
+            },
+            "url": "{{baseUrl}}/api/auth/refresh"
+          }
+        },
+        {
+          "name": "4. Me after refresh",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "postman.setNextRequest('5. Logout');"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/auth/me"
+          }
+        },
+        {
+          "name": "5. Logout",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('ok', () => pm.expect(pm.response.json().ok).to.eql(true));",
+                  "pm.collectionVariables.unset('accessToken');",
+                  "pm.collectionVariables.unset('refreshToken');",
+                  "pm.environment.unset('accessToken');",
+                  "pm.environment.unset('refreshToken');",
+                  "postman.setNextRequest(null);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}"
+            },
+            "url": "{{baseUrl}}/api/auth/logout"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Auth (manual)",
+      "item": [
+        {
+          "name": "Login Super",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "function setVar(key, value) {",
+                  "  pm.collectionVariables.set(key, value);",
+                  "  pm.environment.set(key, value);",
+                  "}",
+                  "setVar('accessToken', body.accessToken);",
+                  "setVar('refreshToken', body.refreshToken);",
+                  "setVar('profileType', body.profileType);",
+                  "setVar('userId', body.user.id);",
+                  "setVar('userEmail', body.user.email);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{superEmail}}\",\n  \"password\": \"{{superPassword}}\"\n}"
+            },
+            "url": "{{baseUrl}}/api/auth/super/login"
+          }
+        },
+        {
+          "name": "Login Staff",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "function setVar(key, value) {",
+                  "  pm.collectionVariables.set(key, value);",
+                  "  pm.environment.set(key, value);",
+                  "}",
+                  "setVar('accessToken', body.accessToken);",
+                  "setVar('refreshToken', body.refreshToken);",
+                  "setVar('profileType', body.profileType);",
+                  "setVar('userId', body.user.id);",
+                  "setVar('userEmail', body.user.email);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tenantId\": \"{{tenantId}}\",\n  \"email\": \"{{staffEmail}}\",\n  \"password\": \"{{staffPassword}}\"\n}"
+            },
+            "url": "{{baseUrl}}/api/auth/staff/login"
+          }
+        },
+        {
+          "name": "Login Member",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "function setVar(key, value) {",
+                  "  pm.collectionVariables.set(key, value);",
+                  "  pm.environment.set(key, value);",
+                  "}",
+                  "setVar('accessToken', body.accessToken);",
+                  "setVar('refreshToken', body.refreshToken);",
+                  "setVar('profileType', body.profileType);",
+                  "setVar('userId', body.user.id);",
+                  "setVar('userEmail', body.user.email);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tenantId\": \"{{tenantId}}\",\n  \"email\": \"{{memberEmail}}\",\n  \"password\": \"{{memberPassword}}\"\n}"
+            },
+            "url": "{{baseUrl}}/api/auth/member/login"
+          }
+        },
+        {
+          "name": "Me",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const token = pm.environment.get('accessToken') || pm.collectionVariables.get('accessToken');",
+                  "if (!token) {",
+                  "  throw new Error('accessToken vacío: corré un Login primero y seleccioná GymBro Local');",
+                  "}"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/auth/me"
+          }
+        },
+        {
+          "name": "Refresh",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "function setVar(key, value) {",
+                  "  pm.collectionVariables.set(key, value);",
+                  "  pm.environment.set(key, value);",
+                  "}",
+                  "setVar('accessToken', body.accessToken);",
+                  "setVar('refreshToken', body.refreshToken);",
+                  "setVar('profileType', body.profileType);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}"
+            },
+            "url": "{{baseUrl}}/api/auth/refresh"
+          }
+        },
+        {
+          "name": "Logout",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "pm.collectionVariables.unset('accessToken');",
+                  "pm.collectionVariables.unset('refreshToken');",
+                  "pm.environment.unset('accessToken');",
+                  "pm.environment.unset('refreshToken');"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}"
+            },
+            "url": "{{baseUrl}}/api/auth/logout"
+          }
+        }
+      ]
+    }
+  ]
+}

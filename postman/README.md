@@ -1,0 +1,35 @@
+# Postman — GymBro API
+
+## Importar (importante)
+
+1. **Import** → `GymBro.api.postman_collection.json` + `GymBro.local.postman_environment.json`
+2. Arriba a la derecha elegí environment **GymBro Local** (si no, `{{accessToken}}` no se reemplaza).
+3. Si ya habías importado antes: borrá la colección/env viejos e importá de nuevo, o Sync variables del environment.
+
+## Credenciales seed (en el environment)
+
+| Perfil | Email | Password | Extra |
+|--------|-------|----------|--------|
+| Super | `super@gymbro.local` | `ChangeMe123!` | — |
+| Staff | `admin@demo.gym` | `ChangeMe123!` | `tenantId` |
+| Member | `socio@demo.gym` | `ChangeMe123!` | `tenantId` |
+
+Variables: `superEmail` / `superPassword`, `staffEmail` / `staffPassword`, `memberEmail` / `memberPassword`.
+
+## Secuencia automática (Collection Runner)
+
+1. Clic derecho en **Auth flow (Collection Runner)** → **Run folder**.
+2. Run: Login Super → Me → Refresh → Me → Logout.
+3. Los scripts guardan `accessToken`, `refreshToken`, `profileType`, `userId`, `userEmail` en **environment + collection**.
+
+## Manual
+
+Carpeta **Auth (manual)**: Login Super/Staff/Member → Me → Refresh → Logout.
+
+## Requisitos API
+
+```powershell
+docker compose up -d
+docker compose exec api npm run prisma:migrate
+docker compose exec api npm run prisma:seed
+```

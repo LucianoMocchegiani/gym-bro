@@ -112,19 +112,23 @@ mobile/                 # Flutter
 ## 5. Autenticación y autorización
 
 ```text
-Login → token (JWT u sesión)
-      → claims: userId, profileType (staff|afiliado|super), tenantId?, roles[]
-      → middleware carga permisos unión de roles
-      → guard por permiso/flag (CU-ROL-006)
+Login por perfil → access JWT + refresh (Postgres)
+      → claims: sub, profileType (SUPER|STAFF|MEMBER), tenantId?, email
+      → JwtAuthGuard
+      → (E1) permisos unión de roles + flags (CU-ROL-006)
 ```
 
-| Perfil | Notas |
-|--------|--------|
-| Super Admin | Sin tenant o tenant de soporte |
-| Staff | `tenantId` obligatorio; N roles |
-| Afiliado | Perfil separado; `tenantId` del gym al que pertenece |
+| Perfil | Notas | Endpoint login |
+|--------|-------|----------------|
+| Super Admin | Sin tenant (RN-ROL-001) | `POST /api/auth/super/login` |
+| Staff | `tenantId` obligatorio | `POST /api/auth/staff/login` |
+| Afiliado | Perfil separado (RN-ROL-005) | `POST /api/auth/member/login` |
+
+También: `POST /api/auth/refresh`, `POST /api/auth/logout`, `GET /api/auth/me`.
 
 Afiliado y staff **nunca** comparten el mismo perfil de sesión (RN-ROL-005).
+
+Pruebas manuales: colección Postman en [`postman/`](../postman/).
 
 ---
 
