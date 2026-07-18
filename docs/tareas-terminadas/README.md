@@ -16,6 +16,7 @@ La creación de registros sigue la skill:
 
 ## Índice
 
+- [2026-07-18 — Scaffold monorepo en la raíz (api / web / mobile)](./2026-07-18-scaffold-api-web-mobile.md)
 - [2026-07-17 — Configurar skills y flujo de trabajo para agentes](./2026-07-17-configurar-skills-de-agentes.md)
 
 ---
