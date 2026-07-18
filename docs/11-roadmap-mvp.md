@@ -40,7 +40,7 @@
 - [x] PostgreSQL + ORM (Prisma 6 + modelo `Tenant`; migraciones manuales)
 - [x] Módulos Nest base + healthcheck
 - [x] Auth JWT + refresh (staff / afiliado / super)
-- [ ] Middleware multi-tenant (`tenant_id`)
+- [x] Middleware multi-tenant (`tenant_id` vía `TenantGuard` / JWT; status en login-refresh)
 - [x] Config env + secrets (`.env.example` por app: `api/`, `web/`)
 - [ ] CI mínimo (lint/build)
 - [x] Deploy de desarrollo (Docker Compose local: postgres, redis, api, web)

@@ -16,6 +16,7 @@ Revisa solo los documentos afectados:
 - `docs/04-reglas-de-negocio.md`: comportamiento normativo.
 - `docs/05-casos-de-uso/`: flujos funcionales.
 - `docs/06-arquitectura.md`: stack, módulos, adapters y decisiones técnicas.
+- `docs/09-esquema-db.md`: **obligatorio** si cambió Prisma/migraciones (tablas, enums, FKs, diagrama).
 - `docs/07-wireframes-ascii.md`: flujos de pantalla.
 - `docs/08-casos-prueba-manuales.md`: criterios manuales.
 - `docs/11-roadmap-mvp.md`: estado de tareas.
@@ -29,5 +30,6 @@ Revisa solo los documentos afectados:
 4. Si cambió una regla, actualiza su CU y prueba manual relacionada.
 5. Si el cambio no altera comportamiento, evita tocar documentos de producto.
 6. README debe permitir a otro desarrollador levantar y entender el repo sin depender del chat.
+7. Si tocaste `api/prisma/schema.prisma` o migraciones, actualizá `docs/09-esquema-db.md` en la misma tarea (tablas, relaciones, enums, lista de migraciones).
 
 Termina indicando qué documentos se actualizaron y por qué.

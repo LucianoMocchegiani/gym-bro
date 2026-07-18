@@ -101,7 +101,9 @@ docker compose exec api npm run prisma:seed
 | Staff | `POST /api/auth/staff/login` (+ `tenantId`) | `admin@demo.gym` / `ChangeMe123!` |
 | Afiliado | `POST /api/auth/member/login` (+ `tenantId`) | `socio@demo.gym` / `ChangeMe123!` |
 
-Tenant demo id: `00000000-0000-4000-8000-000000000001`. También: `POST /api/auth/refresh`, `POST /api/auth/logout`, `GET /api/auth/me` (Bearer).
+Tenant demo id: `00000000-0000-4000-8000-000000000001`. También: `POST /api/auth/refresh`, `POST /api/auth/logout`, `GET /api/auth/me` (Bearer; staff/member traen `tenantId`).
+
+Rutas de negocio: `@RequireTenantAuth()` + `@CurrentTenant()` (tenant solo del JWT). Suspendido = corte en login/refresh (access puede vivir ~15 min).
 
 Probar con Postman: importá [`postman/`](./postman/) (colección + environment local). Los logins guardan `accessToken` / `refreshToken` vía scripts.
 

@@ -34,11 +34,22 @@ Si el usuario ya proporcionó todas las decisiones y pidió implementar explíci
 - Verifica en proporción al riesgo.
 - Corrige errores introducidos.
 - Aplica `sync-project-docs` y marca la tarea en el roadmap si corresponde.
+- Si la tarea tocó **Prisma / migraciones**, actualizá `docs/09-esquema-db.md` (tablas, FKs, enums, diagrama, migraciones).
 - Resume qué quedó hecho y cómo se validó. **Todavía no** registres la tarea terminada ni hagas commit.
 
-### 5. Confirmación del usuario (“¿está todo ok?”)
+### 5. Guía de prueba para el usuario
 
-Al terminar la implementación, **preguntá explícitamente**:
+Al terminar la implementación (paso 4), **antes** de hablar de commit:
+
+1. Entregá una sección clara **Cómo probar** con pasos concretos (comandos, URLs, Postman, credenciales seed si aplica, resultados esperados OK / error).
+2. Incluí qué **no** hace falta probar si está fuera de alcance.
+3. Esperá a que el usuario pruebe o diga que está bien.
+
+No asumas que “build OK” alcanza: el usuario debe poder validar el comportamiento a mano.
+
+### 6. Confirmación del usuario (commit / push / registro)
+
+Solo después de la guía de prueba (y de que el usuario esté conforme o pida cerrar), preguntá explícitamente:
 
 > ¿Está todo ok para commitear, pushear y registrar la tarea terminada?
 
@@ -55,7 +66,9 @@ Orden preferido:
 
 ```text
 implementación + docs de sync
-  → preguntar “¿todo ok?”
+  → guía “Cómo probar” (detalle)
+  → usuario prueba / confirma
+  → preguntar “¿todo ok para commit/push/registro?”
   → commit + push (SIN trailer Co-authored-by de Cursor)
   → record-completed-task (con hash del commit)
   → commit del registro + push
@@ -71,7 +84,7 @@ implementación + docs de sync
 
 Si el usuario **no** confirma: dejá los cambios locales, no pushees, no registres como terminada (o registrá solo si pide “registrar sin push”).
 
-### 6. Cierre en el chat
+### 7. Cierre en el chat
 
 Informá:
 
@@ -86,4 +99,5 @@ Informá:
 - No sumar funcionalidades adyacentes sin aprobación.
 - Lo diferido va a `docs/99-backlog-post-mvp.md`.
 - Una tarea incompleta no se registra como terminada.
-- **Nunca** commit/push de cierre sin la confirmación del paso 5.
+- **Nunca** commit/push de cierre sin la confirmación del paso 6.
+- **Nunca** saltees la guía de prueba del paso 5 al cerrar una implementación.

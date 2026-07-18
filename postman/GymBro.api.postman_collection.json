@@ -133,6 +133,11 @@
                   "const body = pm.response.json();",
                   "const expected = pm.environment.get('profileType') || pm.collectionVariables.get('profileType');",
                   "pm.test('profile matches', () => pm.expect(body.profileType).to.eql(expected));",
+                  "if (expected === 'STAFF' || expected === 'MEMBER') {",
+                  "  pm.test('has tenantId', () => pm.expect(body.tenantId).to.be.a('string'));",
+                  "  pm.environment.set('tenantIdFromMe', body.tenantId);",
+                  "  pm.collectionVariables.set('tenantIdFromMe', body.tenantId);",
+                  "}",
                   "postman.setNextRequest('3. Refresh');"
                 ]
               }

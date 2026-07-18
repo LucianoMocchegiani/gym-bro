@@ -31,10 +31,10 @@ No leas toda la documentación sin necesidad.
 | Tema | Documentos mínimos |
 |------|--------------------|
 | Alcance / negocio | `01-documento-maestro.md`, `99-backlog-post-mvp.md` |
-| Entidades / datos | `02-glosario.md`, `03-modelo-dominio.md` |
+| Entidades / datos | `02-glosario.md`, `03-modelo-dominio.md`, `09-esquema-db.md` (tablas reales) |
 | Reglas | `04-reglas-de-negocio.md` |
 | Flujo funcional | archivo en `05-casos-de-uso/` |
-| Técnico | `06-arquitectura.md` |
+| Técnico | `06-arquitectura.md`, `09-esquema-db.md` si toca persistencia |
 | UI | `07-wireframes-ascii.md` |
 | QA manual | `08-casos-prueba-manuales.md` |
 | Plan | `11-roadmap-mvp.md` |

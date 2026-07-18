@@ -26,10 +26,8 @@ Variables: `superEmail` / `superPassword`, `staffEmail` / `staffPassword`, `memb
 
 Carpeta **Auth (manual)**: Login Super/Staff/Member → Me → Refresh → Logout.
 
-## Requisitos API
+## Multi-tenant
 
-```powershell
-docker compose up -d
-docker compose exec api npm run prisma:migrate
-docker compose exec api npm run prisma:seed
-```
+- `GET /auth/me` → `tenantId` para staff/member (del JWT).
+- Rutas de negocio futuras: `@RequireTenantAuth()` (Super → 403).
+- Tenant suspendido: se corta en login/refresh, no en cada request.

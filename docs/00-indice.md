@@ -36,6 +36,7 @@ Reglas relacionadas
 | [04-reglas-de-negocio.md](./04-reglas-de-negocio.md) | Reglas por módulo | Cerrado (v1) |
 | [05-casos-de-uso/](./05-casos-de-uso/) | CU por módulo | Cerrado (v1) |
 | [06-arquitectura.md](./06-arquitectura.md) | Multi-tenant, adapters, pagos | Cerrado (v1) |
+| [09-esquema-db.md](./09-esquema-db.md) | Tablas, enums, FKs y migraciones (Prisma/Postgres) | Viva |
 | [07-wireframes-ascii.md](./07-wireframes-ascii.md) | Pantallas ASCII | Cerrado (v1) |
 | [08-casos-prueba-manuales.md](./08-casos-prueba-manuales.md) | QA manual (vos + socio) | Cerrado (v1) |
 | [10-metodo-definicion-producto.md](./10-metodo-definicion-producto.md) | Cómo repetir el proceso preguntas→docs (MVP y post-MVP) | Cerrado (v1) |
@@ -48,7 +49,7 @@ Reglas relacionadas
 
 - Skills: [`.cursor/skills/`](../.cursor/skills/)
 - **Hook:** `gymbro-context` contextualiza y enruta a las skills de la tarea.
-- Flujo típico: contexto → cuestionario → aprobación → implementación → “¿todo ok?” → commit/push → registro de cierre (con hash).
+- Flujo típico: contexto → cuestionario → aprobación → implementación → **cómo probar** → confirmación → commit/push → registro de cierre (con hash).
 
 ## Antecedentes (no son la fuente de verdad)
 
@@ -61,7 +62,7 @@ Reglas relacionadas
 1. Documento maestro  
 2. Glosario → Dominio → Reglas  
 3. Casos de uso  
-4. Arquitectura → Wireframes → Pruebas manuales  
+4. Arquitectura → **Esquema DB** → Wireframes → Pruebas manuales  
 5. Método de definición → Roadmap MVP → Backlog post-MVP  
 
 Cada documento incluye al final: enlace al **índice** y al **siguiente** del flujo.

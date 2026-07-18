@@ -94,8 +94,9 @@ mobile/                 # Flutter
 ### 4.1 Modelo
 
 - **Tenant = Gimnasio** (row-level isolation con `tenant_id` en todas las tablas de negocio).
-- Super Admin opera fuera del scope de un gym o con selector de tenant para soporte.
-- Requests de staff/afiliado llevan tenant resuelto por JWT/sesión (no confiar en body).
+- Super Admin opera fuera del scope de un gym (sin impersonación en MVP).
+- Staff/afiliado: `tenantId` del **JWT** (`TenantGuard` + `@CurrentTenant()` / `@RequireTenantAuth()`). Nunca confiar en body (RN-TEN-001).
+- Tenant **suspendido**: se corta en **login/refresh**; el access JWT puede vivir hasta su TTL (~15 min).
 
 ### 4.2 Sucursales (S2)
 
@@ -124,7 +125,9 @@ Login por perfil → access JWT + refresh (Postgres)
 | Staff | `tenantId` obligatorio | `POST /api/auth/staff/login` |
 | Afiliado | Perfil separado (RN-ROL-005) | `POST /api/auth/member/login` |
 
-También: `POST /api/auth/refresh`, `POST /api/auth/logout`, `GET /api/auth/me`.
+También: `POST /api/auth/refresh`, `POST /api/auth/logout`, `GET /api/auth/me` (incluye `tenantId` para staff/member).
+
+Rutas de negocio del gym: `@RequireTenantAuth()` + `@CurrentTenant()` (módulo `tenant/`).
 
 Afiliado y staff **nunca** comparten el mismo perfil de sesión (RN-ROL-005).
 
@@ -312,4 +315,4 @@ Ver [99-backlog-post-mvp.md](./99-backlog-post-mvp.md). Impacto arquitectónico 
 
 ---
 
-[Índice](./00-indice.md) · [Siguiente: Wireframes ASCII →](./07-wireframes-ascii.md)
+[Índice](./00-indice.md) · [Esquema DB](./09-esquema-db.md) · [Siguiente: Wireframes ASCII →](./07-wireframes-ascii.md)

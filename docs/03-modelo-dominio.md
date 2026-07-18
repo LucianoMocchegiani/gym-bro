@@ -209,4 +209,4 @@ Cancelación/reembolso del pack → caen ambos componentes
 
 ---
 
-[Índice](./00-indice.md) · [Siguiente: Reglas de negocio →](./04-reglas-de-negocio.md)
+[Índice](./00-indice.md) · [Esquema DB (implementado)](./09-esquema-db.md) · [Siguiente: Reglas de negocio →](./04-reglas-de-negocio.md)

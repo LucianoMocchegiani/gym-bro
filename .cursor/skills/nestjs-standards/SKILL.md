@@ -58,3 +58,4 @@ No documentes línea por línea ni repitas el nombre del símbolo. Código priva
 - Ejecuta lint, typecheck y pruebas disponibles.
 - No expongas secretos, tokens ni payloads SSI en logs.
 - Actualiza README y docs mediante `sync-project-docs`.
+- Si cambiás el schema Prisma, actualizá `docs/09-esquema-db.md` en la misma tarea.
