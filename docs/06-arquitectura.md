@@ -27,6 +27,7 @@ Estructura de repo sugerida:
 api/            # NestJS
 web/            # Next.js (Admin / Super Admin)
 mobile/         # Flutter
+docker-compose.yml
 docs/           # C-producto (ya existe)
 ```
 
@@ -287,8 +288,9 @@ Stack principal cerrado en §0. Queda por cerrar al scaffold:
 | Tema | Estado |
 |------|--------|
 | ORM (Prisma vs Drizzle) | Pendiente |
-| Hosting (Railway / Fly / VPS / AWS) | Pendiente |
-| Monorepo tool (pnpm workspaces / Turborepo / separado) | Pendiente |
+| Hosting (Railway / Fly / VPS / AWS) | Pendiente (prod) |
+| Docker Compose local (postgres, redis, api, web) | Hecho (dev) |
+| Monorepo tool (pnpm workspaces / Turborepo / separado) | **Separado** — sin package.json raíz; cada app se instala sola |
 | Proveedor exacto de email | Pendiente |
 
 ---

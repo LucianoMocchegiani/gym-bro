@@ -10,46 +10,80 @@ Punto de entrada: [docs/00-indice.md](./docs/00-indice.md)
 
 Roadmap del MVP: [docs/11-roadmap-mvp.md](./docs/11-roadmap-mvp.md)
 
-## Monorepo
+## Estructura
 
 ```text
-api/        # NestJS — puerto 3001 — GET /api/health
-web/        # Next.js — puerto 3000
-mobile/     # Flutter (fuera de npm workspaces)
+api/                 # NestJS — puerto 3001 — GET /api/health
+web/                 # Next.js — puerto 3000
+mobile/              # Flutter (fuera de Docker)
+docker-compose.yml   # postgres + redis + api + web (dev)
 docs/
 git-hooks/
 ```
 
-Requisitos: **Node >= 20**, **npm**, **Flutter** (para mobile).
+Cada app tiene su propio manifest y su propio `.env`. **No** hay `package.json` ni `.env` en la raíz.
 
-### Instalar (JS) — lo corrés vos
+Requisitos: **Docker Desktop** (o Engine + Compose), **Node >= 20** / **Flutter** solo si corrés apps fuera de Docker.
 
-Desde la raíz (workspaces: `api` + `web`):
+## Desarrollo con Docker (recomendado)
 
-```powershell
-npm install
-```
-
-### API
+1. Env por app (Compose los lee desde cada carpeta):
 
 ```powershell
-npm run dev:api
-# GET http://localhost:3001/api/health
+Copy-Item api\.env.example api\.env
+Copy-Item web\.env.example web\.env
 ```
 
-### Web
+2. Levantá todo:
 
 ```powershell
-npm run dev:web
-# http://localhost:3000
+docker compose up --build
 ```
 
-### Mobile
+Servicios:
+
+| Servicio | URL / puerto |
+|----------|----------------|
+| Web | http://localhost:3000 |
+| API health | http://localhost:3001/api/health |
+| Postgres | `localhost:5432` (user/pass/db: `gymbro`) |
+| Redis | `localhost:6379` |
+
+Parar:
+
+```powershell
+docker compose down
+```
+
+Hot-reload: código de `api/` y `web/` montado como volumen. `node_modules` vive en volúmenes Docker.
+
+Mobile en el host:
 
 ```powershell
 cd mobile
 flutter pub get
 flutter run
+```
+
+## Sin Docker (apps en el host)
+
+### API
+
+```powershell
+cd api
+Copy-Item .env.example .env
+# En .env usá localhost en DATABASE_URL / REDIS_URL si Postgres/Redis están en Docker
+npm install
+npm run start:dev
+```
+
+### Web
+
+```powershell
+cd web
+Copy-Item .env.example .env
+npm install
+npm run dev
 ```
 
 ## Flujo de trabajo para agentes

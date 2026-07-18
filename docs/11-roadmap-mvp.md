@@ -37,13 +37,13 @@
 ## E0 — Fundaciones
 
 - [x] Scaffold monorepo (`api` / `web` / `mobile` en la raíz)
-- [ ] PostgreSQL + ORM (Prisma o Drizzle)
+- [ ] PostgreSQL + ORM (Prisma o Drizzle) — Postgres en Docker listo; ORM pendiente
 - [x] Módulos Nest base + healthcheck
 - [ ] Auth JWT + refresh (staff / afiliado / super)
 - [ ] Middleware multi-tenant (`tenant_id`)
-- [ ] Config env + secrets
+- [x] Config env + secrets (`.env.example` por app: `api/`, `web/`)
 - [ ] CI mínimo (lint/build)
-- [ ] Deploy de desarrollo
+- [x] Deploy de desarrollo (Docker Compose local: postgres, redis, api, web)
 
 ---
 
