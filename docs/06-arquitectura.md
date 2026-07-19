@@ -100,8 +100,9 @@ mobile/                 # Flutter
 
 ### 4.2 Sucursales (S2)
 
-- Tabla/entidad `Sucursal` desde día 1.
-- MVP UI: una sucursal activa/default; APIs ya reciben `sucursalId` donde importe (sesión, ingreso, caja).
+- Tabla `branches` (modelo Prisma `Branch`) desde día 1.
+- MVP UI: una sucursal activa/default; APIs ya pueden exponer `defaultBranch` en respuestas Super (`POST/GET /api/tenants`).
+- Al crear tenant: seed automático `Sede principal` (`is_default = true`). Sin CRUD multi-sede en esta etapa.
 
 ### 4.3 Plan SaaS GymBro
 

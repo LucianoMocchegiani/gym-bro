@@ -36,7 +36,8 @@
     { "key": "profileType", "value": "" },
     { "key": "userId", "value": "" },
     { "key": "userEmail", "value": "" },
-    { "key": "createdTenantId", "value": "" }
+    { "key": "createdTenantId", "value": "" },
+    { "key": "createdBranchId", "value": "" }
   ],
   "item": [
     {
@@ -460,12 +461,19 @@
                 "exec": [
                   "pm.test('status 201 or 200', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]));",
                   "const body = pm.response.json();",
-                  "pm.test('has id and ACTIVE', () => {",
+                  "pm.test('has id ACTIVE and defaultBranch', () => {",
                   "  pm.expect(body.id).to.be.a('string');",
                   "  pm.expect(body.status).to.eql('ACTIVE');",
+                  "  pm.expect(body.defaultBranch).to.be.an('object');",
+                  "  pm.expect(body.defaultBranch.isDefault).to.eql(true);",
+                  "  pm.expect(body.defaultBranch.name).to.eql('Sede principal');",
                   "});",
                   "pm.collectionVariables.set('createdTenantId', body.id);",
-                  "pm.environment.set('createdTenantId', body.id);"
+                  "pm.environment.set('createdTenantId', body.id);",
+                  "if (body.defaultBranch) {",
+                  "  pm.collectionVariables.set('createdBranchId', body.defaultBranch.id);",
+                  "  pm.environment.set('createdBranchId', body.defaultBranch.id);",
+                  "}"
                 ]
               }
             }

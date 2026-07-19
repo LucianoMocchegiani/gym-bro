@@ -18,6 +18,7 @@ import { TenantResponse } from './tenants.types';
  * CRUD de tenants para Super Admin (plataforma).
  *
  * @remarks Rutas bajo `/api/tenants`. No usa TenantGuard (RN-TEN-002 / CU-ROL-002).
+ * Al crear: seed de sucursal default (RN-TEN-003 / S2).
  */
 @Controller('tenants')
 @RequireSuperAuth()
@@ -25,9 +26,9 @@ export class TenantsController {
   constructor(private readonly tenantsService: TenantsService) {}
 
   /**
-   * Crea un tenant ACTIVE.
+   * Crea un tenant ACTIVE + sucursal default (`Sede principal`).
    *
-   * @see CU-ROL-001 (parcial: solo entidad Tenant)
+   * @see CU-ROL-001 (parcial: Tenant + Sucursal seed)
    */
   @Post()
   @HttpCode(HttpStatus.CREATED)

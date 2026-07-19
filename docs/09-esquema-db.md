@@ -16,7 +16,7 @@ Documento **implementado** (tablas reales), no el modelo conceptual de [03-model
 | Nombres físicos | `snake_case` vía `@@map` / `@map` |
 | Multi-tenant | Tablas de negocio con `tenant_id` → `tenants.id` (RN-TEN-001) |
 | Timestamps | `created_at`, `updated_at` donde aplica |
-| Soft delete | No (aún); `active` boolean en usuarios |
+| Soft delete | No (aún); `active` boolean en usuarios / sucursales |
 | Migraciones | `api/prisma/migrations/` (manuales en dev) |
 
 ---
@@ -27,6 +27,7 @@ Documento **implementado** (tablas reales), no el modelo conceptual de [03-model
 erDiagram
   tenants ||--o{ staff_users : has
   tenants ||--o{ members : has
+  tenants ||--o{ branches : has
   super_users ||--o{ refresh_tokens : has
   staff_users ||--o{ refresh_tokens : has
   members ||--o{ refresh_tokens : has
@@ -35,6 +36,16 @@ erDiagram
     uuid id PK
     text name
     enum status
+    timestamptz created_at
+    timestamptz updated_at
+  }
+
+  branches {
+    uuid id PK
+    uuid tenant_id FK
+    text name
+    boolean active
+    boolean is_default
     timestamptz created_at
     timestamptz updated_at
   }
@@ -109,11 +120,30 @@ Gimnasio / estudio = tenant SaaS.
 | `created_at` | timestamptz | |
 | `updated_at` | timestamptz | |
 
-**Relaciones:** 1→N `staff_users`, 1→N `members`.
+**Relaciones:** 1→N `staff_users`, 1→N `members`, 1→N `branches`.
 
 ---
 
-### 4.2 `super_users`
+### 4.2 `branches`
+
+Sucursal / sede (modelo Prisma `Branch`). Estrategia **S2** / RN-TEN-003: multi-sede en datos; MVP opera con 1 sede visible (`is_default`).
+
+| Columna | Tipo | Notas |
+|---------|------|--------|
+| `id` | uuid PK | |
+| `tenant_id` | uuid FK → `tenants` | ON DELETE CASCADE · index |
+| `name` | text | seed create: `Sede principal` |
+| `active` | boolean | default true |
+| `is_default` | boolean | default false |
+| `created_at` / `updated_at` | timestamptz | |
+
+**Índice único parcial:** a lo sumo una fila con `is_default = true` por `tenant_id`.
+
+Al `POST /api/tenants` se crea tenant + branch default en la misma transacción. No hay CRUD de sucursales en esta tarea. Tenants anteriores al migrate pueden no tener branch (`defaultBranch: null`).
+
+---
+
+### 4.3 `super_users`
 
 Super Admin de plataforma (sin `tenant_id`, RN-ROL-001).
 
@@ -128,7 +158,7 @@ Super Admin de plataforma (sin `tenant_id`, RN-ROL-001).
 
 ---
 
-### 4.3 `staff_users`
+### 4.4 `staff_users`
 
 Staff de un gym. Email único **por tenant**.
 
@@ -146,7 +176,7 @@ Staff de un gym. Email único **por tenant**.
 
 ---
 
-### 4.4 `members`
+### 4.5 `members`
 
 Afiliado (socio). Perfil separado del staff (RN-ROL-005). Email único **por tenant**.
 
@@ -164,7 +194,7 @@ Afiliado (socio). Perfil separado del staff (RN-ROL-005). Email único **por ten
 
 ---
 
-### 4.5 `refresh_tokens`
+### 4.6 `refresh_tokens`
 
 Refresh opaco hasheado (SHA-256). Un token pertenece a **un** perfil (solo una FK de dueño poblada).
 
@@ -188,6 +218,7 @@ Refresh opaco hasheado (SHA-256). Un token pertenece a **un** perfil (solo una F
 |-----------|-----------|
 | `20260718120000_init_tenant` | enum `TenantStatus` + tabla `tenants` |
 | `20260718160000_auth_identities` | auth: enums, `super_users`, `staff_users`, `members`, `refresh_tokens` |
+| `20260719180000_branches` | tabla `branches` + índice único parcial default por tenant |
 
 Comandos:
 
@@ -209,13 +240,14 @@ docker compose exec api npm run prisma:seed
 | Member | `socio@demo.gym` |
 | Password (todos) | `ChangeMe123!` |
 
-Script: [`api/prisma/seed.ts`](../api/prisma/seed.ts).
+Script: [`api/prisma/seed.ts`](../api/prisma/seed.ts).  
+**Nota:** el seed demo **no** crea sucursal (alcance: seed solo en `POST /tenants`). El tenant demo puede tener `defaultBranch: null` hasta un create nuevo o un backfill futuro.
 
 ---
 
 ## 7. Pendiente de modelar (dominio → DB)
 
-Aún no hay tablas Prisma para (ver [03](./03-modelo-dominio.md) / roadmap): sucursales, roles/permisos, servicios/packs, reservas, pagos/caja, acceso, rutinas, notificaciones, auditoría, etc. Se documentan aquí **al implementarlas**.
+Aún no hay tablas Prisma para (ver [03](./03-modelo-dominio.md) / roadmap): roles/permisos, servicios/packs, reservas, pagos/caja, acceso, rutinas, notificaciones, auditoría, etc. Se documentan aquí **al implementarlas**.
 
 ---
 
