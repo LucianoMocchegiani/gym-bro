@@ -1,5 +1,9 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { Tenant } from '@prisma/client';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
+import { Prisma, Tenant } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateTenantDto, UpdateTenantDto } from './dto/tenant.dto';
 import { TenantResponse } from './tenants.types';
@@ -7,8 +11,8 @@ import { TenantResponse } from './tenants.types';
 /**
  * Casos de uso de tenants a nivel plataforma (Super Admin).
  *
- * @remarks RN-TEN-002: crear/gestionar tenants es exclusivo de Super.
- * Suspender status queda fuera de este servicio hasta la tarea E1 correspondiente.
+ * @remarks RN-TEN-002: crear/gestionar/suspender tenants es exclusivo de Super.
+ * Staff/Member de un tenant SUSPENDED fallan en login/refresh (`AuthService`).
  */
 @Injectable()
 export class TenantsService {
@@ -51,15 +55,31 @@ export class TenantsService {
   }
 
   /**
-   * Actualiza el nombre del tenant.
+   * Actualiza nombre y/o status (suspender / reactivar).
    *
+   * @remarks Idempotente en status: setear el mismo valor actual → 200 sin error.
+   * @throws {BadRequestException} Si el body no trae `name` ni `status`.
    * @throws {NotFoundException} Si no existe.
+   * @see CU-ROL-002
    */
   async update(id: string, dto: UpdateTenantDto): Promise<TenantResponse> {
+    if (dto.name === undefined && dto.status === undefined) {
+      throw new BadRequestException('Provide name and/or status');
+    }
+
     await this.findOne(id);
+
+    const data: Prisma.TenantUpdateInput = {};
+    if (dto.name !== undefined) {
+      data.name = dto.name.trim();
+    }
+    if (dto.status !== undefined) {
+      data.status = dto.status;
+    }
+
     const tenant = await this.prisma.tenant.update({
       where: { id },
-      data: { name: dto.name.trim() },
+      data,
     });
     return this.toResponse(tenant);
   }

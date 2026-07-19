@@ -17,8 +17,7 @@ import { TenantResponse } from './tenants.types';
 /**
  * CRUD de tenants para Super Admin (plataforma).
  *
- * @remarks Rutas bajo `/api/tenants`. No usa TenantGuard (RN-TEN-002).
- * Suspender tenant es una tarea E1 separada.
+ * @remarks Rutas bajo `/api/tenants`. No usa TenantGuard (RN-TEN-002 / CU-ROL-002).
  */
 @Controller('tenants')
 @RequireSuperAuth()
@@ -53,7 +52,9 @@ export class TenantsController {
   }
 
   /**
-   * Renombra un tenant (sin cambiar status).
+   * Actualiza nombre y/o status (`ACTIVE` | `SUSPENDED`).
+   *
+   * @see CU-ROL-002
    */
   @Patch(':id')
   update(

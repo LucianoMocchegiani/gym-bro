@@ -26,7 +26,7 @@ Variables: `superEmail` / `superPassword`, `staffEmail` / `staffPassword`, `memb
 
 Carpeta **Auth (manual)**: Login Super/Staff/Member → Me → Refresh → Logout.
 
-Carpeta **Tenants (Super)**: Login Super primero → POST create → GET list → GET by id → PATCH rename. Guarda `createdTenantId`.
+Carpeta **Tenants (Super)**: Login Super primero → POST create → GET list → GET by id → PATCH rename → PATCH suspend → PATCH activate. Guarda `createdTenantId`.
 
 ## Multi-tenant
 

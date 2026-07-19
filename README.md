@@ -105,7 +105,7 @@ Tenant demo id: `00000000-0000-4000-8000-000000000001`. También: `POST /api/aut
 
 Rutas de negocio: `@RequireTenantAuth()` + `@CurrentTenant()` (tenant solo del JWT). Suspendido = corte en login/refresh (access puede vivir ~15 min).
 
-Super Admin — tenants: `GET|POST /api/tenants`, `GET|PATCH /api/tenants/:id` (Bearer Super; staff/member → 403). Suspender es otra tarea.
+Super Admin — tenants: `GET|POST /api/tenants`, `GET|PATCH /api/tenants/:id` (nombre y/o `status` ACTIVE|SUSPENDED; Bearer Super). Staff/Member de tenant suspendido: falla login/refresh.
 
 Probar con Postman: importá [`postman/`](./postman/) (colección + environment local). Los logins guardan `accessToken` / `refreshToken` vía scripts.
 
