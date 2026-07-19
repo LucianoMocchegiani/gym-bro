@@ -105,6 +105,8 @@ Tenant demo id: `00000000-0000-4000-8000-000000000001`. También: `POST /api/aut
 
 Rutas de negocio: `@RequireTenantAuth()` + `@CurrentTenant()` (tenant solo del JWT). Suspendido = corte en login/refresh (access puede vivir ~15 min).
 
+Super Admin — tenants: `GET|POST /api/tenants`, `GET|PATCH /api/tenants/:id` (Bearer Super; staff/member → 403). Suspender es otra tarea.
+
 Probar con Postman: importá [`postman/`](./postman/) (colección + environment local). Los logins guardan `accessToken` / `refreshToken` vía scripts.
 
 > Nota: si en el host el puerto `5432` ya lo usa otro Postgres, la CLI de Prisma fallará con error de auth; usá el `exec` del contenedor.

@@ -4,6 +4,7 @@ import { AuthModule } from './auth/auth.module';
 import { HealthModule } from './health/health.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { TenantModule } from './tenant/tenant.module';
+import { TenantsModule } from './tenants/tenants.module';
 
 /**
  * Módulo raíz del monolito modular GymBro.
@@ -16,6 +17,7 @@ import { TenantModule } from './tenant/tenant.module';
     PrismaModule,
     AuthModule,
     TenantModule,
+    TenantsModule,
     HealthModule,
   ],
 })

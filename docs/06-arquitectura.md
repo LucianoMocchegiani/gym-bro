@@ -128,6 +128,7 @@ Login por perfil → access JWT + refresh (Postgres)
 También: `POST /api/auth/refresh`, `POST /api/auth/logout`, `GET /api/auth/me` (incluye `tenantId` para staff/member).
 
 Rutas de negocio del gym: `@RequireTenantAuth()` + `@CurrentTenant()` (módulo `tenant/`).
+Rutas de plataforma (Super): `@RequireSuperAuth()` — p. ej. CRUD `GET|POST|PATCH /api/tenants` (sin suspender aún).
 
 Afiliado y staff **nunca** comparten el mismo perfil de sesión (RN-ROL-005).
 
@@ -244,7 +245,7 @@ Prefijo sugerido: `/api/v1`.
 | Área | Ejemplos |
 |------|----------|
 | Auth | `POST /auth/login`, refresh |
-| Super | `POST /super/tenants`, suspend |
+| Super | `GET|POST /tenants`, `GET|PATCH /tenants/:id` (CRUD; suspend → tarea E1) |
 | Afiliados | CRUD `/tenants/:tid/members` |
 | Catálogo | `/services`, `/packs`, `/sessions`, `/recurrence-rules` |
 | Reservas | `/sessions/:id/reservations`, waitlist |

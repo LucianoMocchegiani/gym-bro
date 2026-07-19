@@ -49,7 +49,7 @@
 
 ## E1 — Tenants y roles
 
-- [ ] CRUD tenant (Super Admin)
+- [x] CRUD tenant (Super Admin)
 - [ ] Suspender tenant
 - [ ] Sucursal seed (S2, 1 visible)
 - [ ] Roles seed al crear gym

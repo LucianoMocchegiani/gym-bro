@@ -26,8 +26,11 @@ Variables: `superEmail` / `superPassword`, `staffEmail` / `staffPassword`, `memb
 
 Carpeta **Auth (manual)**: Login Super/Staff/Member → Me → Refresh → Logout.
 
+Carpeta **Tenants (Super)**: Login Super primero → POST create → GET list → GET by id → PATCH rename. Guarda `createdTenantId`.
+
 ## Multi-tenant
 
 - `GET /auth/me` → `tenantId` para staff/member (del JWT).
 - Rutas de negocio futuras: `@RequireTenantAuth()` (Super → 403).
+- Rutas plataforma: `@RequireSuperAuth()` — `/api/tenants` (staff/member → 403).
 - Tenant suspendido: se corta en login/refresh, no en cada request.
