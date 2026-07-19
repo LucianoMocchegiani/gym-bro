@@ -16,6 +16,7 @@ La creación de registros sigue la skill:
 
 ## Índice
 
+- [2026-07-19 — Suspender / reactivar tenant (Super Admin)](./2026-07-19-suspender-tenant.md)
 - [2026-07-19 — CRUD tenant (Super Admin)](./2026-07-19-crud-tenant-super.md)
 - [2026-07-18 — CI mínimo (lint/build) api + web](./2026-07-18-ci-minimo-lint-build.md)
 - [2026-07-18 — TenantGuard multi-tenant + esquema DB vivo](./2026-07-18-tenant-guard-esquema-db.md)
