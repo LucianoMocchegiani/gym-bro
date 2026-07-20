@@ -11,10 +11,21 @@ export type BranchSummary = {
 };
 
 /**
+ * Rol sistema sembrado al crear el tenant (Admin / Profesor).
+ */
+export type RoleSummary = {
+  id: string;
+  name: string;
+  slug: string;
+  isSystem: boolean;
+  permissionCodes: string[];
+};
+
+/**
  * Representación pública de un tenant para respuestas Super Admin.
  *
- * @remarks `defaultBranch` es null en tenants creados antes de la migración
- * de sucursales (sin backfill en esta tarea).
+ * @remarks `defaultBranch` / `systemRoles` pueden ser null/[] en tenants
+ * creados antes de esas migraciones (sin backfill).
  */
 export type TenantResponse = {
   id: string;
@@ -23,4 +34,5 @@ export type TenantResponse = {
   createdAt: Date;
   updatedAt: Date;
   defaultBranch: BranchSummary | null;
+  systemRoles: RoleSummary[];
 };

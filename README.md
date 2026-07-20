@@ -66,13 +66,23 @@ docker compose exec api npm install
 docker compose restart api
 ```
 
-O regenerar volúmenes (borra también datos de Postgres/Redis):
+O regenerar volúmenes (borra también datos de Postgres/Redis **y** `node_modules` de los contenedores):
 
 ```powershell
 docker compose down -v
 docker compose up --build -d
-# Luego: migrate + seed otra vez
 ```
+
+Después de `down -v` la DB queda vacía: hay que **aplicar todas las migraciones** (un solo comando las corre en orden) y el seed:
+
+```powershell
+docker compose exec api npx prisma migrate deploy
+docker compose exec api npx prisma generate
+docker compose exec api npm run prisma:seed
+docker compose restart api
+```
+
+Si el health da `socket hang up` o la API no compila tras un schema nuevo, suele faltar el `prisma generate` en el volumen del contenedor (paso de arriba).
 
 ### Base de datos (Prisma)
 
@@ -105,7 +115,7 @@ Tenant demo id: `00000000-0000-4000-8000-000000000001`. También: `POST /api/aut
 
 Rutas de negocio: `@RequireTenantAuth()` + `@CurrentTenant()` (tenant solo del JWT). Suspendido = corte en login/refresh (access puede vivir ~15 min).
 
-Super Admin — tenants: `GET|POST /api/tenants`, `GET|PATCH /api/tenants/:id` (nombre y/o `status`; create seedéa `defaultBranch` = Sede principal). Staff/Member de tenant suspendido: falla login/refresh.
+Super Admin — tenants: `GET|POST /api/tenants`, `GET|PATCH /api/tenants/:id` (create seedéa `defaultBranch` + `systemRoles` Admin/Profesor). Staff/Member de tenant suspendido: falla login/refresh.
 
 Probar con Postman: importá [`postman/`](./postman/) (colección + environment local). Los logins guardan `accessToken` / `refreshToken` vía scripts.
 

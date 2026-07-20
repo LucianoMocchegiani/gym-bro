@@ -37,6 +37,7 @@ model Tenant {
   staffUsers StaffUser[]
   members    Member[]
   branches   Branch[]
+  roles      Role[]
 
   @@map("tenants")
 }
@@ -132,4 +133,53 @@ model RefreshToken {
   @@index([staffUserId])
   @@index([memberId])
   @@map("refresh_tokens")
+}
+
+/// Permiso de producto (catálogo global). Los roles por tenant eligen de esta lista.
+///
+/// @remarks RN-ROL-003: la autorización se evalúa en el tenant del staff;
+/// los códigos son fijos de producto (no se inventan por gym).
+model Permission {
+  id          String   @id @default(uuid()) @db.Uuid
+  code        String   @unique
+  description String
+  dangerous   Boolean  @default(false)
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  rolePermissions RolePermission[]
+
+  @@map("permissions")
+}
+
+/// Rol de staff dentro de un tenant (RN-ROL-002). Seed: Admin / Profesor.
+model Role {
+  id        String   @id @default(uuid()) @db.Uuid
+  tenantId  String   @map("tenant_id") @db.Uuid
+  name      String
+  slug      String
+  isSystem  Boolean  @default(false) @map("is_system")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  tenant          Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  rolePermissions RolePermission[]
+
+  @@unique([tenantId, slug])
+  @@unique([tenantId, name])
+  @@index([tenantId])
+  @@map("roles")
+}
+
+/// Asignación permiso ↔ rol (N:N).
+model RolePermission {
+  roleId       String @map("role_id") @db.Uuid
+  permissionId String @map("permission_id") @db.Uuid
+
+  role       Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@id([roleId, permissionId])
+  @@index([permissionId])
+  @@map("role_permissions")
 }

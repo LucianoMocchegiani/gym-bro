@@ -52,7 +52,7 @@
 - [x] CRUD tenant (Super Admin)
 - [x] Suspender tenant
 - [x] Sucursal seed (S2, 1 visible)
-- [ ] Roles seed al crear gym
+- [x] Roles seed al crear gym
 - [ ] Crear / editar roles custom
 - [ ] Asignar roles a staff (multi-rol)
 - [ ] Flags peligrosos
