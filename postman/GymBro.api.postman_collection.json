@@ -37,7 +37,8 @@
     { "key": "userId", "value": "" },
     { "key": "userEmail", "value": "" },
     { "key": "createdTenantId", "value": "" },
-    { "key": "createdBranchId", "value": "" }
+    { "key": "createdBranchId", "value": "" },
+    { "key": "createdRoleId", "value": "" }
   ],
   "item": [
     {
@@ -602,6 +603,89 @@
               "raw": "{\n  \"status\": \"ACTIVE\"\n}"
             },
             "url": "{{baseUrl}}/api/tenants/{{createdTenantId}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Roles",
+      "description": "Super: /tenants/:tenantId/roles. Staff: /roles (JWT tenant). Admin system role → 403 on PATCH. Usá createdTenantId de Tenants o tenantId demo.",
+      "item": [
+        {
+          "name": "Super POST create custom role",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 201', () => pm.response.to.have.status(201));",
+                  "const body = pm.response.json();",
+                  "pm.test('custom role', () => {",
+                  "  pm.expect(body.isSystem).to.eql(false);",
+                  "  pm.expect(body.permissionCodes).to.include('members.read');",
+                  "});",
+                  "pm.collectionVariables.set('createdRoleId', body.id);",
+                  "pm.environment.set('createdRoleId', body.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Recepcion\",\n  \"permissionCodes\": [\"members.read\", \"members.write\", \"cashier.operate\"]\n}"
+            },
+            "url": "{{baseUrl}}/api/tenants/{{createdTenantId}}/roles"
+          }
+        },
+        {
+          "name": "Super PATCH custom role",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('renamed', () => pm.expect(pm.response.json().name).to.eql('Recepcion Plus'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Recepcion Plus\",\n  \"permissionCodes\": [\"members.read\", \"cashier.operate\"]\n}"
+            },
+            "url": "{{baseUrl}}/api/tenants/{{createdTenantId}}/roles/{{createdRoleId}}"
+          }
+        },
+        {
+          "name": "Staff POST create role",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 201', () => pm.response.to.have.status(201));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Coach auxiliar\",\n  \"permissionCodes\": [\"routines.write\", \"members.read\"]\n}"
+            },
+            "url": "{{baseUrl}}/api/roles"
           }
         }
       ]

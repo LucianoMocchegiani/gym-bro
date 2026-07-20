@@ -320,7 +320,7 @@ Script: [`api/prisma/seed.ts`](../api/prisma/seed.ts).
 
 ## 7. Pendiente de modelar (dominio → DB)
 
-Aún no hay tablas Prisma para (ver [03](./03-modelo-dominio.md) / roadmap): staff↔roles, servicios/packs, reservas, pagos/caja, acceso, rutinas, notificaciones, auditoría, etc. Se documentan aquí **al implementarlas**.
+Aún no hay tablas Prisma para (ver [03](./03-modelo-dominio.md) / roadmap): staff↔roles (asignación), servicios/packs, reservas, pagos/caja, acceso, rutinas, notificaciones, auditoría, etc. Se documentan aquí **al implementarlas**. CRUD de roles custom: API Super `/tenants/:id/roles` y Staff `/roles` (rol `admin` inmutable).
 
 ---
 
