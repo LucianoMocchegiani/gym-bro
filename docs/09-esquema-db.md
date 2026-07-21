@@ -31,6 +31,8 @@ erDiagram
   tenants ||--o{ roles : has
   roles ||--o{ role_permissions : has
   permissions ||--o{ role_permissions : has
+  staff_users ||--o{ staff_user_roles : has
+  roles ||--o{ staff_user_roles : has
   super_users ||--o{ refresh_tokens : has
   staff_users ||--o{ refresh_tokens : has
   members ||--o{ refresh_tokens : has
@@ -75,6 +77,11 @@ erDiagram
   role_permissions {
     uuid role_id PK_FK
     uuid permission_id PK_FK
+  }
+
+  staff_user_roles {
+    uuid staff_user_id PK_FK
+    uuid role_id PK_FK
   }
 
   super_users {
@@ -212,7 +219,18 @@ N:N rol ↔ permiso.
 
 ---
 
-### 4.6 `super_users`
+### 4.6 `staff_user_roles`
+
+N:N staff ↔ rol (RN-ROL-004).
+
+| Columna | Tipo | Notas |
+|---------|------|--------|
+| `staff_user_id` | uuid PK/FK → `staff_users` | CASCADE |
+| `role_id` | uuid PK/FK → `roles` | CASCADE |
+
+---
+
+### 4.7 `super_users`
 
 Super Admin de plataforma (sin `tenant_id`, RN-ROL-001).
 
@@ -227,7 +245,7 @@ Super Admin de plataforma (sin `tenant_id`, RN-ROL-001).
 
 ---
 
-### 4.7 `staff_users`
+### 4.8 `staff_users`
 
 Staff de un gym. Email único **por tenant**.
 
@@ -245,7 +263,7 @@ Staff de un gym. Email único **por tenant**.
 
 ---
 
-### 4.8 `members`
+### 4.9 `members`
 
 Afiliado (socio). Perfil separado del staff (RN-ROL-005). Email único **por tenant**.
 
@@ -263,7 +281,7 @@ Afiliado (socio). Perfil separado del staff (RN-ROL-005). Email único **por ten
 
 ---
 
-### 4.9 `refresh_tokens`
+### 4.10 `refresh_tokens`
 
 Refresh opaco hasheado (SHA-256). Un token pertenece a **un** perfil (solo una FK de dueño poblada).
 
@@ -289,6 +307,7 @@ Refresh opaco hasheado (SHA-256). Un token pertenece a **un** perfil (solo una F
 | `20260718160000_auth_identities` | auth: enums, `super_users`, `staff_users`, `members`, `refresh_tokens` |
 | `20260719180000_branches` | tabla `branches` + índice único parcial default por tenant |
 | `20260719210000_roles_permissions` | `permissions`, `roles`, `role_permissions` |
+| `20260721150000_staff_user_roles` | `staff_user_roles` (multi-rol staff) |
 
 Comandos:
 
@@ -314,13 +333,15 @@ Tras `docker compose down -v`: `up --build -d` → `migrate deploy` → `generat
 | Password (todos) | `ChangeMe123!` |
 
 Script: [`api/prisma/seed.ts`](../api/prisma/seed.ts).  
-**Nota:** el seed demo crea Super + tenant + staff + member; **no** crea sucursal ni roles sistema (eso ocurre en `POST /api/tenants`). El tenant demo puede tener `defaultBranch: null` y `systemRoles: []` hasta un create nuevo o un backfill futuro. Las filas de `permissions` aparecen al primer create de tenant (upsert del catálogo).
+Crea Super + tenant demo + **branch** + roles Admin/Profesor + staff `admin@demo.gym` con rol Admin + member. Password: `ChangeMe123!`.
 
 ---
 
 ## 7. Pendiente de modelar (dominio → DB)
 
-Aún no hay tablas Prisma para (ver [03](./03-modelo-dominio.md) / roadmap): staff↔roles (asignación), servicios/packs, reservas, pagos/caja, acceso, rutinas, notificaciones, auditoría, etc. Se documentan aquí **al implementarlas**. CRUD de roles custom: API Super `/tenants/:id/roles` y Staff `/roles` (rol `admin` inmutable).
+Aún no hay tablas Prisma para (ver [03](./03-modelo-dominio.md) / roadmap): servicios/packs, reservas, pagos/caja, acceso, rutinas, notificaciones, auditoría, etc. Se documentan aquí **al implementarlas**.
+
+**Staff ↔ roles:** tabla `staff_user_roles`. API: Super `PUT /tenants/:tenantId/staff/:staffId/roles`, Staff `PUT /staff/:staffId/roles`. Create tenant exige owner y le asigna rol Admin.
 
 ---
 

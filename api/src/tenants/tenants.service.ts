@@ -4,13 +4,21 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { Branch, Prisma, Role, Tenant } from '@prisma/client';
+import * as bcrypt from 'bcryptjs';
 import { PrismaService } from '../prisma/prisma.service';
+import { SYSTEM_ROLE_SLUGS } from '../roles/permission-catalog';
 import {
   RolesSeedService,
   SeededRoleSummary,
 } from '../roles/roles-seed.service';
+import { StaffService } from '../staff/staff.service';
 import { CreateTenantDto, UpdateTenantDto } from './dto/tenant.dto';
-import { BranchSummary, RoleSummary, TenantResponse } from './tenants.types';
+import {
+  BranchSummary,
+  OwnerSummary,
+  RoleSummary,
+  TenantResponse,
+} from './tenants.types';
 
 const DEFAULT_BRANCH_NAME = 'Sede principal';
 
@@ -24,29 +32,30 @@ type TenantWithRelations = Tenant & {
 /**
  * Casos de uso de tenants a nivel plataforma (Super Admin).
  *
- * @remarks RN-TEN-002: crear/gestionar/suspender tenants es exclusivo de Super.
- * RN-TEN-003 / S2: al crear tenant se seedéa sucursal default.
- * RN-ROL-002: al crear tenant se seedéan roles Admin y Profesor.
+ * @remarks RN-TEN-002 / RN-TEN-003 / RN-ROL-002 / CU-ROL-001:
+ * create = tenant + branch + roles seed + owner Admin.
  */
 @Injectable()
 export class TenantsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly rolesSeed: RolesSeedService,
+    private readonly staffService: StaffService,
   ) {}
 
   /**
-   * Crea gym ACTIVE + sucursal default + roles sistema (misma transacción).
+   * Crea gym ACTIVE + sede + roles + staff owner con rol Admin.
    *
-   * @param dto - Nombre del tenant.
-   * @returns Tenant con `defaultBranch` y `systemRoles`.
    * @see CU-ROL-001
    */
   async create(dto: CreateTenantDto): Promise<TenantResponse> {
     const permissions = await this.rolesSeed.ensurePermissionCatalog();
+    const passwordHash = await bcrypt.hash(dto.ownerPassword, 12);
+    const ownerEmail = dto.ownerEmail.trim().toLowerCase();
+    const ownerName = dto.ownerName?.trim() || null;
 
-    const { tenant, branch, systemRoles } = await this.prisma.$transaction(
-      async (tx) => {
+    const { tenant, branch, systemRoles, owner } =
+      await this.prisma.$transaction(async (tx) => {
         const created = await tx.tenant.create({
           data: { name: dto.name.trim() },
         });
@@ -63,11 +72,37 @@ export class TenantsService {
           created.id,
           permissions,
         );
-        return { tenant: created, branch: defaultBranch, systemRoles: roles };
-      },
-    );
+        const adminRole = roles.find((r) => r.slug === SYSTEM_ROLE_SLUGS.admin);
+        if (!adminRole) {
+          throw new Error('Admin system role missing after seed');
+        }
 
-    return this.toResponse(tenant, branch, systemRoles);
+        const ownerStaff = await tx.staffUser.create({
+          data: {
+            tenantId: created.id,
+            email: ownerEmail,
+            passwordHash,
+            name: ownerName,
+            active: true,
+          },
+        });
+        await this.staffService.assignRolesInTx(tx, ownerStaff.id, [
+          adminRole.id,
+        ]);
+
+        return {
+          tenant: created,
+          branch: defaultBranch,
+          systemRoles: roles,
+          owner: {
+            id: ownerStaff.id,
+            email: ownerStaff.email,
+            name: ownerStaff.name,
+          },
+        };
+      });
+
+    return this.toResponse(tenant, branch, systemRoles, owner);
   }
 
   /**
@@ -79,7 +114,7 @@ export class TenantsService {
       include: this.tenantInclude(),
     });
     return tenants.map((t) =>
-      this.toResponse(t, t.branches[0] ?? null, this.mapRoles(t.roles)),
+      this.toResponse(t, t.branches[0] ?? null, this.mapRoles(t.roles), null),
     );
   }
 
@@ -94,14 +129,13 @@ export class TenantsService {
       tenant,
       tenant.branches[0] ?? null,
       this.mapRoles(tenant.roles),
+      null,
     );
   }
 
   /**
    * Actualiza nombre y/o status (suspender / reactivar).
    *
-   * @throws {BadRequestException} Si el body no trae `name` ni `status`.
-   * @throws {NotFoundException} Si no existe.
    * @see CU-ROL-002
    */
   async update(id: string, dto: UpdateTenantDto): Promise<TenantResponse> {
@@ -167,6 +201,7 @@ export class TenantsService {
     tenant: Tenant,
     defaultBranch: Branch | null,
     systemRoles: RoleSummary[],
+    owner: OwnerSummary | null,
   ): TenantResponse {
     return {
       id: tenant.id,
@@ -176,6 +211,7 @@ export class TenantsService {
       updatedAt: tenant.updatedAt,
       defaultBranch: defaultBranch ? this.toBranchSummary(defaultBranch) : null,
       systemRoles,
+      owner,
     };
   }
 

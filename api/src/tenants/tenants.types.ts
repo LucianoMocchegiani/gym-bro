@@ -22,10 +22,16 @@ export type RoleSummary = {
 };
 
 /**
+ * Owner Admin creado junto al tenant (CU-ROL-001).
+ */
+export type OwnerSummary = {
+  id: string;
+  email: string;
+  name: string | null;
+};
+
+/**
  * Representación pública de un tenant para respuestas Super Admin.
- *
- * @remarks `defaultBranch` / `systemRoles` pueden ser null/[] en tenants
- * creados antes de esas migraciones (sin backfill).
  */
 export type TenantResponse = {
   id: string;
@@ -35,4 +41,6 @@ export type TenantResponse = {
   updatedAt: Date;
   defaultBranch: BranchSummary | null;
   systemRoles: RoleSummary[];
+  /** Presente en create; en get/list puede ser null si no se resolvió. */
+  owner: OwnerSummary | null;
 };

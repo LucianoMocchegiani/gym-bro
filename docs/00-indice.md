@@ -41,6 +41,7 @@ Reglas relacionadas
 | [08-casos-prueba-manuales.md](./08-casos-prueba-manuales.md) | QA manual (vos + socio) | Cerrado (v1) |
 | [10-metodo-definicion-producto.md](./10-metodo-definicion-producto.md) | Cómo repetir el proceso preguntas→docs (MVP y post-MVP) | Cerrado (v1) |
 | [11-roadmap-mvp.md](./11-roadmap-mvp.md) | Épicas y tareas título para terminar el MVP | Borrador v1 |
+| [credenciales-demo.md](./credenciales-demo.md) | Cuentas seed locales (Super / Staff / Member) | Viva |
 | [99-backlog-post-mvp.md](./99-backlog-post-mvp.md) | Diferidos para no olvidar | Cerrado (v1) |
 | [ideas/](./ideas/) | Ideas crudas (charlas, notas) antes de definir módulo | Viva |
 | [tareas-terminadas/](./tareas-terminadas/) | Registro cronológico de tareas implementadas | Viva |

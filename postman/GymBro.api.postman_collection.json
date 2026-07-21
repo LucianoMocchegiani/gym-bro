@@ -38,7 +38,8 @@
     { "key": "userEmail", "value": "" },
     { "key": "createdTenantId", "value": "" },
     { "key": "createdBranchId", "value": "" },
-    { "key": "createdRoleId", "value": "" }
+    { "key": "createdRoleId", "value": "" },
+    { "key": "createdOwnerId", "value": "" }
   ],
   "item": [
     {
@@ -462,7 +463,7 @@
                 "exec": [
                   "pm.test('status 201 or 200', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]));",
                   "const body = pm.response.json();",
-                  "pm.test('has id ACTIVE defaultBranch and systemRoles', () => {",
+                  "pm.test('has id ACTIVE defaultBranch systemRoles and owner', () => {",
                   "  pm.expect(body.id).to.be.a('string');",
                   "  pm.expect(body.status).to.eql('ACTIVE');",
                   "  pm.expect(body.defaultBranch).to.be.an('object');",
@@ -471,12 +472,18 @@
                   "  pm.expect(body.systemRoles).to.be.an('array').that.has.length(2);",
                   "  const slugs = body.systemRoles.map((r) => r.slug).sort();",
                   "  pm.expect(slugs).to.eql(['admin', 'profesor']);",
+                  "  pm.expect(body.owner).to.be.an('object');",
+                  "  pm.expect(body.owner.email).to.eql('owner.postman@test.gym');",
                   "});",
                   "pm.collectionVariables.set('createdTenantId', body.id);",
                   "pm.environment.set('createdTenantId', body.id);",
                   "if (body.defaultBranch) {",
                   "  pm.collectionVariables.set('createdBranchId', body.defaultBranch.id);",
                   "  pm.environment.set('createdBranchId', body.defaultBranch.id);",
+                  "}",
+                  "if (body.owner) {",
+                  "  pm.collectionVariables.set('createdOwnerId', body.owner.id);",
+                  "  pm.environment.set('createdOwnerId', body.owner.id);",
                   "}"
                 ]
               }
@@ -487,7 +494,7 @@
             "header": [{ "key": "Content-Type", "value": "application/json" }],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"Gym Postman Test\"\n}"
+              "raw": "{\n  \"name\": \"Gym Postman Test\",\n  \"ownerEmail\": \"owner.postman@test.gym\",\n  \"ownerPassword\": \"ChangeMe123!\",\n  \"ownerName\": \"Owner Postman\"\n}"
             },
             "url": "{{baseUrl}}/api/tenants"
           }
@@ -686,6 +693,46 @@
               "raw": "{\n  \"name\": \"Coach auxiliar\",\n  \"permissionCodes\": [\"routines.write\", \"members.read\"]\n}"
             },
             "url": "{{baseUrl}}/api/roles"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Staff roles",
+      "description": "Asignar roles. Super: /tenants/:tenantId/staff/:staffId/roles. Staff: /staff/:staffId/roles. Requiere createdOwnerId o staffId del seed.",
+      "item": [
+        {
+          "name": "Super PUT assign roles to owner",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('has roles', () => pm.expect(body.roles).to.be.an('array').that.is.not.empty);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"roleIds\": []\n}"
+            },
+            "url": "{{baseUrl}}/api/tenants/{{createdTenantId}}/staff/{{createdOwnerId}}/roles",
+            "description": "Body vacío limpia roles; reemplazá roleIds con ids de systemRoles del create tenant (admin + profesor) para multi-rol."
+          }
+        },
+        {
+          "name": "Super GET staff",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/tenants/{{createdTenantId}}/staff/{{createdOwnerId}}"
           }
         }
       ]

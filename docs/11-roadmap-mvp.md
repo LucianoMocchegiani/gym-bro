@@ -54,7 +54,7 @@
 - [x] Sucursal seed (S2, 1 visible)
 - [x] Roles seed al crear gym
 - [x] Crear / editar roles custom
-- [ ] Asignar roles a staff (multi-rol)
+- [x] Asignar roles a staff (multi-rol)
 - [ ] Flags peligrosos
 - [ ] Auditoría de acciones críticas
 - [ ] Perfiles separados afiliado vs staff

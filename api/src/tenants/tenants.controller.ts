@@ -26,9 +26,9 @@ export class TenantsController {
   constructor(private readonly tenantsService: TenantsService) {}
 
   /**
-   * Crea un tenant ACTIVE + sucursal default + roles Admin/Profesor.
+   * Crea un tenant ACTIVE + sucursal + roles + owner Admin.
    *
-   * @see CU-ROL-001 (parcial: Tenant + Sucursal + roles seed)
+   * @see CU-ROL-001
    */
   @Post()
   @HttpCode(HttpStatus.CREATED)

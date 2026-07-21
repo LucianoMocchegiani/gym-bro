@@ -86,8 +86,9 @@ model StaffUser {
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")
 
-  tenant        Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  tenant        Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   refreshTokens RefreshToken[]
+  staffRoles    StaffUserRole[]
 
   @@unique([tenantId, email])
   @@index([tenantId])
@@ -164,6 +165,7 @@ model Role {
 
   tenant          Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   rolePermissions RolePermission[]
+  staffRoles      StaffUserRole[]
 
   @@unique([tenantId, slug])
   @@unique([tenantId, name])
@@ -182,4 +184,17 @@ model RolePermission {
   @@id([roleId, permissionId])
   @@index([permissionId])
   @@map("role_permissions")
+}
+
+/// Asignación staff ↔ rol (multi-rol, RN-ROL-004).
+model StaffUserRole {
+  staffUserId String @map("staff_user_id") @db.Uuid
+  roleId      String @map("role_id") @db.Uuid
+
+  staffUser StaffUser @relation(fields: [staffUserId], references: [id], onDelete: Cascade)
+  role      Role      @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@id([staffUserId, roleId])
+  @@index([roleId])
+  @@map("staff_user_roles")
 }

@@ -1,4 +1,3 @@
-import { createHash, randomBytes } from 'node:crypto';
 import * as bcrypt from 'bcryptjs';
 import { PrismaClient, TenantStatus } from '@prisma/client';
 
@@ -7,10 +6,101 @@ const prisma = new PrismaClient();
 const DEMO_PASSWORD = 'ChangeMe123!';
 const DEMO_TENANT_ID = '00000000-0000-4000-8000-000000000001';
 
+const PERMISSIONS: { code: string; description: string; dangerous: boolean }[] =
+  [
+    {
+      code: 'tenant.settings.read',
+      description: 'Ver configuración del gym',
+      dangerous: false,
+    },
+    {
+      code: 'tenant.settings.write',
+      description: 'Editar configuración del gym',
+      dangerous: false,
+    },
+    {
+      code: 'members.read',
+      description: 'Ver afiliados',
+      dangerous: false,
+    },
+    {
+      code: 'members.write',
+      description: 'Alta, edición y baja de afiliados',
+      dangerous: false,
+    },
+    {
+      code: 'staff.read',
+      description: 'Ver staff',
+      dangerous: false,
+    },
+    {
+      code: 'staff.write',
+      description: 'Alta y edición de staff; asignación de roles',
+      dangerous: false,
+    },
+    {
+      code: 'roles.write',
+      description: 'Crear y editar roles custom',
+      dangerous: false,
+    },
+    {
+      code: 'catalog.write',
+      description: 'Servicios, packs y precios',
+      dangerous: false,
+    },
+    {
+      code: 'sessions.write',
+      description: 'Sesiones, cupos y calendario',
+      dangerous: false,
+    },
+    {
+      code: 'reservations.write',
+      description: 'Reservas operadas por staff',
+      dangerous: false,
+    },
+    {
+      code: 'cashier.operate',
+      description: 'Operar caja del día',
+      dangerous: false,
+    },
+    {
+      code: 'payments.refund',
+      description: 'Devoluciones y reembolsos',
+      dangerous: true,
+    },
+    {
+      code: 'access.manual_pass',
+      description: 'Pase manual en puerta',
+      dangerous: true,
+    },
+    {
+      code: 'routines.write',
+      description: 'Catálogo y asignación de rutinas',
+      dangerous: false,
+    },
+    {
+      code: 'reports.read',
+      description: 'Ver reportes mínimos',
+      dangerous: false,
+    },
+    {
+      code: 'mp.connect',
+      description: 'Conectar o cambiar cuenta Mercado Pago',
+      dangerous: true,
+    },
+  ];
+
+const PROFESOR_CODES = [
+  'members.read',
+  'sessions.write',
+  'routines.write',
+  'reports.read',
+];
+
 /**
- * Seed de desarrollo: Super Admin + tenant demo + staff + afiliado.
+ * Seed de desarrollo: Super + tenant demo completo (branch, roles, staff Admin, member).
  *
- * @remarks Credenciales solo para entornos locales. No usar en producción.
+ * @remarks Credenciales solo para entornos locales.
  */
 async function main(): Promise<void> {
   const passwordHash = await bcrypt.hash(DEMO_PASSWORD, 12);
@@ -35,6 +125,75 @@ async function main(): Promise<void> {
     },
   });
 
+  const permissionRows = [];
+  for (const def of PERMISSIONS) {
+    permissionRows.push(
+      await prisma.permission.upsert({
+        where: { code: def.code },
+        create: def,
+        update: {
+          description: def.description,
+          dangerous: def.dangerous,
+        },
+      }),
+    );
+  }
+  const byCode = new Map(permissionRows.map((p) => [p.code, p]));
+
+  let branch = await prisma.branch.findFirst({
+    where: { tenantId: tenant.id, isDefault: true },
+  });
+  if (!branch) {
+    branch = await prisma.branch.create({
+      data: {
+        tenantId: tenant.id,
+        name: 'Sede principal',
+        active: true,
+        isDefault: true,
+      },
+    });
+  }
+
+  let adminRole = await prisma.role.findUnique({
+    where: {
+      tenantId_slug: { tenantId: tenant.id, slug: 'admin' },
+    },
+  });
+  if (!adminRole) {
+    adminRole = await prisma.role.create({
+      data: {
+        tenantId: tenant.id,
+        name: 'Admin',
+        slug: 'admin',
+        isSystem: true,
+        rolePermissions: {
+          create: permissionRows.map((p) => ({ permissionId: p.id })),
+        },
+      },
+    });
+  }
+
+  let profesorRole = await prisma.role.findUnique({
+    where: {
+      tenantId_slug: { tenantId: tenant.id, slug: 'profesor' },
+    },
+  });
+  if (!profesorRole) {
+    profesorRole = await prisma.role.create({
+      data: {
+        tenantId: tenant.id,
+        name: 'Profesor',
+        slug: 'profesor',
+        isSystem: true,
+        rolePermissions: {
+          create: PROFESOR_CODES.map((code) => ({
+            permissionId: byCode.get(code)!.id,
+          })),
+        },
+      },
+    });
+  }
+
   const staff = await prisma.staffUser.upsert({
     where: {
       tenantId_email: { tenantId: tenant.id, email: 'admin@demo.gym' },
@@ -45,6 +204,20 @@ async function main(): Promise<void> {
       email: 'admin@demo.gym',
       passwordHash,
       name: 'Admin Demo',
+    },
+  });
+
+  await prisma.staffUserRole.upsert({
+    where: {
+      staffUserId_roleId: {
+        staffUserId: staff.id,
+        roleId: adminRole.id,
+      },
+    },
+    update: {},
+    create: {
+      staffUserId: staff.id,
+      roleId: adminRole.id,
     },
   });
 
@@ -65,7 +238,13 @@ async function main(): Promise<void> {
   console.log({
     superUser: { id: superUser.id, email: superUser.email },
     tenant: { id: tenant.id, name: tenant.name },
-    staff: { id: staff.id, email: staff.email },
+    branch: { id: branch.id, name: branch.name },
+    staff: {
+      id: staff.id,
+      email: staff.email,
+      roles: ['admin'],
+    },
+    profesorRoleId: profesorRole.id,
     member: { id: member.id, email: member.email },
     password: DEMO_PASSWORD,
   });

@@ -4,6 +4,7 @@ import { AuthModule } from './auth/auth.module';
 import { HealthModule } from './health/health.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { RolesModule } from './roles/roles.module';
+import { StaffModule } from './staff/staff.module';
 import { TenantModule } from './tenant/tenant.module';
 import { TenantsModule } from './tenants/tenants.module';
 
@@ -19,6 +20,7 @@ import { TenantsModule } from './tenants/tenants.module';
     AuthModule,
     TenantModule,
     RolesModule,
+    StaffModule,
     TenantsModule,
     HealthModule,
   ],

@@ -111,11 +111,13 @@ docker compose exec api npm run prisma:seed
 | Staff | `POST /api/auth/staff/login` (+ `tenantId`) | `admin@demo.gym` / `ChangeMe123!` |
 | Afiliado | `POST /api/auth/member/login` (+ `tenantId`) | `socio@demo.gym` / `ChangeMe123!` |
 
+Detalle (bodies, tenant id): [`docs/credenciales-demo.md`](./docs/credenciales-demo.md).
+
 Tenant demo id: `00000000-0000-4000-8000-000000000001`. También: `POST /api/auth/refresh`, `POST /api/auth/logout`, `GET /api/auth/me` (Bearer; staff/member traen `tenantId`).
 
 Rutas de negocio: `@RequireTenantAuth()` + `@CurrentTenant()` (tenant solo del JWT). Suspendido = corte en login/refresh (access puede vivir ~15 min).
 
-Super Admin — tenants: `GET|POST /api/tenants`, `GET|PATCH /api/tenants/:id` (create seedéa `defaultBranch` + `systemRoles`). Roles: `POST|PATCH /api/tenants/:tenantId/roles` (Admin inmutable). Staff: `POST|PATCH /api/roles` (tenant del JWT).
+Super Admin — tenants: `POST /api/tenants` requiere `ownerEmail` / `ownerPassword` (+ `ownerName` opcional); crea branch, roles y owner con rol Admin. Asignar roles: `PUT /api/tenants/:tenantId/staff/:staffId/roles` o `PUT /api/staff/:staffId/roles` (Staff JWT).
 
 Probar con Postman: importá [`postman/`](./postman/) (colección + environment local). Los logins guardan `accessToken` / `refreshToken` vía scripts.
 

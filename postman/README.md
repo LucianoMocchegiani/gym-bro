@@ -26,7 +26,7 @@ Variables: `superEmail` / `superPassword`, `staffEmail` / `staffPassword`, `memb
 
 Carpeta **Auth (manual)**: Login Super/Staff/Member → Me → Refresh → Logout.
 
-Carpeta **Roles**: Login Super → POST/PATCH `/tenants/{{createdTenantId}}/roles`. Login Staff → POST `/roles`.
+Carpeta **Staff roles**: Super PUT/GET staff roles; create tenant ahora incluye owner.
 
 ## Multi-tenant
 

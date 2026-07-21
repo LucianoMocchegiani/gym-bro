@@ -254,7 +254,7 @@ Prefijo sugerido: `/api/v1`.
 | Access | `/access/verify`, `/access/manual-pass` |
 | Rutinas | `/exercises`, `/routine-templates`, `/assigned-routines` |
 | Notif | `/notifications`, `/notification-templates`, preferences |
-| Roles | Super: `/tenants/:tenantId/roles`; Staff: `/roles` (create/patch; Admin inmutable) |
+| Roles | Super/Staff create-patch roles; `PUT .../staff/:id/roles` multi-rol |
 | Caja | `/cash/day`, `/cash/close` |
 
 Todas las rutas de tenant validan membership/permiso + `tenant_id` del token.
