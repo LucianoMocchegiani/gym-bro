@@ -6,6 +6,9 @@ import {
   ParseUUIDPipe,
   Put,
 } from '@nestjs/common';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import type { AuthUser } from '../auth/auth.types';
+import { toAuditActor } from '../audit/to-audit-actor';
 import { RequirePermission } from '../roles/decorators/require-permission.decorator';
 import { RequireTenantAuth } from '../tenant/decorators/require-tenant-auth.decorator';
 import { CurrentTenant } from '../tenant/decorators/current-tenant.decorator';
@@ -39,9 +42,15 @@ export class StaffController {
   @RequirePermission('staff.write')
   setRoles(
     @CurrentTenant() tenantId: string,
+    @CurrentUser() user: AuthUser,
     @Param('staffId', ParseUUIDPipe) staffId: string,
     @Body() dto: SetStaffRolesDto,
   ): Promise<StaffUserDetail> {
-    return this.staffService.setRoles(tenantId, staffId, dto);
+    return this.staffService.setRoles(
+      tenantId,
+      staffId,
+      dto,
+      toAuditActor(user),
+    );
   }
 }

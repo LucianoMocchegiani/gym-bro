@@ -99,6 +99,11 @@ export const PERMISSION_CATALOG: readonly PermissionDefinition[] = [
     dangerous: false,
   },
   {
+    code: 'audit.read',
+    description: 'Ver eventos de auditoría del gym',
+    dangerous: false,
+  },
+  {
     code: 'mp.connect',
     description: 'Conectar o cambiar cuenta Mercado Pago',
     dangerous: true,

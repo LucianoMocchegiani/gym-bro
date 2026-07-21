@@ -4,6 +4,8 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { Prisma, StaffUser } from '@prisma/client';
+import { AUDIT_ACTIONS, AuditActor } from '../audit/audit.types';
+import { AuditService } from '../audit/audit.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { SetStaffRolesDto } from './dto/staff.dto';
 import { StaffUserDetail } from './staff.types';
@@ -26,7 +28,10 @@ type StaffWithRoles = StaffUser & {
  */
 @Injectable()
 export class StaffService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly audit: AuditService,
+  ) {}
 
   /**
    * Reemplaza por completo los roles del staff.
@@ -34,11 +39,13 @@ export class StaffService {
    * @param tenantId - Tenant esperado (path Super o JWT Staff).
    * @param staffUserId - Staff a actualizar.
    * @param dto - Lista de roleIds (puede ser vacía).
+   * @param actor - Quién realiza el cambio (auditoría).
    */
   async setRoles(
     tenantId: string,
     staffUserId: string,
     dto: SetStaffRolesDto,
+    actor: AuditActor,
   ): Promise<StaffUserDetail> {
     const staff = await this.prisma.staffUser.findFirst({
       where: { id: staffUserId, tenantId },
@@ -49,6 +56,7 @@ export class StaffService {
       );
     }
 
+    const before = await this.findOne(tenantId, staffUserId);
     const uniqueRoleIds = [...new Set(dto.roleIds)];
     if (uniqueRoleIds.length > 0) {
       const roles = await this.prisma.role.findMany({
@@ -71,7 +79,17 @@ export class StaffService {
       }
     });
 
-    return this.findOne(tenantId, staffUserId);
+    const after = await this.findOne(tenantId, staffUserId);
+    await this.audit.record({
+      tenantId,
+      actor,
+      action: AUDIT_ACTIONS.staffRolesSet,
+      entityType: 'staff_user',
+      entityId: staffUserId,
+      before: { roleIds: before.roles.map((r) => r.id) },
+      after: { roleIds: after.roles.map((r) => r.id) },
+    });
+    return after;
   }
 
   /**

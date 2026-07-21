@@ -1,4 +1,5 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
+import { AuditModule } from '../audit/audit.module';
 import { AuthModule } from '../auth/auth.module';
 import { PermissionGuard } from './guards/permission.guard';
 import { PermissionsService } from './permissions.service';
@@ -11,7 +12,7 @@ import { SuperRolesController } from './super-roles.controller';
  * Roles y permisos: catálogo global, seed, CRUD y autorización por código.
  */
 @Module({
-  imports: [AuthModule],
+  imports: [AuthModule, forwardRef(() => AuditModule)],
   controllers: [RolesController, SuperRolesController],
   providers: [
     RolesSeedService,

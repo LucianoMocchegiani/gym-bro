@@ -56,8 +56,8 @@
 - [x] Crear / listar / editar roles custom
 - [x] Asignar roles a staff (multi-rol)
 - [x] Flags peligrosos
-- [ ] Auditoría de acciones críticas
-- [ ] Perfiles separados afiliado vs staff
+- [x] Auditoría de acciones críticas
+- [x] Perfiles separados afiliado vs staff
 
 ---
 

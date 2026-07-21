@@ -29,6 +29,7 @@ erDiagram
   tenants ||--o{ members : has
   tenants ||--o{ branches : has
   tenants ||--o{ roles : has
+  tenants ||--o{ audit_events : has
   roles ||--o{ role_permissions : has
   permissions ||--o{ role_permissions : has
   staff_users ||--o{ staff_user_roles : has
@@ -82,6 +83,19 @@ erDiagram
   staff_user_roles {
     uuid staff_user_id PK_FK
     uuid role_id PK_FK
+  }
+
+  audit_events {
+    uuid id PK
+    uuid tenant_id FK
+    enum actor_profile
+    uuid actor_id
+    text action
+    text entity_type
+    uuid entity_id
+    jsonb before
+    jsonb after
+    timestamptz created_at
   }
 
   super_users {
@@ -154,7 +168,7 @@ Gimnasio / estudio = tenant SaaS.
 | `created_at` | timestamptz | |
 | `updated_at` | timestamptz | |
 
-**Relaciones:** 1→N `staff_users`, 1→N `members`, 1→N `branches`, 1→N `roles`.
+**Relaciones:** 1→N `staff_users`, 1→N `members`, 1→N `branches`, 1→N `roles`, 1→N `audit_events`.
 
 ---
 
@@ -301,6 +315,26 @@ Refresh opaco hasheado (SHA-256). Un token pertenece a **un** perfil (solo una F
 
 ---
 
+### 4.11 `audit_events`
+
+EventoAuditoria append-only (RN-ROL-008 / CU-ROL-007). Sin UPDATE/DELETE de negocio.
+
+| Columna | Tipo | Notas |
+|---------|------|--------|
+| `id` | uuid PK | |
+| `tenant_id` | uuid FK → `tenants` nullable | CASCADE · index con `created_at` |
+| `actor_profile` | `AuthProfileType` | SUPER o STAFF en práctica |
+| `actor_id` | uuid | id del super/staff (sin FK dura) |
+| `action` | text | ej. `tenant.update`, `role.create` |
+| `entity_type` | text | ej. `tenant`, `role`, `staff_user` |
+| `entity_id` | uuid nullable | |
+| `before` / `after` | jsonb nullable | snapshot |
+| `created_at` | timestamptz | |
+
+API: Staff `GET /api/audit-events?limit=&action=` (`audit.read`); Super `GET /api/tenants/:tenantId/audit-events`. Escritura E1 desde servicios de tenants/roles/staff.
+
+---
+
 ## 5. Migraciones aplicadas
 
 | Migración | Contenido |
@@ -310,6 +344,7 @@ Refresh opaco hasheado (SHA-256). Un token pertenece a **un** perfil (solo una F
 | `20260719180000_branches` | tabla `branches` + índice único parcial default por tenant |
 | `20260719210000_roles_permissions` | `permissions`, `roles`, `role_permissions` |
 | `20260721150000_staff_user_roles` | `staff_user_roles` (multi-rol staff) |
+| `20260721190000_audit_events` | `audit_events` (EventoAuditoria append-only) |
 
 Comandos:
 
@@ -341,9 +376,11 @@ Crea Super + tenant demo + **branch** + roles Admin/Profesor + staff `admin@demo
 
 ## 7. Pendiente de modelar (dominio → DB)
 
-Aún no hay tablas Prisma para (ver [03](./03-modelo-dominio.md) / roadmap): servicios/packs, reservas, pagos/caja, acceso, rutinas, notificaciones, auditoría, etc. Se documentan aquí **al implementarlas**.
+Aún no hay tablas Prisma para (ver [03](./03-modelo-dominio.md) / roadmap): servicios/packs, reservas, pagos/caja, acceso, rutinas, notificaciones, etc. Se documentan aquí **al implementarlas**.
 
 **Staff ↔ roles:** tabla `staff_user_roles`. API: Super `PUT /tenants/:tenantId/staff/:staffId/roles`, Staff `PUT /staff/:staffId/roles`. Create tenant exige owner y le asigna rol Admin.
+
+**Auditoría:** tabla `audit_events` (RN-ROL-008). Lectura Staff `GET /audit-events` (`audit.read`); Super `GET /tenants/:tenantId/audit-events`. Escritura E1: tenant create/update, role create/update, staff roles set.
 
 ---
 

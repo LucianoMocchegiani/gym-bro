@@ -84,6 +84,11 @@ const PERMISSIONS: { code: string; description: string; dangerous: boolean }[] =
       dangerous: false,
     },
     {
+      code: 'audit.read',
+      description: 'Ver eventos de auditoría del gym',
+      dangerous: false,
+    },
+    {
       code: 'mp.connect',
       description: 'Conectar o cambiar cuenta Mercado Pago',
       dangerous: true,
@@ -170,6 +175,14 @@ async function main(): Promise<void> {
           create: permissionRows.map((p) => ({ permissionId: p.id })),
         },
       },
+    });
+  } else {
+    await prisma.rolePermission.createMany({
+      data: permissionRows.map((p) => ({
+        roleId: adminRole!.id,
+        permissionId: p.id,
+      })),
+      skipDuplicates: true,
     });
   }
 

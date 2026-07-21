@@ -28,6 +28,8 @@ Carpeta **Auth (manual)**: Login Super/Staff/Member → Me → Refresh → Logou
 
 Carpeta **Roles** / **Staff roles**: Staff necesita permisos (`roles.write` para list/get/create/patch, `staff.write` para asignar). El Admin seed los tiene; un rol sin esos códigos → 403.
 
+Carpeta **Audit**: `GET /audit-events` (Staff, `audit.read`) o Super por tenant. Generá eventos con mutaciones de tenant/roles/staff roles.
+
 ## Multi-tenant
 
 - `GET /auth/me` → `tenantId` para staff/member (del JWT).

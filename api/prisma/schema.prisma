@@ -34,10 +34,11 @@ model Tenant {
   createdAt DateTime     @default(now()) @map("created_at")
   updatedAt DateTime     @updatedAt @map("updated_at")
 
-  staffUsers StaffUser[]
-  members    Member[]
-  branches   Branch[]
-  roles      Role[]
+  staffUsers  StaffUser[]
+  members     Member[]
+  branches    Branch[]
+  roles       Role[]
+  auditEvents AuditEvent[]
 
   @@map("tenants")
 }
@@ -197,4 +198,27 @@ model StaffUserRole {
   @@id([staffUserId, roleId])
   @@index([roleId])
   @@map("staff_user_roles")
+}
+
+/// Evento de auditoría append-only (RN-ROL-008 / CU-ROL-007).
+///
+/// @remarks Sin UPDATE/DELETE de negocio. `tenant_id` nulo solo si no aplica
+/// (hoy siempre se setea para acciones de gym). Actor SUPER o STAFF.
+model AuditEvent {
+  id           String          @id @default(uuid()) @db.Uuid
+  tenantId     String?         @map("tenant_id") @db.Uuid
+  actorProfile AuthProfileType @map("actor_profile")
+  actorId      String          @map("actor_id") @db.Uuid
+  action       String
+  entityType   String          @map("entity_type")
+  entityId     String?         @map("entity_id") @db.Uuid
+  before       Json?
+  after        Json?
+  createdAt    DateTime        @default(now()) @map("created_at")
+
+  tenant Tenant? @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, createdAt])
+  @@index([entityType, entityId])
+  @@map("audit_events")
 }

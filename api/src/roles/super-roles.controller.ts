@@ -10,6 +10,9 @@ import {
   Post,
 } from '@nestjs/common';
 import { RequireSuperAuth } from '../auth/decorators/require-super-auth.decorator';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import type { AuthUser } from '../auth/auth.types';
+import { toAuditActor } from '../audit/to-audit-actor';
 import { CreateRoleDto, UpdateRoleDto } from './dto/role.dto';
 import { RolesService } from './roles.service';
 import { RoleDetail } from './roles.types';
@@ -52,9 +55,10 @@ export class SuperRolesController {
   @HttpCode(HttpStatus.CREATED)
   create(
     @Param('tenantId', ParseUUIDPipe) tenantId: string,
+    @CurrentUser() user: AuthUser,
     @Body() dto: CreateRoleDto,
   ): Promise<RoleDetail> {
-    return this.rolesService.create(tenantId, dto);
+    return this.rolesService.create(tenantId, dto, toAuditActor(user));
   }
 
   /**
@@ -64,8 +68,9 @@ export class SuperRolesController {
   update(
     @Param('tenantId', ParseUUIDPipe) tenantId: string,
     @Param('roleId', ParseUUIDPipe) roleId: string,
+    @CurrentUser() user: AuthUser,
     @Body() dto: UpdateRoleDto,
   ): Promise<RoleDetail> {
-    return this.rolesService.update(tenantId, roleId, dto);
+    return this.rolesService.update(tenantId, roleId, dto, toAuditActor(user));
   }
 }

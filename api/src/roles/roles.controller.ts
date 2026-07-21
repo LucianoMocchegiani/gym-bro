@@ -9,6 +9,9 @@ import {
   Patch,
   Post,
 } from '@nestjs/common';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import type { AuthUser } from '../auth/auth.types';
+import { toAuditActor } from '../audit/to-audit-actor';
 import { RequireTenantAuth } from '../tenant/decorators/require-tenant-auth.decorator';
 import { CurrentTenant } from '../tenant/decorators/current-tenant.decorator';
 import { RequirePermission } from './decorators/require-permission.decorator';
@@ -55,9 +58,10 @@ export class RolesController {
   @RequirePermission('roles.write')
   create(
     @CurrentTenant() tenantId: string,
+    @CurrentUser() user: AuthUser,
     @Body() dto: CreateRoleDto,
   ): Promise<RoleDetail> {
-    return this.rolesService.create(tenantId, dto);
+    return this.rolesService.create(tenantId, dto, toAuditActor(user));
   }
 
   /**
@@ -67,9 +71,10 @@ export class RolesController {
   @RequirePermission('roles.write')
   update(
     @CurrentTenant() tenantId: string,
+    @CurrentUser() user: AuthUser,
     @Param('roleId', ParseUUIDPipe) roleId: string,
     @Body() dto: UpdateRoleDto,
   ): Promise<RoleDetail> {
-    return this.rolesService.update(tenantId, roleId, dto);
+    return this.rolesService.update(tenantId, roleId, dto, toAuditActor(user));
   }
 }

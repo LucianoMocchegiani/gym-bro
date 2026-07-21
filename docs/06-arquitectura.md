@@ -235,8 +235,10 @@ Canales futuros (WhatsApp/Push) = nuevos `ChannelSender` sin tocar el dispatcher
 
 ## 11. Auditoría
 
-- Append-only `EventoAuditoria`.
-- Emisión desde servicios de aplicación en acciones RN-ROL-008 (no solo en controllers).
+- Append-only `audit_events` (`EventoAuditoria`).
+- Emisión desde servicios: create/update tenant, create/update roles, assign staff roles (RN-ROL-008).
+- Lectura: Staff `GET /api/audit-events` (`audit.read`); Super `GET /api/tenants/:tenantId/audit-events`.
+- Acciones futuras (pase manual, devoluciones, baja afiliado) reutilizan `AuditService.record`.
 
 ---
 
@@ -256,6 +258,7 @@ Prefijo sugerido: `/api/v1`.
 | Rutinas | `/exercises`, `/routine-templates`, `/assigned-routines` |
 | Notif | `/notifications`, `/notification-templates`, preferences |
 | Roles | Super/Staff list-get-create-patch roles; `PUT .../staff/:id/roles` multi-rol |
+| Auditoría | Super/Staff `GET .../audit-events`; escritura en mutaciones E1 |
 | Caja | `/cash/day`, `/cash/close` |
 
 Todas las rutas de tenant validan membership/permiso + `tenant_id` del token.

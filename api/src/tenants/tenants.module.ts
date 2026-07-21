@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { AuditModule } from '../audit/audit.module';
 import { AuthModule } from '../auth/auth.module';
 import { RolesModule } from '../roles/roles.module';
 import { StaffModule } from '../staff/staff.module';
@@ -9,7 +10,7 @@ import { TenantsService } from './tenants.service';
  * Módulo de CRUD de tenants (Super Admin / plataforma).
  */
 @Module({
-  imports: [AuthModule, RolesModule, StaffModule],
+  imports: [AuthModule, RolesModule, StaffModule, AuditModule],
   controllers: [TenantsController],
   providers: [TenantsService],
   exports: [TenantsService],

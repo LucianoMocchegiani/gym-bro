@@ -6,6 +6,8 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { Prisma, Role } from '@prisma/client';
+import { AUDIT_ACTIONS, AuditActor } from '../audit/audit.types';
+import { AuditService } from '../audit/audit.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { SYSTEM_ROLE_SLUGS } from './permission-catalog';
 import { CreateRoleDto, UpdateRoleDto } from './dto/role.dto';
@@ -27,6 +29,7 @@ export class RolesService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly rolesSeed: RolesSeedService,
+    private readonly audit: AuditService,
   ) {}
 
   /**
@@ -65,7 +68,11 @@ export class RolesService {
    * @throws {BadRequestException} Códigos de permiso inválidos.
    * @throws {ConflictException} Nombre o slug duplicado.
    */
-  async create(tenantId: string, dto: CreateRoleDto): Promise<RoleDetail> {
+  async create(
+    tenantId: string,
+    dto: CreateRoleDto,
+    actor: AuditActor,
+  ): Promise<RoleDetail> {
     await this.assertTenantExists(tenantId);
     await this.rolesSeed.ensurePermissionCatalog();
 
@@ -88,7 +95,21 @@ export class RolesService {
           rolePermissions: { include: { permission: true } },
         },
       });
-      return this.toDetail(role);
+      const detail = this.toDetail(role);
+      await this.audit.record({
+        tenantId,
+        actor,
+        action: AUDIT_ACTIONS.roleCreate,
+        entityType: 'role',
+        entityId: detail.id,
+        before: null,
+        after: {
+          name: detail.name,
+          slug: detail.slug,
+          permissionCodes: detail.permissionCodes,
+        },
+      });
+      return detail;
     } catch (error: unknown) {
       this.rethrowUniqueConflict(error);
       throw error;
@@ -105,6 +126,7 @@ export class RolesService {
     tenantId: string,
     roleId: string,
     dto: UpdateRoleDto,
+    actor: AuditActor,
   ): Promise<RoleDetail> {
     if (dto.name === undefined && dto.permissionCodes === undefined) {
       throw new BadRequestException('Provide name and/or permissionCodes');
@@ -116,6 +138,7 @@ export class RolesService {
       throw new ForbiddenException('The Admin system role cannot be modified');
     }
 
+    const before = await this.getRoleDetail(tenantId, roleId);
     await this.rolesSeed.ensurePermissionCatalog();
 
     const data: Prisma.RoleUpdateInput = {};
@@ -147,7 +170,25 @@ export class RolesService {
       throw error;
     }
 
-    return this.getRoleDetail(tenantId, roleId);
+    const after = await this.getRoleDetail(tenantId, roleId);
+    await this.audit.record({
+      tenantId,
+      actor,
+      action: AUDIT_ACTIONS.roleUpdate,
+      entityType: 'role',
+      entityId: roleId,
+      before: {
+        name: before.name,
+        slug: before.slug,
+        permissionCodes: before.permissionCodes,
+      },
+      after: {
+        name: after.name,
+        slug: after.slug,
+        permissionCodes: after.permissionCodes,
+      },
+    });
+    return after;
   }
 
   private async assertTenantExists(tenantId: string): Promise<void> {

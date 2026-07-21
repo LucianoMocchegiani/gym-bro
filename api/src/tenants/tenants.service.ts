@@ -5,6 +5,8 @@ import {
 } from '@nestjs/common';
 import { Branch, Prisma, Role, Tenant } from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
+import { AUDIT_ACTIONS, AuditActor } from '../audit/audit.types';
+import { AuditService } from '../audit/audit.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { SYSTEM_ROLE_SLUGS } from '../roles/permission-catalog';
 import {
@@ -41,6 +43,7 @@ export class TenantsService {
     private readonly prisma: PrismaService,
     private readonly rolesSeed: RolesSeedService,
     private readonly staffService: StaffService,
+    private readonly audit: AuditService,
   ) {}
 
   /**
@@ -48,7 +51,10 @@ export class TenantsService {
    *
    * @see CU-ROL-001
    */
-  async create(dto: CreateTenantDto): Promise<TenantResponse> {
+  async create(
+    dto: CreateTenantDto,
+    actor: AuditActor,
+  ): Promise<TenantResponse> {
     const permissions = await this.rolesSeed.ensurePermissionCatalog();
     const passwordHash = await bcrypt.hash(dto.ownerPassword, 12);
     const ownerEmail = dto.ownerEmail.trim().toLowerCase();
@@ -102,7 +108,21 @@ export class TenantsService {
         };
       });
 
-    return this.toResponse(tenant, branch, systemRoles, owner);
+    const response = this.toResponse(tenant, branch, systemRoles, owner);
+    await this.audit.record({
+      tenantId: tenant.id,
+      actor,
+      action: AUDIT_ACTIONS.tenantCreate,
+      entityType: 'tenant',
+      entityId: tenant.id,
+      before: null,
+      after: {
+        name: tenant.name,
+        status: tenant.status,
+        ownerEmail: owner.email,
+      },
+    });
+    return response;
   }
 
   /**
@@ -138,12 +158,22 @@ export class TenantsService {
    *
    * @see CU-ROL-002
    */
-  async update(id: string, dto: UpdateTenantDto): Promise<TenantResponse> {
+  async update(
+    id: string,
+    dto: UpdateTenantDto,
+    actor: AuditActor,
+  ): Promise<TenantResponse> {
     if (dto.name === undefined && dto.status === undefined) {
       throw new BadRequestException('Provide name and/or status');
     }
 
-    await this.findOne(id);
+    const beforeTenant = await this.prisma.tenant.findUnique({
+      where: { id },
+      select: { id: true, name: true, status: true },
+    });
+    if (!beforeTenant) {
+      throw new NotFoundException(`Tenant ${id} not found`);
+    }
 
     const data: Prisma.TenantUpdateInput = {};
     if (dto.name !== undefined) {
@@ -158,7 +188,23 @@ export class TenantsService {
       data,
     });
 
-    return this.findOne(id);
+    const response = await this.findOne(id);
+    await this.audit.record({
+      tenantId: id,
+      actor,
+      action: AUDIT_ACTIONS.tenantUpdate,
+      entityType: 'tenant',
+      entityId: id,
+      before: {
+        name: beforeTenant.name,
+        status: beforeTenant.status,
+      },
+      after: {
+        name: response.name,
+        status: response.status,
+      },
+    });
+    return response;
   }
 
   private tenantInclude() {

@@ -800,6 +800,65 @@
           }
         }
       ]
+    },
+    {
+      "name": "Audit",
+      "description": "GET list EventoAuditoria. Staff: /audit-events (audit.read). Super: /tenants/:tenantId/audit-events. Generá eventos con PATCH tenant, POST/PATCH roles o PUT staff roles.",
+      "item": [
+        {
+          "name": "Staff GET audit events",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('array', () => pm.expect(pm.response.json()).to.be.an('array'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/audit-events?limit=50",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "audit-events"],
+              "query": [
+                { "key": "limit", "value": "50" },
+                { "key": "action", "value": "", "disabled": true }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Super GET audit events",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('array', () => pm.expect(pm.response.json()).to.be.an('array'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/tenants/{{tenantId}}/audit-events?limit=50",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "tenants", "{{tenantId}}", "audit-events"],
+              "query": [{ "key": "limit", "value": "50" }]
+            }
+          }
+        }
+      ]
     }
   ]
 }

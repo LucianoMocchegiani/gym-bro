@@ -10,6 +10,9 @@ import {
   Post,
 } from '@nestjs/common';
 import { RequireSuperAuth } from '../auth/decorators/require-super-auth.decorator';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import type { AuthUser } from '../auth/auth.types';
+import { toAuditActor } from '../audit/to-audit-actor';
 import { CreateTenantDto, UpdateTenantDto } from './dto/tenant.dto';
 import { TenantsService } from './tenants.service';
 import { TenantResponse } from './tenants.types';
@@ -32,8 +35,11 @@ export class TenantsController {
    */
   @Post()
   @HttpCode(HttpStatus.CREATED)
-  create(@Body() dto: CreateTenantDto): Promise<TenantResponse> {
-    return this.tenantsService.create(dto);
+  create(
+    @CurrentUser() user: AuthUser,
+    @Body() dto: CreateTenantDto,
+  ): Promise<TenantResponse> {
+    return this.tenantsService.create(dto, toAuditActor(user));
   }
 
   /**
@@ -60,8 +66,9 @@ export class TenantsController {
   @Patch(':id')
   update(
     @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUser() user: AuthUser,
     @Body() dto: UpdateTenantDto,
   ): Promise<TenantResponse> {
-    return this.tenantsService.update(id, dto);
+    return this.tenantsService.update(id, dto, toAuditActor(user));
   }
 }

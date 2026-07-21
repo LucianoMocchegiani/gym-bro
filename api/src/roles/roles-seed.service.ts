@@ -28,6 +28,8 @@ export class RolesSeedService {
 
   /**
    * Upsert idempotente de todos los permisos del catálogo de producto.
+   * Tras el upsert, sincroniza roles Admin sistema con el catálogo completo
+   * (permisos nuevos como `audit.read` llegan a gyms ya existentes).
    */
   async ensurePermissionCatalog(
     tx: Tx | PrismaService = this.prisma,
@@ -48,7 +50,34 @@ export class RolesSeedService {
       });
       permissions.push(permission);
     }
+    await this.syncAdminRolesWithCatalog(tx, permissions);
     return permissions;
+  }
+
+  /**
+   * Asegura que cada rol sistema `admin` tenga todos los permisos del catálogo.
+   */
+  async syncAdminRolesWithCatalog(
+    tx: Tx | PrismaService,
+    permissions: Permission[],
+  ): Promise<void> {
+    const adminRoles = await tx.role.findMany({
+      where: { slug: SYSTEM_ROLE_SLUGS.admin, isSystem: true },
+      select: { id: true },
+    });
+    if (adminRoles.length === 0 || permissions.length === 0) {
+      return;
+    }
+
+    await tx.rolePermission.createMany({
+      data: adminRoles.flatMap((role) =>
+        permissions.map((permission) => ({
+          roleId: role.id,
+          permissionId: permission.id,
+        })),
+      ),
+      skipDuplicates: true,
+    });
   }
 
   /**
