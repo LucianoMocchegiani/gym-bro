@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Get,
   HttpCode,
   HttpStatus,
   Param,
@@ -22,6 +23,27 @@ import { RoleDetail } from './roles.types';
 @RequireSuperAuth()
 export class SuperRolesController {
   constructor(private readonly rolesService: RolesService) {}
+
+  /**
+   * Lista roles del tenant (sistema + custom).
+   */
+  @Get()
+  list(
+    @Param('tenantId', ParseUUIDPipe) tenantId: string,
+  ): Promise<RoleDetail[]> {
+    return this.rolesService.list(tenantId);
+  }
+
+  /**
+   * Detalle de un rol del tenant indicado.
+   */
+  @Get(':roleId')
+  findOne(
+    @Param('tenantId', ParseUUIDPipe) tenantId: string,
+    @Param('roleId', ParseUUIDPipe) roleId: string,
+  ): Promise<RoleDetail> {
+    return this.rolesService.findOne(tenantId, roleId);
+  }
 
   /**
    * Crea un rol custom en el tenant indicado.

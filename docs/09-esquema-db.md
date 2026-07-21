@@ -191,6 +191,8 @@ Catálogo **global** de permisos de producto (códigos fijos). Fuente en código
 
 Se hace upsert al crear un tenant (`RolesSeedService.ensurePermissionCatalog`).
 
+**Flags peligrosos (RN-ROL-007):** el campo `dangerous` marca el permiso. La API exige el código con `@RequirePermission` (p. ej. `roles.write`, `staff.write`). Tener el permiso en algún rol = flag otorgado; no hay tabla aparte. Hoy cableado en rutas Staff de roles/staff; acciones de negocio (refund, pase manual, MP) usarán el mismo guard cuando existan.
+
 ---
 
 ### 4.4 `roles`

@@ -30,6 +30,35 @@ export class RolesService {
   ) {}
 
   /**
+   * Lista todos los roles del tenant (sistema + custom) con permisos.
+   *
+   * @throws {NotFoundException} Tenant inexistente.
+   */
+  async list(tenantId: string): Promise<RoleDetail[]> {
+    await this.assertTenantExists(tenantId);
+
+    const roles = await this.prisma.role.findMany({
+      where: { tenantId },
+      include: {
+        rolePermissions: { include: { permission: true } },
+      },
+      orderBy: [{ isSystem: 'desc' }, { name: 'asc' }],
+    });
+
+    return roles.map((role) => this.toDetail(role));
+  }
+
+  /**
+   * Detalle de un rol del tenant.
+   *
+   * @throws {NotFoundException} Tenant o rol inexistente / otro tenant.
+   */
+  async findOne(tenantId: string, roleId: string): Promise<RoleDetail> {
+    await this.assertTenantExists(tenantId);
+    return this.getRoleDetail(tenantId, roleId);
+  }
+
+  /**
    * Crea un rol custom (`isSystem=false`) con permisos del catálogo.
    *
    * @throws {NotFoundException} Tenant inexistente.

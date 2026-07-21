@@ -130,6 +130,7 @@ También: `POST /api/auth/refresh`, `POST /api/auth/logout`, `GET /api/auth/me` 
 
 Rutas de negocio del gym: `@RequireTenantAuth()` + `@CurrentTenant()` (módulo `tenant/`).
 Rutas de plataforma (Super): `@RequireSuperAuth()` — `GET|POST|PATCH /api/tenants` (create seedéa branch + roles Admin/Profesor; catálogo global `permissions`).
+Autorización fina staff: `@RequirePermission('code')` (unión de roles; permisos `dangerous` = flags RN-ROL-007). Super bypass en rutas Super.
 
 Afiliado y staff **nunca** comparten el mismo perfil de sesión (RN-ROL-005).
 
@@ -254,7 +255,7 @@ Prefijo sugerido: `/api/v1`.
 | Access | `/access/verify`, `/access/manual-pass` |
 | Rutinas | `/exercises`, `/routine-templates`, `/assigned-routines` |
 | Notif | `/notifications`, `/notification-templates`, preferences |
-| Roles | Super/Staff create-patch roles; `PUT .../staff/:id/roles` multi-rol |
+| Roles | Super/Staff list-get-create-patch roles; `PUT .../staff/:id/roles` multi-rol |
 | Caja | `/cash/day`, `/cash/close` |
 
 Todas las rutas de tenant validan membership/permiso + `tenant_id` del token.

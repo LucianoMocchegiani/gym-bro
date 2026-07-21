@@ -115,9 +115,9 @@ Detalle (bodies, tenant id): [`docs/credenciales-demo.md`](./docs/credenciales-d
 
 Tenant demo id: `00000000-0000-4000-8000-000000000001`. También: `POST /api/auth/refresh`, `POST /api/auth/logout`, `GET /api/auth/me` (Bearer; staff/member traen `tenantId`).
 
-Rutas de negocio: `@RequireTenantAuth()` + `@CurrentTenant()` (tenant solo del JWT). Suspendido = corte en login/refresh (access puede vivir ~15 min).
+Rutas de negocio: `@RequireTenantAuth()` + `@CurrentTenant()` (tenant solo del JWT). Permisos staff: `@RequirePermission('…')` (Admin seed tiene el catálogo; Super no usa esto en rutas `/tenants/...`).
 
-Super Admin — tenants: `POST /api/tenants` requiere `ownerEmail` / `ownerPassword` (+ `ownerName` opcional); crea branch, roles y owner con rol Admin. Asignar roles: `PUT /api/tenants/:tenantId/staff/:staffId/roles` o `PUT /api/staff/:staffId/roles` (Staff JWT).
+Super Admin — tenants: `POST /api/tenants` requiere `ownerEmail` / `ownerPassword` (+ `ownerName` opcional); crea branch, roles y owner con rol Admin. Roles: `GET|POST|PATCH /api/tenants/:tenantId/roles` (Super) o `GET|POST|PATCH /api/roles` (Staff, permiso `roles.write`). Asignar roles: `PUT /api/tenants/:tenantId/staff/:staffId/roles` o `PUT /api/staff/:staffId/roles` (Staff JWT).
 
 Probar con Postman: importá [`postman/`](./postman/) (colección + environment local). Los logins guardan `accessToken` / `refreshToken` vía scripts.
 

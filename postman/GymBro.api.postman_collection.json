@@ -616,8 +616,32 @@
     },
     {
       "name": "Roles",
-      "description": "Super: /tenants/:tenantId/roles. Staff: /roles (JWT tenant). Admin system role → 403 on PATCH. Usá createdTenantId de Tenants o tenantId demo.",
+      "description": "Super: /tenants/:tenantId/roles. Staff: /roles (JWT tenant). GET list/detail + POST/PATCH. Admin system role → 403 on PATCH. Staff requiere roles.write. Usá createdTenantId de Tenants o tenantId demo.",
       "item": [
+        {
+          "name": "Super GET list roles",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('array with system roles', () => {",
+                  "  pm.expect(body).to.be.an('array');",
+                  "  pm.expect(body.some((r) => r.slug === 'admin')).to.eql(true);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/tenants/{{createdTenantId}}/roles"
+          }
+        },
         {
           "name": "Super POST create custom role",
           "event": [
@@ -649,6 +673,26 @@
           }
         },
         {
+          "name": "Super GET role by id",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('id matches', () => pm.expect(pm.response.json().id).to.eql(pm.environment.get('createdRoleId')));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/tenants/{{createdTenantId}}/roles/{{createdRoleId}}"
+          }
+        },
+        {
           "name": "Super PATCH custom role",
           "event": [
             {
@@ -670,6 +714,26 @@
               "raw": "{\n  \"name\": \"Recepcion Plus\",\n  \"permissionCodes\": [\"members.read\", \"cashier.operate\"]\n}"
             },
             "url": "{{baseUrl}}/api/tenants/{{createdTenantId}}/roles/{{createdRoleId}}"
+          }
+        },
+        {
+          "name": "Staff GET list roles",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('array', () => pm.expect(pm.response.json()).to.be.an('array'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/roles"
           }
         },
         {

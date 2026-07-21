@@ -53,9 +53,9 @@
 - [x] Suspender tenant
 - [x] Sucursal seed (S2, 1 visible)
 - [x] Roles seed al crear gym
-- [x] Crear / editar roles custom
+- [x] Crear / listar / editar roles custom
 - [x] Asignar roles a staff (multi-rol)
-- [ ] Flags peligrosos
+- [x] Flags peligrosos
 - [ ] Auditoría de acciones críticas
 - [ ] Perfiles separados afiliado vs staff
 

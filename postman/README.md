@@ -26,7 +26,7 @@ Variables: `superEmail` / `superPassword`, `staffEmail` / `staffPassword`, `memb
 
 Carpeta **Auth (manual)**: Login Super/Staff/Member → Me → Refresh → Logout.
 
-Carpeta **Staff roles**: Super PUT/GET staff roles; create tenant ahora incluye owner.
+Carpeta **Roles** / **Staff roles**: Staff necesita permisos (`roles.write` para list/get/create/patch, `staff.write` para asignar). El Admin seed los tiene; un rol sin esos códigos → 403.
 
 ## Multi-tenant
 

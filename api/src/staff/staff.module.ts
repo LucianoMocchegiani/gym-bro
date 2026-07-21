@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { AuthModule } from '../auth/auth.module';
+import { RolesModule } from '../roles/roles.module';
 import { StaffController } from './staff.controller';
 import { StaffService } from './staff.service';
 import { SuperStaffController } from './super-staff.controller';
@@ -8,7 +9,7 @@ import { SuperStaffController } from './super-staff.controller';
  * Staff del gym: asignación multi-rol.
  */
 @Module({
-  imports: [AuthModule],
+  imports: [AuthModule, RolesModule],
   controllers: [StaffController, SuperStaffController],
   providers: [StaffService],
   exports: [StaffService],
