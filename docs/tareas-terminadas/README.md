@@ -16,6 +16,7 @@ La creación de registros sigue la skill:
 
 ## Índice
 
+- [2026-07-21 — Flags peligrosos + listar / detalle de roles](./2026-07-21-flags-peligrosos-listar-roles.md)
 - [2026-07-21 — Asignar roles a staff + owner al crear tenant](./2026-07-21-asignar-roles-staff-owner.md)
 - [2026-07-19 — Crear / editar roles custom](./2026-07-19-crear-editar-roles-custom.md)
 - [2026-07-19 — Roles seed al crear gym](./2026-07-19-roles-seed-al-crear-gym.md)
