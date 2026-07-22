@@ -74,8 +74,8 @@
 
 ## E3 — Catálogo comercial
 
-- [ ] CRUD servicio `ACCESO_LIBRE`
-- [ ] CRUD servicio `POR_SESIONES`
+- [x] CRUD servicio `ACCESO_LIBRE`
+- [x] CRUD servicio `POR_SESIONES`
 - [ ] CRUD pack (simple / créditos / mixto)
 - [ ] Componentes de pack + créditos por servicio
 - [ ] Política de vencimiento de créditos por pack

@@ -29,6 +29,8 @@ erDiagram
   tenants ||--o{ members : has
   tenants ||--o{ branches : has
   tenants ||--o{ roles : has
+  tenants ||--o{ services : has
+  branches ||--o{ services : optional
   tenants ||--o{ audit_events : has
   branches ||--o{ members : default_for
   roles ||--o{ role_permissions : has
@@ -134,6 +136,18 @@ erDiagram
     timestamptz updated_at
   }
 
+  services {
+    uuid id PK
+    uuid tenant_id FK
+    enum type
+    text name
+    text description
+    boolean active
+    uuid branch_id FK
+    timestamptz created_at
+    timestamptz updated_at
+  }
+
   refresh_tokens {
     uuid id PK
     text token_hash UK
@@ -156,6 +170,7 @@ erDiagram
 | `TenantStatus` | `ACTIVE`, `SUSPENDED` | Estado del gym (RN-TEN-002) |
 | `AuthProfileType` | `SUPER`, `STAFF`, `MEMBER` | Dueño del refresh token (RN-ROL-005) |
 | `MemberStatus` | `ACTIVE`, `SUSPENDED`, `INACTIVE` | Estado del afiliado (CU-AFI-003) |
+| `ServiceType` | `ACCESO_LIBRE`, `POR_SESIONES` | Tipo de servicio (RN-SER-001) |
 
 ---
 
@@ -345,6 +360,25 @@ API: Staff `GET /api/audit-events?limit=&action=` (`audit.read`); Super `GET /ap
 
 ---
 
+### 4.12 `services`
+
+Servicio del catálogo comercial (RN-SER-001 / CU-SER-001).
+
+| Columna | Tipo | Notas |
+|---------|------|--------|
+| `id` | uuid PK | |
+| `tenant_id` | uuid FK → `tenants` | CASCADE · index |
+| `type` | `ServiceType` | inmutable tras create |
+| `name` | text | |
+| `description` | text nullable | |
+| `active` | boolean | default true (baja lógica) |
+| `branch_id` | uuid FK → `branches` nullable | SET NULL |
+| `created_at` / `updated_at` | timestamptz | |
+
+API Staff: `GET|POST|PATCH /api/services` (`catalog.write`). Super: `/api/tenants/:tenantId/services`.
+
+---
+
 ## 5. Migraciones aplicadas
 
 | Migración | Contenido |
@@ -356,6 +390,7 @@ API: Staff `GET /api/audit-events?limit=&action=` (`audit.read`); Super `GET /ap
 | `20260721150000_staff_user_roles` | `staff_user_roles` (multi-rol staff) |
 | `20260721190000_audit_events` | `audit_events` (EventoAuditoria append-only) |
 | `20260721200000_members_ficha_status` | `MemberStatus` + ficha (`phone`, `document`, `branch_id`) en `members` |
+| `20260722140000_services` | enum `ServiceType` + tabla `services` |
 
 Comandos:
 
@@ -387,7 +422,7 @@ Crea Super + tenant demo + **branch** + roles Admin/Profesor + staff `admin@demo
 
 ## 7. Pendiente de modelar (dominio → DB)
 
-Aún no hay tablas Prisma para (ver [03](./03-modelo-dominio.md) / roadmap): servicios/packs, reservas, pagos/caja, acceso, rutinas, notificaciones, etc. Se documentan aquí **al implementarlas**.
+Aún no hay tablas Prisma para (ver [03](./03-modelo-dominio.md) / roadmap): packs, reservas, pagos/caja, acceso, rutinas, notificaciones, etc. Se documentan aquí **al implementarlas**.
 
 **Staff ↔ roles:** tabla `staff_user_roles`. API: Super `PUT /tenants/:tenantId/staff/:staffId/roles`, Staff `PUT /staff/:staffId/roles`. Create tenant exige owner y le asigna rol Admin.
 

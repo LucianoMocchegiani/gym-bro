@@ -47,4 +47,6 @@ export const AUDIT_ACTIONS = {
   memberCreate: 'member.create',
   memberUpdate: 'member.update',
   memberStatus: 'member.status',
+  serviceCreate: 'service.create',
+  serviceUpdate: 'service.update',
 } as const;

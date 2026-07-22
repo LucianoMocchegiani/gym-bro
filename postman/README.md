@@ -32,6 +32,8 @@ Carpeta **Audit**: `GET /audit-events` (Staff, `audit.read`) o Super por tenant.
 
 Carpeta **Members**: Staff `members.read` / `members.write` / `members.deactivate` (status). Admin seed los tiene.
 
+Carpeta **Services**: Staff `catalog.write`. Tipos `ACCESO_LIBRE` y `POR_SESIONES`; desactivar con `active: false`.
+
 ## Multi-tenant
 
 - `GET /auth/me` → `tenantId` para staff/member (del JWT).

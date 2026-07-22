@@ -30,6 +30,12 @@ enum MemberStatus {
   INACTIVE
 }
 
+/// Tipo de servicio del catálogo comercial (RN-SER-001).
+enum ServiceType {
+  ACCESO_LIBRE
+  POR_SESIONES
+}
+
 /// Gimnasio / estudio = tenant SaaS.
 ///
 /// @remarks Aislamiento row-level: el resto de tablas de negocio
@@ -45,6 +51,7 @@ model Tenant {
   members     Member[]
   branches    Branch[]
   roles       Role[]
+  services    Service[]
   auditEvents AuditEvent[]
 
   @@map("tenants")
@@ -62,8 +69,9 @@ model Branch {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  members Member[]
+  tenant   Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  members  Member[]
+  services Service[]
 
   @@index([tenantId])
   @@map("branches")
@@ -212,6 +220,29 @@ model StaffUserRole {
   @@id([staffUserId, roleId])
   @@index([roleId])
   @@map("staff_user_roles")
+}
+
+/// Servicio del catálogo comercial del tenant (RN-SER-001 / CU-SER-001).
+///
+/// @remarks `ACCESO_LIBRE` no exige reserva; `POR_SESIONES` se consume con sesiones (E4).
+model Service {
+  id          String      @id @default(uuid()) @db.Uuid
+  tenantId    String      @map("tenant_id") @db.Uuid
+  type        ServiceType
+  name        String
+  description String?
+  active      Boolean     @default(true)
+  branchId    String?     @map("branch_id") @db.Uuid
+  createdAt   DateTime    @default(now()) @map("created_at")
+  updatedAt   DateTime    @updatedAt @map("updated_at")
+
+  tenant Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  branch Branch? @relation(fields: [branchId], references: [id], onDelete: SetNull)
+
+  @@index([tenantId])
+  @@index([tenantId, type])
+  @@index([branchId])
+  @@map("services")
 }
 
 /// Evento de auditoría append-only (RN-ROL-008 / CU-ROL-007).
