@@ -16,6 +16,7 @@ La creación de registros sigue la skill:
 
 ## Índice
 
+- [2026-07-22 — Contratación tras pago aprobado (stub)](./2026-07-22-contratacion-pago-aprobado.md)
 - [2026-07-22 — Packs catálogo: componentes + creditsExpireAt](./2026-07-22-packs-componentes-vencimiento.md)
 - [2026-07-22 — CRUD servicios ACCESO_LIBRE y POR_SESIONES](./2026-07-22-servicios-catalogo-crud.md)
 - [2026-07-22 — Alta / editar ficha / baja-suspensión de afiliados](./2026-07-22-afiliados-alta-ficha-baja.md)
