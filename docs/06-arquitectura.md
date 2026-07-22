@@ -257,6 +257,7 @@ Prefijo sugerido: `/api/v1`.
 | Access | `/access/verify`, `/access/manual-pass` |
 | Rutinas | `/exercises`, `/routine-templates`, `/assigned-routines` |
 | Notif | `/notifications`, `/notification-templates`, preferences |
+| Afiliados | Super/Staff CRUD members + PATCH status (`members.deactivate`) |
 | Roles | Super/Staff list-get-create-patch roles; `PUT .../staff/:id/roles` multi-rol |
 | Auditoría | Super/Staff `GET .../audit-events`; escritura en mutaciones E1 |
 | Caja | `/cash/day`, `/cash/close` |

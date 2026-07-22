@@ -1,5 +1,5 @@
 import * as bcrypt from 'bcryptjs';
-import { PrismaClient, TenantStatus } from '@prisma/client';
+import { PrismaClient, TenantStatus, MemberStatus } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
@@ -25,8 +25,13 @@ const PERMISSIONS: { code: string; description: string; dangerous: boolean }[] =
     },
     {
       code: 'members.write',
-      description: 'Alta, edición y baja de afiliados',
+      description: 'Alta y edición de ficha de afiliados',
       dangerous: false,
+    },
+    {
+      code: 'members.deactivate',
+      description: 'Suspender o dar de baja afiliados',
+      dangerous: true,
     },
     {
       code: 'staff.read',
@@ -238,12 +243,19 @@ async function main(): Promise<void> {
     where: {
       tenantId_email: { tenantId: tenant.id, email: 'socio@demo.gym' },
     },
-    update: { passwordHash, active: true, name: 'Socio Demo' },
+    update: {
+      passwordHash,
+      name: 'Socio Demo',
+      status: MemberStatus.ACTIVE,
+      phone: null,
+      document: null,
+    },
     create: {
       tenantId: tenant.id,
       email: 'socio@demo.gym',
       passwordHash,
       name: 'Socio Demo',
+      status: MemberStatus.ACTIVE,
     },
   });
 

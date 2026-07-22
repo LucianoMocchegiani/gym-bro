@@ -63,9 +63,9 @@
 
 ## E2 — Afiliados
 
-- [ ] Alta afiliado
-- [ ] Editar ficha
-- [ ] Baja / suspensión
+- [x] Alta afiliado
+- [x] Editar ficha
+- [x] Baja / suspensión
 - [ ] Estado de cuenta (staff)
 - [ ] Estado de cuenta (afiliado)
 - [ ] Emisión / reemisión credencial de vínculo (hook a E6)

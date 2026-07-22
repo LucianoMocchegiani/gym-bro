@@ -40,8 +40,13 @@ export const PERMISSION_CATALOG: readonly PermissionDefinition[] = [
   },
   {
     code: 'members.write',
-    description: 'Alta, edición y baja de afiliados',
+    description: 'Alta y edición de ficha de afiliados',
     dangerous: false,
+  },
+  {
+    code: 'members.deactivate',
+    description: 'Suspender o dar de baja afiliados',
+    dangerous: true,
   },
   {
     code: 'staff.read',

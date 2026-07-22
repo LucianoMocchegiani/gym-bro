@@ -117,7 +117,7 @@ Tenant demo id: `00000000-0000-4000-8000-000000000001`. También: `POST /api/aut
 
 Rutas de negocio: `@RequireTenantAuth()` + `@CurrentTenant()` (tenant solo del JWT). Permisos staff: `@RequirePermission('…')` (Admin seed tiene el catálogo; Super no usa esto en rutas `/tenants/...`).
 
-Super Admin — tenants: `POST /api/tenants` requiere `ownerEmail` / `ownerPassword` (+ `ownerName` opcional); crea branch, roles y owner con rol Admin. Roles: `GET|POST|PATCH /api/tenants/:tenantId/roles` (Super) o `GET|POST|PATCH /api/roles` (Staff, permiso `roles.write`). Asignar roles: `PUT /api/tenants/:tenantId/staff/:staffId/roles` o `PUT /api/staff/:staffId/roles` (Staff JWT). Auditoría: `GET /api/audit-events` (Staff, `audit.read`) o `GET /api/tenants/:tenantId/audit-events` (Super); se escribe en create/update tenant, roles y assign staff roles.
+Super Admin — tenants: `POST /api/tenants` requiere `ownerEmail` / `ownerPassword` (+ `ownerName` opcional); crea branch, roles y owner con rol Admin. Roles: `GET|POST|PATCH /api/tenants/:tenantId/roles` (Super) o `GET|POST|PATCH /api/roles` (Staff, permiso `roles.write`). Asignar roles: `PUT /api/tenants/:tenantId/staff/:staffId/roles` o `PUT /api/staff/:staffId/roles` (Staff JWT). Afiliados: `GET|POST|PATCH /api/members` (Staff: `members.read` / `members.write`; status con `members.deactivate`) o Super bajo `/api/tenants/:tenantId/members`. Auditoría: `GET /api/audit-events` (Staff, `audit.read`) o `GET /api/tenants/:tenantId/audit-events` (Super); se escribe en create/update tenant, roles, staff roles y members.
 
 Probar con Postman: importá [`postman/`](./postman/) (colección + environment local). Los logins guardan `accessToken` / `refreshToken` vía scripts.
 

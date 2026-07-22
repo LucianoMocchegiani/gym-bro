@@ -21,7 +21,8 @@ Tenant demo id: **`00000000-0000-4000-8000-000000000001`** (`Demo Gym`)
 | Staff (Admin del gym) | `admin@demo.gym` | `ChangeMe123!` | `tenantId` = tenant demo |
 | Afiliado (Member) | `socio@demo.gym` | `ChangeMe123!` | `tenantId` = tenant demo |
 
-El staff demo queda con rol sistema **Admin** tras el seed.
+El staff demo queda con rol sistema **Admin** tras el seed.  
+El afiliado demo queda `status: ACTIVE` (solo ACTIVE puede hacer login).
 
 ---
 

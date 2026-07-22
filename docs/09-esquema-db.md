@@ -30,6 +30,7 @@ erDiagram
   tenants ||--o{ branches : has
   tenants ||--o{ roles : has
   tenants ||--o{ audit_events : has
+  branches ||--o{ members : default_for
   roles ||--o{ role_permissions : has
   permissions ||--o{ role_permissions : has
   staff_users ||--o{ staff_user_roles : has
@@ -125,7 +126,10 @@ erDiagram
     text email
     text password_hash
     text name
-    boolean active
+    text phone
+    text document
+    uuid branch_id FK
+    enum status
     timestamptz created_at
     timestamptz updated_at
   }
@@ -151,6 +155,7 @@ erDiagram
 |---------------|---------|-----|
 | `TenantStatus` | `ACTIVE`, `SUSPENDED` | Estado del gym (RN-TEN-002) |
 | `AuthProfileType` | `SUPER`, `STAFF`, `MEMBER` | Dueño del refresh token (RN-ROL-005) |
+| `MemberStatus` | `ACTIVE`, `SUSPENDED`, `INACTIVE` | Estado del afiliado (CU-AFI-003) |
 
 ---
 
@@ -281,7 +286,7 @@ Staff de un gym. Email único **por tenant**.
 
 ### 4.9 `members`
 
-Afiliado (socio). Perfil separado del staff (RN-ROL-005). Email único **por tenant**.
+Afiliado (socio). Perfil separado del staff (RN-ROL-005). Email único **por tenant**. Login solo si `status = ACTIVE`.
 
 | Columna | Tipo | Notas |
 |---------|------|--------|
@@ -290,10 +295,15 @@ Afiliado (socio). Perfil separado del staff (RN-ROL-005). Email único **por ten
 | `email` | text | |
 | `password_hash` | text | |
 | `name` | text nullable | |
-| `active` | boolean | |
+| `phone` | text nullable | |
+| `document` | text nullable | unique por tenant (NULL permitido repetido) |
+| `branch_id` | uuid FK → `branches` nullable | ON DELETE SET NULL |
+| `status` | `MemberStatus` | default `ACTIVE` |
 | `created_at` / `updated_at` | timestamptz | |
 
-**Unique:** `(tenant_id, email)`.
+**Unique:** `(tenant_id, email)`, `(tenant_id, document)`.
+
+API Staff: `GET|POST|PATCH /api/members`, `PATCH /api/members/:id/status` (`members.deactivate`, dangerous). Super: `/api/tenants/:tenantId/members`.
 
 ---
 
@@ -345,6 +355,7 @@ API: Staff `GET /api/audit-events?limit=&action=` (`audit.read`); Super `GET /ap
 | `20260719210000_roles_permissions` | `permissions`, `roles`, `role_permissions` |
 | `20260721150000_staff_user_roles` | `staff_user_roles` (multi-rol staff) |
 | `20260721190000_audit_events` | `audit_events` (EventoAuditoria append-only) |
+| `20260721200000_members_ficha_status` | `MemberStatus` + ficha (`phone`, `document`, `branch_id`) en `members` |
 
 Comandos:
 

@@ -23,6 +23,13 @@ enum AuthProfileType {
   MEMBER
 }
 
+/// Estado operativo del afiliado en el tenant (CU-AFI-003).
+enum MemberStatus {
+  ACTIVE
+  SUSPENDED
+  INACTIVE
+}
+
 /// Gimnasio / estudio = tenant SaaS.
 ///
 /// @remarks Aislamiento row-level: el resto de tablas de negocio
@@ -56,6 +63,7 @@ model Branch {
   updatedAt DateTime @updatedAt @map("updated_at")
 
   tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  members Member[]
 
   @@index([tenantId])
   @@map("branches")
@@ -98,20 +106,26 @@ model StaffUser {
 
 /// Afiliado (socio) de un tenant. Perfil separado del staff (RN-ROL-005).
 model Member {
-  id           String   @id @default(uuid()) @db.Uuid
-  tenantId     String   @map("tenant_id") @db.Uuid
+  id           String       @id @default(uuid()) @db.Uuid
+  tenantId     String       @map("tenant_id") @db.Uuid
   email        String
-  passwordHash String   @map("password_hash")
+  passwordHash String       @map("password_hash")
   name         String?
-  active       Boolean  @default(true)
-  createdAt    DateTime @default(now()) @map("created_at")
-  updatedAt    DateTime @updatedAt @map("updated_at")
+  phone        String?
+  document     String?
+  branchId     String?      @map("branch_id") @db.Uuid
+  status       MemberStatus @default(ACTIVE)
+  createdAt    DateTime     @default(now()) @map("created_at")
+  updatedAt    DateTime     @updatedAt @map("updated_at")
 
   tenant        Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  branch        Branch?        @relation(fields: [branchId], references: [id], onDelete: SetNull)
   refreshTokens RefreshToken[]
 
   @@unique([tenantId, email])
+  @@unique([tenantId, document])
   @@index([tenantId])
+  @@index([branchId])
   @@map("members")
 }
 

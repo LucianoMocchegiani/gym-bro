@@ -6,7 +6,7 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
-import { AuthProfileType, TenantStatus } from '@prisma/client';
+import { AuthProfileType, MemberStatus, TenantStatus } from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuthTokens, JwtAccessPayload } from './auth.types';
@@ -110,7 +110,7 @@ export class AuthService {
         },
       },
     });
-    if (!user?.active) {
+    if (!user || user.status !== MemberStatus.ACTIVE) {
       throw new UnauthorizedException('Invalid credentials');
     }
     await this.assertPassword(dto.password, user.passwordHash);
@@ -171,7 +171,7 @@ export class AuthService {
     }
 
     if (stored.profileType === AuthProfileType.MEMBER && stored.member) {
-      if (!stored.member.active) {
+      if (stored.member.status !== MemberStatus.ACTIVE) {
         throw new UnauthorizedException('Invalid refresh token');
       }
       await this.assertTenantActive(stored.member.tenantId);

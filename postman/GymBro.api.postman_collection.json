@@ -859,6 +859,107 @@
           }
         }
       ]
+    },
+    {
+      "name": "Members",
+      "description": "Staff: /members (members.read/write; status → members.deactivate). Super: /tenants/:tenantId/members. Login member solo si ACTIVE.",
+      "item": [
+        {
+          "name": "Staff GET list members",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('array', () => pm.expect(pm.response.json()).to.be.an('array'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/members"
+          }
+        },
+        {
+          "name": "Staff POST create member",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 201', () => pm.response.to.have.status(201));",
+                  "const body = pm.response.json();",
+                  "pm.test('ACTIVE', () => pm.expect(body.status).to.eql('ACTIVE'));",
+                  "pm.collectionVariables.set('createdMemberId', body.id);",
+                  "pm.environment.set('createdMemberId', body.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"nuevo@demo.gym\",\n  \"password\": \"ChangeMe123!\",\n  \"name\": \"Nuevo Socio\",\n  \"phone\": \"+5491100000000\",\n  \"document\": \"30111222\"\n}"
+            },
+            "url": "{{baseUrl}}/api/members"
+          }
+        },
+        {
+          "name": "Staff PATCH member ficha",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('phone', () => pm.expect(pm.response.json().phone).to.eql('+5491199999999'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phone\": \"+5491199999999\"\n}"
+            },
+            "url": "{{baseUrl}}/api/members/{{createdMemberId}}"
+          }
+        },
+        {
+          "name": "Staff PATCH member status SUSPENDED",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('SUSPENDED', () => pm.expect(pm.response.json().status).to.eql('SUSPENDED'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"SUSPENDED\"\n}"
+            },
+            "url": "{{baseUrl}}/api/members/{{createdMemberId}}/status"
+          }
+        }
+      ]
     }
   ]
 }
