@@ -16,6 +16,7 @@ La creación de registros sigue la skill:
 
 ## Índice
 
+- [2026-07-22 — Alta / editar ficha / baja-suspensión de afiliados](./2026-07-22-afiliados-alta-ficha-baja.md)
 - [2026-07-21 — Auditoría de acciones críticas + perfiles afiliado/staff](./2026-07-21-auditoria-eventos-perfiles.md)
 - [2026-07-21 — Flags peligrosos + listar / detalle de roles](./2026-07-21-flags-peligrosos-listar-roles.md)
 - [2026-07-21 — Asignar roles a staff + owner al crear tenant](./2026-07-21-asignar-roles-staff-owner.md)
