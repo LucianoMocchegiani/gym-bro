@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { AuditModule } from './audit/audit.module';
 import { AuthModule } from './auth/auth.module';
+import { ContractsModule } from './contracts/contracts.module';
 import { HealthModule } from './health/health.module';
 import { MembersModule } from './members/members.module';
 import { PacksModule } from './packs/packs.module';
@@ -28,6 +29,7 @@ import { TenantsModule } from './tenants/tenants.module';
     MembersModule,
     ServicesModule,
     PacksModule,
+    ContractsModule,
     TenantsModule,
     AuditModule,
     HealthModule,

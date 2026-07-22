@@ -1165,6 +1165,57 @@
           }
         }
       ]
+    },
+    {
+      "name": "Contracts",
+      "description": "CU-CON-001. Staff POST /members/:memberId/contracts (members.write) crea Payment APPROVED + Contract. Usá createdMemberId (Members) y createdPackId (Packs). Member: GET /me/contracts.",
+      "item": [
+        {
+          "name": "Staff POST contract for member",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 201', () => pm.response.to.have.status(201));",
+                  "const body = pm.response.json();",
+                  "pm.test('ACTIVE', () => pm.expect(body.status).to.eql('ACTIVE'));",
+                  "pm.test('payment APPROVED', () => pm.expect(body.payment.status).to.eql('APPROVED'));",
+                  "pm.collectionVariables.set('createdContractId', body.id);",
+                  "pm.environment.set('createdContractId', body.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"packId\": \"{{createdPackId}}\",\n  \"method\": \"STUB\",\n  \"idempotencyKey\": \"demo-contract-1\"\n}"
+            },
+            "url": "{{baseUrl}}/api/members/{{createdMemberId}}/contracts"
+          }
+        },
+        {
+          "name": "Staff GET member contracts",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/members/{{createdMemberId}}/contracts"
+          }
+        },
+        {
+          "name": "Member GET me contracts",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/me/contracts",
+            "description": "Requiere accessToken de login Member."
+          }
+        }
+      ]
     }
   ]
 }

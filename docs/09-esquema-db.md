@@ -195,6 +195,9 @@ erDiagram
 | `MemberStatus` | `ACTIVE`, `SUSPENDED`, `INACTIVE` | Estado del afiliado (CU-AFI-003) |
 | `ServiceType` | `ACCESO_LIBRE`, `POR_SESIONES` | Tipo de servicio (RN-SER-001) |
 | `BillingPeriod` | `MONTHLY`, `ONE_TIME` | Periodicidad de cobro del pack |
+| `PaymentStatus` | `PENDING`, `APPROVED`, `REJECTED`, `REFUNDED` | Estado de pago (RN-PAG-003) |
+| `PaymentMethod` | `STUB`, `CASH` | Medio (MP llega en E5) |
+| `ContractStatus` | `ACTIVE`, `EXPIRED`, `CANCELLED`, `REFUNDED` | Estado de contratación |
 
 ---
 
@@ -434,6 +437,46 @@ API Staff: `GET|POST|PATCH /api/packs`. Super: `/api/tenants/:tenantId/packs`.
 
 ---
 
+### 4.15 `payments`
+
+Pago de negocio (RN-PAG-003..005). En MVP staff crea stub/caja ya `APPROVED` junto a la contratación.
+
+| Columna | Tipo | Notas |
+|---------|------|--------|
+| `id` | uuid PK | |
+| `tenant_id` / `member_id` | uuid FK | CASCADE |
+| `pack_id` | uuid FK nullable | SET NULL |
+| `amount` | int | pesos (copia del pack) |
+| `status` | `PaymentStatus` | |
+| `method` | `PaymentMethod` | STUB / CASH |
+| `idempotency_key` | text | unique por tenant |
+| `created_at` / `updated_at` | timestamptz | |
+
+### 4.16 `contracts`
+
+Contratación tras pago aprobado (CU-CON-001).
+
+| Columna | Tipo | Notas |
+|---------|------|--------|
+| `id` | uuid PK | |
+| `tenant_id` / `member_id` / `pack_id` | uuid FK | |
+| `payment_id` | uuid FK UK | 1:1 con payment |
+| `status` | `ContractStatus` | |
+| `starts_at` / `ends_at` | timestamptz | MONTHLY → +1 mes; ONE_TIME → `creditsExpireAt` o null |
+| `has_access_libre` | boolean | |
+
+### 4.17 `contract_credit_balances`
+
+| Columna | Tipo | Notas |
+|---------|------|--------|
+| `contract_id` / `service_id` | uuid FK | unique par |
+| `initial_amount` / `remaining` | int | |
+| `expires_at` | timestamptz nullable | copia de pack |
+
+API: Staff `POST|GET /api/members/:memberId/contracts`, `GET /api/contracts/:id`; Member `GET /api/me/contracts`.
+
+---
+
 ## 5. Migraciones aplicadas
 
 | Migración | Contenido |
@@ -447,6 +490,7 @@ API Staff: `GET|POST|PATCH /api/packs`. Super: `/api/tenants/:tenantId/packs`.
 | `20260721200000_members_ficha_status` | `MemberStatus` + ficha (`phone`, `document`, `branch_id`) en `members` |
 | `20260722140000_services` | enum `ServiceType` + tabla `services` |
 | `20260722180000_packs` | enum `BillingPeriod` + `packs` + `pack_components` |
+| `20260722210000_contracts_payments` | `payments`, `contracts`, `contract_credit_balances` |
 
 Comandos:
 
@@ -478,7 +522,7 @@ Crea Super + tenant demo + **branch** + roles Admin/Profesor + staff `admin@demo
 
 ## 7. Pendiente de modelar (dominio → DB)
 
-Aún no hay tablas Prisma para (ver [03](./03-modelo-dominio.md) / roadmap): contrataciones, reservas, pagos/caja, acceso, rutinas, notificaciones, etc. Se documentan aquí **al implementarlas**.
+Aún no hay tablas Prisma para (ver [03](./03-modelo-dominio.md) / roadmap): reservas, caja completa, acceso, rutinas, notificaciones, etc. Se documentan aquí **al implementarlas**.
 
 **Staff ↔ roles:** tabla `staff_user_roles`. API: Super `PUT /tenants/:tenantId/staff/:staffId/roles`, Staff `PUT /staff/:staffId/roles`. Create tenant exige owner y le asigna rol Admin.
 

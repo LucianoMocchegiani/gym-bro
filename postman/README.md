@@ -38,6 +38,8 @@ Carpeta **Services**: Staff `catalog.write`. Tipos `ACCESO_LIBRE` y `POR_SESIONE
 
 Carpeta **Packs**: mismos permiso. Body con `components` (serviceIds de Services). `price` pesos enteros; `creditsExpireAt` opcional ISO; `kind` en respuesta.
 
+Carpeta **Contracts**: Staff `members.write` crea contract+pago stub; list con `members.read`. Member: `GET /me/contracts`.
+
 ## Multi-tenant
 
 - `GET /auth/me` → `tenantId` para staff/member (del JWT).

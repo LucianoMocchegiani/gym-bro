@@ -79,7 +79,7 @@
 - [x] CRUD pack (simple / créditos / mixto)
 - [x] Componentes de pack + créditos por servicio
 - [x] Política de vencimiento de créditos por pack
-- [ ] Contratación tras pago aprobado
+- [x] Contratación tras pago aprobado
 - [ ] Cancelación pack mixto (pierde todo)
 
 ---

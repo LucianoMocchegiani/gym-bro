@@ -42,6 +42,28 @@ enum BillingPeriod {
   ONE_TIME
 }
 
+/// Estado de un pago (RN-PAG-003).
+enum PaymentStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  REFUNDED
+}
+
+/// Medio de cobro. STUB = aprobación simulada (pre-E5).
+enum PaymentMethod {
+  STUB
+  CASH
+}
+
+/// Estado de una contratación (dominio Contratacion).
+enum ContractStatus {
+  ACTIVE
+  EXPIRED
+  CANCELLED
+  REFUNDED
+}
+
 /// Gimnasio / estudio = tenant SaaS.
 ///
 /// @remarks Aislamiento row-level: el resto de tablas de negocio
@@ -59,6 +81,8 @@ model Tenant {
   roles       Role[]
   services    Service[]
   packs       Pack[]
+  payments    Payment[]
+  contracts   Contract[]
   auditEvents AuditEvent[]
 
   @@map("tenants")
@@ -136,6 +160,8 @@ model Member {
   tenant        Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   branch        Branch?        @relation(fields: [branchId], references: [id], onDelete: SetNull)
   refreshTokens RefreshToken[]
+  payments      Payment[]
+  contracts     Contract[]
 
   @@unique([tenantId, email])
   @@unique([tenantId, document])
@@ -246,6 +272,7 @@ model Service {
   tenant Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   branch Branch? @relation(fields: [branchId], references: [id], onDelete: SetNull)
   packComponents PackComponent[]
+  creditBalances ContractCreditBalance[]
 
   @@index([tenantId])
   @@index([tenantId, type])
@@ -271,6 +298,8 @@ model Pack {
 
   tenant     Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   components PackComponent[]
+  payments   Payment[]
+  contracts  Contract[]
 
   @@index([tenantId])
   @@map("packs")
@@ -289,6 +318,75 @@ model PackComponent {
   @@unique([packId, serviceId])
   @@index([serviceId])
   @@map("pack_components")
+}
+
+/// Pago de negocio (RN-PAG-003..005). En esta entrega el flujo staff crea stub APPROVED.
+model Payment {
+  id             String        @id @default(uuid()) @db.Uuid
+  tenantId       String        @map("tenant_id") @db.Uuid
+  memberId       String        @map("member_id") @db.Uuid
+  packId         String?       @map("pack_id") @db.Uuid
+  amount         Int
+  status         PaymentStatus
+  method         PaymentMethod
+  idempotencyKey String        @map("idempotency_key")
+  createdAt      DateTime      @default(now()) @map("created_at")
+  updatedAt      DateTime      @updatedAt @map("updated_at")
+
+  tenant   Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  member   Member    @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  pack     Pack?     @relation(fields: [packId], references: [id], onDelete: SetNull)
+  contract Contract?
+
+  @@unique([tenantId, idempotencyKey])
+  @@index([tenantId])
+  @@index([memberId])
+  @@map("payments")
+}
+
+/// Contratación de pack tras pago aprobado (CU-CON-001 / RN-PAG-004).
+model Contract {
+  id             String         @id @default(uuid()) @db.Uuid
+  tenantId       String         @map("tenant_id") @db.Uuid
+  memberId       String         @map("member_id") @db.Uuid
+  packId         String         @map("pack_id") @db.Uuid
+  paymentId      String         @unique @map("payment_id") @db.Uuid
+  status         ContractStatus @default(ACTIVE)
+  startsAt       DateTime       @map("starts_at")
+  endsAt         DateTime?      @map("ends_at")
+  hasAccessLibre Boolean        @default(false) @map("has_access_libre")
+  createdAt      DateTime       @default(now()) @map("created_at")
+  updatedAt      DateTime       @updatedAt @map("updated_at")
+
+  tenant   Tenant                  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  member   Member                  @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  pack     Pack                    @relation(fields: [packId], references: [id], onDelete: Restrict)
+  payment  Payment                 @relation(fields: [paymentId], references: [id], onDelete: Restrict)
+  balances ContractCreditBalance[]
+
+  @@index([tenantId])
+  @@index([memberId])
+  @@index([packId])
+  @@map("contracts")
+}
+
+/// Saldo de créditos por servicio dentro de una contratación.
+model ContractCreditBalance {
+  id            String    @id @default(uuid()) @db.Uuid
+  contractId    String    @map("contract_id") @db.Uuid
+  serviceId     String    @map("service_id") @db.Uuid
+  initialAmount Int       @map("initial_amount")
+  remaining     Int
+  expiresAt     DateTime? @map("expires_at")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+
+  contract Contract @relation(fields: [contractId], references: [id], onDelete: Cascade)
+  service  Service  @relation(fields: [serviceId], references: [id], onDelete: Restrict)
+
+  @@unique([contractId, serviceId])
+  @@index([serviceId])
+  @@map("contract_credit_balances")
 }
 
 /// Evento de auditoría append-only (RN-ROL-008 / CU-ROL-007).

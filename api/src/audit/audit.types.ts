@@ -51,4 +51,5 @@ export const AUDIT_ACTIONS = {
   serviceUpdate: 'service.update',
   packCreate: 'pack.create',
   packUpdate: 'pack.update',
+  contractCreate: 'contract.create',
 } as const;
