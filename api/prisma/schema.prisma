@@ -36,6 +36,12 @@ enum ServiceType {
   POR_SESIONES
 }
 
+/// Periodicidad de cobro del pack (aplicable a libre y a sesiones).
+enum BillingPeriod {
+  MONTHLY
+  ONE_TIME
+}
+
 /// Gimnasio / estudio = tenant SaaS.
 ///
 /// @remarks Aislamiento row-level: el resto de tablas de negocio
@@ -52,6 +58,7 @@ model Tenant {
   branches    Branch[]
   roles       Role[]
   services    Service[]
+  packs       Pack[]
   auditEvents AuditEvent[]
 
   @@map("tenants")
@@ -238,11 +245,50 @@ model Service {
 
   tenant Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   branch Branch? @relation(fields: [branchId], references: [id], onDelete: SetNull)
+  packComponents PackComponent[]
 
   @@index([tenantId])
   @@index([tenantId, type])
   @@index([branchId])
   @@map("services")
+}
+
+/// Pack vendible del catálogo (CU-SER-002 / RN-SER-004..007).
+///
+/// @remarks El `kind` (ACCESS/CREDITS/MIXED) se infiere de los componentes.
+/// `price` en pesos enteros ARS. `creditsExpireAt` null = créditos sin fecha de vencimiento de catálogo.
+model Pack {
+  id               String        @id @default(uuid()) @db.Uuid
+  tenantId         String        @map("tenant_id") @db.Uuid
+  name             String
+  description      String?
+  price            Int
+  billingPeriod    BillingPeriod @map("billing_period")
+  creditsExpireAt  DateTime?     @map("credits_expire_at")
+  active           Boolean       @default(true)
+  createdAt        DateTime      @default(now()) @map("created_at")
+  updatedAt        DateTime      @updatedAt @map("updated_at")
+
+  tenant     Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  components PackComponent[]
+
+  @@index([tenantId])
+  @@map("packs")
+}
+
+/// Componente de un pack: servicio + créditos opcionales (RN-SER-004).
+model PackComponent {
+  id           String  @id @default(uuid()) @db.Uuid
+  packId       String  @map("pack_id") @db.Uuid
+  serviceId    String  @map("service_id") @db.Uuid
+  creditAmount Int?    @map("credit_amount")
+
+  pack    Pack    @relation(fields: [packId], references: [id], onDelete: Cascade)
+  service Service @relation(fields: [serviceId], references: [id], onDelete: Restrict)
+
+  @@unique([packId, serviceId])
+  @@index([serviceId])
+  @@map("pack_components")
 }
 
 /// Evento de auditoría append-only (RN-ROL-008 / CU-ROL-007).

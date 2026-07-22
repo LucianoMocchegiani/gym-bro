@@ -4,6 +4,7 @@ import { AuditModule } from './audit/audit.module';
 import { AuthModule } from './auth/auth.module';
 import { HealthModule } from './health/health.module';
 import { MembersModule } from './members/members.module';
+import { PacksModule } from './packs/packs.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { RolesModule } from './roles/roles.module';
 import { ServicesModule } from './services/services.module';
@@ -26,6 +27,7 @@ import { TenantsModule } from './tenants/tenants.module';
     StaffModule,
     MembersModule,
     ServicesModule,
+    PacksModule,
     TenantsModule,
     AuditModule,
     HealthModule,

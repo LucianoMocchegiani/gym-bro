@@ -29,6 +29,9 @@ erDiagram
   tenants ||--o{ members : has
   tenants ||--o{ branches : has
   tenants ||--o{ roles : has
+  tenants ||--o{ packs : has
+  packs ||--o{ pack_components : has
+  services ||--o{ pack_components : in
   tenants ||--o{ services : has
   branches ||--o{ services : optional
   tenants ||--o{ audit_events : has
@@ -148,6 +151,26 @@ erDiagram
     timestamptz updated_at
   }
 
+  packs {
+    uuid id PK
+    uuid tenant_id FK
+    text name
+    text description
+    int price
+    enum billing_period
+    timestamptz credits_expire_at
+    boolean active
+    timestamptz created_at
+    timestamptz updated_at
+  }
+
+  pack_components {
+    uuid id PK
+    uuid pack_id FK
+    uuid service_id FK
+    int credit_amount
+  }
+
   refresh_tokens {
     uuid id PK
     text token_hash UK
@@ -171,6 +194,7 @@ erDiagram
 | `AuthProfileType` | `SUPER`, `STAFF`, `MEMBER` | Dueño del refresh token (RN-ROL-005) |
 | `MemberStatus` | `ACTIVE`, `SUSPENDED`, `INACTIVE` | Estado del afiliado (CU-AFI-003) |
 | `ServiceType` | `ACCESO_LIBRE`, `POR_SESIONES` | Tipo de servicio (RN-SER-001) |
+| `BillingPeriod` | `MONTHLY`, `ONE_TIME` | Periodicidad de cobro del pack |
 
 ---
 
@@ -379,6 +403,37 @@ API Staff: `GET|POST|PATCH /api/services` (`catalog.write`). Super: `/api/tenant
 
 ---
 
+### 4.13 `packs`
+
+Pack vendible (CU-SER-002). `price` = pesos enteros ARS. `kind` (`ACCESS`|`CREDITS`|`MIXED`) se **infiere** de componentes (no se persiste).
+
+| Columna | Tipo | Notas |
+|---------|------|--------|
+| `id` | uuid PK | |
+| `tenant_id` | uuid FK → `tenants` | CASCADE |
+| `name` | text | |
+| `description` | text nullable | |
+| `price` | int | pesos enteros |
+| `billing_period` | `BillingPeriod` | MONTHLY / ONE_TIME |
+| `credits_expire_at` | timestamptz nullable | null = sin vencimiento de catálogo |
+| `active` | boolean | default true |
+| `created_at` / `updated_at` | timestamptz | |
+
+### 4.14 `pack_components`
+
+| Columna | Tipo | Notas |
+|---------|------|--------|
+| `id` | uuid PK | |
+| `pack_id` | uuid FK → `packs` | CASCADE |
+| `service_id` | uuid FK → `services` | RESTRICT |
+| `credit_amount` | int nullable | obligatorio ≥1 si servicio `POR_SESIONES`; null si `ACCESO_LIBRE` |
+
+**Unique:** `(pack_id, service_id)`.
+
+API Staff: `GET|POST|PATCH /api/packs`. Super: `/api/tenants/:tenantId/packs`.
+
+---
+
 ## 5. Migraciones aplicadas
 
 | Migración | Contenido |
@@ -391,6 +446,7 @@ API Staff: `GET|POST|PATCH /api/services` (`catalog.write`). Super: `/api/tenant
 | `20260721190000_audit_events` | `audit_events` (EventoAuditoria append-only) |
 | `20260721200000_members_ficha_status` | `MemberStatus` + ficha (`phone`, `document`, `branch_id`) en `members` |
 | `20260722140000_services` | enum `ServiceType` + tabla `services` |
+| `20260722180000_packs` | enum `BillingPeriod` + `packs` + `pack_components` |
 
 Comandos:
 
@@ -422,7 +478,7 @@ Crea Super + tenant demo + **branch** + roles Admin/Profesor + staff `admin@demo
 
 ## 7. Pendiente de modelar (dominio → DB)
 
-Aún no hay tablas Prisma para (ver [03](./03-modelo-dominio.md) / roadmap): packs, reservas, pagos/caja, acceso, rutinas, notificaciones, etc. Se documentan aquí **al implementarlas**.
+Aún no hay tablas Prisma para (ver [03](./03-modelo-dominio.md) / roadmap): contrataciones, reservas, pagos/caja, acceso, rutinas, notificaciones, etc. Se documentan aquí **al implementarlas**.
 
 **Staff ↔ roles:** tabla `staff_user_roles`. API: Super `PUT /tenants/:tenantId/staff/:staffId/roles`, Staff `PUT /staff/:staffId/roles`. Create tenant exige owner y le asigna rol Admin.
 

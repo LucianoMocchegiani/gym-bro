@@ -6,15 +6,17 @@
 2. Arriba a la derecha elegí environment **GymBro Local** (si no, `{{accessToken}}` no se reemplaza).
 3. Si ya habías importado antes: borrá la colección/env viejos e importá de nuevo, o Sync variables del environment.
 
-## Credenciales seed (en el environment)
+## Credenciales seed (en el environment **GymBro Local**)
 
-| Perfil | Email | Password | Extra |
-|--------|-------|----------|--------|
-| Super | `super@gymbro.local` | `ChangeMe123!` | — |
-| Staff | `admin@demo.gym` | `ChangeMe123!` | `tenantId` |
-| Member | `socio@demo.gym` | `ChangeMe123!` | `tenantId` |
+| Variable | Valor default |
+|----------|----------------|
+| `tenantId` | `00000000-0000-4000-8000-000000000001` |
+| `superEmail` / `superPassword` | `super@gymbro.local` / `ChangeMe123!` |
+| `staffEmail` / `staffPassword` | `admin@demo.gym` / `ChangeMe123!` |
+| `memberEmail` / `memberPassword` | `socio@demo.gym` / `ChangeMe123!` |
+| `demoPassword` | `ChangeMe123!` (alias común) |
 
-Variables: `superEmail` / `superPassword`, `staffEmail` / `staffPassword`, `memberEmail` / `memberPassword`.
+Los logins usan `{{tenantId}}`, `{{staffEmail}}`, etc. Reimportá el environment si no los ves.
 
 ## Secuencia automática (Collection Runner)
 
@@ -33,6 +35,8 @@ Carpeta **Audit**: `GET /audit-events` (Staff, `audit.read`) o Super por tenant.
 Carpeta **Members**: Staff `members.read` / `members.write` / `members.deactivate` (status). Admin seed los tiene.
 
 Carpeta **Services**: Staff `catalog.write`. Tipos `ACCESO_LIBRE` y `POR_SESIONES`; desactivar con `active: false`.
+
+Carpeta **Packs**: mismos permiso. Body con `components` (serviceIds de Services). `price` pesos enteros; `creditsExpireAt` opcional ISO; `kind` en respuesta.
 
 ## Multi-tenant
 

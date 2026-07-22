@@ -76,9 +76,9 @@
 
 - [x] CRUD servicio `ACCESO_LIBRE`
 - [x] CRUD servicio `POR_SESIONES`
-- [ ] CRUD pack (simple / créditos / mixto)
-- [ ] Componentes de pack + créditos por servicio
-- [ ] Política de vencimiento de créditos por pack
+- [x] CRUD pack (simple / créditos / mixto)
+- [x] Componentes de pack + créditos por servicio
+- [x] Política de vencimiento de créditos por pack
 - [ ] Contratación tras pago aprobado
 - [ ] Cancelación pack mixto (pierde todo)
 

@@ -31,6 +31,14 @@
   ],
   "variable": [
     { "key": "baseUrl", "value": "http://localhost:3001" },
+    { "key": "tenantId", "value": "00000000-0000-4000-8000-000000000001" },
+    { "key": "superEmail", "value": "super@gymbro.local" },
+    { "key": "superPassword", "value": "ChangeMe123!" },
+    { "key": "staffEmail", "value": "admin@demo.gym" },
+    { "key": "staffPassword", "value": "ChangeMe123!" },
+    { "key": "memberEmail", "value": "socio@demo.gym" },
+    { "key": "memberPassword", "value": "ChangeMe123!" },
+    { "key": "demoPassword", "value": "ChangeMe123!" },
     { "key": "accessToken", "value": "" },
     { "key": "refreshToken", "value": "" },
     { "key": "profileType", "value": "" },
@@ -39,7 +47,12 @@
     { "key": "createdTenantId", "value": "" },
     { "key": "createdBranchId", "value": "" },
     { "key": "createdRoleId", "value": "" },
-    { "key": "createdOwnerId", "value": "" }
+    { "key": "createdOwnerId", "value": "" },
+    { "key": "createdMemberId", "value": "" },
+    { "key": "createdServiceId", "value": "" },
+    { "key": "accesoLibreServiceId", "value": "" },
+    { "key": "porSesionesServiceId", "value": "" },
+    { "key": "createdPackId", "value": "" }
   ],
   "item": [
     {
@@ -977,7 +990,9 @@
                   "const body = pm.response.json();",
                   "pm.test('type', () => pm.expect(body.type).to.eql('ACCESO_LIBRE'));",
                   "pm.collectionVariables.set('createdServiceId', body.id);",
-                  "pm.environment.set('createdServiceId', body.id);"
+                  "pm.environment.set('createdServiceId', body.id);",
+                  "pm.collectionVariables.set('accesoLibreServiceId', body.id);",
+                  "pm.environment.set('accesoLibreServiceId', body.id);"
                 ]
               }
             }
@@ -1001,7 +1016,10 @@
                 "type": "text/javascript",
                 "exec": [
                   "pm.test('status 201', () => pm.response.to.have.status(201));",
-                  "pm.test('type', () => pm.expect(pm.response.json().type).to.eql('POR_SESIONES'));"
+                  "const body = pm.response.json();",
+                  "pm.test('type', () => pm.expect(body.type).to.eql('POR_SESIONES'));",
+                  "pm.collectionVariables.set('porSesionesServiceId', body.id);",
+                  "pm.environment.set('porSesionesServiceId', body.id);"
                 ]
               }
             }
@@ -1066,6 +1084,84 @@
               "raw": "{\n  \"active\": false\n}"
             },
             "url": "{{baseUrl}}/api/services/{{createdServiceId}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Packs",
+      "description": "Catálogo E3 packs. Staff /packs (catalog.write). Usá serviceIds de Services (ACCESO_LIBRE + POR_SESIONES). price = pesos enteros. kind inferido.",
+      "item": [
+        {
+          "name": "Staff POST pack MIXED",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 201', () => pm.response.to.have.status(201));",
+                  "const body = pm.response.json();",
+                  "pm.test('kind MIXED', () => pm.expect(body.kind).to.eql('MIXED'));",
+                  "pm.collectionVariables.set('createdPackId', body.id);",
+                  "pm.environment.set('createdPackId', body.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Full mensual\",\n  \"description\": \"Libre + 8 funcional\",\n  \"price\": 45000,\n  \"billingPeriod\": \"MONTHLY\",\n  \"creditsExpireAt\": \"2026-12-31T23:59:59.000Z\",\n  \"components\": [\n    { \"serviceId\": \"{{accesoLibreServiceId}}\" },\n    { \"serviceId\": \"{{porSesionesServiceId}}\", \"creditAmount\": 8 }\n  ]\n}"
+            },
+            "url": "{{baseUrl}}/api/packs",
+            "description": "Reemplazá accesoLibreServiceId y porSesionesServiceId con ids reales de POST Services (o variables de environment)."
+          }
+        },
+        {
+          "name": "Staff GET list packs",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('array', () => pm.expect(pm.response.json()).to.be.an('array'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/packs"
+          }
+        },
+        {
+          "name": "Staff PATCH pack price",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('price', () => pm.expect(pm.response.json().price).to.eql(49000));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"price\": 49000\n}"
+            },
+            "url": "{{baseUrl}}/api/packs/{{createdPackId}}"
           }
         }
       ]
