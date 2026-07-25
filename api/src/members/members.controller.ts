@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  ForbiddenException,
   Get,
   HttpCode,
   HttpStatus,
@@ -11,7 +12,7 @@ import {
   Post,
   Query,
 } from '@nestjs/common';
-import { MemberStatus } from '@prisma/client';
+import { ContractStatus, MemberStatus } from '@prisma/client';
 import type { AuthUser } from '../auth/auth.types';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { toAuditActor } from '../audit/to-audit-actor';
@@ -24,19 +25,19 @@ import {
   UpdateMemberStatusDto,
 } from './dto/member.dto';
 import { MembersService } from './members.service';
-import { MemberDetail } from './members.types';
+import { MemberAccountDetail, MemberDetail } from './members.types';
 
 /**
- * Afiliados del gym (staff autenticado).
+ * Afiliados del gym (staff) y estado de cuenta propio (member).
  *
- * @remarks CU-AFI-001..003 / RN-ROL-007. Credencial SSI fuera de alcance.
+ * @remarks CU-AFI-001..005 / RN-ROL-007. Credencial SSI fuera de alcance.
  */
-@Controller('members')
+@Controller()
 @RequireTenantAuth()
 export class MembersController {
   constructor(private readonly membersService: MembersService) {}
 
-  @Get()
+  @Get('members')
   @RequirePermission('members.read')
   list(
     @CurrentTenant() tenantId: string,
@@ -46,7 +47,38 @@ export class MembersController {
     return this.membersService.list(tenantId, { status });
   }
 
-  @Get(':memberId')
+  /**
+   * Estado de cuenta del afiliado autenticado (CU-AFI-005).
+   */
+  @Get('me/account')
+  getMine(
+    @CurrentTenant() tenantId: string,
+    @CurrentUser() user: AuthUser,
+    @Query('status', new ParseEnumPipe(ContractStatus, { optional: true }))
+    contractStatus?: ContractStatus,
+  ): Promise<MemberAccountDetail> {
+    if (user.profileType !== 'MEMBER') {
+      throw new ForbiddenException('Member profile required');
+    }
+    return this.membersService.getAccount(tenantId, user.userId, {
+      contractStatus,
+    });
+  }
+
+  @Get('members/:memberId/account')
+  @RequirePermission('members.read')
+  getAccount(
+    @CurrentTenant() tenantId: string,
+    @Param('memberId', ParseUUIDPipe) memberId: string,
+    @Query('status', new ParseEnumPipe(ContractStatus, { optional: true }))
+    contractStatus?: ContractStatus,
+  ): Promise<MemberAccountDetail> {
+    return this.membersService.getAccount(tenantId, memberId, {
+      contractStatus,
+    });
+  }
+
+  @Get('members/:memberId')
   @RequirePermission('members.read')
   findOne(
     @CurrentTenant() tenantId: string,
@@ -55,7 +87,7 @@ export class MembersController {
     return this.membersService.findOne(tenantId, memberId);
   }
 
-  @Post()
+  @Post('members')
   @HttpCode(HttpStatus.CREATED)
   @RequirePermission('members.write')
   create(
@@ -66,7 +98,7 @@ export class MembersController {
     return this.membersService.create(tenantId, dto, toAuditActor(user));
   }
 
-  @Patch(':memberId')
+  @Patch('members/:memberId')
   @RequirePermission('members.write')
   update(
     @CurrentTenant() tenantId: string,
@@ -82,7 +114,7 @@ export class MembersController {
     );
   }
 
-  @Patch(':memberId/status')
+  @Patch('members/:memberId/status')
   @RequirePermission('members.deactivate')
   updateStatus(
     @CurrentTenant() tenantId: string,

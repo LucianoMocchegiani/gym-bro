@@ -32,7 +32,7 @@ Carpeta **Roles** / **Staff roles**: Staff necesita permisos (`roles.write` para
 
 Carpeta **Audit**: `GET /audit-events` (Staff, `audit.read`) o Super por tenant. Generá eventos con mutaciones de tenant/roles/staff roles.
 
-Carpeta **Members**: Staff `members.read` / `members.write` / `members.deactivate` (status). Admin seed los tiene.
+Carpeta **Members**: Staff `members.read` / `members.write` / `members.deactivate` (status). Estado de cuenta: `GET /members/:id/account` y `GET /me/account`. Admin seed los tiene.
 
 Carpeta **Services**: Staff `catalog.write`. Tipos `ACCESO_LIBRE` y `POR_SESIONES`; desactivar con `active: false`.
 

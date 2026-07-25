@@ -875,7 +875,7 @@
     },
     {
       "name": "Members",
-      "description": "Staff: /members (members.read/write; status → members.deactivate). Super: /tenants/:tenantId/members. Login member solo si ACTIVE.",
+      "description": "Staff: /members (members.read/write; status → members.deactivate). Estado de cuenta: GET /members/:id/account y GET /me/account (CU-AFI-004/005). Super: /tenants/:tenantId/members. Login member solo si ACTIVE.",
       "item": [
         {
           "name": "Staff GET list members",
@@ -970,6 +970,54 @@
               "raw": "{\n  \"status\": \"SUSPENDED\"\n}"
             },
             "url": "{{baseUrl}}/api/members/{{createdMemberId}}/status"
+          }
+        },
+        {
+          "name": "Staff GET member account",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('member', () => pm.expect(body.member).to.be.an('object'));",
+                  "pm.test('debt AL_DIA', () => pm.expect(body.debt.status).to.eql('AL_DIA'));",
+                  "pm.test('reservations empty', () => pm.expect(body.reservations).to.eql([]));",
+                  "pm.test('summary', () => pm.expect(body.summary).to.have.keys('activeContracts','hasAccessLibre','totalCreditsRemaining'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/members/{{createdMemberId}}/account",
+            "description": "CU-AFI-004. Query opcional ?status=ACTIVE|CANCELLED|..."
+          }
+        },
+        {
+          "name": "Member GET me account",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('own member', () => pm.expect(body.member).to.be.an('object'));",
+                  "pm.test('debt AL_DIA', () => pm.expect(body.debt.status).to.eql('AL_DIA'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/me/account",
+            "description": "CU-AFI-005. Requiere accessToken de login Member."
           }
         }
       ]

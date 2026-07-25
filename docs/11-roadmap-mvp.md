@@ -66,8 +66,8 @@
 - [x] Alta afiliado
 - [x] Editar ficha
 - [x] Baja / suspensión
-- [ ] Estado de cuenta (staff)
-- [ ] Estado de cuenta (afiliado)
+- [x] Estado de cuenta (staff)
+- [x] Estado de cuenta (afiliado)
 - [ ] Emisión / reemisión credencial de vínculo (hook a E6)
 
 ---
@@ -218,7 +218,7 @@ E11 → E12
 
 ## Próximo paso
 
-Elegir **una épica** (recomendado: **E2 estado de cuenta** o **E4 sesión puntual**) y bajar solo esa a subtareas del día / PRs.
+Elegir **una épica** (recomendado: **E4 sesión puntual**; SSI/credencial E2 queda enganchado a E6) y bajar solo esa a subtareas del día / PRs.
 
 ---
 

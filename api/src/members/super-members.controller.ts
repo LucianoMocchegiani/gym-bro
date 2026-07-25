@@ -11,7 +11,7 @@ import {
   Post,
   Query,
 } from '@nestjs/common';
-import { MemberStatus } from '@prisma/client';
+import { ContractStatus, MemberStatus } from '@prisma/client';
 import type { AuthUser } from '../auth/auth.types';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { RequireSuperAuth } from '../auth/decorators/require-super-auth.decorator';
@@ -22,7 +22,7 @@ import {
   UpdateMemberStatusDto,
 } from './dto/member.dto';
 import { MembersService } from './members.service';
-import { MemberDetail } from './members.types';
+import { MemberAccountDetail, MemberDetail } from './members.types';
 
 /**
  * Afiliados por tenant (Super Admin).
@@ -41,6 +41,18 @@ export class SuperMembersController {
     status?: MemberStatus,
   ): Promise<MemberDetail[]> {
     return this.membersService.list(tenantId, { status });
+  }
+
+  @Get(':memberId/account')
+  getAccount(
+    @Param('tenantId', ParseUUIDPipe) tenantId: string,
+    @Param('memberId', ParseUUIDPipe) memberId: string,
+    @Query('status', new ParseEnumPipe(ContractStatus, { optional: true }))
+    contractStatus?: ContractStatus,
+  ): Promise<MemberAccountDetail> {
+    return this.membersService.getAccount(tenantId, memberId, {
+      contractStatus,
+    });
   }
 
   @Get(':memberId')

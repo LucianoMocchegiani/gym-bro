@@ -4,20 +4,24 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { Member, MemberStatus, Prisma } from '@prisma/client';
+import { ContractStatus, Member, MemberStatus, Prisma } from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
 import { AUDIT_ACTIONS, AuditActor } from '../audit/audit.types';
 import { AuditService } from '../audit/audit.service';
+import { ContractsService } from '../contracts/contracts.service';
 import { PrismaService } from '../prisma/prisma.service';
 import {
   CreateMemberDto,
   UpdateMemberDto,
   UpdateMemberStatusDto,
 } from './dto/member.dto';
-import { MemberDetail } from './members.types';
+import { MemberAccountDetail, MemberDetail } from './members.types';
+
+/** Cantidad de pagos recientes en estado de cuenta. */
+const RECENT_PAYMENTS_LIMIT = 20;
 
 /**
- * CRUD de afiliados por tenant (CU-AFI-001..003).
+ * CRUD de afiliados y estado de cuenta (CU-AFI-001..005).
  *
  * @remarks Credencial SSI diferida (E6). Login solo si status ACTIVE.
  */
@@ -26,6 +30,7 @@ export class MembersService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
+    private readonly contractsService: ContractsService,
   ) {}
 
   /**
@@ -52,6 +57,79 @@ export class MembersService {
   async findOne(tenantId: string, memberId: string): Promise<MemberDetail> {
     const member = await this.findInTenant(tenantId, memberId);
     return this.toDetail(member);
+  }
+
+  /**
+   * Estado de cuenta: ficha + contratos + pagos + placeholders deuda/reservas.
+   *
+   * @remarks CU-AFI-004 / CU-AFI-005. `debt` siempre AL_DIA hasta E5.
+   * Contratos ACTIVE primero; filtro opcional por status de contrato.
+   */
+  async getAccount(
+    tenantId: string,
+    memberId: string,
+    options: { contractStatus?: ContractStatus } = {},
+  ): Promise<MemberAccountDetail> {
+    const member = await this.findInTenant(tenantId, memberId);
+    const allContracts = await this.contractsService.listByMember(
+      tenantId,
+      memberId,
+    );
+    const active = allContracts.filter((c) => c.status === 'ACTIVE');
+    const totalCreditsRemaining = active.reduce(
+      (sum, c) => sum + c.creditBalances.reduce((s, b) => s + b.remaining, 0),
+      0,
+    );
+
+    let contracts = allContracts;
+    if (options.contractStatus) {
+      contracts = allContracts.filter(
+        (c) => c.status === options.contractStatus,
+      );
+    } else {
+      contracts = [...allContracts].sort((a, b) => {
+        const rank = (s: string) => (s === 'ACTIVE' ? 0 : 1);
+        const byStatus = rank(a.status) - rank(b.status);
+        if (byStatus !== 0) {
+          return byStatus;
+        }
+        return b.createdAt.getTime() - a.createdAt.getTime();
+      });
+    }
+
+    const payments = await this.prisma.payment.findMany({
+      where: { tenantId, memberId },
+      orderBy: { createdAt: 'desc' },
+      take: RECENT_PAYMENTS_LIMIT,
+      select: {
+        id: true,
+        amount: true,
+        status: true,
+        method: true,
+        packId: true,
+        createdAt: true,
+      },
+    });
+
+    return {
+      member: this.toDetail(member),
+      summary: {
+        activeContracts: active.length,
+        hasAccessLibre: active.some((c) => c.hasAccessLibre),
+        totalCreditsRemaining,
+      },
+      debt: { amount: 0, status: 'AL_DIA' },
+      contracts,
+      recentPayments: payments.map((p) => ({
+        id: p.id,
+        amount: p.amount,
+        status: p.status,
+        method: p.method,
+        packId: p.packId,
+        createdAt: p.createdAt,
+      })),
+      reservations: [],
+    };
   }
 
   /**
