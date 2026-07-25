@@ -1,5 +1,6 @@
-import { PaymentMethod } from '@prisma/client';
+import { ContractStatus, PaymentMethod } from '@prisma/client';
 import {
+  Equals,
   IsEnum,
   IsOptional,
   IsString,
@@ -24,4 +25,21 @@ export class CreateContractDto {
   @MinLength(8)
   @MaxLength(120)
   idempotencyKey?: string;
+}
+
+/**
+ * Cancelación de contratación activa (CU-CON-002 / RN-SER-009).
+ *
+ * @remarks Solo `CANCELLED` en esta entrega. `REFUNDED` queda para E5.
+ * `reason` es opcional y va a auditoría; no altera la lógica.
+ */
+export class UpdateContractStatusDto {
+  @Equals(ContractStatus.CANCELLED)
+  status!: 'CANCELLED';
+
+  @IsOptional()
+  @IsString()
+  @MinLength(1)
+  @MaxLength(500)
+  reason?: string;
 }

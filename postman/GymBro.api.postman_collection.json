@@ -1168,7 +1168,7 @@
     },
     {
       "name": "Contracts",
-      "description": "CU-CON-001. Staff POST /members/:memberId/contracts (members.write) crea Payment APPROVED + Contract. Usá createdMemberId (Members) y createdPackId (Packs). Member: GET /me/contracts.",
+      "description": "CU-CON-001 / CU-CON-002. Staff POST crea Payment APPROVED + Contract. PATCH /contracts/:id/status → CANCELLED (pierde derechos, RN-SER-009; payment sigue APPROVED). Usá createdMemberId y createdPackId. Member: GET /me/contracts.",
       "item": [
         {
           "name": "Staff POST contract for member",
@@ -1196,6 +1196,37 @@
               "raw": "{\n  \"packId\": \"{{createdPackId}}\",\n  \"method\": \"STUB\",\n  \"idempotencyKey\": \"demo-contract-1\"\n}"
             },
             "url": "{{baseUrl}}/api/members/{{createdMemberId}}/contracts"
+          }
+        },
+        {
+          "name": "Staff PATCH cancel contract",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('CANCELLED', () => pm.expect(body.status).to.eql('CANCELLED'));",
+                  "pm.test('no access libre', () => pm.expect(body.hasAccessLibre).to.eql(false));",
+                  "pm.test('payment still APPROVED', () => pm.expect(body.payment.status).to.eql('APPROVED'));",
+                  "if (body.creditBalances && body.creditBalances.length) {",
+                  "  pm.test('credits zeroed', () => body.creditBalances.every(b => b.remaining === 0));",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"CANCELLED\",\n  \"reason\": \"Demo cancelación RN-SER-009\"\n}"
+            },
+            "url": "{{baseUrl}}/api/contracts/{{createdContractId}}/status",
+            "description": "Cancela ACTIVE. Idempotente si ya CANCELLED. Reembolso (REFUNDED) = E5."
           }
         },
         {

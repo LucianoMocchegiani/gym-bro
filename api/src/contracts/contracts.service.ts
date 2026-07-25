@@ -17,7 +17,7 @@ import { randomBytes } from 'node:crypto';
 import { AUDIT_ACTIONS, AuditActor } from '../audit/audit.types';
 import { AuditService } from '../audit/audit.service';
 import { PrismaService } from '../prisma/prisma.service';
-import { CreateContractDto } from './dto/contract.dto';
+import { CreateContractDto, UpdateContractStatusDto } from './dto/contract.dto';
 import { ContractDetail } from './contracts.types';
 
 type ContractWithRelations = Contract & {
@@ -40,9 +40,10 @@ type ContractWithRelations = Contract & {
 };
 
 /**
- * Contrataciones tras pago aprobado (CU-CON-001 / RN-PAG-004 / RN-PAG-005).
+ * Contrataciones tras pago aprobado y cancelación de derechos.
  *
- * @remarks Cancelación mixto (RN-SER-009) queda fuera de esta entrega.
+ * @remarks CU-CON-001 / CU-CON-002 / RN-PAG-004 / RN-SER-009.
+ * Reembolso real (Payment/Contract REFUNDED) queda en E5.
  */
 @Injectable()
 export class ContractsService {
@@ -73,6 +74,78 @@ export class ContractsService {
   async findOne(tenantId: string, contractId: string): Promise<ContractDetail> {
     const contract = await this.findInTenant(tenantId, contractId);
     return this.toDetail(contract);
+  }
+
+  /**
+   * Cancela una contratación ACTIVE: pierde acceso libre y créditos remanentes.
+   *
+   * @remarks RN-SER-009 (pack mixto pierde todo). El Payment permanece APPROVED;
+   * `REFUNDED` se aplica en E5 con devolución. Idempotente si ya está CANCELLED.
+   * @throws {BadRequestException} Si el contrato no está ACTIVE ni CANCELLED.
+   */
+  async updateStatus(
+    tenantId: string,
+    contractId: string,
+    dto: UpdateContractStatusDto,
+    actor: AuditActor,
+  ): Promise<ContractDetail> {
+    const before = await this.findInTenant(tenantId, contractId);
+
+    if (before.status === ContractStatus.CANCELLED) {
+      return this.toDetail(before);
+    }
+    if (before.status !== ContractStatus.ACTIVE) {
+      throw new BadRequestException(
+        `Only ACTIVE contracts can be cancelled (current: ${before.status})`,
+      );
+    }
+    if (dto.status !== ContractStatus.CANCELLED) {
+      throw new BadRequestException('Only CANCELLED status is supported');
+    }
+
+    const reason = dto.reason?.trim() || null;
+    const beforeSnapshot = this.auditSnapshot(this.toDetail(before));
+
+    const contract = await this.prisma.$transaction(async (tx) => {
+      await tx.contractCreditBalance.updateMany({
+        where: { contractId },
+        data: { remaining: 0 },
+      });
+
+      return tx.contract.update({
+        where: { id: contractId },
+        data: {
+          status: ContractStatus.CANCELLED,
+          hasAccessLibre: false,
+        },
+        include: this.contractInclude(),
+      });
+    });
+
+    const detail = this.toDetail(contract);
+    await this.audit.record({
+      tenantId,
+      actor,
+      action: AUDIT_ACTIONS.contractCancel,
+      entityType: 'contract',
+      entityId: contractId,
+      before: beforeSnapshot,
+      after: {
+        memberId: detail.memberId,
+        packId: detail.packId,
+        status: detail.status,
+        startsAt: detail.startsAt.toISOString(),
+        endsAt: detail.endsAt?.toISOString() ?? null,
+        hasAccessLibre: detail.hasAccessLibre,
+        paymentId: detail.payment.id,
+        creditBalances: detail.creditBalances.map((b) => ({
+          serviceId: b.serviceId,
+          remaining: b.remaining,
+        })),
+        reason,
+      },
+    });
+    return detail;
   }
 
   /**

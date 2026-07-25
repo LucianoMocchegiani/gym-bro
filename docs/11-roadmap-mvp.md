@@ -80,7 +80,7 @@
 - [x] Componentes de pack + créditos por servicio
 - [x] Política de vencimiento de créditos por pack
 - [x] Contratación tras pago aprobado
-- [ ] Cancelación pack mixto (pierde todo)
+- [x] Cancelación pack mixto (pierde todo)
 
 ---
 
@@ -218,7 +218,7 @@ E11 → E12
 
 ## Próximo paso
 
-Elegir **una épica** (recomendado: **E0**) y bajar solo esa a subtareas del día / PRs, sin reescribir todo el roadmap.
+Elegir **una épica** (recomendado: **E2 estado de cuenta** o **E4 sesión puntual**) y bajar solo esa a subtareas del día / PRs.
 
 ---
 

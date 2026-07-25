@@ -7,6 +7,7 @@ import {
   HttpStatus,
   Param,
   ParseUUIDPipe,
+  Patch,
   Post,
 } from '@nestjs/common';
 import type { AuthUser } from '../auth/auth.types';
@@ -15,14 +16,15 @@ import { toAuditActor } from '../audit/to-audit-actor';
 import { RequirePermission } from '../roles/decorators/require-permission.decorator';
 import { CurrentTenant } from '../tenant/decorators/current-tenant.decorator';
 import { RequireTenantAuth } from '../tenant/decorators/require-tenant-auth.decorator';
-import { CreateContractDto } from './dto/contract.dto';
+import { CreateContractDto, UpdateContractStatusDto } from './dto/contract.dto';
 import { ContractsService } from './contracts.service';
 import { ContractDetail } from './contracts.types';
 
 /**
  * Contrataciones del gym (staff) y lectura propia (afiliado).
  *
- * @remarks CU-CON-001 / RN-PAG-004. Create: `members.write`. List/get staff: `members.read`.
+ * @remarks CU-CON-001 / CU-CON-002 / RN-SER-009.
+ * Create/cancel: `members.write`. List/get staff: `members.read`.
  */
 @Controller()
 @RequireTenantAuth()
@@ -65,6 +67,25 @@ export class ContractsController {
     @Param('contractId', ParseUUIDPipe) contractId: string,
   ): Promise<ContractDetail> {
     return this.contractsService.findOne(tenantId, contractId);
+  }
+
+  /**
+   * Cancela contratación ACTIVE (pierde acceso libre y créditos).
+   */
+  @Patch('contracts/:contractId/status')
+  @RequirePermission('members.write')
+  updateStatus(
+    @CurrentTenant() tenantId: string,
+    @CurrentUser() user: AuthUser,
+    @Param('contractId', ParseUUIDPipe) contractId: string,
+    @Body() dto: UpdateContractStatusDto,
+  ): Promise<ContractDetail> {
+    return this.contractsService.updateStatus(
+      tenantId,
+      contractId,
+      dto,
+      toAuditActor(user),
+    );
   }
 
   /**

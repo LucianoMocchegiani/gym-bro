@@ -38,7 +38,7 @@ Carpeta **Services**: Staff `catalog.write`. Tipos `ACCESO_LIBRE` y `POR_SESIONE
 
 Carpeta **Packs**: mismos permiso. Body con `components` (serviceIds de Services). `price` pesos enteros; `creditsExpireAt` opcional ISO; `kind` en respuesta.
 
-Carpeta **Contracts**: Staff `members.write` crea contract+pago stub; list con `members.read`. Member: `GET /me/contracts`.
+Carpeta **Contracts**: Staff `members.write` crea contract+pago stub; `PATCH /contracts/:id/status` cancela (pierde derechos); list con `members.read`. Member: `GET /me/contracts`.
 
 ## Multi-tenant
 

@@ -6,13 +6,14 @@ import {
   HttpStatus,
   Param,
   ParseUUIDPipe,
+  Patch,
   Post,
 } from '@nestjs/common';
 import type { AuthUser } from '../auth/auth.types';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { RequireSuperAuth } from '../auth/decorators/require-super-auth.decorator';
 import { toAuditActor } from '../audit/to-audit-actor';
-import { CreateContractDto } from './dto/contract.dto';
+import { CreateContractDto, UpdateContractStatusDto } from './dto/contract.dto';
 import { ContractsService } from './contracts.service';
 import { ContractDetail } from './contracts.types';
 
@@ -54,5 +55,20 @@ export class SuperContractsController {
     @Param('contractId', ParseUUIDPipe) contractId: string,
   ): Promise<ContractDetail> {
     return this.contractsService.findOne(tenantId, contractId);
+  }
+
+  @Patch('contracts/:contractId/status')
+  updateStatus(
+    @Param('tenantId', ParseUUIDPipe) tenantId: string,
+    @Param('contractId', ParseUUIDPipe) contractId: string,
+    @CurrentUser() user: AuthUser,
+    @Body() dto: UpdateContractStatusDto,
+  ): Promise<ContractDetail> {
+    return this.contractsService.updateStatus(
+      tenantId,
+      contractId,
+      dto,
+      toAuditActor(user),
+    );
   }
 }
