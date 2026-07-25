@@ -53,4 +53,7 @@ export const AUDIT_ACTIONS = {
   packUpdate: 'pack.update',
   contractCreate: 'contract.create',
   contractCancel: 'contract.cancel',
+  sessionCreate: 'session.create',
+  sessionUpdate: 'session.update',
+  sessionCancel: 'session.cancel',
 } as const;

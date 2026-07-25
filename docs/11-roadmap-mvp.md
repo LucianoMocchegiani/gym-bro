@@ -86,7 +86,7 @@
 
 ## E4 — Sesiones y reservas
 
-- [ ] Crear sesión puntual
+- [x] Crear sesión puntual
 - [ ] Regla de recurrencia simple
 - [ ] Ampliar cupo
 - [ ] Reservar con crédito
@@ -218,7 +218,7 @@ E11 → E12
 
 ## Próximo paso
 
-Elegir **una épica** (recomendado: **E4 sesión puntual**; SSI/credencial E2 queda enganchado a E6) y bajar solo esa a subtareas del día / PRs.
+Elegir **una épica** (recomendado: **E4 recurrencia** o **reservar con crédito**) y bajar solo esa a subtareas del día / PRs.
 
 ---
 

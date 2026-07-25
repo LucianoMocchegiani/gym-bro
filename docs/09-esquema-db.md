@@ -34,6 +34,10 @@ erDiagram
   services ||--o{ pack_components : in
   tenants ||--o{ services : has
   branches ||--o{ services : optional
+  tenants ||--o{ sessions : has
+  services ||--o{ sessions : schedules
+  branches ||--o{ sessions : hosts
+  staff_users ||--o{ sessions : instructs
   tenants ||--o{ audit_events : has
   branches ||--o{ members : default_for
   roles ||--o{ role_permissions : has
@@ -171,6 +175,21 @@ erDiagram
     int credit_amount
   }
 
+  sessions {
+    uuid id PK
+    uuid tenant_id FK
+    uuid service_id FK
+    uuid branch_id FK
+    uuid instructor_id FK
+    timestamptz starts_at
+    timestamptz ends_at
+    int capacity
+    int booked_count
+    enum status
+    timestamptz created_at
+    timestamptz updated_at
+  }
+
   refresh_tokens {
     uuid id PK
     text token_hash UK
@@ -198,6 +217,7 @@ erDiagram
 | `PaymentStatus` | `PENDING`, `APPROVED`, `REJECTED`, `REFUNDED` | Estado de pago (RN-PAG-003) |
 | `PaymentMethod` | `STUB`, `CASH` | Medio (MP llega en E5) |
 | `ContractStatus` | `ACTIVE`, `EXPIRED`, `CANCELLED`, `REFUNDED` | Estado de contratación |
+| `SessionStatus` | `PUBLISHED`, `CANCELLED` | Estado de sesión de calendario |
 
 ---
 
@@ -473,7 +493,26 @@ Contratación tras pago aprobado (CU-CON-001).
 | `initial_amount` / `remaining` | int | |
 | `expires_at` | timestamptz nullable | copia de pack |
 
-API: Staff `POST|GET /api/members/:memberId/contracts`, `GET /api/contracts/:id`; Member `GET /api/me/contracts`.
+API: Staff `POST|GET /api/members/:memberId/contracts`, `GET /api/contracts/:id`, `PATCH /api/contracts/:id/status`; Member `GET /api/me/contracts`.
+
+### 4.18 `sessions`
+
+Sesión puntual de servicio `POR_SESIONES` (CU-SER-003 / RN-SER-010..013).
+
+| Columna | Tipo | Notas |
+|---------|------|--------|
+| `id` | uuid PK | |
+| `tenant_id` | uuid FK → `tenants` | CASCADE |
+| `service_id` | uuid FK → `services` | RESTRICT; debe ser `POR_SESIONES` |
+| `branch_id` | uuid FK → `branches` | RESTRICT; default sede si no se envía |
+| `instructor_id` | uuid FK → `staff_users` nullable | SET NULL; opcional (RN-SER-011) |
+| `starts_at` / `ends_at` | timestamptz | `ends_at > starts_at` |
+| `capacity` | int | ≥ 1 |
+| `booked_count` | int | default 0; reservas después |
+| `status` | `SessionStatus` | create → `PUBLISHED` |
+| `created_at` / `updated_at` | timestamptz | |
+
+API Staff: `GET|POST|PATCH /api/sessions` (`sessions.write`). Super: `/api/tenants/:tenantId/sessions`.
 
 ---
 
@@ -491,6 +530,7 @@ API: Staff `POST|GET /api/members/:memberId/contracts`, `GET /api/contracts/:id`
 | `20260722140000_services` | enum `ServiceType` + tabla `services` |
 | `20260722180000_packs` | enum `BillingPeriod` + `packs` + `pack_components` |
 | `20260722210000_contracts_payments` | `payments`, `contracts`, `contract_credit_balances` |
+| `20260725150000_sessions` | enum `SessionStatus` + tabla `sessions` |
 
 Comandos:
 

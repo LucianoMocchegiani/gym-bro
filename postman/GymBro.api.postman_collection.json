@@ -52,7 +52,9 @@
     { "key": "createdServiceId", "value": "" },
     { "key": "accesoLibreServiceId", "value": "" },
     { "key": "porSesionesServiceId", "value": "" },
-    { "key": "createdPackId", "value": "" }
+    { "key": "createdPackId", "value": "" },
+    { "key": "createdContractId", "value": "" },
+    { "key": "createdSessionId", "value": "" }
   ],
   "item": [
     {
@@ -1292,6 +1294,105 @@
             "header": [],
             "url": "{{baseUrl}}/api/me/contracts",
             "description": "Requiere accessToken de login Member."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Sessions",
+      "description": "CU-SER-003. Staff /sessions (sessions.write). serviceId = POR_SESIONES (porSesionesServiceId). instructorId = StaffUser id (userId del login Staff). branchId opcional → sede default.",
+      "item": [
+        {
+          "name": "Staff POST session",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 201', () => pm.response.to.have.status(201));",
+                  "const body = pm.response.json();",
+                  "pm.test('PUBLISHED', () => pm.expect(body.status).to.eql('PUBLISHED'));",
+                  "pm.test('booked 0', () => pm.expect(body.bookedCount).to.eql(0));",
+                  "pm.collectionVariables.set('createdSessionId', body.id);",
+                  "pm.environment.set('createdSessionId', body.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"serviceId\": \"{{porSesionesServiceId}}\",\n  \"startsAt\": \"2026-08-01T13:00:00.000Z\",\n  \"endsAt\": \"2026-08-01T14:00:00.000Z\",\n  \"capacity\": 12,\n  \"instructorId\": \"{{userId}}\"\n}"
+            },
+            "url": "{{baseUrl}}/api/sessions",
+            "description": "Creá antes un servicio POR_SESIONES. userId queda del login Staff (Auth Me)."
+          }
+        },
+        {
+          "name": "Staff GET list sessions",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/sessions"
+          }
+        },
+        {
+          "name": "Staff GET session",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/sessions/{{createdSessionId}}"
+          }
+        },
+        {
+          "name": "Staff PATCH session capacity",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('capacity', () => pm.expect(pm.response.json().capacity).to.eql(15));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"capacity\": 15\n}"
+            },
+            "url": "{{baseUrl}}/api/sessions/{{createdSessionId}}"
+          }
+        },
+        {
+          "name": "Staff PATCH cancel session",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('CANCELLED', () => pm.expect(pm.response.json().status).to.eql('CANCELLED'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"CANCELLED\"\n}"
+            },
+            "url": "{{baseUrl}}/api/sessions/{{createdSessionId}}"
           }
         }
       ]

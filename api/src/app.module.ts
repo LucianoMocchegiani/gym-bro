@@ -9,6 +9,7 @@ import { PacksModule } from './packs/packs.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { RolesModule } from './roles/roles.module';
 import { ServicesModule } from './services/services.module';
+import { SessionsModule } from './sessions/sessions.module';
 import { StaffModule } from './staff/staff.module';
 import { TenantModule } from './tenant/tenant.module';
 import { TenantsModule } from './tenants/tenants.module';
@@ -30,6 +31,7 @@ import { TenantsModule } from './tenants/tenants.module';
     ServicesModule,
     PacksModule,
     ContractsModule,
+    SessionsModule,
     TenantsModule,
     AuditModule,
     HealthModule,

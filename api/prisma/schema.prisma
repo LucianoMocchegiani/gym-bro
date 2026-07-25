@@ -64,6 +64,12 @@ enum ContractStatus {
   REFUNDED
 }
 
+/// Estado de una sesión de calendario (CU-SER-003).
+enum SessionStatus {
+  PUBLISHED
+  CANCELLED
+}
+
 /// Gimnasio / estudio = tenant SaaS.
 ///
 /// @remarks Aislamiento row-level: el resto de tablas de negocio
@@ -83,6 +89,7 @@ model Tenant {
   packs       Pack[]
   payments    Payment[]
   contracts   Contract[]
+  sessions    Session[]
   auditEvents AuditEvent[]
 
   @@map("tenants")
@@ -103,6 +110,7 @@ model Branch {
   tenant   Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   members  Member[]
   services Service[]
+  sessions Session[]
 
   @@index([tenantId])
   @@map("branches")
@@ -137,6 +145,7 @@ model StaffUser {
   tenant        Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   refreshTokens RefreshToken[]
   staffRoles    StaffUserRole[]
+  instructedSessions Session[]  @relation("SessionInstructor")
 
   @@unique([tenantId, email])
   @@index([tenantId])
@@ -273,6 +282,7 @@ model Service {
   branch Branch? @relation(fields: [branchId], references: [id], onDelete: SetNull)
   packComponents PackComponent[]
   creditBalances ContractCreditBalance[]
+  sessions       Session[]
 
   @@index([tenantId])
   @@index([tenantId, type])
@@ -318,6 +328,37 @@ model PackComponent {
   @@unique([packId, serviceId])
   @@index([serviceId])
   @@map("pack_components")
+}
+
+/// Sesión puntual de un servicio POR_SESIONES (CU-SER-003 / RN-SER-010..013).
+///
+/// @remarks `instructorId` opcional (StaffUser). `bookedCount` se incrementa con reservas (E4 posterior).
+/// Recurrencia y lista de espera quedan fuera de esta entrega.
+model Session {
+  id           String        @id @default(uuid()) @db.Uuid
+  tenantId     String        @map("tenant_id") @db.Uuid
+  serviceId    String        @map("service_id") @db.Uuid
+  branchId     String        @map("branch_id") @db.Uuid
+  instructorId String?       @map("instructor_id") @db.Uuid
+  startsAt     DateTime      @map("starts_at")
+  endsAt       DateTime      @map("ends_at")
+  capacity     Int
+  bookedCount  Int           @default(0) @map("booked_count")
+  status       SessionStatus @default(PUBLISHED)
+  createdAt    DateTime      @default(now()) @map("created_at")
+  updatedAt    DateTime      @updatedAt @map("updated_at")
+
+  tenant     Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  service    Service    @relation(fields: [serviceId], references: [id], onDelete: Restrict)
+  branch     Branch     @relation(fields: [branchId], references: [id], onDelete: Restrict)
+  instructor StaffUser? @relation("SessionInstructor", fields: [instructorId], references: [id], onDelete: SetNull)
+
+  @@index([tenantId])
+  @@index([tenantId, startsAt])
+  @@index([serviceId])
+  @@index([branchId])
+  @@index([instructorId])
+  @@map("sessions")
 }
 
 /// Pago de negocio (RN-PAG-003..005). En esta entrega el flujo staff crea stub APPROVED.
