@@ -16,6 +16,7 @@ La creación de registros sigue la skill:
 
 ## Índice
 
+- [2026-07-26 — Cobro en caja + caja del día](./2026-07-26-caja-del-dia.md)
 - [2026-07-26 — Reservar drop-in (pago stub/caja)](./2026-07-26-reservar-drop-in.md)
 - [2026-07-26 — Ingreso tardío a sesión](./2026-07-26-ingreso-tardio-sesion.md)
 - [2026-07-26 — Lista de espera (auto-assign)](./2026-07-26-lista-espera-auto-assign.md)
