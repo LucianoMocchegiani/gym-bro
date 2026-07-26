@@ -7,6 +7,7 @@ import {
   Param,
   ParseEnumPipe,
   ParseUUIDPipe,
+  Patch,
   Post,
   Query,
 } from '@nestjs/common';
@@ -15,7 +16,10 @@ import type { AuthUser } from '../auth/auth.types';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { RequireSuperAuth } from '../auth/decorators/require-super-auth.decorator';
 import { toAuditActor } from '../audit/to-audit-actor';
-import { CreateReservationDto } from './dto/reservation.dto';
+import {
+  CreateReservationDto,
+  UpdateReservationStatusDto,
+} from './dto/reservation.dto';
 import { ReservationsService } from './reservations.service';
 import { ReservationDetail } from './reservations.types';
 
@@ -61,5 +65,20 @@ export class SuperReservationsController {
     @Param('reservationId', ParseUUIDPipe) reservationId: string,
   ): Promise<ReservationDetail> {
     return this.reservationsService.findOne(tenantId, reservationId);
+  }
+
+  @Patch('reservations/:reservationId/status')
+  cancel(
+    @Param('tenantId', ParseUUIDPipe) tenantId: string,
+    @Param('reservationId', ParseUUIDPipe) reservationId: string,
+    @CurrentUser() user: AuthUser,
+    @Body() dto: UpdateReservationStatusDto,
+  ): Promise<ReservationDetail> {
+    return this.reservationsService.cancel(
+      tenantId,
+      reservationId,
+      dto,
+      toAuditActor(user),
+    );
   }
 }

@@ -16,7 +16,11 @@ import {
 import { AUDIT_ACTIONS, AuditActor } from '../audit/audit.types';
 import { AuditService } from '../audit/audit.service';
 import { PrismaService } from '../prisma/prisma.service';
-import { CreateReservationDto } from './dto/reservation.dto';
+import { TenantSettingsService } from '../tenant-settings/tenant-settings.service';
+import {
+  CreateReservationDto,
+  UpdateReservationStatusDto,
+} from './dto/reservation.dto';
 import { ReservationDetail } from './reservations.types';
 
 type ReservationWithRelations = Reservation & {
@@ -30,15 +34,16 @@ type ReservationWithRelations = Reservation & {
 };
 
 /**
- * Reservas con crédito (CU-RES-001 / CU-RES-002 / RN-RES-001).
+ * Reservas con crédito (CU-RES-001 / CU-RES-002 / RN-RES-001) y cancelación (CU-RES-003).
  *
- * @remarks Drop-in, lista de espera y cancelación con ventana quedan fuera.
+ * @remarks Drop-in y lista de espera quedan fuera. Cancelación: RN-RES-003 / RN-TEN-005.
  */
 @Injectable()
 export class ReservationsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
+    private readonly tenantSettings: TenantSettingsService,
   ) {}
 
   /**
@@ -222,6 +227,131 @@ export class ReservationsService {
       }
       throw error;
     }
+  }
+
+  /**
+   * Cancela una reserva confirmada (CU-RES-003 / RN-RES-003 / RN-TEN-005).
+   *
+   * @remarks Libera cupo, devuelve 1 crédito al saldo original e invoca hook
+   * de lista de espera (no-op). Idempotente si ya estaba CANCELLED.
+   * @param ownerMemberId Si se indica, exige que la reserva pertenezca a ese afiliado.
+   *   El afiliado (actor MEMBER) valida la ventana de horas del gym; Staff/Super no.
+   */
+  async cancel(
+    tenantId: string,
+    reservationId: string,
+    dto: UpdateReservationStatusDto,
+    actor: AuditActor,
+    ownerMemberId?: string,
+  ): Promise<ReservationDetail> {
+    if (dto.status !== ReservationStatus.CANCELLED) {
+      throw new BadRequestException('Only CANCELLED status is supported');
+    }
+
+    const before = await this.findInTenant(tenantId, reservationId);
+    if (ownerMemberId && before.memberId !== ownerMemberId) {
+      throw new NotFoundException(
+        `Reservation ${reservationId} not found in tenant`,
+      );
+    }
+    if (before.status === ReservationStatus.CANCELLED) {
+      return this.toDetail(before);
+    }
+
+    const startsAt = before.session.startsAt;
+    if (startsAt.getTime() <= Date.now()) {
+      throw new BadRequestException(
+        'Cannot cancel a reservation after the session has started',
+      );
+    }
+
+    const enforceWindow = actor.profileType === 'MEMBER';
+    if (enforceWindow) {
+      const hours = await this.tenantSettings.getCancellationHours(tenantId);
+      const deadlineMs = startsAt.getTime() - hours * 60 * 60 * 1000;
+      if (Date.now() > deadlineMs) {
+        throw new BadRequestException(
+          `Cancellation window closed (${hours}h before session start)`,
+        );
+      }
+    }
+
+    const { detail, cancelledNow } = await this.prisma.$transaction(
+      async (tx) => {
+        const updated = await tx.reservation.updateMany({
+          where: {
+            id: reservationId,
+            tenantId,
+            status: ReservationStatus.CONFIRMED,
+          },
+          data: { status: ReservationStatus.CANCELLED },
+        });
+        if (updated.count !== 1) {
+          const current = await tx.reservation.findFirst({
+            where: { id: reservationId, tenantId },
+            include: this.reservationInclude(),
+          });
+          if (current?.status === ReservationStatus.CANCELLED) {
+            return { detail: this.toDetail(current), cancelledNow: false };
+          }
+          throw new ConflictException(
+            'Reservation status changed concurrently; retry',
+          );
+        }
+
+        const seat = await tx.session.updateMany({
+          where: {
+            id: before.sessionId,
+            tenantId,
+            bookedCount: { gt: 0 },
+          },
+          data: { bookedCount: { decrement: 1 } },
+        });
+        if (seat.count !== 1) {
+          throw new ConflictException(
+            'Session bookedCount could not be decremented',
+          );
+        }
+
+        await tx.contractCreditBalance.update({
+          where: { id: before.creditBalanceId },
+          data: { remaining: { increment: 1 } },
+        });
+
+        const row = await tx.reservation.findFirstOrThrow({
+          where: { id: reservationId, tenantId },
+          include: this.reservationInclude(),
+        });
+        return { detail: this.toDetail(row), cancelledNow: true };
+      },
+    );
+
+    if (cancelledNow) {
+      this.releaseWaitlistAfterCancel(tenantId, before.sessionId);
+      await this.audit.record({
+        tenantId,
+        actor,
+        action: AUDIT_ACTIONS.reservationCancel,
+        entityType: 'reservation',
+        entityId: reservationId,
+        before: this.auditSnapshot(this.toDetail(before)),
+        after: this.auditSnapshot(detail),
+      });
+    }
+    return detail;
+  }
+
+  /**
+   * Hook para liberar cupo hacia lista de espera (CU-RES-005).
+   *
+   * @remarks No-op hasta implementar cola.
+   */
+  private releaseWaitlistAfterCancel(
+    tenantId: string,
+    sessionId: string,
+  ): void {
+    void tenantId;
+    void sessionId;
   }
 
   private async pickCreditBalance(

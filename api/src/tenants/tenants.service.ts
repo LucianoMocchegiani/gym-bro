@@ -73,6 +73,12 @@ export class TenantsService {
             isDefault: true,
           },
         });
+        await tx.tenantSettings.create({
+          data: {
+            tenantId: created.id,
+            reservationCancellationHours: 6,
+          },
+        });
         const roles = await this.rolesSeed.seedSystemRolesForTenant(
           tx,
           created.id,

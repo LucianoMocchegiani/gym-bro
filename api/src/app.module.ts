@@ -13,6 +13,7 @@ import { SessionsModule } from './sessions/sessions.module';
 import { ReservationsModule } from './reservations/reservations.module';
 import { StaffModule } from './staff/staff.module';
 import { TenantModule } from './tenant/tenant.module';
+import { TenantSettingsModule } from './tenant-settings/tenant-settings.module';
 import { TenantsModule } from './tenants/tenants.module';
 
 /**
@@ -26,6 +27,7 @@ import { TenantsModule } from './tenants/tenants.module';
     PrismaModule,
     AuthModule,
     TenantModule,
+    TenantSettingsModule,
     RolesModule,
     StaffModule,
     MembersModule,

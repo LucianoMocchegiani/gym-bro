@@ -259,6 +259,15 @@ async function main(): Promise<void> {
     },
   });
 
+  await prisma.tenantSettings.upsert({
+    where: { tenantId: tenant.id },
+    update: {},
+    create: {
+      tenantId: tenant.id,
+      reservationCancellationHours: 6,
+    },
+  });
+
   console.log('Seed OK');
   console.log({
     superUser: { id: superUser.id, email: superUser.email },

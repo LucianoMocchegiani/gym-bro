@@ -92,10 +92,11 @@
 - [x] Reservar con crédito
 - [ ] Reservar drop-in (pago)
 - [x] Reserva en nombre del afiliado (staff)
-- [ ] Cancelar reserva (ventana del gym)
+- [x] Cancelar reserva (ventana del gym)
 - [ ] Lista de espera (3 modos)
 - [ ] Ingreso tardío a sesión (si config ON)
 - [ ] Config: horas cancelación, modo lista espera
+  - horas de cancelación: cubierto en `tenant_settings` (falta modo lista de espera)
 
 ---
 
@@ -218,7 +219,7 @@ E11 → E12
 
 ## Próximo paso
 
-Elegir **una épica** (recomendado: **cancelar reserva**, **lista de espera**, o **config gym**) y bajar solo esa a subtareas del día / PRs.
+Elegir **una épica** (recomendado: **lista de espera**, **drop-in**, o **modo lista espera en config**) y bajar solo esa a subtareas del día / PRs.
 
 ---
 

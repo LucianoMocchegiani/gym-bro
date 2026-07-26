@@ -259,7 +259,8 @@ Prefijo sugerido: `/api/v1`.
 | Notif | `/notifications`, `/notification-templates`, preferences |
 | Afiliados | Super/Staff CRUD members + PATCH status (`members.deactivate`); estado de cuenta `GET /members/:id/account` / `GET /me/account` |
 | Sesiones | Staff `GET|POST|PATCH /sessions`, `PATCH /sessions/:id/capacity` (ampliar cupo) + `/session-recurrence-rules` (`sessions.write`); Super mirrors bajo `/tenants/:tid/...` |
-| Reservas | Member `POST|GET /me/reservations` (crédito); Staff `POST|GET /members/:id/reservations` (`reservations.write`) |
+| Reservas | Member `/me/reservations` + cancel status; Staff `/members/:id/reservations` + `/reservations/:id/status` (`reservations.write`) |
+| Settings | Staff `GET|PATCH /tenant-settings` (`tenant.settings.*`); Super `/tenants/:tid/settings` |
 | Catálogo | Super/Staff CRUD services + packs (`catalog.write`; kind inferido; `creditsExpireAt`) |
 | Contrataciones | Staff `POST /members/:id/contracts` (pago stub APPROVED); `PATCH /contracts/:id/status` → `CANCELLED` (pierde derechos, RN-SER-009); Member `GET /me/contracts` |
 | Roles | Super/Staff list-get-create-patch roles; `PUT .../staff/:id/roles` multi-rol |

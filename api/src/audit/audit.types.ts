@@ -60,4 +60,6 @@ export const AUDIT_ACTIONS = {
   recurrenceRuleCreate: 'session.recurrence.create',
   recurrenceRuleDeactivate: 'session.recurrence.deactivate',
   reservationCreate: 'reservation.create',
+  reservationCancel: 'reservation.cancel',
+  tenantSettingsUpdate: 'tenant.settings.update',
 } as const;

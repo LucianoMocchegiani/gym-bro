@@ -114,9 +114,25 @@ model Tenant {
   sessions        Session[]
   recurrenceRules SessionRecurrenceRule[]
   reservations    Reservation[]
+  settings        TenantSettings?
   auditEvents     AuditEvent[]
 
   @@map("tenants")
+}
+
+/// Configuración operativa del gym (RN-TEN-005).
+///
+/// @remarks 1:1 con tenant. MVP: horas de cancelación de reserva.
+/// Modo lista de espera y otras policies se suman después.
+model TenantSettings {
+  tenantId                       String   @id @map("tenant_id") @db.Uuid
+  reservationCancellationHours   Int      @default(6) @map("reservation_cancellation_hours")
+  createdAt                      DateTime @default(now()) @map("created_at")
+  updatedAt                      DateTime @updatedAt @map("updated_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@map("tenant_settings")
 }
 
 /// Sucursal / sede física del tenant (S2: modelo multi-sede, MVP 1 visible).
@@ -498,7 +514,7 @@ model ContractCreditBalance {
 
 /// Reserva confirmada de una sesión (CU-RES-001 / RN-RES-001).
 ///
-/// @remarks En esta entrega solo cobertura CREDIT. Drop-in y cancelación con ventana quedan diferidos.
+/// @remarks Cobertura CREDIT. Cancelación con ventana: CU-RES-003. Drop-in diferido.
 model Reservation {
   id              String              @id @default(uuid()) @db.Uuid
   tenantId        String              @map("tenant_id") @db.Uuid

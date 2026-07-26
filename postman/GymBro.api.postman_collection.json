@@ -1487,7 +1487,7 @@
     },
     {
       "name": "Reservations",
-      "description": "CU-RES-001/002. Reserva con crédito: Member POST /me/reservations o Staff POST /members/:id/reservations (reservations.write). Requiere sesión PUBLISHED futura + contrato ACTIVE con saldo del servicio. Cancelación y drop-in diferidos.",
+      "description": "CU-RES-001/002/003. Reserva con crédito + cancelación (ventana RN-TEN-005). Member PATCH /me/reservations/:id/status; Staff PATCH /reservations/:id/status (puede fuera de ventana). Drop-in y lista de espera diferidos.",
       "item": [
         {
           "name": "Member POST me reservation",
@@ -1524,6 +1524,31 @@
             "method": "GET",
             "header": [],
             "url": "{{baseUrl}}/api/me/reservations"
+          }
+        },
+        {
+          "name": "Member PATCH cancel my reservation",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('CANCELLED', () => pm.expect(pm.response.json().status).to.eql('CANCELLED'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"CANCELLED\"\n}"
+            },
+            "url": "{{baseUrl}}/api/me/reservations/{{createdReservationId}}/status",
+            "description": "CU-RES-003. Solo dentro de la ventana (default 6h). Fuera → 400."
           }
         },
         {
@@ -1564,6 +1589,69 @@
             "method": "GET",
             "header": [],
             "url": "{{baseUrl}}/api/reservations/{{createdReservationId}}"
+          }
+        },
+        {
+          "name": "Staff PATCH cancel reservation",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('CANCELLED', () => pm.expect(pm.response.json().status).to.eql('CANCELLED'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"CANCELLED\"\n}"
+            },
+            "url": "{{baseUrl}}/api/reservations/{{createdReservationId}}/status",
+            "description": "Staff puede cancelar fuera de ventana (antes del inicio). Idempotente."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Tenant settings",
+      "description": "RN-TEN-005. Staff GET|PATCH /tenant-settings (tenant.settings.read/write). reservationCancellationHours default 6 (0–720).",
+      "item": [
+        {
+          "name": "Staff GET tenant settings",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/tenant-settings"
+          }
+        },
+        {
+          "name": "Staff PATCH tenant settings",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('hours', () => pm.expect(pm.response.json().reservationCancellationHours).to.be.a('number'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reservationCancellationHours\": 6\n}"
+            },
+            "url": "{{baseUrl}}/api/tenant-settings"
           }
         }
       ]

@@ -43,6 +43,7 @@ erDiagram
   branches ||--o{ session_recurrence_rules : hosts
   staff_users ||--o{ session_recurrence_rules : instructs
   session_recurrence_rules ||--o{ sessions : generates
+  tenants ||--o| tenant_settings : configures
   tenants ||--o{ reservations : has
   members ||--o{ reservations : books
   sessions ||--o{ reservations : fills
@@ -61,6 +62,13 @@ erDiagram
     uuid id PK
     text name
     enum status
+    timestamptz created_at
+    timestamptz updated_at
+  }
+
+  tenant_settings {
+    uuid tenant_id PK,FK
+    int reservation_cancellation_hours
     timestamptz created_at
     timestamptz updated_at
   }
@@ -266,7 +274,7 @@ Gimnasio / estudio = tenant SaaS.
 | `created_at` | timestamptz | |
 | `updated_at` | timestamptz | |
 
-**Relaciones:** 1→N `staff_users`, 1→N `members`, 1→N `branches`, 1→N `roles`, 1→N `audit_events`.
+**Relaciones:** 1→N `staff_users`, 1→N `members`, 1→N `branches`, 1→N `roles`, 1→1 `tenant_settings`, 1→N `audit_events`.
 
 ---
 
@@ -580,7 +588,19 @@ Reserva con crédito (CU-RES-001 / RN-RES-001).
 
 Unique parcial: una `CONFIRMED` por (`session_id`, `member_id`).
 
-API: Member `POST|GET /api/me/reservations`; Staff `POST|GET /api/members/:memberId/reservations`, `GET /api/reservations/:id`.
+API: Member `POST|GET /api/me/reservations`, `PATCH /api/me/reservations/:id/status` (ventana RN-TEN-005); Staff `POST|GET /api/members/:memberId/reservations`, `GET|PATCH /api/reservations/:id(/status)`. Cancelación: libera cupo + devuelve crédito (CU-RES-003).
+
+### 4.21 `tenant_settings`
+
+Config operativa 1:1 con tenant (RN-TEN-005).
+
+| Columna | Tipo | Notas |
+|---------|------|--------|
+| `tenant_id` | uuid PK FK → `tenants` | CASCADE |
+| `reservation_cancellation_hours` | int | default 6; rango API 0–720 |
+| `created_at` / `updated_at` | timestamptz | |
+
+API Staff: `GET|PATCH /api/tenant-settings` (`tenant.settings.read/write`). Super: `/api/tenants/:tenantId/settings`. Create tenant + seed crean el row.
 
 ---
 
@@ -601,6 +621,7 @@ API: Member `POST|GET /api/me/reservations`; Staff `POST|GET /api/members/:membe
 | `20260725150000_sessions` | enum `SessionStatus` + tabla `sessions` |
 | `20260725180000_reservations_credit` | enums reserva + tabla `reservations` |
 | `20260726140000_session_recurrence_rules` | enum `Weekday`, reglas semanales + vínculo desde `sessions` |
+| `20260726180000_tenant_settings_cancel_reservation` | `tenant_settings` + backfill horas cancelación |
 
 Comandos:
 

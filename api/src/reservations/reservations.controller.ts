@@ -8,6 +8,7 @@ import {
   Param,
   ParseEnumPipe,
   ParseUUIDPipe,
+  Patch,
   Post,
   Query,
 } from '@nestjs/common';
@@ -19,14 +20,17 @@ import { toAuditActor } from '../audit/to-audit-actor';
 import { RequirePermission } from '../roles/decorators/require-permission.decorator';
 import { CurrentTenant } from '../tenant/decorators/current-tenant.decorator';
 import { RequireTenantAuth } from '../tenant/decorators/require-tenant-auth.decorator';
-import { CreateReservationDto } from './dto/reservation.dto';
+import {
+  CreateReservationDto,
+  UpdateReservationStatusDto,
+} from './dto/reservation.dto';
 import { ReservationsService } from './reservations.service';
 import { ReservationDetail } from './reservations.types';
 
 /**
  * Reservas del gym (staff) y propias (afiliado).
  *
- * @remarks CU-RES-001 / CU-RES-002. Staff: `reservations.write`. Member: JWT propio.
+ * @remarks CU-RES-001 / CU-RES-002 / CU-RES-003. Staff: `reservations.write`.
  */
 @Controller()
 @RequireTenantAuth()
@@ -66,6 +70,25 @@ export class ReservationsController {
     });
   }
 
+  @Patch('me/reservations/:reservationId/status')
+  cancelMine(
+    @CurrentTenant() tenantId: string,
+    @CurrentUser() user: AuthUser,
+    @Param('reservationId', ParseUUIDPipe) reservationId: string,
+    @Body() dto: UpdateReservationStatusDto,
+  ): Promise<ReservationDetail> {
+    if (user.profileType !== 'MEMBER') {
+      throw new ForbiddenException('Member profile required');
+    }
+    return this.reservationsService.cancel(
+      tenantId,
+      reservationId,
+      dto,
+      this.memberActor(user),
+      user.userId,
+    );
+  }
+
   @Post('members/:memberId/reservations')
   @HttpCode(HttpStatus.CREATED)
   @RequirePermission('reservations.write')
@@ -103,6 +126,22 @@ export class ReservationsController {
     @Param('reservationId', ParseUUIDPipe) reservationId: string,
   ): Promise<ReservationDetail> {
     return this.reservationsService.findOne(tenantId, reservationId);
+  }
+
+  @Patch('reservations/:reservationId/status')
+  @RequirePermission('reservations.write')
+  cancel(
+    @CurrentTenant() tenantId: string,
+    @CurrentUser() user: AuthUser,
+    @Param('reservationId', ParseUUIDPipe) reservationId: string,
+    @Body() dto: UpdateReservationStatusDto,
+  ): Promise<ReservationDetail> {
+    return this.reservationsService.cancel(
+      tenantId,
+      reservationId,
+      dto,
+      toAuditActor(user),
+    );
   }
 
   private memberActor(user: AuthUser): AuditActor {
