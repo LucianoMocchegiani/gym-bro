@@ -551,7 +551,25 @@ Movimiento de caja del día (CU-PAG-002 / RN-PAG-007).
 | `concept` | `CashMovementConcept` | `PACK_CONTRACT` \| `DROP_IN` |
 | `created_at` | timestamptz | |
 
-API: Staff `GET /api/cash-register/day?date=YYYY-MM-DD` (`cashier.operate`); Super `/api/tenants/:tid/cash-register/day`. Arqueo diferido.
+API: Staff `GET /api/cash-register/day?date=YYYY-MM-DD`, `POST /api/cash-register/day/reconcile` (`cashier.operate`); Super `/api/tenants/:tid/cash-register/...`.
+
+### 4.15c `cash_reconciliations`
+
+Arqueo de caja del día (CU-PAG-003 / RN-PAG-007).
+
+| Columna | Tipo | Notas |
+|---------|------|--------|
+| `id` | uuid PK | |
+| `tenant_id` | uuid FK | CASCADE |
+| `business_date` | date | día BA |
+| `expected_amount` | int | suma ingresos CASH al momento del arqueo |
+| `declared_amount` | int | contado por staff (≥ 0) |
+| `difference` | int | declarado − esperado |
+| `reconciled_by_staff_id` | uuid FK nullable | SET NULL |
+| `note` | text nullable | |
+| `created_at` | timestamptz | |
+
+**Unique:** `(tenant_id, business_date)`. No bloquea cobros posteriores.
 
 ### 4.16 `contracts`
 
@@ -686,6 +704,7 @@ API: Member `POST|GET /api/me/waitlist`, `PATCH /api/me/waitlist/:id/status`; St
 | `20260726200000_allow_late_session_entry` | `allow_late_session_entry` en `tenant_settings` |
 | `20260726210000_reservation_drop_in` | `DROP_IN` + `drop_in_price` + `reservations.payment_id` nullable FKs crédito |
 | `20260726220000_cash_movements` | enums caja + tabla `cash_movements` |
+| `20260726230000_cash_reconciliations` | tabla `cash_reconciliations` (arqueo 1/día) |
 
 Comandos:
 

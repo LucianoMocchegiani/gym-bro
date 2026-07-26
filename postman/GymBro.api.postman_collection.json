@@ -1800,7 +1800,7 @@
     },
     {
       "name": "Cash register",
-      "description": "CU-PAG-002/003 parcial. GET /cash-register/day (cashier.operate). Movimientos solo de pagos CASH (contrato o drop-in). Día en America/Argentina/Buenos_Aires. Sin arqueo.",
+      "description": "CU-PAG-002/003. GET /cash-register/day + POST /cash-register/day/reconcile (cashier.operate). Movimientos CASH. Arqueo 1 por día; no bloquea cobros. Día en America/Argentina/Buenos_Aires.",
       "item": [
         {
           "name": "Staff GET cash day (today)",
@@ -1814,7 +1814,8 @@
                   "const body = pm.response.json();",
                   "pm.test('timezone', () => pm.expect(body.timezone).to.eql('America/Argentina/Buenos_Aires'));",
                   "pm.test('totals', () => pm.expect(body.totals).to.have.keys('income', 'movementCount'));",
-                  "pm.test('movements', () => pm.expect(body.movements).to.be.an('array'));"
+                  "pm.test('movements', () => pm.expect(body.movements).to.be.an('array'));",
+                  "pm.test('reconciliation key', () => pm.expect(body).to.have.property('reconciliation'));"
                 ]
               }
             }
@@ -1836,6 +1837,35 @@
               "path": ["api", "cash-register", "day"],
               "query": [{ "key": "date", "value": "2026-07-26" }]
             }
+          }
+        },
+        {
+          "name": "Staff POST reconcile cash day",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 201 or 409', () => pm.expect([201, 409]).to.include(pm.response.code));",
+                  "if (pm.response.code === 201) {",
+                  "  const body = pm.response.json();",
+                  "  pm.test('has reconciliation', () => pm.expect(body.reconciliation).to.be.an('object'));",
+                  "  pm.test('difference', () => pm.expect(body.reconciliation.difference).to.eql(body.reconciliation.declaredAmount - body.reconciliation.expectedAmount));",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"declaredAmount\": 7500,\n  \"note\": \"Faltante de prueba\"\n}"
+            },
+            "url": "{{baseUrl}}/api/cash-register/day/reconcile",
+            "description": "Omití date para hoy (BA). Si ya arqueado → 409. declaredAmount puede diferir del esperado."
           }
         }
       ]

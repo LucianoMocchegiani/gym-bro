@@ -65,4 +65,5 @@ export const AUDIT_ACTIONS = {
   waitlistLeave: 'waitlist.leave',
   waitlistPromote: 'waitlist.promote',
   tenantSettingsUpdate: 'tenant.settings.update',
+  cashReconcile: 'cash.reconcile',
 } as const;

@@ -143,6 +143,7 @@ model Tenant {
   waitlistEntries WaitlistEntry[]
   settings        TenantSettings?
   cashMovements   CashMovement[]
+  cashReconciliations CashReconciliation[]
   auditEvents     AuditEvent[]
 
   @@map("tenants")
@@ -220,6 +221,7 @@ model StaffUser {
   instructedSessions        Session[]               @relation("SessionInstructor")
   instructedRecurrenceRules SessionRecurrenceRule[] @relation("RecurrenceInstructor")
   cashMovementsRecorded     CashMovement[]          @relation("CashMovementRecorder")
+  cashReconciliations       CashReconciliation[]    @relation("CashReconciliationStaff")
 
   @@unique([tenantId, email])
   @@index([tenantId])
@@ -610,7 +612,7 @@ model WaitlistEntry {
 /// Movimiento de caja del día (CU-PAG-002 / RN-PAG-007).
 ///
 /// @remarks Solo se crea para pagos `CASH` (STUB no entra). `businessDate` es
-/// el día calendario en `America/Argentina/Buenos_Aires`. Arqueo diferido.
+/// el día calendario en `America/Argentina/Buenos_Aires`.
 model CashMovement {
   id                 String              @id @default(uuid()) @db.Uuid
   tenantId           String              @map("tenant_id") @db.Uuid
@@ -631,6 +633,29 @@ model CashMovement {
   @@index([tenantId, businessDate])
   @@index([memberId])
   @@map("cash_movements")
+}
+
+/// Arqueo de caja del día (CU-PAG-003 / RN-PAG-007).
+///
+/// @remarks Un arqueo por (`tenant_id`, `business_date`). No bloquea cobros
+/// posteriores. `difference` = declarado − esperado.
+model CashReconciliation {
+  id                String   @id @default(uuid()) @db.Uuid
+  tenantId          String   @map("tenant_id") @db.Uuid
+  businessDate      DateTime @map("business_date") @db.Date
+  expectedAmount    Int      @map("expected_amount")
+  declaredAmount    Int      @map("declared_amount")
+  difference        Int
+  reconciledByStaffId String? @map("reconciled_by_staff_id") @db.Uuid
+  note              String?
+  createdAt         DateTime @default(now()) @map("created_at")
+
+  tenant            Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  reconciledByStaff StaffUser? @relation("CashReconciliationStaff", fields: [reconciledByStaffId], references: [id], onDelete: SetNull)
+
+  @@unique([tenantId, businessDate])
+  @@index([tenantId, businessDate])
+  @@map("cash_reconciliations")
 }
 
 /// Evento de auditoría append-only (RN-ROL-008 / CU-ROL-007).

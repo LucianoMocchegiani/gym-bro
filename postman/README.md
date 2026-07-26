@@ -42,7 +42,7 @@ Carpeta **Waitlist**: Member/Staff join cuando sesión llena; leave; promoción 
 
 Carpeta **Tenant settings**: `GET|PATCH /tenant-settings` (`tenant.settings.*`). `reservationCancellationHours`, `waitlistMode`, `allowLateSessionEntry`.
 
-Carpeta **Cash register**: `GET /cash-register/day?date=YYYY-MM-DD` (`cashier.operate`). Solo movimientos de pagos `CASH` (contrato / drop-in). Día en timezone BA.
+Carpeta **Cash register**: `GET /cash-register/day` + `POST /cash-register/day/reconcile` (`cashier.operate`). Movimientos CASH; arqueo 1/día (declarado ≥ 0); día en timezone BA.
 
 Carpeta **Services**: Staff `catalog.write`. Tipos `ACCESO_LIBRE` y `POR_SESIONES`; `dropInPrice` (ARS) habilita drop-in; desactivar con `active: false`.
 

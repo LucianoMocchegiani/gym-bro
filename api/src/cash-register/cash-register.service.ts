@@ -1,26 +1,40 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  Injectable,
+} from '@nestjs/common';
 import {
   CashMovementConcept,
   CashMovementKind,
   PaymentMethod,
   Prisma,
 } from '@prisma/client';
+import { AUDIT_ACTIONS, AuditActor } from '../audit/audit.types';
+import { AuditService } from '../audit/audit.service';
 import { PrismaService } from '../prisma/prisma.service';
-import { CashDayDetail, CashMovementDetail } from './cash-register.types';
+import { ReconcileCashDayDto } from './dto/reconcile-cash-day.dto';
+import {
+  CashDayDetail,
+  CashMovementDetail,
+  CashReconciliationDetail,
+} from './cash-register.types';
 
 export const CASH_REGISTER_TIMEZONE = 'America/Argentina/Buenos_Aires' as const;
 
 type Tx = Prisma.TransactionClient;
 
 /**
- * Caja del día y movimientos por cobros CASH (CU-PAG-002 / RN-PAG-007).
+ * Caja del día, movimientos CASH y arqueo (CU-PAG-002 / CU-PAG-003 / RN-PAG-007).
  *
  * @remarks STUB no genera movimiento. Día operativo en timezone BA.
- * Arqueo diferido (CU-PAG-003 parcial).
+ * Un arqueo por día; no bloquea cobros posteriores.
  */
 @Injectable()
 export class CashRegisterService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly audit: AuditService,
+  ) {}
 
   /**
    * Si el pago es CASH, registra ingreso de caja en la misma transacción.
@@ -69,14 +83,24 @@ export class CashRegisterService {
       ? this.parseBusinessDate(dateYmd)
       : this.businessDate(new Date());
 
-    const rows = await this.prisma.cashMovement.findMany({
-      where: { tenantId, businessDate },
-      include: {
-        member: { select: { id: true, name: true } },
-        recordedByStaff: { select: { id: true, name: true } },
-      },
-      orderBy: { createdAt: 'asc' },
-    });
+    const [rows, reconciliation] = await Promise.all([
+      this.prisma.cashMovement.findMany({
+        where: { tenantId, businessDate },
+        include: {
+          member: { select: { id: true, name: true } },
+          recordedByStaff: { select: { id: true, name: true } },
+        },
+        orderBy: { createdAt: 'asc' },
+      }),
+      this.prisma.cashReconciliation.findUnique({
+        where: {
+          tenantId_businessDate: { tenantId, businessDate },
+        },
+        include: {
+          reconciledByStaff: { select: { id: true, name: true } },
+        },
+      }),
+    ]);
 
     const movements = rows.map((row) => this.toMovementDetail(row));
     const income = movements.reduce((sum, m) => sum + m.amount, 0);
@@ -90,7 +114,95 @@ export class CashRegisterService {
         movementCount: movements.length,
       },
       movements,
+      reconciliation: reconciliation
+        ? this.toReconciliationDetail(reconciliation)
+        : null,
     };
+  }
+
+  /**
+   * Registra el arqueo del día (efectivo contado vs esperado).
+   *
+   * @throws {BadRequestException} Día futuro o declarado inválido.
+   * @throws {ConflictException} Ya existe arqueo para ese día.
+   */
+  async reconcileDay(
+    tenantId: string,
+    dto: ReconcileCashDayDto,
+    actor: AuditActor,
+  ): Promise<CashDayDetail> {
+    const businessDate = dto.date
+      ? this.parseBusinessDate(dto.date)
+      : this.businessDate(new Date());
+    this.assertNotFutureBusinessDate(businessDate);
+
+    const existing = await this.prisma.cashReconciliation.findUnique({
+      where: {
+        tenantId_businessDate: { tenantId, businessDate },
+      },
+      select: { id: true },
+    });
+    if (existing) {
+      throw new ConflictException(
+        'Cash day already reconciled for this business date',
+      );
+    }
+
+    const incomeAgg = await this.prisma.cashMovement.aggregate({
+      where: { tenantId, businessDate },
+      _sum: { amount: true },
+    });
+    const expectedAmount = incomeAgg._sum.amount ?? 0;
+    const declaredAmount = dto.declaredAmount;
+    const difference = declaredAmount - expectedAmount;
+    const note = dto.note?.trim() || null;
+    const reconciledByStaffId =
+      actor.profileType === 'STAFF' ? actor.userId : null;
+
+    try {
+      const created = await this.prisma.cashReconciliation.create({
+        data: {
+          tenantId,
+          businessDate,
+          expectedAmount,
+          declaredAmount,
+          difference,
+          reconciledByStaffId,
+          note,
+        },
+        include: {
+          reconciledByStaff: { select: { id: true, name: true } },
+        },
+      });
+
+      await this.audit.record({
+        tenantId,
+        actor,
+        action: AUDIT_ACTIONS.cashReconcile,
+        entityType: 'cash_reconciliation',
+        entityId: created.id,
+        before: null,
+        after: {
+          businessDate: this.formatBusinessDate(businessDate),
+          expectedAmount,
+          declaredAmount,
+          difference,
+          note,
+        },
+      });
+    } catch (error: unknown) {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2002'
+      ) {
+        throw new ConflictException(
+          'Cash day already reconciled for this business date',
+        );
+      }
+      throw error;
+    }
+
+    return this.getDay(tenantId, this.formatBusinessDate(businessDate));
   }
 
   /**
@@ -105,6 +217,13 @@ export class CashRegisterService {
     });
     const ymd = formatter.format(at);
     return this.parseBusinessDate(ymd);
+  }
+
+  private assertNotFutureBusinessDate(businessDate: Date): void {
+    const today = this.businessDate(new Date());
+    if (businessDate.getTime() > today.getTime()) {
+      throw new BadRequestException('Cannot reconcile a future business date');
+    }
   }
 
   private parseBusinessDate(ymd: string): Date {
@@ -159,6 +278,32 @@ export class CashRegisterService {
       amount: row.amount,
       kind: row.kind,
       concept: row.concept,
+      createdAt: row.createdAt,
+    };
+  }
+
+  private toReconciliationDetail(row: {
+    id: string;
+    tenantId: string;
+    businessDate: Date;
+    expectedAmount: number;
+    declaredAmount: number;
+    difference: number;
+    reconciledByStaffId: string | null;
+    note: string | null;
+    createdAt: Date;
+    reconciledByStaff: { id: string; name: string | null } | null;
+  }): CashReconciliationDetail {
+    return {
+      id: row.id,
+      tenantId: row.tenantId,
+      businessDate: this.formatBusinessDate(row.businessDate),
+      expectedAmount: row.expectedAmount,
+      declaredAmount: row.declaredAmount,
+      difference: row.difference,
+      reconciledByStaffId: row.reconciledByStaffId,
+      reconciledByStaffName: row.reconciledByStaff?.name ?? null,
+      note: row.note,
       createdAt: row.createdAt,
     };
   }

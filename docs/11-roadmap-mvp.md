@@ -112,8 +112,9 @@
   - `method=CASH` en contrato/drop-in → `cash_movements` (STUB no entra)
 - [ ] Comprobante interno
 - [x] Caja del día
-  - `GET /cash-register/day` (timezone BA); sin arqueo
-- [ ] Arqueo
+  - `GET /cash-register/day` (timezone BA)
+- [x] Arqueo
+  - `POST /cash-register/day/reconcile`; 1 por día; no bloquea cobros
 - [ ] Solicitud devolución (afiliado)
 - [ ] Ejecutar devolución (staff + flag)
 - [ ] Reembolso por doble cobro
@@ -224,7 +225,7 @@ E11 → E12
 
 ## Próximo paso
 
-Elegir **una épica** (recomendado: **arqueo**, **comprobante**, o **cuenta MP**) y bajar solo esa a subtareas del día / PRs.
+Elegir **una épica** (recomendado: **comprobante interno**, **cuenta MP**, o devoluciones) y bajar solo esa a subtareas del día / PRs.
 
 ---
 
