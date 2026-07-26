@@ -46,6 +46,7 @@
 | Ítem | Notas |
 |------|--------|
 | Recurrencias avanzadas (excepciones, feriados, “solo este lunes”) | MVP: regla simple tipo calendario |
+| Lista de espera modos 2/3 (confirma afiliado + timeout job; confirma staff) + notif E6 | MVP: cola + liberación AUTO_ASSIGN con crédito |
 | Políticas finas de no-show (multas, bans) | Si no se cubren en CU del MVP |
 | Multi-sede completa en UX | Modelo S2 desde día 1; UI multi-sede después |
 

@@ -15,6 +15,7 @@ import { StaffModule } from './staff/staff.module';
 import { TenantModule } from './tenant/tenant.module';
 import { TenantSettingsModule } from './tenant-settings/tenant-settings.module';
 import { TenantsModule } from './tenants/tenants.module';
+import { WaitlistModule } from './waitlist/waitlist.module';
 
 /**
  * Módulo raíz del monolito modular GymBro.
@@ -36,6 +37,7 @@ import { TenantsModule } from './tenants/tenants.module';
     ContractsModule,
     SessionsModule,
     ReservationsModule,
+    WaitlistModule,
     TenantsModule,
     AuditModule,
     HealthModule,

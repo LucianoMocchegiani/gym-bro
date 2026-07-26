@@ -7,6 +7,7 @@ import { Prisma, ServiceType, Session, SessionStatus } from '@prisma/client';
 import { AUDIT_ACTIONS, AuditActor } from '../audit/audit.types';
 import { AuditService } from '../audit/audit.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { WaitlistService } from '../waitlist/waitlist.service';
 import {
   CreateSessionDto,
   ExpandSessionCapacityDto,
@@ -23,13 +24,14 @@ type SessionWithRelations = Session & {
 /**
  * Sesiones puntuales de calendario (CU-SER-003 / RN-SER-010..013).
  *
- * @remarks Ampliar cupo: CU-SER-005. Liberación a lista de espera (CU-RES-005) aún no implementada.
+ * @remarks Ampliar cupo: CU-SER-005. Liberación lista de espera: CU-RES-005 (AUTO_ASSIGN).
  */
 @Injectable()
 export class SessionsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
+    private readonly waitlist: WaitlistService,
   ) {}
 
   /**
@@ -264,7 +266,12 @@ export class SessionsService {
     });
     const detail = this.toDetail(session);
 
-    this.releaseWaitlistAfterCapacityExpand(tenantId, sessionId, slotsOpened);
+    await this.waitlist.tryPromoteForSession(
+      tenantId,
+      sessionId,
+      slotsOpened,
+      actor,
+    );
 
     await this.audit.record({
       tenantId,
@@ -276,22 +283,6 @@ export class SessionsService {
       after: this.auditSnapshot(detail),
     });
     return detail;
-  }
-
-  /**
-   * Hook para liberar cupos hacia la lista de espera (CU-RES-005 / RN-RES-005).
-   *
-   * @remarks No-op en esta entrega: la cola aún no existe en el roadmap.
-   * Cuando exista, procesará hasta `slotsOpened` candidatos según el modo del gym.
-   */
-  private releaseWaitlistAfterCapacityExpand(
-    tenantId: string,
-    sessionId: string,
-    slotsOpened: number,
-  ): void {
-    void tenantId;
-    void sessionId;
-    void slotsOpened;
   }
 
   private sessionInclude() {

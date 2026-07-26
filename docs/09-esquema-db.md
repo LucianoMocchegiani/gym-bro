@@ -43,6 +43,9 @@ erDiagram
   branches ||--o{ session_recurrence_rules : hosts
   staff_users ||--o{ session_recurrence_rules : instructs
   session_recurrence_rules ||--o{ sessions : generates
+  tenants ||--o{ waitlist_entries : queues
+  sessions ||--o{ waitlist_entries : fills
+  members ||--o{ waitlist_entries : waits
   tenants ||--o| tenant_settings : configures
   tenants ||--o{ reservations : has
   members ||--o{ reservations : books
@@ -69,6 +72,17 @@ erDiagram
   tenant_settings {
     uuid tenant_id PK,FK
     int reservation_cancellation_hours
+    enum waitlist_mode
+    timestamptz created_at
+    timestamptz updated_at
+  }
+
+  waitlist_entries {
+    uuid id PK
+    uuid tenant_id FK
+    uuid session_id FK
+    uuid member_id FK
+    enum status
     timestamptz created_at
     timestamptz updated_at
   }
@@ -257,6 +271,8 @@ erDiagram
 | `Weekday` | `MONDAY` … `SUNDAY` | Días ISO de recurrencia semanal |
 | `ReservationStatus` | `CONFIRMED`, `CANCELLED` | Estado de reserva |
 | `ReservationCoverage` | `CREDIT` | Medio (drop-in llega después) |
+| `WaitlistMode` | `AUTO_ASSIGN`, `MEMBER_CONFIRM`, `STAFF_CONFIRM` | Liberación cola (RN-RES-005) |
+| `WaitlistStatus` | `WAITING`, `PROMOTED`, `LEFT` | Estado ítem de cola |
 
 ---
 
@@ -598,9 +614,25 @@ Config operativa 1:1 con tenant (RN-TEN-005).
 |---------|------|--------|
 | `tenant_id` | uuid PK FK → `tenants` | CASCADE |
 | `reservation_cancellation_hours` | int | default 6; rango API 0–720 |
+| `waitlist_mode` | `WaitlistMode` | default `AUTO_ASSIGN`; liberación MVP solo AUTO |
 | `created_at` / `updated_at` | timestamptz | |
 
 API Staff: `GET|PATCH /api/tenant-settings` (`tenant.settings.read/write`). Super: `/api/tenants/:tenantId/settings`. Create tenant + seed crean el row.
+
+### 4.22 `waitlist_entries`
+
+Cola FIFO de sesión (CU-RES-004 / RN-RES-004).
+
+| Columna | Tipo | Notas |
+|---------|------|--------|
+| `id` | uuid PK | |
+| `tenant_id` / `session_id` / `member_id` | uuid FK | CASCADE |
+| `status` | `WaitlistStatus` | `WAITING` / `PROMOTED` / `LEFT` |
+| `created_at` / `updated_at` | timestamptz | orden FIFO |
+
+Unique parcial: un `WAITING` por (`session_id`, `member_id`).
+
+API: Member `POST|GET /api/me/waitlist`, `PATCH /api/me/waitlist/:id/status`; Staff `POST|GET /api/members/:id/waitlist`, `GET /api/sessions/:id/waitlist`, `PATCH /api/waitlist/:id/status` (`reservations.write`). Liberación AUTO al cancelar reserva o ampliar cupo.
 
 ---
 
@@ -622,6 +654,7 @@ API Staff: `GET|PATCH /api/tenant-settings` (`tenant.settings.read/write`). Supe
 | `20260725180000_reservations_credit` | enums reserva + tabla `reservations` |
 | `20260726140000_session_recurrence_rules` | enum `Weekday`, reglas semanales + vínculo desde `sessions` |
 | `20260726180000_tenant_settings_cancel_reservation` | `tenant_settings` + backfill horas cancelación |
+| `20260726190000_waitlist_entries` | enums waitlist + `waitlist_entries` + `waitlist_mode` en settings |
 
 Comandos:
 

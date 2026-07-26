@@ -38,7 +38,9 @@ Carpeta **Sessions**: Staff `sessions.write`. Servicio `POR_SESIONES` + `instruc
 
 Carpeta **Reservations**: Member `POST|GET /me/reservations` + `PATCH .../status` (cancelar en ventana). Staff `reservations.write` crea/cancela (staff puede fuera de ventana).
 
-Carpeta **Tenant settings**: `GET|PATCH /tenant-settings` (`tenant.settings.*`). `reservationCancellationHours` default 6.
+Carpeta **Waitlist**: Member/Staff join cuando sesión llena; leave; promoción AUTO al cancelar/ampliar cupo.
+
+Carpeta **Tenant settings**: `GET|PATCH /tenant-settings` (`tenant.settings.*`). `reservationCancellationHours` + `waitlistMode`.
 
 Carpeta **Services**: Staff `catalog.write`. Tipos `ACCESO_LIBRE` y `POR_SESIONES`; desactivar con `active: false`.
 

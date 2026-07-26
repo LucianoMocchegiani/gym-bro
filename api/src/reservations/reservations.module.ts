@@ -3,6 +3,7 @@ import { AuditModule } from '../audit/audit.module';
 import { AuthModule } from '../auth/auth.module';
 import { RolesModule } from '../roles/roles.module';
 import { TenantSettingsModule } from '../tenant-settings/tenant-settings.module';
+import { WaitlistModule } from '../waitlist/waitlist.module';
 import { ReservationsController } from './reservations.controller';
 import { ReservationsService } from './reservations.service';
 import { SuperReservationsController } from './super-reservations.controller';
@@ -11,7 +12,13 @@ import { SuperReservationsController } from './super-reservations.controller';
  * Reservas con crédito y cancelación con ventana (E4).
  */
 @Module({
-  imports: [AuthModule, RolesModule, AuditModule, TenantSettingsModule],
+  imports: [
+    AuthModule,
+    RolesModule,
+    AuditModule,
+    TenantSettingsModule,
+    WaitlistModule,
+  ],
   controllers: [ReservationsController, SuperReservationsController],
   providers: [ReservationsService],
   exports: [ReservationsService],

@@ -3,7 +3,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
+import { Prisma, WaitlistMode } from '@prisma/client';
 import { AUDIT_ACTIONS, AuditActor } from '../audit/audit.types';
 import { AuditService } from '../audit/audit.service';
 import { PrismaService } from '../prisma/prisma.service';
@@ -11,11 +11,12 @@ import { UpdateTenantSettingsDto } from './dto/tenant-settings.dto';
 import { TenantSettingsDetail } from './tenant-settings.types';
 
 const DEFAULT_CANCELLATION_HOURS = 6;
+const DEFAULT_WAITLIST_MODE = WaitlistMode.AUTO_ASSIGN;
 
 /**
- * Configuración operativa del gym (RN-TEN-005).
+ * Configuración operativa del gym (RN-TEN-005 / RN-TEN-006).
  *
- * @remarks MVP: horas mínimas para que el afiliado cancele una reserva.
+ * @remarks Horas de cancelación + modo lista de espera.
  * Si el row no existe (tenants legacy), se crea con defaults.
  */
 @Injectable()
@@ -44,8 +45,13 @@ export class TenantSettingsService {
     dto: UpdateTenantSettingsDto,
     actor: AuditActor,
   ): Promise<TenantSettingsDetail> {
-    if (dto.reservationCancellationHours === undefined) {
-      throw new BadRequestException('Provide reservationCancellationHours');
+    if (
+      dto.reservationCancellationHours === undefined &&
+      dto.waitlistMode === undefined
+    ) {
+      throw new BadRequestException(
+        'Provide reservationCancellationHours and/or waitlistMode',
+      );
     }
     await this.assertTenantExists(tenantId);
     const before = await this.getOrCreate(tenantId);
@@ -53,7 +59,14 @@ export class TenantSettingsService {
     const settings = await this.prisma.tenantSettings.update({
       where: { tenantId },
       data: {
-        reservationCancellationHours: dto.reservationCancellationHours,
+        ...(dto.reservationCancellationHours !== undefined
+          ? {
+              reservationCancellationHours: dto.reservationCancellationHours,
+            }
+          : {}),
+        ...(dto.waitlistMode !== undefined
+          ? { waitlistMode: dto.waitlistMode }
+          : {}),
       },
     });
     const detail = this.toDetail(settings);
@@ -77,6 +90,14 @@ export class TenantSettingsService {
     return settings.reservationCancellationHours;
   }
 
+  /**
+   * Modo de lista de espera efectivo (default AUTO_ASSIGN).
+   */
+  async getWaitlistMode(tenantId: string): Promise<WaitlistMode> {
+    const settings = await this.getOrCreate(tenantId);
+    return settings.waitlistMode;
+  }
+
   private async getOrCreate(tenantId: string) {
     const existing = await this.prisma.tenantSettings.findUnique({
       where: { tenantId },
@@ -89,6 +110,7 @@ export class TenantSettingsService {
         data: {
           tenantId,
           reservationCancellationHours: DEFAULT_CANCELLATION_HOURS,
+          waitlistMode: DEFAULT_WAITLIST_MODE,
         },
       });
     } catch (error: unknown) {
@@ -120,12 +142,14 @@ export class TenantSettingsService {
   private toDetail(row: {
     tenantId: string;
     reservationCancellationHours: number;
+    waitlistMode: WaitlistMode;
     createdAt: Date;
     updatedAt: Date;
   }): TenantSettingsDetail {
     return {
       tenantId: row.tenantId,
       reservationCancellationHours: row.reservationCancellationHours,
+      waitlistMode: row.waitlistMode,
       createdAt: row.createdAt,
       updatedAt: row.updatedAt,
     };
@@ -134,6 +158,7 @@ export class TenantSettingsService {
   private auditSnapshot(detail: TenantSettingsDetail): Prisma.InputJsonValue {
     return {
       reservationCancellationHours: detail.reservationCancellationHours,
+      waitlistMode: detail.waitlistMode,
     };
   }
 }

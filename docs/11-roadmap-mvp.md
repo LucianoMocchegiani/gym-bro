@@ -93,10 +93,11 @@
 - [ ] Reservar drop-in (pago)
 - [x] Reserva en nombre del afiliado (staff)
 - [x] Cancelar reserva (ventana del gym)
-- [ ] Lista de espera (3 modos)
+- [x] Lista de espera (3 modos)
+  - join/leave + liberación **AUTO_ASSIGN** (crédito); MEMBER_CONFIRM / STAFF_CONFIRM config-only (liberación diferida)
 - [ ] Ingreso tardío a sesión (si config ON)
-- [ ] Config: horas cancelación, modo lista espera
-  - horas de cancelación: cubierto en `tenant_settings` (falta modo lista de espera)
+- [x] Config: horas cancelación, modo lista espera
+  - horas + `waitlistMode` en `tenant_settings`; flujos confirmación modos 2/3 diferidos
 
 ---
 
@@ -219,7 +220,7 @@ E11 → E12
 
 ## Próximo paso
 
-Elegir **una épica** (recomendado: **lista de espera**, **drop-in**, o **modo lista espera en config**) y bajar solo esa a subtareas del día / PRs.
+Elegir **una épica** (recomendado: **drop-in**, **ingreso tardío**, o empezar **E5 pagos**) y bajar solo esa a subtareas del día / PRs.
 
 ---
 

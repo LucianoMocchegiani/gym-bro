@@ -61,5 +61,8 @@ export const AUDIT_ACTIONS = {
   recurrenceRuleDeactivate: 'session.recurrence.deactivate',
   reservationCreate: 'reservation.create',
   reservationCancel: 'reservation.cancel',
+  waitlistJoin: 'waitlist.join',
+  waitlistLeave: 'waitlist.leave',
+  waitlistPromote: 'waitlist.promote',
   tenantSettingsUpdate: 'tenant.settings.update',
 } as const;

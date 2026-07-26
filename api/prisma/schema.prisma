@@ -92,6 +92,20 @@ enum ReservationCoverage {
   CREDIT
 }
 
+/// Modo de liberación de lista de espera (RN-RES-005 / RN-TEN-006).
+enum WaitlistMode {
+  AUTO_ASSIGN
+  MEMBER_CONFIRM
+  STAFF_CONFIRM
+}
+
+/// Estado de un ítem en cola de espera (CU-RES-004).
+enum WaitlistStatus {
+  WAITING
+  PROMOTED
+  LEFT
+}
+
 /// Gimnasio / estudio = tenant SaaS.
 ///
 /// @remarks Aislamiento row-level: el resto de tablas de negocio
@@ -114,21 +128,23 @@ model Tenant {
   sessions        Session[]
   recurrenceRules SessionRecurrenceRule[]
   reservations    Reservation[]
+  waitlistEntries WaitlistEntry[]
   settings        TenantSettings?
   auditEvents     AuditEvent[]
 
   @@map("tenants")
 }
 
-/// Configuración operativa del gym (RN-TEN-005).
+/// Configuración operativa del gym (RN-TEN-005 / RN-TEN-006).
 ///
-/// @remarks 1:1 con tenant. MVP: horas de cancelación de reserva.
-/// Modo lista de espera y otras policies se suman después.
+/// @remarks 1:1 con tenant. Horas de cancelación + modo lista de espera.
+/// Liberación automática solo implementada para AUTO_ASSIGN (crédito).
 model TenantSettings {
-  tenantId                       String   @id @map("tenant_id") @db.Uuid
-  reservationCancellationHours   Int      @default(6) @map("reservation_cancellation_hours")
-  createdAt                      DateTime @default(now()) @map("created_at")
-  updatedAt                      DateTime @updatedAt @map("updated_at")
+  tenantId                     String       @id @map("tenant_id") @db.Uuid
+  reservationCancellationHours Int          @default(6) @map("reservation_cancellation_hours")
+  waitlistMode                 WaitlistMode @default(AUTO_ASSIGN) @map("waitlist_mode")
+  createdAt                    DateTime     @default(now()) @map("created_at")
+  updatedAt                    DateTime     @updatedAt @map("updated_at")
 
   tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
@@ -214,6 +230,7 @@ model Member {
   payments      Payment[]
   contracts     Contract[]
   reservations  Reservation[]
+  waitlistEntries WaitlistEntry[]
 
   @@unique([tenantId, email])
   @@unique([tenantId, document])
@@ -430,6 +447,7 @@ model Session {
   instructor     StaffUser?             @relation("SessionInstructor", fields: [instructorId], references: [id], onDelete: SetNull)
   recurrenceRule SessionRecurrenceRule? @relation(fields: [recurrenceRuleId], references: [id], onDelete: SetNull)
   reservations   Reservation[]
+  waitlistEntries WaitlistEntry[]
 
   @@unique([recurrenceRuleId, startsAt])
   @@index([tenantId])
@@ -539,6 +557,29 @@ model Reservation {
   @@index([contractId])
   @@index([creditBalanceId])
   @@map("reservations")
+}
+
+/// Ítem de lista de espera de una sesión (CU-RES-004 / RN-RES-004).
+///
+/// @remarks FIFO por `createdAt`. Unique parcial: un WAITING por (sesión, afiliado).
+/// Liberación AUTO_ASSIGN (crédito) en CU-RES-005; otros modos diferidos.
+model WaitlistEntry {
+  id        String         @id @default(uuid()) @db.Uuid
+  tenantId  String         @map("tenant_id") @db.Uuid
+  sessionId String         @map("session_id") @db.Uuid
+  memberId  String         @map("member_id") @db.Uuid
+  status    WaitlistStatus @default(WAITING)
+  createdAt DateTime       @default(now()) @map("created_at")
+  updatedAt DateTime       @updatedAt @map("updated_at")
+
+  tenant  Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  session Session @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  member  Member  @relation(fields: [memberId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([sessionId, status, createdAt])
+  @@index([memberId])
+  @@map("waitlist_entries")
 }
 
 /// Evento de auditoría append-only (RN-ROL-008 / CU-ROL-007).

@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { AuditModule } from '../audit/audit.module';
 import { AuthModule } from '../auth/auth.module';
 import { RolesModule } from '../roles/roles.module';
+import { WaitlistModule } from '../waitlist/waitlist.module';
 import { RecurrenceRulesController } from './recurrence-rules.controller';
 import { RecurrenceRulesService } from './recurrence-rules.service';
 import { SessionsController } from './sessions.controller';
@@ -13,7 +14,7 @@ import { SuperSessionsController } from './super-sessions.controller';
  * Sesiones puntuales y recurrencia semanal (E4 / CU-SER-003..004).
  */
 @Module({
-  imports: [AuthModule, RolesModule, AuditModule],
+  imports: [AuthModule, RolesModule, AuditModule, WaitlistModule],
   controllers: [
     SessionsController,
     SuperSessionsController,

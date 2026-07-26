@@ -1619,8 +1619,94 @@
       ]
     },
     {
+      "name": "Waitlist",
+      "description": "CU-RES-004/005. Join solo si sesión llena. Liberación AUTO_ASSIGN (crédito) al cancelar reserva o ampliar cupo. Modos MEMBER_CONFIRM/STAFF_CONFIRM: config only.",
+      "item": [
+        {
+          "name": "Staff POST waitlist for member",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 201', () => pm.response.to.have.status(201));",
+                  "const body = pm.response.json();",
+                  "pm.test('WAITING', () => pm.expect(body.status).to.eql('WAITING'));",
+                  "pm.collectionVariables.set('createdWaitlistId', body.id);",
+                  "pm.environment.set('createdWaitlistId', body.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sessionId\": \"{{createdSessionId}}\"\n}"
+            },
+            "url": "{{baseUrl}}/api/members/{{createdMemberId}}/waitlist",
+            "description": "Requiere sesión PUBLISHED futura llena (bookedCount >= capacity)."
+          }
+        },
+        {
+          "name": "Staff GET session waitlist",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/sessions/{{createdSessionId}}/waitlist"
+          }
+        },
+        {
+          "name": "Member POST me waitlist",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sessionId\": \"{{createdSessionId}}\"\n}"
+            },
+            "url": "{{baseUrl}}/api/me/waitlist"
+          }
+        },
+        {
+          "name": "Member GET me waitlist",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/me/waitlist"
+          }
+        },
+        {
+          "name": "Member PATCH leave waitlist",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"LEFT\"\n}"
+            },
+            "url": "{{baseUrl}}/api/me/waitlist/{{createdWaitlistId}}/status"
+          }
+        },
+        {
+          "name": "Staff PATCH leave waitlist",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"LEFT\"\n}"
+            },
+            "url": "{{baseUrl}}/api/waitlist/{{createdWaitlistId}}/status"
+          }
+        }
+      ]
+    },
+    {
       "name": "Tenant settings",
-      "description": "RN-TEN-005. Staff GET|PATCH /tenant-settings (tenant.settings.read/write). reservationCancellationHours default 6 (0–720).",
+      "description": "RN-TEN-005/006. Staff GET|PATCH /tenant-settings. reservationCancellationHours + waitlistMode (AUTO_ASSIGN|MEMBER_CONFIRM|STAFF_CONFIRM).",
       "item": [
         {
           "name": "Staff GET tenant settings",
@@ -1639,7 +1725,8 @@
                 "type": "text/javascript",
                 "exec": [
                   "pm.test('status 200', () => pm.response.to.have.status(200));",
-                  "pm.test('hours', () => pm.expect(pm.response.json().reservationCancellationHours).to.be.a('number'));"
+                  "pm.test('hours', () => pm.expect(pm.response.json().reservationCancellationHours).to.be.a('number'));",
+                  "pm.test('waitlistMode', () => pm.expect(pm.response.json().waitlistMode).to.be.a('string'));"
                 ]
               }
             }
@@ -1649,7 +1736,7 @@
             "header": [{ "key": "Content-Type", "value": "application/json" }],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"reservationCancellationHours\": 6\n}"
+              "raw": "{\n  \"reservationCancellationHours\": 6,\n  \"waitlistMode\": \"AUTO_ASSIGN\"\n}"
             },
             "url": "{{baseUrl}}/api/tenant-settings"
           }

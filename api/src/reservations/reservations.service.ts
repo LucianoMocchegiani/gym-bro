@@ -17,6 +17,7 @@ import { AUDIT_ACTIONS, AuditActor } from '../audit/audit.types';
 import { AuditService } from '../audit/audit.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { TenantSettingsService } from '../tenant-settings/tenant-settings.service';
+import { WaitlistService } from '../waitlist/waitlist.service';
 import {
   CreateReservationDto,
   UpdateReservationStatusDto,
@@ -36,7 +37,7 @@ type ReservationWithRelations = Reservation & {
 /**
  * Reservas con crédito (CU-RES-001 / CU-RES-002 / RN-RES-001) y cancelación (CU-RES-003).
  *
- * @remarks Drop-in y lista de espera quedan fuera. Cancelación: RN-RES-003 / RN-TEN-005.
+ * @remarks Drop-in diferido. Cancelación: RN-RES-003. Liberación waitlist AUTO_ASSIGN al cancelar.
  */
 @Injectable()
 export class ReservationsService {
@@ -44,6 +45,7 @@ export class ReservationsService {
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
     private readonly tenantSettings: TenantSettingsService,
+    private readonly waitlist: WaitlistService,
   ) {}
 
   /**
@@ -327,7 +329,12 @@ export class ReservationsService {
     );
 
     if (cancelledNow) {
-      this.releaseWaitlistAfterCancel(tenantId, before.sessionId);
+      await this.waitlist.tryPromoteForSession(
+        tenantId,
+        before.sessionId,
+        1,
+        actor,
+      );
       await this.audit.record({
         tenantId,
         actor,
@@ -339,19 +346,6 @@ export class ReservationsService {
       });
     }
     return detail;
-  }
-
-  /**
-   * Hook para liberar cupo hacia lista de espera (CU-RES-005).
-   *
-   * @remarks No-op hasta implementar cola.
-   */
-  private releaseWaitlistAfterCancel(
-    tenantId: string,
-    sessionId: string,
-  ): void {
-    void tenantId;
-    void sessionId;
   }
 
   private async pickCreditBalance(

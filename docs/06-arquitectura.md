@@ -260,7 +260,8 @@ Prefijo sugerido: `/api/v1`.
 | Afiliados | Super/Staff CRUD members + PATCH status (`members.deactivate`); estado de cuenta `GET /members/:id/account` / `GET /me/account` |
 | Sesiones | Staff `GET|POST|PATCH /sessions`, `PATCH /sessions/:id/capacity` (ampliar cupo) + `/session-recurrence-rules` (`sessions.write`); Super mirrors bajo `/tenants/:tid/...` |
 | Reservas | Member `/me/reservations` + cancel status; Staff `/members/:id/reservations` + `/reservations/:id/status` (`reservations.write`) |
-| Settings | Staff `GET|PATCH /tenant-settings` (`tenant.settings.*`); Super `/tenants/:tid/settings` |
+| Waitlist | Member `/me/waitlist`; Staff `/members/:id/waitlist`, `/sessions/:id/waitlist` (`reservations.write`); promoción AUTO al liberar cupo |
+| Settings | Staff `GET|PATCH /tenant-settings` (`tenant.settings.*`; horas cancelación + `waitlistMode`); Super `/tenants/:tid/settings` |
 | Catálogo | Super/Staff CRUD services + packs (`catalog.write`; kind inferido; `creditsExpireAt`) |
 | Contrataciones | Staff `POST /members/:id/contracts` (pago stub APPROVED); `PATCH /contracts/:id/status` → `CANCELLED` (pierde derechos, RN-SER-009); Member `GET /me/contracts` |
 | Roles | Super/Staff list-get-create-patch roles; `PUT .../staff/:id/roles` multi-rol |
