@@ -4,7 +4,13 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { ContractStatus, Member, MemberStatus, Prisma } from '@prisma/client';
+import {
+  ContractStatus,
+  Member,
+  MemberStatus,
+  Prisma,
+  ReservationStatus,
+} from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
 import { AUDIT_ACTIONS, AuditActor } from '../audit/audit.types';
 import { AuditService } from '../audit/audit.service';
@@ -111,6 +117,27 @@ export class MembersService {
       },
     });
 
+    const upcomingReservations = await this.prisma.reservation.findMany({
+      where: {
+        tenantId,
+        memberId,
+        status: ReservationStatus.CONFIRMED,
+        session: { startsAt: { gte: new Date() } },
+      },
+      include: {
+        session: {
+          select: {
+            id: true,
+            startsAt: true,
+            endsAt: true,
+            service: { select: { name: true } },
+          },
+        },
+      },
+      orderBy: { session: { startsAt: 'asc' } },
+      take: 20,
+    });
+
     return {
       member: this.toDetail(member),
       summary: {
@@ -128,7 +155,15 @@ export class MembersService {
         packId: p.packId,
         createdAt: p.createdAt,
       })),
-      reservations: [],
+      reservations: upcomingReservations.map((r) => ({
+        id: r.id,
+        sessionId: r.sessionId,
+        serviceName: r.session.service.name,
+        startsAt: r.session.startsAt,
+        endsAt: r.session.endsAt,
+        status: r.status,
+        coverage: r.coverage,
+      })),
     };
   }
 

@@ -46,9 +46,22 @@ export type MemberAccountSummary = {
 };
 
 /**
+ * Resumen de reserva próxima en estado de cuenta.
+ */
+export type MemberAccountReservation = {
+  id: string;
+  sessionId: string;
+  serviceName: string;
+  startsAt: Date;
+  endsAt: Date;
+  status: 'CONFIRMED' | 'CANCELLED';
+  coverage: 'CREDIT';
+};
+
+/**
  * Estado de cuenta (CU-AFI-004 / CU-AFI-005).
  *
- * @remarks `reservations` vacío hasta E4. `debt` placeholder hasta E5.
+ * @remarks `debt` placeholder hasta E5. `reservations` = próximas CONFIRMED.
  */
 export type MemberAccountDetail = {
   member: MemberDetail;
@@ -56,5 +69,5 @@ export type MemberAccountDetail = {
   debt: MemberAccountDebt;
   contracts: ContractDetail[];
   recentPayments: MemberAccountPayment[];
-  reservations: [];
+  reservations: MemberAccountReservation[];
 };

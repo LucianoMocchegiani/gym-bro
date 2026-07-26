@@ -70,6 +70,17 @@ enum SessionStatus {
   CANCELLED
 }
 
+/// Estado de una reserva (CU-RES-001).
+enum ReservationStatus {
+  CONFIRMED
+  CANCELLED
+}
+
+/// Medio de cobertura de la reserva.
+enum ReservationCoverage {
+  CREDIT
+}
+
 /// Gimnasio / estudio = tenant SaaS.
 ///
 /// @remarks Aislamiento row-level: el resto de tablas de negocio
@@ -90,6 +101,7 @@ model Tenant {
   payments    Payment[]
   contracts   Contract[]
   sessions    Session[]
+  reservations Reservation[]
   auditEvents AuditEvent[]
 
   @@map("tenants")
@@ -171,6 +183,7 @@ model Member {
   refreshTokens RefreshToken[]
   payments      Payment[]
   contracts     Contract[]
+  reservations  Reservation[]
 
   @@unique([tenantId, email])
   @@unique([tenantId, document])
@@ -332,7 +345,7 @@ model PackComponent {
 
 /// Sesión puntual de un servicio POR_SESIONES (CU-SER-003 / RN-SER-010..013).
 ///
-/// @remarks `instructorId` opcional (StaffUser). `bookedCount` se incrementa con reservas (E4 posterior).
+/// @remarks `instructorId` opcional (StaffUser). `bookedCount` se incrementa al confirmar reserva con crédito.
 /// Recurrencia y lista de espera quedan fuera de esta entrega.
 model Session {
   id           String        @id @default(uuid()) @db.Uuid
@@ -348,10 +361,11 @@ model Session {
   createdAt    DateTime      @default(now()) @map("created_at")
   updatedAt    DateTime      @updatedAt @map("updated_at")
 
-  tenant     Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  service    Service    @relation(fields: [serviceId], references: [id], onDelete: Restrict)
-  branch     Branch     @relation(fields: [branchId], references: [id], onDelete: Restrict)
-  instructor StaffUser? @relation("SessionInstructor", fields: [instructorId], references: [id], onDelete: SetNull)
+  tenant       Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  service      Service       @relation(fields: [serviceId], references: [id], onDelete: Restrict)
+  branch       Branch        @relation(fields: [branchId], references: [id], onDelete: Restrict)
+  instructor   StaffUser?    @relation("SessionInstructor", fields: [instructorId], references: [id], onDelete: SetNull)
+  reservations Reservation[]
 
   @@index([tenantId])
   @@index([tenantId, startsAt])
@@ -404,6 +418,7 @@ model Contract {
   pack     Pack                    @relation(fields: [packId], references: [id], onDelete: Restrict)
   payment  Payment                 @relation(fields: [paymentId], references: [id], onDelete: Restrict)
   balances ContractCreditBalance[]
+  reservations Reservation[]
 
   @@index([tenantId])
   @@index([memberId])
@@ -424,10 +439,40 @@ model ContractCreditBalance {
 
   contract Contract @relation(fields: [contractId], references: [id], onDelete: Cascade)
   service  Service  @relation(fields: [serviceId], references: [id], onDelete: Restrict)
+  reservations Reservation[]
 
   @@unique([contractId, serviceId])
   @@index([serviceId])
   @@map("contract_credit_balances")
+}
+
+/// Reserva confirmada de una sesión (CU-RES-001 / RN-RES-001).
+///
+/// @remarks En esta entrega solo cobertura CREDIT. Drop-in y cancelación con ventana quedan diferidos.
+model Reservation {
+  id              String              @id @default(uuid()) @db.Uuid
+  tenantId        String              @map("tenant_id") @db.Uuid
+  memberId        String              @map("member_id") @db.Uuid
+  sessionId       String              @map("session_id") @db.Uuid
+  contractId      String              @map("contract_id") @db.Uuid
+  creditBalanceId String              @map("credit_balance_id") @db.Uuid
+  status          ReservationStatus   @default(CONFIRMED)
+  coverage        ReservationCoverage @default(CREDIT)
+  createdAt       DateTime            @default(now()) @map("created_at")
+  updatedAt       DateTime            @updatedAt @map("updated_at")
+
+  tenant        Tenant                @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  member        Member                @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  session       Session               @relation(fields: [sessionId], references: [id], onDelete: Restrict)
+  contract      Contract              @relation(fields: [contractId], references: [id], onDelete: Restrict)
+  creditBalance ContractCreditBalance @relation(fields: [creditBalanceId], references: [id], onDelete: Restrict)
+
+  @@index([tenantId])
+  @@index([memberId])
+  @@index([sessionId])
+  @@index([contractId])
+  @@index([creditBalanceId])
+  @@map("reservations")
 }
 
 /// Evento de auditoría append-only (RN-ROL-008 / CU-ROL-007).

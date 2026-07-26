@@ -54,7 +54,8 @@
     { "key": "porSesionesServiceId", "value": "" },
     { "key": "createdPackId", "value": "" },
     { "key": "createdContractId", "value": "" },
-    { "key": "createdSessionId", "value": "" }
+    { "key": "createdSessionId", "value": "" },
+    { "key": "createdReservationId", "value": "" }
   ],
   "item": [
     {
@@ -986,7 +987,7 @@
                   "const body = pm.response.json();",
                   "pm.test('member', () => pm.expect(body.member).to.be.an('object'));",
                   "pm.test('debt AL_DIA', () => pm.expect(body.debt.status).to.eql('AL_DIA'));",
-                  "pm.test('reservations empty', () => pm.expect(body.reservations).to.eql([]));",
+                  "pm.test('reservations array', () => pm.expect(body.reservations).to.be.an('array'));",
                   "pm.test('summary', () => pm.expect(body.summary).to.have.keys('activeContracts','hasAccessLibre','totalCreditsRemaining'));"
                 ]
               }
@@ -1393,6 +1394,89 @@
               "raw": "{\n  \"status\": \"CANCELLED\"\n}"
             },
             "url": "{{baseUrl}}/api/sessions/{{createdSessionId}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Reservations",
+      "description": "CU-RES-001/002. Reserva con crédito: Member POST /me/reservations o Staff POST /members/:id/reservations (reservations.write). Requiere sesión PUBLISHED futura + contrato ACTIVE con saldo del servicio. Cancelación y drop-in diferidos.",
+      "item": [
+        {
+          "name": "Member POST me reservation",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 201', () => pm.response.to.have.status(201));",
+                  "const body = pm.response.json();",
+                  "pm.test('CONFIRMED', () => pm.expect(body.status).to.eql('CONFIRMED'));",
+                  "pm.test('CREDIT', () => pm.expect(body.coverage).to.eql('CREDIT'));",
+                  "pm.collectionVariables.set('createdReservationId', body.id);",
+                  "pm.environment.set('createdReservationId', body.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sessionId\": \"{{createdSessionId}}\"\n}"
+            },
+            "url": "{{baseUrl}}/api/me/reservations",
+            "description": "Requiere accessToken Member + sesión PUBLISHED (no cancelada) + créditos del servicio."
+          }
+        },
+        {
+          "name": "Member GET me reservations",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/me/reservations"
+          }
+        },
+        {
+          "name": "Staff POST reservation for member",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 201 or 409', () => pm.expect([201,409]).to.include(pm.response.code));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sessionId\": \"{{createdSessionId}}\"\n}"
+            },
+            "url": "{{baseUrl}}/api/members/{{createdMemberId}}/reservations",
+            "description": "CU-RES-002. Si el member ya reservó esa sesión → 409."
+          }
+        },
+        {
+          "name": "Staff GET member reservations",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/members/{{createdMemberId}}/reservations"
+          }
+        },
+        {
+          "name": "Staff GET reservation",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/reservations/{{createdReservationId}}"
           }
         }
       ]

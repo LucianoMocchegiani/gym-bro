@@ -4,7 +4,7 @@ import { AuthProfileType, Prisma } from '@prisma/client';
  * Actor que dispara un evento de auditoría (SUPER o STAFF).
  */
 export type AuditActor = {
-  profileType: 'SUPER' | 'STAFF';
+  profileType: 'SUPER' | 'STAFF' | 'MEMBER';
   userId: string;
 };
 
@@ -56,4 +56,5 @@ export const AUDIT_ACTIONS = {
   sessionCreate: 'session.create',
   sessionUpdate: 'session.update',
   sessionCancel: 'session.cancel',
+  reservationCreate: 'reservation.create',
 } as const;

@@ -38,6 +38,10 @@ erDiagram
   services ||--o{ sessions : schedules
   branches ||--o{ sessions : hosts
   staff_users ||--o{ sessions : instructs
+  tenants ||--o{ reservations : has
+  members ||--o{ reservations : books
+  sessions ||--o{ reservations : fills
+  contracts ||--o{ reservations : covers
   tenants ||--o{ audit_events : has
   branches ||--o{ members : default_for
   roles ||--o{ role_permissions : has
@@ -218,6 +222,8 @@ erDiagram
 | `PaymentMethod` | `STUB`, `CASH` | Medio (MP llega en E5) |
 | `ContractStatus` | `ACTIVE`, `EXPIRED`, `CANCELLED`, `REFUNDED` | Estado de contratación |
 | `SessionStatus` | `PUBLISHED`, `CANCELLED` | Estado de sesión de calendario |
+| `ReservationStatus` | `CONFIRMED`, `CANCELLED` | Estado de reserva |
+| `ReservationCoverage` | `CREDIT` | Medio (drop-in llega después) |
 
 ---
 
@@ -514,6 +520,23 @@ Sesión puntual de servicio `POR_SESIONES` (CU-SER-003 / RN-SER-010..013).
 
 API Staff: `GET|POST|PATCH /api/sessions` (`sessions.write`). Super: `/api/tenants/:tenantId/sessions`.
 
+### 4.19 `reservations`
+
+Reserva con crédito (CU-RES-001 / RN-RES-001).
+
+| Columna | Tipo | Notas |
+|---------|------|--------|
+| `id` | uuid PK | |
+| `tenant_id` / `member_id` / `session_id` | uuid FK | |
+| `contract_id` / `credit_balance_id` | uuid FK | saldo debitado |
+| `status` | `ReservationStatus` | create → `CONFIRMED` |
+| `coverage` | `ReservationCoverage` | solo `CREDIT` ahora |
+| `created_at` / `updated_at` | timestamptz | |
+
+Unique parcial: una `CONFIRMED` por (`session_id`, `member_id`).
+
+API: Member `POST|GET /api/me/reservations`; Staff `POST|GET /api/members/:memberId/reservations`, `GET /api/reservations/:id`.
+
 ---
 
 ## 5. Migraciones aplicadas
@@ -531,6 +554,7 @@ API Staff: `GET|POST|PATCH /api/sessions` (`sessions.write`). Super: `/api/tenan
 | `20260722180000_packs` | enum `BillingPeriod` + `packs` + `pack_components` |
 | `20260722210000_contracts_payments` | `payments`, `contracts`, `contract_credit_balances` |
 | `20260725150000_sessions` | enum `SessionStatus` + tabla `sessions` |
+| `20260725180000_reservations_credit` | enums reserva + tabla `reservations` |
 
 Comandos:
 

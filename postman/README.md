@@ -36,6 +36,8 @@ Carpeta **Members**: Staff `members.read` / `members.write` / `members.deactivat
 
 Carpeta **Sessions**: Staff `sessions.write`. Servicio `POR_SESIONES` + `instructorId` opcional (`userId` del Staff).
 
+Carpeta **Reservations**: Member `POST|GET /me/reservations` (consume 1 crédito). Staff `reservations.write` en nombre del afiliado.
+
 Carpeta **Services**: Staff `catalog.write`. Tipos `ACCESO_LIBRE` y `POR_SESIONES`; desactivar con `active: false`.
 
 Carpeta **Packs**: mismos permiso. Body con `components` (serviceIds de Services). `price` pesos enteros; `creditsExpireAt` opcional ISO; `kind` en respuesta.
