@@ -55,6 +55,7 @@
     { "key": "createdPackId", "value": "" },
     { "key": "createdContractId", "value": "" },
     { "key": "createdSessionId", "value": "" },
+    { "key": "createdRecurrenceRuleId", "value": "" },
     { "key": "createdReservationId", "value": "" }
   ],
   "item": [
@@ -1394,6 +1395,91 @@
               "raw": "{\n  \"status\": \"CANCELLED\"\n}"
             },
             "url": "{{baseUrl}}/api/sessions/{{createdSessionId}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Session recurrence",
+      "description": "CU-SER-004. Regla semanal finita (máx. 6 meses) que materializa sesiones PUBLISHED. Hora local + timezone IANA. Desactivar la regla no cancela sesiones.",
+      "item": [
+        {
+          "name": "Staff POST weekly recurrence rule",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 201', () => pm.response.to.have.status(201));",
+                  "const body = pm.response.json();",
+                  "pm.test('active', () => pm.expect(body.active).to.eql(true));",
+                  "pm.test('generated sessions', () => pm.expect(body.generatedSessionsCount).to.be.above(0));",
+                  "pm.collectionVariables.set('createdRecurrenceRuleId', body.id);",
+                  "pm.environment.set('createdRecurrenceRuleId', body.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"serviceId\": \"{{porSesionesServiceId}}\",\n  \"weekdays\": [\"MONDAY\", \"WEDNESDAY\"],\n  \"localStartTime\": \"08:00\",\n  \"durationMinutes\": 60,\n  \"timezone\": \"America/Argentina/Buenos_Aires\",\n  \"startsOn\": \"2026-08-03\",\n  \"endsOn\": \"2026-08-31\",\n  \"capacity\": 12,\n  \"instructorId\": \"{{userId}}\"\n}"
+            },
+            "url": "{{baseUrl}}/api/session-recurrence-rules",
+            "description": "Genera 9 sesiones (lunes/miércoles) a las 08:00 ART = 11:00 UTC."
+          }
+        },
+        {
+          "name": "Staff GET recurrence rules",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/session-recurrence-rules"
+          }
+        },
+        {
+          "name": "Staff GET recurrence rule",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/session-recurrence-rules/{{createdRecurrenceRuleId}}"
+          }
+        },
+        {
+          "name": "Staff GET generated sessions",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/sessions?from=2026-08-03T00:00:00.000Z&to=2026-09-01T00:00:00.000Z",
+            "description": "Las sesiones de la regla incluyen recurrenceRuleId."
+          }
+        },
+        {
+          "name": "Staff PATCH deactivate recurrence rule",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('inactive', () => pm.expect(pm.response.json().active).to.eql(false));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"active\": false\n}"
+            },
+            "url": "{{baseUrl}}/api/session-recurrence-rules/{{createdRecurrenceRuleId}}/status",
+            "description": "No cancela ni elimina las sesiones ya materializadas."
           }
         }
       ]

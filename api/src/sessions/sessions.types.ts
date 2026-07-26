@@ -10,6 +10,7 @@ export type SessionDetail = {
   branchName: string;
   instructorId: string | null;
   instructorName: string | null;
+  recurrenceRuleId: string | null;
   startsAt: Date;
   endsAt: Date;
   capacity: number;

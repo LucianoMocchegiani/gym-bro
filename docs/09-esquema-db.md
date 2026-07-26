@@ -38,6 +38,11 @@ erDiagram
   services ||--o{ sessions : schedules
   branches ||--o{ sessions : hosts
   staff_users ||--o{ sessions : instructs
+  tenants ||--o{ session_recurrence_rules : has
+  services ||--o{ session_recurrence_rules : schedules
+  branches ||--o{ session_recurrence_rules : hosts
+  staff_users ||--o{ session_recurrence_rules : instructs
+  session_recurrence_rules ||--o{ sessions : generates
   tenants ||--o{ reservations : has
   members ||--o{ reservations : books
   sessions ||--o{ reservations : fills
@@ -179,12 +184,31 @@ erDiagram
     int credit_amount
   }
 
+  session_recurrence_rules {
+    uuid id PK
+    uuid tenant_id FK
+    uuid service_id FK
+    uuid branch_id FK
+    uuid instructor_id FK
+    enum_array weekdays
+    text local_start_time
+    int duration_minutes
+    text timezone
+    date starts_on
+    date ends_on
+    int capacity
+    boolean active
+    timestamptz created_at
+    timestamptz updated_at
+  }
+
   sessions {
     uuid id PK
     uuid tenant_id FK
     uuid service_id FK
     uuid branch_id FK
     uuid instructor_id FK
+    uuid recurrence_rule_id FK
     timestamptz starts_at
     timestamptz ends_at
     int capacity
@@ -222,6 +246,7 @@ erDiagram
 | `PaymentMethod` | `STUB`, `CASH` | Medio (MP llega en E5) |
 | `ContractStatus` | `ACTIVE`, `EXPIRED`, `CANCELLED`, `REFUNDED` | Estado de contratación |
 | `SessionStatus` | `PUBLISHED`, `CANCELLED` | Estado de sesión de calendario |
+| `Weekday` | `MONDAY` … `SUNDAY` | Días ISO de recurrencia semanal |
 | `ReservationStatus` | `CONFIRMED`, `CANCELLED` | Estado de reserva |
 | `ReservationCoverage` | `CREDIT` | Medio (drop-in llega después) |
 
@@ -501,7 +526,26 @@ Contratación tras pago aprobado (CU-CON-001).
 
 API: Staff `POST|GET /api/members/:memberId/contracts`, `GET /api/contracts/:id`, `PATCH /api/contracts/:id/status`; Member `GET /api/me/contracts`.
 
-### 4.18 `sessions`
+### 4.18 `session_recurrence_rules`
+
+Regla semanal que materializa sesiones futuras (CU-SER-004 / RN-SER-012).
+
+| Columna | Tipo | Notas |
+|---------|------|--------|
+| `id` | uuid PK | |
+| `tenant_id` / `service_id` / `branch_id` | uuid FK | servicio `POR_SESIONES`; sede activa |
+| `instructor_id` | uuid FK → `staff_users` nullable | Profesor default |
+| `weekdays` | `Weekday[]` | Días seleccionados |
+| `local_start_time` | text `HH:mm` | Hora de pared del gimnasio |
+| `duration_minutes` | int | 1..1440 |
+| `timezone` | text | IANA, ej. `America/Argentina/Buenos_Aires` |
+| `starts_on` / `ends_on` | date | Rango finito máximo 6 meses |
+| `capacity` | int | ≥ 1 |
+| `active` | boolean | Desactivar no altera sesiones generadas |
+
+API Staff: `GET|POST /api/session-recurrence-rules`, `PATCH /api/session-recurrence-rules/:id/status`. Super mirror bajo `/api/tenants/:tenantId/...`.
+
+### 4.19 `sessions`
 
 Sesión puntual de servicio `POR_SESIONES` (CU-SER-003 / RN-SER-010..013).
 
@@ -512,6 +556,7 @@ Sesión puntual de servicio `POR_SESIONES` (CU-SER-003 / RN-SER-010..013).
 | `service_id` | uuid FK → `services` | RESTRICT; debe ser `POR_SESIONES` |
 | `branch_id` | uuid FK → `branches` | RESTRICT; default sede si no se envía |
 | `instructor_id` | uuid FK → `staff_users` nullable | SET NULL; opcional (RN-SER-011) |
+| `recurrence_rule_id` | uuid FK nullable | Origen de serie; editar sesión no cambia regla |
 | `starts_at` / `ends_at` | timestamptz | `ends_at > starts_at` |
 | `capacity` | int | ≥ 1 |
 | `booked_count` | int | default 0; reservas después |
@@ -520,7 +565,7 @@ Sesión puntual de servicio `POR_SESIONES` (CU-SER-003 / RN-SER-010..013).
 
 API Staff: `GET|POST|PATCH /api/sessions` (`sessions.write`). Super: `/api/tenants/:tenantId/sessions`.
 
-### 4.19 `reservations`
+### 4.20 `reservations`
 
 Reserva con crédito (CU-RES-001 / RN-RES-001).
 
@@ -555,6 +600,7 @@ API: Member `POST|GET /api/me/reservations`; Staff `POST|GET /api/members/:membe
 | `20260722210000_contracts_payments` | `payments`, `contracts`, `contract_credit_balances` |
 | `20260725150000_sessions` | enum `SessionStatus` + tabla `sessions` |
 | `20260725180000_reservations_credit` | enums reserva + tabla `reservations` |
+| `20260726140000_session_recurrence_rules` | enum `Weekday`, reglas semanales + vínculo desde `sessions` |
 
 Comandos:
 

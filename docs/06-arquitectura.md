@@ -258,7 +258,7 @@ Prefijo sugerido: `/api/v1`.
 | Rutinas | `/exercises`, `/routine-templates`, `/assigned-routines` |
 | Notif | `/notifications`, `/notification-templates`, preferences |
 | Afiliados | Super/Staff CRUD members + PATCH status (`members.deactivate`); estado de cuenta `GET /members/:id/account` / `GET /me/account` |
-| Sesiones | Staff `GET|POST|PATCH /sessions` (`sessions.write`); Super `/tenants/:tid/sessions` |
+| Sesiones | Staff `GET|POST|PATCH /sessions` + `/session-recurrence-rules` (`sessions.write`); Super mirrors bajo `/tenants/:tid/...` |
 | Reservas | Member `POST|GET /me/reservations` (crédito); Staff `POST|GET /members/:id/reservations` (`reservations.write`) |
 | Catálogo | Super/Staff CRUD services + packs (`catalog.write`; kind inferido; `creditsExpireAt`) |
 | Contrataciones | Staff `POST /members/:id/contracts` (pago stub APPROVED); `PATCH /contracts/:id/status` → `CANCELLED` (pierde derechos, RN-SER-009); Member `GET /me/contracts` |

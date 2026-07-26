@@ -87,11 +87,11 @@
 ## E4 — Sesiones y reservas
 
 - [x] Crear sesión puntual
-- [ ] Regla de recurrencia simple
+- [x] Regla de recurrencia simple
 - [ ] Ampliar cupo
 - [x] Reservar con crédito
 - [ ] Reservar drop-in (pago)
-- [ ] Reserva en nombre del afiliado (staff)
+- [x] Reserva en nombre del afiliado (staff)
 - [ ] Cancelar reserva (ventana del gym)
 - [ ] Lista de espera (3 modos)
 - [ ] Ingreso tardío a sesión (si config ON)

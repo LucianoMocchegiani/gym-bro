@@ -70,6 +70,17 @@ enum SessionStatus {
   CANCELLED
 }
 
+/// Día de semana para reglas de recurrencia (ISO-8601).
+enum Weekday {
+  MONDAY
+  TUESDAY
+  WEDNESDAY
+  THURSDAY
+  FRIDAY
+  SATURDAY
+  SUNDAY
+}
+
 /// Estado de una reserva (CU-RES-001).
 enum ReservationStatus {
   CONFIRMED
@@ -92,17 +103,18 @@ model Tenant {
   createdAt DateTime     @default(now()) @map("created_at")
   updatedAt DateTime     @updatedAt @map("updated_at")
 
-  staffUsers  StaffUser[]
-  members     Member[]
-  branches    Branch[]
-  roles       Role[]
-  services    Service[]
-  packs       Pack[]
-  payments    Payment[]
-  contracts   Contract[]
-  sessions    Session[]
-  reservations Reservation[]
-  auditEvents AuditEvent[]
+  staffUsers      StaffUser[]
+  members         Member[]
+  branches        Branch[]
+  roles           Role[]
+  services        Service[]
+  packs           Pack[]
+  payments        Payment[]
+  contracts       Contract[]
+  sessions        Session[]
+  recurrenceRules SessionRecurrenceRule[]
+  reservations    Reservation[]
+  auditEvents     AuditEvent[]
 
   @@map("tenants")
 }
@@ -119,10 +131,11 @@ model Branch {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  tenant   Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  members  Member[]
-  services Service[]
-  sessions Session[]
+  tenant          Tenant                  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  members         Member[]
+  services        Service[]
+  sessions        Session[]
+  recurrenceRules SessionRecurrenceRule[]
 
   @@index([tenantId])
   @@map("branches")
@@ -154,10 +167,11 @@ model StaffUser {
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")
 
-  tenant        Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  refreshTokens RefreshToken[]
-  staffRoles    StaffUserRole[]
-  instructedSessions Session[]  @relation("SessionInstructor")
+  tenant                    Tenant                  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  refreshTokens             RefreshToken[]
+  staffRoles                StaffUserRole[]
+  instructedSessions        Session[]               @relation("SessionInstructor")
+  instructedRecurrenceRules SessionRecurrenceRule[] @relation("RecurrenceInstructor")
 
   @@unique([tenantId, email])
   @@index([tenantId])
@@ -291,11 +305,12 @@ model Service {
   createdAt   DateTime    @default(now()) @map("created_at")
   updatedAt   DateTime    @updatedAt @map("updated_at")
 
-  tenant Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  branch Branch? @relation(fields: [branchId], references: [id], onDelete: SetNull)
-  packComponents PackComponent[]
-  creditBalances ContractCreditBalance[]
-  sessions       Session[]
+  tenant          Tenant                  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  branch          Branch?                 @relation(fields: [branchId], references: [id], onDelete: SetNull)
+  packComponents  PackComponent[]
+  creditBalances  ContractCreditBalance[]
+  sessions        Session[]
+  recurrenceRules SessionRecurrenceRule[]
 
   @@index([tenantId])
   @@index([tenantId, type])
@@ -308,16 +323,16 @@ model Service {
 /// @remarks El `kind` (ACCESS/CREDITS/MIXED) se infiere de los componentes.
 /// `price` en pesos enteros ARS. `creditsExpireAt` null = créditos sin fecha de vencimiento de catálogo.
 model Pack {
-  id               String        @id @default(uuid()) @db.Uuid
-  tenantId         String        @map("tenant_id") @db.Uuid
-  name             String
-  description      String?
-  price            Int
-  billingPeriod    BillingPeriod @map("billing_period")
-  creditsExpireAt  DateTime?     @map("credits_expire_at")
-  active           Boolean       @default(true)
-  createdAt        DateTime      @default(now()) @map("created_at")
-  updatedAt        DateTime      @updatedAt @map("updated_at")
+  id              String        @id @default(uuid()) @db.Uuid
+  tenantId        String        @map("tenant_id") @db.Uuid
+  name            String
+  description     String?
+  price           Int
+  billingPeriod   BillingPeriod @map("billing_period")
+  creditsExpireAt DateTime?     @map("credits_expire_at")
+  active          Boolean       @default(true)
+  createdAt       DateTime      @default(now()) @map("created_at")
+  updatedAt       DateTime      @updatedAt @map("updated_at")
 
   tenant     Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   components PackComponent[]
@@ -330,10 +345,10 @@ model Pack {
 
 /// Componente de un pack: servicio + créditos opcionales (RN-SER-004).
 model PackComponent {
-  id           String  @id @default(uuid()) @db.Uuid
-  packId       String  @map("pack_id") @db.Uuid
-  serviceId    String  @map("service_id") @db.Uuid
-  creditAmount Int?    @map("credit_amount")
+  id           String @id @default(uuid()) @db.Uuid
+  packId       String @map("pack_id") @db.Uuid
+  serviceId    String @map("service_id") @db.Uuid
+  creditAmount Int?   @map("credit_amount")
 
   pack    Pack    @relation(fields: [packId], references: [id], onDelete: Cascade)
   service Service @relation(fields: [serviceId], references: [id], onDelete: Restrict)
@@ -343,35 +358,70 @@ model PackComponent {
   @@map("pack_components")
 }
 
+/// Regla semanal que materializa sesiones futuras (CU-SER-004 / RN-SER-012).
+model SessionRecurrenceRule {
+  id              String    @id @default(uuid()) @db.Uuid
+  tenantId        String    @map("tenant_id") @db.Uuid
+  serviceId       String    @map("service_id") @db.Uuid
+  branchId        String    @map("branch_id") @db.Uuid
+  instructorId    String?   @map("instructor_id") @db.Uuid
+  weekdays        Weekday[]
+  localStartTime  String    @map("local_start_time")
+  durationMinutes Int       @map("duration_minutes")
+  timezone        String
+  startsOn        DateTime  @map("starts_on") @db.Date
+  endsOn          DateTime  @map("ends_on") @db.Date
+  capacity        Int
+  active          Boolean   @default(true)
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+
+  tenant     Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  service    Service    @relation(fields: [serviceId], references: [id], onDelete: Restrict)
+  branch     Branch     @relation(fields: [branchId], references: [id], onDelete: Restrict)
+  instructor StaffUser? @relation("RecurrenceInstructor", fields: [instructorId], references: [id], onDelete: SetNull)
+  sessions   Session[]
+
+  @@index([tenantId])
+  @@index([serviceId])
+  @@index([branchId])
+  @@index([instructorId])
+  @@map("session_recurrence_rules")
+}
+
 /// Sesión puntual de un servicio POR_SESIONES (CU-SER-003 / RN-SER-010..013).
 ///
 /// @remarks `instructorId` opcional (StaffUser). `bookedCount` se incrementa al confirmar reserva con crédito.
-/// Recurrencia y lista de espera quedan fuera de esta entrega.
+/// Si fue generada por recurrencia, `recurrenceRuleId` conserva el origen; editarla no cambia la regla.
 model Session {
-  id           String        @id @default(uuid()) @db.Uuid
-  tenantId     String        @map("tenant_id") @db.Uuid
-  serviceId    String        @map("service_id") @db.Uuid
-  branchId     String        @map("branch_id") @db.Uuid
-  instructorId String?       @map("instructor_id") @db.Uuid
-  startsAt     DateTime      @map("starts_at")
-  endsAt       DateTime      @map("ends_at")
-  capacity     Int
-  bookedCount  Int           @default(0) @map("booked_count")
-  status       SessionStatus @default(PUBLISHED)
-  createdAt    DateTime      @default(now()) @map("created_at")
-  updatedAt    DateTime      @updatedAt @map("updated_at")
+  id               String        @id @default(uuid()) @db.Uuid
+  tenantId         String        @map("tenant_id") @db.Uuid
+  serviceId        String        @map("service_id") @db.Uuid
+  branchId         String        @map("branch_id") @db.Uuid
+  instructorId     String?       @map("instructor_id") @db.Uuid
+  recurrenceRuleId String?       @map("recurrence_rule_id") @db.Uuid
+  startsAt         DateTime      @map("starts_at")
+  endsAt           DateTime      @map("ends_at")
+  capacity         Int
+  bookedCount      Int           @default(0) @map("booked_count")
+  status           SessionStatus @default(PUBLISHED)
+  createdAt        DateTime      @default(now()) @map("created_at")
+  updatedAt        DateTime      @updatedAt @map("updated_at")
 
-  tenant       Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  service      Service       @relation(fields: [serviceId], references: [id], onDelete: Restrict)
-  branch       Branch        @relation(fields: [branchId], references: [id], onDelete: Restrict)
-  instructor   StaffUser?    @relation("SessionInstructor", fields: [instructorId], references: [id], onDelete: SetNull)
-  reservations Reservation[]
+  tenant         Tenant                 @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  service        Service                @relation(fields: [serviceId], references: [id], onDelete: Restrict)
+  branch         Branch                 @relation(fields: [branchId], references: [id], onDelete: Restrict)
+  instructor     StaffUser?             @relation("SessionInstructor", fields: [instructorId], references: [id], onDelete: SetNull)
+  recurrenceRule SessionRecurrenceRule? @relation(fields: [recurrenceRuleId], references: [id], onDelete: SetNull)
+  reservations   Reservation[]
 
+  @@unique([recurrenceRuleId, startsAt])
   @@index([tenantId])
   @@index([tenantId, startsAt])
   @@index([serviceId])
   @@index([branchId])
   @@index([instructorId])
+  @@index([recurrenceRuleId])
   @@map("sessions")
 }
 
@@ -413,11 +463,11 @@ model Contract {
   createdAt      DateTime       @default(now()) @map("created_at")
   updatedAt      DateTime       @updatedAt @map("updated_at")
 
-  tenant   Tenant                  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  member   Member                  @relation(fields: [memberId], references: [id], onDelete: Cascade)
-  pack     Pack                    @relation(fields: [packId], references: [id], onDelete: Restrict)
-  payment  Payment                 @relation(fields: [paymentId], references: [id], onDelete: Restrict)
-  balances ContractCreditBalance[]
+  tenant       Tenant                  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  member       Member                  @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  pack         Pack                    @relation(fields: [packId], references: [id], onDelete: Restrict)
+  payment      Payment                 @relation(fields: [paymentId], references: [id], onDelete: Restrict)
+  balances     ContractCreditBalance[]
   reservations Reservation[]
 
   @@index([tenantId])
@@ -437,8 +487,8 @@ model ContractCreditBalance {
   createdAt     DateTime  @default(now()) @map("created_at")
   updatedAt     DateTime  @updatedAt @map("updated_at")
 
-  contract Contract @relation(fields: [contractId], references: [id], onDelete: Cascade)
-  service  Service  @relation(fields: [serviceId], references: [id], onDelete: Restrict)
+  contract     Contract      @relation(fields: [contractId], references: [id], onDelete: Cascade)
+  service      Service       @relation(fields: [serviceId], references: [id], onDelete: Restrict)
   reservations Reservation[]
 
   @@unique([contractId, serviceId])

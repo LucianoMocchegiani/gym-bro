@@ -355,6 +355,7 @@ export class SessionsService {
       branchName: session.branch.name,
       instructorId: session.instructorId,
       instructorName: session.instructor?.name ?? null,
+      recurrenceRuleId: session.recurrenceRuleId,
       startsAt: session.startsAt,
       endsAt: session.endsAt,
       capacity: session.capacity,

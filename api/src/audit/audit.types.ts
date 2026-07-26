@@ -56,5 +56,7 @@ export const AUDIT_ACTIONS = {
   sessionCreate: 'session.create',
   sessionUpdate: 'session.update',
   sessionCancel: 'session.cancel',
+  recurrenceRuleCreate: 'session.recurrence.create',
+  recurrenceRuleDeactivate: 'session.recurrence.deactivate',
   reservationCreate: 'reservation.create',
 } as const;
