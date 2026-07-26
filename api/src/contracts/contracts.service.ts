@@ -5,6 +5,7 @@ import {
 } from '@nestjs/common';
 import {
   BillingPeriod,
+  CashMovementConcept,
   Contract,
   ContractStatus,
   MemberStatus,
@@ -16,6 +17,7 @@ import {
 import { randomBytes } from 'node:crypto';
 import { AUDIT_ACTIONS, AuditActor } from '../audit/audit.types';
 import { AuditService } from '../audit/audit.service';
+import { CashRegisterService } from '../cash-register/cash-register.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateContractDto, UpdateContractStatusDto } from './dto/contract.dto';
 import { ContractDetail } from './contracts.types';
@@ -43,13 +45,14 @@ type ContractWithRelations = Contract & {
  * Contrataciones tras pago aprobado y cancelación de derechos.
  *
  * @remarks CU-CON-001 / CU-CON-002 / RN-PAG-004 / RN-SER-009.
- * Reembolso real (Payment/Contract REFUNDED) queda en E5.
+ * Pago CASH registra movimiento de caja (RN-PAG-007). Reembolso REFUNDED en E5.
  */
 @Injectable()
 export class ContractsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
+    private readonly cashRegister: CashRegisterService,
   ) {}
 
   /**
@@ -234,6 +237,17 @@ export class ContractsService {
             method,
             idempotencyKey,
           },
+        });
+
+        await this.cashRegister.recordIncomeIfCash(tx, {
+          tenantId,
+          paymentId: payment.id,
+          memberId,
+          amount: payment.amount,
+          method: payment.method,
+          concept: CashMovementConcept.PACK_CONTRACT,
+          recordedByStaffId:
+            actor.profileType === 'STAFF' ? actor.userId : null,
         });
 
         return tx.contract.create({

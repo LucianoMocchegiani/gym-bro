@@ -1797,6 +1797,48 @@
           }
         }
       ]
+    },
+    {
+      "name": "Cash register",
+      "description": "CU-PAG-002/003 parcial. GET /cash-register/day (cashier.operate). Movimientos solo de pagos CASH (contrato o drop-in). Día en America/Argentina/Buenos_Aires. Sin arqueo.",
+      "item": [
+        {
+          "name": "Staff GET cash day (today)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('timezone', () => pm.expect(body.timezone).to.eql('America/Argentina/Buenos_Aires'));",
+                  "pm.test('totals', () => pm.expect(body.totals).to.have.keys('income', 'movementCount'));",
+                  "pm.test('movements', () => pm.expect(body.movements).to.be.an('array'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/cash-register/day"
+          }
+        },
+        {
+          "name": "Staff GET cash day by date",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/cash-register/day?date=2026-07-26",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "cash-register", "day"],
+              "query": [{ "key": "date", "value": "2026-07-26" }]
+            }
+          }
+        }
+      ]
     }
   ]
 }

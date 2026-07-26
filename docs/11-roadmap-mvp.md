@@ -108,9 +108,11 @@
 - [ ] Conectar cuenta MP del gym
 - [ ] Checkout MP (pack / mensualidad / drop-in)
 - [ ] Webhook MP idempotente
-- [ ] Cobro en caja
+- [x] Cobro en caja
+  - `method=CASH` en contrato/drop-in → `cash_movements` (STUB no entra)
 - [ ] Comprobante interno
-- [ ] Caja del día
+- [x] Caja del día
+  - `GET /cash-register/day` (timezone BA); sin arqueo
 - [ ] Arqueo
 - [ ] Solicitud devolución (afiliado)
 - [ ] Ejecutar devolución (staff + flag)
@@ -222,7 +224,7 @@ E11 → E12
 
 ## Próximo paso
 
-Elegir **una épica** (recomendado: empezar **E5 pagos** — caja / MP) y bajar solo esa a subtareas del día / PRs.
+Elegir **una épica** (recomendado: **arqueo**, **comprobante**, o **cuenta MP**) y bajar solo esa a subtareas del día / PRs.
 
 ---
 

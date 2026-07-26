@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { AuditModule } from '../audit/audit.module';
 import { AuthModule } from '../auth/auth.module';
+import { CashRegisterModule } from '../cash-register/cash-register.module';
 import { RolesModule } from '../roles/roles.module';
 import { TenantSettingsModule } from '../tenant-settings/tenant-settings.module';
 import { WaitlistModule } from '../waitlist/waitlist.module';
@@ -9,7 +10,7 @@ import { ReservationsService } from './reservations.service';
 import { SuperReservationsController } from './super-reservations.controller';
 
 /**
- * Reservas con crédito y cancelación con ventana (E4).
+ * Reservas con crédito, drop-in y cancelación (E4).
  */
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { SuperReservationsController } from './super-reservations.controller';
     AuditModule,
     TenantSettingsModule,
     WaitlistModule,
+    CashRegisterModule,
   ],
   controllers: [ReservationsController, SuperReservationsController],
   providers: [ReservationsService],

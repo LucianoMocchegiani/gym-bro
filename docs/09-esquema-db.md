@@ -275,6 +275,8 @@ erDiagram
 | `ReservationCoverage` | `CREDIT`, `DROP_IN` | Medio de cobertura de la reserva |
 | `WaitlistMode` | `AUTO_ASSIGN`, `MEMBER_CONFIRM`, `STAFF_CONFIRM` | Liberación cola (RN-RES-005) |
 | `WaitlistStatus` | `WAITING`, `PROMOTED`, `LEFT` | Estado ítem de cola |
+| `CashMovementKind` | `INCOME` | Tipo movimiento caja (OUTFLOW con devoluciones) |
+| `CashMovementConcept` | `PACK_CONTRACT`, `DROP_IN` | Concepto del movimiento |
 
 ---
 
@@ -517,18 +519,39 @@ API Staff: `GET|POST|PATCH /api/packs`. Super: `/api/tenants/:tenantId/packs`.
 
 ### 4.15 `payments`
 
-Pago de negocio (RN-PAG-003..005). En MVP staff crea stub/caja ya `APPROVED` junto a la contratación.
+Pago de negocio (RN-PAG-003..005). En MVP staff crea stub/caja ya `APPROVED` junto a la contratación o drop-in.
 
 | Columna | Tipo | Notas |
 |---------|------|--------|
 | `id` | uuid PK | |
 | `tenant_id` / `member_id` | uuid FK | CASCADE |
 | `pack_id` | uuid FK nullable | SET NULL |
-| `amount` | int | pesos (copia del pack) |
+| `amount` | int | pesos (copia del pack / drop-in) |
 | `status` | `PaymentStatus` | |
-| `method` | `PaymentMethod` | STUB / CASH |
+| `method` | `PaymentMethod` | STUB / CASH (MP en E5) |
 | `idempotency_key` | text | unique por tenant |
 | `created_at` / `updated_at` | timestamptz | |
+
+Si `method=CASH` → se crea 1 `cash_movements` (1:1).
+
+### 4.15b `cash_movements`
+
+Movimiento de caja del día (CU-PAG-002 / RN-PAG-007).
+
+| Columna | Tipo | Notas |
+|---------|------|--------|
+| `id` | uuid PK | |
+| `tenant_id` | uuid FK | CASCADE |
+| `business_date` | date | día BA (`America/Argentina/Buenos_Aires`) |
+| `payment_id` | uuid FK UK | 1:1 con payment CASH |
+| `member_id` | uuid FK | CASCADE |
+| `recorded_by_staff_id` | uuid FK nullable | SET NULL |
+| `amount` | int | ingreso ≥ 1 |
+| `kind` | `CashMovementKind` | MVP: `INCOME` |
+| `concept` | `CashMovementConcept` | `PACK_CONTRACT` \| `DROP_IN` |
+| `created_at` | timestamptz | |
+
+API: Staff `GET /api/cash-register/day?date=YYYY-MM-DD` (`cashier.operate`); Super `/api/tenants/:tid/cash-register/day`. Arqueo diferido.
 
 ### 4.16 `contracts`
 
@@ -662,6 +685,7 @@ API: Member `POST|GET /api/me/waitlist`, `PATCH /api/me/waitlist/:id/status`; St
 | `20260726190000_waitlist_entries` | enums waitlist + `waitlist_entries` + `waitlist_mode` en settings |
 | `20260726200000_allow_late_session_entry` | `allow_late_session_entry` en `tenant_settings` |
 | `20260726210000_reservation_drop_in` | `DROP_IN` + `drop_in_price` + `reservations.payment_id` nullable FKs crédito |
+| `20260726220000_cash_movements` | enums caja + tabla `cash_movements` |
 
 Comandos:
 

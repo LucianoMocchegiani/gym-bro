@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { AuditModule } from './audit/audit.module';
 import { AuthModule } from './auth/auth.module';
+import { CashRegisterModule } from './cash-register/cash-register.module';
 import { ContractsModule } from './contracts/contracts.module';
 import { HealthModule } from './health/health.module';
 import { MembersModule } from './members/members.module';
@@ -38,6 +39,7 @@ import { WaitlistModule } from './waitlist/waitlist.module';
     SessionsModule,
     ReservationsModule,
     WaitlistModule,
+    CashRegisterModule,
     TenantsModule,
     AuditModule,
     HealthModule,

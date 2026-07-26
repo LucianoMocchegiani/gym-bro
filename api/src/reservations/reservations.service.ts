@@ -7,6 +7,7 @@ import {
 } from '@nestjs/common';
 import {
   ContractStatus,
+  CashMovementConcept,
   MemberStatus,
   PaymentMethod,
   PaymentStatus,
@@ -19,6 +20,7 @@ import {
 import { randomBytes } from 'node:crypto';
 import { AUDIT_ACTIONS, AuditActor } from '../audit/audit.types';
 import { AuditService } from '../audit/audit.service';
+import { CashRegisterService } from '../cash-register/cash-register.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { TenantSettingsService } from '../tenant-settings/tenant-settings.service';
 import { WaitlistService } from '../waitlist/waitlist.service';
@@ -48,8 +50,9 @@ type ReservationWithRelations = Reservation & {
  * Reservas con crédito o drop-in (CU-RES-001 / CU-RES-002 / RN-RES-001)
  * y cancelación (CU-RES-003).
  *
- * @remarks Drop-in: staff-only, Payment APPROVED stub/caja. Cancelación:
- * CREDIT devuelve crédito; DROP_IN no reembolsa (E5). Ingreso tardío RN-RES-006.
+ * @remarks Drop-in: staff-only, Payment APPROVED stub/caja. CASH → movimiento
+ * de caja. Cancelación: CREDIT devuelve crédito; DROP_IN no reembolsa (E5).
+ * Ingreso tardío RN-RES-006.
  */
 @Injectable()
 export class ReservationsService {
@@ -58,6 +61,7 @@ export class ReservationsService {
     private readonly audit: AuditService,
     private readonly tenantSettings: TenantSettingsService,
     private readonly waitlist: WaitlistService,
+    private readonly cashRegister: CashRegisterService,
   ) {}
 
   /**
@@ -405,6 +409,17 @@ export class ReservationsService {
             method,
             idempotencyKey,
           },
+        });
+
+        await this.cashRegister.recordIncomeIfCash(tx, {
+          tenantId,
+          paymentId: payment.id,
+          memberId,
+          amount: payment.amount,
+          method: payment.method,
+          concept: CashMovementConcept.DROP_IN,
+          recordedByStaffId:
+            actor.profileType === 'STAFF' ? actor.userId : null,
         });
 
         return tx.reservation.create({

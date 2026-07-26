@@ -107,6 +107,17 @@ enum WaitlistStatus {
   LEFT
 }
 
+/// Tipo de movimiento de caja (RN-PAG-007). OUTFLOW llega con devoluciones.
+enum CashMovementKind {
+  INCOME
+}
+
+/// Concepto de negocio del movimiento de caja.
+enum CashMovementConcept {
+  PACK_CONTRACT
+  DROP_IN
+}
+
 /// Gimnasio / estudio = tenant SaaS.
 ///
 /// @remarks Aislamiento row-level: el resto de tablas de negocio
@@ -131,6 +142,7 @@ model Tenant {
   reservations    Reservation[]
   waitlistEntries WaitlistEntry[]
   settings        TenantSettings?
+  cashMovements   CashMovement[]
   auditEvents     AuditEvent[]
 
   @@map("tenants")
@@ -207,6 +219,7 @@ model StaffUser {
   staffRoles                StaffUserRole[]
   instructedSessions        Session[]               @relation("SessionInstructor")
   instructedRecurrenceRules SessionRecurrenceRule[] @relation("RecurrenceInstructor")
+  cashMovementsRecorded     CashMovement[]          @relation("CashMovementRecorder")
 
   @@unique([tenantId, email])
   @@index([tenantId])
@@ -234,6 +247,7 @@ model Member {
   contracts     Contract[]
   reservations  Reservation[]
   waitlistEntries WaitlistEntry[]
+  cashMovements CashMovement[]
 
   @@unique([tenantId, email])
   @@unique([tenantId, document])
@@ -483,6 +497,7 @@ model Payment {
   pack     Pack?         @relation(fields: [packId], references: [id], onDelete: SetNull)
   contract Contract?
   reservation Reservation?
+  cashMovement CashMovement?
 
   @@unique([tenantId, idempotencyKey])
   @@index([tenantId])
@@ -590,6 +605,32 @@ model WaitlistEntry {
   @@index([sessionId, status, createdAt])
   @@index([memberId])
   @@map("waitlist_entries")
+}
+
+/// Movimiento de caja del día (CU-PAG-002 / RN-PAG-007).
+///
+/// @remarks Solo se crea para pagos `CASH` (STUB no entra). `businessDate` es
+/// el día calendario en `America/Argentina/Buenos_Aires`. Arqueo diferido.
+model CashMovement {
+  id                 String              @id @default(uuid()) @db.Uuid
+  tenantId           String              @map("tenant_id") @db.Uuid
+  businessDate       DateTime            @map("business_date") @db.Date
+  paymentId          String              @unique @map("payment_id") @db.Uuid
+  memberId           String              @map("member_id") @db.Uuid
+  recordedByStaffId  String?             @map("recorded_by_staff_id") @db.Uuid
+  amount             Int
+  kind               CashMovementKind    @default(INCOME)
+  concept            CashMovementConcept
+  createdAt          DateTime            @default(now()) @map("created_at")
+
+  tenant          Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  payment         Payment    @relation(fields: [paymentId], references: [id], onDelete: Restrict)
+  member          Member     @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  recordedByStaff StaffUser? @relation("CashMovementRecorder", fields: [recordedByStaffId], references: [id], onDelete: SetNull)
+
+  @@index([tenantId, businessDate])
+  @@index([memberId])
+  @@map("cash_movements")
 }
 
 /// Evento de auditoría append-only (RN-ROL-008 / CU-ROL-007).
