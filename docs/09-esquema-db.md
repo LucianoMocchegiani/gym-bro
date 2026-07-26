@@ -277,6 +277,7 @@ erDiagram
 | `WaitlistStatus` | `WAITING`, `PROMOTED`, `LEFT` | Estado ítem de cola |
 | `CashMovementKind` | `INCOME` | Tipo movimiento caja (OUTFLOW con devoluciones) |
 | `CashMovementConcept` | `PACK_CONTRACT`, `DROP_IN` | Concepto del movimiento |
+| `ReceiptConcept` | `PACK_CONTRACT`, `DROP_IN` | Concepto del comprobante |
 
 ---
 
@@ -571,6 +572,25 @@ Arqueo de caja del día (CU-PAG-003 / RN-PAG-007).
 
 **Unique:** `(tenant_id, business_date)`. No bloquea cobros posteriores.
 
+### 4.15d `receipts` / `receipt_sequences`
+
+Comprobante interno (RN-PAG-009). 1:1 con `payments` APPROVED.
+
+| Columna (`receipts`) | Tipo | Notas |
+|---------|------|--------|
+| `id` | uuid PK | |
+| `tenant_id` / `member_id` | uuid FK | CASCADE |
+| `payment_id` | uuid FK UK | RESTRICT |
+| `number` | int | secuencial por tenant |
+| `amount` / `method` | int / enum | snapshot del pago |
+| `concept` | `ReceiptConcept` | `PACK_CONTRACT` \| `DROP_IN` |
+| `description` | text nullable | pack o servicio |
+| `created_at` | timestamptz | |
+
+`receipt_sequences`: PK `tenant_id`, `next_number`. Código API: `GB-` + number pad 6.
+
+API: Member `GET /api/me/receipts`; Staff `GET /api/payments/:paymentId/receipt`, `GET /api/members/:id/receipts` (`members.read`).
+
 ### 4.16 `contracts`
 
 Contratación tras pago aprobado (CU-CON-001).
@@ -705,6 +725,7 @@ API: Member `POST|GET /api/me/waitlist`, `PATCH /api/me/waitlist/:id/status`; St
 | `20260726210000_reservation_drop_in` | `DROP_IN` + `drop_in_price` + `reservations.payment_id` nullable FKs crédito |
 | `20260726220000_cash_movements` | enums caja + tabla `cash_movements` |
 | `20260726230000_cash_reconciliations` | tabla `cash_reconciliations` (arqueo 1/día) |
+| `20260726240000_receipts` | `ReceiptConcept` + `receipt_sequences` + `receipts` |
 
 Comandos:
 

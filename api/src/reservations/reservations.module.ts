@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { AuditModule } from '../audit/audit.module';
 import { AuthModule } from '../auth/auth.module';
 import { CashRegisterModule } from '../cash-register/cash-register.module';
+import { ReceiptsModule } from '../receipts/receipts.module';
 import { RolesModule } from '../roles/roles.module';
 import { TenantSettingsModule } from '../tenant-settings/tenant-settings.module';
 import { WaitlistModule } from '../waitlist/waitlist.module';
@@ -20,6 +21,7 @@ import { SuperReservationsController } from './super-reservations.controller';
     TenantSettingsModule,
     WaitlistModule,
     CashRegisterModule,
+    ReceiptsModule,
   ],
   controllers: [ReservationsController, SuperReservationsController],
   providers: [ReservationsService],

@@ -12,6 +12,7 @@ import {
   PaymentMethod,
   PaymentStatus,
   Prisma,
+  ReceiptConcept,
   Reservation,
   ReservationCoverage,
   ReservationStatus,
@@ -22,6 +23,7 @@ import { AUDIT_ACTIONS, AuditActor } from '../audit/audit.types';
 import { AuditService } from '../audit/audit.service';
 import { CashRegisterService } from '../cash-register/cash-register.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { ReceiptsService } from '../receipts/receipts.service';
 import { TenantSettingsService } from '../tenant-settings/tenant-settings.service';
 import { WaitlistService } from '../waitlist/waitlist.service';
 import {
@@ -51,8 +53,8 @@ type ReservationWithRelations = Reservation & {
  * y cancelación (CU-RES-003).
  *
  * @remarks Drop-in: staff-only, Payment APPROVED stub/caja. CASH → movimiento
- * de caja. Cancelación: CREDIT devuelve crédito; DROP_IN no reembolsa (E5).
- * Ingreso tardío RN-RES-006.
+ * de caja. Comprobante interno RN-PAG-009. Cancelación: CREDIT devuelve crédito;
+ * DROP_IN no reembolsa (E5). Ingreso tardío RN-RES-006.
  */
 @Injectable()
 export class ReservationsService {
@@ -62,6 +64,7 @@ export class ReservationsService {
     private readonly tenantSettings: TenantSettingsService,
     private readonly waitlist: WaitlistService,
     private readonly cashRegister: CashRegisterService,
+    private readonly receipts: ReceiptsService,
   ) {}
 
   /**
@@ -420,6 +423,16 @@ export class ReservationsService {
           concept: CashMovementConcept.DROP_IN,
           recordedByStaffId:
             actor.profileType === 'STAFF' ? actor.userId : null,
+        });
+
+        await this.receipts.issueForApprovedPayment(tx, {
+          tenantId,
+          paymentId: payment.id,
+          memberId,
+          amount: payment.amount,
+          method: payment.method,
+          concept: ReceiptConcept.DROP_IN,
+          description: session.service.name,
         });
 
         return tx.reservation.create({

@@ -118,6 +118,12 @@ enum CashMovementConcept {
   DROP_IN
 }
 
+/// Concepto del comprobante interno (RN-PAG-009).
+enum ReceiptConcept {
+  PACK_CONTRACT
+  DROP_IN
+}
+
 /// Gimnasio / estudio = tenant SaaS.
 ///
 /// @remarks Aislamiento row-level: el resto de tablas de negocio
@@ -144,6 +150,8 @@ model Tenant {
   settings        TenantSettings?
   cashMovements   CashMovement[]
   cashReconciliations CashReconciliation[]
+  receipts        Receipt[]
+  receiptSequence ReceiptSequence?
   auditEvents     AuditEvent[]
 
   @@map("tenants")
@@ -250,6 +258,7 @@ model Member {
   reservations  Reservation[]
   waitlistEntries WaitlistEntry[]
   cashMovements CashMovement[]
+  receipts      Receipt[]
 
   @@unique([tenantId, email])
   @@unique([tenantId, document])
@@ -500,6 +509,7 @@ model Payment {
   contract Contract?
   reservation Reservation?
   cashMovement CashMovement?
+  receipt Receipt?
 
   @@unique([tenantId, idempotencyKey])
   @@index([tenantId])
@@ -633,6 +643,42 @@ model CashMovement {
   @@index([tenantId, businessDate])
   @@index([memberId])
   @@map("cash_movements")
+}
+
+/// Contador de comprobantes por tenant (RN-PAG-009).
+model ReceiptSequence {
+  tenantId   String @id @map("tenant_id") @db.Uuid
+  nextNumber Int    @default(1) @map("next_number")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@map("receipt_sequences")
+}
+
+/// Comprobante interno de un pago aprobado (RN-PAG-009).
+///
+/// @remarks 1:1 con Payment APPROVED. Número secuencial por tenant (`GB-000001`).
+/// Email N1 diferido (E8). Sin backfill de pagos legacy.
+model Receipt {
+  id          String           @id @default(uuid()) @db.Uuid
+  tenantId    String           @map("tenant_id") @db.Uuid
+  paymentId   String           @unique @map("payment_id") @db.Uuid
+  memberId    String           @map("member_id") @db.Uuid
+  number      Int
+  amount      Int
+  method      PaymentMethod
+  concept     ReceiptConcept
+  description String?
+  createdAt   DateTime         @default(now()) @map("created_at")
+
+  tenant  Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  payment Payment @relation(fields: [paymentId], references: [id], onDelete: Restrict)
+  member  Member  @relation(fields: [memberId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, number])
+  @@index([tenantId])
+  @@index([memberId, createdAt])
+  @@map("receipts")
 }
 
 /// Arqueo de caja del día (CU-PAG-003 / RN-PAG-007).

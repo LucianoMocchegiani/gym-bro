@@ -8,6 +8,7 @@ import { HealthModule } from './health/health.module';
 import { MembersModule } from './members/members.module';
 import { PacksModule } from './packs/packs.module';
 import { PrismaModule } from './prisma/prisma.module';
+import { ReceiptsModule } from './receipts/receipts.module';
 import { RolesModule } from './roles/roles.module';
 import { ServicesModule } from './services/services.module';
 import { SessionsModule } from './sessions/sessions.module';
@@ -40,6 +41,7 @@ import { WaitlistModule } from './waitlist/waitlist.module';
     ReservationsModule,
     WaitlistModule,
     CashRegisterModule,
+    ReceiptsModule,
     TenantsModule,
     AuditModule,
     HealthModule,

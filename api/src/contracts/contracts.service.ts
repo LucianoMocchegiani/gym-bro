@@ -12,6 +12,7 @@ import {
   PaymentMethod,
   PaymentStatus,
   Prisma,
+  ReceiptConcept,
   ServiceType,
 } from '@prisma/client';
 import { randomBytes } from 'node:crypto';
@@ -19,6 +20,7 @@ import { AUDIT_ACTIONS, AuditActor } from '../audit/audit.types';
 import { AuditService } from '../audit/audit.service';
 import { CashRegisterService } from '../cash-register/cash-register.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { ReceiptsService } from '../receipts/receipts.service';
 import { CreateContractDto, UpdateContractStatusDto } from './dto/contract.dto';
 import { ContractDetail } from './contracts.types';
 
@@ -45,7 +47,8 @@ type ContractWithRelations = Contract & {
  * Contrataciones tras pago aprobado y cancelación de derechos.
  *
  * @remarks CU-CON-001 / CU-CON-002 / RN-PAG-004 / RN-SER-009.
- * Pago CASH registra movimiento de caja (RN-PAG-007). Reembolso REFUNDED en E5.
+ * Pago CASH registra movimiento de caja (RN-PAG-007). Comprobante interno
+ * RN-PAG-009. Reembolso REFUNDED en E5.
  */
 @Injectable()
 export class ContractsService {
@@ -53,6 +56,7 @@ export class ContractsService {
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
     private readonly cashRegister: CashRegisterService,
+    private readonly receipts: ReceiptsService,
   ) {}
 
   /**
@@ -248,6 +252,16 @@ export class ContractsService {
           concept: CashMovementConcept.PACK_CONTRACT,
           recordedByStaffId:
             actor.profileType === 'STAFF' ? actor.userId : null,
+        });
+
+        await this.receipts.issueForApprovedPayment(tx, {
+          tenantId,
+          paymentId: payment.id,
+          memberId,
+          amount: payment.amount,
+          method: payment.method,
+          concept: ReceiptConcept.PACK_CONTRACT,
+          description: pack.name,
         });
 
         return tx.contract.create({

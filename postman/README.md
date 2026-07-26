@@ -44,6 +44,8 @@ Carpeta **Tenant settings**: `GET|PATCH /tenant-settings` (`tenant.settings.*`).
 
 Carpeta **Cash register**: `GET /cash-register/day` + `POST /cash-register/day/reconcile` (`cashier.operate`). Movimientos CASH; arqueo 1/día (declarado ≥ 0); día en timezone BA.
 
+Carpeta **Receipts**: Member `GET /me/receipts`. Staff `GET /payments/:paymentId/receipt` y `GET /members/:id/receipts` (`members.read`). Código `GB-000001`.
+
 Carpeta **Services**: Staff `catalog.write`. Tipos `ACCESO_LIBRE` y `POR_SESIONES`; `dropInPrice` (ARS) habilita drop-in; desactivar con `active: false`.
 
 Carpeta **Packs**: mismos permiso. Body con `components` (serviceIds de Services). `price` pesos enteros; `creditsExpireAt` opcional ISO; `kind` en respuesta.

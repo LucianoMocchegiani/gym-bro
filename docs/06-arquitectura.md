@@ -263,6 +263,7 @@ Prefijo sugerido: `/api/v1`.
 | Waitlist | Member `/me/waitlist`; Staff `/members/:id/waitlist`, `/sessions/:id/waitlist` (`reservations.write`); promoción AUTO al liberar cupo |
 | Settings | Staff `GET|PATCH /tenant-settings` (`tenant.settings.*`; horas cancelación, `waitlistMode`, `allowLateSessionEntry`); Super `/tenants/:tid/settings` |
 | Caja | Staff `GET /cash-register/day`, `POST /cash-register/day/reconcile` (`cashier.operate`); Super `/tenants/:tid/cash-register/...` |
+| Comprobantes | Member `/me/receipts`; Staff `GET /payments/:id/receipt`, `GET /members/:id/receipts` (`members.read`) |
 | Catálogo | Super/Staff CRUD services + packs (`catalog.write`; kind inferido; `creditsExpireAt`) |
 | Contrataciones | Staff `POST /members/:id/contracts` (pago stub APPROVED); `PATCH /contracts/:id/status` → `CANCELLED` (pierde derechos, RN-SER-009); Member `GET /me/contracts` |
 | Roles | Super/Staff list-get-create-patch roles; `PUT .../staff/:id/roles` multi-rol |

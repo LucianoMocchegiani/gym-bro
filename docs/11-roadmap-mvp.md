@@ -110,7 +110,8 @@
 - [ ] Webhook MP idempotente
 - [x] Cobro en caja
   - `method=CASH` en contrato/drop-in → `cash_movements` (STUB no entra)
-- [ ] Comprobante interno
+- [x] Comprobante interno
+  - `receipts` 1:1 pago APPROVED (STUB/CASH); código `GB-######`; sin email N1 / sin backfill
 - [x] Caja del día
   - `GET /cash-register/day` (timezone BA)
 - [x] Arqueo
@@ -225,7 +226,7 @@ E11 → E12
 
 ## Próximo paso
 
-Elegir **una épica** (recomendado: **comprobante interno**, **cuenta MP**, o devoluciones) y bajar solo esa a subtareas del día / PRs.
+Elegir **una épica** (recomendado: **cuenta MP**, o devoluciones) y bajar solo esa a subtareas del día / PRs.
 
 ---
 

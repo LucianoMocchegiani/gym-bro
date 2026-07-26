@@ -54,6 +54,7 @@
     { "key": "porSesionesServiceId", "value": "" },
     { "key": "createdPackId", "value": "" },
     { "key": "createdContractId", "value": "" },
+    { "key": "createdPaymentId", "value": "" },
     { "key": "createdSessionId", "value": "" },
     { "key": "createdRecurrenceRuleId", "value": "" },
     { "key": "createdReservationId", "value": "" }
@@ -1260,7 +1261,9 @@
                   "pm.test('ACTIVE', () => pm.expect(body.status).to.eql('ACTIVE'));",
                   "pm.test('payment APPROVED', () => pm.expect(body.payment.status).to.eql('APPROVED'));",
                   "pm.collectionVariables.set('createdContractId', body.id);",
-                  "pm.environment.set('createdContractId', body.id);"
+                  "pm.environment.set('createdContractId', body.id);",
+                  "pm.collectionVariables.set('createdPaymentId', body.payment.id);",
+                  "pm.environment.set('createdPaymentId', body.payment.id);"
                 ]
               }
             }
@@ -1866,6 +1869,52 @@
             },
             "url": "{{baseUrl}}/api/cash-register/day/reconcile",
             "description": "Omití date para hoy (BA). Si ya arqueado → 409. declaredAmount puede diferir del esperado."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Receipts",
+      "description": "RN-PAG-009. Comprobante interno al aprobar pago (contrato/drop-in). Member /me/receipts; Staff members.read. Sin email N1.",
+      "item": [
+        {
+          "name": "Staff GET payment receipt",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('code', () => pm.expect(body.code).to.match(/^GB-\\d{6}$/));",
+                  "pm.collectionVariables.set('createdReceiptId', body.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/payments/{{createdPaymentId}}/receipt",
+            "description": "Usá paymentId de un contract/drop-in nuevo (legacy sin receipt → 404)."
+          }
+        },
+        {
+          "name": "Staff GET member receipts",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/members/{{createdMemberId}}/receipts"
+          }
+        },
+        {
+          "name": "Member GET me receipts",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/me/receipts",
+            "description": "Requiere accessToken Member."
           }
         }
       ]
