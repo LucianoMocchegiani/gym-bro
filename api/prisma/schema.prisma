@@ -90,6 +90,7 @@ enum ReservationStatus {
 /// Medio de cobertura de la reserva.
 enum ReservationCoverage {
   CREDIT
+  DROP_IN
 }
 
 /// Modo de liberación de lista de espera (RN-RES-005 / RN-TEN-006).
@@ -329,12 +330,15 @@ model StaffUserRole {
 /// Servicio del catálogo comercial del tenant (RN-SER-001 / CU-SER-001).
 ///
 /// @remarks `ACCESO_LIBRE` no exige reserva; `POR_SESIONES` se consume con sesiones (E4).
+/// `dropInPrice` (ARS) habilita drop-in; null = deshabilitado (RN-SER-006).
 model Service {
   id          String      @id @default(uuid()) @db.Uuid
   tenantId    String      @map("tenant_id") @db.Uuid
   type        ServiceType
   name        String
   description String?
+  /// Precio drop-in en pesos enteros ARS. Solo aplica a `POR_SESIONES`.
+  dropInPrice Int?        @map("drop_in_price")
   active      Boolean     @default(true)
   branchId    String?     @map("branch_id") @db.Uuid
   createdAt   DateTime    @default(now()) @map("created_at")
@@ -476,8 +480,9 @@ model Payment {
 
   tenant   Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   member   Member    @relation(fields: [memberId], references: [id], onDelete: Cascade)
-  pack     Pack?     @relation(fields: [packId], references: [id], onDelete: SetNull)
+  pack     Pack?         @relation(fields: [packId], references: [id], onDelete: SetNull)
   contract Contract?
+  reservation Reservation?
 
   @@unique([tenantId, idempotencyKey])
   @@index([tenantId])
@@ -534,24 +539,27 @@ model ContractCreditBalance {
 
 /// Reserva confirmada de una sesión (CU-RES-001 / RN-RES-001).
 ///
-/// @remarks Cobertura CREDIT. Cancelación con ventana: CU-RES-003. Drop-in diferido.
+/// @remarks Cobertura `CREDIT` (contrato + saldo) o `DROP_IN` (pago aprobado).
+/// Cancelación con ventana: CU-RES-003. Drop-in no reembolsa el pago en esta entrega.
 model Reservation {
   id              String              @id @default(uuid()) @db.Uuid
   tenantId        String              @map("tenant_id") @db.Uuid
   memberId        String              @map("member_id") @db.Uuid
   sessionId       String              @map("session_id") @db.Uuid
-  contractId      String              @map("contract_id") @db.Uuid
-  creditBalanceId String              @map("credit_balance_id") @db.Uuid
+  contractId      String?             @map("contract_id") @db.Uuid
+  creditBalanceId String?             @map("credit_balance_id") @db.Uuid
+  paymentId       String?             @unique @map("payment_id") @db.Uuid
   status          ReservationStatus   @default(CONFIRMED)
   coverage        ReservationCoverage @default(CREDIT)
   createdAt       DateTime            @default(now()) @map("created_at")
   updatedAt       DateTime            @updatedAt @map("updated_at")
 
-  tenant        Tenant                @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  member        Member                @relation(fields: [memberId], references: [id], onDelete: Cascade)
-  session       Session               @relation(fields: [sessionId], references: [id], onDelete: Restrict)
-  contract      Contract              @relation(fields: [contractId], references: [id], onDelete: Restrict)
-  creditBalance ContractCreditBalance @relation(fields: [creditBalanceId], references: [id], onDelete: Restrict)
+  tenant        Tenant                 @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  member        Member                 @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  session       Session                @relation(fields: [sessionId], references: [id], onDelete: Restrict)
+  contract      Contract?              @relation(fields: [contractId], references: [id], onDelete: Restrict)
+  creditBalance ContractCreditBalance? @relation(fields: [creditBalanceId], references: [id], onDelete: Restrict)
+  payment       Payment?               @relation(fields: [paymentId], references: [id], onDelete: Restrict)
 
   @@index([tenantId])
   @@index([memberId])

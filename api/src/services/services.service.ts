@@ -62,6 +62,7 @@ export class ServicesService {
     if (branchId) {
       await this.assertBranchInTenant(tenantId, branchId);
     }
+    const dropInPrice = this.resolveDropInPrice(dto.type, dto.dropInPrice);
 
     const service = await this.prisma.service.create({
       data: {
@@ -69,6 +70,7 @@ export class ServicesService {
         type: dto.type,
         name: dto.name.trim(),
         description: this.normalizeOptional(dto.description),
+        dropInPrice,
         branchId,
         active: dto.active ?? true,
       },
@@ -87,7 +89,7 @@ export class ServicesService {
   }
 
   /**
-   * Actualiza nombre, descripción, sucursal y/o active (no el type).
+   * Actualiza nombre, descripción, sucursal, drop-in y/o active (no el type).
    */
   async update(
     tenantId: string,
@@ -99,10 +101,11 @@ export class ServicesService {
       dto.name === undefined &&
       dto.description === undefined &&
       dto.branchId === undefined &&
-      dto.active === undefined
+      dto.active === undefined &&
+      dto.dropInPrice === undefined
     ) {
       throw new BadRequestException(
-        'Provide name, description, branchId and/or active',
+        'Provide name, description, branchId, dropInPrice and/or active',
       );
     }
 
@@ -117,6 +120,9 @@ export class ServicesService {
     }
     if (dto.active !== undefined) {
       data.active = dto.active;
+    }
+    if (dto.dropInPrice !== undefined) {
+      data.dropInPrice = this.resolveDropInPrice(before.type, dto.dropInPrice);
     }
     if (dto.branchId !== undefined) {
       if (dto.branchId === null) {
@@ -190,6 +196,24 @@ export class ServicesService {
     return trimmed.length === 0 ? null : trimmed;
   }
 
+  /**
+   * Resuelve precio drop-in: solo `POR_SESIONES`; ACCESO_LIBRE no admite precio.
+   */
+  private resolveDropInPrice(
+    type: ServiceType,
+    dropInPrice: number | null | undefined,
+  ): number | null {
+    if (dropInPrice === undefined || dropInPrice === null) {
+      return null;
+    }
+    if (type !== ServiceType.POR_SESIONES) {
+      throw new BadRequestException(
+        'dropInPrice is only allowed for POR_SESIONES services',
+      );
+    }
+    return dropInPrice;
+  }
+
   private toDetail(service: Service): ServiceDetail {
     return {
       id: service.id,
@@ -197,6 +221,7 @@ export class ServicesService {
       type: service.type,
       name: service.name,
       description: service.description,
+      dropInPrice: service.dropInPrice,
       active: service.active,
       branchId: service.branchId,
       createdAt: service.createdAt,
@@ -209,6 +234,7 @@ export class ServicesService {
       type: detail.type,
       name: detail.name,
       description: detail.description,
+      dropInPrice: detail.dropInPrice,
       active: detail.active,
       branchId: detail.branchId,
     };

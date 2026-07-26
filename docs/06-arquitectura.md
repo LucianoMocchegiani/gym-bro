@@ -259,7 +259,7 @@ Prefijo sugerido: `/api/v1`.
 | Notif | `/notifications`, `/notification-templates`, preferences |
 | Afiliados | Super/Staff CRUD members + PATCH status (`members.deactivate`); estado de cuenta `GET /members/:id/account` / `GET /me/account` |
 | Sesiones | Staff `GET|POST|PATCH /sessions`, `PATCH /sessions/:id/capacity` (ampliar cupo) + `/session-recurrence-rules` (`sessions.write`); Super mirrors bajo `/tenants/:tid/...` |
-| Reservas | Member `/me/reservations` + cancel status; Staff `/members/:id/reservations` + `/reservations/:id/status` (`reservations.write`) |
+| Reservas | Member `/me/reservations` (crédito) + cancel; Staff `/members/:id/reservations` (crédito o drop-in stub/caja) + `/reservations/:id/status` (`reservations.write`) |
 | Waitlist | Member `/me/waitlist`; Staff `/members/:id/waitlist`, `/sessions/:id/waitlist` (`reservations.write`); promoción AUTO al liberar cupo |
 | Settings | Staff `GET|PATCH /tenant-settings` (`tenant.settings.*`; horas cancelación, `waitlistMode`, `allowLateSessionEntry`); Super `/tenants/:tid/settings` |
 | Catálogo | Super/Staff CRUD services + packs (`catalog.write`; kind inferido; `creditsExpireAt`) |

@@ -1081,7 +1081,7 @@
             "header": [{ "key": "Content-Type", "value": "application/json" }],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"type\": \"POR_SESIONES\",\n  \"name\": \"Funcional\",\n  \"description\": \"Clases grupales\"\n}"
+              "raw": "{\n  \"type\": \"POR_SESIONES\",\n  \"name\": \"Funcional\",\n  \"description\": \"Clases grupales\",\n  \"dropInPrice\": 8000\n}"
             },
             "url": "{{baseUrl}}/api/services"
           }
@@ -1112,6 +1112,31 @@
                 { "key": "active", "value": "true", "disabled": true }
               ]
             }
+          }
+        },
+        {
+          "name": "Staff PATCH set dropInPrice",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('dropInPrice', () => pm.expect(pm.response.json().dropInPrice).to.eql(8000));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"dropInPrice\": 8000\n}"
+            },
+            "url": "{{baseUrl}}/api/services/{{porSesionesServiceId}}",
+            "description": "Habilita drop-in en un servicio POR_SESIONES existente (precio ARS)."
           }
         },
         {
@@ -1487,7 +1512,7 @@
     },
     {
       "name": "Reservations",
-      "description": "CU-RES-001/002/003. Reserva con crédito + cancelación (ventana RN-TEN-005). Member PATCH /me/reservations/:id/status; Staff PATCH /reservations/:id/status (puede fuera de ventana). Drop-in y lista de espera diferidos.",
+      "description": "CU-RES-001/002/003. Reserva con crédito o drop-in (staff stub/caja). Cancelación ventana RN-TEN-005. Member solo crédito; Staff puede coverage=DROP_IN si el servicio tiene dropInPrice.",
       "item": [
         {
           "name": "Member POST me reservation",
@@ -1573,6 +1598,35 @@
             },
             "url": "{{baseUrl}}/api/members/{{createdMemberId}}/reservations",
             "description": "CU-RES-002. Si el member ya reservó esa sesión → 409."
+          }
+        },
+        {
+          "name": "Staff POST drop-in reservation",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 201', () => pm.response.to.have.status(201));",
+                  "const body = pm.response.json();",
+                  "pm.test('DROP_IN', () => pm.expect(body.coverage).to.eql('DROP_IN'));",
+                  "pm.test('paymentId', () => pm.expect(body.paymentId).to.be.a('string'));",
+                  "pm.collectionVariables.set('createdReservationId', body.id);",
+                  "pm.environment.set('createdReservationId', body.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sessionId\": \"{{createdSessionId}}\",\n  \"coverage\": \"DROP_IN\",\n  \"method\": \"CASH\",\n  \"idempotencyKey\": \"dropin-demo-1\"\n}"
+            },
+            "url": "{{baseUrl}}/api/members/{{createdMemberId}}/reservations",
+            "description": "Requiere servicio con dropInPrice. Crea Payment APPROVED + Reservation DROP_IN. No consume créditos."
           }
         },
         {

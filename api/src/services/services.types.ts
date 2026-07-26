@@ -7,6 +7,7 @@ export type ServiceDetail = {
   type: 'ACCESO_LIBRE' | 'POR_SESIONES';
   name: string;
   description: string | null;
+  dropInPrice: number | null;
   active: boolean;
   branchId: string | null;
   createdAt: Date;

@@ -55,7 +55,7 @@ export type MemberAccountReservation = {
   startsAt: Date;
   endsAt: Date;
   status: 'CONFIRMED' | 'CANCELLED';
-  coverage: 'CREDIT';
+  coverage: 'CREDIT' | 'DROP_IN';
 };
 
 /**

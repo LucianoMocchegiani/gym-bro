@@ -1,17 +1,43 @@
-import { Equals, IsOptional, IsUUID } from 'class-validator';
+import {
+  Equals,
+  IsEnum,
+  IsIn,
+  IsOptional,
+  IsString,
+  IsUUID,
+  MaxLength,
+  MinLength,
+} from 'class-validator';
+import { PaymentMethod } from '@prisma/client';
 
 /**
- * Alta de reserva con crédito (CU-RES-001 / CU-RES-002).
+ * Alta de reserva con crédito o drop-in (CU-RES-001 / CU-RES-002).
  *
- * @remarks `contractId` opcional: si falta, el sistema elige el saldo que vence antes.
+ * @remarks Default `coverage=CREDIT`. Drop-in (`DROP_IN`) es staff-only, crea
+ * Payment APPROVED (stub/caja) con `idempotencyKey` y no consume créditos.
+ * `contractId` solo aplica a CREDIT.
  */
 export class CreateReservationDto {
   @IsUUID('4')
   sessionId!: string;
 
   @IsOptional()
+  @IsIn(['CREDIT', 'DROP_IN'])
+  coverage?: 'CREDIT' | 'DROP_IN';
+
+  @IsOptional()
   @IsUUID('4')
   contractId?: string;
+
+  @IsOptional()
+  @IsEnum(PaymentMethod)
+  method?: PaymentMethod;
+
+  @IsOptional()
+  @IsString()
+  @MinLength(8)
+  @MaxLength(120)
+  idempotencyKey?: string;
 }
 
 /**

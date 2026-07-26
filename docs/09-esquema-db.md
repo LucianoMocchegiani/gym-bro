@@ -181,6 +181,7 @@ erDiagram
     enum type
     text name
     text description
+    int drop_in_price
     boolean active
     uuid branch_id FK
     timestamptz created_at
@@ -271,7 +272,7 @@ erDiagram
 | `SessionStatus` | `PUBLISHED`, `CANCELLED` | Estado de sesión de calendario |
 | `Weekday` | `MONDAY` … `SUNDAY` | Días ISO de recurrencia semanal |
 | `ReservationStatus` | `CONFIRMED`, `CANCELLED` | Estado de reserva |
-| `ReservationCoverage` | `CREDIT` | Medio (drop-in llega después) |
+| `ReservationCoverage` | `CREDIT`, `DROP_IN` | Medio de cobertura de la reserva |
 | `WaitlistMode` | `AUTO_ASSIGN`, `MEMBER_CONFIRM`, `STAFF_CONFIRM` | Liberación cola (RN-RES-005) |
 | `WaitlistStatus` | `WAITING`, `PROMOTED`, `LEFT` | Estado ítem de cola |
 
@@ -474,6 +475,7 @@ Servicio del catálogo comercial (RN-SER-001 / CU-SER-001).
 | `type` | `ServiceType` | inmutable tras create |
 | `name` | text | |
 | `description` | text nullable | |
+| `drop_in_price` | int nullable | ARS; solo `POR_SESIONES`; null = drop-in off (RN-SER-006) |
 | `active` | boolean | default true (baja lógica) |
 | `branch_id` | uuid FK → `branches` nullable | SET NULL |
 | `created_at` / `updated_at` | timestamptz | |
@@ -592,20 +594,21 @@ API Staff: `GET|POST|PATCH /api/sessions`, `PATCH /api/sessions/:id/capacity` (`
 
 ### 4.20 `reservations`
 
-Reserva con crédito (CU-RES-001 / RN-RES-001).
+Reserva con crédito o drop-in (CU-RES-001 / RN-RES-001).
 
 | Columna | Tipo | Notas |
 |---------|------|--------|
 | `id` | uuid PK | |
 | `tenant_id` / `member_id` / `session_id` | uuid FK | |
-| `contract_id` / `credit_balance_id` | uuid FK | saldo debitado |
+| `contract_id` / `credit_balance_id` | uuid FK nullable | requeridos si `CREDIT` |
+| `payment_id` | uuid FK → `payments` nullable unique | requerido si `DROP_IN` |
 | `status` | `ReservationStatus` | create → `CONFIRMED` |
-| `coverage` | `ReservationCoverage` | solo `CREDIT` ahora |
+| `coverage` | `ReservationCoverage` | `CREDIT` \| `DROP_IN` |
 | `created_at` / `updated_at` | timestamptz | |
 
 Unique parcial: una `CONFIRMED` por (`session_id`, `member_id`).
 
-API: Member `POST|GET /api/me/reservations`, `PATCH /api/me/reservations/:id/status` (ventana RN-TEN-005); Staff `POST|GET /api/members/:memberId/reservations`, `GET|PATCH /api/reservations/:id(/status)`. Cancelación: libera cupo + devuelve crédito (CU-RES-003).
+API: Member `POST|GET /api/me/reservations` (solo crédito), `PATCH .../status` (ventana RN-TEN-005); Staff `POST|GET /api/members/:memberId/reservations` (`coverage=DROP_IN` + pago stub/caja), `GET|PATCH /api/reservations/:id(/status)`. Cancelación: libera cupo; CREDIT devuelve crédito; DROP_IN no reembolsa (E5).
 
 ### 4.21 `tenant_settings`
 
@@ -658,6 +661,7 @@ API: Member `POST|GET /api/me/waitlist`, `PATCH /api/me/waitlist/:id/status`; St
 | `20260726180000_tenant_settings_cancel_reservation` | `tenant_settings` + backfill horas cancelación |
 | `20260726190000_waitlist_entries` | enums waitlist + `waitlist_entries` + `waitlist_mode` en settings |
 | `20260726200000_allow_late_session_entry` | `allow_late_session_entry` en `tenant_settings` |
+| `20260726210000_reservation_drop_in` | `DROP_IN` + `drop_in_price` + `reservations.payment_id` nullable FKs crédito |
 
 Comandos:
 

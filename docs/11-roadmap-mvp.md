@@ -90,7 +90,8 @@
 - [x] Regla de recurrencia simple
 - [x] Ampliar cupo
 - [x] Reservar con crédito
-- [ ] Reservar drop-in (pago)
+- [x] Reservar drop-in (pago)
+  - staff stub/caja APPROVED + `coverage=DROP_IN`; precio `service.dropInPrice`; reembolso E5
 - [x] Reserva en nombre del afiliado (staff)
 - [x] Cancelar reserva (ventana del gym)
 - [x] Lista de espera (3 modos)
@@ -221,7 +222,7 @@ E11 → E12
 
 ## Próximo paso
 
-Elegir **una épica** (recomendado: **drop-in** stub/caja, o empezar **E5 pagos**) y bajar solo esa a subtareas del día / PRs.
+Elegir **una épica** (recomendado: empezar **E5 pagos** — caja / MP) y bajar solo esa a subtareas del día / PRs.
 
 ---
 

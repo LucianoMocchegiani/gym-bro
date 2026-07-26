@@ -10,10 +10,13 @@ export type ReservationDetail = {
   sessionEndsAt: Date;
   serviceId: string;
   serviceName: string;
-  contractId: string;
-  creditBalanceId: string;
+  contractId: string | null;
+  creditBalanceId: string | null;
+  paymentId: string | null;
+  paymentAmount: number | null;
+  paymentMethod: 'STUB' | 'CASH' | null;
   status: 'CONFIRMED' | 'CANCELLED';
-  coverage: 'CREDIT';
+  coverage: 'CREDIT' | 'DROP_IN';
   createdAt: Date;
   updatedAt: Date;
 };

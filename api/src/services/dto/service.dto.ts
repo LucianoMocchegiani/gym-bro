@@ -2,16 +2,20 @@ import { ServiceType } from '@prisma/client';
 import {
   IsBoolean,
   IsEnum,
+  IsInt,
   IsOptional,
   IsString,
   IsUUID,
   MaxLength,
+  Min,
   MinLength,
   ValidateIf,
 } from 'class-validator';
 
 /**
  * Alta de servicio (CU-SER-001). El `type` no se cambia después.
+ *
+ * @remarks `dropInPrice` solo válido para `POR_SESIONES` (RN-SER-006).
  */
 export class CreateServiceDto {
   @IsEnum(ServiceType)
@@ -34,6 +38,13 @@ export class CreateServiceDto {
   @IsOptional()
   @IsBoolean()
   active?: boolean;
+
+  /** Precio drop-in ARS; omitir o null = drop-in deshabilitado. */
+  @IsOptional()
+  @ValidateIf((_, value) => value !== null)
+  @IsInt()
+  @Min(1)
+  dropInPrice?: number | null;
 }
 
 /**
@@ -60,4 +71,10 @@ export class UpdateServiceDto {
   @IsOptional()
   @IsBoolean()
   active?: boolean;
+
+  @IsOptional()
+  @ValidateIf((_, value) => value !== null)
+  @IsInt()
+  @Min(1)
+  dropInPrice?: number | null;
 }

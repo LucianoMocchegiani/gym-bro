@@ -1,18 +1,22 @@
 import {
   BadRequestException,
   ConflictException,
+  ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
 import {
   ContractStatus,
   MemberStatus,
+  PaymentMethod,
+  PaymentStatus,
   Prisma,
   Reservation,
   ReservationCoverage,
   ReservationStatus,
   SessionStatus,
 } from '@prisma/client';
+import { randomBytes } from 'node:crypto';
 import { AUDIT_ACTIONS, AuditActor } from '../audit/audit.types';
 import { AuditService } from '../audit/audit.service';
 import { PrismaService } from '../prisma/prisma.service';
@@ -32,13 +36,20 @@ type ReservationWithRelations = Reservation & {
     serviceId: string;
     service: { id: string; name: string };
   };
+  payment: {
+    id: string;
+    amount: number;
+    method: PaymentMethod;
+    status: PaymentStatus;
+  } | null;
 };
 
 /**
- * Reservas con crédito (CU-RES-001 / CU-RES-002 / RN-RES-001) y cancelación (CU-RES-003).
+ * Reservas con crédito o drop-in (CU-RES-001 / CU-RES-002 / RN-RES-001)
+ * y cancelación (CU-RES-003).
  *
- * @remarks Drop-in diferido. Cancelación: RN-RES-003. Ingreso tardío: RN-RES-006
- * si `allowLateSessionEntry`. Liberación waitlist AUTO_ASSIGN al cancelar.
+ * @remarks Drop-in: staff-only, Payment APPROVED stub/caja. Cancelación:
+ * CREDIT devuelve crédito; DROP_IN no reembolsa (E5). Ingreso tardío RN-RES-006.
  */
 @Injectable()
 export class ReservationsService {
@@ -82,6 +93,29 @@ export class ReservationsService {
   }
 
   /**
+   * Confirma reserva con crédito o drop-in según `coverage`.
+   *
+   * @remarks Default CREDIT. DROP_IN solo staff/super (CU-RES-002).
+   */
+  async createForMember(
+    tenantId: string,
+    memberId: string,
+    dto: CreateReservationDto,
+    actor: AuditActor,
+  ): Promise<ReservationDetail> {
+    const coverage = dto.coverage ?? ReservationCoverage.CREDIT;
+    if (coverage === ReservationCoverage.DROP_IN) {
+      if (actor.profileType === 'MEMBER') {
+        throw new ForbiddenException(
+          'Drop-in reservations require staff (pay at desk / stub)',
+        );
+      }
+      return this.createDropIn(tenantId, memberId, dto, actor);
+    }
+    return this.createWithCredit(tenantId, memberId, dto, actor);
+  }
+
+  /**
    * Confirma reserva consumiendo 1 crédito del servicio de la sesión.
    *
    * @remarks Elige saldo con `expiresAt` más próximo (nulls al final).
@@ -89,7 +123,7 @@ export class ReservationsService {
    * Si la sesión ya inició, solo permite si el gym tiene ingreso tardío ON y
    * `endsAt` es futuro (CU-RES-006).
    */
-  async createForMember(
+  private async createWithCredit(
     tenantId: string,
     memberId: string,
     dto: CreateReservationDto,
@@ -232,10 +266,200 @@ export class ReservationsService {
   }
 
   /**
+   * Reserva drop-in con pago stub/caja ya aprobado (CU-RES-002 / RN-PAG-004).
+   *
+   * @remarks Precio desde `service.dropInPrice`. Idempotente por `idempotencyKey`.
+   */
+  private async createDropIn(
+    tenantId: string,
+    memberId: string,
+    dto: CreateReservationDto,
+    actor: AuditActor,
+  ): Promise<ReservationDetail> {
+    await this.assertMemberInTenant(tenantId, memberId, true);
+
+    const session = await this.prisma.session.findFirst({
+      where: { id: dto.sessionId, tenantId },
+      select: {
+        id: true,
+        serviceId: true,
+        status: true,
+        startsAt: true,
+        endsAt: true,
+        capacity: true,
+        bookedCount: true,
+        service: {
+          select: {
+            id: true,
+            name: true,
+            active: true,
+            dropInPrice: true,
+            type: true,
+          },
+        },
+      },
+    });
+    if (!session) {
+      throw new NotFoundException(
+        `Session ${dto.sessionId} not found in tenant`,
+      );
+    }
+    if (session.status !== SessionStatus.PUBLISHED) {
+      throw new BadRequestException('Session is not published');
+    }
+    await this.tenantSettings.assertSessionOpenForBooking(tenantId, session);
+    if (session.bookedCount >= session.capacity) {
+      throw new BadRequestException('Session is full');
+    }
+    if (!session.service.active) {
+      throw new BadRequestException('Service is inactive');
+    }
+    if (
+      session.service.dropInPrice === null ||
+      session.service.dropInPrice < 1
+    ) {
+      throw new BadRequestException(
+        'Drop-in is not enabled for this service (set dropInPrice)',
+      );
+    }
+
+    const existing = await this.prisma.reservation.findFirst({
+      where: {
+        tenantId,
+        memberId,
+        sessionId: session.id,
+        status: ReservationStatus.CONFIRMED,
+      },
+      select: { id: true },
+    });
+    if (existing) {
+      throw new ConflictException(
+        'Member already has a confirmed reservation for this session',
+      );
+    }
+
+    const idempotencyKey =
+      dto.idempotencyKey?.trim() || `stub-${randomBytes(16).toString('hex')}`;
+    const method = dto.method ?? PaymentMethod.STUB;
+
+    const existingPayment = await this.prisma.payment.findUnique({
+      where: {
+        tenantId_idempotencyKey: { tenantId, idempotencyKey },
+      },
+      include: {
+        reservation: { include: this.reservationInclude() },
+      },
+    });
+    if (existingPayment?.reservation) {
+      return this.toDetail(existingPayment.reservation);
+    }
+    if (existingPayment && !existingPayment.reservation) {
+      throw new BadRequestException(
+        'Idempotency key already used without a reservation',
+      );
+    }
+
+    try {
+      const reservation = await this.prisma.$transaction(async (tx) => {
+        const fresh = await tx.session.findFirst({
+          where: { id: session.id, tenantId },
+          select: {
+            id: true,
+            status: true,
+            capacity: true,
+            bookedCount: true,
+            startsAt: true,
+            endsAt: true,
+          },
+        });
+        if (!fresh || fresh.status !== SessionStatus.PUBLISHED) {
+          throw new BadRequestException('Session is not published');
+        }
+        await this.tenantSettings.assertSessionOpenForBooking(tenantId, fresh);
+        if (fresh.bookedCount >= fresh.capacity) {
+          throw new BadRequestException('Session is full');
+        }
+
+        const seat = await tx.session.updateMany({
+          where: {
+            id: fresh.id,
+            tenantId,
+            status: SessionStatus.PUBLISHED,
+            bookedCount: fresh.bookedCount,
+          },
+          data: { bookedCount: { increment: 1 } },
+        });
+        if (seat.count !== 1) {
+          throw new ConflictException(
+            'Session capacity changed concurrently; retry',
+          );
+        }
+
+        const payment = await tx.payment.create({
+          data: {
+            tenantId,
+            memberId,
+            packId: null,
+            amount: session.service.dropInPrice!,
+            status: PaymentStatus.APPROVED,
+            method,
+            idempotencyKey,
+          },
+        });
+
+        return tx.reservation.create({
+          data: {
+            tenantId,
+            memberId,
+            sessionId: session.id,
+            paymentId: payment.id,
+            status: ReservationStatus.CONFIRMED,
+            coverage: ReservationCoverage.DROP_IN,
+          },
+          include: this.reservationInclude(),
+        });
+      });
+
+      const detail = this.toDetail(reservation);
+      await this.audit.record({
+        tenantId,
+        actor,
+        action: AUDIT_ACTIONS.reservationCreate,
+        entityType: 'reservation',
+        entityId: reservation.id,
+        before: null,
+        after: this.auditSnapshot(detail),
+      });
+      return detail;
+    } catch (error: unknown) {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2002'
+      ) {
+        const again = await this.prisma.payment.findUnique({
+          where: {
+            tenantId_idempotencyKey: { tenantId, idempotencyKey },
+          },
+          include: {
+            reservation: { include: this.reservationInclude() },
+          },
+        });
+        if (again?.reservation) {
+          return this.toDetail(again.reservation);
+        }
+        throw new ConflictException(
+          'Member already has a confirmed reservation for this session',
+        );
+      }
+      throw error;
+    }
+  }
+
+  /**
    * Cancela una reserva confirmada (CU-RES-003 / RN-RES-003 / RN-TEN-005).
    *
-   * @remarks Libera cupo, devuelve 1 crédito al saldo original e invoca hook
-   * de lista de espera (no-op). Idempotente si ya estaba CANCELLED.
+   * @remarks Libera cupo. Si coverage CREDIT, devuelve 1 crédito. DROP_IN no
+   * reembolsa el pago (E5). Invoca waitlist AUTO_ASSIGN. Idempotente si ya CANCELLED.
    * @param ownerMemberId Si se indica, exige que la reserva pertenezca a ese afiliado.
    *   El afiliado (actor MEMBER) valida la ventana de horas del gym; Staff/Super no.
    */
@@ -315,10 +539,12 @@ export class ReservationsService {
           );
         }
 
-        await tx.contractCreditBalance.update({
-          where: { id: before.creditBalanceId },
-          data: { remaining: { increment: 1 } },
-        });
+        if (before.creditBalanceId) {
+          await tx.contractCreditBalance.update({
+            where: { id: before.creditBalanceId },
+            data: { remaining: { increment: 1 } },
+          });
+        }
 
         const row = await tx.reservation.findFirstOrThrow({
           where: { id: reservationId, tenantId },
@@ -424,6 +650,14 @@ export class ReservationsService {
           service: { select: { id: true, name: true } },
         },
       },
+      payment: {
+        select: {
+          id: true,
+          amount: true,
+          method: true,
+          status: true,
+        },
+      },
     };
   }
 
@@ -472,6 +706,9 @@ export class ReservationsService {
       serviceName: row.session.service.name,
       contractId: row.contractId,
       creditBalanceId: row.creditBalanceId,
+      paymentId: row.paymentId,
+      paymentAmount: row.payment?.amount ?? null,
+      paymentMethod: row.payment?.method ?? null,
       status: row.status,
       coverage: row.coverage,
       createdAt: row.createdAt,
@@ -485,6 +722,8 @@ export class ReservationsService {
       sessionId: detail.sessionId,
       contractId: detail.contractId,
       creditBalanceId: detail.creditBalanceId,
+      paymentId: detail.paymentId,
+      paymentAmount: detail.paymentAmount,
       status: detail.status,
       coverage: detail.coverage,
     };
