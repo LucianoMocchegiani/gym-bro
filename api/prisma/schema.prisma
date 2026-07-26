@@ -137,12 +137,14 @@ model Tenant {
 
 /// Configuración operativa del gym (RN-TEN-005 / RN-TEN-006).
 ///
-/// @remarks 1:1 con tenant. Horas de cancelación + modo lista de espera.
+/// @remarks 1:1 con tenant. Horas de cancelación, modo lista de espera e ingreso tardío.
 /// Liberación automática solo implementada para AUTO_ASSIGN (crédito).
 model TenantSettings {
   tenantId                     String       @id @map("tenant_id") @db.Uuid
   reservationCancellationHours Int          @default(6) @map("reservation_cancellation_hours")
   waitlistMode                 WaitlistMode @default(AUTO_ASSIGN) @map("waitlist_mode")
+  /// RN-RES-006 / CU-RES-006: permitir reservar con crédito tras `startsAt` hasta `endsAt`.
+  allowLateSessionEntry        Boolean      @default(false) @map("allow_late_session_entry")
   createdAt                    DateTime     @default(now()) @map("created_at")
   updatedAt                    DateTime     @updatedAt @map("updated_at")
 

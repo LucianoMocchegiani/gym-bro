@@ -73,6 +73,7 @@ erDiagram
     uuid tenant_id PK,FK
     int reservation_cancellation_hours
     enum waitlist_mode
+    boolean allow_late_session_entry
     timestamptz created_at
     timestamptz updated_at
   }
@@ -615,6 +616,7 @@ Config operativa 1:1 con tenant (RN-TEN-005).
 | `tenant_id` | uuid PK FK → `tenants` | CASCADE |
 | `reservation_cancellation_hours` | int | default 6; rango API 0–720 |
 | `waitlist_mode` | `WaitlistMode` | default `AUTO_ASSIGN`; liberación MVP solo AUTO |
+| `allow_late_session_entry` | boolean | default false; RN-RES-006 / CU-RES-006 |
 | `created_at` / `updated_at` | timestamptz | |
 
 API Staff: `GET|PATCH /api/tenant-settings` (`tenant.settings.read/write`). Super: `/api/tenants/:tenantId/settings`. Create tenant + seed crean el row.
@@ -655,6 +657,7 @@ API: Member `POST|GET /api/me/waitlist`, `PATCH /api/me/waitlist/:id/status`; St
 | `20260726140000_session_recurrence_rules` | enum `Weekday`, reglas semanales + vínculo desde `sessions` |
 | `20260726180000_tenant_settings_cancel_reservation` | `tenant_settings` + backfill horas cancelación |
 | `20260726190000_waitlist_entries` | enums waitlist + `waitlist_entries` + `waitlist_mode` en settings |
+| `20260726200000_allow_late_session_entry` | `allow_late_session_entry` en `tenant_settings` |
 
 Comandos:
 

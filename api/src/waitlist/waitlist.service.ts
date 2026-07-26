@@ -70,6 +70,7 @@ export class WaitlistService {
         id: true,
         status: true,
         startsAt: true,
+        endsAt: true,
         capacity: true,
         bookedCount: true,
       },
@@ -82,9 +83,7 @@ export class WaitlistService {
     if (session.status !== SessionStatus.PUBLISHED) {
       throw new BadRequestException('Session is not published');
     }
-    if (session.startsAt.getTime() <= Date.now()) {
-      throw new BadRequestException('Session has already started');
-    }
+    await this.tenantSettings.assertSessionOpenForBooking(tenantId, session);
     if (session.bookedCount < session.capacity) {
       throw new BadRequestException(
         'Session has free capacity; reserve instead of joining waitlist',
@@ -292,6 +291,7 @@ export class WaitlistService {
         serviceId: true,
         status: true,
         startsAt: true,
+        endsAt: true,
         capacity: true,
         bookedCount: true,
       },
@@ -299,9 +299,15 @@ export class WaitlistService {
     if (
       !session ||
       session.status !== SessionStatus.PUBLISHED ||
-      session.startsAt.getTime() <= Date.now() ||
       session.bookedCount >= session.capacity
     ) {
+      return 'skipped';
+    }
+    const open = await this.tenantSettings.isSessionOpenForBooking(
+      tenantId,
+      session,
+    );
+    if (!open) {
       return 'skipped';
     }
 
@@ -338,15 +344,24 @@ export class WaitlistService {
             capacity: true,
             bookedCount: true,
             startsAt: true,
+            endsAt: true,
           },
         });
         if (
           !fresh ||
           fresh.status !== SessionStatus.PUBLISHED ||
-          fresh.startsAt.getTime() <= Date.now() ||
           fresh.bookedCount >= fresh.capacity
         ) {
           throw new BadRequestException('Session no longer has free capacity');
+        }
+        const stillOpen = await this.tenantSettings.isSessionOpenForBooking(
+          tenantId,
+          fresh,
+        );
+        if (!stillOpen) {
+          throw new BadRequestException(
+            'Session is no longer open for booking',
+          );
         }
 
         const seat = await tx.session.updateMany({

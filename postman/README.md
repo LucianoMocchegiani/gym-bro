@@ -40,7 +40,7 @@ Carpeta **Reservations**: Member `POST|GET /me/reservations` + `PATCH .../status
 
 Carpeta **Waitlist**: Member/Staff join cuando sesión llena; leave; promoción AUTO al cancelar/ampliar cupo.
 
-Carpeta **Tenant settings**: `GET|PATCH /tenant-settings` (`tenant.settings.*`). `reservationCancellationHours` + `waitlistMode`.
+Carpeta **Tenant settings**: `GET|PATCH /tenant-settings` (`tenant.settings.*`). `reservationCancellationHours`, `waitlistMode`, `allowLateSessionEntry`.
 
 Carpeta **Services**: Staff `catalog.write`. Tipos `ACCESO_LIBRE` y `POR_SESIONES`; desactivar con `active: false`.
 

@@ -95,9 +95,10 @@
 - [x] Cancelar reserva (ventana del gym)
 - [x] Lista de espera (3 modos)
   - join/leave + liberación **AUTO_ASSIGN** (crédito); MEMBER_CONFIRM / STAFF_CONFIRM config-only (liberación diferida)
-- [ ] Ingreso tardío a sesión (si config ON)
+- [x] Ingreso tardío a sesión (si config ON)
+  - `allowLateSessionEntry` en `tenant_settings` (default OFF); reserva/crédito hasta `endsAt`
 - [x] Config: horas cancelación, modo lista espera
-  - horas + `waitlistMode` en `tenant_settings`; flujos confirmación modos 2/3 diferidos
+  - horas + `waitlistMode` + `allowLateSessionEntry` en `tenant_settings`; flujos confirmación modos 2/3 diferidos
 
 ---
 
@@ -220,7 +221,7 @@ E11 → E12
 
 ## Próximo paso
 
-Elegir **una épica** (recomendado: **drop-in**, **ingreso tardío**, o empezar **E5 pagos**) y bajar solo esa a subtareas del día / PRs.
+Elegir **una épica** (recomendado: **drop-in** stub/caja, o empezar **E5 pagos**) y bajar solo esa a subtareas del día / PRs.
 
 ---
 

@@ -1706,7 +1706,7 @@
     },
     {
       "name": "Tenant settings",
-      "description": "RN-TEN-005/006. Staff GET|PATCH /tenant-settings. reservationCancellationHours + waitlistMode (AUTO_ASSIGN|MEMBER_CONFIRM|STAFF_CONFIRM).",
+      "description": "RN-TEN-005/006 + RN-RES-006. Staff GET|PATCH /tenant-settings. reservationCancellationHours + waitlistMode + allowLateSessionEntry.",
       "item": [
         {
           "name": "Staff GET tenant settings",
@@ -1726,7 +1726,8 @@
                 "exec": [
                   "pm.test('status 200', () => pm.response.to.have.status(200));",
                   "pm.test('hours', () => pm.expect(pm.response.json().reservationCancellationHours).to.be.a('number'));",
-                  "pm.test('waitlistMode', () => pm.expect(pm.response.json().waitlistMode).to.be.a('string'));"
+                  "pm.test('waitlistMode', () => pm.expect(pm.response.json().waitlistMode).to.be.a('string'));",
+                  "pm.test('allowLate', () => pm.expect(pm.response.json().allowLateSessionEntry).to.be.a('boolean'));"
                 ]
               }
             }
@@ -1736,7 +1737,7 @@
             "header": [{ "key": "Content-Type", "value": "application/json" }],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"reservationCancellationHours\": 6,\n  \"waitlistMode\": \"AUTO_ASSIGN\"\n}"
+              "raw": "{\n  \"reservationCancellationHours\": 6,\n  \"waitlistMode\": \"AUTO_ASSIGN\",\n  \"allowLateSessionEntry\": false\n}"
             },
             "url": "{{baseUrl}}/api/tenant-settings"
           }

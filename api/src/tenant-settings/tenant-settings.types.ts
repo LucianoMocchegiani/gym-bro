@@ -5,6 +5,7 @@ export type TenantSettingsDetail = {
   tenantId: string;
   reservationCancellationHours: number;
   waitlistMode: 'AUTO_ASSIGN' | 'MEMBER_CONFIRM' | 'STAFF_CONFIRM';
+  allowLateSessionEntry: boolean;
   createdAt: Date;
   updatedAt: Date;
 };

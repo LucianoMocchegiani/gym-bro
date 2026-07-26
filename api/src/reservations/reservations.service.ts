@@ -37,7 +37,8 @@ type ReservationWithRelations = Reservation & {
 /**
  * Reservas con crédito (CU-RES-001 / CU-RES-002 / RN-RES-001) y cancelación (CU-RES-003).
  *
- * @remarks Drop-in diferido. Cancelación: RN-RES-003. Liberación waitlist AUTO_ASSIGN al cancelar.
+ * @remarks Drop-in diferido. Cancelación: RN-RES-003. Ingreso tardío: RN-RES-006
+ * si `allowLateSessionEntry`. Liberación waitlist AUTO_ASSIGN al cancelar.
  */
 @Injectable()
 export class ReservationsService {
@@ -85,6 +86,8 @@ export class ReservationsService {
    *
    * @remarks Elige saldo con `expiresAt` más próximo (nulls al final).
    * Incrementa `bookedCount` de forma condicional para evitar overbooking.
+   * Si la sesión ya inició, solo permite si el gym tiene ingreso tardío ON y
+   * `endsAt` es futuro (CU-RES-006).
    */
   async createForMember(
     tenantId: string,
@@ -114,9 +117,7 @@ export class ReservationsService {
     if (session.status !== SessionStatus.PUBLISHED) {
       throw new BadRequestException('Session is not published');
     }
-    if (session.startsAt.getTime() <= Date.now()) {
-      throw new BadRequestException('Session has already started');
-    }
+    await this.tenantSettings.assertSessionOpenForBooking(tenantId, session);
     if (session.bookedCount >= session.capacity) {
       throw new BadRequestException('Session is full');
     }
@@ -153,14 +154,13 @@ export class ReservationsService {
             capacity: true,
             bookedCount: true,
             startsAt: true,
+            endsAt: true,
           },
         });
         if (!fresh || fresh.status !== SessionStatus.PUBLISHED) {
           throw new BadRequestException('Session is not published');
         }
-        if (fresh.startsAt.getTime() <= Date.now()) {
-          throw new BadRequestException('Session has already started');
-        }
+        await this.tenantSettings.assertSessionOpenForBooking(tenantId, fresh);
         if (fresh.bookedCount >= fresh.capacity) {
           throw new BadRequestException('Session is full');
         }
