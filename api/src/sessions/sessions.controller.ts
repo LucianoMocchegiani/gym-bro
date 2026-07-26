@@ -18,14 +18,18 @@ import { toAuditActor } from '../audit/to-audit-actor';
 import { RequirePermission } from '../roles/decorators/require-permission.decorator';
 import { CurrentTenant } from '../tenant/decorators/current-tenant.decorator';
 import { RequireTenantAuth } from '../tenant/decorators/require-tenant-auth.decorator';
-import { CreateSessionDto, UpdateSessionDto } from './dto/session.dto';
+import {
+  CreateSessionDto,
+  ExpandSessionCapacityDto,
+  UpdateSessionDto,
+} from './dto/session.dto';
 import { SessionsService } from './sessions.service';
 import { SessionDetail } from './sessions.types';
 
 /**
  * Sesiones puntuales del gym (staff).
  *
- * @remarks CU-SER-003. Requiere `sessions.write` (lectura y mutación en MVP).
+ * @remarks CU-SER-003 / CU-SER-005. Requiere `sessions.write` (lectura y mutación en MVP).
  */
 @Controller('sessions')
 @RequireTenantAuth()
@@ -69,6 +73,22 @@ export class SessionsController {
     @Body() dto: CreateSessionDto,
   ): Promise<SessionDetail> {
     return this.sessionsService.create(tenantId, dto, toAuditActor(user));
+  }
+
+  @Patch(':sessionId/capacity')
+  @RequirePermission('sessions.write')
+  expandCapacity(
+    @CurrentTenant() tenantId: string,
+    @CurrentUser() user: AuthUser,
+    @Param('sessionId', ParseUUIDPipe) sessionId: string,
+    @Body() dto: ExpandSessionCapacityDto,
+  ): Promise<SessionDetail> {
+    return this.sessionsService.expandCapacity(
+      tenantId,
+      sessionId,
+      dto,
+      toAuditActor(user),
+    );
   }
 
   @Patch(':sessionId')

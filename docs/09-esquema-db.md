@@ -558,12 +558,12 @@ Sesión puntual de servicio `POR_SESIONES` (CU-SER-003 / RN-SER-010..013).
 | `instructor_id` | uuid FK → `staff_users` nullable | SET NULL; opcional (RN-SER-011) |
 | `recurrence_rule_id` | uuid FK nullable | Origen de serie; editar sesión no cambia regla |
 | `starts_at` / `ends_at` | timestamptz | `ends_at > starts_at` |
-| `capacity` | int | ≥ 1 |
+| `capacity` | int | ≥ 1; ampliar con `PATCH .../sessions/:id/capacity` (CU-SER-005) |
 | `booked_count` | int | default 0; reservas después |
 | `status` | `SessionStatus` | create → `PUBLISHED` |
 | `created_at` / `updated_at` | timestamptz | |
 
-API Staff: `GET|POST|PATCH /api/sessions` (`sessions.write`). Super: `/api/tenants/:tenantId/sessions`.
+API Staff: `GET|POST|PATCH /api/sessions`, `PATCH /api/sessions/:id/capacity` (`sessions.write`). Super: `/api/tenants/:tenantId/sessions`.
 
 ### 4.20 `reservations`
 

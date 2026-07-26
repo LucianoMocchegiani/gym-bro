@@ -7,7 +7,11 @@ import { Prisma, ServiceType, Session, SessionStatus } from '@prisma/client';
 import { AUDIT_ACTIONS, AuditActor } from '../audit/audit.types';
 import { AuditService } from '../audit/audit.service';
 import { PrismaService } from '../prisma/prisma.service';
-import { CreateSessionDto, UpdateSessionDto } from './dto/session.dto';
+import {
+  CreateSessionDto,
+  ExpandSessionCapacityDto,
+  UpdateSessionDto,
+} from './dto/session.dto';
 import { SessionDetail } from './sessions.types';
 
 type SessionWithRelations = Session & {
@@ -19,7 +23,7 @@ type SessionWithRelations = Session & {
 /**
  * Sesiones puntuales de calendario (CU-SER-003 / RN-SER-010..013).
  *
- * @remarks Recurrencia, reservas y ampliación con lista de espera quedan fuera.
+ * @remarks Ampliar cupo: CU-SER-005. Liberación a lista de espera (CU-RES-005) aún no implementada.
  */
 @Injectable()
 export class SessionsService {
@@ -225,6 +229,69 @@ export class SessionsService {
       after: this.auditSnapshot(detail),
     });
     return detail;
+  }
+
+  /**
+   * Amplía el cupo de una sesión publicada (CU-SER-005 / RN-SER-010).
+   *
+   * @remarks Solo acepta `capacity` estrictamente mayor al actual.
+   * Tras el update invoca el hook de lista de espera (no-op hasta CU-RES-005).
+   * @throws {BadRequestException} Si la sesión está cancelada o el cupo no sube.
+   */
+  async expandCapacity(
+    tenantId: string,
+    sessionId: string,
+    dto: ExpandSessionCapacityDto,
+    actor: AuditActor,
+  ): Promise<SessionDetail> {
+    const before = await this.findInTenant(tenantId, sessionId);
+    if (before.status === SessionStatus.CANCELLED) {
+      throw new BadRequestException(
+        'Cannot expand capacity of a cancelled session',
+      );
+    }
+    if (dto.capacity <= before.capacity) {
+      throw new BadRequestException(
+        `capacity must be greater than current (${before.capacity})`,
+      );
+    }
+
+    const slotsOpened = dto.capacity - before.capacity;
+    const session = await this.prisma.session.update({
+      where: { id: sessionId },
+      data: { capacity: dto.capacity },
+      include: this.sessionInclude(),
+    });
+    const detail = this.toDetail(session);
+
+    this.releaseWaitlistAfterCapacityExpand(tenantId, sessionId, slotsOpened);
+
+    await this.audit.record({
+      tenantId,
+      actor,
+      action: AUDIT_ACTIONS.sessionCapacityExpand,
+      entityType: 'session',
+      entityId: sessionId,
+      before: this.auditSnapshot(this.toDetail(before)),
+      after: this.auditSnapshot(detail),
+    });
+    return detail;
+  }
+
+  /**
+   * Hook para liberar cupos hacia la lista de espera (CU-RES-005 / RN-RES-005).
+   *
+   * @remarks No-op en esta entrega: la cola aún no existe en el roadmap.
+   * Cuando exista, procesará hasta `slotsOpened` candidatos según el modo del gym.
+   */
+  private releaseWaitlistAfterCapacityExpand(
+    tenantId: string,
+    sessionId: string,
+    slotsOpened: number,
+  ): void {
+    void tenantId;
+    void sessionId;
+    void slotsOpened;
   }
 
   private sessionInclude() {

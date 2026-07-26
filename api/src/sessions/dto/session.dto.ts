@@ -68,3 +68,15 @@ export class UpdateSessionDto {
   @Equals(SessionStatus.CANCELLED)
   status?: 'CANCELLED';
 }
+
+/**
+ * Ampliar cupo de una sesión (CU-SER-005 / RN-SER-010).
+ *
+ * @remarks Solo permite subir `capacity` por encima del valor actual.
+ * Bajar cupo (si ≥ bookedCount) sigue en {@link UpdateSessionDto}.
+ */
+export class ExpandSessionCapacityDto {
+  @IsInt()
+  @Min(1)
+  capacity!: number;
+}

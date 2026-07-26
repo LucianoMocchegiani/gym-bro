@@ -16,14 +16,18 @@ import type { AuthUser } from '../auth/auth.types';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { RequireSuperAuth } from '../auth/decorators/require-super-auth.decorator';
 import { toAuditActor } from '../audit/to-audit-actor';
-import { CreateSessionDto, UpdateSessionDto } from './dto/session.dto';
+import {
+  CreateSessionDto,
+  ExpandSessionCapacityDto,
+  UpdateSessionDto,
+} from './dto/session.dto';
 import { SessionsService } from './sessions.service';
 import { SessionDetail } from './sessions.types';
 
 /**
  * Sesiones por tenant (Super Admin).
  *
- * @remarks Path: `/api/tenants/:tenantId/sessions`.
+ * @remarks Path: `/api/tenants/:tenantId/sessions`. Incluye ampliar cupo (CU-SER-005).
  */
 @Controller('tenants/:tenantId/sessions')
 @RequireSuperAuth()
@@ -64,6 +68,21 @@ export class SuperSessionsController {
     @Body() dto: CreateSessionDto,
   ): Promise<SessionDetail> {
     return this.sessionsService.create(tenantId, dto, toAuditActor(user));
+  }
+
+  @Patch(':sessionId/capacity')
+  expandCapacity(
+    @Param('tenantId', ParseUUIDPipe) tenantId: string,
+    @Param('sessionId', ParseUUIDPipe) sessionId: string,
+    @CurrentUser() user: AuthUser,
+    @Body() dto: ExpandSessionCapacityDto,
+  ): Promise<SessionDetail> {
+    return this.sessionsService.expandCapacity(
+      tenantId,
+      sessionId,
+      dto,
+      toAuditActor(user),
+    );
   }
 
   @Patch(':sessionId')

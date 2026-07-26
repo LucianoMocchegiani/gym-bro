@@ -88,7 +88,7 @@
 
 - [x] Crear sesión puntual
 - [x] Regla de recurrencia simple
-- [ ] Ampliar cupo
+- [x] Ampliar cupo
 - [x] Reservar con crédito
 - [ ] Reservar drop-in (pago)
 - [x] Reserva en nombre del afiliado (staff)
@@ -218,7 +218,7 @@ E11 → E12
 
 ## Próximo paso
 
-Elegir **una épica** (recomendado: **ampliar cupo**, **recurrencia**, o **cancelar reserva**) y bajar solo esa a subtareas del día / PRs.
+Elegir **una épica** (recomendado: **cancelar reserva**, **lista de espera**, o **config gym**) y bajar solo esa a subtareas del día / PRs.
 
 ---
 
