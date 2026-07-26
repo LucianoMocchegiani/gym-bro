@@ -16,6 +16,7 @@ La creación de registros sigue la skill:
 
 ## Índice
 
+- [2026-07-26 — Regla de recurrencia simple](./2026-07-26-regla-recurrencia-simple.md)
 - [2026-07-26 — Reservar sesión con crédito](./2026-07-26-reservar-con-credito.md)
 - [2026-07-25 — Sesiones puntuales de calendario](./2026-07-25-sesiones-puntuales.md)
 - [2026-07-25 — Estado de cuenta staff y afiliado](./2026-07-25-estado-cuenta-staff-afiliado.md)
