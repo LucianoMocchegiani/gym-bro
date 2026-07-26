@@ -16,6 +16,7 @@ La creación de registros sigue la skill:
 
 ## Índice
 
+- [2026-07-26 — Ingreso tardío a sesión](./2026-07-26-ingreso-tardio-sesion.md)
 - [2026-07-26 — Lista de espera (auto-assign)](./2026-07-26-lista-espera-auto-assign.md)
 - [2026-07-26 — Cancelar reserva (ventana del gym)](./2026-07-26-cancelar-reserva-ventana.md)
 - [2026-07-26 — Ampliar cupo de sesión](./2026-07-26-ampliar-cupo-sesion.md)
