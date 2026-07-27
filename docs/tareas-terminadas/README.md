@@ -16,6 +16,7 @@ La creación de registros sigue la skill:
 
 ## Índice
 
+- [2026-07-26 — Conectar cuenta Mercado Pago del gym](./2026-07-26-conectar-cuenta-mp.md)
 - [2026-07-26 — Comprobante interno (recibo)](./2026-07-26-comprobante-interno.md)
 - [2026-07-26 — Arqueo de caja del día](./2026-07-26-arqueo-caja.md)
 - [2026-07-26 — Cobro en caja + caja del día](./2026-07-26-caja-del-dia.md)
