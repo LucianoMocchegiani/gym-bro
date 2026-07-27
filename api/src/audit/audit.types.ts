@@ -69,4 +69,6 @@ export const AUDIT_ACTIONS = {
   mpAccountConnect: 'mp.account.connect',
   mpAccountTest: 'mp.account.test',
   mpAccountDisconnect: 'mp.account.disconnect',
+  refundRequestCreate: 'refund.request.create',
+  paymentRefund: 'payment.refund',
 } as const;

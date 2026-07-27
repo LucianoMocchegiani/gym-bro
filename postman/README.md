@@ -46,6 +46,8 @@ Carpeta **Cash register**: `GET /cash-register/day` + `POST /cash-register/day/r
 
 Carpeta **Mercado Pago**: cuenta `GET|PUT|DELETE /mercadopago/account` + test (`mp.connect`). Checkout pack Member `POST /me/payments/mp/checkout`; webhook `POST /webhooks/mercadopago` y `/simulate` si `MP_CHECKOUT_MODE=stub`.
 
+Carpeta **Refunds**: Member `POST /me/payments/:paymentId/refund-requests` + `GET /me/refund-requests`. Staff `GET /refund-requests` + `POST /payments/:paymentId/refunds` (`payments.refund`; `motiveCode=doble_cobro` opcional).
+
 Carpeta **Receipts**: Member `GET /me/receipts`. Staff `GET /payments/:paymentId/receipt` y `GET /members/:id/receipts` (`members.read`). Código `GB-000001`.
 
 Carpeta **Services**: Staff `catalog.write`. Tipos `ACCESO_LIBRE` y `POR_SESIONES`; `dropInPrice` (ARS) habilita drop-in; desactivar con `active: false`.

@@ -2069,6 +2069,78 @@
           }
         }
       ]
+    },
+    {
+      "name": "Refunds",
+      "description": "CU-PAG-004/005/007. Member POST /me/payments/:paymentId/refund-requests. Staff GET /refund-requests + POST /payments/:paymentId/refunds (payments.refund). Usá paymentId de cobro reciente (CASH/STUB/MP APPROVED).",
+      "item": [
+        {
+          "name": "Member POST refund request",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"No lo voy a usar\"\n}"
+            },
+            "url": "{{baseUrl}}/api/me/payments/{{createdPaymentId}}/refund-requests",
+            "description": "Requiere accessToken Member. createdPaymentId = pago APPROVED propio."
+          }
+        },
+        {
+          "name": "Member GET me refund requests",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/me/refund-requests"
+          }
+        },
+        {
+          "name": "Staff GET refund requests",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/refund-requests"
+          }
+        },
+        {
+          "name": "Staff POST execute refund",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 201', () => pm.response.to.have.status(201));",
+                  "pm.test('refunded', () => pm.expect(pm.response.json().status).to.eql('REFUNDED'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"Devolución staff\",\n  \"motiveCode\": \"solicitud\"\n}"
+            },
+            "url": "{{baseUrl}}/api/payments/{{createdPaymentId}}/refunds"
+          }
+        },
+        {
+          "name": "Staff POST refund doble_cobro",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"Cobro duplicado\",\n  \"motiveCode\": \"doble_cobro\"\n}"
+            },
+            "url": "{{baseUrl}}/api/payments/{{createdPaymentId}}/refunds",
+            "description": "CU-PAG-007. Mismo endpoint con motiveCode."
+          }
+        }
+      ]
     }
   ]
 }

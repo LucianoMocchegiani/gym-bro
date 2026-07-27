@@ -211,7 +211,16 @@ Env: `MP_CHECKOUT_MODE=stub|live`, `PUBLIC_API_BASE_URL` (notification_url).
 
 ### 7.4 Devoluciones
 
-- Servicio único `RefundService`: revierte derechos (pack mixto completo), marca pago, intenta refund MP o deja “manual pendiente”, notifica E9, audita.
+```text
+Member POST /me/payments/:id/refund-requests → política RN-PAG-012
+  → PENDING | rechazo (motivo)
+Staff POST /payments/:id/refunds (payments.refund)
+  → Payment REFUNDED + revierte contrato/reserva
+  → CASH: OUTCOME REFUND | MP: refund API o manual_pending | STUB: solo estado
+  → motiveCode=doble_cobro (CU-PAG-007)
+```
+
+Sin comprobante de devolución ni N1 E9 en esta entrega.
 
 ---
 
@@ -277,6 +286,7 @@ Prefijo sugerido: `/api/v1`.
 | Settings | Staff `GET|PATCH /tenant-settings` (`tenant.settings.*`; horas cancelación, `waitlistMode`, `allowLateSessionEntry`); Super `/tenants/:tid/settings` |
 | Caja | Staff `GET /cash-register/day`, `POST /cash-register/day/reconcile` (`cashier.operate`); Super `/tenants/:tid/cash-register/...` |
 | Mercado Pago | Staff `GET|PUT|DELETE /mercadopago/account`, `POST .../test` (`mp.connect`); Member `POST /me/payments/mp/checkout`; webhook `POST /webhooks/mercadopago`; Super `/tenants/:tid/mercadopago/account` |
+| Devoluciones | Member `POST /me/payments/:id/refund-requests`, `GET /me/refund-requests`; Staff `GET /refund-requests`, `POST /payments/:id/refunds` (`payments.refund`) |
 | Comprobantes | Member `/me/receipts`; Staff `GET /payments/:id/receipt`, `GET /members/:id/receipts` (`members.read`) |
 | Catálogo | Super/Staff CRUD services + packs (`catalog.write`; kind inferido; `creditsExpireAt`) |
 | Contrataciones | Staff `POST /members/:id/contracts` (pago stub APPROVED); `PATCH /contracts/:id/status` → `CANCELLED` (pierde derechos, RN-SER-009); Member `GET /me/contracts` |

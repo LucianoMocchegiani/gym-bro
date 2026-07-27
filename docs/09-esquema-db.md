@@ -275,9 +275,10 @@ erDiagram
 | `ReservationCoverage` | `CREDIT`, `DROP_IN` | Medio de cobertura de la reserva |
 | `WaitlistMode` | `AUTO_ASSIGN`, `MEMBER_CONFIRM`, `STAFF_CONFIRM` | Liberación cola (RN-RES-005) |
 | `WaitlistStatus` | `WAITING`, `PROMOTED`, `LEFT` | Estado ítem de cola |
-| `CashMovementKind` | `INCOME` | Tipo movimiento caja (OUTFLOW con devoluciones) |
-| `CashMovementConcept` | `PACK_CONTRACT`, `DROP_IN` | Concepto del movimiento |
+| `CashMovementKind` | `INCOME`, `OUTCOME` | Ingreso cobro / egreso devolución |
+| `CashMovementConcept` | `PACK_CONTRACT`, `DROP_IN`, `REFUND` | Concepto del movimiento |
 | `ReceiptConcept` | `PACK_CONTRACT`, `DROP_IN` | Concepto del comprobante |
+| `RefundRequestStatus` | `PENDING`, `REJECTED`, `EXECUTED` | Solicitud de devolución |
 
 ---
 
@@ -548,8 +549,8 @@ Movimiento de caja del día (CU-PAG-002 / RN-PAG-007).
 | `member_id` | uuid FK | CASCADE |
 | `recorded_by_staff_id` | uuid FK nullable | SET NULL |
 | `amount` | int | ingreso ≥ 1 |
-| `kind` | `CashMovementKind` | MVP: `INCOME` |
-| `concept` | `CashMovementConcept` | `PACK_CONTRACT` \| `DROP_IN` |
+| `kind` | `CashMovementKind` | `INCOME` \| `OUTCOME` |
+| `concept` | `CashMovementConcept` | `PACK_CONTRACT` \| `DROP_IN` \| `REFUND` |
 | `created_at` | timestamptz | |
 
 API: Staff `GET /api/cash-register/day?date=YYYY-MM-DD`, `POST /api/cash-register/day/reconcile` (`cashier.operate`); Super `/api/tenants/:tid/cash-register/...`.
@@ -618,6 +619,23 @@ Extensión checkout/webhook (CU-PAG-001):
 | `mp_init_point` / `mp_sandbox_init_point` | text nullable | URLs checkout |
 
 API Member: `POST /api/me/payments/mp/checkout` → Payment `PENDING` + URLs. Webhook: `POST /api/webhooks/mercadopago?tenantId=` (público). Stub: `POST /api/webhooks/mercadopago/simulate`. Al `APPROVED` → contrato + recibo.
+
+### 4.15g `refund_requests` + refund en `payments`
+
+Devoluciones (CU-PAG-004/005/007 / RN-PAG-011/012).
+
+| Columna (`refund_requests`) | Tipo | Notas |
+|---------|------|--------|
+| `id` | uuid PK | |
+| `tenant_id` / `payment_id` / `member_id` | uuid FK | |
+| `status` | `RefundRequestStatus` | `PENDING` \| `REJECTED` \| `EXECUTED` |
+| `reason` / `rejection_reason` | text nullable | |
+| `resolved_by_staff_id` / `resolved_at` | uuid / timestamptz nullable | |
+| `created_at` / `updated_at` | timestamptz | |
+
+Pagos: `refunded_at`, `refund_reason`, `mp_refund_manual_pending`. Caja: `OUTCOME` + concepto `REFUND`; unique `(payment_id, kind)`.
+
+API: Member `POST /me/payments/:id/refund-requests`, `GET /me/refund-requests`. Staff `GET /refund-requests`, `POST /payments/:id/refunds` (`payments.refund`).
 
 ### 4.16 `contracts`
 
@@ -756,6 +774,7 @@ API: Member `POST|GET /api/me/waitlist`, `PATCH /api/me/waitlist/:id/status`; St
 | `20260726240000_receipts` | `ReceiptConcept` + `receipt_sequences` + `receipts` |
 | `20260726250000_mercadopago_accounts` | tabla `mercadopago_accounts` (cuenta MP por tenant) |
 | `20260726260000_payment_mp_checkout` | `PaymentMethod.MP` + ids/URLs Preference en `payments` |
+| `20260726270000_refunds` | `refund_requests` + OUTCOME/REFUND caja + campos refund en payments |
 
 Comandos:
 

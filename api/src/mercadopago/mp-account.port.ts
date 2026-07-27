@@ -68,6 +68,17 @@ export abstract class MpAccountPort {
     accessToken: string,
     mpPaymentId: string,
   ): Promise<MpRemotePayment>;
+
+  /**
+   * Solicita reembolso total de un pago MP.
+   *
+   * @returns true si MP aceptó; false si debe marcarse manual pendiente.
+   */
+  abstract refundPayment(
+    accessToken: string,
+    mpPaymentId: string,
+    amount: number,
+  ): Promise<{ ok: boolean; manualPending: boolean }>;
 }
 
 /** Token de inyección Nest para el adapter concreto. */

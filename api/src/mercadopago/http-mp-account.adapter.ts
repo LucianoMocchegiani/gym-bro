@@ -193,6 +193,43 @@ export class HttpMpAccountAdapter extends MpAccountPort {
     };
   }
 
+  /**
+   * @inheritdoc
+   */
+  async refundPayment(
+    accessToken: string,
+    mpPaymentId: string,
+    amount: number,
+  ): Promise<{ ok: boolean; manualPending: boolean }> {
+    if (this.isCheckoutStub()) {
+      return { ok: true, manualPending: false };
+    }
+
+    const response = await fetch(
+      `${MP_PAYMENTS}/${encodeURIComponent(mpPaymentId)}/refunds`,
+      {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+          'X-Idempotency-Key': `refund-${mpPaymentId}-${amount}`,
+        },
+        body: JSON.stringify({ amount }),
+      },
+    );
+
+    if (!response.ok) {
+      const body = await response.text().catch(() => '');
+      this.logger.warn(
+        `MP refund ${mpPaymentId} failed status=${response.status} body=${body.slice(0, 300)}`,
+      );
+      return { ok: false, manualPending: true };
+    }
+
+    return { ok: true, manualPending: false };
+  }
+
   private isValidateStub(): boolean {
     const mode =
       this.config.get<string>('MP_ACCOUNT_VALIDATE_MODE')?.trim() ?? 'live';

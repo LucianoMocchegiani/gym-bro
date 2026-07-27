@@ -76,6 +76,44 @@ export class CashRegisterService {
   }
 
   /**
+   * Si el pago es CASH, registra egreso de caja por devolución.
+   *
+   * @remarks Unique `(paymentId, OUTCOME)`. No-op si no es CASH.
+   */
+  async recordOutcomeIfCash(
+    tx: Tx,
+    input: {
+      tenantId: string;
+      paymentId: string;
+      memberId: string;
+      amount: number;
+      method: PaymentMethod;
+      recordedByStaffId: string | null;
+      at?: Date;
+    },
+  ): Promise<void> {
+    if (input.method !== PaymentMethod.CASH) {
+      return;
+    }
+    if (input.amount < 1) {
+      throw new BadRequestException('Cash movement amount must be >= 1');
+    }
+
+    await tx.cashMovement.create({
+      data: {
+        tenantId: input.tenantId,
+        businessDate: this.businessDate(input.at ?? new Date()),
+        paymentId: input.paymentId,
+        memberId: input.memberId,
+        recordedByStaffId: input.recordedByStaffId,
+        amount: input.amount,
+        kind: CashMovementKind.OUTCOME,
+        concept: CashMovementConcept.REFUND,
+      },
+    });
+  }
+
+  /**
    * Consulta la caja de un día operativo (default: hoy en BA).
    */
   async getDay(tenantId: string, dateYmd?: string): Promise<CashDayDetail> {
@@ -103,7 +141,12 @@ export class CashRegisterService {
     ]);
 
     const movements = rows.map((row) => this.toMovementDetail(row));
-    const income = movements.reduce((sum, m) => sum + m.amount, 0);
+    const income = movements
+      .filter((m) => m.kind === 'INCOME')
+      .reduce((sum, m) => sum + m.amount, 0);
+    const outcome = movements
+      .filter((m) => m.kind === 'OUTCOME')
+      .reduce((sum, m) => sum + m.amount, 0);
 
     return {
       tenantId,
@@ -111,6 +154,8 @@ export class CashRegisterService {
       timezone: CASH_REGISTER_TIMEZONE,
       totals: {
         income,
+        outcome,
+        net: income - outcome,
         movementCount: movements.length,
       },
       movements,
@@ -149,10 +194,15 @@ export class CashRegisterService {
     }
 
     const incomeAgg = await this.prisma.cashMovement.aggregate({
-      where: { tenantId, businessDate },
+      where: { tenantId, businessDate, kind: CashMovementKind.INCOME },
       _sum: { amount: true },
     });
-    const expectedAmount = incomeAgg._sum.amount ?? 0;
+    const outcomeAgg = await this.prisma.cashMovement.aggregate({
+      where: { tenantId, businessDate, kind: CashMovementKind.OUTCOME },
+      _sum: { amount: true },
+    });
+    const expectedAmount =
+      (incomeAgg._sum.amount ?? 0) - (outcomeAgg._sum.amount ?? 0);
     const declaredAmount = dto.declaredAmount;
     const difference = declaredAmount - expectedAmount;
     const note = dto.note?.trim() || null;

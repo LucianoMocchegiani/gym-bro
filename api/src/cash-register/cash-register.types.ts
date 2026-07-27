@@ -11,8 +11,8 @@ export type CashMovementDetail = {
   recordedByStaffId: string | null;
   recordedByStaffName: string | null;
   amount: number;
-  kind: 'INCOME';
-  concept: 'PACK_CONTRACT' | 'DROP_IN';
+  kind: 'INCOME' | 'OUTCOME';
+  concept: 'PACK_CONTRACT' | 'DROP_IN' | 'REFUND';
   createdAt: Date;
 };
 
@@ -41,6 +41,8 @@ export type CashDayDetail = {
   timezone: 'America/Argentina/Buenos_Aires';
   totals: {
     income: number;
+    outcome: number;
+    net: number;
     movementCount: number;
   };
   movements: CashMovementDetail[];

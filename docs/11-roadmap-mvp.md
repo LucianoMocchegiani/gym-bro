@@ -119,9 +119,12 @@
   - `GET /cash-register/day` (timezone BA)
 - [x] Arqueo
   - `POST /cash-register/day/reconcile`; 1 por día; no bloquea cobros
-- [ ] Solicitud devolución (afiliado)
-- [ ] Ejecutar devolución (staff + flag)
-- [ ] Reembolso por doble cobro
+- [x] Solicitud devolución (afiliado)
+  - `POST /me/payments/:id/refund-requests`; política fija RN-PAG-012; rechazo con motivo
+- [x] Ejecutar devolución (staff + flag)
+  - `POST /payments/:id/refunds` (`payments.refund`); total; CASH egreso; MP refund/manual_pending
+- [x] Reembolso por doble cobro
+  - mismo execute con `motiveCode=doble_cobro`
 
 ---
 
@@ -229,7 +232,7 @@ E11 → E12
 
 ## Próximo paso
 
-Elegir **una épica** (recomendado: **drop-in MP**, o **devoluciones**) y bajar solo esa a subtareas del día / PRs.
+Elegir **una épica** (recomendado: **E6 acceso QR**, o drop-in MP) y bajar solo esa a subtareas del día / PRs.
 
 ---
 

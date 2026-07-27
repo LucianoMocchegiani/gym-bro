@@ -108,15 +108,24 @@ enum WaitlistStatus {
   LEFT
 }
 
-/// Tipo de movimiento de caja (RN-PAG-007). OUTFLOW llega con devoluciones.
+/// Tipo de movimiento de caja (RN-PAG-007).
 enum CashMovementKind {
   INCOME
+  OUTCOME
 }
 
 /// Concepto de negocio del movimiento de caja.
 enum CashMovementConcept {
   PACK_CONTRACT
   DROP_IN
+  REFUND
+}
+
+/// Estado de solicitud de devolución (CU-PAG-004).
+enum RefundRequestStatus {
+  PENDING
+  REJECTED
+  EXECUTED
 }
 
 /// Concepto del comprobante interno (RN-PAG-009).
@@ -154,6 +163,7 @@ model Tenant {
   receipts        Receipt[]
   receiptSequence ReceiptSequence?
   mercadoPagoAccount MercadoPagoAccount?
+  refundRequests  RefundRequest[]
   auditEvents     AuditEvent[]
 
   @@map("tenants")
@@ -252,6 +262,7 @@ model StaffUser {
   instructedRecurrenceRules SessionRecurrenceRule[] @relation("RecurrenceInstructor")
   cashMovementsRecorded     CashMovement[]          @relation("CashMovementRecorder")
   cashReconciliations       CashReconciliation[]    @relation("CashReconciliationStaff")
+  refundRequestsResolved    RefundRequest[]         @relation("RefundRequestResolver")
 
   @@unique([tenantId, email])
   @@index([tenantId])
@@ -281,6 +292,7 @@ model Member {
   waitlistEntries WaitlistEntry[]
   cashMovements CashMovement[]
   receipts      Receipt[]
+  refundRequests RefundRequest[]
 
   @@unique([tenantId, email])
   @@unique([tenantId, document])
@@ -530,6 +542,11 @@ model Payment {
   mpPaymentId      String?       @unique @map("mp_payment_id")
   mpInitPoint      String?       @map("mp_init_point")
   mpSandboxInitPoint String?     @map("mp_sandbox_init_point")
+  /// Timestamp de reembolso total (CU-PAG-005).
+  refundedAt       DateTime?     @map("refunded_at")
+  refundReason     String?       @map("refund_reason")
+  /// MP refund API falló → pendiente manual.
+  mpRefundManualPending Boolean  @default(false) @map("mp_refund_manual_pending")
   createdAt        DateTime      @default(now()) @map("created_at")
   updatedAt        DateTime      @updatedAt @map("updated_at")
 
@@ -538,8 +555,9 @@ model Payment {
   pack     Pack?         @relation(fields: [packId], references: [id], onDelete: SetNull)
   contract Contract?
   reservation Reservation?
-  cashMovement CashMovement?
+  cashMovements CashMovement[]
   receipt Receipt?
+  refundRequests RefundRequest[]
 
   @@unique([tenantId, idempotencyKey])
   @@index([tenantId])
@@ -650,15 +668,14 @@ model WaitlistEntry {
   @@map("waitlist_entries")
 }
 
-/// Movimiento de caja del día (CU-PAG-002 / RN-PAG-007).
+/// Movimiento de caja del día (CU-PAG-002 / RN-PAG-007 / CU-PAG-005).
 ///
-/// @remarks Solo se crea para pagos `CASH` (STUB no entra). `businessDate` es
-/// el día calendario en `America/Argentina/Buenos_Aires`.
+/// @remarks CASH: ingreso al cobrar; egreso al devolver. Unique `(payment_id, kind)`.
 model CashMovement {
   id                 String              @id @default(uuid()) @db.Uuid
   tenantId           String              @map("tenant_id") @db.Uuid
   businessDate       DateTime            @map("business_date") @db.Date
-  paymentId          String              @unique @map("payment_id") @db.Uuid
+  paymentId          String              @map("payment_id") @db.Uuid
   memberId           String              @map("member_id") @db.Uuid
   recordedByStaffId  String?             @map("recorded_by_staff_id") @db.Uuid
   amount             Int
@@ -671,9 +688,35 @@ model CashMovement {
   member          Member     @relation(fields: [memberId], references: [id], onDelete: Cascade)
   recordedByStaff StaffUser? @relation("CashMovementRecorder", fields: [recordedByStaffId], references: [id], onDelete: SetNull)
 
+  @@unique([paymentId, kind])
   @@index([tenantId, businessDate])
   @@index([memberId])
   @@map("cash_movements")
+}
+
+/// Solicitud de devolución del afiliado (CU-PAG-004 / RN-PAG-012).
+model RefundRequest {
+  id                   String              @id @default(uuid()) @db.Uuid
+  tenantId             String              @map("tenant_id") @db.Uuid
+  paymentId            String              @map("payment_id") @db.Uuid
+  memberId             String              @map("member_id") @db.Uuid
+  status               RefundRequestStatus @default(PENDING)
+  reason               String?
+  rejectionReason      String?             @map("rejection_reason")
+  resolvedByStaffId    String?             @map("resolved_by_staff_id") @db.Uuid
+  resolvedAt           DateTime?           @map("resolved_at")
+  createdAt            DateTime            @default(now()) @map("created_at")
+  updatedAt            DateTime            @updatedAt @map("updated_at")
+
+  tenant          Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  payment         Payment    @relation(fields: [paymentId], references: [id], onDelete: Restrict)
+  member          Member     @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  resolvedByStaff StaffUser? @relation("RefundRequestResolver", fields: [resolvedByStaffId], references: [id], onDelete: SetNull)
+
+  @@index([tenantId, status])
+  @@index([memberId, createdAt])
+  @@index([paymentId])
+  @@map("refund_requests")
 }
 
 /// Contador de comprobantes por tenant (RN-PAG-009).
