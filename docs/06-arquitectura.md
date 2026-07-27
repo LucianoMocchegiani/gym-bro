@@ -151,7 +151,8 @@ AccessIdentityProvider
 
 ### 6.2 Adaptador MVP
 
-- **Quark / SSI** implementa el puerto.
+- **Stub** (`ACCESS_PROVIDER=stub`): refs `stub:{uuid}`, venue `stub-venue:{tenantId}`; persistencia en `access_credentials`.
+- **Quark / SSI** (siguiente): implementa el mismo puerto sin cambiar la evaluación de negocio.
 - GymBro **no** mete packs ni deuda en la credencial (enfoque B).
 
 ### 6.3 Evaluación de ingreso (dominio puro)

@@ -134,6 +134,12 @@ enum ReceiptConcept {
   DROP_IN
 }
 
+/// Estado de credencial de vínculo de acceso (RN-ACC-002).
+enum AccessCredentialStatus {
+  ACTIVE
+  REVOKED
+}
+
 /// Gimnasio / estudio = tenant SaaS.
 ///
 /// @remarks Aislamiento row-level: el resto de tablas de negocio
@@ -164,6 +170,7 @@ model Tenant {
   receiptSequence ReceiptSequence?
   mercadoPagoAccount MercadoPagoAccount?
   refundRequests  RefundRequest[]
+  accessCredentials AccessCredential[]
   auditEvents     AuditEvent[]
 
   @@map("tenants")
@@ -293,6 +300,7 @@ model Member {
   cashMovements CashMovement[]
   receipts      Receipt[]
   refundRequests RefundRequest[]
+  accessCredentials AccessCredential[]
 
   @@unique([tenantId, email])
   @@unique([tenantId, document])
@@ -692,6 +700,31 @@ model CashMovement {
   @@index([tenantId, businessDate])
   @@index([memberId])
   @@map("cash_movements")
+}
+
+/// Credencial de vínculo afiliado↔gym para acceso QR/SSI (RN-ACC-001/002).
+///
+/// @remarks `credentialRef` opaco del adapter. Una sola ACTIVE por member
+/// (índice único parcial en migración). Derechos los evalúa GymBro, no la credencial.
+model AccessCredential {
+  id            String                 @id @default(uuid()) @db.Uuid
+  tenantId      String                 @map("tenant_id") @db.Uuid
+  memberId      String                 @map("member_id") @db.Uuid
+  credentialRef String                 @unique @map("credential_ref")
+  status        AccessCredentialStatus @default(ACTIVE)
+  /// Identificador del adapter (`stub` | futuro `quark`).
+  provider      String                 @default("stub")
+  issuedAt      DateTime               @default(now()) @map("issued_at")
+  revokedAt     DateTime?              @map("revoked_at")
+  createdAt     DateTime               @default(now()) @map("created_at")
+  updatedAt     DateTime               @updatedAt @map("updated_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  member Member @relation(fields: [memberId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, memberId])
+  @@index([memberId, status])
+  @@map("access_credentials")
 }
 
 /// Solicitud de devolución del afiliado (CU-PAG-004 / RN-PAG-012).

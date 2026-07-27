@@ -68,7 +68,8 @@
 - [x] Baja / suspensión
 - [x] Estado de cuenta (staff)
 - [x] Estado de cuenta (afiliado)
-- [ ] Emisión / reemisión credencial de vínculo (hook a E6)
+- [x] Emisión / reemisión credencial de vínculo (hook a E6)
+  - Member `POST /me/access-credential/issue`; Staff `POST /members/:id/access-credentials/issue`
 
 ---
 
@@ -130,9 +131,11 @@
 
 ## E6 — Acceso QR / SSI
 
-- [ ] Puerto `AccessIdentityProvider`
+- [x] Puerto `AccessIdentityProvider`
+  - modos `gym_scans_member` | `member_scans_gym`; `ACCESS_PROVIDER=stub`
 - [ ] Adapter Quark / SSI
-- [ ] Emitir / revocar credencial de vínculo
+- [x] Emitir / revocar credencial de vínculo
+  - tabla `access_credentials`; Member `GET|POST /me/access-credential…`; Staff list/issue/revoke
 - [ ] `POST /access/verify` (1 modo de escaneo en MVP)
 - [ ] Evaluación: libre / reserva / deuda / tolerancia / multi-ingreso
 - [ ] Pase manual + auditoría
@@ -232,7 +235,7 @@ E11 → E12
 
 ## Próximo paso
 
-Elegir **una épica** (recomendado: **E6 acceso QR**, o drop-in MP) y bajar solo esa a subtareas del día / PRs.
+Elegir **una subtarea de E6** (recomendado: `POST /access/verify` + evaluación mínima) o drop-in MP opcional.
 
 ---
 

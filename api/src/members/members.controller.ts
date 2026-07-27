@@ -30,7 +30,7 @@ import { MemberAccountDetail, MemberDetail } from './members.types';
 /**
  * Afiliados del gym (staff) y estado de cuenta propio (member).
  *
- * @remarks CU-AFI-001..005 / RN-ROL-007. Credencial SSI fuera de alcance.
+ * @remarks CU-AFI-001..005 / RN-ROL-007. Credencial SSI: módulo `access`.
  */
 @Controller()
 @RequireTenantAuth()

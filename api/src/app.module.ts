@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { AccessModule } from './access/access.module';
 import { AuditModule } from './audit/audit.module';
 import { AuthModule } from './auth/auth.module';
 import { CashRegisterModule } from './cash-register/cash-register.module';
@@ -46,6 +47,7 @@ import { WaitlistModule } from './waitlist/waitlist.module';
     ReceiptsModule,
     MercadoPagoModule,
     RefundsModule,
+    AccessModule,
     TenantsModule,
     AuditModule,
     HealthModule,

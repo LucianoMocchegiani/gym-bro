@@ -51,6 +51,10 @@ erDiagram
   members ||--o{ reservations : books
   sessions ||--o{ reservations : fills
   contracts ||--o{ reservations : covers
+  tenants ||--o{ refund_requests : has
+  members ||--o{ refund_requests : requests
+  tenants ||--o{ access_credentials : issues
+  members ||--o{ access_credentials : holds
   tenants ||--o{ audit_events : has
   branches ||--o{ members : default_for
   roles ||--o{ role_permissions : has
@@ -279,6 +283,7 @@ erDiagram
 | `CashMovementConcept` | `PACK_CONTRACT`, `DROP_IN`, `REFUND` | Concepto del movimiento |
 | `ReceiptConcept` | `PACK_CONTRACT`, `DROP_IN` | Concepto del comprobante |
 | `RefundRequestStatus` | `PENDING`, `REJECTED`, `EXECUTED` | Solicitud de devolución |
+| `AccessCredentialStatus` | `ACTIVE`, `REVOKED` | Credencial de vínculo de acceso |
 
 ---
 
@@ -637,6 +642,24 @@ Pagos: `refunded_at`, `refund_reason`, `mp_refund_manual_pending`. Caja: `OUTCOM
 
 API: Member `POST /me/payments/:id/refund-requests`, `GET /me/refund-requests`. Staff `GET /refund-requests`, `POST /payments/:id/refunds` (`payments.refund`).
 
+### 4.15h `access_credentials`
+
+Credencial de vínculo afiliado↔gym (E6 / RN-ACC-002). Stub SSI: `credential_ref` opaco (`stub:{uuid}`).
+
+| Columna | Tipo | Notas |
+|---------|------|--------|
+| `id` | uuid PK | |
+| `tenant_id` / `member_id` | uuid FK | |
+| `credential_ref` | text UK | Ref opaca del adapter |
+| `status` | `AccessCredentialStatus` | `ACTIVE` \| `REVOKED` |
+| `provider` | text | default `stub` |
+| `issued_at` / `revoked_at` | timestamptz | |
+| `created_at` / `updated_at` | timestamptz | |
+
+Índice único parcial: una sola `ACTIVE` por `member_id`.
+
+API: Member `GET /me/access-credential`, `POST /me/access-credential/issue`. Staff `GET /members/:id/access-credentials`, `POST .../issue`, `POST .../revoke` (`members.read` / `members.write`).
+
 ### 4.16 `contracts`
 
 Contratación tras pago aprobado (CU-CON-001).
@@ -775,6 +798,7 @@ API: Member `POST|GET /api/me/waitlist`, `PATCH /api/me/waitlist/:id/status`; St
 | `20260726250000_mercadopago_accounts` | tabla `mercadopago_accounts` (cuenta MP por tenant) |
 | `20260726260000_payment_mp_checkout` | `PaymentMethod.MP` + ids/URLs Preference en `payments` |
 | `20260726270000_refunds` | `refund_requests` + OUTCOME/REFUND caja + campos refund en payments |
+| `20260727120000_access_credentials` | enum `AccessCredentialStatus` + tabla `access_credentials` |
 
 Comandos:
 
@@ -806,7 +830,7 @@ Crea Super + tenant demo + **branch** + roles Admin/Profesor + staff `admin@demo
 
 ## 7. Pendiente de modelar (dominio → DB)
 
-Aún no hay tablas Prisma para (ver [03](./03-modelo-dominio.md) / roadmap): reservas, caja completa, acceso, rutinas, notificaciones, etc. Se documentan aquí **al implementarlas**.
+Aún no hay tablas Prisma para (ver [03](./03-modelo-dominio.md) / roadmap): intentos de ingreso, rutinas, notificaciones, etc. Se documentan aquí **al implementarlas**.
 
 **Staff ↔ roles:** tabla `staff_user_roles`. API: Super `PUT /tenants/:tenantId/staff/:staffId/roles`, Staff `PUT /staff/:staffId/roles`. Create tenant exige owner y le asigna rol Admin.
 
