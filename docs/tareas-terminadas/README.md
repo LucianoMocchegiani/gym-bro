@@ -16,6 +16,7 @@ La creación de registros sigue la skill:
 
 ## Índice
 
+- [2026-07-26 — Devoluciones (solicitud + ejecutar + doble cobro)](./2026-07-26-devoluciones.md)
 - [2026-07-26 — Checkout MP + webhook idempotente (pack)](./2026-07-26-checkout-webhook-mp.md)
 - [2026-07-26 — Conectar cuenta Mercado Pago del gym](./2026-07-26-conectar-cuenta-mp.md)
 - [2026-07-26 — Comprobante interno (recibo)](./2026-07-26-comprobante-interno.md)
