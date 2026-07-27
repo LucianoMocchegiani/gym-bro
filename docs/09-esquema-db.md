@@ -591,6 +591,21 @@ Comprobante interno (RN-PAG-009). 1:1 con `payments` APPROVED.
 
 API: Member `GET /api/me/receipts`; Staff `GET /api/payments/:paymentId/receipt`, `GET /api/members/:id/receipts` (`members.read`).
 
+### 4.15e `mercadopago_accounts`
+
+Cuenta Mercado Pago del gym (CU-PAG-006 / RN-PAG-001). 1:1 con tenant.
+
+| Columna | Tipo | Notas |
+|---------|------|--------|
+| `tenant_id` | uuid PK FK → `tenants` | CASCADE |
+| `access_token_ciphertext` | text | AES-256-GCM (`v1:iv:tag:data`); nunca en API GET |
+| `public_key` | text | expuesto solo enmascarado |
+| `mp_user_id` | text nullable | id de `/users/me` tras validación |
+| `last_validated_at` / `last_validation_ok` | timestamptz / bool nullable | |
+| `created_at` / `updated_at` | timestamptz | |
+
+API Staff: `GET|PUT|DELETE /api/mercadopago/account`, `POST .../test` (`mp.connect`). Super: `/api/tenants/:tenantId/mercadopago/account`. Env: `MP_CREDENTIALS_SECRET`, `MP_ACCOUNT_VALIDATE_MODE=live|stub`.
+
 ### 4.16 `contracts`
 
 Contratación tras pago aprobado (CU-CON-001).
@@ -726,6 +741,7 @@ API: Member `POST|GET /api/me/waitlist`, `PATCH /api/me/waitlist/:id/status`; St
 | `20260726220000_cash_movements` | enums caja + tabla `cash_movements` |
 | `20260726230000_cash_reconciliations` | tabla `cash_reconciliations` (arqueo 1/día) |
 | `20260726240000_receipts` | `ReceiptConcept` + `receipt_sequences` + `receipts` |
+| `20260726250000_mercadopago_accounts` | tabla `mercadopago_accounts` (cuenta MP por tenant) |
 
 Comandos:
 

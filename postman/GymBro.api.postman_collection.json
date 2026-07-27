@@ -1918,6 +1918,99 @@
           }
         }
       ]
+    },
+    {
+      "name": "Mercado Pago",
+      "description": "CU-PAG-006 / RN-PAG-001. GET|PUT|DELETE /mercadopago/account + POST .../test (mp.connect). Token cifrado; GET sin secretos. Con MP_ACCOUNT_VALIDATE_MODE=stub cualquier accessToken ≥10 chars sirve.",
+      "item": [
+        {
+          "name": "Staff GET MP account status",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('connected bool', () => pm.expect(pm.response.json().connected).to.be.a('boolean'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/mercadopago/account"
+          }
+        },
+        {
+          "name": "Staff PUT connect MP account",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('connected', () => pm.expect(body.connected).to.eql(true));",
+                  "pm.test('masked key', () => pm.expect(body.publicKeyMasked).to.be.a('string'));",
+                  "pm.test('no raw token', () => pm.expect(body).to.not.have.property('accessToken'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"accessToken\": \"TEST-ACCESS-TOKEN-STUB-123456\",\n  \"publicKey\": \"TEST-PUBLIC-KEY-APPUSR-XXXX\",\n  \"validate\": true\n}"
+            },
+            "url": "{{baseUrl}}/api/mercadopago/account"
+          }
+        },
+        {
+          "name": "Staff POST test MP account",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('ok', () => pm.expect(pm.response.json().ok).to.eql(true));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": "{{baseUrl}}/api/mercadopago/account/test"
+          }
+        },
+        {
+          "name": "Staff DELETE disconnect MP account",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('disconnected', () => pm.expect(pm.response.json().connected).to.eql(false));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": "{{baseUrl}}/api/mercadopago/account"
+          }
+        }
+      ]
     }
   ]
 }

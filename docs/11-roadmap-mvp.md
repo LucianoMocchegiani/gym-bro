@@ -105,7 +105,8 @@
 
 ## E5 — Pagos y caja
 
-- [ ] Conectar cuenta MP del gym
+- [x] Conectar cuenta MP del gym
+  - `mercadopago_accounts` 1:1; access_token cifrado; PUT/GET/DELETE + test (`mp.connect`); sin checkout
 - [ ] Checkout MP (pack / mensualidad / drop-in)
 - [ ] Webhook MP idempotente
 - [x] Cobro en caja
@@ -226,7 +227,7 @@ E11 → E12
 
 ## Próximo paso
 
-Elegir **una épica** (recomendado: **cuenta MP**, o devoluciones) y bajar solo esa a subtareas del día / PRs.
+Elegir **una épica** (recomendado: **checkout + webhook MP**, o devoluciones) y bajar solo esa a subtareas del día / PRs.
 
 ---
 

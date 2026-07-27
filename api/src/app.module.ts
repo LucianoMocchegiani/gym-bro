@@ -6,6 +6,7 @@ import { CashRegisterModule } from './cash-register/cash-register.module';
 import { ContractsModule } from './contracts/contracts.module';
 import { HealthModule } from './health/health.module';
 import { MembersModule } from './members/members.module';
+import { MercadoPagoModule } from './mercadopago/mercadopago.module';
 import { PacksModule } from './packs/packs.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { ReceiptsModule } from './receipts/receipts.module';
@@ -42,6 +43,7 @@ import { WaitlistModule } from './waitlist/waitlist.module';
     WaitlistModule,
     CashRegisterModule,
     ReceiptsModule,
+    MercadoPagoModule,
     TenantsModule,
     AuditModule,
     HealthModule,

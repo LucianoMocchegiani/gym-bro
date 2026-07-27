@@ -75,7 +75,7 @@ Plataforma GymBro
 | Entidad | Responsabilidad | Atributos clave |
 |---------|-----------------|-----------------|
 | **Pago** | Cobro | monto, medio (`MP`\|`CAJA`), estado, idempotencyKey, afiliadoId, concepto |
-| **CuentaMercadoPago** | Config tenant | credenciales/OAuth del gym |
+| **CuentaMercadoPago** | Config tenant | access_token cifrado + public_key; validación `/users/me` |
 | **MovimientoCaja** | Línea de caja | pagoId, fecha, usuarioStaffId, monto |
 | **ArqueoCaja** | Cierre del día | fecha, esperado, declarado, diferencia, usuarioStaffId |
 | **SolicitudDevolucion** | Pedido afiliado | pagoId, estado, motivo |

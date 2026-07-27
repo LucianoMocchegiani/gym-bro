@@ -66,4 +66,7 @@ export const AUDIT_ACTIONS = {
   waitlistPromote: 'waitlist.promote',
   tenantSettingsUpdate: 'tenant.settings.update',
   cashReconcile: 'cash.reconcile',
+  mpAccountConnect: 'mp.account.connect',
+  mpAccountTest: 'mp.account.test',
+  mpAccountDisconnect: 'mp.account.disconnect',
 } as const;

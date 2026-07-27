@@ -152,9 +152,30 @@ model Tenant {
   cashReconciliations CashReconciliation[]
   receipts        Receipt[]
   receiptSequence ReceiptSequence?
+  mercadoPagoAccount MercadoPagoAccount?
   auditEvents     AuditEvent[]
 
   @@map("tenants")
+}
+
+/// Cuenta Mercado Pago del gym (CU-PAG-006 / RN-PAG-001).
+///
+/// @remarks 1:1 con tenant. `access_token` cifrado en reposo; nunca se expone en GET.
+model MercadoPagoAccount {
+  tenantId              String    @id @map("tenant_id") @db.Uuid
+  /// AES-256-GCM del access_token (formato v1:iv:tag:ciphertext).
+  accessTokenCiphertext String    @map("access_token_ciphertext")
+  publicKey             String    @map("public_key")
+  /// `id` de GET /users/me tras validación exitosa.
+  mpUserId              String?   @map("mp_user_id")
+  lastValidatedAt       DateTime? @map("last_validated_at")
+  lastValidationOk      Boolean?  @map("last_validation_ok")
+  createdAt             DateTime  @default(now()) @map("created_at")
+  updatedAt             DateTime  @updatedAt @map("updated_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@map("mercadopago_accounts")
 }
 
 /// Configuración operativa del gym (RN-TEN-005 / RN-TEN-006).

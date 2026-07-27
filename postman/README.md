@@ -44,6 +44,8 @@ Carpeta **Tenant settings**: `GET|PATCH /tenant-settings` (`tenant.settings.*`).
 
 Carpeta **Cash register**: `GET /cash-register/day` + `POST /cash-register/day/reconcile` (`cashier.operate`). Movimientos CASH; arqueo 1/día (declarado ≥ 0); día en timezone BA.
 
+Carpeta **Mercado Pago**: `GET|PUT|DELETE /mercadopago/account` + `POST .../test` (`mp.connect`). Con `MP_ACCOUNT_VALIDATE_MODE=stub` cualquier token sirve; en `live` usá sandbox real.
+
 Carpeta **Receipts**: Member `GET /me/receipts`. Staff `GET /payments/:paymentId/receipt` y `GET /members/:id/receipts` (`members.read`). Código `GB-000001`.
 
 Carpeta **Services**: Staff `catalog.write`. Tipos `ACCESO_LIBRE` y `POR_SESIONES`; `dropInPrice` (ARS) habilita drop-in; desactivar con `active: false`.

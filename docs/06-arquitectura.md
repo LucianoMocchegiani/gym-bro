@@ -177,9 +177,20 @@ Cambiar a “QR propio” = nuevo adaptador; **misma** evaluación de negocio.
 
 ### 7.1 Principios
 
-- Credenciales MP **por tenant**.
+- Credenciales MP **por tenant** (`mercadopago_accounts`; access_token cifrado; permiso `mp.connect`).
 - Derechos (contratación/reserva) solo tras `aprobado` (RN-PAG-004).
 - Toda intención de cobro: `idempotency_key` única de negocio (RN-PAG-005).
+
+### 7.1b Cuenta MP (CU-PAG-006)
+
+```text
+Admin PUT /mercadopago/account { accessToken, publicKey }
+  → (opcional) MpAccountPort.validateAccessToken → /users/me
+  → cifra token → upsert mercadopago_accounts
+  → GET status sin secretos; POST test; DELETE desconecta
+```
+
+Checkout / webhook: tareas siguientes de E5.
 
 ### 7.2 Flujo MP
 
@@ -263,6 +274,7 @@ Prefijo sugerido: `/api/v1`.
 | Waitlist | Member `/me/waitlist`; Staff `/members/:id/waitlist`, `/sessions/:id/waitlist` (`reservations.write`); promoción AUTO al liberar cupo |
 | Settings | Staff `GET|PATCH /tenant-settings` (`tenant.settings.*`; horas cancelación, `waitlistMode`, `allowLateSessionEntry`); Super `/tenants/:tid/settings` |
 | Caja | Staff `GET /cash-register/day`, `POST /cash-register/day/reconcile` (`cashier.operate`); Super `/tenants/:tid/cash-register/...` |
+| Mercado Pago | Staff `GET|PUT|DELETE /mercadopago/account`, `POST .../test` (`mp.connect`); Super `/tenants/:tid/mercadopago/account` |
 | Comprobantes | Member `/me/receipts`; Staff `GET /payments/:id/receipt`, `GET /members/:id/receipts` (`members.read`) |
 | Catálogo | Super/Staff CRUD services + packs (`catalog.write`; kind inferido; `creditsExpireAt`) |
 | Contrataciones | Staff `POST /members/:id/contracts` (pago stub APPROVED); `PATCH /contracts/:id/status` → `CANCELLED` (pierde derechos, RN-SER-009); Member `GET /me/contracts` |
