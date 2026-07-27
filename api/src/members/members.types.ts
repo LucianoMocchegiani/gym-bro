@@ -31,7 +31,7 @@ export type MemberAccountPayment = {
   id: string;
   amount: number;
   status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'REFUNDED';
-  method: 'STUB' | 'CASH';
+  method: 'STUB' | 'CASH' | 'MP';
   packId: string | null;
   createdAt: Date;
 };

@@ -267,7 +267,7 @@ erDiagram
 | `ServiceType` | `ACCESO_LIBRE`, `POR_SESIONES` | Tipo de servicio (RN-SER-001) |
 | `BillingPeriod` | `MONTHLY`, `ONE_TIME` | Periodicidad de cobro del pack |
 | `PaymentStatus` | `PENDING`, `APPROVED`, `REJECTED`, `REFUNDED` | Estado de pago (RN-PAG-003) |
-| `PaymentMethod` | `STUB`, `CASH` | Medio (MP llega en E5) |
+| `PaymentMethod` | `STUB`, `CASH`, `MP` | Medio de cobro |
 | `ContractStatus` | `ACTIVE`, `EXPIRED`, `CANCELLED`, `REFUNDED` | Estado de contratación |
 | `SessionStatus` | `PUBLISHED`, `CANCELLED` | Estado de sesión de calendario |
 | `Weekday` | `MONDAY` … `SUNDAY` | Días ISO de recurrencia semanal |
@@ -529,7 +529,7 @@ Pago de negocio (RN-PAG-003..005). En MVP staff crea stub/caja ya `APPROVED` jun
 | `pack_id` | uuid FK nullable | SET NULL |
 | `amount` | int | pesos (copia del pack / drop-in) |
 | `status` | `PaymentStatus` | |
-| `method` | `PaymentMethod` | STUB / CASH (MP en E5) |
+| `method` | `PaymentMethod` | STUB / CASH / MP |
 | `idempotency_key` | text | unique por tenant |
 | `created_at` / `updated_at` | timestamptz | |
 
@@ -605,6 +605,19 @@ Cuenta Mercado Pago del gym (CU-PAG-006 / RN-PAG-001). 1:1 con tenant.
 | `created_at` / `updated_at` | timestamptz | |
 
 API Staff: `GET|PUT|DELETE /api/mercadopago/account`, `POST .../test` (`mp.connect`). Super: `/api/tenants/:tenantId/mercadopago/account`. Env: `MP_CREDENTIALS_SECRET`, `MP_ACCOUNT_VALIDATE_MODE=live|stub`.
+
+### 4.15f `payments` (campos MP)
+
+Extensión checkout/webhook (CU-PAG-001):
+
+| Columna | Tipo | Notas |
+|---------|------|--------|
+| `method` | enum + `MP` | además de STUB/CASH |
+| `mp_preference_id` | text nullable | Preference Checkout Pro |
+| `mp_payment_id` | text nullable UK | dedup webhook |
+| `mp_init_point` / `mp_sandbox_init_point` | text nullable | URLs checkout |
+
+API Member: `POST /api/me/payments/mp/checkout` → Payment `PENDING` + URLs. Webhook: `POST /api/webhooks/mercadopago?tenantId=` (público). Stub: `POST /api/webhooks/mercadopago/simulate`. Al `APPROVED` → contrato + recibo.
 
 ### 4.16 `contracts`
 
@@ -742,6 +755,7 @@ API: Member `POST|GET /api/me/waitlist`, `PATCH /api/me/waitlist/:id/status`; St
 | `20260726230000_cash_reconciliations` | tabla `cash_reconciliations` (arqueo 1/día) |
 | `20260726240000_receipts` | `ReceiptConcept` + `receipt_sequences` + `receipts` |
 | `20260726250000_mercadopago_accounts` | tabla `mercadopago_accounts` (cuenta MP por tenant) |
+| `20260726260000_payment_mp_checkout` | `PaymentMethod.MP` + ids/URLs Preference en `payments` |
 
 Comandos:
 

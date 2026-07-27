@@ -195,12 +195,14 @@ Checkout / webhook: tareas siguientes de E5.
 ### 7.2 Flujo MP
 
 ```text
-API crea Pago(pendiente, idempotencyKey)
-  → Preference/Checkout con cuenta del gym
-  → Webhook MP → handler idempotente
-  → aprueba → ConfirmationService (contratacion/reserva)
-  → Comprobante + Notification E1
+Member POST /me/payments/mp/checkout (pack + idempotencyKey)
+  → Payment(PENDING, method=MP) + Preference (cuenta del gym)
+  → Webhook POST /webhooks/mercadopago?tenantId=… (o /simulate en stub)
+  → aprueba → ContractsService.confirmFromApprovedPayment + recibo
+  → rechaza → Payment REJECTED (sin derechos)
 ```
+
+Env: `MP_CHECKOUT_MODE=stub|live`, `PUBLIC_API_BASE_URL` (notification_url).
 
 ### 7.3 Caja
 
@@ -274,7 +276,7 @@ Prefijo sugerido: `/api/v1`.
 | Waitlist | Member `/me/waitlist`; Staff `/members/:id/waitlist`, `/sessions/:id/waitlist` (`reservations.write`); promoción AUTO al liberar cupo |
 | Settings | Staff `GET|PATCH /tenant-settings` (`tenant.settings.*`; horas cancelación, `waitlistMode`, `allowLateSessionEntry`); Super `/tenants/:tid/settings` |
 | Caja | Staff `GET /cash-register/day`, `POST /cash-register/day/reconcile` (`cashier.operate`); Super `/tenants/:tid/cash-register/...` |
-| Mercado Pago | Staff `GET|PUT|DELETE /mercadopago/account`, `POST .../test` (`mp.connect`); Super `/tenants/:tid/mercadopago/account` |
+| Mercado Pago | Staff `GET|PUT|DELETE /mercadopago/account`, `POST .../test` (`mp.connect`); Member `POST /me/payments/mp/checkout`; webhook `POST /webhooks/mercadopago`; Super `/tenants/:tid/mercadopago/account` |
 | Comprobantes | Member `/me/receipts`; Staff `GET /payments/:id/receipt`, `GET /members/:id/receipts` (`members.read`) |
 | Catálogo | Super/Staff CRUD services + packs (`catalog.write`; kind inferido; `creditsExpireAt`) |
 | Contrataciones | Staff `POST /members/:id/contracts` (pago stub APPROVED); `PATCH /contracts/:id/status` → `CANCELLED` (pierde derechos, RN-SER-009); Member `GET /me/contracts` |

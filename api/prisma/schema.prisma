@@ -50,10 +50,11 @@ enum PaymentStatus {
   REFUNDED
 }
 
-/// Medio de cobro. STUB = aprobación simulada (pre-E5).
+/// Medio de cobro. STUB = aprobación simulada; CASH = caja; MP = Mercado Pago.
 enum PaymentMethod {
   STUB
   CASH
+  MP
 }
 
 /// Estado de una contratación (dominio Contratacion).
@@ -511,18 +512,26 @@ model Session {
   @@map("sessions")
 }
 
-/// Pago de negocio (RN-PAG-003..005). En esta entrega el flujo staff crea stub APPROVED.
+/// Pago de negocio (RN-PAG-003..005).
+///
+/// @remarks Staff stub/caja → APPROVED inmediato. MP → PENDING hasta webhook.
 model Payment {
-  id             String        @id @default(uuid()) @db.Uuid
-  tenantId       String        @map("tenant_id") @db.Uuid
-  memberId       String        @map("member_id") @db.Uuid
-  packId         String?       @map("pack_id") @db.Uuid
-  amount         Int
-  status         PaymentStatus
-  method         PaymentMethod
-  idempotencyKey String        @map("idempotency_key")
-  createdAt      DateTime      @default(now()) @map("created_at")
-  updatedAt      DateTime      @updatedAt @map("updated_at")
+  id               String        @id @default(uuid()) @db.Uuid
+  tenantId         String        @map("tenant_id") @db.Uuid
+  memberId         String        @map("member_id") @db.Uuid
+  packId           String?       @map("pack_id") @db.Uuid
+  amount           Int
+  status           PaymentStatus
+  method           PaymentMethod
+  idempotencyKey   String        @map("idempotency_key")
+  /// Preference Checkout Pro del gym.
+  mpPreferenceId   String?       @map("mp_preference_id")
+  /// Id del pago en Mercado Pago (dedup webhook).
+  mpPaymentId      String?       @unique @map("mp_payment_id")
+  mpInitPoint      String?       @map("mp_init_point")
+  mpSandboxInitPoint String?     @map("mp_sandbox_init_point")
+  createdAt        DateTime      @default(now()) @map("created_at")
+  updatedAt        DateTime      @updatedAt @map("updated_at")
 
   tenant   Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   member   Member    @relation(fields: [memberId], references: [id], onDelete: Cascade)
@@ -535,6 +544,7 @@ model Payment {
   @@unique([tenantId, idempotencyKey])
   @@index([tenantId])
   @@index([memberId])
+  @@index([mpPreferenceId])
   @@map("payments")
 }
 

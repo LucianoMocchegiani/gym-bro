@@ -10,7 +10,7 @@ export type ReceiptDetail = {
   /** Código legible, ej. `GB-000001`. */
   code: string;
   amount: number;
-  method: 'STUB' | 'CASH';
+  method: 'STUB' | 'CASH' | 'MP';
   concept: 'PACK_CONTRACT' | 'DROP_IN';
   description: string | null;
   createdAt: Date;

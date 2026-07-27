@@ -1921,7 +1921,7 @@
     },
     {
       "name": "Mercado Pago",
-      "description": "CU-PAG-006 / RN-PAG-001. GET|PUT|DELETE /mercadopago/account + POST .../test (mp.connect). Token cifrado; GET sin secretos. Con MP_ACCOUNT_VALIDATE_MODE=stub cualquier accessToken ≥10 chars sirve.",
+      "description": "CU-PAG-006 + CU-PAG-001. Cuenta: GET|PUT|DELETE /mercadopago/account + test (mp.connect). Checkout pack: Member POST /me/payments/mp/checkout. Webhook público + POST /webhooks/mercadopago/simulate (MP_CHECKOUT_MODE=stub). Requiere cuenta conectada y {{createdPackId}}.",
       "item": [
         {
           "name": "Staff GET MP account status",
@@ -1988,6 +1988,64 @@
             "method": "POST",
             "header": [],
             "url": "{{baseUrl}}/api/mercadopago/account/test"
+          }
+        },
+        {
+          "name": "Member POST MP pack checkout",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 201', () => pm.response.to.have.status(201));",
+                  "const body = pm.response.json();",
+                  "pm.test('pending', () => pm.expect(body.status).to.eql('PENDING'));",
+                  "pm.test('checkoutUrl', () => pm.expect(body.checkoutUrl).to.be.a('string'));",
+                  "pm.collectionVariables.set('mpPaymentId', body.paymentId);",
+                  "pm.collectionVariables.set('mpIdempotencyKey', body.idempotencyKey);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"packId\": \"{{createdPackId}}\",\n  \"idempotencyKey\": \"mp-pack-{{$timestamp}}\"\n}"
+            },
+            "url": "{{baseUrl}}/api/me/payments/mp/checkout",
+            "description": "Requiere accessToken Member + cuenta MP conectada + createdPackId."
+          }
+        },
+        {
+          "name": "Simulate MP webhook APPROVED",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('handled', () => pm.expect(body.handled).to.eql(true));",
+                  "pm.test('approved', () => pm.expect(body.status).to.eql('APPROVED'));",
+                  "pm.test('contract', () => pm.expect(body.contractId).to.be.a('string'));",
+                  "if (body.contractId) pm.collectionVariables.set('createdContractId', body.contractId);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"paymentId\": \"{{mpPaymentId}}\",\n  \"status\": \"APPROVED\"\n}"
+            },
+            "url": "{{baseUrl}}/api/webhooks/mercadopago/simulate",
+            "description": "Solo con MP_CHECKOUT_MODE=stub. Crea contrato + recib."
           }
         },
         {

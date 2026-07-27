@@ -43,12 +43,32 @@ type ContractWithRelations = Contract & {
   }[];
 };
 
+type PackForContract = {
+  id: string;
+  name: string;
+  price: number;
+  billingPeriod: BillingPeriod;
+  creditsExpireAt: Date | null;
+  components: {
+    serviceId: string;
+    creditAmount: number | null;
+    service: { id: string; name: string; type: ServiceType; active: boolean };
+  }[];
+};
+
+type ContractPlan = {
+  startsAt: Date;
+  endsAt: Date | null;
+  hasAccessLibre: boolean;
+  creditComponents: { serviceId: string; creditAmount: number }[];
+};
+
 /**
  * Contrataciones tras pago aprobado y cancelación de derechos.
  *
  * @remarks CU-CON-001 / CU-CON-002 / RN-PAG-004 / RN-SER-009.
  * Pago CASH registra movimiento de caja (RN-PAG-007). Comprobante interno
- * RN-PAG-009. Reembolso REFUNDED en E5.
+ * RN-PAG-009. MP confirma vía webhook con {@link confirmFromApprovedPayment}.
  */
 @Injectable()
 export class ContractsService {
@@ -156,7 +176,7 @@ export class ContractsService {
   }
 
   /**
-   * Crea pago APPROVED + contratación ACTIVE con saldos (idempotente por key).
+   * Crea pago APPROVED + contrato ACTIVE con saldos (idempotente por key).
    */
   async createForMember(
     tenantId: string,
@@ -166,25 +186,16 @@ export class ContractsService {
   ): Promise<ContractDetail> {
     await this.assertMemberInTenant(tenantId, memberId, true);
 
-    const pack = await this.prisma.pack.findFirst({
-      where: { id: dto.packId, tenantId },
-      include: {
-        components: { include: { service: true } },
-      },
-    });
-    if (!pack) {
-      throw new NotFoundException(`Pack ${dto.packId} not found in tenant`);
-    }
-    if (!pack.active) {
-      throw new BadRequestException('Pack is inactive');
-    }
-    if (pack.components.length === 0) {
-      throw new BadRequestException('Pack has no components');
-    }
+    const pack = await this.loadActivePackForContract(tenantId, dto.packId);
 
     const idempotencyKey =
       dto.idempotencyKey?.trim() || `stub-${randomBytes(16).toString('hex')}`;
     const method = dto.method ?? PaymentMethod.STUB;
+    if (method === PaymentMethod.MP) {
+      throw new BadRequestException(
+        'Use POST /me/payments/mp/checkout for Mercado Pago pack purchases',
+      );
+    }
 
     const existingPayment = await this.prisma.payment.findUnique({
       where: {
@@ -203,31 +214,7 @@ export class ContractsService {
       );
     }
 
-    const startsAt = new Date();
-    const endsAt = this.computeEndsAt(
-      startsAt,
-      pack.billingPeriod,
-      pack.creditsExpireAt,
-    );
-    const hasAccessLibre = pack.components.some(
-      (c) => c.service.type === ServiceType.ACCESO_LIBRE,
-    );
-    const creditComponents = pack.components.filter(
-      (c) => c.service.type === ServiceType.POR_SESIONES,
-    );
-
-    for (const component of creditComponents) {
-      if (!component.creditAmount || component.creditAmount < 1) {
-        throw new BadRequestException(
-          `Pack component for service ${component.serviceId} has invalid creditAmount`,
-        );
-      }
-      if (!component.service.active) {
-        throw new BadRequestException(
-          `Service ${component.service.name} is inactive`,
-        );
-      }
-    }
+    const plan = this.buildContractPlan(pack);
 
     try {
       const contract = await this.prisma.$transaction(async (tx) => {
@@ -264,26 +251,13 @@ export class ContractsService {
           description: pack.name,
         });
 
-        return tx.contract.create({
-          data: {
-            tenantId,
-            memberId,
-            packId: pack.id,
-            paymentId: payment.id,
-            status: ContractStatus.ACTIVE,
-            startsAt,
-            endsAt,
-            hasAccessLibre,
-            balances: {
-              create: creditComponents.map((c) => ({
-                serviceId: c.serviceId,
-                initialAmount: c.creditAmount!,
-                remaining: c.creditAmount!,
-                expiresAt: pack.creditsExpireAt,
-              })),
-            },
-          },
-          include: this.contractInclude(),
+        return this.createContractInTx(tx, {
+          tenantId,
+          memberId,
+          packId: pack.id,
+          paymentId: payment.id,
+          plan,
+          creditsExpireAt: pack.creditsExpireAt,
         });
       });
 
@@ -317,6 +291,199 @@ export class ContractsService {
       }
       throw error;
     }
+  }
+
+  /**
+   * Confirma contratación + comprobante para un pago MP ya APPROVED.
+   *
+   * @remarks Idempotente si el contrato ya existe. Usado por webhook (CU-PAG-001).
+   */
+  async confirmFromApprovedPayment(
+    tenantId: string,
+    paymentId: string,
+    actor: AuditActor,
+  ): Promise<ContractDetail> {
+    const payment = await this.prisma.payment.findFirst({
+      where: { id: paymentId, tenantId },
+      include: {
+        contract: { include: this.contractInclude() },
+        pack: {
+          include: {
+            components: { include: { service: true } },
+          },
+        },
+      },
+    });
+    if (!payment) {
+      throw new NotFoundException(`Payment ${paymentId} not found in tenant`);
+    }
+    if (payment.contract) {
+      return this.toDetail(payment.contract);
+    }
+    if (payment.status !== PaymentStatus.APPROVED) {
+      throw new BadRequestException(
+        `Payment must be APPROVED to confirm contract (current: ${payment.status})`,
+      );
+    }
+    if (payment.method !== PaymentMethod.MP) {
+      throw new BadRequestException(
+        'confirmFromApprovedPayment is only for MP payments',
+      );
+    }
+    if (!payment.packId || !payment.pack) {
+      throw new BadRequestException('MP pack payment is missing packId');
+    }
+
+    const pack = payment.pack;
+    if (pack.components.length === 0) {
+      throw new BadRequestException('Pack has no components');
+    }
+    const plan = this.buildContractPlan(pack);
+
+    try {
+      const contract = await this.prisma.$transaction(async (tx) => {
+        await this.receipts.issueForApprovedPayment(tx, {
+          tenantId,
+          paymentId: payment.id,
+          memberId: payment.memberId,
+          amount: payment.amount,
+          method: payment.method,
+          concept: ReceiptConcept.PACK_CONTRACT,
+          description: pack.name,
+        });
+
+        return this.createContractInTx(tx, {
+          tenantId,
+          memberId: payment.memberId,
+          packId: pack.id,
+          paymentId: payment.id,
+          plan,
+          creditsExpireAt: pack.creditsExpireAt,
+        });
+      });
+
+      const detail = this.toDetail(contract);
+      await this.audit.record({
+        tenantId,
+        actor,
+        action: AUDIT_ACTIONS.contractCreate,
+        entityType: 'contract',
+        entityId: contract.id,
+        before: null,
+        after: this.auditSnapshot(detail),
+      });
+      return detail;
+    } catch (error: unknown) {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2002'
+      ) {
+        const again = await this.prisma.payment.findFirst({
+          where: { id: paymentId, tenantId },
+          include: {
+            contract: { include: this.contractInclude() },
+          },
+        });
+        if (again?.contract) {
+          return this.toDetail(again.contract);
+        }
+      }
+      throw error;
+    }
+  }
+
+  private async loadActivePackForContract(
+    tenantId: string,
+    packId: string,
+  ): Promise<PackForContract> {
+    const pack = await this.prisma.pack.findFirst({
+      where: { id: packId, tenantId },
+      include: {
+        components: { include: { service: true } },
+      },
+    });
+    if (!pack) {
+      throw new NotFoundException(`Pack ${packId} not found in tenant`);
+    }
+    if (!pack.active) {
+      throw new BadRequestException('Pack is inactive');
+    }
+    if (pack.components.length === 0) {
+      throw new BadRequestException('Pack has no components');
+    }
+    return pack;
+  }
+
+  private buildContractPlan(pack: PackForContract): ContractPlan {
+    const startsAt = new Date();
+    const endsAt = this.computeEndsAt(
+      startsAt,
+      pack.billingPeriod,
+      pack.creditsExpireAt,
+    );
+    const hasAccessLibre = pack.components.some(
+      (c) => c.service.type === ServiceType.ACCESO_LIBRE,
+    );
+    const creditComponents = pack.components.filter(
+      (c) => c.service.type === ServiceType.POR_SESIONES,
+    );
+
+    for (const component of creditComponents) {
+      if (!component.creditAmount || component.creditAmount < 1) {
+        throw new BadRequestException(
+          `Pack component for service ${component.serviceId} has invalid creditAmount`,
+        );
+      }
+      if (!component.service.active) {
+        throw new BadRequestException(
+          `Service ${component.service.name} is inactive`,
+        );
+      }
+    }
+
+    return {
+      startsAt,
+      endsAt,
+      hasAccessLibre,
+      creditComponents: creditComponents.map((c) => ({
+        serviceId: c.serviceId,
+        creditAmount: c.creditAmount!,
+      })),
+    };
+  }
+
+  private createContractInTx(
+    tx: Prisma.TransactionClient,
+    input: {
+      tenantId: string;
+      memberId: string;
+      packId: string;
+      paymentId: string;
+      plan: ContractPlan;
+      creditsExpireAt: Date | null;
+    },
+  ) {
+    return tx.contract.create({
+      data: {
+        tenantId: input.tenantId,
+        memberId: input.memberId,
+        packId: input.packId,
+        paymentId: input.paymentId,
+        status: ContractStatus.ACTIVE,
+        startsAt: input.plan.startsAt,
+        endsAt: input.plan.endsAt,
+        hasAccessLibre: input.plan.hasAccessLibre,
+        balances: {
+          create: input.plan.creditComponents.map((c) => ({
+            serviceId: c.serviceId,
+            initialAmount: c.creditAmount,
+            remaining: c.creditAmount,
+            expiresAt: input.creditsExpireAt,
+          })),
+        },
+      },
+      include: this.contractInclude(),
+    });
   }
 
   private computeEndsAt(
