@@ -36,6 +36,7 @@ export const ACCESS_REASON = {
   deudaExcedida: 'deuda_excedida',
   multiIngresoExcedido: 'multi_ingreso_excedido',
   payloadInvalido: 'payload_invalido',
+  okPaseManual: 'ok_pase_manual',
 } as const;
 
 export type AccessReasonCode =
@@ -55,6 +56,8 @@ export type AccessAttemptDetail = {
   reservationId: string | null;
   sessionId: string | null;
   manualPass: boolean;
+  motiveCode: string | null;
+  note: string | null;
   actorStaffId: string | null;
   createdAt: Date;
 };

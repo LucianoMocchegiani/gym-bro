@@ -1,14 +1,15 @@
 import {
+  Body,
   Controller,
   ForbiddenException,
   Get,
   HttpCode,
   HttpStatus,
+  Param,
   ParseEnumPipe,
   ParseIntPipe,
   ParseUUIDPipe,
   Post,
-  Body,
   Query,
 } from '@nestjs/common';
 import { AccessAttemptResult } from '@prisma/client';
@@ -18,13 +19,12 @@ import { RequirePermission } from '../roles/decorators/require-permission.decora
 import { CurrentTenant } from '../tenant/decorators/current-tenant.decorator';
 import { RequireTenantAuth } from '../tenant/decorators/require-tenant-auth.decorator';
 import { AccessVerifyService } from './access-verify.service';
+import { ManualPassDto } from './dto/manual-pass.dto';
 import { VerifyAccessDto } from './dto/verify-access.dto';
 import { AccessAttemptDetail, AccessVerifyResult } from './access.types';
 
 /**
- * Verificación de ingreso e historial (CU-ACC-001 / CU-ACC-005).
- *
- * @remarks Staff con `access.verify`. Pase manual fuera de este slice.
+ * Verificación de ingreso, pase manual e historial (CU-ACC-001 / 004 / 005).
  */
 @Controller()
 @RequireTenantAuth()
@@ -46,6 +46,29 @@ export class AccessVerifyController {
       throw new ForbiddenException('Staff profile required');
     }
     return this.accessVerify.verify(tenantId, dto, user.userId);
+  }
+
+  /**
+   * Pase manual: ingreso permitido pese a reglas automáticas (RN-ACC-006).
+   */
+  @Post('members/:memberId/access/manual-pass')
+  @HttpCode(HttpStatus.CREATED)
+  @RequirePermission('access.manual_pass')
+  manualPass(
+    @CurrentTenant() tenantId: string,
+    @CurrentUser() user: AuthUser,
+    @Param('memberId', ParseUUIDPipe) memberId: string,
+    @Body() dto: ManualPassDto,
+  ): Promise<AccessVerifyResult> {
+    if (user.profileType !== 'STAFF') {
+      throw new ForbiddenException('Staff profile required');
+    }
+    return this.accessVerify.manualPass(
+      tenantId,
+      memberId,
+      dto,
+      user.userId,
+    );
   }
 
   /**

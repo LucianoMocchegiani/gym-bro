@@ -678,13 +678,15 @@ Intentos de ingreso (CU-ACC-001 / RN-ACC-007) y marca de presente (RN-RES-007).
 | `reason_code` | text | p.ej. `ok_acceso_libre`, `sin_derecho` |
 | `scan_mode` | text | `gym_scans_member` \| `member_scans_gym` |
 | `reservation_id` / `session_id` | uuid FK nullable | |
-| `manual_pass` | boolean | default false (pase manual = slice siguiente) |
+| `manual_pass` | boolean | default false |
+| `motive_code` | text nullable | pase manual: `deuda` \| `olvido_celular` \| `cortesia` \| `otro` |
+| `note` | text nullable | nota opcional del pase |
 | `actor_staff_id` | uuid FK nullable | Staff que verificó |
 | `created_at` | timestamptz | |
 
 Reservas: `checked_in_at` timestamptz nullable (primera allow asociada).
 
-API: Staff `POST /access/verify`, `GET /access-attempts` (`access.verify`).
+API: Staff `POST /access/verify`, `GET /access-attempts` (`access.verify`); `POST /members/:id/access/manual-pass` (`access.manual_pass`).
 
 ### 4.16 `contracts`
 
@@ -829,6 +831,7 @@ API: Member `POST|GET /api/me/waitlist`, `PATCH /api/me/waitlist/:id/status`; St
 | `20260726270000_refunds` | `refund_requests` + OUTCOME/REFUND caja + campos refund en payments |
 | `20260727120000_access_credentials` | enum `AccessCredentialStatus` + tabla `access_credentials` |
 | `20260727180000_access_verify` | `access_attempts` + settings deuda/multi + `checked_in_at` |
+| `20260727230000_access_manual_pass` | `motive_code` + `note` en `access_attempts` |
 
 Comandos:
 

@@ -760,6 +760,9 @@ model AccessAttempt {
   reservationId   String?             @map("reservation_id") @db.Uuid
   sessionId       String?             @map("session_id") @db.Uuid
   manualPass      Boolean             @default(false) @map("manual_pass")
+  /// Motivo del pase manual (`deuda`, `olvido_celular`, `cortesia`, `otro`).
+  motiveCode      String?             @map("motive_code")
+  note            String?
   actorStaffId    String?             @map("actor_staff_id") @db.Uuid
   createdAt       DateTime            @default(now()) @map("created_at")
 

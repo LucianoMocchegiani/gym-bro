@@ -140,7 +140,8 @@
   - ambos modos en API; Staff `access.verify`; respuesta allow/deny + intento
 - [x] Evaluación: libre / reserva / deuda / tolerancia / multi-ingreso
   - deuda placeholder 0 días; settings `debtToleranceDays`, `multiEntry*`
-- [ ] Pase manual + auditoría
+- [x] Pase manual + auditoría
+  - `POST /members/:id/access/manual-pass` (`access.manual_pass`); no cuenta para multi-ingreso
 - [x] Historial de ingresos con motivo
   - `GET /access-attempts`; tabla `access_attempts`; `reservations.checked_in_at`
 - [x] Config políticas de acceso del gym
@@ -239,7 +240,7 @@ E11 → E12
 
 ## Próximo paso
 
-Elegir **pase manual** (E6) o UI puerta / Quark; drop-in MP sigue opcional.
+Elegir **pantalla/flujo puerta** (web), Quark real, o pasar a **E7 rutinas** / E9 app.
 
 ---
 

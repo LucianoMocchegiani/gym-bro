@@ -73,4 +73,5 @@ export const AUDIT_ACTIONS = {
   paymentRefund: 'payment.refund',
   accessCredentialIssue: 'access.credential.issue',
   accessCredentialRevoke: 'access.credential.revoke',
+  accessManualPass: 'access.manual_pass',
 } as const;

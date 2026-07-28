@@ -2238,7 +2238,7 @@
     },
     {
       "name": "Access verify",
-      "description": "E6 / CU-ACC-001. Staff POST /access/verify (`access.verify`) con mode gym_scans_member|member_scans_gym. Siempre HTTP 200 + allowed/reasonCode + attempt. Historial GET /access-attempts. Usá accessCredentialRef de emitir credencial; para allow hace falta contrato ACCESO_LIBRE o reserva en ventana.",
+      "description": "E6 / CU-ACC-001/004. Staff POST /access/verify (`access.verify`) con mode gym_scans_member|member_scans_gym. Pase manual POST /members/:id/access/manual-pass (`access.manual_pass`). Historial GET /access-attempts.",
       "item": [
         {
           "name": "Staff POST access verify (gym scans member)",
@@ -2269,6 +2269,22 @@
               "raw": "{\n  \"mode\": \"member_scans_gym\",\n  \"venueToken\": \"stub-venue:{{tenantId}}\",\n  \"credentialRef\": \"{{accessCredentialRef}}\"\n}"
             },
             "url": "{{baseUrl}}/api/access/verify"
+          }
+        },
+        {
+          "name": "Staff POST manual pass",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"motiveCode\": \"olvido_celular\",\n  \"note\": \"Dejó el teléfono en el auto\"\n}"
+            },
+            "url": "{{baseUrl}}/api/members/{{createdMemberId}}/access/manual-pass",
+            "description": "access.manual_pass. Saltea derechos/deuda/multi. sessionId opcional."
           }
         },
         {

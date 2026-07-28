@@ -3,6 +3,7 @@ import {
   HttpException,
   Inject,
   Injectable,
+  NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
 import {
@@ -14,6 +15,8 @@ import {
   SessionStatus,
   TenantStatus,
 } from '@prisma/client';
+import { AUDIT_ACTIONS } from '../audit/audit.types';
+import { AuditService } from '../audit/audit.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { TenantSettingsService } from '../tenant-settings/tenant-settings.service';
 import {
@@ -21,6 +24,7 @@ import {
   AccessIdentityProvider,
   AccessScanMode,
 } from './access-identity.port';
+import { ManualPassDto } from './dto/manual-pass.dto';
 import { VerifyAccessDto } from './dto/verify-access.dto';
 import {
   ACCESS_REASON,
@@ -42,16 +46,17 @@ type CoverageHit = {
 };
 
 /**
- * Verificación de ingreso en puerta (CU-ACC-001..003 / RN-ACC-004..009).
+ * Verificación de ingreso y pase manual (CU-ACC-001..004 / RN-ACC-004..009).
  *
- * @remarks Deuda real aún no modelada: `overdueDays = 0` (siempre dentro de tolerancia).
- * Persistencia siempre; presencia en reserva vía `checkedInAt` (RN-RES-007).
+ * @remarks Deuda real aún no modelada: `overdueDays = 0`.
+ * Pases manuales no cuentan para el tope de multi-ingreso.
  */
 @Injectable()
 export class AccessVerifyService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly tenantSettings: TenantSettingsService,
+    private readonly audit: AuditService,
     @Inject(ACCESS_IDENTITY_PROVIDER)
     private readonly identity: AccessIdentityProvider,
   ) {}
@@ -151,6 +156,94 @@ export class AccessVerifyService {
       take: limit,
     });
     return rows.map((r) => this.toAttemptDetail(r));
+  }
+
+  /**
+   * Otorga ingreso manual a un afiliado existente (CU-ACC-004 / RN-ACC-006).
+   *
+   * @remarks Saltea derechos/deuda/multi-ingreso. No consume cupo diario de QR.
+   * @throws {NotFoundException} Member inexistente.
+   * @throws {BadRequestException} Tenant/member no ACTIVE, o sesión sin reserva.
+   */
+  async manualPass(
+    tenantId: string,
+    memberId: string,
+    dto: ManualPassDto,
+    actorStaffId: string,
+  ): Promise<AccessVerifyResult> {
+    const tenant = await this.prisma.tenant.findUnique({
+      where: { id: tenantId },
+      select: { status: true },
+    });
+    if (!tenant || tenant.status === TenantStatus.SUSPENDED) {
+      throw new BadRequestException('Tenant is not active');
+    }
+
+    const member = await this.prisma.member.findFirst({
+      where: { id: memberId, tenantId },
+      select: { id: true, status: true },
+    });
+    if (!member) {
+      throw new NotFoundException(`Member ${memberId} not found`);
+    }
+    if (member.status !== MemberStatus.ACTIVE) {
+      throw new BadRequestException('Member must be ACTIVE for manual pass');
+    }
+
+    let reservationId: string | null = null;
+    let sessionId: string | null = null;
+    if (dto.sessionId) {
+      const reservation = await this.prisma.reservation.findFirst({
+        where: {
+          tenantId,
+          memberId,
+          sessionId: dto.sessionId,
+          status: ReservationStatus.CONFIRMED,
+          session: { status: SessionStatus.PUBLISHED },
+        },
+        select: { id: true, sessionId: true },
+      });
+      if (!reservation) {
+        throw new BadRequestException(
+          'No confirmed reservation for member on that session',
+        );
+      }
+      reservationId = reservation.id;
+      sessionId = reservation.sessionId;
+    }
+
+    const note = dto.note?.trim() ? dto.note.trim() : null;
+    const result = await this.persistAllowed({
+      tenantId,
+      memberId,
+      credentialRef: null,
+      scanMode: 'manual',
+      actorStaffId,
+      reasonCode: ACCESS_REASON.okPaseManual,
+      reservationId,
+      sessionId,
+      manualPass: true,
+      motiveCode: dto.motiveCode,
+      note,
+    });
+
+    await this.audit.record({
+      tenantId,
+      actor: { profileType: 'STAFF', userId: actorStaffId },
+      action: AUDIT_ACTIONS.accessManualPass,
+      entityType: 'access_attempt',
+      entityId: result.attempt.id,
+      after: {
+        memberId,
+        motiveCode: dto.motiveCode,
+        note,
+        sessionId,
+        reservationId,
+        reasonCode: ACCESS_REASON.okPaseManual,
+      },
+    });
+
+    return result;
   }
 
   private async evaluateAndPersist(input: {
@@ -323,6 +416,7 @@ export class AccessVerifyService {
         tenantId,
         memberId,
         result: AccessAttemptResult.ALLOWED,
+        manualPass: false,
         createdAt: { gte: start, lt: end },
       },
     });
@@ -331,12 +425,15 @@ export class AccessVerifyService {
   private async persistAllowed(input: {
     tenantId: string;
     memberId: string;
-    credentialRef: string;
-    scanMode: AccessScanMode;
+    credentialRef: string | null;
+    scanMode: AccessScanMode | 'manual';
     actorStaffId: string;
     reasonCode: AccessReasonCode;
     reservationId: string | null;
     sessionId: string | null;
+    manualPass?: boolean;
+    motiveCode?: string | null;
+    note?: string | null;
   }): Promise<AccessVerifyResult> {
     const now = new Date();
     const { attempt, checkedInAt } = await this.prisma.$transaction(
@@ -373,6 +470,9 @@ export class AccessVerifyService {
             scanMode: input.scanMode,
             reservationId: input.reservationId,
             sessionId: input.sessionId,
+            manualPass: input.manualPass ?? false,
+            motiveCode: input.motiveCode ?? null,
+            note: input.note ?? null,
             actorStaffId: input.actorStaffId,
           },
         });
@@ -458,6 +558,8 @@ export class AccessVerifyService {
       reservationId: row.reservationId,
       sessionId: row.sessionId,
       manualPass: row.manualPass,
+      motiveCode: row.motiveCode,
+      note: row.note,
       actorStaffId: row.actorStaffId,
       createdAt: row.createdAt,
     };
