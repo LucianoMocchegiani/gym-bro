@@ -51,12 +51,19 @@ erDiagram
   members ||--o{ reservations : books
   sessions ||--o{ reservations : fills
   contracts ||--o{ reservations : covers
+  tenants ||--o| mercadopago_accounts : connects
+  tenants ||--o{ cash_movements : records
+  tenants ||--o{ cash_reconciliations : reconciles
+  tenants ||--o{ receipts : issues
+  tenants ||--o{ payments : charges
+  tenants ||--o{ contracts : sells
   tenants ||--o{ refund_requests : has
   members ||--o{ refund_requests : requests
   tenants ||--o{ access_credentials : issues
   members ||--o{ access_credentials : holds
   tenants ||--o{ access_attempts : logs
   members ||--o{ access_attempts : attempts
+  sessions ||--o{ access_attempts : linked
   reservations ||--o{ access_attempts : linked
   tenants ||--o{ audit_events : has
   branches ||--o{ members : default_for
@@ -81,6 +88,9 @@ erDiagram
     int reservation_cancellation_hours
     enum waitlist_mode
     boolean allow_late_session_entry
+    int debt_tolerance_days
+    boolean multi_entry_enabled
+    int multi_entry_max_per_day
     timestamptz created_at
     timestamptz updated_at
   }
@@ -305,7 +315,7 @@ Gimnasio / estudio = tenant SaaS.
 | `created_at` | timestamptz | |
 | `updated_at` | timestamptz | |
 
-**Relaciones:** 1→N `staff_users`, 1→N `members`, 1→N `branches`, 1→N `roles`, 1→1 `tenant_settings`, 1→N `audit_events`.
+**Relaciones:** 1→N staff/members/branches/roles/services/packs/sessions/…; 1→1 `tenant_settings` y `mercadopago_accounts`; 1→N `access_credentials`, `access_attempts`, `audit_events`, caja, pagos, etc.
 
 ---
 
@@ -342,7 +352,7 @@ Catálogo **global** de permisos de producto (códigos fijos). Fuente en código
 
 Se hace upsert al crear un tenant (`RolesSeedService.ensurePermissionCatalog`).
 
-**Flags peligrosos (RN-ROL-007):** el campo `dangerous` marca el permiso. La API exige el código con `@RequirePermission` (p. ej. `roles.write`, `staff.write`). Tener el permiso en algún rol = flag otorgado; no hay tabla aparte. Hoy cableado en rutas Staff de roles/staff; acciones de negocio (refund, pase manual, MP) usarán el mismo guard cuando existan.
+**Flags peligrosos (RN-ROL-007):** el campo `dangerous` marca el permiso. La API exige el código con `@RequirePermission`. Tener el permiso en algún rol = flag otorgado. Cableado en roles/staff y en acciones de negocio (`payments.refund`, `access.manual_pass`, `mp.connect`, etc.).
 
 ---
 
@@ -762,6 +772,7 @@ Reserva con crédito o drop-in (CU-RES-001 / RN-RES-001).
 | `payment_id` | uuid FK → `payments` nullable unique | requerido si `DROP_IN` |
 | `status` | `ReservationStatus` | create → `CONFIRMED` |
 | `coverage` | `ReservationCoverage` | `CREDIT` \| `DROP_IN` |
+| `checked_in_at` | timestamptz nullable | presente al verify/pase (RN-RES-007) |
 | `created_at` / `updated_at` | timestamptz | |
 
 Unique parcial: una `CONFIRMED` por (`session_id`, `member_id`).
@@ -863,11 +874,11 @@ Crea Super + tenant demo + **branch** + roles Admin/Profesor + staff `admin@demo
 
 ## 7. Pendiente de modelar (dominio → DB)
 
-Aún no hay tablas Prisma para (ver [03](./03-modelo-dominio.md) / roadmap): deuda real, rutinas, notificaciones, etc. Se documentan aquí **al implementarlas**.
+Aún no hay tablas Prisma para (ver [03](./03-modelo-dominio.md) / roadmap): **deuda real**, **rutinas**, **notificaciones**, config Quark/SSI, etc. Se documentan aquí **al implementarlas**.
 
 **Staff ↔ roles:** tabla `staff_user_roles`. API: Super `PUT /tenants/:tenantId/staff/:staffId/roles`, Staff `PUT /staff/:staffId/roles`. Create tenant exige owner y le asigna rol Admin.
 
-**Auditoría:** tabla `audit_events` (RN-ROL-008). Lectura Staff `GET /audit-events` (`audit.read`); Super `GET /tenants/:tenantId/audit-events`. Escritura E1: tenant create/update, role create/update, staff roles set.
+**Auditoría:** tabla `audit_events` (RN-ROL-008). Lectura Staff `GET /audit-events` (`audit.read`); Super `GET /tenants/:tenantId/audit-events`. Escritura desde dominios cableados (tenant, roles, staff, catálogo, contratos, reservas, caja, MP, acceso, etc.).
 
 ---
 
