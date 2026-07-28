@@ -13,11 +13,14 @@ import { TenantSettingsDetail } from './tenant-settings.types';
 const DEFAULT_CANCELLATION_HOURS = 6;
 const DEFAULT_WAITLIST_MODE = WaitlistMode.AUTO_ASSIGN;
 const DEFAULT_ALLOW_LATE_ENTRY = false;
+const DEFAULT_DEBT_TOLERANCE_DAYS = 15;
+const DEFAULT_MULTI_ENTRY_ENABLED = false;
+const DEFAULT_MULTI_ENTRY_MAX = 1;
 
 /**
- * Configuración operativa del gym (RN-TEN-005 / RN-TEN-006 / RN-RES-006).
+ * Configuración operativa del gym (RN-TEN-004..007 / RN-RES-006).
  *
- * @remarks Horas de cancelación, modo lista de espera e ingreso tardío.
+ * @remarks Horas de cancelación, waitlist, ingreso tardío, deuda y multi-ingreso.
  * Si el row no existe (tenants legacy), se crea con defaults.
  */
 @Injectable()
@@ -49,10 +52,13 @@ export class TenantSettingsService {
     if (
       dto.reservationCancellationHours === undefined &&
       dto.waitlistMode === undefined &&
-      dto.allowLateSessionEntry === undefined
+      dto.allowLateSessionEntry === undefined &&
+      dto.debtToleranceDays === undefined &&
+      dto.multiEntryEnabled === undefined &&
+      dto.multiEntryMaxPerDay === undefined
     ) {
       throw new BadRequestException(
-        'Provide reservationCancellationHours, waitlistMode and/or allowLateSessionEntry',
+        'Provide at least one settings field to update',
       );
     }
     await this.assertTenantExists(tenantId);
@@ -71,6 +77,15 @@ export class TenantSettingsService {
           : {}),
         ...(dto.allowLateSessionEntry !== undefined
           ? { allowLateSessionEntry: dto.allowLateSessionEntry }
+          : {}),
+        ...(dto.debtToleranceDays !== undefined
+          ? { debtToleranceDays: dto.debtToleranceDays }
+          : {}),
+        ...(dto.multiEntryEnabled !== undefined
+          ? { multiEntryEnabled: dto.multiEntryEnabled }
+          : {}),
+        ...(dto.multiEntryMaxPerDay !== undefined
+          ? { multiEntryMaxPerDay: dto.multiEntryMaxPerDay }
           : {}),
       },
     });
@@ -164,6 +179,9 @@ export class TenantSettingsService {
           reservationCancellationHours: DEFAULT_CANCELLATION_HOURS,
           waitlistMode: DEFAULT_WAITLIST_MODE,
           allowLateSessionEntry: DEFAULT_ALLOW_LATE_ENTRY,
+          debtToleranceDays: DEFAULT_DEBT_TOLERANCE_DAYS,
+          multiEntryEnabled: DEFAULT_MULTI_ENTRY_ENABLED,
+          multiEntryMaxPerDay: DEFAULT_MULTI_ENTRY_MAX,
         },
       });
     } catch (error: unknown) {
@@ -197,6 +215,9 @@ export class TenantSettingsService {
     reservationCancellationHours: number;
     waitlistMode: WaitlistMode;
     allowLateSessionEntry: boolean;
+    debtToleranceDays: number;
+    multiEntryEnabled: boolean;
+    multiEntryMaxPerDay: number;
     createdAt: Date;
     updatedAt: Date;
   }): TenantSettingsDetail {
@@ -205,6 +226,9 @@ export class TenantSettingsService {
       reservationCancellationHours: row.reservationCancellationHours,
       waitlistMode: row.waitlistMode,
       allowLateSessionEntry: row.allowLateSessionEntry,
+      debtToleranceDays: row.debtToleranceDays,
+      multiEntryEnabled: row.multiEntryEnabled,
+      multiEntryMaxPerDay: row.multiEntryMaxPerDay,
       createdAt: row.createdAt,
       updatedAt: row.updatedAt,
     };
@@ -215,6 +239,9 @@ export class TenantSettingsService {
       reservationCancellationHours: detail.reservationCancellationHours,
       waitlistMode: detail.waitlistMode,
       allowLateSessionEntry: detail.allowLateSessionEntry,
+      debtToleranceDays: detail.debtToleranceDays,
+      multiEntryEnabled: detail.multiEntryEnabled,
+      multiEntryMaxPerDay: detail.multiEntryMaxPerDay,
     };
   }
 }

@@ -161,11 +161,13 @@ AccessIdentityProvider
 resolvePresentation
   → load Afiliado + Contrataciones + Reservas + Config
   → decide Allow/Deny + reasonCode
-  → persist IntentoIngreso
-  → maybe mark asistencia sesión
+  → persist IntentoIngreso (access_attempts)
+  → maybe mark asistencia sesión (reservations.checked_in_at)
 ```
 
 Cambiar a “QR propio” = nuevo adaptador; **misma** evaluación de negocio.
+
+Implementado en API: `POST /access/verify` (Staff, `access.verify`). Deuda real pendiente (hoy `overdueDays=0`).
 
 ### 6.4 Modos de escaneo
 

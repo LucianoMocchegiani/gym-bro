@@ -30,6 +30,12 @@ enum MemberStatus {
   INACTIVE
 }
 
+/// Resultado de un intento de ingreso en puerta (RN-ACC-007).
+enum AccessAttemptResult {
+  ALLOWED
+  DENIED
+}
+
 /// Tipo de servicio del catálogo comercial (RN-SER-001).
 enum ServiceType {
   ACCESO_LIBRE
@@ -171,6 +177,7 @@ model Tenant {
   mercadoPagoAccount MercadoPagoAccount?
   refundRequests  RefundRequest[]
   accessCredentials AccessCredential[]
+  accessAttempts  AccessAttempt[]
   auditEvents     AuditEvent[]
 
   @@map("tenants")
@@ -206,6 +213,12 @@ model TenantSettings {
   waitlistMode                 WaitlistMode @default(AUTO_ASSIGN) @map("waitlist_mode")
   /// RN-RES-006 / CU-RES-006: permitir reservar con crédito tras `startsAt` hasta `endsAt`.
   allowLateSessionEntry        Boolean      @default(false) @map("allow_late_session_entry")
+  /// RN-TEN-004: días de atraso de deuda con los que aún se permite ingreso.
+  debtToleranceDays            Int          @default(15) @map("debt_tolerance_days")
+  /// RN-TEN-007: si false, a lo sumo 1 ingreso ALLOWED por día calendario (BA).
+  multiEntryEnabled            Boolean      @default(false) @map("multi_entry_enabled")
+  /// Tope de ingresos ALLOWED/día cuando `multiEntryEnabled` (mín. 1).
+  multiEntryMaxPerDay          Int          @default(1) @map("multi_entry_max_per_day")
   createdAt                    DateTime     @default(now()) @map("created_at")
   updatedAt                    DateTime     @updatedAt @map("updated_at")
 
@@ -270,6 +283,7 @@ model StaffUser {
   cashMovementsRecorded     CashMovement[]          @relation("CashMovementRecorder")
   cashReconciliations       CashReconciliation[]    @relation("CashReconciliationStaff")
   refundRequestsResolved    RefundRequest[]         @relation("RefundRequestResolver")
+  accessAttemptsRecorded    AccessAttempt[]         @relation("AccessAttemptStaff")
 
   @@unique([tenantId, email])
   @@index([tenantId])
@@ -301,6 +315,7 @@ model Member {
   receipts      Receipt[]
   refundRequests RefundRequest[]
   accessCredentials AccessCredential[]
+  accessAttempts AccessAttempt[]
 
   @@unique([tenantId, email])
   @@unique([tenantId, document])
@@ -521,6 +536,7 @@ model Session {
   recurrenceRule SessionRecurrenceRule? @relation(fields: [recurrenceRuleId], references: [id], onDelete: SetNull)
   reservations   Reservation[]
   waitlistEntries WaitlistEntry[]
+  accessAttempts AccessAttempt[]
 
   @@unique([recurrenceRuleId, startsAt])
   @@index([tenantId])
@@ -635,6 +651,8 @@ model Reservation {
   paymentId       String?             @unique @map("payment_id") @db.Uuid
   status          ReservationStatus   @default(CONFIRMED)
   coverage        ReservationCoverage @default(CREDIT)
+  /// Marca de presente al verificar ingreso asociado (RN-RES-007).
+  checkedInAt     DateTime?           @map("checked_in_at")
   createdAt       DateTime            @default(now()) @map("created_at")
   updatedAt       DateTime            @updatedAt @map("updated_at")
 
@@ -644,6 +662,7 @@ model Reservation {
   contract      Contract?              @relation(fields: [contractId], references: [id], onDelete: Restrict)
   creditBalance ContractCreditBalance? @relation(fields: [creditBalanceId], references: [id], onDelete: Restrict)
   payment       Payment?               @relation(fields: [paymentId], references: [id], onDelete: Restrict)
+  accessAttempts AccessAttempt[]
 
   @@index([tenantId])
   @@index([memberId])
@@ -725,6 +744,35 @@ model AccessCredential {
   @@index([tenantId, memberId])
   @@index([memberId, status])
   @@map("access_credentials")
+}
+
+/// Intento de ingreso en puerta (CU-ACC-001 / RN-ACC-007).
+///
+/// @remarks Siempre se persiste (allow/deny). `manualPass` queda para el slice de pase manual.
+model AccessAttempt {
+  id              String              @id @default(uuid()) @db.Uuid
+  tenantId        String              @map("tenant_id") @db.Uuid
+  memberId        String?             @map("member_id") @db.Uuid
+  credentialRef   String?             @map("credential_ref")
+  result          AccessAttemptResult
+  reasonCode      String              @map("reason_code")
+  scanMode        String              @map("scan_mode")
+  reservationId   String?             @map("reservation_id") @db.Uuid
+  sessionId       String?             @map("session_id") @db.Uuid
+  manualPass      Boolean             @default(false) @map("manual_pass")
+  actorStaffId    String?             @map("actor_staff_id") @db.Uuid
+  createdAt       DateTime            @default(now()) @map("created_at")
+
+  tenant      Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  member      Member?      @relation(fields: [memberId], references: [id], onDelete: SetNull)
+  reservation Reservation? @relation(fields: [reservationId], references: [id], onDelete: SetNull)
+  session     Session?     @relation(fields: [sessionId], references: [id], onDelete: SetNull)
+  actorStaff  StaffUser?   @relation("AccessAttemptStaff", fields: [actorStaffId], references: [id], onDelete: SetNull)
+
+  @@index([tenantId, createdAt])
+  @@index([memberId, createdAt])
+  @@index([tenantId, memberId, result, createdAt])
+  @@map("access_attempts")
 }
 
 /// Solicitud de devolución del afiliado (CU-PAG-004 / RN-PAG-012).

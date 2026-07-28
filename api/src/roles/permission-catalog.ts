@@ -94,6 +94,11 @@ export const PERMISSION_CATALOG: readonly PermissionDefinition[] = [
     dangerous: true,
   },
   {
+    code: 'access.verify',
+    description: 'Verificar ingreso QR y ver historial de intentos',
+    dangerous: false,
+  },
+  {
     code: 'routines.write',
     description: 'Catálogo y asignación de rutinas',
     dangerous: false,
@@ -121,4 +126,5 @@ export const PROFESOR_PERMISSION_CODES: readonly string[] = [
   'sessions.write',
   'routines.write',
   'reports.read',
+  'access.verify',
 ];

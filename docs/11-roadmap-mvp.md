@@ -136,11 +136,15 @@
 - [ ] Adapter Quark / SSI
 - [x] Emitir / revocar credencial de vínculo
   - tabla `access_credentials`; Member `GET|POST /me/access-credential…`; Staff list/issue/revoke
-- [ ] `POST /access/verify` (1 modo de escaneo en MVP)
-- [ ] Evaluación: libre / reserva / deuda / tolerancia / multi-ingreso
+- [x] `POST /access/verify` (1 modo de escaneo en MVP)
+  - ambos modos en API; Staff `access.verify`; respuesta allow/deny + intento
+- [x] Evaluación: libre / reserva / deuda / tolerancia / multi-ingreso
+  - deuda placeholder 0 días; settings `debtToleranceDays`, `multiEntry*`
 - [ ] Pase manual + auditoría
-- [ ] Historial de ingresos con motivo
-- [ ] Config políticas de acceso del gym
+- [x] Historial de ingresos con motivo
+  - `GET /access-attempts`; tabla `access_attempts`; `reservations.checked_in_at`
+- [x] Config políticas de acceso del gym
+  - tolerancia + multi-ingreso en `tenant_settings` (CU-ACC-007 parcial)
 - [ ] Pantalla / flujo puerta (tocámetro o escaneo afiliado)
 
 ---
@@ -235,7 +239,7 @@ E11 → E12
 
 ## Próximo paso
 
-Elegir **una subtarea de E6** (recomendado: `POST /access/verify` + evaluación mínima) o drop-in MP opcional.
+Elegir **pase manual** (E6) o UI puerta / Quark; drop-in MP sigue opcional.
 
 ---
 

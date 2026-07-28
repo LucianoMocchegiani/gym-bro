@@ -55,6 +55,9 @@ erDiagram
   members ||--o{ refund_requests : requests
   tenants ||--o{ access_credentials : issues
   members ||--o{ access_credentials : holds
+  tenants ||--o{ access_attempts : logs
+  members ||--o{ access_attempts : attempts
+  reservations ||--o{ access_attempts : linked
   tenants ||--o{ audit_events : has
   branches ||--o{ members : default_for
   roles ||--o{ role_permissions : has
@@ -284,6 +287,7 @@ erDiagram
 | `ReceiptConcept` | `PACK_CONTRACT`, `DROP_IN` | Concepto del comprobante |
 | `RefundRequestStatus` | `PENDING`, `REJECTED`, `EXECUTED` | Solicitud de devolución |
 | `AccessCredentialStatus` | `ACTIVE`, `REVOKED` | Credencial de vínculo de acceso |
+| `AccessAttemptResult` | `ALLOWED`, `DENIED` | Resultado de intento de ingreso |
 
 ---
 
@@ -660,6 +664,28 @@ Credencial de vínculo afiliado↔gym (E6 / RN-ACC-002). Stub SSI: `credential_r
 
 API: Member `GET /me/access-credential`, `POST /me/access-credential/issue`. Staff `GET /members/:id/access-credentials`, `POST .../issue`, `POST .../revoke` (`members.read` / `members.write`).
 
+### 4.15i `access_attempts` + `reservations.checked_in_at`
+
+Intentos de ingreso (CU-ACC-001 / RN-ACC-007) y marca de presente (RN-RES-007).
+
+| Columna (`access_attempts`) | Tipo | Notas |
+|---------|------|--------|
+| `id` | uuid PK | |
+| `tenant_id` | uuid FK | |
+| `member_id` | uuid FK nullable | SET NULL |
+| `credential_ref` | text nullable | |
+| `result` | `AccessAttemptResult` | `ALLOWED` \| `DENIED` |
+| `reason_code` | text | p.ej. `ok_acceso_libre`, `sin_derecho` |
+| `scan_mode` | text | `gym_scans_member` \| `member_scans_gym` |
+| `reservation_id` / `session_id` | uuid FK nullable | |
+| `manual_pass` | boolean | default false (pase manual = slice siguiente) |
+| `actor_staff_id` | uuid FK nullable | Staff que verificó |
+| `created_at` | timestamptz | |
+
+Reservas: `checked_in_at` timestamptz nullable (primera allow asociada).
+
+API: Staff `POST /access/verify`, `GET /access-attempts` (`access.verify`).
+
 ### 4.16 `contracts`
 
 Contratación tras pago aprobado (CU-CON-001).
@@ -750,6 +776,9 @@ Config operativa 1:1 con tenant (RN-TEN-005).
 | `reservation_cancellation_hours` | int | default 6; rango API 0–720 |
 | `waitlist_mode` | `WaitlistMode` | default `AUTO_ASSIGN`; liberación MVP solo AUTO |
 | `allow_late_session_entry` | boolean | default false; RN-RES-006 / CU-RES-006 |
+| `debt_tolerance_days` | int | default 15; RN-TEN-004 |
+| `multi_entry_enabled` | boolean | default false; RN-TEN-007 |
+| `multi_entry_max_per_day` | int | default 1; tope si multi habilitado |
 | `created_at` / `updated_at` | timestamptz | |
 
 API Staff: `GET|PATCH /api/tenant-settings` (`tenant.settings.read/write`). Super: `/api/tenants/:tenantId/settings`. Create tenant + seed crean el row.
@@ -799,6 +828,7 @@ API: Member `POST|GET /api/me/waitlist`, `PATCH /api/me/waitlist/:id/status`; St
 | `20260726260000_payment_mp_checkout` | `PaymentMethod.MP` + ids/URLs Preference en `payments` |
 | `20260726270000_refunds` | `refund_requests` + OUTCOME/REFUND caja + campos refund en payments |
 | `20260727120000_access_credentials` | enum `AccessCredentialStatus` + tabla `access_credentials` |
+| `20260727180000_access_verify` | `access_attempts` + settings deuda/multi + `checked_in_at` |
 
 Comandos:
 
@@ -830,7 +860,7 @@ Crea Super + tenant demo + **branch** + roles Admin/Profesor + staff `admin@demo
 
 ## 7. Pendiente de modelar (dominio → DB)
 
-Aún no hay tablas Prisma para (ver [03](./03-modelo-dominio.md) / roadmap): intentos de ingreso, rutinas, notificaciones, etc. Se documentan aquí **al implementarlas**.
+Aún no hay tablas Prisma para (ver [03](./03-modelo-dominio.md) / roadmap): deuda real, rutinas, notificaciones, etc. Se documentan aquí **al implementarlas**.
 
 **Staff ↔ roles:** tabla `staff_user_roles`. API: Super `PUT /tenants/:tenantId/staff/:staffId/roles`, Staff `PUT /staff/:staffId/roles`. Create tenant exige owner y le asigna rol Admin.
 

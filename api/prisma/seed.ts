@@ -79,6 +79,11 @@ const PERMISSIONS: { code: string; description: string; dangerous: boolean }[] =
       dangerous: true,
     },
     {
+      code: 'access.verify',
+      description: 'Verificar ingreso QR y ver historial de intentos',
+      dangerous: false,
+    },
+    {
       code: 'routines.write',
       description: 'Catálogo y asignación de rutinas',
       dangerous: false,
@@ -105,6 +110,7 @@ const PROFESOR_CODES = [
   'sessions.write',
   'routines.write',
   'reports.read',
+  'access.verify',
 ];
 
 /**
@@ -209,6 +215,14 @@ async function main(): Promise<void> {
           })),
         },
       },
+    });
+  } else {
+    await prisma.rolePermission.createMany({
+      data: PROFESOR_CODES.map((code) => ({
+        roleId: profesorRole!.id,
+        permissionId: byCode.get(code)!.id,
+      })),
+      skipDuplicates: true,
     });
   }
 
