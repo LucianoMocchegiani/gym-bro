@@ -193,7 +193,7 @@ Admin PUT /mercadopago/account { accessToken, publicKey }
   → GET status sin secretos; POST test; DELETE desconecta
 ```
 
-Checkout / webhook: tareas siguientes de E5.
+Checkout/webhook implementados (stub local + modo live). Pendiente en roadmap: validación E2E con cuenta MP real.
 
 ### 7.2 Flujo MP
 

@@ -113,6 +113,11 @@
   - Member/Staff drop-in: `POST .../drop-in-checkout` → reserva al APPROVED; STUB/CASH drop-in sigue inmediato
 - [x] Webhook MP idempotente
   - `POST /webhooks/mercadopago?tenantId=`; simulate stub; dedup `mp_payment_id`; pack→contrato / drop-in→reserva
+- [ ] Validar checkout/webhook MP con cuenta real (sandbox → live)
+  - `MP_ACCOUNT_VALIDATE_MODE=live` + `MP_CHECKOUT_MODE=live`; token/public_key de prueba MP del gym
+  - `PUBLIC_API_BASE_URL` alcanzable (ngrok u host público) para `notification_url`
+  - Preferencia real + pago sandbox; webhook MP (no `/simulate`); pack y drop-in → contrato/reserva
+  - Opcional: reembolso MP live; checklist S5 en `docs/08-casos-prueba-manuales.md`
 - [x] Cobro en caja
   - `method=CASH` en contrato/drop-in → `cash_movements` (STUB no entra)
 - [x] Comprobante interno
