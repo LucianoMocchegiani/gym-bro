@@ -348,6 +348,11 @@ export class ReservationsService {
     const idempotencyKey =
       dto.idempotencyKey?.trim() || `stub-${randomBytes(16).toString('hex')}`;
     const method = dto.method ?? PaymentMethod.STUB;
+    if (method === PaymentMethod.MP) {
+      throw new BadRequestException(
+        'Use POST /me/payments/mp/drop-in-checkout (or Staff /members/:id/...) for Mercado Pago drop-in',
+      );
+    }
 
     const existingPayment = await this.prisma.payment.findUnique({
       where: {
@@ -468,6 +473,180 @@ export class ReservationsService {
           where: {
             tenantId_idempotencyKey: { tenantId, idempotencyKey },
           },
+          include: {
+            reservation: { include: this.reservationInclude() },
+          },
+        });
+        if (again?.reservation) {
+          return this.toDetail(again.reservation);
+        }
+        throw new ConflictException(
+          'Member already has a confirmed reservation for this session',
+        );
+      }
+      throw error;
+    }
+  }
+
+  /**
+   * Confirma reserva DROP_IN + comprobante para un pago MP ya APPROVED.
+   *
+   * @remarks Idempotente si la reserva ya existe. Usado por webhook (CU-RES-001).
+   * Si el cupo se agotó tras el pago, lanza error (admin/reembolso edge case).
+   */
+  async confirmDropInFromApprovedPayment(
+    tenantId: string,
+    paymentId: string,
+    actor: AuditActor,
+  ): Promise<ReservationDetail> {
+    const payment = await this.prisma.payment.findFirst({
+      where: { id: paymentId, tenantId },
+      include: {
+        reservation: { include: this.reservationInclude() },
+      },
+    });
+    if (!payment) {
+      throw new NotFoundException(`Payment ${paymentId} not found in tenant`);
+    }
+    if (payment.reservation) {
+      return this.toDetail(payment.reservation);
+    }
+    if (payment.status !== PaymentStatus.APPROVED) {
+      throw new BadRequestException(
+        `Payment must be APPROVED to confirm drop-in (current: ${payment.status})`,
+      );
+    }
+    if (payment.method !== PaymentMethod.MP) {
+      throw new BadRequestException(
+        'confirmDropInFromApprovedPayment is only for MP payments',
+      );
+    }
+    if (!payment.sessionId) {
+      throw new BadRequestException('MP drop-in payment is missing sessionId');
+    }
+    if (payment.packId) {
+      throw new BadRequestException(
+        'Payment looks like a pack checkout, not drop-in',
+      );
+    }
+
+    const session = await this.prisma.session.findFirst({
+      where: { id: payment.sessionId, tenantId },
+      select: {
+        id: true,
+        status: true,
+        startsAt: true,
+        endsAt: true,
+        capacity: true,
+        bookedCount: true,
+        service: { select: { name: true } },
+      },
+    });
+    if (!session) {
+      throw new NotFoundException(
+        `Session ${payment.sessionId} not found in tenant`,
+      );
+    }
+    if (session.status !== SessionStatus.PUBLISHED) {
+      throw new BadRequestException('Session is not published');
+    }
+
+    const existingRes = await this.prisma.reservation.findFirst({
+      where: {
+        tenantId,
+        memberId: payment.memberId,
+        sessionId: session.id,
+        status: ReservationStatus.CONFIRMED,
+      },
+      select: { id: true },
+    });
+    if (existingRes) {
+      throw new ConflictException(
+        'Member already has a confirmed reservation for this session',
+      );
+    }
+
+    try {
+      await this.tenantSettings.assertSessionOpenForBooking(tenantId, session);
+
+      const reservation = await this.prisma.$transaction(async (tx) => {
+        const fresh = await tx.session.findFirst({
+          where: { id: session.id, tenantId },
+          select: {
+            id: true,
+            status: true,
+            capacity: true,
+            bookedCount: true,
+            startsAt: true,
+            endsAt: true,
+          },
+        });
+        if (!fresh || fresh.status !== SessionStatus.PUBLISHED) {
+          throw new BadRequestException('Session is not published');
+        }
+        await this.tenantSettings.assertSessionOpenForBooking(tenantId, fresh);
+        if (fresh.bookedCount >= fresh.capacity) {
+          throw new BadRequestException(
+            'Session is full; refund the MP drop-in payment',
+          );
+        }
+
+        const seat = await tx.session.updateMany({
+          where: {
+            id: fresh.id,
+            tenantId,
+            status: SessionStatus.PUBLISHED,
+            bookedCount: fresh.bookedCount,
+          },
+          data: { bookedCount: { increment: 1 } },
+        });
+        if (seat.count !== 1) {
+          throw new ConflictException(
+            'Session capacity changed concurrently; retry',
+          );
+        }
+
+        await this.receipts.issueForApprovedPayment(tx, {
+          tenantId,
+          paymentId: payment.id,
+          memberId: payment.memberId,
+          amount: payment.amount,
+          method: payment.method,
+          concept: ReceiptConcept.DROP_IN,
+          description: session.service.name,
+        });
+
+        return tx.reservation.create({
+          data: {
+            tenantId,
+            memberId: payment.memberId,
+            sessionId: session.id,
+            paymentId: payment.id,
+            status: ReservationStatus.CONFIRMED,
+            coverage: ReservationCoverage.DROP_IN,
+          },
+          include: this.reservationInclude(),
+        });
+      });
+
+      const detail = this.toDetail(reservation);
+      await this.audit.record({
+        tenantId,
+        actor,
+        action: AUDIT_ACTIONS.reservationCreate,
+        entityType: 'reservation',
+        entityId: reservation.id,
+        before: null,
+        after: this.auditSnapshot(detail),
+      });
+      return detail;
+    } catch (error: unknown) {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2002'
+      ) {
+        const again = await this.prisma.payment.findUnique({
+          where: { id: paymentId },
           include: {
             reservation: { include: this.reservationInclude() },
           },

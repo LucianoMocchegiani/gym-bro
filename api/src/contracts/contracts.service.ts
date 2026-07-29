@@ -333,6 +333,11 @@ export class ContractsService {
     if (!payment.packId || !payment.pack) {
       throw new BadRequestException('MP pack payment is missing packId');
     }
+    if (payment.sessionId) {
+      throw new BadRequestException(
+        'Payment looks like a drop-in checkout, not pack',
+      );
+    }
 
     const pack = payment.pack;
     if (pack.components.length === 0) {

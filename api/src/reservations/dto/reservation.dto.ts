@@ -15,6 +15,7 @@ import { PaymentMethod } from '@prisma/client';
  *
  * @remarks Default `coverage=CREDIT`. Drop-in (`DROP_IN`) es staff-only, crea
  * Payment APPROVED (stub/caja) con `idempotencyKey` y no consume créditos.
+ * `method=MP` no aplica aquí: usar checkout MP drop-in.
  * `contractId` solo aplica a CREDIT.
  */
 export class CreateReservationDto {

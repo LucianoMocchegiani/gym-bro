@@ -1,8 +1,10 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { AuditModule } from '../audit/audit.module';
 import { AuthModule } from '../auth/auth.module';
 import { ContractsModule } from '../contracts/contracts.module';
+import { ReservationsModule } from '../reservations/reservations.module';
 import { RolesModule } from '../roles/roles.module';
+import { TenantSettingsModule } from '../tenant-settings/tenant-settings.module';
 import { HttpMpAccountAdapter } from './http-mp-account.adapter';
 import { MercadoPagoAccountController } from './mercadopago-account.controller';
 import { MercadoPagoAccountService } from './mercadopago-account.service';
@@ -14,10 +16,17 @@ import { MpWebhookService } from './mp-webhook.service';
 import { SuperMercadoPagoAccountController } from './super-mercadopago-account.controller';
 
 /**
- * Mercado Pago: cuenta del gym + checkout pack + webhook (E5).
+ * Mercado Pago: cuenta del gym + checkout pack/drop-in + webhook (E5).
  */
 @Module({
-  imports: [AuthModule, RolesModule, AuditModule, ContractsModule],
+  imports: [
+    AuthModule,
+    RolesModule,
+    AuditModule,
+    ContractsModule,
+    TenantSettingsModule,
+    forwardRef(() => ReservationsModule),
+  ],
   controllers: [
     MercadoPagoAccountController,
     SuperMercadoPagoAccountController,

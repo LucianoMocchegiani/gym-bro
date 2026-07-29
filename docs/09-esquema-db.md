@@ -628,16 +628,17 @@ API Staff: `GET|PUT|DELETE /api/mercadopago/account`, `POST .../test` (`mp.conne
 
 ### 4.15f `payments` (campos MP)
 
-Extensión checkout/webhook (CU-PAG-001):
+Extensión checkout/webhook (CU-PAG-001 / drop-in):
 
 | Columna | Tipo | Notas |
 |---------|------|--------|
 | `method` | enum + `MP` | además de STUB/CASH |
+| `session_id` | uuid FK nullable → `sessions` | checkout drop-in MP |
 | `mp_preference_id` | text nullable | Preference Checkout Pro |
 | `mp_payment_id` | text nullable UK | dedup webhook |
 | `mp_init_point` / `mp_sandbox_init_point` | text nullable | URLs checkout |
 
-API Member: `POST /api/me/payments/mp/checkout` → Payment `PENDING` + URLs. Webhook: `POST /api/webhooks/mercadopago?tenantId=` (público). Stub: `POST /api/webhooks/mercadopago/simulate`. Al `APPROVED` → contrato + recibo.
+API: pack `POST /me|members/:id/payments/mp/checkout`; drop-in `.../drop-in-checkout`. Webhook: `POST /api/webhooks/mercadopago?tenantId=` (+ `/simulate` stub). Al `APPROVED`: pack → contrato; drop-in → reserva `DROP_IN` + recibo.
 
 ### 4.15g `refund_requests` + refund en `payments`
 
@@ -843,6 +844,7 @@ API: Member `POST|GET /api/me/waitlist`, `PATCH /api/me/waitlist/:id/status`; St
 | `20260727120000_access_credentials` | enum `AccessCredentialStatus` + tabla `access_credentials` |
 | `20260727180000_access_verify` | `access_attempts` + settings deuda/multi + `checked_in_at` |
 | `20260727230000_access_manual_pass` | `motive_code` + `note` en `access_attempts` |
+| `20260728120000_payment_drop_in_session` | `payments.session_id` para checkout drop-in MP |
 
 Comandos:
 

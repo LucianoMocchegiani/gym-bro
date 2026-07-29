@@ -44,7 +44,7 @@ Carpeta **Tenant settings**: `GET|PATCH /tenant-settings` (`tenant.settings.*`).
 
 Carpeta **Cash register**: `GET /cash-register/day` + `POST /cash-register/day/reconcile` (`cashier.operate`). Movimientos CASH; arqueo 1/día (declarado ≥ 0); día en timezone BA.
 
-Carpeta **Mercado Pago**: cuenta `GET|PUT|DELETE /mercadopago/account` + test (`mp.connect`). Checkout pack Member `POST /me/payments/mp/checkout`; webhook `POST /webhooks/mercadopago` y `/simulate` si `MP_CHECKOUT_MODE=stub`.
+Carpeta **Mercado Pago**: cuenta `GET|PUT|DELETE /mercadopago/account` + test (`mp.connect`). Checkout pack: Member `POST /me/payments/mp/checkout` y Staff `POST /members/:id/payments/mp/checkout`. Drop-in MP: Member/Staff `.../drop-in-checkout` (reserva al APPROVED). Webhook `POST /webhooks/mercadopago` y `/simulate` si `MP_CHECKOUT_MODE=stub` (pack → `contractId`; drop-in → `reservationId`).
 
 Carpeta **Refunds**: Member `POST /me/payments/:paymentId/refund-requests` + `GET /me/refund-requests`. Staff `GET /refund-requests` + `POST /payments/:paymentId/refunds` (`payments.refund`; `motiveCode=doble_cobro` opcional).
 

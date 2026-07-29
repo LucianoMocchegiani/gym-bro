@@ -1923,7 +1923,7 @@
     },
     {
       "name": "Mercado Pago",
-      "description": "CU-PAG-006 + CU-PAG-001. Cuenta: GET|PUT|DELETE /mercadopago/account + test (mp.connect). Checkout pack: Member POST /me/payments/mp/checkout. Webhook público + POST /webhooks/mercadopago/simulate (MP_CHECKOUT_MODE=stub). Requiere cuenta conectada y {{createdPackId}}.",
+      "description": "CU-PAG-006 + CU-PAG-001. Cuenta: GET|PUT|DELETE /mercadopago/account + test (mp.connect). Checkout pack: Member POST /me/payments/mp/checkout; Staff POST /members/:id/payments/mp/checkout. Drop-in MP: .../drop-in-checkout. Webhook + simulate stub.",
       "item": [
         {
           "name": "Staff GET MP account status",
@@ -2022,6 +2022,73 @@
           }
         },
         {
+          "name": "Staff POST MP pack checkout",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "  const body = pm.response.json();",
+                  "  if (body.paymentId) pm.collectionVariables.set('mpPaymentId', body.paymentId);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"packId\": \"{{createdPackId}}\",\n  \"idempotencyKey\": \"mp-staff-pack-{{$timestamp}}\"\n}"
+            },
+            "url": "{{baseUrl}}/api/members/{{createdMemberId}}/payments/mp/checkout",
+            "description": "members.write. Staff genera Preference para el afiliado."
+          }
+        },
+        {
+          "name": "Member POST MP drop-in checkout",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "  const body = pm.response.json();",
+                  "  if (body.paymentId) pm.collectionVariables.set('mpPaymentId', body.paymentId);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sessionId\": \"{{createdSessionId}}\",\n  \"idempotencyKey\": \"mp-dropin-{{$timestamp}}\"\n}"
+            },
+            "url": "{{baseUrl}}/api/me/payments/mp/drop-in-checkout",
+            "description": "Member. Sesión con dropInPrice. Reserva al simulate APPROVED."
+          }
+        },
+        {
+          "name": "Staff POST MP drop-in checkout",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sessionId\": \"{{createdSessionId}}\",\n  \"idempotencyKey\": \"mp-staff-dropin-{{$timestamp}}\"\n}"
+            },
+            "url": "{{baseUrl}}/api/members/{{createdMemberId}}/payments/mp/drop-in-checkout",
+            "description": "reservations.write."
+          }
+        },
+        {
           "name": "Simulate MP webhook APPROVED",
           "event": [
             {
@@ -2033,8 +2100,14 @@
                   "const body = pm.response.json();",
                   "pm.test('handled', () => pm.expect(body.handled).to.eql(true));",
                   "pm.test('approved', () => pm.expect(body.status).to.eql('APPROVED'));",
-                  "pm.test('contract', () => pm.expect(body.contractId).to.be.a('string'));",
-                  "if (body.contractId) pm.collectionVariables.set('createdContractId', body.contractId);"
+                  "if (body.contractId) {",
+                  "  pm.test('contract', () => pm.expect(body.contractId).to.be.a('string'));",
+                  "  pm.collectionVariables.set('createdContractId', body.contractId);",
+                  "}",
+                  "if (body.reservationId) {",
+                  "  pm.test('reservation', () => pm.expect(body.reservationId).to.be.a('string'));",
+                  "  pm.collectionVariables.set('createdReservationId', body.reservationId);",
+                  "}"
                 ]
               }
             }
@@ -2047,7 +2120,7 @@
               "raw": "{\n  \"paymentId\": \"{{mpPaymentId}}\",\n  \"status\": \"APPROVED\"\n}"
             },
             "url": "{{baseUrl}}/api/webhooks/mercadopago/simulate",
-            "description": "Solo con MP_CHECKOUT_MODE=stub. Crea contrato + recib."
+            "description": "Solo con MP_CHECKOUT_MODE=stub. Pack → contractId; drop-in → reservationId."
           }
         },
         {

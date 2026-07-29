@@ -109,9 +109,10 @@
 - [x] Conectar cuenta MP del gym
   - `mercadopago_accounts` 1:1; access_token cifrado; PUT/GET/DELETE + test (`mp.connect`); sin checkout
 - [x] Checkout MP (pack / mensualidad / drop-in)
-  - Member `POST /me/payments/mp/checkout` (pack); Payment PENDING + Preference; contrato al aprobar
+  - Member/Staff pack: `POST /me|members/:id/payments/mp/checkout`
+  - Member/Staff drop-in: `POST .../drop-in-checkout` → reserva al APPROVED; STUB/CASH drop-in sigue inmediato
 - [x] Webhook MP idempotente
-  - `POST /webhooks/mercadopago?tenantId=`; simulate stub; dedup `mp_payment_id`
+  - `POST /webhooks/mercadopago?tenantId=`; simulate stub; dedup `mp_payment_id`; pack→contrato / drop-in→reserva
 - [x] Cobro en caja
   - `method=CASH` en contrato/drop-in → `cash_movements` (STUB no entra)
 - [x] Comprobante interno
@@ -240,7 +241,7 @@ E11 → E12
 
 ## Próximo paso
 
-Elegir **pantalla/flujo puerta** (web), Quark real, o pasar a **E7 rutinas** / E9 app.
+Elegir **pantalla/flujo puerta** (web), Quark, **E7 rutinas**, o probar MP live.
 
 ---
 
