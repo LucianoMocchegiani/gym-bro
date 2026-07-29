@@ -16,6 +16,7 @@ La creación de registros sigue la skill:
 
 ## Índice
 
+- [2026-07-29 — Checkout MP drop-in + Staff pack](./2026-07-29-checkout-mp-drop-in.md)
 - [2026-07-27 — Pase manual de acceso + auditoría](./2026-07-27-pase-manual-acceso.md)
 - [2026-07-27 — Acceso verify + evaluación + historial](./2026-07-27-acceso-verify-evaluacion.md)
 - [2026-07-27 — Credenciales de vínculo de acceso (stub)](./2026-07-27-credenciales-acceso-stub.md)
