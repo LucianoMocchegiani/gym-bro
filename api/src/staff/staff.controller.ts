@@ -2,8 +2,11 @@ import {
   Body,
   Controller,
   Get,
+  HttpCode,
+  HttpStatus,
   Param,
   ParseUUIDPipe,
+  Post,
   Put,
 } from '@nestjs/common';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
@@ -12,19 +15,36 @@ import { toAuditActor } from '../audit/to-audit-actor';
 import { RequirePermission } from '../roles/decorators/require-permission.decorator';
 import { RequireTenantAuth } from '../tenant/decorators/require-tenant-auth.decorator';
 import { CurrentTenant } from '../tenant/decorators/current-tenant.decorator';
-import { SetStaffRolesDto } from './dto/staff.dto';
+import { CreateStaffDto, SetStaffRolesDto } from './dto/staff.dto';
 import { StaffService } from './staff.service';
 import { StaffUserDetail } from './staff.types';
 
 /**
  * Staff del gym autenticado (solo su tenant).
  *
- * @remarks CU-ROL-004 / RN-ROL-007. Lectura: `staff.read`; asignación: `staff.write`.
+ * @remarks CU-ROL-004 / RN-ROL-007. Lectura: `staff.read`; alta/asignación: `staff.write`.
  */
 @Controller('staff')
 @RequireTenantAuth()
 export class StaffController {
   constructor(private readonly staffService: StaffService) {}
+
+  @Get()
+  @RequirePermission('staff.read')
+  list(@CurrentTenant() tenantId: string): Promise<StaffUserDetail[]> {
+    return this.staffService.list(tenantId);
+  }
+
+  @Post()
+  @HttpCode(HttpStatus.CREATED)
+  @RequirePermission('staff.write')
+  create(
+    @CurrentTenant() tenantId: string,
+    @CurrentUser() user: AuthUser,
+    @Body() dto: CreateStaffDto,
+  ): Promise<StaffUserDetail> {
+    return this.staffService.create(tenantId, dto, toAuditActor(user));
+  }
 
   @Get(':staffId')
   @RequirePermission('staff.read')

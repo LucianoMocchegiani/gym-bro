@@ -2,15 +2,18 @@ import {
   Body,
   Controller,
   Get,
+  HttpCode,
+  HttpStatus,
   Param,
   ParseUUIDPipe,
+  Post,
   Put,
 } from '@nestjs/common';
 import { RequireSuperAuth } from '../auth/decorators/require-super-auth.decorator';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import type { AuthUser } from '../auth/auth.types';
 import { toAuditActor } from '../audit/to-audit-actor';
-import { SetStaffRolesDto } from './dto/staff.dto';
+import { CreateStaffDto, SetStaffRolesDto } from './dto/staff.dto';
 import { StaffService } from './staff.service';
 import { StaffUserDetail } from './staff.types';
 
@@ -23,6 +26,23 @@ import { StaffUserDetail } from './staff.types';
 @RequireSuperAuth()
 export class SuperStaffController {
   constructor(private readonly staffService: StaffService) {}
+
+  @Get()
+  list(
+    @Param('tenantId', ParseUUIDPipe) tenantId: string,
+  ): Promise<StaffUserDetail[]> {
+    return this.staffService.list(tenantId);
+  }
+
+  @Post()
+  @HttpCode(HttpStatus.CREATED)
+  create(
+    @Param('tenantId', ParseUUIDPipe) tenantId: string,
+    @CurrentUser() user: AuthUser,
+    @Body() dto: CreateStaffDto,
+  ): Promise<StaffUserDetail> {
+    return this.staffService.create(tenantId, dto, toAuditActor(user));
+  }
 
   @Get(':staffId')
   findOne(

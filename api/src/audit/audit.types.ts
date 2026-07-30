@@ -43,6 +43,7 @@ export const AUDIT_ACTIONS = {
   tenantUpdate: 'tenant.update',
   roleCreate: 'role.create',
   roleUpdate: 'role.update',
+  staffCreate: 'staff.create',
   staffRolesSet: 'staff.roles.set',
   memberCreate: 'member.create',
   memberUpdate: 'member.update',

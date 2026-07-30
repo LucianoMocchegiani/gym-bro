@@ -212,7 +212,9 @@
 - [x] Pase manual / historial acceso
   - `/puerta` + `/puerta/pase-manual` (E6 pantalla puerta)
 - [ ] Rutinas
-- [ ] Roles y config gym
+- [x] Roles y config gym
+  - `/roles` + `/staff` (listado/alta/asignación); `/config` (tenant-settings + MP)
+  - API: `GET|POST /staff` (+ Super equivalentes)
 - [ ] Plantillas de notificación
 - [ ] Panel Super Admin (tenants)
 

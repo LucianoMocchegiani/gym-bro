@@ -28,7 +28,7 @@ Los logins usan `{{tenantId}}`, `{{staffEmail}}`, etc. Reimportá el environment
 
 Carpeta **Auth (manual)**: Login Super/Staff/Member → Me → Refresh → Logout.
 
-Carpeta **Roles** / **Staff roles**: Staff necesita permisos (`roles.write` para list/get/create/patch, `staff.write` para asignar). El Admin seed los tiene; un rol sin esos códigos → 403.
+Carpeta **Roles** / **Staff roles**: Staff necesita permisos (`roles.write` para list/get/create/patch; `staff.read` list/detail; `staff.write` alta + asignar roles). Incluye `GET|POST /staff` y equivalentes Super. El Admin seed los tiene; un rol sin esos códigos → 403.
 
 Carpeta **Audit**: `GET /audit-events` (Staff, `audit.read`) o Super por tenant. Generá eventos con mutaciones de tenant/roles/staff roles.
 

@@ -30,36 +30,126 @@
     }
   ],
   "variable": [
-    { "key": "baseUrl", "value": "http://localhost:3001" },
-    { "key": "tenantId", "value": "00000000-0000-4000-8000-000000000001" },
-    { "key": "superEmail", "value": "super@gymbro.local" },
-    { "key": "superPassword", "value": "ChangeMe123!" },
-    { "key": "staffEmail", "value": "admin@demo.gym" },
-    { "key": "staffPassword", "value": "ChangeMe123!" },
-    { "key": "memberEmail", "value": "socio@demo.gym" },
-    { "key": "memberPassword", "value": "ChangeMe123!" },
-    { "key": "demoPassword", "value": "ChangeMe123!" },
-    { "key": "accessToken", "value": "" },
-    { "key": "refreshToken", "value": "" },
-    { "key": "profileType", "value": "" },
-    { "key": "userId", "value": "" },
-    { "key": "userEmail", "value": "" },
-    { "key": "createdTenantId", "value": "" },
-    { "key": "createdBranchId", "value": "" },
-    { "key": "createdRoleId", "value": "" },
-    { "key": "createdOwnerId", "value": "" },
-    { "key": "createdMemberId", "value": "" },
-    { "key": "createdServiceId", "value": "" },
-    { "key": "accesoLibreServiceId", "value": "" },
-    { "key": "porSesionesServiceId", "value": "" },
-    { "key": "createdPackId", "value": "" },
-    { "key": "createdContractId", "value": "" },
-    { "key": "createdPaymentId", "value": "" },
-    { "key": "createdSessionId", "value": "" },
-    { "key": "createdRecurrenceRuleId", "value": "" },
-    { "key": "createdReservationId", "value": "" },
-    { "key": "accessCredentialId", "value": "" },
-    { "key": "accessCredentialRef", "value": "" }
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3001"
+    },
+    {
+      "key": "tenantId",
+      "value": "00000000-0000-4000-8000-000000000001"
+    },
+    {
+      "key": "superEmail",
+      "value": "super@gymbro.local"
+    },
+    {
+      "key": "superPassword",
+      "value": "ChangeMe123!"
+    },
+    {
+      "key": "staffEmail",
+      "value": "admin@demo.gym"
+    },
+    {
+      "key": "staffPassword",
+      "value": "ChangeMe123!"
+    },
+    {
+      "key": "memberEmail",
+      "value": "socio@demo.gym"
+    },
+    {
+      "key": "memberPassword",
+      "value": "ChangeMe123!"
+    },
+    {
+      "key": "demoPassword",
+      "value": "ChangeMe123!"
+    },
+    {
+      "key": "accessToken",
+      "value": ""
+    },
+    {
+      "key": "refreshToken",
+      "value": ""
+    },
+    {
+      "key": "profileType",
+      "value": ""
+    },
+    {
+      "key": "userId",
+      "value": ""
+    },
+    {
+      "key": "userEmail",
+      "value": ""
+    },
+    {
+      "key": "createdTenantId",
+      "value": ""
+    },
+    {
+      "key": "createdBranchId",
+      "value": ""
+    },
+    {
+      "key": "createdRoleId",
+      "value": ""
+    },
+    {
+      "key": "createdOwnerId",
+      "value": ""
+    },
+    {
+      "key": "createdMemberId",
+      "value": ""
+    },
+    {
+      "key": "createdServiceId",
+      "value": ""
+    },
+    {
+      "key": "accesoLibreServiceId",
+      "value": ""
+    },
+    {
+      "key": "porSesionesServiceId",
+      "value": ""
+    },
+    {
+      "key": "createdPackId",
+      "value": ""
+    },
+    {
+      "key": "createdContractId",
+      "value": ""
+    },
+    {
+      "key": "createdPaymentId",
+      "value": ""
+    },
+    {
+      "key": "createdSessionId",
+      "value": ""
+    },
+    {
+      "key": "createdRecurrenceRuleId",
+      "value": ""
+    },
+    {
+      "key": "createdReservationId",
+      "value": ""
+    },
+    {
+      "key": "accessCredentialId",
+      "value": ""
+    },
+    {
+      "key": "accessCredentialRef",
+      "value": ""
+    }
   ],
   "item": [
     {
@@ -81,7 +171,9 @@
             }
           ],
           "request": {
-            "auth": { "type": "noauth" },
+            "auth": {
+              "type": "noauth"
+            },
             "method": "GET",
             "header": [],
             "url": "{{baseUrl}}/api/health"
@@ -123,9 +215,16 @@
             }
           ],
           "request": {
-            "auth": { "type": "noauth" },
+            "auth": {
+              "type": "noauth"
+            },
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"email\": \"{{superEmail}}\",\n  \"password\": \"{{superPassword}}\"\n}"
@@ -209,9 +308,16 @@
             }
           ],
           "request": {
-            "auth": { "type": "noauth" },
+            "auth": {
+              "type": "noauth"
+            },
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}"
@@ -259,9 +365,16 @@
             }
           ],
           "request": {
-            "auth": { "type": "noauth" },
+            "auth": {
+              "type": "noauth"
+            },
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}"
@@ -298,9 +411,16 @@
             }
           ],
           "request": {
-            "auth": { "type": "noauth" },
+            "auth": {
+              "type": "noauth"
+            },
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"email\": \"{{superEmail}}\",\n  \"password\": \"{{superPassword}}\"\n}"
@@ -332,9 +452,16 @@
             }
           ],
           "request": {
-            "auth": { "type": "noauth" },
+            "auth": {
+              "type": "noauth"
+            },
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"tenantId\": \"{{tenantId}}\",\n  \"email\": \"{{staffEmail}}\",\n  \"password\": \"{{staffPassword}}\"\n}"
@@ -366,9 +493,16 @@
             }
           ],
           "request": {
-            "auth": { "type": "noauth" },
+            "auth": {
+              "type": "noauth"
+            },
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"tenantId\": \"{{tenantId}}\",\n  \"email\": \"{{memberEmail}}\",\n  \"password\": \"{{memberPassword}}\"\n}"
@@ -429,9 +563,16 @@
             }
           ],
           "request": {
-            "auth": { "type": "noauth" },
+            "auth": {
+              "type": "noauth"
+            },
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}"
@@ -457,9 +598,16 @@
             }
           ],
           "request": {
-            "auth": { "type": "noauth" },
+            "auth": {
+              "type": "noauth"
+            },
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}"
@@ -511,7 +659,12 @@
           ],
           "request": {
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"name\": \"Gym Postman Test\",\n  \"ownerEmail\": \"owner.postman@test.gym\",\n  \"ownerPassword\": \"ChangeMe123!\",\n  \"ownerName\": \"Owner Postman\"\n}"
@@ -576,7 +729,12 @@
           ],
           "request": {
             "method": "PATCH",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"name\": \"Gym Postman Renamed\"\n}"
@@ -600,7 +758,12 @@
           ],
           "request": {
             "method": "PATCH",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"status\": \"SUSPENDED\"\n}"
@@ -624,7 +787,12 @@
           ],
           "request": {
             "method": "PATCH",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"status\": \"ACTIVE\"\n}"
@@ -684,7 +852,12 @@
           ],
           "request": {
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"name\": \"Recepcion\",\n  \"permissionCodes\": [\"members.read\", \"members.write\", \"cashier.operate\"]\n}"
@@ -728,7 +901,12 @@
           ],
           "request": {
             "method": "PATCH",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"name\": \"Recepcion Plus\",\n  \"permissionCodes\": [\"members.read\", \"cashier.operate\"]\n}"
@@ -771,7 +949,12 @@
           ],
           "request": {
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"name\": \"Coach auxiliar\",\n  \"permissionCodes\": [\"routines.write\", \"members.read\"]\n}"
@@ -783,8 +966,151 @@
     },
     {
       "name": "Staff roles",
-      "description": "Asignar roles. Super: /tenants/:tenantId/staff/:staffId/roles. Staff: /staff/:staffId/roles. Requiere createdOwnerId o staffId del seed.",
+      "description": "Listado/alta/asignación. Super: /tenants/:tenantId/staff. Staff: /staff (staff.read / staff.write). Variables: createdStaffId, createdOwnerId, createdRoleId.",
       "item": [
+        {
+          "name": "Staff GET list",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('array', () => pm.expect(pm.response.json()).to.be.an('array'));",
+                  "const rows = pm.response.json();",
+                  "if (rows[0]) { pm.environment.set('createdStaffId', rows[0].id); pm.collectionVariables.set('createdStaffId', rows[0].id); }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/staff"
+          }
+        },
+        {
+          "name": "Staff POST create",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 201', () => pm.response.to.have.status(201));",
+                  "const body = pm.response.json();",
+                  "pm.environment.set('createdStaffId', body.id);",
+                  "pm.collectionVariables.set('createdStaffId', body.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"nuevo.staff-{{$timestamp}}@demo.gym\",\n  \"password\": \"{{demoPassword}}\",\n  \"name\": \"Staff nuevo\",\n  \"roleIds\": [\"{{createdRoleId}}\"]\n}"
+            },
+            "url": "{{baseUrl}}/api/staff",
+            "description": "roleIds opcional; usá createdRoleId de Roles o dejá []."
+          }
+        },
+        {
+          "name": "Staff GET detail",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/staff/{{createdStaffId}}"
+          }
+        },
+        {
+          "name": "Staff PUT assign roles",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('has roles array', () => pm.expect(body.roles).to.be.an('array'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"roleIds\": [\"{{createdRoleId}}\"]\n}"
+            },
+            "url": "{{baseUrl}}/api/staff/{{createdStaffId}}/roles"
+          }
+        },
+        {
+          "name": "Super GET list staff",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('array', () => pm.expect(pm.response.json()).to.be.an('array'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/tenants/{{createdTenantId}}/staff"
+          }
+        },
+        {
+          "name": "Super POST create staff",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 201', () => pm.response.to.have.status(201));",
+                  "const body = pm.response.json();",
+                  "pm.environment.set('createdStaffId', body.id);",
+                  "pm.collectionVariables.set('createdStaffId', body.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"super.staff-{{$timestamp}}@demo.gym\",\n  \"password\": \"{{demoPassword}}\",\n  \"name\": \"Staff Super\",\n  \"roleIds\": []\n}"
+            },
+            "url": "{{baseUrl}}/api/tenants/{{createdTenantId}}/staff"
+          }
+        },
         {
           "name": "Super PUT assign roles to owner",
           "event": [
@@ -802,7 +1128,12 @@
           ],
           "request": {
             "method": "PUT",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"roleIds\": []\n}"
@@ -844,11 +1175,23 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/api/audit-events?limit=50",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "audit-events"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "audit-events"
+              ],
               "query": [
-                { "key": "limit", "value": "50" },
-                { "key": "action", "value": "", "disabled": true }
+                {
+                  "key": "limit",
+                  "value": "50"
+                },
+                {
+                  "key": "action",
+                  "value": "",
+                  "disabled": true
+                }
               ]
             }
           }
@@ -872,9 +1215,21 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/api/tenants/{{tenantId}}/audit-events?limit=50",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "tenants", "{{tenantId}}", "audit-events"],
-              "query": [{ "key": "limit", "value": "50" }]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "tenants",
+                "{{tenantId}}",
+                "audit-events"
+              ],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "50"
+                }
+              ]
             }
           }
         }
@@ -923,7 +1278,12 @@
           ],
           "request": {
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"email\": \"nuevo@demo.gym\",\n  \"password\": \"ChangeMe123!\",\n  \"name\": \"Nuevo Socio\",\n  \"phone\": \"+5491100000000\",\n  \"document\": \"30111222\"\n}"
@@ -947,7 +1307,12 @@
           ],
           "request": {
             "method": "PATCH",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"phone\": \"+5491199999999\"\n}"
@@ -971,7 +1336,12 @@
           ],
           "request": {
             "method": "PATCH",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"status\": \"SUSPENDED\"\n}"
@@ -1054,7 +1424,12 @@
           ],
           "request": {
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"type\": \"ACCESO_LIBRE\",\n  \"name\": \"Gym libre\",\n  \"description\": \"Acceso general a sala\"\n}"
@@ -1081,7 +1456,12 @@
           ],
           "request": {
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"type\": \"POR_SESIONES\",\n  \"name\": \"Funcional\",\n  \"description\": \"Clases grupales\",\n  \"dropInPrice\": 8000\n}"
@@ -1108,11 +1488,24 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/api/services",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "services"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "services"
+              ],
               "query": [
-                { "key": "type", "value": "ACCESO_LIBRE", "disabled": true },
-                { "key": "active", "value": "true", "disabled": true }
+                {
+                  "key": "type",
+                  "value": "ACCESO_LIBRE",
+                  "disabled": true
+                },
+                {
+                  "key": "active",
+                  "value": "true",
+                  "disabled": true
+                }
               ]
             }
           }
@@ -1133,7 +1526,12 @@
           ],
           "request": {
             "method": "PATCH",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"dropInPrice\": 8000\n}"
@@ -1158,7 +1556,12 @@
           ],
           "request": {
             "method": "PATCH",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"active\": false\n}"
@@ -1191,7 +1594,12 @@
           ],
           "request": {
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"name\": \"Full mensual\",\n  \"description\": \"Libre + 8 funcional\",\n  \"price\": 45000,\n  \"billingPeriod\": \"MONTHLY\",\n  \"creditsExpireAt\": \"2026-12-31T23:59:59.000Z\",\n  \"components\": [\n    { \"serviceId\": \"{{accesoLibreServiceId}}\" },\n    { \"serviceId\": \"{{porSesionesServiceId}}\", \"creditAmount\": 8 }\n  ]\n}"
@@ -1236,7 +1644,12 @@
           ],
           "request": {
             "method": "PATCH",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"price\": 49000\n}"
@@ -1272,7 +1685,12 @@
           ],
           "request": {
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"packId\": \"{{createdPackId}}\",\n  \"method\": \"STUB\",\n  \"idempotencyKey\": \"demo-contract-1\"\n}"
@@ -1302,7 +1720,12 @@
           ],
           "request": {
             "method": "PATCH",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"status\": \"CANCELLED\",\n  \"reason\": \"Demo cancelación RN-SER-009\"\n}"
@@ -1354,7 +1777,12 @@
           ],
           "request": {
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"serviceId\": \"{{porSesionesServiceId}}\",\n  \"startsAt\": \"2026-08-01T13:00:00.000Z\",\n  \"endsAt\": \"2026-08-01T14:00:00.000Z\",\n  \"capacity\": 12,\n  \"instructorId\": \"{{userId}}\"\n}"
@@ -1395,7 +1823,12 @@
           ],
           "request": {
             "method": "PATCH",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"capacity\": 15\n}"
@@ -1420,7 +1853,12 @@
           ],
           "request": {
             "method": "PATCH",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"status\": \"CANCELLED\"\n}"
@@ -1454,7 +1892,12 @@
           ],
           "request": {
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"serviceId\": \"{{porSesionesServiceId}}\",\n  \"weekdays\": [\"MONDAY\", \"WEDNESDAY\"],\n  \"localStartTime\": \"08:00\",\n  \"durationMinutes\": 60,\n  \"timezone\": \"America/Argentina/Buenos_Aires\",\n  \"startsOn\": \"2026-08-03\",\n  \"endsOn\": \"2026-08-31\",\n  \"capacity\": 12,\n  \"instructorId\": \"{{userId}}\"\n}"
@@ -1504,7 +1947,12 @@
           ],
           "request": {
             "method": "PATCH",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"active\": false\n}"
@@ -1539,7 +1987,12 @@
           ],
           "request": {
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"sessionId\": \"{{createdSessionId}}\"\n}"
@@ -1572,7 +2025,12 @@
           ],
           "request": {
             "method": "PATCH",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"status\": \"CANCELLED\"\n}"
@@ -1596,7 +2054,12 @@
           ],
           "request": {
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"sessionId\": \"{{createdSessionId}}\"\n}"
@@ -1625,7 +2088,12 @@
           ],
           "request": {
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"sessionId\": \"{{createdSessionId}}\",\n  \"coverage\": \"DROP_IN\",\n  \"method\": \"CASH\",\n  \"idempotencyKey\": \"dropin-demo-1\"\n}"
@@ -1666,7 +2134,12 @@
           ],
           "request": {
             "method": "PATCH",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"status\": \"CANCELLED\"\n}"
@@ -1700,7 +2173,12 @@
           ],
           "request": {
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"sessionId\": \"{{createdSessionId}}\"\n}"
@@ -1721,7 +2199,12 @@
           "name": "Member POST me waitlist",
           "request": {
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"sessionId\": \"{{createdSessionId}}\"\n}"
@@ -1741,7 +2224,12 @@
           "name": "Member PATCH leave waitlist",
           "request": {
             "method": "PATCH",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"status\": \"LEFT\"\n}"
@@ -1753,7 +2241,12 @@
           "name": "Staff PATCH leave waitlist",
           "request": {
             "method": "PATCH",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"status\": \"LEFT\"\n}"
@@ -1793,7 +2286,12 @@
           ],
           "request": {
             "method": "PATCH",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"reservationCancellationHours\": 6,\n  \"waitlistMode\": \"AUTO_ASSIGN\",\n  \"allowLateSessionEntry\": false,\n  \"debtToleranceDays\": 15,\n  \"multiEntryEnabled\": false,\n  \"multiEntryMaxPerDay\": 1\n}"
@@ -1838,9 +2336,20 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/api/cash-register/day?date=2026-07-26",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "cash-register", "day"],
-              "query": [{ "key": "date", "value": "2026-07-26" }]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "cash-register",
+                "day"
+              ],
+              "query": [
+                {
+                  "key": "date",
+                  "value": "2026-07-26"
+                }
+              ]
             }
           }
         },
@@ -1864,7 +2373,12 @@
           ],
           "request": {
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"declaredAmount\": 7500,\n  \"note\": \"Faltante de prueba\"\n}"
@@ -1964,7 +2478,12 @@
           ],
           "request": {
             "method": "PUT",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"accessToken\": \"TEST-ACCESS-TOKEN-STUB-123456\",\n  \"publicKey\": \"TEST-PUBLIC-KEY-APPUSR-XXXX\",\n  \"validate\": true\n}"
@@ -2012,7 +2531,12 @@
           ],
           "request": {
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"packId\": \"{{createdPackId}}\",\n  \"idempotencyKey\": \"mp-pack-{{$timestamp}}\"\n}"
@@ -2039,7 +2563,12 @@
           ],
           "request": {
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"packId\": \"{{createdPackId}}\",\n  \"idempotencyKey\": \"mp-staff-pack-{{$timestamp}}\"\n}"
@@ -2066,7 +2595,12 @@
           ],
           "request": {
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"sessionId\": \"{{createdSessionId}}\",\n  \"idempotencyKey\": \"mp-dropin-{{$timestamp}}\"\n}"
@@ -2079,7 +2613,12 @@
           "name": "Staff POST MP drop-in checkout",
           "request": {
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"sessionId\": \"{{createdSessionId}}\",\n  \"idempotencyKey\": \"mp-staff-dropin-{{$timestamp}}\"\n}"
@@ -2114,7 +2653,12 @@
           ],
           "request": {
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"paymentId\": \"{{mpPaymentId}}\",\n  \"status\": \"APPROVED\"\n}"
@@ -2153,7 +2697,12 @@
           "name": "Member POST refund request",
           "request": {
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"reason\": \"No lo voy a usar\"\n}"
@@ -2194,7 +2743,12 @@
           ],
           "request": {
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"reason\": \"Devolución staff\",\n  \"motiveCode\": \"solicitud\"\n}"
@@ -2206,7 +2760,12 @@
           "name": "Staff POST refund doble_cobro",
           "request": {
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"reason\": \"Cobro duplicado\",\n  \"motiveCode\": \"doble_cobro\"\n}"
@@ -2242,7 +2801,10 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
             ],
             "url": "{{baseUrl}}/api/me/access-credential/issue",
             "description": "Emite o reemite. Login como Member (socio@demo.gym)."
@@ -2253,7 +2815,10 @@
           "request": {
             "method": "GET",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
             ],
             "url": "{{baseUrl}}/api/me/access-credential",
             "description": "404 si aún no emitió."
@@ -2264,7 +2829,10 @@
           "request": {
             "method": "GET",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
             ],
             "url": "{{baseUrl}}/api/members/{{createdMemberId}}/access-credentials",
             "description": "Historial. Usá memberId del socio demo o createdMemberId."
@@ -2290,7 +2858,10 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
             ],
             "url": "{{baseUrl}}/api/members/{{createdMemberId}}/access-credentials/issue",
             "description": "members.write. Reemite (revoca ACTIVE previa)."
@@ -2301,7 +2872,10 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
             ],
             "url": "{{baseUrl}}/api/members/{{createdMemberId}}/access-credentials/revoke",
             "description": "members.write. 404 si no hay ACTIVE."
@@ -2318,8 +2892,14 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
@@ -2334,8 +2914,14 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
@@ -2349,8 +2935,14 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
@@ -2365,16 +2957,35 @@
           "request": {
             "method": "GET",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
             ],
             "url": {
               "raw": "{{baseUrl}}/api/access-attempts?limit=50",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "access-attempts"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "access-attempts"
+              ],
               "query": [
-                { "key": "limit", "value": "50" },
-                { "key": "memberId", "value": "{{createdMemberId}}", "disabled": true },
-                { "key": "result", "value": "ALLOWED", "disabled": true }
+                {
+                  "key": "limit",
+                  "value": "50"
+                },
+                {
+                  "key": "memberId",
+                  "value": "{{createdMemberId}}",
+                  "disabled": true
+                },
+                {
+                  "key": "result",
+                  "value": "ALLOWED",
+                  "disabled": true
+                }
               ]
             }
           }

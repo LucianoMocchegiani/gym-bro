@@ -408,8 +408,32 @@ a.btn.ghost,
   max-width: 520px;
 }
 
+.form-panel-wide {
+  max-width: 720px;
+}
+
 .form-panel:has(.pack-components) {
   max-width: 640px;
+}
+
+.perm-checklist {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 0.85rem;
+  display: grid;
+  gap: 0.55rem;
+}
+
+.perm-checklist legend {
+  padding: 0 0.35rem;
+  font-weight: 600;
+}
+
+.perm-list {
+  display: grid;
+  gap: 0.45rem;
+  max-height: 320px;
+  overflow: auto;
 }
 
 .checkbox-row {

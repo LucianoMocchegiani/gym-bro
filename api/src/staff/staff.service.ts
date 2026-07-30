@@ -1,13 +1,15 @@
 import {
   BadRequestException,
+  ConflictException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
 import { Prisma, StaffUser } from '@prisma/client';
+import * as bcrypt from 'bcryptjs';
 import { AUDIT_ACTIONS, AuditActor } from '../audit/audit.types';
 import { AuditService } from '../audit/audit.service';
 import { PrismaService } from '../prisma/prisma.service';
-import { SetStaffRolesDto } from './dto/staff.dto';
+import { CreateStaffDto, SetStaffRolesDto } from './dto/staff.dto';
 import { StaffUserDetail } from './staff.types';
 
 type StaffWithRoles = StaffUser & {
@@ -22,7 +24,7 @@ type StaffWithRoles = StaffUser & {
 };
 
 /**
- * Asignación multi-rol de staff (RN-ROL-004 / CU-ROL-004).
+ * Staff del gym: listado, alta y asignación multi-rol (RN-ROL-004 / CU-ROL-004).
  *
  * @remarks Los `roleIds` deben pertenecer al mismo tenant que el staff.
  */
@@ -32,6 +34,84 @@ export class StaffService {
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
   ) {}
+
+  /**
+   * Lista staff del tenant (más recientes primero).
+   */
+  async list(tenantId: string): Promise<StaffUserDetail[]> {
+    const rows = await this.prisma.staffUser.findMany({
+      where: { tenantId },
+      include: {
+        staffRoles: {
+          include: {
+            role: {
+              select: { id: true, name: true, slug: true, isSystem: true },
+            },
+          },
+          orderBy: { role: { slug: 'asc' } },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+    return rows.map((s) => this.toDetail(s));
+  }
+
+  /**
+   * Alta de staff con password y roles opcionales.
+   *
+   * @throws {ConflictException} Email ya usado en el tenant.
+   * @throws {BadRequestException} roleIds de otro tenant.
+   */
+  async create(
+    tenantId: string,
+    dto: CreateStaffDto,
+    actor: AuditActor,
+  ): Promise<StaffUserDetail> {
+    const email = dto.email.trim().toLowerCase();
+    const uniqueRoleIds = [...new Set(dto.roleIds ?? [])];
+    if (uniqueRoleIds.length > 0) {
+      await this.assertRolesInTenant(tenantId, uniqueRoleIds);
+    }
+
+    const passwordHash = await bcrypt.hash(dto.password, 12);
+
+    try {
+      const staff = await this.prisma.$transaction(async (tx) => {
+        const created = await tx.staffUser.create({
+          data: {
+            tenantId,
+            email,
+            passwordHash,
+            name: dto.name?.trim() || null,
+            active: true,
+          },
+        });
+        if (uniqueRoleIds.length > 0) {
+          await this.assignRolesInTx(tx, created.id, uniqueRoleIds);
+        }
+        return created;
+      });
+
+      const detail = await this.findOne(tenantId, staff.id);
+      await this.audit.record({
+        tenantId,
+        actor,
+        action: AUDIT_ACTIONS.staffCreate,
+        entityType: 'staff_user',
+        entityId: staff.id,
+        before: null,
+        after: {
+          email: detail.email,
+          name: detail.name,
+          roleIds: detail.roles.map((r) => r.id),
+        },
+      });
+      return detail;
+    } catch (error: unknown) {
+      this.rethrowUniqueConflict(error);
+      throw error;
+    }
+  }
 
   /**
    * Reemplaza por completo los roles del staff.
@@ -59,15 +139,7 @@ export class StaffService {
     const before = await this.findOne(tenantId, staffUserId);
     const uniqueRoleIds = [...new Set(dto.roleIds)];
     if (uniqueRoleIds.length > 0) {
-      const roles = await this.prisma.role.findMany({
-        where: { tenantId, id: { in: uniqueRoleIds } },
-        select: { id: true },
-      });
-      if (roles.length !== uniqueRoleIds.length) {
-        throw new BadRequestException(
-          'One or more roleIds do not belong to this tenant',
-        );
-      }
+      await this.assertRolesInTenant(tenantId, uniqueRoleIds);
     }
 
     await this.prisma.$transaction(async (tx) => {
@@ -134,6 +206,30 @@ export class StaffService {
     await tx.staffUserRole.createMany({
       data: roleIds.map((roleId) => ({ staffUserId, roleId })),
     });
+  }
+
+  private async assertRolesInTenant(
+    tenantId: string,
+    roleIds: string[],
+  ): Promise<void> {
+    const roles = await this.prisma.role.findMany({
+      where: { tenantId, id: { in: roleIds } },
+      select: { id: true },
+    });
+    if (roles.length !== roleIds.length) {
+      throw new BadRequestException(
+        'One or more roleIds do not belong to this tenant',
+      );
+    }
+  }
+
+  private rethrowUniqueConflict(error: unknown): void {
+    if (
+      error instanceof Prisma.PrismaClientKnownRequestError &&
+      error.code === 'P2002'
+    ) {
+      throw new ConflictException('Staff email already exists in tenant');
+    }
   }
 
   private toDetail(staff: StaffWithRoles): StaffUserDetail {
