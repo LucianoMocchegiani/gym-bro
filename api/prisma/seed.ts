@@ -133,10 +133,11 @@ async function main(): Promise<void> {
 
   const tenant = await prisma.tenant.upsert({
     where: { id: DEMO_TENANT_ID },
-    update: { name: 'Demo Gym', status: TenantStatus.ACTIVE },
+    update: { name: 'Demo Gym', status: TenantStatus.ACTIVE, slug: 'demo' },
     create: {
       id: DEMO_TENANT_ID,
       name: 'Demo Gym',
+      slug: 'demo',
       status: TenantStatus.ACTIVE,
     },
   });

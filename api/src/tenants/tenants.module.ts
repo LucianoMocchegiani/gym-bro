@@ -4,14 +4,15 @@ import { AuthModule } from '../auth/auth.module';
 import { RolesModule } from '../roles/roles.module';
 import { StaffModule } from '../staff/staff.module';
 import { TenantsController } from './tenants.controller';
+import { PublicTenantsController } from './public-tenants.controller';
 import { TenantsService } from './tenants.service';
 
 /**
- * Módulo de CRUD de tenants (Super Admin / plataforma).
+ * Módulo de CRUD de tenants (Super Admin / plataforma) + resolución pública por slug.
  */
 @Module({
   imports: [AuthModule, RolesModule, StaffModule, AuditModule],
-  controllers: [TenantsController],
+  controllers: [TenantsController, PublicTenantsController],
   providers: [TenantsService],
   exports: [TenantsService],
 })

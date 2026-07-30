@@ -45,7 +45,7 @@ Servicios:
 
 | Servicio | URL / puerto |
 |----------|----------------|
-| Web | http://localhost:3000 — Admin (inicio, afiliados, catálogo, roles/config, caja, puerta) |
+| Web | http://demo.localhost:3000 — Admin Staff (slug); http://localhost:3000/super — Super Admin |
 | API health | http://localhost:3001/api/health |
 | Postman | [`postman/`](./postman/) |
 | Postgres | `localhost:5432` (user/pass/db: `gymbro`) |

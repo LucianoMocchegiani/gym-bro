@@ -3,6 +3,7 @@
  */
 
 import { apiRequest } from '@/lib/api/client';
+import type { SuperLoginResponse } from '@/lib/auth/super-session';
 
 export type StaffLoginResponse = {
   accessToken: string;
@@ -19,14 +20,29 @@ export type StaffLoginResponse = {
 };
 
 /**
- * Login Staff.
+ * Login Staff por `tenantSlug` (preferido) o `tenantId` (compat).
  */
 export function staffLogin(input: {
-  tenantId: string;
+  tenantSlug?: string;
+  tenantId?: string;
   email: string;
   password: string;
 }): Promise<StaffLoginResponse> {
   return apiRequest<StaffLoginResponse>('/auth/staff/login', {
+    method: 'POST',
+    body: input,
+    auth: false,
+  });
+}
+
+/**
+ * Login Super Admin (sin tenant).
+ */
+export function superLogin(input: {
+  email: string;
+  password: string;
+}): Promise<SuperLoginResponse> {
+  return apiRequest<SuperLoginResponse>('/auth/super/login', {
     method: 'POST',
     body: input,
     auth: false,
@@ -46,4 +62,11 @@ export async function staffLogout(refreshToken: string): Promise<void> {
   } catch {
     // Cierre local igual si el server ya invalidó el token.
   }
+}
+
+/**
+ * Logout Super (mismo endpoint de revocación).
+ */
+export async function superLogout(refreshToken: string): Promise<void> {
+  return staffLogout(refreshToken);
 }

@@ -1,9 +1,11 @@
 import {
   BadRequestException,
+  ConflictException,
+  ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { Branch, Prisma, Role, Tenant } from '@prisma/client';
+import { Branch, Prisma, Role, Tenant, TenantStatus } from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
 import { AUDIT_ACTIONS, AuditActor } from '../audit/audit.types';
 import { AuditService } from '../audit/audit.service';
@@ -15,9 +17,11 @@ import {
 } from '../roles/roles-seed.service';
 import { StaffService } from '../staff/staff.service';
 import { CreateTenantDto, UpdateTenantDto } from './dto/tenant.dto';
+import { assertValidTenantSlug, normalizeTenantSlug } from './tenant-slug';
 import {
   BranchSummary,
   OwnerSummary,
+  PublicTenantSummary,
   RoleSummary,
   TenantResponse,
 } from './tenants.types';
@@ -47,6 +51,30 @@ export class TenantsService {
   ) {}
 
   /**
+   * Resuelve tenant por slug (login / subdominio).
+   *
+   * @throws {NotFoundException} Slug inexistente.
+   * @throws {ForbiddenException} Tenant suspendido.
+   */
+  async findPublicBySlug(rawSlug: string): Promise<PublicTenantSummary> {
+    const slug = normalizeTenantSlug(rawSlug);
+    assertValidTenantSlug(slug);
+    const tenant = await this.prisma.tenant.findUnique({ where: { slug } });
+    if (!tenant) {
+      throw new NotFoundException(`Tenant slug "${slug}" not found`);
+    }
+    if (tenant.status === TenantStatus.SUSPENDED) {
+      throw new ForbiddenException('Tenant is suspended');
+    }
+    return {
+      id: tenant.id,
+      name: tenant.name,
+      slug: tenant.slug,
+      status: tenant.status,
+    };
+  }
+
+  /**
    * Crea gym ACTIVE + sede + roles + staff owner con rol Admin.
    *
    * @see CU-ROL-001
@@ -55,80 +83,90 @@ export class TenantsService {
     dto: CreateTenantDto,
     actor: AuditActor,
   ): Promise<TenantResponse> {
+    const slug = normalizeTenantSlug(dto.slug);
+    assertValidTenantSlug(slug);
     const permissions = await this.rolesSeed.ensurePermissionCatalog();
     const passwordHash = await bcrypt.hash(dto.ownerPassword, 12);
     const ownerEmail = dto.ownerEmail.trim().toLowerCase();
     const ownerName = dto.ownerName?.trim() || null;
 
-    const { tenant, branch, systemRoles, owner } =
-      await this.prisma.$transaction(async (tx) => {
-        const created = await tx.tenant.create({
-          data: { name: dto.name.trim() },
-        });
-        const defaultBranch = await tx.branch.create({
-          data: {
-            tenantId: created.id,
-            name: DEFAULT_BRANCH_NAME,
-            active: true,
-            isDefault: true,
-          },
-        });
-        await tx.tenantSettings.create({
-          data: {
-            tenantId: created.id,
-            reservationCancellationHours: 6,
-          },
-        });
-        const roles = await this.rolesSeed.seedSystemRolesForTenant(
-          tx,
-          created.id,
-          permissions,
-        );
-        const adminRole = roles.find((r) => r.slug === SYSTEM_ROLE_SLUGS.admin);
-        if (!adminRole) {
-          throw new Error('Admin system role missing after seed');
-        }
+    try {
+      const { tenant, branch, systemRoles, owner } =
+        await this.prisma.$transaction(async (tx) => {
+          const created = await tx.tenant.create({
+            data: { name: dto.name.trim(), slug },
+          });
+          const defaultBranch = await tx.branch.create({
+            data: {
+              tenantId: created.id,
+              name: DEFAULT_BRANCH_NAME,
+              active: true,
+              isDefault: true,
+            },
+          });
+          await tx.tenantSettings.create({
+            data: {
+              tenantId: created.id,
+              reservationCancellationHours: 6,
+            },
+          });
+          const roles = await this.rolesSeed.seedSystemRolesForTenant(
+            tx,
+            created.id,
+            permissions,
+          );
+          const adminRole = roles.find(
+            (r) => r.slug === SYSTEM_ROLE_SLUGS.admin,
+          );
+          if (!adminRole) {
+            throw new Error('Admin system role missing after seed');
+          }
 
-        const ownerStaff = await tx.staffUser.create({
-          data: {
-            tenantId: created.id,
-            email: ownerEmail,
-            passwordHash,
-            name: ownerName,
-            active: true,
-          },
-        });
-        await this.staffService.assignRolesInTx(tx, ownerStaff.id, [
-          adminRole.id,
-        ]);
+          const ownerStaff = await tx.staffUser.create({
+            data: {
+              tenantId: created.id,
+              email: ownerEmail,
+              passwordHash,
+              name: ownerName,
+              active: true,
+            },
+          });
+          await this.staffService.assignRolesInTx(tx, ownerStaff.id, [
+            adminRole.id,
+          ]);
 
-        return {
-          tenant: created,
-          branch: defaultBranch,
-          systemRoles: roles,
-          owner: {
-            id: ownerStaff.id,
-            email: ownerStaff.email,
-            name: ownerStaff.name,
-          },
-        };
+          return {
+            tenant: created,
+            branch: defaultBranch,
+            systemRoles: roles,
+            owner: {
+              id: ownerStaff.id,
+              email: ownerStaff.email,
+              name: ownerStaff.name,
+            },
+          };
+        });
+
+      const response = this.toResponse(tenant, branch, systemRoles, owner);
+      await this.audit.record({
+        tenantId: tenant.id,
+        actor,
+        action: AUDIT_ACTIONS.tenantCreate,
+        entityType: 'tenant',
+        entityId: tenant.id,
+        before: null,
+        after: {
+          name: tenant.name,
+          slug: tenant.slug,
+          status: tenant.status,
+          ownerEmail: owner.email,
+        },
       });
-
-    const response = this.toResponse(tenant, branch, systemRoles, owner);
-    await this.audit.record({
-      tenantId: tenant.id,
-      actor,
-      action: AUDIT_ACTIONS.tenantCreate,
-      entityType: 'tenant',
-      entityId: tenant.id,
-      before: null,
-      after: {
-        name: tenant.name,
-        status: tenant.status,
-        ownerEmail: owner.email,
-      },
-    });
-    return response;
+      return response;
+    } catch (error: unknown) {
+      this.rethrowSlugConflict(error);
+      throw error;
+    }
   }
 
   /**
@@ -160,7 +198,7 @@ export class TenantsService {
   }
 
   /**
-   * Actualiza nombre y/o status (suspender / reactivar).
+   * Actualiza nombre, slug y/o status (suspender / reactivar).
    *
    * @see CU-ROL-002
    */
@@ -169,13 +207,17 @@ export class TenantsService {
     dto: UpdateTenantDto,
     actor: AuditActor,
   ): Promise<TenantResponse> {
-    if (dto.name === undefined && dto.status === undefined) {
-      throw new BadRequestException('Provide name and/or status');
+    if (
+      dto.name === undefined &&
+      dto.status === undefined &&
+      dto.slug === undefined
+    ) {
+      throw new BadRequestException('Provide name, slug and/or status');
     }
 
     const beforeTenant = await this.prisma.tenant.findUnique({
       where: { id },
-      select: { id: true, name: true, status: true },
+      select: { id: true, name: true, slug: true, status: true },
     });
     if (!beforeTenant) {
       throw new NotFoundException(`Tenant ${id} not found`);
@@ -185,14 +227,24 @@ export class TenantsService {
     if (dto.name !== undefined) {
       data.name = dto.name.trim();
     }
+    if (dto.slug !== undefined) {
+      const slug = normalizeTenantSlug(dto.slug);
+      assertValidTenantSlug(slug);
+      data.slug = slug;
+    }
     if (dto.status !== undefined) {
       data.status = dto.status;
     }
 
-    await this.prisma.tenant.update({
-      where: { id },
-      data,
-    });
+    try {
+      await this.prisma.tenant.update({
+        where: { id },
+        data,
+      });
+    } catch (error: unknown) {
+      this.rethrowSlugConflict(error);
+      throw error;
+    }
 
     const response = await this.findOne(id);
     await this.audit.record({
@@ -203,10 +255,12 @@ export class TenantsService {
       entityId: id,
       before: {
         name: beforeTenant.name,
+        slug: beforeTenant.slug,
         status: beforeTenant.status,
       },
       after: {
         name: response.name,
+        slug: response.slug,
         status: response.status,
       },
     });
@@ -249,6 +303,15 @@ export class TenantsService {
     }));
   }
 
+  private rethrowSlugConflict(error: unknown): void {
+    if (
+      error instanceof Prisma.PrismaClientKnownRequestError &&
+      error.code === 'P2002'
+    ) {
+      throw new ConflictException('Tenant slug already exists');
+    }
+  }
+
   private toResponse(
     tenant: Tenant,
     defaultBranch: Branch | null,
@@ -258,6 +321,7 @@ export class TenantsService {
     return {
       id: tenant.id,
       name: tenant.name,
+      slug: tenant.slug,
       status: tenant.status,
       createdAt: tenant.createdAt,
       updatedAt: tenant.updatedAt,

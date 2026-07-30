@@ -1,4 +1,10 @@
-import { IsEmail, IsString, IsUUID, MinLength } from 'class-validator';
+import {
+  IsEmail,
+  IsOptional,
+  IsString,
+  IsUUID,
+  MinLength,
+} from 'class-validator';
 
 /**
  * Credenciales de Super Admin (sin tenant).
@@ -13,11 +19,19 @@ export class SuperLoginDto {
 }
 
 /**
- * Credenciales de staff. Requiere `tenantId` porque el email es único por gym.
+ * Credenciales de staff.
+ *
+ * @remarks Requiere `tenantId` **o** `tenantSlug` (email único por gym).
  */
 export class StaffLoginDto {
+  @IsOptional()
   @IsUUID()
-  tenantId!: string;
+  tenantId?: string;
+
+  @IsOptional()
+  @IsString()
+  @MinLength(2)
+  tenantSlug?: string;
 
   @IsEmail()
   email!: string;

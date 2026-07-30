@@ -22,7 +22,8 @@ type AuthContextValue = {
   session: StaffSession | null;
   ready: boolean;
   login: (input: {
-    tenantId: string;
+    tenantSlug?: string;
+    tenantId?: string;
     email: string;
     password: string;
   }) => Promise<void>;
@@ -44,7 +45,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = useCallback(
     async (input: {
-      tenantId: string;
+      tenantSlug?: string;
+      tenantId?: string;
       email: string;
       password: string;
     }) => {

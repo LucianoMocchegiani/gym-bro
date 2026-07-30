@@ -381,6 +381,57 @@
             },
             "url": "{{baseUrl}}/api/auth/logout"
           }
+        },
+        {
+          "name": "GET public tenant by slug",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('has slug', () => pm.expect(pm.response.json().slug).to.eql('demo'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/public/tenants/by-slug/demo"
+          }
+        },
+        {
+          "name": "Staff login by slug",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.environment.set('accessToken', body.accessToken);",
+                  "pm.collectionVariables.set('accessToken', body.accessToken);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tenantSlug\": \"demo\",\n  \"email\": \"{{staffEmail}}\",\n  \"password\": \"{{staffPassword}}\"\n}"
+            },
+            "url": "{{baseUrl}}/api/auth/staff/login"
+          }
         }
       ]
     },
@@ -466,7 +517,8 @@
               "mode": "raw",
               "raw": "{\n  \"tenantId\": \"{{tenantId}}\",\n  \"email\": \"{{staffEmail}}\",\n  \"password\": \"{{staffPassword}}\"\n}"
             },
-            "url": "{{baseUrl}}/api/auth/staff/login"
+            "url": "{{baseUrl}}/api/auth/staff/login",
+            "description": " Preferí tenantSlug (demo) en UI; tenantId sigue válido."
           }
         },
         {
@@ -667,7 +719,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"Gym Postman Test\",\n  \"ownerEmail\": \"owner.postman@test.gym\",\n  \"ownerPassword\": \"ChangeMe123!\",\n  \"ownerName\": \"Owner Postman\"\n}"
+              "raw": "{\n  \"name\": \"Gym Postman Test\",\n  \"slug\": \"postman-{{$timestamp}}\",\n  \"ownerEmail\": \"owner.postman@test.gym\",\n  \"ownerPassword\": \"{{demoPassword}}\",\n  \"ownerName\": \"Owner Postman\"\n}"
             },
             "url": "{{baseUrl}}/api/tenants"
           }

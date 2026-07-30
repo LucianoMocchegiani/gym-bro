@@ -36,6 +36,7 @@ export type OwnerSummary = {
 export type TenantResponse = {
   id: string;
   name: string;
+  slug: string;
   status: TenantStatus;
   createdAt: Date;
   updatedAt: Date;
@@ -43,4 +44,14 @@ export type TenantResponse = {
   systemRoles: RoleSummary[];
   /** Presente en create; en get/list puede ser null si no se resolvió. */
   owner: OwnerSummary | null;
+};
+
+/**
+ * Vista pública mínima para resolver subdominio (login Staff).
+ */
+export type PublicTenantSummary = {
+  id: string;
+  name: string;
+  slug: string;
+  status: TenantStatus;
 };

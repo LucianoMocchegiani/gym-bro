@@ -9,7 +9,10 @@ docker compose exec api npm run prisma:seed
 
 Password común a todos: **`ChangeMe123!`**
 
-Tenant demo id: **`00000000-0000-4000-8000-000000000001`** (`Demo Gym`)
+Tenant demo: slug **`demo`** · id **`00000000-0000-4000-8000-000000000001`** (`Demo Gym`)
+
+Admin web Staff: **http://demo.localhost:3000/login** (sin pegar tenantId)  
+Super Admin: **http://localhost:3000/super/login**
 
 ---
 
@@ -17,9 +20,9 @@ Tenant demo id: **`00000000-0000-4000-8000-000000000001`** (`Demo Gym`)
 
 | Perfil | Email | Password | Extra |
 |--------|--------|----------|--------|
-| Super Admin | `super@gymbro.local` | `ChangeMe123!` | Sin tenant |
-| Staff (Admin del gym) | `admin@demo.gym` | `ChangeMe123!` | `tenantId` = tenant demo |
-| Afiliado (Member) | `socio@demo.gym` | `ChangeMe123!` | `tenantId` = tenant demo |
+| Super Admin | `super@gymbro.local` | `ChangeMe123!` | Sin tenant · `/super/login` |
+| Staff (Admin del gym) | `admin@demo.gym` | `ChangeMe123!` | slug `demo` · `demo.localhost:3000` |
+| Afiliado (Member) | `socio@demo.gym` | `ChangeMe123!` | API aún con `tenantId` |
 
 El staff demo queda con rol sistema **Admin** tras el seed.  
 El afiliado demo queda `status: ACTIVE` (solo ACTIVE puede hacer login).
@@ -49,11 +52,13 @@ POST /api/auth/staff/login
 Content-Type: application/json
 
 {
-  "tenantId": "00000000-0000-4000-8000-000000000001",
+  "tenantSlug": "demo",
   "email": "admin@demo.gym",
   "password": "ChangeMe123!"
 }
 ```
+
+(`tenantId` UUID sigue aceptado por compatibilidad.)
 
 ### Afiliado
 

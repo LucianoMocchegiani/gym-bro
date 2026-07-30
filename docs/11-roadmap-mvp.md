@@ -201,7 +201,7 @@
 ## E10 — Admin web (Next.js)
 
 - [x] Login staff / Super Admin
-  - Staff login web (`/login`); Super Admin UI pendiente
+  - Staff: `demo.localhost:3000/login` (slug); Super: `/super/login` + UI tenants
 - [x] Dashboard mínimo
   - `/` Inicio: KPIs del día (caja, activos, puerta, sesiones) + atajos; deuda agregada → E11
 - [x] Afiliados
@@ -217,7 +217,8 @@
   - `/roles` + `/staff` (listado/alta/asignación); `/config` (tenant-settings + MP)
   - API: `GET|POST /staff` (+ Super equivalentes)
 - [ ] Plantillas de notificación
-- [ ] Panel Super Admin (tenants)
+- [x] Panel Super Admin (tenants)
+  - `/super/*`; slug en create; `GET /public/tenants/by-slug/:slug`
 
 ---
 
@@ -257,7 +258,7 @@ E11 → E12
 
 ## Próximo paso
 
-Elegir Quark SSI, **E8 notificaciones**, resto de **E10 Admin**, o probar MP live.
+Elegir Quark SSI, **E8 notificaciones**, **E11 reportes**, o DNS wildcard prod (`*.gymbro.app`).
 
 ---
 

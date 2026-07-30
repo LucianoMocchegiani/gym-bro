@@ -4,6 +4,7 @@ import {
   IsEnum,
   IsOptional,
   IsString,
+  Matches,
   MaxLength,
   MinLength,
 } from 'class-validator';
@@ -16,6 +17,13 @@ export class CreateTenantDto {
   @MinLength(2)
   @MaxLength(120)
   name!: string;
+
+  /** Slug URL-safe único (subdominio). */
+  @IsString()
+  @MinLength(2)
+  @MaxLength(40)
+  @Matches(/^[a-z0-9]+(?:-[a-z0-9]+)*$/)
+  slug!: string;
 
   @IsEmail()
   ownerEmail!: string;
@@ -32,7 +40,7 @@ export class CreateTenantDto {
 }
 
 /**
- * Edición parcial de tenant (nombre y/o status).
+ * Edición parcial de tenant (nombre, slug y/o status).
  *
  * @remarks RN-TEN-002 / CU-ROL-002: `status` SUSPENDED | ACTIVE (idempotente).
  */
@@ -42,6 +50,13 @@ export class UpdateTenantDto {
   @MinLength(2)
   @MaxLength(120)
   name?: string;
+
+  @IsOptional()
+  @IsString()
+  @MinLength(2)
+  @MaxLength(40)
+  @Matches(/^[a-z0-9]+(?:-[a-z0-9]+)*$/)
+  slug?: string;
 
   @IsOptional()
   @IsEnum(TenantStatus)

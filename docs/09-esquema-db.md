@@ -311,6 +311,7 @@ Gimnasio / estudio = tenant SaaS.
 |---------|------|--------|
 | `id` | uuid PK | |
 | `name` | text | |
+| `slug` | text UNIQUE | subdominio (`demo.localhost` / `{slug}.gymbro.app`) |
 | `status` | `TenantStatus` | default `ACTIVE` |
 | `created_at` | timestamptz | |
 | `updated_at` | timestamptz | |
@@ -845,6 +846,7 @@ API: Member `POST|GET /api/me/waitlist`, `PATCH /api/me/waitlist/:id/status`; St
 | `20260727180000_access_verify` | `access_attempts` + settings deuda/multi + `checked_in_at` |
 | `20260727230000_access_manual_pass` | `motive_code` + `note` en `access_attempts` |
 | `20260728120000_payment_drop_in_session` | `payments.session_id` para checkout drop-in MP |
+| `20260730180000_tenant_slug` | `tenants.slug` UNIQUE (subdominio) |
 
 Comandos:
 

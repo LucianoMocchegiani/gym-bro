@@ -7,6 +7,11 @@ import {
   readStaffSession,
   updateStaffTokens,
 } from '@/lib/auth/session';
+import {
+  clearSuperSession,
+  readSuperSession,
+  updateSuperTokens,
+} from '@/lib/auth/super-session';
 
 export type ApiErrorBody = {
   message?: string | string[];
@@ -42,32 +47,51 @@ function apiBaseUrl(): string {
   return `${base}/api`;
 }
 
+type AuthMode = false | 'staff' | 'super';
+
 type RequestOptions = {
   method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
   body?: unknown;
-  auth?: boolean;
+  /** `true`/`'staff'` (default), `'super'`, o `false` sin Bearer. */
+  auth?: boolean | 'staff' | 'super';
   /** Evita loop infinito en refresh. */
   _retried?: boolean;
 };
 
+function resolveAuthMode(auth: boolean | 'staff' | 'super' | undefined): AuthMode {
+  if (auth === false) {
+    return false;
+  }
+  if (auth === 'super') {
+    return 'super';
+  }
+  return 'staff';
+}
+
 /**
  * Request tipado a la API.
  *
- * @remarks En 401 con sesión Staff intenta un refresh y reintenta una vez.
+ * @remarks En 401 con sesión intenta refresh (staff o super) y reintenta una vez.
  */
 export async function apiRequest<T>(
   path: string,
   options: RequestOptions = {},
 ): Promise<T> {
-  const { method = 'GET', body, auth = true, _retried = false } = options;
+  const { method = 'GET', body, _retried = false } = options;
+  const authMode = resolveAuthMode(options.auth);
   const headers: Record<string, string> = {
     Accept: 'application/json',
   };
   if (body !== undefined) {
     headers['Content-Type'] = 'application/json';
   }
-  if (auth) {
+  if (authMode === 'staff') {
     const session = readStaffSession();
+    if (session?.accessToken) {
+      headers.Authorization = `Bearer ${session.accessToken}`;
+    }
+  } else if (authMode === 'super') {
+    const session = readSuperSession();
     if (session?.accessToken) {
       headers.Authorization = `Bearer ${session.accessToken}`;
     }
@@ -79,12 +103,16 @@ export async function apiRequest<T>(
     body: body !== undefined ? JSON.stringify(body) : undefined,
   });
 
-  if (res.status === 401 && auth && !_retried) {
-    const refreshed = await tryRefresh();
+  if (res.status === 401 && authMode && !_retried) {
+    const refreshed = await tryRefresh(authMode);
     if (refreshed) {
       return apiRequest<T>(path, { ...options, _retried: true });
     }
-    clearStaffSession();
+    if (authMode === 'super') {
+      clearSuperSession();
+    } else {
+      clearStaffSession();
+    }
   }
 
   if (res.status === 204) {
@@ -123,9 +151,12 @@ export function newIdempotencyKey(prefix: string): string {
   return `${prefix}-${rand}`;
 }
 
-async function tryRefresh(): Promise<boolean> {
-  const session = readStaffSession();
-  if (!session?.refreshToken) {
+async function tryRefresh(mode: 'staff' | 'super'): Promise<boolean> {
+  const refreshToken =
+    mode === 'super'
+      ? readSuperSession()?.refreshToken
+      : readStaffSession()?.refreshToken;
+  if (!refreshToken) {
     return false;
   }
   try {
@@ -135,7 +166,7 @@ async function tryRefresh(): Promise<boolean> {
         Accept: 'application/json',
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ refreshToken: session.refreshToken }),
+      body: JSON.stringify({ refreshToken }),
     });
     if (!res.ok) {
       return false;
@@ -144,7 +175,11 @@ async function tryRefresh(): Promise<boolean> {
       accessToken: string;
       refreshToken: string;
     };
-    updateStaffTokens(data.accessToken, data.refreshToken);
+    if (mode === 'super') {
+      updateSuperTokens(data.accessToken, data.refreshToken);
+    } else {
+      updateStaffTokens(data.accessToken, data.refreshToken);
+    }
     return true;
   } catch {
     return false;

@@ -1,5 +1,6 @@
 import { createHash, randomBytes } from 'node:crypto';
 import {
+  BadRequestException,
   Injectable,
   UnauthorizedException,
   ForbiddenException,
@@ -9,6 +10,10 @@ import { JwtService } from '@nestjs/jwt';
 import { AuthProfileType, MemberStatus, TenantStatus } from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
 import { PrismaService } from '../prisma/prisma.service';
+import {
+  assertValidTenantSlug,
+  normalizeTenantSlug,
+} from '../tenants/tenant-slug';
 import { AuthTokens, JwtAccessPayload } from './auth.types';
 import { MemberLoginDto, StaffLoginDto, SuperLoginDto } from './dto/auth.dto';
 
@@ -68,15 +73,18 @@ export class AuthService {
   /**
    * Login de staff dentro de un tenant.
    *
+   * @remarks Acepta `tenantId` o `tenantSlug` (subdominio).
    * @throws {UnauthorizedException} Credenciales inválidas.
    * @throws {ForbiddenException} Tenant suspendido.
+   * @throws {BadRequestException} Falta tenantId y tenantSlug.
    */
   async loginStaff(dto: StaffLoginDto): Promise<AuthTokens> {
-    await this.assertTenantActive(dto.tenantId);
+    const tenantId = await this.resolveStaffTenantId(dto);
+    await this.assertTenantActive(tenantId);
     const user = await this.prisma.staffUser.findUnique({
       where: {
         tenantId_email: {
-          tenantId: dto.tenantId,
+          tenantId,
           email: dto.email.toLowerCase(),
         },
       },
@@ -197,6 +205,22 @@ export class AuthService {
       data: { revokedAt: new Date() },
     });
     return { ok: true };
+  }
+
+  private async resolveStaffTenantId(dto: StaffLoginDto): Promise<string> {
+    if (dto.tenantId) {
+      return dto.tenantId;
+    }
+    if (!dto.tenantSlug) {
+      throw new BadRequestException('Provide tenantId or tenantSlug');
+    }
+    const slug = normalizeTenantSlug(dto.tenantSlug);
+    assertValidTenantSlug(slug);
+    const tenant = await this.prisma.tenant.findUnique({ where: { slug } });
+    if (!tenant) {
+      throw new UnauthorizedException('Invalid credentials');
+    }
+    return tenant.id;
   }
 
   private async assertTenantActive(tenantId: string): Promise<void> {
