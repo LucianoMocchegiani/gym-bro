@@ -6,6 +6,7 @@ Next.js App Router — panel staff.
 
 | Ruta | Uso |
 |------|-----|
+| `/` | Dashboard mínimo: KPIs del día + atajos |
 | `/login` | Login Staff (`tenantId` + email + password) |
 | `/afiliados` | Listado / alta / ficha + estado de cuenta |
 | `/servicios` | Catálogo de servicios (acceso libre / por sesiones) |

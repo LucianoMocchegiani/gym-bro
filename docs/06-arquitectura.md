@@ -81,7 +81,7 @@ Estructura lógica interna:
 
 ```text
 api/                    # NestJS (módulos por dominio dentro de src/)
-web/                    # Next.js — Admin (afiliados, catálogo, roles/config, caja, puerta); login Staff
+web/                    # Next.js — Admin (inicio, afiliados, catálogo, roles/config, caja, puerta); login Staff
 mobile/                 # Flutter
 # Dominios Nest (ejemplos, dentro de api/src):
 #   identity-access/, members/, catalog/, billing/, access/, ...

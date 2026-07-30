@@ -202,7 +202,8 @@
 
 - [x] Login staff / Super Admin
   - Staff login web (`/login`); Super Admin UI pendiente
-- [ ] Dashboard mínimo
+- [x] Dashboard mínimo
+  - `/` Inicio: KPIs del día (caja, activos, puerta, sesiones) + atajos; deuda agregada → E11
 - [x] Afiliados
   - listado/filtro, alta, ficha, status, estado de cuenta (`/afiliados`)
 - [x] Servicios / packs / sesiones

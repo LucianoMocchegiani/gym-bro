@@ -504,6 +504,40 @@ button.danger {
   padding: 1rem 1.1rem;
 }
 
+.dash-kpis {
+  margin-bottom: 1rem;
+}
+
+.dash-shortcuts-panel {
+  margin-top: 0.25rem;
+}
+
+.dash-shortcuts {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 0.65rem;
+}
+
+.dash-shortcut {
+  display: grid;
+  gap: 0.2rem;
+  padding: 0.85rem 0.9rem;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #fff;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.dash-shortcut:hover {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.dash-shortcut-label {
+  font-weight: 700;
+  color: var(--accent);
+}
+
 .toolbar-hint {
   align-self: end;
   margin-bottom: 0.35rem;

@@ -77,6 +77,16 @@ export function manualPass(
 /**
  * Historial reciente de intentos (CU-ACC-005).
  */
-export function listAccessAttempts(limit = 20): Promise<AccessAttemptDetail[]> {
-  return apiRequest<AccessAttemptDetail[]>(`/access-attempts?limit=${limit}`);
+export function listAccessAttempts(
+  limit = 20,
+  result?: 'ALLOWED' | 'DENIED',
+): Promise<AccessAttemptDetail[]> {
+  const params = new URLSearchParams();
+  params.set('limit', String(limit));
+  if (result) {
+    params.set('result', result);
+  }
+  return apiRequest<AccessAttemptDetail[]>(
+    `/access-attempts?${params.toString()}`,
+  );
 }

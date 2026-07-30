@@ -19,6 +19,9 @@ export function AdminShell({ title, children, actions }: AdminShellProps) {
   const pathname = usePathname();
 
   function navClass(href: string): string | undefined {
+    if (href === '/') {
+      return pathname === '/' ? 'active' : undefined;
+    }
     return pathname === href || pathname.startsWith(`${href}/`)
       ? 'active'
       : undefined;
@@ -29,12 +32,15 @@ export function AdminShell({ title, children, actions }: AdminShellProps) {
       <header className="admin-top">
         <div className="admin-top-inner">
           <div className="admin-brand-block">
-            <Link href="/afiliados" className="brand">
+            <Link href="/" className="brand">
               GymBro
             </Link>
             <span className="muted small">Admin</span>
           </div>
           <nav className="admin-nav">
+            <Link href="/" className={navClass('/')}>
+              Inicio
+            </Link>
             <Link href="/afiliados" className={navClass('/afiliados')}>
               Afiliados
             </Link>
