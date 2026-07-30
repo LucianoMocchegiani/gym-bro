@@ -16,6 +16,7 @@ La creación de registros sigue la skill:
 
 ## Índice
 
+- [2026-07-30 — Admin web — caja + cliente API por dominio](./2026-07-30-admin-caja-api-client.md)
 - [2026-07-30 — Admin web — afiliados + UI unificada](./2026-07-30-admin-afiliados-ui.md)
 - [2026-07-30 — Pantalla / flujo puerta (Admin web)](./2026-07-30-flujo-puerta-admin-web.md)
 - [2026-07-29 — Checkout MP drop-in + Staff pack](./2026-07-29-checkout-mp-drop-in.md)
