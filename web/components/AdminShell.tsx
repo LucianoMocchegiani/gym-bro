@@ -19,16 +19,9 @@ export function AdminShell({ title, children, actions }: AdminShellProps) {
   const pathname = usePathname();
 
   function navClass(href: string): string | undefined {
-    if (href === '/afiliados') {
-      return pathname.startsWith('/afiliados') ? 'active' : undefined;
-    }
-    if (href === '/puerta') {
-      return pathname.startsWith('/puerta') ? 'active' : undefined;
-    }
-    if (href === '/caja') {
-      return pathname.startsWith('/caja') ? 'active' : undefined;
-    }
-    return pathname === href ? 'active' : undefined;
+    return pathname === href || pathname.startsWith(`${href}/`)
+      ? 'active'
+      : undefined;
   }
 
   return (
@@ -44,6 +37,15 @@ export function AdminShell({ title, children, actions }: AdminShellProps) {
           <nav className="admin-nav">
             <Link href="/afiliados" className={navClass('/afiliados')}>
               Afiliados
+            </Link>
+            <Link href="/servicios" className={navClass('/servicios')}>
+              Servicios
+            </Link>
+            <Link href="/packs" className={navClass('/packs')}>
+              Packs
+            </Link>
+            <Link href="/sesiones" className={navClass('/sesiones')}>
+              Sesiones
             </Link>
             <Link href="/caja" className={navClass('/caja')}>
               Caja

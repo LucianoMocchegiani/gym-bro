@@ -399,8 +399,66 @@ a.btn.ghost,
   color: #555;
 }
 
+.status-pill.active {
+  background: var(--accent-soft);
+  color: var(--ok);
+}
+
 .form-panel {
   max-width: 520px;
+}
+
+.form-panel:has(.pack-components) {
+  max-width: 640px;
+}
+
+.checkbox-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 500;
+}
+
+.checkbox-row input {
+  width: auto;
+}
+
+.pack-components {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 0.85rem;
+  display: grid;
+  gap: 0.75rem;
+}
+
+.pack-components legend {
+  padding: 0 0.35rem;
+  font-weight: 600;
+}
+
+.pack-component-row {
+  display: grid;
+  gap: 0.65rem;
+  padding-bottom: 0.65rem;
+  border-bottom: 1px solid var(--line);
+}
+
+.pack-component-row:last-of-type {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  margin-top: 0.5rem;
+}
+
+.btn.danger,
+button.danger {
+  background: var(--danger);
+  color: #fff;
 }
 
 .account-panel {

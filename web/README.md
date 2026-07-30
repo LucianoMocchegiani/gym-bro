@@ -1,6 +1,6 @@
 # GymBro Web (Admin)
 
-Next.js App Router — panel staff. Primer slice: **login + flujo puerta**.
+Next.js App Router — panel staff.
 
 ## Rutas
 
@@ -8,6 +8,9 @@ Next.js App Router — panel staff. Primer slice: **login + flujo puerta**.
 |------|-----|
 | `/login` | Login Staff (`tenantId` + email + password) |
 | `/afiliados` | Listado / alta / ficha + estado de cuenta |
+| `/servicios` | Catálogo de servicios (acceso libre / por sesiones) |
+| `/packs` | Packs + componentes (servicios + créditos) |
+| `/sesiones` | Sesiones puntuales (editar, cancelar, ampliar cupo) |
 | `/caja` | Caja del día, cobro CASH (pack/drop-in), arqueo |
 | `/puerta` | Verificar ingreso (pegar token stub) + historial |
 | `/puerta/pase-manual` | Pase manual (CU-ACC-004) |
@@ -29,4 +32,4 @@ Credenciales demo: ver `docs/credenciales-demo.md`.
 - Sesión en `localStorage` (access + refresh); refresh automático ante 401.
 - Sin cámara QR en este slice (stub: pegar `stub:…`).
 - La API habilita CORS vía `CORS_ORIGIN` (default `http://localhost:3000`).
-- Cliente HTTP en `lib/api/` espeja módulos Nest (`auth`, `members`, `access`, `cash-register`, `contracts`, `packs`, `sessions`, `reservations`).
+- Cliente HTTP en `lib/api/` espeja módulos Nest (`auth`, `members`, `access`, `cash-register`, `contracts`, `services`, `packs`, `sessions`, `reservations`).

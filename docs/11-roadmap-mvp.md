@@ -205,7 +205,8 @@
 - [ ] Dashboard mínimo
 - [x] Afiliados
   - listado/filtro, alta, ficha, status, estado de cuenta (`/afiliados`)
-- [ ] Servicios / packs / sesiones
+- [x] Servicios / packs / sesiones
+  - `/servicios`, `/packs`, `/sesiones` (listado/alta/edición; sesiones: cancelar + ampliar cupo)
 - [x] Caja y cobros
   - `/caja`: día + movimientos + arqueo; cobro pack/drop-in CASH
 - [x] Pase manual / historial acceso
