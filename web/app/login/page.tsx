@@ -21,7 +21,7 @@ export default function LoginPage() {
 
   useEffect(() => {
     if (ready && session) {
-      router.replace('/puerta');
+      router.replace('/afiliados');
     }
   }, [ready, session, router]);
 
@@ -31,7 +31,7 @@ export default function LoginPage() {
     setSubmitting(true);
     try {
       await login({ tenantId: tenantId.trim(), email: email.trim(), password });
-      router.replace('/puerta');
+      router.replace('/afiliados');
     } catch (err) {
       setError(
         err instanceof ApiClientError

@@ -2,6 +2,7 @@
 
 import { FormEvent, useEffect, useState } from 'react';
 import { AccessResultBanner } from '@/components/AccessResult';
+import { AdminGrid, Panel } from '@/components/AdminUi';
 import { DoorShell } from '@/components/DoorShell';
 import { RequireStaff } from '@/components/RequireStaff';
 import { manualPass } from '@/lib/api/access';
@@ -43,14 +44,21 @@ function PaseManualInner() {
   const [loadError, setLoadError] = useState<string | null>(null);
 
   useEffect(() => {
+    let cancelled = false;
     void (async () => {
       try {
         const rows = await listMembers('ACTIVE');
+        if (cancelled) {
+          return;
+        }
         setMembers(rows);
         if (rows[0]) {
           setMemberId(rows[0].id);
         }
       } catch (err) {
+        if (cancelled) {
+          return;
+        }
         setLoadError(
           err instanceof ApiClientError
             ? err.message
@@ -58,6 +66,9 @@ function PaseManualInner() {
         );
       }
     })();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const filtered = members.filter((m) => {
@@ -100,68 +111,82 @@ function PaseManualInner() {
 
   return (
     <DoorShell title="Pase manual">
-      <form className="verify-form" onSubmit={(e) => void onSubmit(e)}>
-        {loadError ? <p className="error">{loadError}</p> : null}
+      <AdminGrid className="door-dashboard">
+        <Panel
+          title="Autorizar ingreso"
+          description="El pase manual omite las reglas automáticas y queda auditado."
+        >
+          <form className="admin-form" onSubmit={(e) => void onSubmit(e)}>
+            {loadError ? <p className="error">{loadError}</p> : null}
 
-        <label>
-          Buscar afiliado
-          <input
-            value={filter}
-            onChange={(e) => setFilter(e.target.value)}
-            placeholder="Nombre o email"
-            autoComplete="off"
-          />
-        </label>
+            <label>
+              Buscar afiliado
+              <input
+                value={filter}
+                onChange={(e) => setFilter(e.target.value)}
+                placeholder="Nombre o email"
+                autoComplete="off"
+              />
+            </label>
 
-        <label>
-          Afiliado
-          <select
-            value={memberId}
-            onChange={(e) => setMemberId(e.target.value)}
-            required
-          >
-            {filtered.map((m) => (
-              <option key={m.id} value={m.id}>
-                {(m.name ?? 'Sin nombre') + ` — ${m.email}`}
-              </option>
-            ))}
-          </select>
-        </label>
+            <label>
+              Afiliado
+              <select
+                value={memberId}
+                onChange={(e) => setMemberId(e.target.value)}
+                required
+              >
+                {filtered.map((m) => (
+                  <option key={m.id} value={m.id}>
+                    {(m.name ?? 'Sin nombre') + ` — ${m.email}`}
+                  </option>
+                ))}
+              </select>
+            </label>
 
-        <label>
-          Motivo
-          <select
-            value={motiveCode}
-            onChange={(e) =>
-              setMotiveCode(e.target.value as ManualPassMotive)
-            }
-          >
-            {MOTIVES.map((m) => (
-              <option key={m.value} value={m.value}>
-                {m.label}
-              </option>
-            ))}
-          </select>
-        </label>
+            <label>
+              Motivo
+              <select
+                value={motiveCode}
+                onChange={(e) =>
+                  setMotiveCode(e.target.value as ManualPassMotive)
+                }
+              >
+                {MOTIVES.map((m) => (
+                  <option key={m.value} value={m.value}>
+                    {m.label}
+                  </option>
+                ))}
+              </select>
+            </label>
 
-        <label>
-          Nota (opcional)
-          <textarea
-            value={note}
-            onChange={(e) => setNote(e.target.value)}
-            rows={3}
-            maxLength={500}
-          />
-        </label>
+            <label>
+              Nota (opcional)
+              <textarea
+                value={note}
+                onChange={(e) => setNote(e.target.value)}
+                rows={3}
+                maxLength={500}
+              />
+            </label>
 
-        {error ? <p className="error">{error}</p> : null}
+            {error ? <p className="error">{error}</p> : null}
 
-        <button type="submit" className="primary" disabled={busy || !memberId}>
-          {busy ? 'Registrando…' : 'Registrar ingreso'}
-        </button>
-      </form>
+            <button
+              type="submit"
+              className="primary"
+              disabled={busy || !memberId}
+            >
+              {busy ? 'Registrando…' : 'Registrar ingreso'}
+            </button>
+          </form>
+        </Panel>
 
-      <AccessResultBanner result={result} />
+        <AccessResultBanner
+          result={result}
+          emptyText="El pase autorizado aparecerá acá."
+        />
+      </AdminGrid>
     </DoorShell>
   );
 }

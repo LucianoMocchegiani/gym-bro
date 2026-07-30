@@ -203,7 +203,8 @@
 - [x] Login staff / Super Admin
   - Staff login web (`/login`); Super Admin UI pendiente
 - [ ] Dashboard mínimo
-- [ ] Afiliados
+- [x] Afiliados
+  - listado/filtro, alta, ficha, status, estado de cuenta (`/afiliados`)
 - [ ] Servicios / packs / sesiones
 - [ ] Caja y cobros
 - [x] Pase manual / historial acceso

@@ -2,21 +2,29 @@
 
 import { formatAccessReason } from '@/lib/access-labels';
 import type { AccessAttemptDetail, AccessVerifyResult } from '@/lib/api/types';
+import { Panel } from '@/components/AdminUi';
 
 /**
  * Resultado grande de verificación / pase manual.
  */
 export function AccessResultBanner({
   result,
+  emptyText = 'El resultado del próximo ingreso aparecerá acá.',
 }: {
   result: AccessVerifyResult | null;
+  emptyText?: string;
 }) {
   if (!result) {
-    return null;
+    return (
+      <Panel title="Resultado" className="access-result empty">
+        <p className="muted">{emptyText}</p>
+      </Panel>
+    );
   }
   return (
-    <section
-      className={`result-banner ${result.allowed ? 'allowed' : 'denied'}`}
+    <Panel
+      title="Resultado"
+      className={`access-result ${result.allowed ? 'allowed' : 'denied'}`}
       aria-live="polite"
     >
       <p className="result-status">
@@ -26,7 +34,7 @@ export function AccessResultBanner({
       {result.memberId ? (
         <p className="muted small">Afiliado: {result.memberId}</p>
       ) : null}
-    </section>
+    </Panel>
   );
 }
 
@@ -43,8 +51,11 @@ export function AttemptsList({
   error: string | null;
 }) {
   return (
-    <section className="attempts">
-      <h2>Últimos ingresos</h2>
+    <Panel
+      title="Últimos ingresos"
+      description="Actividad reciente registrada en esta puerta."
+      className="attempts"
+    >
       {loading ? <p className="muted">Cargando…</p> : null}
       {error ? <p className="error">{error}</p> : null}
       {!loading && !error && attempts.length === 0 ? (
@@ -63,6 +74,6 @@ export function AttemptsList({
           </li>
         ))}
       </ul>
-    </section>
+    </Panel>
   );
 }

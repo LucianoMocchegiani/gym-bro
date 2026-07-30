@@ -7,6 +7,7 @@ Next.js App Router — panel staff. Primer slice: **login + flujo puerta**.
 | Ruta | Uso |
 |------|-----|
 | `/login` | Login Staff (`tenantId` + email + password) |
+| `/afiliados` | Listado / alta / ficha + estado de cuenta |
 | `/puerta` | Verificar ingreso (pegar token stub) + historial |
 | `/puerta/pase-manual` | Pase manual (CU-ACC-004) |
 

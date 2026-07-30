@@ -1,6 +1,7 @@
 import type { StaffLoginResponse } from '@/lib/api/types';
 
 const STORAGE_KEY = 'gymbro.staff.session';
+const SESSION_EVENT = 'gymbro-staff-session';
 
 /**
  * Sesión Staff persistida en localStorage (panel puerta / Admin).
@@ -14,18 +15,34 @@ export type StaffSession = {
   name: string | null;
 };
 
-/**
- * Lee la sesión Staff del storage del browser.
- */
-export function readStaffSession(): StaffSession | null {
+/** Snapshot cacheado: misma referencia si el JSON no cambió (useSyncExternalStore). */
+let cachedRaw: string | null | undefined;
+let cachedSession: StaffSession | null = null;
+
+function notifySessionListeners(): void {
   if (typeof window === 'undefined') {
-    return null;
+    return;
   }
+  window.dispatchEvent(new Event(SESSION_EVENT));
+}
+
+/**
+ * Suscripción para `useSyncExternalStore` (cambios de sesión Staff).
+ */
+export function subscribeStaffSession(onStoreChange: () => void): () => void {
+  if (typeof window === 'undefined') {
+    return () => undefined;
+  }
+  window.addEventListener(SESSION_EVENT, onStoreChange);
+  window.addEventListener('storage', onStoreChange);
+  return () => {
+    window.removeEventListener(SESSION_EVENT, onStoreChange);
+    window.removeEventListener('storage', onStoreChange);
+  };
+}
+
+function parseSession(raw: string): StaffSession | null {
   try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
-    if (!raw) {
-      return null;
-    }
     const parsed = JSON.parse(raw) as StaffSession;
     if (!parsed.accessToken || !parsed.tenantId) {
       return null;
@@ -34,6 +51,45 @@ export function readStaffSession(): StaffSession | null {
   } catch {
     return null;
   }
+}
+
+/**
+ * Lee la sesión Staff del storage del browser.
+ *
+ * @remarks Devuelve referencia estable mientras el valor en localStorage no cambie.
+ */
+export function readStaffSession(): StaffSession | null {
+  if (typeof window === 'undefined') {
+    return null;
+  }
+  const raw = window.localStorage.getItem(STORAGE_KEY);
+  if (raw === cachedRaw) {
+    return cachedSession;
+  }
+  cachedRaw = raw;
+  cachedSession = raw ? parseSession(raw) : null;
+  return cachedSession;
+}
+
+/**
+ * Snapshot SSR: sin sesión.
+ */
+export function getStaffSessionServerSnapshot(): null {
+  return null;
+}
+
+function persist(session: StaffSession | null): void {
+  if (session) {
+    const raw = JSON.stringify(session);
+    window.localStorage.setItem(STORAGE_KEY, raw);
+    cachedRaw = raw;
+    cachedSession = session;
+  } else {
+    window.localStorage.removeItem(STORAGE_KEY);
+    cachedRaw = null;
+    cachedSession = null;
+  }
+  notifySessionListeners();
 }
 
 /**
@@ -52,7 +108,7 @@ export function writeStaffSession(login: StaffLoginResponse): StaffSession {
     email: login.user.email,
     name: login.user.name,
   };
-  window.localStorage.setItem(STORAGE_KEY, JSON.stringify(session));
+  persist(session);
   return session;
 }
 
@@ -67,8 +123,8 @@ export function updateStaffTokens(
   if (!current) {
     return null;
   }
-  const next = { ...current, accessToken, refreshToken };
-  window.localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+  const next: StaffSession = { ...current, accessToken, refreshToken };
+  persist(next);
   return next;
 }
 
@@ -79,5 +135,5 @@ export function clearStaffSession(): void {
   if (typeof window === 'undefined') {
     return;
   }
-  window.localStorage.removeItem(STORAGE_KEY);
+  persist(null);
 }

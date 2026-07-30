@@ -1,8 +1,8 @@
 import { redirect } from 'next/navigation';
 
 /**
- * Entrada del panel web: redirige al flujo puerta.
+ * Entrada del panel web: afiliados (Admin).
  */
 export default function Home() {
-  redirect('/puerta');
+  redirect('/afiliados');
 }

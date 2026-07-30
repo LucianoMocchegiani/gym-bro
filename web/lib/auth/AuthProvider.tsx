@@ -4,15 +4,16 @@ import {
   createContext,
   useCallback,
   useContext,
-  useEffect,
   useMemo,
-  useState,
+  useSyncExternalStore,
   type ReactNode,
 } from 'react';
 import { staffLogin, staffLogout } from '@/lib/api/auth';
 import {
   clearStaffSession,
+  getStaffSessionServerSnapshot,
   readStaffSession,
+  subscribeStaffSession,
   writeStaffSession,
   type StaffSession,
 } from '@/lib/auth/session';
@@ -34,13 +35,12 @@ const AuthContext = createContext<AuthContextValue | null>(null);
  * Proveedor de sesión Staff para el panel web.
  */
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [session, setSession] = useState<StaffSession | null>(null);
-  const [ready, setReady] = useState(false);
-
-  useEffect(() => {
-    setSession(readStaffSession());
-    setReady(true);
-  }, []);
+  const session = useSyncExternalStore(
+    subscribeStaffSession,
+    readStaffSession,
+    getStaffSessionServerSnapshot,
+  );
+  const ready = typeof window !== 'undefined';
 
   const login = useCallback(
     async (input: {
@@ -49,8 +49,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       password: string;
     }) => {
       const res = await staffLogin(input);
-      const next = writeStaffSession(res);
-      setSession(next);
+      writeStaffSession(res);
     },
     [],
   );
@@ -61,7 +60,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       await staffLogout(current.refreshToken);
     }
     clearStaffSession();
-    setSession(null);
   }, []);
 
   const value = useMemo(
