@@ -16,6 +16,7 @@ La creación de registros sigue la skill:
 
 ## Índice
 
+- [2026-07-30 — Admin web — roles, staff y config gym](./2026-07-30-admin-roles-staff-config.md)
 - [2026-07-30 — Admin web — catálogo servicios / packs / sesiones](./2026-07-30-admin-catalogo-servicios-packs-sesiones.md)
 - [2026-07-30 — Admin web — caja + cliente API por dominio](./2026-07-30-admin-caja-api-client.md)
 - [2026-07-30 — Admin web — afiliados + UI unificada](./2026-07-30-admin-afiliados-ui.md)
