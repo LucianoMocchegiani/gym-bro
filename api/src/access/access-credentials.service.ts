@@ -81,7 +81,9 @@ export class AccessCredentialsService {
   ): Promise<AccessCredentialDetail> {
     const member = await this.requireMember(tenantId, memberId);
     if (member.status !== MemberStatus.ACTIVE) {
-      throw new BadRequestException('Member must be ACTIVE to issue credential');
+      throw new BadRequestException(
+        'Member must be ACTIVE to issue credential',
+      );
     }
 
     const issued = await this.identity.issueMembershipCredential({

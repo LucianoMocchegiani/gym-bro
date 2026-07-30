@@ -245,11 +245,12 @@ export class MpWebhookService {
           reservationId: payment.reservation.id,
         };
       }
-      const reservation = await this.reservations.confirmDropInFromApprovedPayment(
-        tenantId,
-        payment.id,
-        actor,
-      );
+      const reservation =
+        await this.reservations.confirmDropInFromApprovedPayment(
+          tenantId,
+          payment.id,
+          actor,
+        );
       return {
         handled: true,
         paymentId: payment.id,

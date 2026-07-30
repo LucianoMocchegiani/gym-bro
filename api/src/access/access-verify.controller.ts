@@ -63,12 +63,7 @@ export class AccessVerifyController {
     if (user.profileType !== 'STAFF') {
       throw new ForbiddenException('Staff profile required');
     }
-    return this.accessVerify.manualPass(
-      tenantId,
-      memberId,
-      dto,
-      user.userId,
-    );
+    return this.accessVerify.manualPass(tenantId, memberId, dto, user.userId);
   }
 
   /**
@@ -80,10 +75,7 @@ export class AccessVerifyController {
     @CurrentTenant() tenantId: string,
     @Query('memberId', new ParseUUIDPipe({ optional: true }))
     memberId?: string,
-    @Query(
-      'result',
-      new ParseEnumPipe(AccessAttemptResult, { optional: true }),
-    )
+    @Query('result', new ParseEnumPipe(AccessAttemptResult, { optional: true }))
     result?: AccessAttemptResult,
     @Query('limit', new ParseIntPipe({ optional: true })) limit?: number,
   ): Promise<AccessAttemptDetail[]> {

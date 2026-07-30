@@ -71,7 +71,7 @@ export class AccessVerifyService {
     dto: VerifyAccessDto,
     actorStaffId: string,
   ): Promise<AccessVerifyResult> {
-    const scanMode = dto.mode as AccessScanMode;
+    const scanMode = dto.mode;
     let memberId: string | null = null;
     let credentialRef: string | null = null;
 
@@ -253,8 +253,7 @@ export class AccessVerifyService {
     scanMode: AccessScanMode;
     actorStaffId: string;
   }): Promise<AccessVerifyResult> {
-    const { tenantId, memberId, credentialRef, scanMode, actorStaffId } =
-      input;
+    const { tenantId, memberId, credentialRef, scanMode, actorStaffId } = input;
 
     const tenant = await this.prisma.tenant.findUnique({
       where: { id: tenantId },

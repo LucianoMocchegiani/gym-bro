@@ -78,7 +78,9 @@ export class StubAccessIdentityProvider extends AccessIdentityProvider {
       return resolved;
     }
 
-    throw new BadRequestException(`Unsupported scan mode: ${String(input.mode)}`);
+    throw new BadRequestException(
+      `Unsupported scan mode: ${String(input.mode)}`,
+    );
   }
 
   private async resolveActiveRef(
