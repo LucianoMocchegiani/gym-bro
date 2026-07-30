@@ -45,7 +45,7 @@ Servicios:
 
 | Servicio | URL / puerto |
 |----------|----------------|
-| Web | http://localhost:3000 |
+| Web | http://localhost:3000 — login Staff + flujo puerta (`/puerta`) |
 | API health | http://localhost:3001/api/health |
 | Postman | [`postman/`](./postman/) |
 | Postgres | `localhost:5432` (user/pass/db: `gymbro`) |

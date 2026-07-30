@@ -1,36 +1,29 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# GymBro Web (Admin)
 
-## Getting Started
+Next.js App Router — panel staff. Primer slice: **login + flujo puerta**.
 
-First, run the development server:
+## Rutas
 
-```bash
+| Ruta | Uso |
+|------|-----|
+| `/login` | Login Staff (`tenantId` + email + password) |
+| `/puerta` | Verificar ingreso (pegar token stub) + historial |
+| `/puerta/pase-manual` | Pase manual (CU-ACC-004) |
+
+## Setup
+
+```powershell
+Copy-Item web\.env.example web\.env
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Abrí http://localhost:3000 — la API debe estar en `NEXT_PUBLIC_API_URL` (default `http://localhost:3001`).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Credenciales demo: ver `docs/credenciales-demo.md`.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Notas
 
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- Sesión en `localStorage` (access + refresh); refresh automático ante 401.
+- Sin cámara QR en este slice (stub: pegar `stub:…`).
+- La API habilita CORS vía `CORS_ORIGIN` (default `http://localhost:3000`).

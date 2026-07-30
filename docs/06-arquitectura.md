@@ -81,11 +81,13 @@ Estructura lógica interna:
 
 ```text
 api/                    # NestJS (módulos por dominio dentro de src/)
-web/                    # Next.js
+web/                    # Next.js — login Staff + flujo puerta (`/puerta`, `/puerta/pase-manual`)
 mobile/                 # Flutter
 # Dominios Nest (ejemplos, dentro de api/src):
 #   identity-access/, members/, catalog/, billing/, access/, ...
 ```
+
+CORS: la API acepta orígenes de `CORS_ORIGIN` (default `http://localhost:3000`) para el panel web.
 
 ---
 

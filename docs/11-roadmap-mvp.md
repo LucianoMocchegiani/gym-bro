@@ -152,7 +152,10 @@
   - `GET /access-attempts`; tabla `access_attempts`; `reservations.checked_in_at`
 - [x] Config políticas de acceso del gym
   - tolerancia + multi-ingreso en `tenant_settings` (CU-ACC-007 parcial)
-- [ ] Pantalla / flujo puerta (tocámetro o escaneo afiliado)
+- [x] Pantalla / flujo puerta (tocámetro o escaneo afiliado)
+  - Admin web: `/login` Staff + `/puerta` (verify stub pegar token, ambos modos) + `/puerta/pase-manual` + historial reciente; sin cámara/Quark
+  - API: CORS `CORS_ORIGIN` (default `http://localhost:3000`)
+
 
 ---
 
@@ -197,12 +200,14 @@
 
 ## E10 — Admin web (Next.js)
 
-- [ ] Login staff / Super Admin
+- [x] Login staff / Super Admin
+  - Staff login web (`/login`); Super Admin UI pendiente
 - [ ] Dashboard mínimo
 - [ ] Afiliados
 - [ ] Servicios / packs / sesiones
 - [ ] Caja y cobros
-- [ ] Pase manual / historial acceso
+- [x] Pase manual / historial acceso
+  - `/puerta` + `/puerta/pase-manual` (E6 pantalla puerta)
 - [ ] Rutinas
 - [ ] Roles y config gym
 - [ ] Plantillas de notificación
@@ -246,7 +251,7 @@ E11 → E12
 
 ## Próximo paso
 
-Elegir **pantalla/flujo puerta** (web), Quark, **E7 rutinas**, o probar MP live.
+Elegir Quark SSI, **E8 notificaciones**, resto de **E10 Admin**, o probar MP live.
 
 ---
 
