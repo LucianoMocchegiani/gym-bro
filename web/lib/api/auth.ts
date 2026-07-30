@@ -1,8 +1,25 @@
+/**
+ * Auth API (módulo `auth`).
+ */
+
 import { apiRequest } from '@/lib/api/client';
-import type { StaffLoginResponse } from '@/lib/api/types';
+
+export type StaffLoginResponse = {
+  accessToken: string;
+  refreshToken: string;
+  expiresIn: number;
+  tokenType: 'Bearer';
+  profileType: 'STAFF' | 'SUPER' | 'MEMBER';
+  user: {
+    id: string;
+    email: string;
+    name: string | null;
+    tenantId?: string;
+  };
+};
 
 /**
- * Login Staff (CU-ROL / auth).
+ * Login Staff.
  */
 export function staffLogin(input: {
   tenantId: string;

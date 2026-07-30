@@ -6,12 +6,12 @@ import { AdminGrid, Panel } from '@/components/AdminUi';
 import { DoorShell } from '@/components/DoorShell';
 import { RequireStaff } from '@/components/RequireStaff';
 import { listAccessAttempts, verifyAccess } from '@/lib/api/access';
-import { ApiClientError } from '@/lib/api/client';
 import type {
   AccessAttemptDetail,
   AccessScanMode,
   AccessVerifyResult,
-} from '@/lib/api/types';
+} from '@/lib/api/access';
+import { ApiClientError } from '@/lib/api/client';
 import { useAuth } from '@/lib/auth/AuthProvider';
 
 /**

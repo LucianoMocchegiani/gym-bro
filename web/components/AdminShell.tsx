@@ -25,6 +25,9 @@ export function AdminShell({ title, children, actions }: AdminShellProps) {
     if (href === '/puerta') {
       return pathname.startsWith('/puerta') ? 'active' : undefined;
     }
+    if (href === '/caja') {
+      return pathname.startsWith('/caja') ? 'active' : undefined;
+    }
     return pathname === href ? 'active' : undefined;
   }
 
@@ -41,6 +44,9 @@ export function AdminShell({ title, children, actions }: AdminShellProps) {
           <nav className="admin-nav">
             <Link href="/afiliados" className={navClass('/afiliados')}>
               Afiliados
+            </Link>
+            <Link href="/caja" className={navClass('/caja')}>
+              Caja
             </Link>
             <Link href="/puerta" className={navClass('/puerta')}>
               Puerta

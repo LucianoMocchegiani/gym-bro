@@ -1,9 +1,18 @@
+/**
+ * Cliente HTTP tipado hacia `NEXT_PUBLIC_API_URL/api`.
+ */
+
 import {
   clearStaffSession,
   readStaffSession,
   updateStaffTokens,
 } from '@/lib/auth/session';
-import type { ApiErrorBody } from '@/lib/api/types';
+
+export type ApiErrorBody = {
+  message?: string | string[];
+  error?: string;
+  statusCode?: number;
+};
 
 /**
  * Error HTTP tipado desde la API Nest.
@@ -42,7 +51,7 @@ type RequestOptions = {
 };
 
 /**
- * Cliente HTTP tipado hacia `NEXT_PUBLIC_API_URL/api`.
+ * Request tipado a la API.
  *
  * @remarks En 401 con sesión Staff intenta un refresh y reintenta una vez.
  */
@@ -101,6 +110,17 @@ export async function apiRequest<T>(
   }
 
   return parsed as T;
+}
+
+/**
+ * Idempotency key corta para mutaciones de mostrador.
+ */
+export function newIdempotencyKey(prefix: string): string {
+  const rand =
+    typeof crypto !== 'undefined' && 'randomUUID' in crypto
+      ? crypto.randomUUID().slice(0, 8)
+      : String(Date.now());
+  return `${prefix}-${rand}`;
 }
 
 async function tryRefresh(): Promise<boolean> {

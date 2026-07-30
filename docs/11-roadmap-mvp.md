@@ -206,7 +206,8 @@
 - [x] Afiliados
   - listado/filtro, alta, ficha, status, estado de cuenta (`/afiliados`)
 - [ ] Servicios / packs / sesiones
-- [ ] Caja y cobros
+- [x] Caja y cobros
+  - `/caja`: día + movimientos + arqueo; cobro pack/drop-in CASH
 - [x] Pase manual / historial acceso
   - `/puerta` + `/puerta/pase-manual` (E6 pantalla puerta)
 - [ ] Rutinas

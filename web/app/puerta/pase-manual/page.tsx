@@ -6,13 +6,13 @@ import { AdminGrid, Panel } from '@/components/AdminUi';
 import { DoorShell } from '@/components/DoorShell';
 import { RequireStaff } from '@/components/RequireStaff';
 import { manualPass } from '@/lib/api/access';
-import { ApiClientError } from '@/lib/api/client';
-import { listMembers } from '@/lib/api/members';
 import type {
   AccessVerifyResult,
   ManualPassMotive,
-  MemberSummary,
-} from '@/lib/api/types';
+} from '@/lib/api/access';
+import { ApiClientError } from '@/lib/api/client';
+import { listMembers } from '@/lib/api/members';
+import type { MemberSummary } from '@/lib/api/members';
 
 const MOTIVES: { value: ManualPassMotive; label: string }[] = [
   { value: 'deuda', label: 'Deuda' },

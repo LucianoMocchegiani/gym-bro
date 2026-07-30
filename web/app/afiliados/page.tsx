@@ -7,7 +7,7 @@ import { Panel } from '@/components/AdminUi';
 import { RequireStaff } from '@/components/RequireStaff';
 import { ApiClientError } from '@/lib/api/client';
 import { listMembers } from '@/lib/api/members';
-import type { MemberDetail, MemberStatus } from '@/lib/api/types';
+import type { MemberDetail, MemberStatus } from '@/lib/api/members';
 import { formatMemberStatus } from '@/lib/member-labels';
 
 /**

@@ -8,6 +8,7 @@ Next.js App Router — panel staff. Primer slice: **login + flujo puerta**.
 |------|-----|
 | `/login` | Login Staff (`tenantId` + email + password) |
 | `/afiliados` | Listado / alta / ficha + estado de cuenta |
+| `/caja` | Caja del día, cobro CASH (pack/drop-in), arqueo |
 | `/puerta` | Verificar ingreso (pegar token stub) + historial |
 | `/puerta/pase-manual` | Pase manual (CU-ACC-004) |
 
@@ -28,3 +29,4 @@ Credenciales demo: ver `docs/credenciales-demo.md`.
 - Sesión en `localStorage` (access + refresh); refresh automático ante 401.
 - Sin cámara QR en este slice (stub: pegar `stub:…`).
 - La API habilita CORS vía `CORS_ORIGIN` (default `http://localhost:3000`).
+- Cliente HTTP en `lib/api/` espeja módulos Nest (`auth`, `members`, `access`, `cash-register`, `contracts`, `packs`, `sessions`, `reservations`).

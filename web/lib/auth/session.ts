@@ -1,4 +1,4 @@
-import type { StaffLoginResponse } from '@/lib/api/types';
+import type { StaffLoginResponse } from '@/lib/api/auth';
 
 const STORAGE_KEY = 'gymbro.staff.session';
 const SESSION_EVENT = 'gymbro-staff-session';

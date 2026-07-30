@@ -1,7 +1,7 @@
 'use client';
 
 import { formatAccessReason } from '@/lib/access-labels';
-import type { AccessAttemptDetail, AccessVerifyResult } from '@/lib/api/types';
+import type { AccessAttemptDetail, AccessVerifyResult } from '@/lib/api/access';
 import { Panel } from '@/components/AdminUi';
 
 /**

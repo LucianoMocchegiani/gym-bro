@@ -17,7 +17,7 @@ import type {
   MemberAccountDetail,
   MemberDetail,
   MemberStatus,
-} from '@/lib/api/types';
+} from '@/lib/api/members';
 import { formatMemberStatus } from '@/lib/member-labels';
 
 /**

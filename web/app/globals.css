@@ -418,6 +418,19 @@ a.btn.ghost,
   gap: 0.75rem;
 }
 
+.stat-card {
+  padding: 1rem 1.1rem;
+}
+
+.toolbar-hint {
+  align-self: end;
+  margin-bottom: 0.35rem;
+}
+
+.cash-dashboard {
+  align-items: start;
+}
+
 .stat-value {
   font-family: var(--font-display), 'Barlow Condensed', sans-serif;
   font-size: 1.6rem;
