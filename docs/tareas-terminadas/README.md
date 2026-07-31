@@ -16,6 +16,7 @@ La creación de registros sigue la skill:
 
 ## Índice
 
+- [2026-07-30 — Reportes mínimos + historial puerta nominado](./2026-07-30-reportes-minimos.md)
 - [2026-07-30 — Tenant slug (subdominio) + Super Admin web](./2026-07-30-tenant-slug-super-admin.md)
 - [2026-07-30 — Admin web — dashboard mínimo](./2026-07-30-admin-dashboard-minimo.md)
 - [2026-07-30 — Admin web — roles, staff y config gym](./2026-07-30-admin-roles-staff-config.md)
