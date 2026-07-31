@@ -36,7 +36,11 @@ export function SuperAuthProvider({ children }: { children: ReactNode }) {
     readSuperSession,
     getSuperSessionServerSnapshot,
   );
-  const ready = typeof window !== 'undefined';
+  const ready = useSyncExternalStore(
+    () => () => undefined,
+    () => true,
+    () => false,
+  );
 
   const login = useCallback(
     async (input: { email: string; password: string }) => {

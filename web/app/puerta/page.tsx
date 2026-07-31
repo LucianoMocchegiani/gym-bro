@@ -184,7 +184,9 @@ function PuertaInner() {
 
             {mode === 'gym_scans_member' ? (
               <label>
-                Token del afiliado (stub: <code>stub:…</code>)
+                <span>
+                  Token del afiliado (stub: <code>stub:…</code>)
+                </span>
                 <input
                   value={presentationToken}
                   onChange={(e) => setPresentationToken(e.target.value)}

@@ -32,8 +32,15 @@ type AuthContextValue = {
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
+function subscribeAlways(): () => void {
+  return () => undefined;
+}
+
 /**
  * Proveedor de sesión Staff para el panel web.
+ *
+ * @remarks `ready` usa `useSyncExternalStore` para que SSR e hidratación
+ * coincidan (evitar “Cargando sesión…” huérfano en el DOM).
  */
 export function AuthProvider({ children }: { children: ReactNode }) {
   const session = useSyncExternalStore(
@@ -41,7 +48,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     readStaffSession,
     getStaffSessionServerSnapshot,
   );
-  const ready = typeof window !== 'undefined';
+  const ready = useSyncExternalStore(
+    subscribeAlways,
+    () => true,
+    () => false,
+  );
 
   const login = useCallback(
     async (input: {
