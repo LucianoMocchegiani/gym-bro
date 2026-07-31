@@ -17,7 +17,8 @@ Entrar por **`http://{slug}.localhost:3000`** (demo: `http://demo.localhost:3000
 | `/roles` / `/staff` | Roles y staff |
 | `/config` | Settings + Mercado Pago |
 | `/caja` | Caja del día |
-| `/puerta` | Verify + pase manual |
+| `/reportes` | Ingresos del período (detalle nominado) + snapshot packs/activos |
+| `/puerta` | Verify + historial nominado (filtro fecha) |
 
 ## Rutas Super (apex)
 

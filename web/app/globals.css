@@ -506,6 +506,7 @@ button.danger {
 
 .dash-kpis {
   margin-bottom: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
 }
 
 .dash-shortcuts-panel {
@@ -666,7 +667,7 @@ button.danger {
 
 .attempts-list li {
   display: grid;
-  grid-template-columns: auto 1fr auto;
+  grid-template-columns: auto minmax(6rem, 0.9fr) 1fr auto;
   gap: 0.65rem;
   align-items: center;
   padding: 0.65rem 0.75rem;
@@ -674,6 +675,14 @@ button.danger {
   background: #fff;
   border: 1px solid var(--line);
   font-size: 0.92rem;
+}
+
+.attempt-who {
+  font-weight: 600;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .attempts-list li time {

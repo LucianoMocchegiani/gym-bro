@@ -68,6 +68,8 @@ export class AccessVerifyController {
 
   /**
    * Lista intentos del gym (más recientes primero).
+   *
+   * @remarks Incluye nombre/email del afiliado. `from`/`to` = YYYY-MM-DD (BA).
    */
   @Get('access-attempts')
   @RequirePermission('access.verify')
@@ -78,11 +80,15 @@ export class AccessVerifyController {
     @Query('result', new ParseEnumPipe(AccessAttemptResult, { optional: true }))
     result?: AccessAttemptResult,
     @Query('limit', new ParseIntPipe({ optional: true })) limit?: number,
+    @Query('from') from?: string,
+    @Query('to') to?: string,
   ): Promise<AccessAttemptDetail[]> {
     return this.accessVerify.listAttempts(tenantId, {
       memberId,
       result,
       limit,
+      fromYmd: from,
+      toYmd: to,
     });
   }
 }

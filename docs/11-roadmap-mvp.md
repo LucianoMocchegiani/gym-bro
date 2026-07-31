@@ -224,10 +224,14 @@
 
 ## E11 — Reportes mínimos
 
-- [ ] Afiliados activos
-- [ ] Cuotas / packs pagados vs vencidos
-- [ ] Ingresos del período (MP + caja)
-- [ ] Ingresos por puerta (conteo / denegados)
+- [x] Afiliados activos
+  - conteo por status + proxy “sin pack activo” (`ACTIVE` sin contrato `ACTIVE`)
+- [x] Cuotas / packs pagados vs vencidos
+  - contratos `ACTIVE` / `EXPIRED` / cancelados / reembolsados (punto en el tiempo)
+- [x] Ingresos del período (MP + caja)
+  - `GET /reports/summary?from&to` — totales por medio + detalle con nombre; UI `/reportes`
+- [x] Ingresos por puerta (conteo / denegados)
+  - En `/puerta`: historial nominado + filtro fecha/resultado; API `access-attempts?from&to`
 
 ---
 
@@ -258,7 +262,7 @@ E11 → E12
 
 ## Próximo paso
 
-Elegir Quark SSI, **E8 notificaciones**, **E11 reportes**, o DNS wildcard prod (`*.gymbro.app`).
+Elegir Quark SSI, **E8 notificaciones**, rutinas (E7/E10), o DNS wildcard prod (`*.gymbro.app`).
 
 ---
 

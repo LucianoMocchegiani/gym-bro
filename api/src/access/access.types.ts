@@ -49,6 +49,8 @@ export type AccessAttemptDetail = {
   id: string;
   tenantId: string;
   memberId: string | null;
+  memberName: string | null;
+  memberEmail: string | null;
   credentialRef: string | null;
   result: 'ALLOWED' | 'DENIED';
   reasonCode: string;

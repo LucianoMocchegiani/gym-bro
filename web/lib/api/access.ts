@@ -16,6 +16,8 @@ export type AccessAttemptDetail = {
   id: string;
   tenantId: string;
   memberId: string | null;
+  memberName: string | null;
+  memberEmail: string | null;
   credentialRef: string | null;
   result: 'ALLOWED' | 'DENIED';
   reasonCode: string;
@@ -75,16 +77,24 @@ export function manualPass(
 }
 
 /**
- * Historial reciente de intentos (CU-ACC-005).
+ * Historial de intentos (CU-ACC-005). Incluye nombre del afiliado.
  */
-export function listAccessAttempts(
-  limit = 20,
-  result?: 'ALLOWED' | 'DENIED',
-): Promise<AccessAttemptDetail[]> {
+export function listAccessAttempts(input?: {
+  limit?: number;
+  result?: 'ALLOWED' | 'DENIED';
+  from?: string;
+  to?: string;
+}): Promise<AccessAttemptDetail[]> {
   const params = new URLSearchParams();
-  params.set('limit', String(limit));
-  if (result) {
-    params.set('result', result);
+  params.set('limit', String(input?.limit ?? 50));
+  if (input?.result) {
+    params.set('result', input.result);
+  }
+  if (input?.from) {
+    params.set('from', input.from);
+  }
+  if (input?.to) {
+    params.set('to', input.to);
   }
   return apiRequest<AccessAttemptDetail[]>(
     `/access-attempts?${params.toString()}`,

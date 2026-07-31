@@ -2,7 +2,7 @@ import type { HTMLAttributes, ReactNode } from 'react';
 
 type PanelProps = HTMLAttributes<HTMLElement> & {
   title?: string;
-  description?: string;
+  description?: ReactNode;
   children: ReactNode;
 };
 

@@ -12,18 +12,21 @@ import {
 } from '@/lib/api/cash-register';
 import { ApiClientError } from '@/lib/api/client';
 import { listMembers } from '@/lib/api/members';
+import { getReportsSummary } from '@/lib/api/reports';
 import { listSessions } from '@/lib/api/sessions';
 import { formatMoney } from '@/lib/cash-labels';
 
 type KpiState = {
   income: number | null;
   activeMembers: number | null;
+  withoutPack: number | null;
   doorAllowed: number | null;
   sessionsToday: number | null;
   errors: string[];
 };
 
 const SHORTCUTS: { href: string; label: string; hint: string }[] = [
+  { href: '/reportes', label: 'Reportes', hint: 'Período e ingresos' },
   { href: '/afiliados', label: 'Afiliados', hint: 'Alta y ficha' },
   { href: '/caja', label: 'Caja', hint: 'Cobros y arqueo' },
   { href: '/puerta', label: 'Puerta', hint: 'Verify e historial' },
@@ -34,15 +37,6 @@ const SHORTCUTS: { href: string; label: string; hint: string }[] = [
   { href: '/staff', label: 'Staff', hint: 'Usuarios del gym' },
   { href: '/config', label: 'Config', hint: 'Operación y MP' },
 ];
-
-/**
- * Fecha de negocio BA de un instante ISO.
- */
-function businessDateOf(iso: string): string {
-  return new Intl.DateTimeFormat('en-CA', {
-    timeZone: 'America/Argentina/Buenos_Aires',
-  }).format(new Date(iso));
-}
 
 /**
  * Dashboard mínimo del Admin (wireframe §7): KPIs del día + atajos.
@@ -60,6 +54,7 @@ function DashboardInner() {
   const [kpi, setKpi] = useState<KpiState>({
     income: null,
     activeMembers: null,
+    withoutPack: null,
     doorAllowed: null,
     sessionsToday: null,
     errors: [],
@@ -72,6 +67,7 @@ function DashboardInner() {
       const errors: string[] = [];
       let income: number | null = null;
       let activeMembers: number | null = null;
+      let withoutPack: number | null = null;
       let doorAllowed: number | null = null;
       let sessionsToday: number | null = null;
 
@@ -98,10 +94,27 @@ function DashboardInner() {
       }
 
       try {
-        const attempts = await listAccessAttempts(100, 'ALLOWED');
-        doorAllowed = attempts.filter(
-          (a) => businessDateOf(a.createdAt) === today,
-        ).length;
+        const summary = await getReportsSummary({ from: today, to: today });
+        withoutPack = summary.members.activeWithoutActiveContract;
+        if (activeMembers == null) {
+          activeMembers = summary.members.active;
+        }
+      } catch (err) {
+        errors.push(
+          err instanceof ApiClientError
+            ? `Reportes: ${err.message}`
+            : 'Reportes: no disponible',
+        );
+      }
+
+      try {
+        const attempts = await listAccessAttempts({
+          limit: 100,
+          result: 'ALLOWED',
+          from: today,
+          to: today,
+        });
+        doorAllowed = attempts.length;
       } catch (err) {
         errors.push(
           err instanceof ApiClientError
@@ -128,7 +141,14 @@ function DashboardInner() {
       }
 
       if (!cancelled) {
-        setKpi({ income, activeMembers, doorAllowed, sessionsToday, errors });
+        setKpi({
+          income,
+          activeMembers,
+          withoutPack,
+          doorAllowed,
+          sessionsToday,
+          errors,
+        });
         setLoading(false);
       }
     })();
@@ -165,6 +185,13 @@ function DashboardInner() {
               </p>
             </Panel>
             <Panel className="stat-card">
+              <p className="muted small">Sin pack activo</p>
+              <p className="stat-value">
+                {kpi.withoutPack != null ? kpi.withoutPack : '—'}
+              </p>
+              <p className="muted small">Proxy deuda · ver Reportes</p>
+            </Panel>
+            <Panel className="stat-card">
               <p className="muted small">Ingresos puerta</p>
               <p className="stat-value">
                 {kpi.doorAllowed != null ? kpi.doorAllowed : '—'}
@@ -181,7 +208,7 @@ function DashboardInner() {
 
           <Panel
             title="Atajos"
-            description="Deuda agregada queda para reportes (E11)."
+            description="Detalle de período e ingresos nominados en Reportes."
             className="dash-shortcuts-panel"
           >
             <div className="dash-shortcuts">

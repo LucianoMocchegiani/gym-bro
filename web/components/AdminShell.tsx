@@ -62,6 +62,9 @@ export function AdminShell({ title, children, actions }: AdminShellProps) {
             <Link href="/config" className={navClass('/config')}>
               Config
             </Link>
+            <Link href="/reportes" className={navClass('/reportes')}>
+              Reportes
+            </Link>
             <Link href="/caja" className={navClass('/caja')}>
               Caja
             </Link>

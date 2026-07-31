@@ -1288,6 +1288,55 @@
       ]
     },
     {
+      "name": "Reports",
+      "description": "E11. GET /reports/summary?from&to (reports.read). Ingresos + snapshot comercial. Historial de puerta en access-attempts.",
+      "item": [
+        {
+          "name": "Staff GET reports summary",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('has income', () => pm.expect(pm.response.json()).to.have.property('income'));",
+                  "pm.test('has door', () => pm.expect(pm.response.json()).to.have.property('door'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/reports/summary",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "reports",
+                "summary"
+              ],
+              "query": [
+                {
+                  "key": "from",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "to",
+                  "value": "",
+                  "disabled": true
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
       "name": "Members",
       "description": "Staff: /members (members.read/write; status → members.deactivate). Estado de cuenta: GET /members/:id/account y GET /me/account (CU-AFI-004/005). Super: /tenants/:tenantId/members. Login member solo si ACTIVE.",
       "item": [

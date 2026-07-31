@@ -12,6 +12,7 @@ import { PacksModule } from './packs/packs.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { ReceiptsModule } from './receipts/receipts.module';
 import { RefundsModule } from './refunds/refunds.module';
+import { ReportsModule } from './reports/reports.module';
 import { RolesModule } from './roles/roles.module';
 import { ServicesModule } from './services/services.module';
 import { SessionsModule } from './sessions/sessions.module';
@@ -47,6 +48,7 @@ import { WaitlistModule } from './waitlist/waitlist.module';
     ReceiptsModule,
     MercadoPagoModule,
     RefundsModule,
+    ReportsModule,
     AccessModule,
     TenantsModule,
     AuditModule,

@@ -11,6 +11,7 @@ import type {
   AccessScanMode,
   AccessVerifyResult,
 } from '@/lib/api/access';
+import { todayBusinessDate } from '@/lib/api/cash-register';
 import { ApiClientError } from '@/lib/api/client';
 import { useAuth } from '@/lib/auth/AuthProvider';
 
@@ -29,6 +30,7 @@ export default function PuertaPage() {
 
 function PuertaInner() {
   const { session } = useAuth();
+  const today = todayBusinessDate();
   const [mode, setMode] = useState<AccessScanMode>('gym_scans_member');
   const [presentationToken, setPresentationToken] = useState('');
   const [venueToken, setVenueToken] = useState(
@@ -38,6 +40,13 @@ function PuertaInner() {
   const [result, setResult] = useState<AccessVerifyResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [from, setFrom] = useState(today);
+  const [to, setTo] = useState(today);
+  const [appliedFrom, setAppliedFrom] = useState(today);
+  const [appliedTo, setAppliedTo] = useState(today);
+  const [resultFilter, setResultFilter] = useState<
+    'ALL' | 'ALLOWED' | 'DENIED'
+  >('ALL');
   const [attempts, setAttempts] = useState<AccessAttemptDetail[]>([]);
   const [attemptsLoading, setAttemptsLoading] = useState(true);
   const [attemptsError, setAttemptsError] = useState<string | null>(null);
@@ -49,8 +58,14 @@ function PuertaInner() {
   useEffect(() => {
     let cancelled = false;
     void (async () => {
+      setAttemptsLoading(true);
       try {
-        const rows = await listAccessAttempts(15);
+        const rows = await listAccessAttempts({
+          limit: 100,
+          from: appliedFrom,
+          to: appliedTo,
+          result: resultFilter === 'ALL' ? undefined : resultFilter,
+        });
         if (cancelled) {
           return;
         }
@@ -74,13 +89,18 @@ function PuertaInner() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [appliedFrom, appliedTo, resultFilter]);
 
   async function refreshAttempts() {
     setAttemptsLoading(true);
     setAttemptsError(null);
     try {
-      const rows = await listAccessAttempts(15);
+      const rows = await listAccessAttempts({
+        limit: 100,
+        from: appliedFrom,
+        to: appliedTo,
+        result: resultFilter === 'ALL' ? undefined : resultFilter,
+      });
       setAttempts(rows);
     } catch (err) {
       setAttemptsError(
@@ -91,6 +111,12 @@ function PuertaInner() {
     } finally {
       setAttemptsLoading(false);
     }
+  }
+
+  function onFilter(e: FormEvent) {
+    e.preventDefault();
+    setAppliedFrom(from);
+    setAppliedTo(to);
   }
 
   async function onVerify(e: FormEvent) {
@@ -202,10 +228,52 @@ function PuertaInner() {
 
         <div className="admin-stack">
           <AccessResultBanner result={result} />
+          <Panel title="Historial" description="Filtrá por fecha (BA) y resultado.">
+            <form className="toolbar" onSubmit={onFilter}>
+              <label className="toolbar-field">
+                Desde
+                <input
+                  type="date"
+                  value={from}
+                  onChange={(e) => setFrom(e.target.value)}
+                  required
+                />
+              </label>
+              <label className="toolbar-field">
+                Hasta
+                <input
+                  type="date"
+                  value={to}
+                  onChange={(e) => setTo(e.target.value)}
+                  required
+                />
+              </label>
+              <label className="toolbar-field">
+                Resultado
+                <select
+                  value={resultFilter}
+                  onChange={(e) =>
+                    setResultFilter(
+                      e.target.value as 'ALL' | 'ALLOWED' | 'DENIED',
+                    )
+                  }
+                >
+                  <option value="ALL">Todos</option>
+                  <option value="ALLOWED">ALLOWED</option>
+                  <option value="DENIED">DENIED</option>
+                </select>
+              </label>
+              <button type="submit" disabled={attemptsLoading}>
+                Aplicar
+              </button>
+            </form>
+          </Panel>
           <AttemptsList
             attempts={attempts}
             loading={attemptsLoading}
             error={attemptsError}
+            title="Ingresos"
+            description={`${appliedFrom} → ${appliedTo} · hasta 100`}
           />
         </div>
       </AdminGrid>

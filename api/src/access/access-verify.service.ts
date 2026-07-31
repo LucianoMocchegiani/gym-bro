@@ -143,19 +143,41 @@ export class AccessVerifyService {
       memberId?: string;
       result?: AccessAttemptResult;
       limit?: number;
+      fromYmd?: string;
+      toYmd?: string;
     } = {},
   ): Promise<AccessAttemptDetail[]> {
     const limit = Math.min(Math.max(options.limit ?? 50, 1), 200);
+    let createdAtFilter: { gte?: Date; lt?: Date } | undefined;
+    if (options.fromYmd || options.toYmd) {
+      const from = options.fromYmd;
+      const to = options.toYmd;
+      if (from && to && from > to) {
+        throw new BadRequestException('from must be <= to');
+      }
+      createdAtFilter = {};
+      if (from) {
+        createdAtFilter.gte = this.zonedDayStartUtc(from);
+      }
+      if (to) {
+        const next = this.addDaysYmd(to, 1);
+        createdAtFilter.lt = this.zonedDayStartUtc(next);
+      }
+    }
     const rows = await this.prisma.accessAttempt.findMany({
       where: {
         tenantId,
         ...(options.memberId ? { memberId: options.memberId } : {}),
         ...(options.result ? { result: options.result } : {}),
+        ...(createdAtFilter ? { createdAt: createdAtFilter } : {}),
       },
       orderBy: { createdAt: 'desc' },
       take: limit,
+      include: {
+        member: { select: { name: true, email: true } },
+      },
     });
-    return rows.map((r) => this.toAttemptDetail(r));
+    return rows.map((r) => this.toAttemptDetail(r, r.member));
   }
 
   /**
@@ -486,7 +508,7 @@ export class AccessVerifyService {
       reservationId: input.reservationId,
       sessionId: input.sessionId,
       checkedInAt,
-      attempt: this.toAttemptDetail(attempt),
+      attempt: await this.toAttemptDetailAsync(attempt),
     };
   }
 
@@ -516,7 +538,7 @@ export class AccessVerifyService {
       reservationId: null,
       sessionId: null,
       checkedInAt: null,
-      attempt: this.toAttemptDetail(attempt),
+      attempt: await this.toAttemptDetailAsync(attempt),
     };
   }
 
@@ -542,14 +564,50 @@ export class AccessVerifyService {
    * @remarks BA sin DST desde 2009; suficiente para MVP de multi-ingreso.
    */
   private zonedDayStartUtc(ymd: string): Date {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(ymd)) {
+      throw new BadRequestException('from/to must be YYYY-MM-DD');
+    }
     return new Date(`${ymd}T03:00:00.000Z`);
   }
 
-  private toAttemptDetail(row: AccessAttempt): AccessAttemptDetail {
+  private addDaysYmd(ymd: string, days: number): string {
+    const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(ymd);
+    if (!match) {
+      throw new BadRequestException('from/to must be YYYY-MM-DD');
+    }
+    const year = Number(match[1]);
+    const month = Number(match[2]);
+    const day = Number(match[3]);
+    const date = new Date(Date.UTC(year, month - 1, day + days));
+    const yy = date.getUTCFullYear();
+    const mm = String(date.getUTCMonth() + 1).padStart(2, '0');
+    const dd = String(date.getUTCDate()).padStart(2, '0');
+    return `${yy}-${mm}-${dd}`;
+  }
+
+  private async toAttemptDetailAsync(
+    row: AccessAttempt,
+  ): Promise<AccessAttemptDetail> {
+    let member: { name: string | null; email: string } | null = null;
+    if (row.memberId) {
+      member = await this.prisma.member.findFirst({
+        where: { id: row.memberId, tenantId: row.tenantId },
+        select: { name: true, email: true },
+      });
+    }
+    return this.toAttemptDetail(row, member);
+  }
+
+  private toAttemptDetail(
+    row: AccessAttempt,
+    member?: { name: string | null; email: string } | null,
+  ): AccessAttemptDetail {
     return {
       id: row.id,
       tenantId: row.tenantId,
       memberId: row.memberId,
+      memberName: member?.name ?? null,
+      memberEmail: member?.email ?? null,
       credentialRef: row.credentialRef,
       result: row.result,
       reasonCode: row.reasonCode,
