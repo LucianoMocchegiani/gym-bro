@@ -8,6 +8,7 @@ import { SuperShell } from '@/components/SuperShell';
 import { Panel } from '@/components/AdminUi';
 import { ApiClientError } from '@/lib/api/client';
 import { createTenant } from '@/lib/api/tenants';
+import { tenantHostLabel } from '@/lib/tenant-host';
 
 /**
  * Alta de tenant + owner Admin (CU-ROL-001).
@@ -86,7 +87,7 @@ function NuevoInner() {
             />
           </label>
           <p className="muted small">
-            Admin: <code>{slug || '…'}.localhost:3000</code>
+            Admin: <code>{tenantHostLabel(slug || '…')}</code>
           </p>
           <label>
             Owner email

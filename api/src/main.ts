@@ -20,11 +20,31 @@ function isLocalTenantOrigin(origin: string): boolean {
 }
 
 /**
+ * Orígenes bajo `CORS_APP_DOMAIN` (ej. pruebasaproduccunon.uno + *.dominio).
+ */
+function isAppDomainOrigin(origin: string): boolean {
+  const domain = process.env.CORS_APP_DOMAIN?.trim().toLowerCase();
+  if (!domain) {
+    return false;
+  }
+  try {
+    const url = new URL(origin);
+    if (url.protocol !== 'http:' && url.protocol !== 'https:') {
+      return false;
+    }
+    const host = url.hostname.toLowerCase();
+    return host === domain || host.endsWith(`.${domain}`);
+  } catch {
+    return false;
+  }
+}
+
+/**
  * Arranca la API HTTP de GymBro.
  *
  * @remarks Puerto por defecto `3001` para no chocar con Next (`3000`).
  * Prefijo global `api` → health en `GET /api/health`.
- * CORS: `CORS_ORIGIN` + subdominios `*.localhost` en desarrollo.
+ * CORS: `CORS_ORIGIN` + `*.localhost` + opcional `CORS_APP_DOMAIN`.
  * Pruebas manuales: colección Postman en `postman/`.
  */
 async function bootstrap(): Promise<void> {
@@ -42,7 +62,11 @@ async function bootstrap(): Promise<void> {
         callback(null, true);
         return;
       }
-      if (corsOrigin.includes(origin) || isLocalTenantOrigin(origin)) {
+      if (
+        corsOrigin.includes(origin) ||
+        isLocalTenantOrigin(origin) ||
+        isAppDomainOrigin(origin)
+      ) {
         callback(null, true);
         return;
       }

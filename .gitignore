@@ -30,5 +30,6 @@ npm-debug.log*
 # Local
 tmp/
 .temp/
+local/
 
 # `git-hooks/` del repo se versiona (plantillas). `.git/hooks/` es local y no entra en git.

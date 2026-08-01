@@ -4,7 +4,7 @@ import { FormEvent, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ApiClientError } from '@/lib/api/client';
 import { SuperAuthProvider, useSuperAuth } from '@/lib/auth/SuperAuthProvider';
-import { platformOrigin } from '@/lib/tenant-host';
+import { isPlatformHost, platformOrigin } from '@/lib/tenant-host';
 
 /**
  * Login Super Admin (plataforma).
@@ -28,7 +28,7 @@ function SuperLoginInner() {
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const host = window.location.hostname;
-      if (host !== 'localhost' && host !== '127.0.0.1') {
+      if (!isPlatformHost(host)) {
         window.location.replace(`${platformOrigin()}/super/login`);
       }
     }

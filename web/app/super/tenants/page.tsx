@@ -8,7 +8,7 @@ import { Panel } from '@/components/AdminUi';
 import { ApiClientError } from '@/lib/api/client';
 import { listTenants } from '@/lib/api/tenants';
 import type { TenantDetail } from '@/lib/api/tenants';
-import { tenantOrigin } from '@/lib/tenant-host';
+import { tenantHostLabel, tenantOrigin } from '@/lib/tenant-host';
 
 /**
  * Listado de tenants (CU-ROL-001/002).
@@ -107,7 +107,7 @@ function TenantsInner() {
                         target="_blank"
                         rel="noreferrer"
                       >
-                        {t.slug}.localhost
+                        {tenantHostLabel(t.slug)}
                       </a>
                     </td>
                     <td className="row-actions">

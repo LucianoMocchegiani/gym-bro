@@ -1,13 +1,12 @@
 'use client';
 
 import { FormEvent, useEffect, useState } from 'react';
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ApiClientError } from '@/lib/api/client';
 import { getTenantBySlug } from '@/lib/api/tenants';
 import type { PublicTenantSummary } from '@/lib/api/tenants';
 import { useAuth } from '@/lib/auth/AuthProvider';
-import { platformOrigin, tenantOrigin } from '@/lib/tenant-host';
+import { platformOrigin, tenantHostLabel, tenantOrigin } from '@/lib/tenant-host';
 
 type LoginClientProps = {
   /** Slug resuelto en el servidor desde el header Host. */
@@ -94,13 +93,15 @@ export function LoginClient({ slug }: LoginClientProps) {
           <p className="muted">
             Entrá por el subdominio del gym, por ejemplo{' '}
             <a href={`${tenantOrigin('demo')}/login`}>
-              demo.localhost:3000/login
+              {tenantHostLabel('demo')}/login
             </a>
             .
           </p>
           <p className="muted small">
             Super Admin:{' '}
-            <Link href="/super/login">localhost:3000/super/login</Link>
+            <a href={`${platformOrigin()}/super/login`}>
+              {platformOrigin().replace(/^https?:\/\//, '')}/super/login
+            </a>
           </p>
         </div>
       </div>
@@ -114,7 +115,7 @@ export function LoginClient({ slug }: LoginClientProps) {
         <h1>Acceso staff</h1>
         <p className="muted">
           {tenant ? tenant.name : slug}
-          <span className="small"> · {slug}.localhost</span>
+          <span className="small"> · {tenantHostLabel(slug)}</span>
         </p>
 
         {tenantError ? <p className="error">{tenantError}</p> : null}

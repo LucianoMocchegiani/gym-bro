@@ -6,6 +6,8 @@ Next.js App Router — panel staff y Super Admin.
 
 Entrar por **`http://{slug}.localhost:3000`** (demo: `http://demo.localhost:3000`).
 
+Con tunnel: `{slug}.{NEXT_PUBLIC_APP_DOMAIN}` (ej. `https://demo.pruebasaproduccunon.uno`).
+
 | Ruta | Uso |
 |------|-----|
 | `/login` | Login Staff (slug desde el Host; sin UUID) |
