@@ -62,7 +62,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       password: string;
     }) => {
       const res = await staffLogin(input);
-      writeStaffSession(res);
+      writeStaffSession(res, input.tenantSlug ?? null);
     },
     [],
   );

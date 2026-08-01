@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { ApiClientError } from '@/lib/api/client';
 import { getTenantBySlug } from '@/lib/api/tenants';
 import type { PublicTenantSummary } from '@/lib/api/tenants';
+import { ThemeToggle } from '@/components/ThemeToggle';
 import { useAuth } from '@/lib/auth/AuthProvider';
 import { platformOrigin, tenantHostLabel, tenantOrigin } from '@/lib/tenant-host';
 
@@ -87,6 +88,9 @@ export function LoginClient({ slug }: LoginClientProps) {
   if (!slug) {
     return (
       <div className="login-page">
+        <div className="login-theme-slot">
+          <ThemeToggle />
+        </div>
         <div className="login-card">
           <p className="brand">GymBro</p>
           <h1>Elegí tu gym</h1>
@@ -110,8 +114,11 @@ export function LoginClient({ slug }: LoginClientProps) {
 
   return (
     <div className="login-page">
+      <div className="login-theme-slot">
+        <ThemeToggle />
+      </div>
       <form className="login-card" onSubmit={(e) => void onSubmit(e)}>
-        <p className="brand">GymBro</p>
+        <p className="brand">{slug}</p>
         <h1>Acceso staff</h1>
         <p className="muted">
           {tenant ? tenant.name : slug}

@@ -2,6 +2,7 @@
 
 import { FormEvent, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { ThemeToggle } from '@/components/ThemeToggle';
 import { ApiClientError } from '@/lib/api/client';
 import { SuperAuthProvider, useSuperAuth } from '@/lib/auth/SuperAuthProvider';
 import { isPlatformHost, platformOrigin } from '@/lib/tenant-host';
@@ -60,8 +61,11 @@ function SuperLoginInner() {
 
   return (
     <div className="login-page">
+      <div className="login-theme-slot">
+        <ThemeToggle />
+      </div>
       <form className="login-card" onSubmit={(e) => void onSubmit(e)}>
-        <p className="brand">GymBro</p>
+        <p className="brand">SUPER</p>
         <h1>Super Admin</h1>
         <p className="muted">Plataforma (sin tenant)</p>
 

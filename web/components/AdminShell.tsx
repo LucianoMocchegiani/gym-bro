@@ -1,8 +1,11 @@
 'use client';
 
 import Link from 'next/link';
+import { useState, useSyncExternalStore } from 'react';
 import { usePathname } from 'next/navigation';
+import { ThemeToggle } from '@/components/ThemeToggle';
 import { useAuth } from '@/lib/auth/AuthProvider';
+import { extractTenantSlugFromHost } from '@/lib/tenant-host';
 
 type AdminShellProps = {
   title: string;
@@ -11,12 +14,66 @@ type AdminShellProps = {
   actions?: React.ReactNode;
 };
 
+type NavItem = { href: string; label: string };
+type NavGroup = { label: string; items: NavItem[] };
+
+const NAV_GROUPS: NavGroup[] = [
+  {
+    label: 'Operación',
+    items: [
+      { href: '/', label: 'Inicio' },
+      { href: '/puerta', label: 'Puerta' },
+      { href: '/caja', label: 'Caja' },
+      { href: '/reportes', label: 'Reportes' },
+    ],
+  },
+  {
+    label: 'Personas',
+    items: [
+      { href: '/afiliados', label: 'Afiliados' },
+      { href: '/staff', label: 'Staff' },
+      { href: '/roles', label: 'Roles' },
+    ],
+  },
+  {
+    label: 'Catálogo',
+    items: [
+      { href: '/servicios', label: 'Servicios' },
+      { href: '/packs', label: 'Packs' },
+      { href: '/sesiones', label: 'Sesiones' },
+    ],
+  },
+  {
+    label: 'Sistema',
+    items: [{ href: '/config', label: 'Config' }],
+  },
+];
+
+function subscribeHost(): () => void {
+  return () => undefined;
+}
+
+function readHostSlug(): string | null {
+  return extractTenantSlugFromHost(window.location.host);
+}
+
+function getServerHostSlug(): null {
+  return null;
+}
+
 /**
- * Shell del panel Admin staff (nav + contenido centrado).
+ * Shell Admin: sidebar de navegación + topbar (tema / perfil / logout).
  */
 export function AdminShell({ title, children, actions }: AdminShellProps) {
   const { session, logout } = useAuth();
   const pathname = usePathname();
+  const [navOpen, setNavOpen] = useState(false);
+  const hostSlug = useSyncExternalStore(
+    subscribeHost,
+    readHostSlug,
+    getServerHostSlug,
+  );
+  const brandSlug = hostSlug ?? session?.tenantSlug?.trim() ?? '…';
 
   function navClass(href: string): string | undefined {
     if (href === '/') {
@@ -27,70 +84,80 @@ export function AdminShell({ title, children, actions }: AdminShellProps) {
       : undefined;
   }
 
-  return (
-    <div className="admin-shell">
-      <header className="admin-top">
-        <div className="admin-top-inner">
-          <div className="admin-brand-block">
-            <Link href="/" className="brand">
-              GymBro
-            </Link>
-            <span className="muted small">Admin</span>
-          </div>
-          <nav className="admin-nav">
-            <Link href="/" className={navClass('/')}>
-              Inicio
-            </Link>
-            <Link href="/afiliados" className={navClass('/afiliados')}>
-              Afiliados
-            </Link>
-            <Link href="/servicios" className={navClass('/servicios')}>
-              Servicios
-            </Link>
-            <Link href="/packs" className={navClass('/packs')}>
-              Packs
-            </Link>
-            <Link href="/sesiones" className={navClass('/sesiones')}>
-              Sesiones
-            </Link>
-            <Link href="/roles" className={navClass('/roles')}>
-              Roles
-            </Link>
-            <Link href="/staff" className={navClass('/staff')}>
-              Staff
-            </Link>
-            <Link href="/config" className={navClass('/config')}>
-              Config
-            </Link>
-            <Link href="/reportes" className={navClass('/reportes')}>
-              Reportes
-            </Link>
-            <Link href="/caja" className={navClass('/caja')}>
-              Caja
-            </Link>
-            <Link href="/puerta" className={navClass('/puerta')}>
-              Puerta
-            </Link>
-            <span className="muted small">
-              {session?.name ?? session?.email}
-            </span>
-            <button
-              type="button"
-              className="linkish"
-              onClick={() => void logout()}
-            >
-              Salir
-            </button>
-          </nav>
-        </div>
-      </header>
+  function closeNav(): void {
+    setNavOpen(false);
+  }
 
-      <div className="admin-content">
-        <div className="admin-page-head">
-          <h1>{title}</h1>
-          {actions}
+  return (
+    <div className={`app-shell${navOpen ? ' nav-open' : ''}`}>
+      <button
+        type="button"
+        className="app-overlay"
+        aria-label="Cerrar menú"
+        onClick={closeNav}
+      />
+
+      <aside className="app-sidebar" id="admin-sidebar" aria-label="Navegación">
+        <div className="app-sidebar-brand">
+          <Link href="/" className="brand" onClick={closeNav}>
+            {brandSlug}
+          </Link>
+          <span className="eyebrow">Admin</span>
         </div>
-        {children}
+
+        <nav className="app-nav">
+          {NAV_GROUPS.map((group) => (
+            <div key={group.label} className="app-nav-group">
+              <p className="app-nav-label">{group.label}</p>
+              {group.items.map((item) => (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={navClass(item.href)}
+                  onClick={closeNav}
+                >
+                  {item.label}
+                </Link>
+              ))}
+            </div>
+          ))}
+        </nav>
+      </aside>
+
+      <div className="app-main">
+        <header className="app-topbar">
+          <div className="app-topbar-inner">
+            <div className="app-topbar-left">
+              <button
+                type="button"
+                className="app-menu-btn"
+                aria-expanded={navOpen}
+                aria-controls="admin-sidebar"
+                onClick={() => setNavOpen((open) => !open)}
+              >
+                Menú
+              </button>
+            </div>
+            <div className="app-topbar-right">
+              <ThemeToggle />
+              <button
+                type="button"
+                className="linkish"
+                onClick={() => void logout()}
+              >
+                Salir
+              </button>
+            </div>
+          </div>
+        </header>
+
+        <div className="app-content">
+          <div className="app-page-head admin-page-head">
+            <h1>{title}</h1>
+            {actions}
+          </div>
+          {children}
+        </div>
       </div>
     </div>
   );

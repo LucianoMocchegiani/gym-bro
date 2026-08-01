@@ -10,6 +10,8 @@ export type StaffSession = {
   accessToken: string;
   refreshToken: string;
   tenantId: string;
+  /** Slug del gym (marca en sidebar); opcional en sesiones viejas. */
+  tenantSlug: string | null;
   userId: string;
   email: string;
   name: string | null;
@@ -47,7 +49,10 @@ function parseSession(raw: string): StaffSession | null {
     if (!parsed.accessToken || !parsed.tenantId) {
       return null;
     }
-    return parsed;
+    return {
+      ...parsed,
+      tenantSlug: parsed.tenantSlug ?? null,
+    };
   } catch {
     return null;
   }
@@ -94,8 +99,13 @@ function persist(session: StaffSession | null): void {
 
 /**
  * Persiste tokens y datos de usuario tras login Staff.
+ *
+ * @param tenantSlug Slug usado en el login (Host / form); se guarda para la marca UI.
  */
-export function writeStaffSession(login: StaffLoginResponse): StaffSession {
+export function writeStaffSession(
+  login: StaffLoginResponse,
+  tenantSlug?: string | null,
+): StaffSession {
   const tenantId = login.user.tenantId;
   if (!tenantId || login.profileType !== 'STAFF') {
     throw new Error('Se requiere login Staff con tenantId');
@@ -104,6 +114,7 @@ export function writeStaffSession(login: StaffLoginResponse): StaffSession {
     accessToken: login.accessToken,
     refreshToken: login.refreshToken,
     tenantId,
+    tenantSlug: tenantSlug?.trim().toLowerCase() || null,
     userId: login.user.id,
     email: login.user.email,
     name: login.user.name,

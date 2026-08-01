@@ -46,5 +46,7 @@ Credenciales: `docs/credenciales-demo.md`.
 ## Notas
 
 - Staff: sesión `gymbro.staff.session`; Super: `gymbro.super.session` (separadas).
+- Tema claro/oscuro: `data-theme` + `localStorage` clave `gymbro.theme` (default oscuro).
+- Marca del Admin = slug del tenant (sidebar); Super = `SUPER`.
 - CORS API acepta `*.localhost` además de `CORS_ORIGIN`.
 - Prod futuro: `{slug}.gymbro.app` (mismo extractor de Host).
