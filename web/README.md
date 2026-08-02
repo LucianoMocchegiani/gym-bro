@@ -20,7 +20,7 @@ Con tunnel: `{slug}.{NEXT_PUBLIC_APP_DOMAIN}` (ej. `https://demo.pruebasaproducc
 | `/config` | Settings + Mercado Pago |
 | `/caja` | Caja del día |
 | `/reportes` | Ingresos del período (detalle nominado) + snapshot packs/activos |
-| `/puerta` | Verify + historial nominado (filtro fecha) |
+| `/puerta` | QR del local (afiliado escanea) + verify token + historial |
 
 ## Rutas Super (apex)
 

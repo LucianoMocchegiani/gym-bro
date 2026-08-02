@@ -144,6 +144,7 @@
   - tabla `access_credentials`; Member `GET|POST /me/access-credential…`; Staff list/issue/revoke
 - [x] `POST /access/verify` (1 modo de escaneo en MVP)
   - ambos modos en API; Staff `access.verify`; respuesta allow/deny + intento
+  - Member check-in modo B: `POST /me/access/check-in` `{ venueToken }`
 - [x] Evaluación: libre / reserva / deuda / tolerancia / multi-ingreso
   - deuda placeholder 0 días; settings `debtToleranceDays`, `multiEntry*`
 - [x] Pase manual + auditoría
@@ -153,7 +154,8 @@
 - [x] Config políticas de acceso del gym
   - tolerancia + multi-ingreso en `tenant_settings` (CU-ACC-007 parcial)
 - [x] Pantalla / flujo puerta (tocámetro o escaneo afiliado)
-  - Admin web: `/login` Staff + `/puerta` (verify stub pegar token, ambos modos) + `/puerta/pase-manual` + historial reciente; sin cámara/Quark
+  - Admin web: `/puerta` QR del local (`stub-venue`) + polling resultado; modo gym escanea token; pase manual
+  - App: escanear QR del local → check-in; ambos ven ALLOWED/DENIED
   - API: CORS `CORS_ORIGIN` (default `http://localhost:3000`)
 
 
@@ -186,12 +188,15 @@
 
 ## E9 — App afiliado (Flutter)
 
-- [ ] Login afiliado
-- [ ] Home / estado de cuenta
+- [x] Login afiliado
+  - Flutter: slug + email/password; API `tenantSlug` (o `tenantId`); sesión secure storage
+- [x] Home / estado de cuenta
+  - `GET /me/account`; bottom nav Inicio · Sesiones · QR · Cuenta; tema claro/oscuro (tokens Admin)
 - [ ] Comprar pack / pagar
 - [ ] Calendario y reservar
 - [ ] Lista de espera
-- [ ] Mi QR / credencial
+- [x] Mi QR / credencial
+  - Stub: emitir/reemitir; **escanear QR del local** → `POST /me/access/check-in`; resultado en app + web puerta (polling)
 - [ ] Rutinas y cumplimiento
 - [ ] Avisos + preferencias
 - [ ] Solicitar devolución
@@ -262,7 +267,7 @@ E11 → E12
 
 ## Próximo paso
 
-Elegir Quark SSI, **E8 notificaciones**, rutinas (E7/E10), o DNS wildcard prod (`*.gymbro.app`).
+Seguir E9 (sesiones/reservas, packs/MP) o Quark SSI / E8 notificaciones / rutinas E7.
 
 ---
 

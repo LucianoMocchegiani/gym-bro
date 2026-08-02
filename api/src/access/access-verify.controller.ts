@@ -20,6 +20,7 @@ import { CurrentTenant } from '../tenant/decorators/current-tenant.decorator';
 import { RequireTenantAuth } from '../tenant/decorators/require-tenant-auth.decorator';
 import { AccessVerifyService } from './access-verify.service';
 import { ManualPassDto } from './dto/manual-pass.dto';
+import { MemberCheckInDto } from './dto/member-check-in.dto';
 import { VerifyAccessDto } from './dto/verify-access.dto';
 import { AccessAttemptDetail, AccessVerifyResult } from './access.types';
 
@@ -32,7 +33,7 @@ export class AccessVerifyController {
   constructor(private readonly accessVerify: AccessVerifyService) {}
 
   /**
-   * Evalúa presentación QR/credencial y registra el intento.
+   * Evalúa presentación QR/credencial y registra el intento (Staff).
    */
   @Post('access/verify')
   @HttpCode(HttpStatus.OK)
@@ -46,6 +47,28 @@ export class AccessVerifyController {
       throw new ForbiddenException('Staff profile required');
     }
     return this.accessVerify.verify(tenantId, dto, user.userId);
+  }
+
+  /**
+   * Check-in del afiliado al escanear el QR del local (modo B).
+   *
+   * @remarks CU-ACC-001 / RN-ACC-003. No requiere permiso Staff.
+   */
+  @Post('me/access/check-in')
+  @HttpCode(HttpStatus.OK)
+  checkIn(
+    @CurrentTenant() tenantId: string,
+    @CurrentUser() user: AuthUser,
+    @Body() dto: MemberCheckInDto,
+  ): Promise<AccessVerifyResult> {
+    if (user.profileType !== 'MEMBER') {
+      throw new ForbiddenException('Member profile required');
+    }
+    return this.accessVerify.checkInMember(
+      tenantId,
+      user.userId,
+      dto.venueToken,
+    );
   }
 
   /**

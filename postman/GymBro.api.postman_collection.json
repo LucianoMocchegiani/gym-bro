@@ -2986,7 +2986,7 @@
     },
     {
       "name": "Access verify",
-      "description": "E6 / CU-ACC-001/004. Staff POST /access/verify (`access.verify`) con mode gym_scans_member|member_scans_gym. Pase manual POST /members/:id/access/manual-pass (`access.manual_pass`). Historial GET /access-attempts.",
+      "description": "E6 / CU-ACC-001/004. Staff POST /access/verify (`access.verify`). Member POST /me/access/check-in (modo B). Pase manual. Historial GET /access-attempts.",
       "item": [
         {
           "name": "Staff POST access verify (gym scans member)",
@@ -3029,6 +3029,28 @@
               "raw": "{\n  \"mode\": \"member_scans_gym\",\n  \"venueToken\": \"stub-venue:{{tenantId}}\",\n  \"credentialRef\": \"{{accessCredentialRef}}\"\n}"
             },
             "url": "{{baseUrl}}/api/access/verify"
+          }
+        },
+        {
+          "name": "Member POST me access check-in",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"venueToken\": \"stub-venue:{{tenantId}}\"\n}"
+            },
+            "url": "{{baseUrl}}/api/me/access/check-in",
+            "description": "Login Member + credencial ACTIVE. Escanea QR del local (modo B)."
           }
         },
         {

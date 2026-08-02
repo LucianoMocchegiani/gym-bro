@@ -22,7 +22,7 @@ Super Admin: **http://localhost:3000/super/login**
 |--------|--------|----------|--------|
 | Super Admin | `super@gymbro.local` | `ChangeMe123!` | Sin tenant · `/super/login` |
 | Staff (Admin del gym) | `admin@demo.gym` | `ChangeMe123!` | slug `demo` · `demo.localhost:3000` |
-| Afiliado (Member) | `socio@demo.gym` | `ChangeMe123!` | API aún con `tenantId` |
+| Afiliado (Member) | `socio@demo.gym` | `ChangeMe123!` | slug `demo` · app Flutter / API |
 
 El staff demo queda con rol sistema **Admin** tras el seed.  
 El afiliado demo queda `status: ACTIVE` (solo ACTIVE puede hacer login).
@@ -67,13 +67,13 @@ POST /api/auth/member/login
 Content-Type: application/json
 
 {
-  "tenantId": "00000000-0000-4000-8000-000000000001",
+  "tenantSlug": "demo",
   "email": "socio@demo.gym",
   "password": "ChangeMe123!"
 }
 ```
 
-La respuesta trae `accessToken` / `refreshToken`. En Postman: environment **GymBro Local** + carpeta Auth.
+(`tenantId` UUID sigue aceptado por compatibilidad.)
 
 ---
 

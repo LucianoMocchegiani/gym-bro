@@ -1,27 +1,85 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
-/// Punto de entrada de la app móvil GymBro (scaffold).
+import 'core/network/api_client.dart';
+import 'core/theme/gymbro_theme.dart';
+import 'core/theme/theme_controller.dart';
+import 'features/access/access_repository.dart';
+import 'features/account/account_repository.dart';
+import 'features/auth/auth_controller.dart';
+import 'features/auth/auth_repository.dart';
+import 'features/auth/login_screen.dart';
+import 'features/auth/session_store.dart';
+import 'features/shell/member_shell.dart';
+
+/// Punto de entrada de la app afiliado GymBro.
 void main() {
-  runApp(const GymBroApp());
+  WidgetsFlutterBinding.ensureInitialized();
+  runApp(const GymBroMemberApp());
 }
 
-/// Shell mínimo de la app afiliado hasta E9.
-class GymBroApp extends StatelessWidget {
-  /// Crea la app raíz.
-  const GymBroApp({super.key});
+/// App raíz: tema + auth + shell.
+class GymBroMemberApp extends StatefulWidget {
+  /// Crea la app.
+  const GymBroMemberApp({super.key});
+
+  @override
+  State<GymBroMemberApp> createState() => _GymBroMemberAppState();
+}
+
+class _GymBroMemberAppState extends State<GymBroMemberApp> {
+  late final ApiClient _api;
+  late final SessionStore _store;
+  late final AuthRepository _authRepo;
+  late final AuthController _auth;
+  late final ThemeController _theme;
+  late final AccountRepository _accountRepo;
+  late final AccessRepository _accessRepo;
+
+  @override
+  void initState() {
+    super.initState();
+    _api = ApiClient();
+    _store = SessionStore();
+    _authRepo = AuthRepository(api: _api, store: _store);
+    _auth = AuthController(auth: _authRepo, api: _api);
+    _theme = ThemeController();
+    _accountRepo = AccountRepository(_api);
+    _accessRepo = AccessRepository(_api);
+    _bootstrap();
+  }
+
+  Future<void> _bootstrap() async {
+    await Future.wait([_theme.load(), _auth.bootstrap()]);
+  }
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'GymBro',
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.green),
-        useMaterial3: true,
-      ),
-      home: const Scaffold(
-        body: Center(
-          child: Text('GymBro Mobile — scaffold'),
-        ),
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider.value(value: _auth),
+        ChangeNotifierProvider.value(value: _theme),
+        Provider.value(value: _api),
+        Provider.value(value: _accountRepo),
+        Provider.value(value: _accessRepo),
+      ],
+      child: Consumer2<ThemeController, AuthController>(
+        builder: (context, theme, auth, _) {
+          return MaterialApp(
+            title: 'GymBro',
+            debugShowCheckedModeBanner: false,
+            theme: GymBroTheme.light(),
+            darkTheme: GymBroTheme.dark(),
+            themeMode: theme.isDark ? ThemeMode.dark : ThemeMode.light,
+            home: !auth.ready || !theme.ready
+                ? const Scaffold(
+                    body: Center(child: CircularProgressIndicator()),
+                  )
+                : auth.isAuthenticated
+                ? const MemberShell()
+                : const LoginScreen(),
+          );
+        },
       ),
     );
   }

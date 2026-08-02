@@ -814,8 +814,24 @@ button.danger {
   width: auto;
 }
 
-.access-result {
-  padding: 1.5rem;
+.venue-qr {
+  display: grid;
+  justify-items: center;
+  gap: 0.75rem;
+  padding: 1rem 0 0.25rem;
+}
+
+.venue-qr img {
+  border-radius: 12px;
+  background: #fff;
+  padding: 0.5rem;
+  border: 1px solid var(--line);
+  max-width: 100%;
+  height: auto;
+}
+
+.venue-qr-token {
+  word-break: break-all;
   text-align: center;
 }
 

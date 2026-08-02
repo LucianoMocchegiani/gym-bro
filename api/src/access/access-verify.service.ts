@@ -9,6 +9,7 @@ import {
 import {
   AccessAttempt,
   AccessAttemptResult,
+  AccessCredentialStatus,
   ContractStatus,
   MemberStatus,
   ReservationStatus,
@@ -69,7 +70,7 @@ export class AccessVerifyService {
   async verify(
     tenantId: string,
     dto: VerifyAccessDto,
-    actorStaffId: string,
+    actorStaffId: string | null,
   ): Promise<AccessVerifyResult> {
     const scanMode = dto.mode;
     let memberId: string | null = null;
@@ -132,6 +133,46 @@ export class AccessVerifyService {
       }
       throw error;
     }
+  }
+
+  /**
+   * Check-in del afiliado autenticado al escanear el QR del local (modo B).
+   *
+   * @remarks Usa la credencial ACTIVE del member; no requiere Staff.
+   * CU-ACC-001 / RN-ACC-003 (`member_scans_gym`).
+   */
+  async checkInMember(
+    tenantId: string,
+    memberId: string,
+    venueToken: string,
+  ): Promise<AccessVerifyResult> {
+    const active = await this.prisma.accessCredential.findFirst({
+      where: {
+        tenantId,
+        memberId,
+        status: AccessCredentialStatus.ACTIVE,
+      },
+      orderBy: { issuedAt: 'desc' },
+    });
+    if (!active) {
+      return this.persistDenied({
+        tenantId,
+        memberId,
+        credentialRef: null,
+        scanMode: 'member_scans_gym',
+        actorStaffId: null,
+        reasonCode: ACCESS_REASON.credencialInvalida,
+      });
+    }
+    return this.verify(
+      tenantId,
+      {
+        mode: 'member_scans_gym',
+        venueToken: venueToken.trim(),
+        credentialRef: active.credentialRef,
+      },
+      null,
+    );
   }
 
   /**
@@ -273,7 +314,7 @@ export class AccessVerifyService {
     memberId: string;
     credentialRef: string;
     scanMode: AccessScanMode;
-    actorStaffId: string;
+    actorStaffId: string | null;
   }): Promise<AccessVerifyResult> {
     const { tenantId, memberId, credentialRef, scanMode, actorStaffId } = input;
 
@@ -448,7 +489,7 @@ export class AccessVerifyService {
     memberId: string;
     credentialRef: string | null;
     scanMode: AccessScanMode | 'manual';
-    actorStaffId: string;
+    actorStaffId: string | null;
     reasonCode: AccessReasonCode;
     reservationId: string | null;
     sessionId: string | null;
@@ -517,7 +558,7 @@ export class AccessVerifyService {
     memberId: string | null;
     credentialRef: string | null;
     scanMode: AccessScanMode;
-    actorStaffId: string;
+    actorStaffId: string | null;
     reasonCode: AccessReasonCode;
   }): Promise<AccessVerifyResult> {
     const attempt = await this.prisma.accessAttempt.create({

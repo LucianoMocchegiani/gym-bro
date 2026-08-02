@@ -42,11 +42,19 @@ export class StaffLoginDto {
 }
 
 /**
- * Credenciales de afiliado. Requiere `tenantId` (RN-ROL-005: perfil separado).
+ * Credenciales de afiliado.
+ *
+ * @remarks Requiere `tenantId` **o** `tenantSlug` (RN-ROL-005: perfil separado).
  */
 export class MemberLoginDto {
+  @IsOptional()
   @IsUUID()
-  tenantId!: string;
+  tenantId?: string;
+
+  @IsOptional()
+  @IsString()
+  @MinLength(2)
+  tenantSlug?: string;
 
   @IsEmail()
   email!: string;

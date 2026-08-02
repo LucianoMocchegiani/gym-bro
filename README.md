@@ -123,7 +123,7 @@ Probar con Postman: importá [`postman/`](./postman/) (colección + environment 
 
 > Nota: si en el host el puerto `5432` ya lo usa otro Postgres, la CLI de Prisma fallará con error de auth; usá el `exec` del contenedor.
 
-Mobile en el host:
+Mobile en el host (device USB / ADB):
 
 ```powershell
 cd mobile
@@ -131,6 +131,7 @@ flutter pub get
 flutter run
 ```
 
+API default del afiliado: `https://api-gymbro.pruebasaproduccunon.uno` (override con `--dart-define=API_BASE_URL=...`). Demo: slug `demo` / `socio@demo.gym` / `ChangeMe123!`.
 ## Sin Docker (apps en el host)
 
 ### API

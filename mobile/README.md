@@ -1,17 +1,53 @@
-# mobile
+# GymBro Mobile — App afiliado
 
-A new Flutter project.
+Flutter (Material 3). Estilos alineados al Admin web: tema oscuro/lima acid + claro.
 
-## Getting Started
+## Requisitos
 
-This project is a starting point for a Flutter application.
+- Flutter 3.41+ / Dart 3.11+
+- Device Android por USB con depuración ADB
+- API alcanzable (tunnel o red)
 
-A few resources to get you started if this is your first Flutter project:
+## API
 
-- [Learn Flutter](https://docs.flutter.dev/get-started/learn-flutter)
-- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Flutter learning resources](https://docs.flutter.dev/reference/learning-resources)
+Default:
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+```text
+https://api-gymbro.pruebasaproduccunon.uno
+```
+
+Override:
+
+```powershell
+flutter run --dart-define=API_BASE_URL=https://api-gymbro.pruebasaproduccunon.uno
+```
+
+## Correr en tu Android (USB)
+
+```powershell
+cd mobile
+flutter pub get
+adb devices
+flutter run
+```
+
+## Login demo
+
+| Campo | Valor |
+|-------|--------|
+| Gym (slug) | `demo` |
+| Email | `socio@demo.gym` |
+| Password | `ChangeMe123!` |
+
+## Slice actual (E9)
+
+- Login afiliado (`tenantSlug`)
+- Home / estado de cuenta (`GET /me/account`)
+- Bottom nav: Inicio · Sesiones (placeholder) · QR · Cuenta
+- **Ingreso modo B:** pestaña «Escanear local» (cámara) → `POST /me/access/check-in`
+- Credencial stub (pestaña «Mi credencial») para modo gym escanea afiliado
+- Tema claro/oscuro
+
+En la web, `/puerta` en modo «Afiliado escanea el local» muestra el QR `stub-venue:{tenantId}` y hace polling del resultado.
+
+Pendiente: calendario/reservas, packs/MP, rutinas, avisos, devoluciones, Quark/SSI.

@@ -79,7 +79,7 @@ export class AuthService {
    * @throws {BadRequestException} Falta tenantId y tenantSlug.
    */
   async loginStaff(dto: StaffLoginDto): Promise<AuthTokens> {
-    const tenantId = await this.resolveStaffTenantId(dto);
+    const tenantId = await this.resolveTenantId(dto);
     await this.assertTenantActive(tenantId);
     const user = await this.prisma.staffUser.findUnique({
       where: {
@@ -105,15 +105,18 @@ export class AuthService {
   /**
    * Login de afiliado dentro de un tenant.
    *
+   * @remarks Acepta `tenantId` o `tenantSlug` (mismo criterio que Staff).
    * @throws {UnauthorizedException} Credenciales inválidas.
    * @throws {ForbiddenException} Tenant suspendido.
+   * @throws {BadRequestException} Falta tenantId y tenantSlug.
    */
   async loginMember(dto: MemberLoginDto): Promise<AuthTokens> {
-    await this.assertTenantActive(dto.tenantId);
+    const tenantId = await this.resolveTenantId(dto);
+    await this.assertTenantActive(tenantId);
     const user = await this.prisma.member.findUnique({
       where: {
         tenantId_email: {
-          tenantId: dto.tenantId,
+          tenantId,
           email: dto.email.toLowerCase(),
         },
       },
@@ -207,7 +210,10 @@ export class AuthService {
     return { ok: true };
   }
 
-  private async resolveStaffTenantId(dto: StaffLoginDto): Promise<string> {
+  private async resolveTenantId(dto: {
+    tenantId?: string;
+    tenantSlug?: string;
+  }): Promise<string> {
     if (dto.tenantId) {
       return dto.tenantId;
     }
