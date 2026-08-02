@@ -6,6 +6,18 @@ import { apiRequest } from '@/lib/api/client';
 
 export type TenantStatus = 'ACTIVE' | 'SUSPENDED';
 
+export type QuarkProvisionStatus = 'MISSING' | 'READY';
+
+export type TenantQuarkSummary = {
+  status: QuarkProvisionStatus;
+  issuerWalletId: string | null;
+  issuerDid: string | null;
+  verifierWalletId: string | null;
+  verifierDid: string | null;
+  lastError: string | null;
+  provisionedAt: string | null;
+};
+
 export type PublicTenantSummary = {
   id: string;
   name: string;
@@ -31,6 +43,7 @@ export type TenantDetail = {
     email: string;
     name: string | null;
   } | null;
+  quark: TenantQuarkSummary;
 };
 
 export type CreateTenantInput = {
@@ -94,6 +107,16 @@ export function updateTenant(
   return apiRequest<TenantDetail>(`/tenants/${id}`, {
     method: 'PATCH',
     body: input,
+    auth: 'super',
+  });
+}
+
+/**
+ * Reintenta provisioning Quark (issuer + verifier) para el tenant.
+ */
+export function provisionTenantQuark(id: string): Promise<TenantDetail> {
+  return apiRequest<TenantDetail>(`/tenants/${id}/quark/provision`, {
+    method: 'POST',
     auth: 'super',
   });
 }

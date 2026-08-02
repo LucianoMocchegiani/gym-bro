@@ -59,6 +59,20 @@ export class TenantsController {
   }
 
   /**
+   * Reintenta provisioning Quark (issuer + verifier) para el tenant.
+   *
+   * @remarks Soft-fail: responde el tenant con `quark.status` READY o MISSING.
+   */
+  @Post(':id/quark/provision')
+  @HttpCode(HttpStatus.OK)
+  provisionQuark(
+    @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUser() user: AuthUser,
+  ): Promise<TenantResponse> {
+    return this.tenantsService.provisionQuark(id, toAuditActor(user));
+  }
+
+  /**
    * Actualiza nombre y/o status (`ACTIVE` | `SUSPENDED`).
    *
    * @see CU-ROL-002

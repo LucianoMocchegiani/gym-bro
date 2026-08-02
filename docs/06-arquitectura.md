@@ -151,11 +151,23 @@ AccessIdentityProvider
   revokeCredential(credentialRef) → void
 ```
 
-### 6.2 Adaptador MVP
+### 6.2 Adaptador MVP (stub)
 
 - **Stub** (`ACCESS_PROVIDER=stub`): refs `stub:{uuid}`, venue `stub-venue:{tenantId}`; persistencia en `access_credentials`.
-- **Quark / SSI** (siguiente): implementa el mismo puerto sin cambiar la evaluación de negocio.
-- GymBro **no** mete packs ni deuda en la credencial (enfoque B).
+- Check-in afiliado: `POST /me/access/check-in` `{ venueToken }` (modo B).
+- El stub **no** mete packs en la credencial (vínculo); la evaluación fina queda en dominio.
+
+### 6.2b Adaptador Quark (diseño + spike provisioning)
+
+Diseño completo: [12-acceso-quark-oid4-diseno.md](./12-acceso-quark-oid4-diseno.md).
+
+**Implementado (spike):**
+- Compose: `quark-issuer` (:9001) + `quark-verifier` (:9002); DBs `quarkid_*` en Postgres; **sin** RabbitMQ/VDR.
+- Al `POST /api/tenants`: crea `gymbro-iss-{slug}` / `gymbro-ver-{slug}` (soft-fail → `quark_status=MISSING` + `quark_last_error`).
+- Reintento Super: `POST /api/tenants/:id/quark/provision` + UI en detalle de tenant.
+- Clon local en `ssi-quark/` (gitignore).
+
+**Pendiente:** OID4VCI al pago, wallet app, OID4VP en puerta, adapter `AccessIdentityProvider` Quark.
 
 ### 6.3 Evaluación de ingreso (dominio puro)
 
@@ -167,14 +179,14 @@ resolvePresentation
   → maybe mark asistencia sesión (reservations.checked_in_at)
 ```
 
-Cambiar a “QR propio” = nuevo adaptador; **misma** evaluación de negocio.
+Cambiar a Quark = nuevo adaptador; **misma** evaluación de negocio (más claims tipados).
 
-Implementado en API: `POST /access/verify` (Staff, `access.verify`). Deuda real pendiente (hoy `overdueDays=0`).
+Implementado en API: `POST /access/verify` (Staff) y `POST /me/access/check-in` (Member). Deuda real pendiente (hoy `overdueDays=0`).
 
 ### 6.4 Modos de escaneo
 
-- Contrato de API único: `POST /access/verify` con `mode=gym_scans_member | member_scans_gym` + payload.
-- MVP puede exponer un solo mode en UI.
+- Contrato de API: `POST /access/verify` con `mode=gym_scans_member | member_scans_gym` + payload; check-in member vía `/me/access/check-in`.
+- UI demo: `/puerta` + escaneo en app Flutter.
 
 ---
 

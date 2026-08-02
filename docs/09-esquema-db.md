@@ -279,6 +279,7 @@ erDiagram
 | Enum (Prisma) | Valores | Uso |
 |---------------|---------|-----|
 | `TenantStatus` | `ACTIVE`, `SUSPENDED` | Estado del gym (RN-TEN-002) |
+| `QuarkProvisionStatus` | `MISSING`, `READY` | Issuer+verifier Quark del tenant |
 | `AuthProfileType` | `SUPER`, `STAFF`, `MEMBER` | Dueño del refresh token (RN-ROL-005) |
 | `MemberStatus` | `ACTIVE`, `SUSPENDED`, `INACTIVE` | Estado del afiliado (CU-AFI-003) |
 | `ServiceType` | `ACCESO_LIBRE`, `POR_SESIONES` | Tipo de servicio (RN-SER-001) |
@@ -313,10 +314,19 @@ Gimnasio / estudio = tenant SaaS.
 | `name` | text | |
 | `slug` | text UNIQUE | subdominio (`demo.localhost` / `{slug}.gymbro.app`) |
 | `status` | `TenantStatus` | default `ACTIVE` |
+| `quark_status` | `QuarkProvisionStatus` | default `MISSING` — soft-fail al crear |
+| `quark_issuer_wallet_id` | text nullable | p. ej. `gymbro-iss-{slug}` |
+| `quark_issuer_did` | text nullable | DID web del issuer |
+| `quark_verifier_wallet_id` | text nullable | p. ej. `gymbro-ver-{slug}` |
+| `quark_verifier_did` | text nullable | |
+| `quark_last_error` | text nullable | último error de provisioning |
+| `quark_provisioned_at` | timestamptz nullable | cuando pasó a `READY` |
 | `created_at` | timestamptz | |
 | `updated_at` | timestamptz | |
 
 **Relaciones:** 1→N staff/members/branches/roles/services/packs/sessions/…; 1→1 `tenant_settings` y `mercadopago_accounts`; 1→N `access_credentials`, `access_attempts`, `audit_events`, caja, pagos, etc.
+
+Al `POST /api/tenants` se intenta `POST` Quark issuer+verifier (soft-fail). Reintento: `POST /api/tenants/:id/quark/provision`.
 
 ---
 
@@ -847,6 +857,7 @@ API: Member `POST|GET /api/me/waitlist`, `PATCH /api/me/waitlist/:id/status`; St
 | `20260727230000_access_manual_pass` | `motive_code` + `note` en `access_attempts` |
 | `20260728120000_payment_drop_in_session` | `payments.session_id` para checkout drop-in MP |
 | `20260730180000_tenant_slug` | `tenants.slug` UNIQUE (subdominio) |
+| `20260802180000_tenant_quark_provision` | `tenants.quark_*` + enum `QuarkProvisionStatus` |
 
 Comandos:
 

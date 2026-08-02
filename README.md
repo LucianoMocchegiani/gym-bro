@@ -10,6 +10,9 @@ Punto de entrada: [docs/00-indice.md](./docs/00-indice.md)
 
 Roadmap del MVP: [docs/11-roadmap-mvp.md](./docs/11-roadmap-mvp.md)
 
+Diseño acceso Quark / OID4: [docs/12-acceso-quark-oid4-diseno.md](./docs/12-acceso-quark-oid4-diseno.md)  
+Spike Compose + provisioning al crear gym: ver sección Quark abajo.
+
 ## Estructura
 
 ```text
@@ -17,7 +20,9 @@ api/                 # NestJS — puerto 3001 — GET /api/health
 web/                 # Next.js — puerto 3000
 mobile/              # Flutter (fuera de Docker)
 postman/             # Colección + environment de prueba
-docker-compose.yml   # postgres + redis + api + web (dev)
+docker-compose.yml   # postgres + redis + api + web + quark-issuer/verifier (dev)
+docker/              # Dockerfiles Quark + init SQL Postgres
+ssi-quark/           # Clon local de repos Quark (gitignore; ver ssi-quark/README.md)
 docs/
 git-hooks/
 ```
@@ -47,9 +52,25 @@ Servicios:
 |----------|----------------|
 | Web | http://demo.localhost:3000 — Admin Staff (slug); http://localhost:3000/super — Super Admin |
 | API health | http://localhost:3001/api/health |
+| Quark issuer | http://localhost:9001/v1/health |
+| Quark verifier | http://localhost:9002/v1/health |
 | Postman | [`postman/`](./postman/) |
-| Postgres | `localhost:5432` (user/pass/db: `gymbro`) |
+| Postgres | `localhost:5432` (user/pass/db: `gymbro`; DBs Quark: `quarkid_issuer` / `quarkid_verifier`) |
+| pgAdmin | http://localhost:5050 — `admin@example.com` / `gymbro` (server: host `postgres`, pass DB `gymbro`) |
 | Redis | `localhost:6379` |
+
+### Quark (spike issuer/verifier)
+
+1. Cloná repos oficiales en `ssi-quark/` (ver [`ssi-quark/README.md`](./ssi-quark/README.md)).
+2. `docker compose up --build` incluye `quark-issuer` y `quark-verifier` (**sin** RabbitMQ/VDR).
+3. Al crear un gym (`POST /api/tenants`) se provisionan `gymbro-iss-{slug}` + `gymbro-ver-{slug}` (soft-fail). Reintento: Super → tenant → **Reintentar Quark**, o `POST /api/tenants/:id/quark/provision`.
+4. Si el volumen de Postgres ya existía antes de este cambio, creá las DBs Quark a mano o `docker compose down -v` (borra datos) y volvé a subir.
+
+```powershell
+docker compose exec postgres psql -U gymbro -d gymbro -c "CREATE USER quarkid WITH PASSWORD 'quarkid';"
+docker compose exec postgres psql -U gymbro -d gymbro -c "CREATE DATABASE quarkid_issuer OWNER quarkid;"
+docker compose exec postgres psql -U gymbro -d gymbro -c "CREATE DATABASE quarkid_verifier OWNER quarkid;"
+```
 
 Parar:
 

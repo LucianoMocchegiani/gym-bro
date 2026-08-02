@@ -3,6 +3,7 @@ import {
   ConflictException,
   ForbiddenException,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { Branch, Prisma, Role, Tenant, TenantStatus } from '@prisma/client';
@@ -10,6 +11,7 @@ import * as bcrypt from 'bcryptjs';
 import { AUDIT_ACTIONS, AuditActor } from '../audit/audit.types';
 import { AuditService } from '../audit/audit.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { QuarkProvisionService } from '../quark/quark-provision.service';
 import { SYSTEM_ROLE_SLUGS } from '../roles/permission-catalog';
 import {
   RolesSeedService,
@@ -23,6 +25,7 @@ import {
   OwnerSummary,
   PublicTenantSummary,
   RoleSummary,
+  TenantQuarkSummary,
   TenantResponse,
 } from './tenants.types';
 
@@ -39,15 +42,18 @@ type TenantWithRelations = Tenant & {
  * Casos de uso de tenants a nivel plataforma (Super Admin).
  *
  * @remarks RN-TEN-002 / RN-TEN-003 / RN-ROL-002 / CU-ROL-001:
- * create = tenant + branch + roles seed + owner Admin.
+ * create = tenant + branch + roles seed + owner Admin + Quark soft-provision.
  */
 @Injectable()
 export class TenantsService {
+  private readonly logger = new Logger(TenantsService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly rolesSeed: RolesSeedService,
     private readonly staffService: StaffService,
     private readonly audit: AuditService,
+    private readonly quarkProvision: QuarkProvisionService,
   ) {}
 
   /**
@@ -76,8 +82,10 @@ export class TenantsService {
 
   /**
    * Crea gym ACTIVE + sede + roles + staff owner con rol Admin.
+   * Luego intenta provisioning Quark (soft-fail).
    *
    * @see CU-ROL-001
+   * @see docs/12-acceso-quark-oid4-diseno.md
    */
   async create(
     dto: CreateTenantDto,
@@ -91,63 +99,64 @@ export class TenantsService {
     const ownerName = dto.ownerName?.trim() || null;
 
     try {
-      const { tenant, branch, systemRoles, owner } =
-        await this.prisma.$transaction(async (tx) => {
-          const created = await tx.tenant.create({
-            data: { name: dto.name.trim(), slug },
-          });
-          const defaultBranch = await tx.branch.create({
-            data: {
-              tenantId: created.id,
-              name: DEFAULT_BRANCH_NAME,
-              active: true,
-              isDefault: true,
-            },
-          });
-          await tx.tenantSettings.create({
-            data: {
-              tenantId: created.id,
-              reservationCancellationHours: 6,
-            },
-          });
-          const roles = await this.rolesSeed.seedSystemRolesForTenant(
-            tx,
-            created.id,
-            permissions,
-          );
-          const adminRole = roles.find(
-            (r) => r.slug === SYSTEM_ROLE_SLUGS.admin,
-          );
-          if (!adminRole) {
-            throw new Error('Admin system role missing after seed');
-          }
-
-          const ownerStaff = await tx.staffUser.create({
-            data: {
-              tenantId: created.id,
-              email: ownerEmail,
-              passwordHash,
-              name: ownerName,
-              active: true,
-            },
-          });
-          await this.staffService.assignRolesInTx(tx, ownerStaff.id, [
-            adminRole.id,
-          ]);
-
-          return {
-            tenant: created,
-            branch: defaultBranch,
-            systemRoles: roles,
-            owner: {
-              id: ownerStaff.id,
-              email: ownerStaff.email,
-              name: ownerStaff.name,
-            },
-          };
+      const { tenant, owner } = await this.prisma.$transaction(async (tx) => {
+        const created = await tx.tenant.create({
+          data: { name: dto.name.trim(), slug },
         });
+        await tx.branch.create({
+          data: {
+            tenantId: created.id,
+            name: DEFAULT_BRANCH_NAME,
+            active: true,
+            isDefault: true,
+          },
+        });
+        await tx.tenantSettings.create({
+          data: {
+            tenantId: created.id,
+            reservationCancellationHours: 6,
+          },
+        });
+        const roles = await this.rolesSeed.seedSystemRolesForTenant(
+          tx,
+          created.id,
+          permissions,
+        );
+        const adminRole = roles.find(
+          (r) => r.slug === SYSTEM_ROLE_SLUGS.admin,
+        );
+        if (!adminRole) {
+          throw new Error('Admin system role missing after seed');
+        }
 
-      const response = this.toResponse(tenant, branch, systemRoles, owner);
+        const ownerStaff = await tx.staffUser.create({
+          data: {
+            tenantId: created.id,
+            email: ownerEmail,
+            passwordHash,
+            name: ownerName,
+            active: true,
+          },
+        });
+        await this.staffService.assignRolesInTx(tx, ownerStaff.id, [
+          adminRole.id,
+        ]);
+
+        return {
+          tenant: created,
+          owner: {
+            id: ownerStaff.id,
+            email: ownerStaff.email,
+            name: ownerStaff.name,
+          },
+        };
+      });
+
+      // No bloquear el alta: Quark puede tardar/colgarse (p. ej. BBS en Alpine).
+      void this.tryProvisionQuark(tenant.id, actor);
+
+      const response = await this.findOne(tenant.id);
+      response.owner = owner;
       await this.audit.record({
         tenantId: tenant.id,
         actor,
@@ -160,6 +169,7 @@ export class TenantsService {
           slug: tenant.slug,
           status: tenant.status,
           ownerEmail: owner.email,
+          quarkStatus: response.quark.status,
         },
       });
       return response;
@@ -167,6 +177,51 @@ export class TenantsService {
       this.rethrowSlugConflict(error);
       throw error;
     }
+  }
+
+  /**
+   * Reintenta crear issuer+verifier Quark para un tenant (Super).
+   *
+   * @remarks Soft-fail: siempre responde con el estado actualizado (READY o MISSING).
+   */
+  async provisionQuark(
+    id: string,
+    actor: AuditActor,
+  ): Promise<TenantResponse> {
+    await this.findTenantWithRelations(id);
+    const before = await this.prisma.tenant.findUniqueOrThrow({
+      where: { id },
+      select: {
+        quarkStatus: true,
+        quarkIssuerWalletId: true,
+        quarkVerifierWalletId: true,
+        quarkLastError: true,
+      },
+    });
+
+    await this.quarkProvision.provisionTenant(id);
+
+    const response = await this.findOne(id);
+    await this.audit.record({
+      tenantId: id,
+      actor,
+      action: AUDIT_ACTIONS.tenantQuarkProvision,
+      entityType: 'tenant',
+      entityId: id,
+      before: {
+        quarkStatus: before.quarkStatus,
+        issuerWalletId: before.quarkIssuerWalletId,
+        verifierWalletId: before.quarkVerifierWalletId,
+        lastError: before.quarkLastError,
+      },
+      after: {
+        quarkStatus: response.quark.status,
+        issuerWalletId: response.quark.issuerWalletId,
+        verifierWalletId: response.quark.verifierWalletId,
+        lastError: response.quark.lastError,
+      },
+    });
+    return response;
   }
 
   /**
@@ -267,6 +322,34 @@ export class TenantsService {
     return response;
   }
 
+  private async tryProvisionQuark(
+    tenantId: string,
+    actor: AuditActor,
+  ): Promise<void> {
+    try {
+      const result = await this.quarkProvision.provisionTenant(tenantId);
+      await this.audit.record({
+        tenantId,
+        actor,
+        action: AUDIT_ACTIONS.tenantQuarkProvision,
+        entityType: 'tenant',
+        entityId: tenantId,
+        before: null,
+        after: {
+          quarkStatus: result.status,
+          issuerWalletId: result.issuerWalletId,
+          verifierWalletId: result.verifierWalletId,
+          lastError: result.lastError,
+        },
+      });
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      this.logger.warn(
+        `Unexpected Quark provision error tenant=${tenantId}: ${msg}`,
+      );
+    }
+  }
+
   private tenantInclude() {
     return {
       branches: { where: { isDefault: true }, take: 1 },
@@ -328,6 +411,19 @@ export class TenantsService {
       defaultBranch: defaultBranch ? this.toBranchSummary(defaultBranch) : null,
       systemRoles,
       owner,
+      quark: this.toQuarkSummary(tenant),
+    };
+  }
+
+  private toQuarkSummary(tenant: Tenant): TenantQuarkSummary {
+    return {
+      status: tenant.quarkStatus,
+      issuerWalletId: tenant.quarkIssuerWalletId,
+      issuerDid: tenant.quarkIssuerDid,
+      verifierWalletId: tenant.quarkVerifierWalletId,
+      verifierDid: tenant.quarkVerifierDid,
+      lastError: tenant.quarkLastError,
+      provisionedAt: tenant.quarkProvisionedAt,
     };
   }
 

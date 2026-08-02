@@ -122,8 +122,9 @@ Destacados: **tienda/e-commerce**, white label, push/WhatsApp, AFIP, offline en 
 
 ### 9.2 Acceso / QR
 
-- Diseño soporta escaneo gym→afiliado y afiliado→QR del gym; MVP implementa uno primero.
-- Credencial SSI recomendada: **una de vínculo** afiliado↔gym; **GymBro** decide derechos (enfoque B). Credencial por pack = post-MVP si hace falta.
+- Diseño soporta escaneo gym→afiliado y afiliado→QR del gym; demo actual: afiliado escanea venue (`/puerta`).
+- **Hoy (stub):** credencial de **vínculo** afiliado↔gym; GymBro decide derechos (enfoque B).
+- **Camino Quark (diseño cerrado):** issuer+verifier por gym; VC tipada por pack (OID4VCI/VP); offers remotos al renovar; wallet con secreto local + biometría. Ver [12-acceso-quark-oid4-diseno.md](./12-acceso-quark-oid4-diseno.md).
 - Tolerancia deuda: default **15 días**, configurable por gym.
 - Multi-ingreso: configurable por gym.
 - Pase manual: sí.

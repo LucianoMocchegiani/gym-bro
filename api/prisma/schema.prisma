@@ -16,6 +16,12 @@ enum TenantStatus {
   SUSPENDED
 }
 
+/// Estado del provisioning Quark (issuer + verifier) por tenant.
+enum QuarkProvisionStatus {
+  MISSING
+  READY
+}
+
 /// Tipo de perfil autenticado. Staff y afiliado nunca comparten sesión (RN-ROL-005).
 enum AuthProfileType {
   SUPER
@@ -156,6 +162,15 @@ model Tenant {
   /// Slug URL-safe único (subdominio: `{slug}.localhost` / `{slug}.gymbro.app`).
   slug      String       @unique
   status    TenantStatus @default(ACTIVE)
+  /// Provisioning Quark issuer+verifier (soft-fail al crear gym).
+  quarkStatus            QuarkProvisionStatus @default(MISSING) @map("quark_status")
+  quarkIssuerWalletId    String?              @map("quark_issuer_wallet_id")
+  quarkIssuerDid         String?              @map("quark_issuer_did")
+  quarkVerifierWalletId  String?              @map("quark_verifier_wallet_id")
+  quarkVerifierDid       String?              @map("quark_verifier_did")
+  /// Último error de provisioning (truncado); null si READY.
+  quarkLastError         String?              @map("quark_last_error")
+  quarkProvisionedAt     DateTime?            @map("quark_provisioned_at")
   createdAt DateTime     @default(now()) @map("created_at")
   updatedAt DateTime     @updatedAt @map("updated_at")
 

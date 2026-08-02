@@ -34,10 +34,10 @@
 |------|--------|
 | Modo offline en la puerta | MVP online |
 | Molinetes / hardware de terceros | |
-| Biometría | |
+| Biometría (candado app / puerta) | Wallet: biometría opcional para desbloquear secreto local (ver diseño Quark) |
 | Anti-fraude avanzado (préstamo de QR) | |
-| Credencial SSI por pack (enfoques A/C) | MVP = credencial de vínculo (B) |
-| Segundo modo de escaneo si no entró en MVP | Diseño contempla ambos (C) |
+| Adapter Quark OID4 (issuer/verifier por gym, VC por pack, offers remotos) | Spike Compose + provision tenant **hecho**. Siguiente: pack→config, offers, OID4VP. Diseño: [12-acceso-quark-oid4-diseno.md](./12-acceso-quark-oid4-diseno.md) |
+| Segundo modo de escaneo (gym escanea afiliado) | UI demo hoy: afiliado escanea venue (`/puerta`) |
 
 ---
 
