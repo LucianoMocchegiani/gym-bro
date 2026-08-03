@@ -284,6 +284,7 @@ erDiagram
 |---------------|---------|-----|
 | `TenantStatus` | `ACTIVE`, `SUSPENDED` | Estado del gym (RN-TEN-002) |
 | `QuarkProvisionStatus` | `MISSING`, `READY` | Issuer+verifier Quark del tenant |
+| `CredentialOfferStatus` | `PENDING`, `FAILED` | Offer OID4VCI (soft-fail) |
 | `AuthProfileType` | `SUPER`, `STAFF`, `MEMBER` | Dueño del refresh token (RN-ROL-005) |
 | `MemberStatus` | `ACTIVE`, `SUSPENDED`, `INACTIVE` | Estado del afiliado (CU-AFI-003) |
 | `ServiceType` | `ACCESO_LIBRE`, `POR_SESIONES` | Tipo de servicio (RN-SER-001) |
@@ -743,6 +744,23 @@ Contratación tras pago aprobado (CU-CON-001).
 
 API: Staff `POST|GET /api/members/:memberId/contracts`, `GET /api/contracts/:id`, `PATCH /api/contracts/:id/status`; Member `GET /api/me/contracts`.
 
+### 4.16b `credential_offers`
+
+Offer OID4VCI al contratar pack (soft-fail). Un row por `contract_id`.  
+Claims / `configurationId` / `vct` **no** se persisten: al (re)emitir se reconstruyen desde el contrato.
+
+| Columna | Tipo | Notas |
+|---------|------|--------|
+| `id` | uuid PK | |
+| `tenant_id` / `member_id` / `pack_id` | uuid FK | |
+| `contract_id` | uuid UK FK → `contracts` | CASCADE |
+| `status` | `CredentialOfferStatus` | `PENDING` \| `FAILED` |
+| `offer_uri` | text nullable | null si FAILED |
+| `last_error` | text nullable | soft-fail |
+| `created_at` / `updated_at` | timestamptz | |
+
+API slim: Member `GET /api/me/credential-offers`; Staff `GET /api/members/:memberId/credential-offers` (`members.read`, incluye `lastError`); Staff `POST /api/contracts/:id/credential-offer` (`members.write`, re-oferta / reintento). Campos list: `id`, `status`, `packId`, `packName`, `contractId`, `offerUri`, `validFrom`, `validUntil`, `createdAt`.
+
 ### 4.18 `session_recurrence_rules`
 
 Regla semanal que materializa sesiones futuras (CU-SER-004 / RN-SER-012).
@@ -869,6 +887,8 @@ API: Member `POST|GET /api/me/waitlist`, `PATCH /api/me/waitlist/:id/status`; St
 | `20260730180000_tenant_slug` | `tenants.slug` UNIQUE (subdominio) |
 | `20260802180000_tenant_quark_provision` | `tenants.quark_*` + enum `QuarkProvisionStatus` |
 | `20260802190000_pack_quark_configuration` | `packs.quark_configuration_id` / `quark_vct` / `quark_synced_at` / `quark_last_error` |
+| `20260803010000_credential_offers` | enum `CredentialOfferStatus` + tabla `credential_offers` |
+| `20260803020000_credential_offers_slim` | quita `claims` / `configuration_id` / `vct` / `payment_id` / `issuance_session_id` |
 
 Comandos y checklist “desde cero”: [13-setup-db-desde-cero.md](./13-setup-db-desde-cero.md).
 

@@ -45,6 +45,23 @@ export type QuarkPatchIssuerMetadataResult = {
 };
 
 /**
+ * Body de `POST /v1/issuers/:walletId/openid4vc/offer`.
+ */
+export type QuarkCreateOfferInput = {
+  credentialConfigurationId: string;
+  vct: string;
+  claims: Record<string, unknown>;
+  claimsDisplay?: Record<string, { name: string; locale?: string }>;
+  disclosureFrame?: { _sd?: string[] };
+  preAuthorizedCode?: string;
+};
+
+export type QuarkCreateOfferResult = {
+  offerUri: string;
+  issuanceSessionId: string;
+};
+
+/**
  * Cliente hacia los servicios Quark del Compose local.
  */
 export abstract class QuarkAdminPort {
@@ -90,4 +107,12 @@ export abstract class QuarkAdminPort {
     issuerWalletId: string,
     type: string,
   ): Promise<{ total: number }>;
+
+  /**
+   * Crea credential offer OID4VCI pre-authorized.
+   */
+  abstract createCredentialOffer(
+    issuerWalletId: string,
+    input: QuarkCreateOfferInput,
+  ): Promise<QuarkCreateOfferResult>;
 }

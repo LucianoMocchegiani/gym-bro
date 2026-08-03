@@ -35,6 +35,7 @@ Si el usuario ya proporcionó todas las decisiones y pidió implementar explíci
 - Corrige errores introducidos.
 - Aplica `sync-project-docs` y marca la tarea en el roadmap si corresponde.
 - Si la tarea tocó **Prisma / migraciones**, actualizá `docs/09-esquema-db.md` (tablas, FKs, enums, diagrama, migraciones).
+- Si la tarea agregó o cambió **endpoints HTTP de la API**, actualizá `postman/GymBro.api.postman_collection.json` (+ nota breve en `postman/README.md` si abre carpeta o flujo nuevo).
 - Resume qué quedó hecho y cómo se validó. **Todavía no** registres la tarea terminada ni hagas commit.
 
 ### 5. Guía de prueba para el usuario

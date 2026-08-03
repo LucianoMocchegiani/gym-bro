@@ -54,7 +54,7 @@ Carpeta **Services**: Staff `catalog.write`. Tipos `ACCESO_LIBRE` y `POR_SESIONE
 
 Carpeta **Packs**: mismos permiso. Body con `components` (serviceIds de Services). `price` pesos enteros; `creditsExpireAt` opcional ISO; `kind` en respuesta.
 
-Carpeta **Contracts**: Staff `members.write` crea contract+pago stub; `PATCH /contracts/:id/status` cancela (pierde derechos); list con `members.read`. Member: `GET /me/contracts`.
+Carpeta **Contracts**: Staff `members.write` crea contract+pago stub (+ offer OID4VCI soft-fail); `PATCH /contracts/:id/status` cancela (pierde derechos); list con `members.read`. Member: `GET /me/contracts`. Offers: Staff `GET /members/:id/credential-offers`, Member `GET /me/credential-offers`, Staff `POST /contracts/:id/credential-offer` (re-oferta).
 
 ## Multi-tenant
 

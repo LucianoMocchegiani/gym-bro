@@ -22,6 +22,14 @@ enum QuarkProvisionStatus {
   READY
 }
 
+/// Estado de un credential offer OID4VCI pendiente de aceptar en la wallet.
+enum CredentialOfferStatus {
+  /// Offer URI listo para que el afiliado acepte.
+  PENDING
+  /// Falló la creación en Quark (soft-fail; contrato igual existe).
+  FAILED
+}
+
 /// Tipo de perfil autenticado. Staff y afiliado nunca comparten sesión (RN-ROL-005).
 enum AuthProfileType {
   SUPER
@@ -196,6 +204,7 @@ model Tenant {
   accessCredentials AccessCredential[]
   accessAttempts  AccessAttempt[]
   auditEvents     AuditEvent[]
+  credentialOffers CredentialOffer[]
 
   @@map("tenants")
 }
@@ -333,6 +342,7 @@ model Member {
   refundRequests RefundRequest[]
   accessCredentials AccessCredential[]
   accessAttempts AccessAttempt[]
+  credentialOffers CredentialOffer[]
 
   @@unique([tenantId, email])
   @@unique([tenantId, document])
@@ -483,6 +493,7 @@ model Pack {
   components PackComponent[]
   payments   Payment[]
   contracts  Contract[]
+  credentialOffers CredentialOffer[]
 
   @@index([tenantId])
   @@map("packs")
@@ -640,6 +651,7 @@ model Contract {
   payment      Payment                 @relation(fields: [paymentId], references: [id], onDelete: Restrict)
   balances     ContractCreditBalance[]
   reservations Reservation[]
+  credentialOffer CredentialOffer?
 
   @@index([tenantId])
   @@index([memberId])
@@ -665,6 +677,34 @@ model ContractCreditBalance {
   @@unique([contractId, serviceId])
   @@index([serviceId])
   @@map("contract_credit_balances")
+}
+
+/// Offer OID4VCI pendiente de aceptar (paso 3 Quark; bandeja afiliado).
+///
+/// @remarks Soft-fail al pago APPROVED: contrato existe aunque status=FAILED.
+/// Un offer por contrato (MVP). Accept/wallet en slice siguiente.
+/// Offer OID4VCI por contrato. Claims/config/vct se reconstruyen del contrato al (re)emitir.
+model CredentialOffer {
+  id         String                @id @default(uuid()) @db.Uuid
+  tenantId   String                @map("tenant_id") @db.Uuid
+  memberId   String                @map("member_id") @db.Uuid
+  packId     String                @map("pack_id") @db.Uuid
+  contractId String                @unique @map("contract_id") @db.Uuid
+  status     CredentialOfferStatus @default(PENDING)
+  offerUri   String?               @map("offer_uri")
+  lastError  String?               @map("last_error")
+  createdAt  DateTime              @default(now()) @map("created_at")
+  updatedAt  DateTime              @updatedAt @map("updated_at")
+
+  tenant   Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  member   Member   @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  pack     Pack     @relation(fields: [packId], references: [id], onDelete: Restrict)
+  contract Contract @relation(fields: [contractId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([memberId])
+  @@index([status])
+  @@map("credential_offers")
 }
 
 /// Reserva confirmada de una sesión (CU-RES-001 / RN-RES-001).

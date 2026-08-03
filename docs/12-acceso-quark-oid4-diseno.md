@@ -54,11 +54,11 @@ Puerta (afiliado escanea local o gym escanea)
 
 ### Claims mínimos sugeridos (instancia VC)
 
-- `memberId` (GymBro)
-- `tenantId` / slug
-- `packId` (si aplica)
-- `validFrom` / `validUntil` (ciclo de facturación)
-- opcional `graceUntil` (tolerancia) **o** re-emisión de VC corta de gracia
+- `memberId`, `memberName`
+- `tenantId`, `tenantName`
+- `packId`, `packName`
+- `validFrom` / `validUntil` (ciclo del contrato)
+- opcional luego: `graceUntil` **o** re-emisión de VC corta de gracia
 
 La **evaluación fina** (deuda real, cupo sesión, reingreso) puede seguir en GymBro usando estos claims + DB.
 
@@ -100,10 +100,12 @@ La **evaluación fina** (deuda real, cupo sesión, reingreso) puede seguir en Gy
 
 1. **[x] Spike:** Compose issuer+verifier (sin RabbitMQ) + al crear tenant GymBro → Quark + soft-fail + `POST …/quark/provision` + UI Super.  
 2. **[x] Pack → configuration** en metadata issuer (`pack_{id}` / `urn:gymbro:pack:{id}`; soft-fail; `packs.quark_*`).  
-3. **Offer al pago** + bandeja “Aceptar” en app (con `identity_core_dart`).  
+3. **[parcial] Offer al pago** (API): al pack APPROVED → `POST …/openid4vc/offer` + tabla `credential_offers` slim + `GET /me/credential-offers` (soft-fail). Bandeja Flutter / `identity_core_dart` pendiente.  
+   - Claims VC (solo en llamada Quark, no en DB): `memberId`, `memberName`, `tenantId`, `tenantName`, `packId`, `packName`, `validFrom`, `validUntil`.  
+   - Reemitir: `POST /api/contracts/:id/credential-offer` (`members.write`) → `ensureOfferForContract` (reconstruye desde contrato). RabbitMQ opcional.  
 4. **Puerta OID4VP** vía verifier del gym (reemplazo gradual del stub).  
 5. Push remoto de offers (E8).  
-6. Afinar tolerancia/reingreso en evaluate GymBro.
+6. Afinar tolerancia/reingreso en evaluate GymBro.  
 
 Hasta (4), el stub y el QR `stub-venue` siguen válidos para demos.
 
@@ -125,7 +127,8 @@ Hasta (4), el stub y el QR `stub-venue` siguen válidos para demos.
 - Tolerancia: claim `graceUntil` vs segunda VC.  
 - Hosting Quark (issuer/verifier) en el mismo compose vs servicios externos del trabajo.
 
-**Nota ops:** issuers creados en el spike **sin** body `oid4vc` no tienen `OpenId4VcIssuerRecord`; el PATCH de pack falla (soft-fail). Provision nuevo crea issuer con `oid4vc` mínimo; tenants READY viejos pueden necesitar recrear el issuer.
+**Nota ops:** issuers creados en el spike **sin** body `oid4vc` no tienen `OpenId4VcIssuerRecord`; el PATCH de pack falla (soft-fail). Provision nuevo crea issuer con `oid4vc` mínimo; tenants READY viejos pueden necesitar recrear el issuer.  
+RabbitMQ es **opcional** (event bus index/audit). Sin broker, `MessagingClient` skipea publish y no cuelga `allocateIndex` / offer. Compose sigue sin Rabbit.
 
 ---
 

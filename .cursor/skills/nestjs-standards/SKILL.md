@@ -59,3 +59,4 @@ No documentes línea por línea ni repitas el nombre del símbolo. Código priva
 - No expongas secretos, tokens ni payloads SSI en logs.
 - Actualiza README y docs mediante `sync-project-docs`.
 - Si cambiás el schema Prisma, actualizá `docs/09-esquema-db.md` en la misma tarea.
+- Todo endpoint HTTP nuevo o renombrado: agregalo a `postman/GymBro.api.postman_collection.json` (y `postman/README.md` si aplica).

@@ -20,6 +20,7 @@ import { AUDIT_ACTIONS, AuditActor } from '../audit/audit.types';
 import { AuditService } from '../audit/audit.service';
 import { CashRegisterService } from '../cash-register/cash-register.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { QuarkOfferService } from '../quark/quark-offer.service';
 import { ReceiptsService } from '../receipts/receipts.service';
 import { CreateContractDto, UpdateContractStatusDto } from './dto/contract.dto';
 import { ContractDetail } from './contracts.types';
@@ -77,6 +78,7 @@ export class ContractsService {
     private readonly audit: AuditService,
     private readonly cashRegister: CashRegisterService,
     private readonly receipts: ReceiptsService,
+    private readonly quarkOffers: QuarkOfferService,
   ) {}
 
   /**
@@ -206,6 +208,10 @@ export class ContractsService {
       },
     });
     if (existingPayment?.contract) {
+      await this.quarkOffers.ensureOfferForContract(
+        tenantId,
+        existingPayment.contract.id,
+      );
       return this.toDetail(existingPayment.contract);
     }
     if (existingPayment && !existingPayment.contract) {
@@ -271,6 +277,7 @@ export class ContractsService {
         before: null,
         after: this.auditSnapshot(detail),
       });
+      await this.quarkOffers.ensureOfferForContract(tenantId, contract.id);
       return detail;
     } catch (error: unknown) {
       if (
@@ -286,6 +293,10 @@ export class ContractsService {
           },
         });
         if (again?.contract) {
+          await this.quarkOffers.ensureOfferForContract(
+            tenantId,
+            again.contract.id,
+          );
           return this.toDetail(again.contract);
         }
       }
@@ -318,6 +329,10 @@ export class ContractsService {
       throw new NotFoundException(`Payment ${paymentId} not found in tenant`);
     }
     if (payment.contract) {
+      await this.quarkOffers.ensureOfferForContract(
+        tenantId,
+        payment.contract.id,
+      );
       return this.toDetail(payment.contract);
     }
     if (payment.status !== PaymentStatus.APPROVED) {
@@ -377,6 +392,7 @@ export class ContractsService {
         before: null,
         after: this.auditSnapshot(detail),
       });
+      await this.quarkOffers.ensureOfferForContract(tenantId, contract.id);
       return detail;
     } catch (error: unknown) {
       if (
@@ -390,6 +406,10 @@ export class ContractsService {
           },
         });
         if (again?.contract) {
+          await this.quarkOffers.ensureOfferForContract(
+            tenantId,
+            again.contract.id,
+          );
           return this.toDetail(again.contract);
         }
       }

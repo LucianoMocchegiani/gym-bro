@@ -65,7 +65,8 @@ Servicios:
 2. `docker compose up --build` incluye `quark-issuer` y `quark-verifier` (**sin** RabbitMQ/VDR).
 3. Al crear un gym (`POST /api/tenants`) se provisionan `gymbro-iss-{slug}` + `gymbro-ver-{slug}` (soft-fail). Reintento: Super → tenant → **Reintentar Quark**, o `POST /api/tenants/:id/quark/provision`.
 4. Create/update de pack sincroniza `credentialConfigurationsSupported` en el issuer (`pack_{id}` / `urn:gymbro:pack:{id}`; soft-fail → `packs.quark_*`).
-5. Si el volumen de Postgres ya existía antes de este cambio, creá las DBs Quark a mano o `docker compose down -v` (borra datos) y volvé a subir.
+5. Pack APPROVED (stub/caja/MP) crea offer OID4VCI → tabla `credential_offers` + `GET /api/me/credential-offers` (soft-fail). Sin RabbitMQ el issuer skipea publish y no cuelga.
+6. Si el volumen de Postgres ya existía antes de este cambio, creá las DBs Quark a mano o `docker compose down -v` (borra datos) y volvé a subir.
 
 ```powershell
 docker compose exec postgres psql -U gymbro -d gymbro -c "CREATE USER quarkid WITH PASSWORD 'quarkid';"

@@ -166,9 +166,10 @@ Diseño completo: [12-acceso-quark-oid4-diseno.md](./12-acceso-quark-oid4-diseno
 - Al `POST /api/tenants`: crea `gymbro-iss-{slug}` / `gymbro-ver-{slug}` con `oid4vc` mínimo (soft-fail → `quark_status=MISSING` + `quark_last_error`).
 - Reintento Super: `POST /api/tenants/:id/quark/provision` + UI en detalle de tenant.
 - Create/update pack → `PATCH …/records/metadata` (`pack_{id}` / `urn:gymbro:pack:{id}`; soft-fail en `packs.quark_*`).
+- Pack APPROVED → `POST …/openid4vc/offer` + `credential_offers` (`PENDING`|`FAILED`) + `GET /me/credential-offers` (soft-fail).
 - Clon local en `ssi-quark/` (gitignore).
 
-**Pendiente:** OID4VCI offer al pago, wallet app, OID4VP en puerta, adapter `AccessIdentityProvider` Quark.
+**Pendiente:** bandeja Flutter + accept `identity_core_dart`, OID4VP en puerta, adapter `AccessIdentityProvider` Quark.
 
 ### 6.3 Evaluación de ingreso (dominio puro)
 

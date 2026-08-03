@@ -1786,7 +1786,7 @@
     },
     {
       "name": "Contracts",
-      "description": "CU-CON-001 / CU-CON-002. Staff POST crea Payment APPROVED + Contract. PATCH /contracts/:id/status → CANCELLED (pierde derechos, RN-SER-009; payment sigue APPROVED). Usá createdMemberId y createdPackId. Member: GET /me/contracts.",
+      "description": "CU-CON-001 / CU-CON-002. Staff POST crea Payment APPROVED + Contract (+ credential offer OID4VCI soft-fail). PATCH /contracts/:id/status → CANCELLED (pierde derechos, RN-SER-009; payment sigue APPROVED). Usá createdMemberId y createdPackId. Member: GET /me/contracts y GET /me/credential-offers.",
       "item": [
         {
           "name": "Staff POST contract for member",
@@ -1874,6 +1874,93 @@
             "header": [],
             "url": "{{baseUrl}}/api/me/contracts",
             "description": "Requiere accessToken de login Member."
+          }
+        },
+        {
+          "name": "Staff POST reoffer credential from contract",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200|201', () => pm.expect([200,201]).to.include(pm.response.code));",
+                  "const body = pm.response.json();",
+                  "pm.test('status PENDING|FAILED', () => pm.expect(['PENDING','FAILED']).to.include(body.status));",
+                  "pm.test('no claims', () => pm.expect(body).to.not.have.property('claims'));",
+                  "pm.collectionVariables.set('createdCredentialOfferId', body.id);",
+                  "pm.environment.set('createdCredentialOfferId', body.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": "{{baseUrl}}/api/contracts/{{createdContractId}}/credential-offer",
+            "description": "Re-emite offer OID4VCI desde el contrato (members.write). Idempotente si ya PENDING+URI; si FAILED reintenta Quark reconstruyendo claims."
+          }
+        },
+        {
+          "name": "Staff GET member credential-offers",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('array', () => pm.expect(body).to.be.an('array'));",
+                  "if (body.length) {",
+                  "  pm.test('status PENDING|FAILED', () => pm.expect(['PENDING','FAILED']).to.include(body[0].status));",
+                  "  pm.test('slim fields', () => {",
+                  "    pm.expect(body[0]).to.have.property('packName');",
+                  "    pm.expect(body[0]).to.have.property('offerUri');",
+                  "    pm.expect(body[0]).to.not.have.property('claims');",
+                  "  });",
+                  "  pm.collectionVariables.set('createdCredentialOfferId', body[0].id);",
+                  "  pm.environment.set('createdCredentialOfferId', body[0].id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/members/{{createdMemberId}}/credential-offers",
+            "description": "OID4VCI offers del afiliado (members.read). Tras POST contract stub/caja/MP APPROVED. Soft-fail: FAILED + lastError si Quark falla."
+          }
+        },
+        {
+          "name": "Member GET me credential-offers",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('array', () => pm.expect(body).to.be.an('array'));",
+                  "if (body.length) {",
+                  "  pm.test('slim bandeja', () => {",
+                  "    pm.expect(body[0]).to.have.property('offerUri');",
+                  "    pm.expect(body[0]).to.have.property('validFrom');",
+                  "    pm.expect(body[0]).to.not.have.property('claims');",
+                  "    pm.expect(body[0]).to.not.have.property('lastError');",
+                  "  });",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/me/credential-offers",
+            "description": "Bandeja OID4VCI del afiliado. Requiere accessToken Member. Accept wallet = paso 3b."
           }
         }
       ]

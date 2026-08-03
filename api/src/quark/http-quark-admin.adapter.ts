@@ -3,6 +3,8 @@ import { ConfigService } from '@nestjs/config';
 import {
   QuarkAdminPort,
   QuarkCreateIssuerResult,
+  QuarkCreateOfferInput,
+  QuarkCreateOfferResult,
   QuarkCreateVerifierResult,
   QuarkIssuerListItem,
   QuarkIssuerMetadataPatch,
@@ -123,6 +125,20 @@ export class HttpQuarkAdminAdapter extends QuarkAdminPort {
       data.pagination?.total ??
       (Array.isArray(data.records) ? data.records.length : 0);
     return { total };
+  }
+
+  /**
+   * @inheritdoc
+   */
+  async createCredentialOffer(
+    issuerWalletId: string,
+    input: QuarkCreateOfferInput,
+  ): Promise<QuarkCreateOfferResult> {
+    return this.postJson<QuarkCreateOfferResult>(
+      this.issuerBase(),
+      `/v1/issuers/${encodeURIComponent(issuerWalletId)}/openid4vc/offer`,
+      input,
+    );
   }
 
   private issuerBase(): string {
