@@ -16,6 +16,7 @@ La creación de registros sigue la skill:
 
 ## Índice
 
+- [2026-08-03 — Bandeja Flutter OID4VCI + estado ACCEPTED](./2026-08-03-credential-offers-flutter-accepted.md)
 - [2026-08-03 — Offer OID4VCI al pack APPROVED (API)](./2026-08-03-credential-offers-oid4vci-api.md)
 - [2026-08-02 — Pack → metadata OID4VCI + seed Quark demo](./2026-08-02-pack-quark-metadata-seed-demo.md)
 - [2026-08-02 — Spike Quark: issuer/verifier + provision tenant](./2026-08-02-spike-quark-tenant-provision.md)
