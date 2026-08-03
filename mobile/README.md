@@ -43,7 +43,7 @@ flutter run
 
 - Login afiliado (`tenantSlug`)
 - Home / estado de cuenta (`GET /me/account`)
-- **Bandeja OID4VCI:** offers `PENDING` + **Aceptar** → wallet + `POST …/accept` → `ACCEPTED` (salen de la bandeja)
+- **Bandeja OID4VCI:** offers `PENDING` + **Aceptar** → wallet + `POST …/accept` → `ACCEPTED` (salen de la bandeja). Si el issuer dice vencida/inválida → `POST …/fail` → `FAILED` (también sale; staff re-oferta).
 - Bottom nav: Inicio · Sesiones (placeholder) · QR · Cuenta
 - **Ingreso modo B:** pestaña «Escanear local» (cámara) → `POST /me/access/check-in`
 - Credencial stub (pestaña «Mi credencial») para modo gym escanea afiliado

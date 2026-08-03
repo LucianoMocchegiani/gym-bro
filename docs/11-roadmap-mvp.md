@@ -144,7 +144,7 @@
 - [x] Spike Quark Compose: issuer+verifier + provision al crear tenant (soft-fail + `POST …/quark/provision`)
 - [x] Pack → `credentialConfigurationsSupported` en issuer Quark (soft-fail + `packs.quark_*`)
 - [x] Offer OID4VCI al pack APPROVED + `credential_offers` + `GET /me/credential-offers` (re-oferta = re-POST contrato misma key)
-- [x] Bandeja Flutter “Aceptar” + `identity_core_dart` + `ACCEPTED` en API (`POST /me/credential-offers/:id/accept`)
+- [x] Bandeja Flutter “Aceptar” + `identity_core_dart` + `ACCEPTED` / `FAILED` en API (`POST …/accept` | `…/fail`)
 - [x] Emitir / revocar credencial de vínculo
   - tabla `access_credentials`; Member `GET|POST /me/access-credential…`; Staff list/issue/revoke
 - [x] `POST /access/verify` (1 modo de escaneo en MVP)

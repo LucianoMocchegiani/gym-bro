@@ -89,4 +89,25 @@ class CredentialOffersRepository {
       },
     );
   }
+
+  /// Marca el offer `FAILED` tras OID4VCI vencido/inválido (sale de bandeja).
+  ///
+  /// Conserva `offerUri` en API; [reason] va a `lastError` (staff).
+  Future<CredentialOfferItem> markFailed(
+    String offerId, {
+    String? reason,
+  }) {
+    return _api.postJson<CredentialOfferItem>(
+      '/api/me/credential-offers/$offerId/fail',
+      body: {
+        if (reason != null && reason.isNotEmpty) 'reason': reason,
+      },
+      parse: (json) {
+        if (json is! Map) {
+          throw ApiException('Respuesta inválida al marcar offer FAILED');
+        }
+        return CredentialOfferItem.fromJson(Map<String, dynamic>.from(json));
+      },
+    );
+  }
 }

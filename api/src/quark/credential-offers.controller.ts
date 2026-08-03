@@ -1,4 +1,5 @@
 import {
+  Body,
   Controller,
   ForbiddenException,
   Get,
@@ -11,6 +12,7 @@ import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { RequirePermission } from '../roles/decorators/require-permission.decorator';
 import { CurrentTenant } from '../tenant/decorators/current-tenant.decorator';
 import { RequireTenantAuth } from '../tenant/decorators/require-tenant-auth.decorator';
+import { FailCredentialOfferDto } from './dto/fail-credential-offer.dto';
 import {
   CredentialOfferListItem,
   QuarkOfferService,
@@ -56,6 +58,30 @@ export class CredentialOffersController {
       throw new ForbiddenException('Member profile required');
     }
     return this.offers.markAcceptedByMember(tenantId, user.userId, offerId);
+  }
+
+  /**
+   * Marca offer `FAILED` tras OID4VCI inválido/vencido en wallet (sale de bandeja).
+   *
+   * @remarks No llama a Quark. Conserva `offerUri` + `lastError` para staff.
+   * Idempotente si ya `FAILED`. Timeout/red: la app no debe llamar esto.
+   */
+  @Post('me/credential-offers/:offerId/fail')
+  failMine(
+    @CurrentTenant() tenantId: string,
+    @CurrentUser() user: AuthUser,
+    @Param('offerId', ParseUUIDPipe) offerId: string,
+    @Body() body: FailCredentialOfferDto,
+  ): Promise<CredentialOfferListItem> {
+    if (user.profileType !== 'MEMBER') {
+      throw new ForbiddenException('Member profile required');
+    }
+    return this.offers.markFailedByMember(
+      tenantId,
+      user.userId,
+      offerId,
+      body?.reason,
+    );
   }
 
   /**

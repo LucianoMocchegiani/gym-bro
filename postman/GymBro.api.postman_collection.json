@@ -2041,6 +2041,40 @@
             "url": "{{baseUrl}}/api/me/credential-offers/{{createdCredentialOfferId}}/accept",
             "description": "Marca offer ACCEPTED tras OID4VCI OK en wallet (≥1 credencial). Idempotente. Conserva offerUri. Requiere accessToken Member + createdCredentialOfferId PENDING."
           }
+        },
+        {
+          "name": "Member POST me credential-offer fail",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200|201', () => pm.expect([200,201]).to.include(pm.response.code));",
+                  "const body = pm.response.json();",
+                  "pm.test('FAILED', () => pm.expect(body.status).to.eql('FAILED'));",
+                  "pm.test('keeps offerUri', () => pm.expect(body).to.have.property('offerUri'));",
+                  "pm.test('no lastError for member', () => pm.expect(body).to.not.have.property('lastError'));",
+                  "pm.test('no claims', () => pm.expect(body).to.not.have.property('claims'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"Offer expired or invalid at issuer\"\n}"
+            },
+            "url": "{{baseUrl}}/api/me/credential-offers/{{createdCredentialOfferId}}/fail",
+            "description": "Marca offer FAILED tras OID4VCI vencido/inválido en wallet (sale de bandeja). Conserva offerUri; reason → lastError (staff). Idempotente. No llama a Quark. Requiere accessToken Member + PENDING."
+          }
         }
       ]
     },

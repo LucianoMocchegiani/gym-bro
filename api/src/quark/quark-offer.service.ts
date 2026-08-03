@@ -246,6 +246,67 @@ export class QuarkOfferService {
     });
   }
 
+  /**
+   * Marca un offer como `FAILED` tras fallo OID4VCI en wallet (offer muerto/vencido).
+   *
+   * @remarks Idempotente si ya está `FAILED`. Conserva `offerUri` (auditoría).
+   * No llama a Quark. Timeout/red no deberían llegar acá (la app filtra).
+   * Staff ve `lastError`; member no. Re-oferta = re-POST contrato misma key.
+   * @throws {NotFoundException} Si no existe para el member/tenant.
+   * @throws {BadRequestException} Si el status es `ACCEPTED`.
+   */
+  async markFailedByMember(
+    tenantId: string,
+    memberId: string,
+    offerId: string,
+    reason?: string,
+  ): Promise<CredentialOfferListItem> {
+    const row = await this.prisma.credentialOffer.findFirst({
+      where: { id: offerId, tenantId, memberId },
+      include: {
+        pack: { select: { name: true } },
+        contract: { select: { startsAt: true, endsAt: true } },
+      },
+    });
+    if (!row) {
+      throw new NotFoundException(`Credential offer ${offerId} not found`);
+    }
+    if (row.status === CredentialOfferStatus.FAILED) {
+      return this.toListItem(row, row.pack.name, row.contract, {
+        includeLastError: false,
+      });
+    }
+    if (row.status === CredentialOfferStatus.ACCEPTED) {
+      throw new BadRequestException(
+        `Credential offer ${offerId} cannot be failed (status=ACCEPTED)`,
+      );
+    }
+    if (row.status !== CredentialOfferStatus.PENDING) {
+      throw new BadRequestException(
+        `Credential offer ${offerId} cannot be failed (status=${row.status})`,
+      );
+    }
+
+    const raw =
+      reason?.trim() || 'Offer expired or invalid at issuer';
+    const lastError = raw.slice(0, MAX_ERROR_LEN);
+    const updated = await this.prisma.credentialOffer.update({
+      where: { id: row.id },
+      data: {
+        status: CredentialOfferStatus.FAILED,
+        lastError,
+        // Conserva offerUri: el link quedó huérfano en el issuer, útil para ops.
+      },
+      include: {
+        pack: { select: { name: true } },
+        contract: { select: { startsAt: true, endsAt: true } },
+      },
+    });
+    return this.toListItem(updated, updated.pack.name, updated.contract, {
+      includeLastError: false,
+    });
+  }
+
   private async loadContractContext(
     tenantId: string,
     contractId: string,

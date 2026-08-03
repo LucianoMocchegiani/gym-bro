@@ -102,7 +102,7 @@ La **evaluación fina** (deuda real, cupo sesión, reingreso) puede seguir en Gy
 2. **[x] Pack → configuration** en metadata issuer (`pack_{id}` / `urn:gymbro:pack:{id}`; soft-fail; `packs.quark_*`).  
 3. **[x] Offer al pago** (API): al pack APPROVED → `POST …/openid4vc/offer` + tabla `credential_offers` slim + `GET /me/credential-offers` (soft-fail). Re-oferta: re-POST contrato con la misma `idempotencyKey`.  
    - Claims VC (solo en llamada Quark): `memberId`, `memberName`, `tenantId`, `tenantName`, `packId`, `packName`, `validFrom`, `validUntil`.  
-   - **Bandeja Flutter:** Home lista `PENDING` + Aceptar con `identity_core_dart` (secreto device-bound). Tras ≥1 VC → `POST /me/credential-offers/:id/accept` → `ACCEPTED`. Issuer público: `https://issuer.pruebasaproduccunon.uno` (tunnel).  
+   - **Bandeja Flutter:** Home lista `PENDING` + Aceptar con `identity_core_dart` (secreto device-bound). Tras ≥1 VC → `POST /me/credential-offers/:id/accept` → `ACCEPTED`. Si el issuer responde vencido/inválido → `POST …/fail` → `FAILED` (sale de bandeja; `lastError` staff). Issuer público: `https://issuer.pruebasaproduccunon.uno` (tunnel).  
 4. **Puerta OID4VP** vía verifier del gym (reemplazo gradual del stub).  
 5. Push remoto de offers (E8).  
 6. Afinar tolerancia/reingreso en evaluate GymBro.  

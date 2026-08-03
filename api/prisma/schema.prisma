@@ -26,7 +26,7 @@ enum QuarkProvisionStatus {
 enum CredentialOfferStatus {
   /// Offer URI listo para que el afiliado acepte.
   PENDING
-  /// Falló la creación en Quark (soft-fail; contrato igual existe).
+  /// Falló la creación en Quark o el canje OID4VCI en wallet (offer muerto).
   FAILED
   /// Afiliado aceptó en wallet (OID4VCI) y GymBro lo registró.
   ACCEPTED

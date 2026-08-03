@@ -759,7 +759,7 @@ Claims / `configurationId` / `vct` **no** se persisten: al (re)emitir se reconst
 | `last_error` | text nullable | soft-fail |
 | `created_at` / `updated_at` | timestamptz | |
 
-API slim: Member `GET /api/me/credential-offers`; Member `POST /api/me/credential-offers/:id/accept` → `ACCEPTED` (idempotente; conserva `offerUri`); Staff `GET /api/members/:memberId/credential-offers` (`members.read`, incluye `lastError`). Re-oferta: re-POST `…/members/:id/contracts` con la misma `idempotencyKey` (force Quark). Campos list: `id`, `status`, `packId`, `packName`, `contractId`, `offerUri`, `validFrom`, `validUntil`, `createdAt`.
+API slim: Member `GET /api/me/credential-offers`; Member `POST /api/me/credential-offers/:id/accept` → `ACCEPTED` (idempotente; conserva `offerUri`); Member `POST /api/me/credential-offers/:id/fail` → `FAILED` (offer vencido/inválido en wallet; conserva `offerUri`, `reason` → `lastError` staff); Staff `GET /api/members/:memberId/credential-offers` (`members.read`, incluye `lastError`). Re-oferta: re-POST `…/members/:id/contracts` con la misma `idempotencyKey` (force Quark). Campos list: `id`, `status`, `packId`, `packName`, `contractId`, `offerUri`, `validFrom`, `validUntil`, `createdAt`.
 
 ### 4.18 `session_recurrence_rules`
 

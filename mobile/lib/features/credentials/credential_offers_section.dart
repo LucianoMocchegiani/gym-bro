@@ -86,9 +86,32 @@ class _CredentialOffersSectionState extends State<CredentialOffersSection> {
       if (!mounted) {
         return;
       }
-      final msg = _friendlyError(e);
+      if (_isInvalidOfferError(e)) {
+        try {
+          final repo = context.read<CredentialOffersRepository>();
+          await repo.markFailed(
+            item.id,
+            reason: _failReason(e),
+          );
+        } catch (_) {
+          // Soft: el snackbar de usuario importa más que el sync de estado.
+        }
+        if (!mounted) {
+          return;
+        }
+        messenger.showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Oferta vencida o inválida. Pedile al staff una re-oferta '
+              'del contrato y volvé a intentar.',
+            ),
+          ),
+        );
+        await _reload();
+        return;
+      }
       messenger.showSnackBar(
-        SnackBar(content: Text(msg)),
+        SnackBar(content: Text(_friendlyError(e))),
       );
     } finally {
       if (mounted) {
@@ -192,7 +215,7 @@ class _CredentialOffersSectionState extends State<CredentialOffersSection> {
   String _friendlyError(Object e) {
     final raw = e is ApiException ? e.message : e.toString();
     final lower = raw.toLowerCase();
-    if (lower.contains('404') || lower.contains('not found')) {
+    if (_isInvalidOfferError(e)) {
       return 'Oferta vencida o inválida. Pedile al staff una re-oferta '
           'del contrato y volvé a intentar.';
     }
@@ -200,5 +223,25 @@ class _CredentialOffersSectionState extends State<CredentialOffersSection> {
       return 'Sin conexión al issuer. Revisá el tunnel Cloudflare.';
     }
     return 'No se pudo aceptar: $raw';
+  }
+
+  /// ¿Offer muerto en el issuer? (no timeout/red).
+  bool _isInvalidOfferError(Object e) {
+    final raw = e is ApiException ? e.message : e.toString();
+    final lower = raw.toLowerCase();
+    if (lower.contains('timeout') || lower.contains('connection')) {
+      return false;
+    }
+    return lower.contains('404') ||
+        lower.contains('not found') ||
+        lower.contains('expired') ||
+        lower.contains('invalid') ||
+        lower.contains('vencid');
+  }
+
+  String _failReason(Object e) {
+    final raw = e is ApiException ? e.message : e.toString();
+    final clipped = raw.length > 400 ? '${raw.substring(0, 400)}…' : raw;
+    return 'Wallet OID4VCI: $clipped';
   }
 }
