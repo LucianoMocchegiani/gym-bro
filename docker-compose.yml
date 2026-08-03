@@ -58,8 +58,9 @@ services:
     environment:
       NODE_ENV: development
       PORT: "9001"
-      BASE_URL: http://quark-issuer:9001
-      SERVICE_HOST: quark-issuer
+      # Público vía cloudflared (offers OID4VCI alcanzables desde el celu).
+      BASE_URL: https://issuer.pruebasaproduccunon.uno
+      SERVICE_HOST: issuer.pruebasaproduccunon.uno
       LOG_LEVEL: INFO
       KMS_MODE: internal
       INTERNAL_KMS_DATABASE_URL: postgresql://quarkid:quarkid@postgres:5432/quarkid_issuer
@@ -96,8 +97,8 @@ services:
     environment:
       NODE_ENV: development
       PORT: "9002"
-      BASE_URL: http://quark-verifier:9002
-      SERVICE_HOST: quark-verifier
+      BASE_URL: https://verifier.pruebasaproduccunon.uno
+      SERVICE_HOST: verifier.pruebasaproduccunon.uno
       LOG_LEVEL: INFO
       KMS_MODE: internal
       INTERNAL_KMS_DATABASE_URL: postgresql://quarkid:quarkid@postgres:5432/quarkid_verifier

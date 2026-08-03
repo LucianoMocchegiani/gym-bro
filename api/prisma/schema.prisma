@@ -28,6 +28,8 @@ enum CredentialOfferStatus {
   PENDING
   /// Falló la creación en Quark (soft-fail; contrato igual existe).
   FAILED
+  /// Afiliado aceptó en wallet (OID4VCI) y GymBro lo registró.
+  ACCEPTED
 }
 
 /// Tipo de perfil autenticado. Staff y afiliado nunca comparten sesión (RN-ROL-005).
@@ -679,11 +681,11 @@ model ContractCreditBalance {
   @@map("contract_credit_balances")
 }
 
-/// Offer OID4VCI pendiente de aceptar (paso 3 Quark; bandeja afiliado).
+/// Offer OID4VCI por contrato (bandeja afiliado + re-oferta staff).
 ///
 /// @remarks Soft-fail al pago APPROVED: contrato existe aunque status=FAILED.
-/// Un offer por contrato (MVP). Accept/wallet en slice siguiente.
-/// Offer OID4VCI por contrato. Claims/config/vct se reconstruyen del contrato al (re)emitir.
+/// Un offer por contrato (MVP). `ACCEPTED` tras OID4VCI OK en app.
+/// Claims/config/vct se reconstruyen del contrato al (re)emitir.
 model CredentialOffer {
   id         String                @id @default(uuid()) @db.Uuid
   tenantId   String                @map("tenant_id") @db.Uuid

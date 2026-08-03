@@ -17,9 +17,9 @@ import {
 } from './quark-offer.service';
 
 /**
- * Credential offers OID4VCI (bandeja + re-oferta staff).
+ * Credential offers OID4VCI (bandeja, accept member, re-oferta staff).
  *
- * @remarks Accept wallet queda fuera de este slice. Respuesta slim (sin claims).
+ * @remarks Respuesta slim (sin claims). Accept = estado GymBro tras OID4VCI en wallet.
  */
 @Controller()
 @RequireTenantAuth()
@@ -41,6 +41,23 @@ export class CredentialOffersController {
   }
 
   /**
+   * Confirma aceptación en wallet (marca `ACCEPTED`; sale de la bandeja PENDING).
+   *
+   * @remarks La app llama esto solo si OID4VCI trajo ≥1 credencial. Idempotente.
+   */
+  @Post('me/credential-offers/:offerId/accept')
+  acceptMine(
+    @CurrentTenant() tenantId: string,
+    @CurrentUser() user: AuthUser,
+    @Param('offerId', ParseUUIDPipe) offerId: string,
+  ): Promise<CredentialOfferListItem> {
+    if (user.profileType !== 'MEMBER') {
+      throw new ForbiddenException('Member profile required');
+    }
+    return this.offers.markAcceptedByMember(tenantId, user.userId, offerId);
+  }
+
+  /**
    * Offers de un afiliado (staff; incluye `lastError`).
    */
   @Get('members/:memberId/credential-offers')
@@ -57,8 +74,9 @@ export class CredentialOffersController {
   /**
    * (Re)emite offer OID4VCI desde un contrato.
    *
-   * @remarks Idempotente: si ya hay `PENDING` con URI, lo reutiliza.
-   * Si `FAILED` (o no hay fila), reconstruye claims desde el contrato y llama a Quark.
+   * @remarks Siempre fuerza un offer nuevo en Quark (no reutiliza `PENDING`
+   * muerto tras restart del issuer). Los hooks de contrato usan
+   * `ensureOfferForContract` sin force.
    */
   @Post('contracts/:contractId/credential-offer')
   @RequirePermission('members.write')
@@ -66,6 +84,8 @@ export class CredentialOffersController {
     @CurrentTenant() tenantId: string,
     @Param('contractId', ParseUUIDPipe) contractId: string,
   ): Promise<CredentialOfferListItem> {
-    return this.offers.ensureOfferForContract(tenantId, contractId);
+    return this.offers.ensureOfferForContract(tenantId, contractId, {
+      force: true,
+    });
   }
 }

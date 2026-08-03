@@ -1898,7 +1898,7 @@
             "method": "POST",
             "header": [],
             "url": "{{baseUrl}}/api/contracts/{{createdContractId}}/credential-offer",
-            "description": "Re-emite offer OID4VCI desde el contrato (members.write). Idempotente si ya PENDING+URI; si FAILED reintenta Quark reconstruyendo claims."
+            "description": "Re-emite offer OID4VCI desde el contrato (members.write). Siempre fuerza offer nuevo en Quark (no reutiliza PENDING muerto). Si FAILED/ACCEPTED, vuelve a PENDING al éxito."
           }
         },
         {
@@ -1913,7 +1913,7 @@
                   "const body = pm.response.json();",
                   "pm.test('array', () => pm.expect(body).to.be.an('array'));",
                   "if (body.length) {",
-                  "  pm.test('status PENDING|FAILED', () => pm.expect(['PENDING','FAILED']).to.include(body[0].status));",
+                  "  pm.test('status PENDING|FAILED|ACCEPTED', () => pm.expect(['PENDING','FAILED','ACCEPTED']).to.include(body[0].status));",
                   "  pm.test('slim fields', () => {",
                   "    pm.expect(body[0]).to.have.property('packName');",
                   "    pm.expect(body[0]).to.have.property('offerUri');",
@@ -1960,7 +1960,31 @@
             "method": "GET",
             "header": [],
             "url": "{{baseUrl}}/api/me/credential-offers",
-            "description": "Bandeja OID4VCI del afiliado. Requiere accessToken Member. Accept wallet = paso 3b."
+            "description": "Bandeja OID4VCI del afiliado. Requiere accessToken Member. Tras accept wallet: POST .../accept → ACCEPTED."
+          }
+        },
+        {
+          "name": "Member POST me credential-offer accept",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200|201', () => pm.expect([200,201]).to.include(pm.response.code));",
+                  "const body = pm.response.json();",
+                  "pm.test('ACCEPTED', () => pm.expect(body.status).to.eql('ACCEPTED'));",
+                  "pm.test('keeps offerUri', () => pm.expect(body).to.have.property('offerUri'));",
+                  "pm.test('no claims', () => pm.expect(body).to.not.have.property('claims'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": "{{baseUrl}}/api/me/credential-offers/{{createdCredentialOfferId}}/accept",
+            "description": "Marca offer ACCEPTED tras OID4VCI OK en wallet (≥1 credencial). Idempotente. Conserva offerUri. Requiere accessToken Member + createdCredentialOfferId PENDING."
           }
         }
       ]

@@ -4,8 +4,9 @@ import 'package:provider/provider.dart';
 import '../../core/network/api_client.dart';
 import '../account/account_repository.dart';
 import '../auth/auth_controller.dart';
+import '../credentials/credential_offers_section.dart';
 
-/// Home: estado de cuenta + atajos (wireframe afiliado).
+/// Home: estado de cuenta + offers OID4VCI + atajos (wireframe afiliado).
 class HomeScreen extends StatefulWidget {
   /// Crea la pantalla.
   const HomeScreen({super.key});
@@ -16,6 +17,7 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   Future<MemberAccount>? _future;
+  int _refreshToken = 0;
   bool _started = false;
 
   @override
@@ -29,6 +31,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> _reload() async {
     setState(() {
+      _refreshToken++;
       _future = context.read<AccountRepository>().fetchMine();
     });
     await _future;
@@ -56,6 +59,8 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
           Text('Hola, $hello', style: Theme.of(context).textTheme.titleMedium),
           const SizedBox(height: 16),
+          CredentialOffersSection(refreshToken: _refreshToken),
+          const SizedBox(height: 24),
           if (future == null)
             const Padding(
               padding: EdgeInsets.symmetric(vertical: 48),

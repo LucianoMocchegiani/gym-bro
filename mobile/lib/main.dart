@@ -10,6 +10,8 @@ import 'features/auth/auth_controller.dart';
 import 'features/auth/auth_repository.dart';
 import 'features/auth/login_screen.dart';
 import 'features/auth/session_store.dart';
+import 'features/credentials/credential_offers_repository.dart';
+import 'features/credentials/member_wallet_service.dart';
 import 'features/shell/member_shell.dart';
 
 /// Punto de entrada de la app afiliado GymBro.
@@ -35,6 +37,8 @@ class _GymBroMemberAppState extends State<GymBroMemberApp> {
   late final ThemeController _theme;
   late final AccountRepository _accountRepo;
   late final AccessRepository _accessRepo;
+  late final CredentialOffersRepository _offersRepo;
+  late final MemberWalletService _wallet;
 
   @override
   void initState() {
@@ -46,6 +50,8 @@ class _GymBroMemberAppState extends State<GymBroMemberApp> {
     _theme = ThemeController();
     _accountRepo = AccountRepository(_api);
     _accessRepo = AccessRepository(_api);
+    _offersRepo = CredentialOffersRepository(_api);
+    _wallet = MemberWalletService();
     _bootstrap();
   }
 
@@ -62,6 +68,8 @@ class _GymBroMemberAppState extends State<GymBroMemberApp> {
         Provider.value(value: _api),
         Provider.value(value: _accountRepo),
         Provider.value(value: _accessRepo),
+        Provider.value(value: _offersRepo),
+        Provider.value(value: _wallet),
       ],
       child: Consumer2<ThemeController, AuthController>(
         builder: (context, theme, auth, _) {

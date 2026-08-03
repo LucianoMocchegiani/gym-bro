@@ -39,10 +39,11 @@ flutter run
 | Email | `socio@demo.gym` |
 | Password | `ChangeMe123!` |
 
-## Slice actual (E9)
+## Slice actual
 
 - Login afiliado (`tenantSlug`)
 - Home / estado de cuenta (`GET /me/account`)
+- **Bandeja OID4VCI:** offers `PENDING` + **Aceptar** → wallet + `POST …/accept` → `ACCEPTED` (salen de la bandeja)
 - Bottom nav: Inicio · Sesiones (placeholder) · QR · Cuenta
 - **Ingreso modo B:** pestaña «Escanear local» (cámara) → `POST /me/access/check-in`
 - Credencial stub (pestaña «Mi credencial») para modo gym escanea afiliado
@@ -50,4 +51,6 @@ flutter run
 
 En la web, `/puerta` en modo «Afiliado escanea el local» muestra el QR `stub-venue:{tenantId}` y hace polling del resultado.
 
-Pendiente: calendario/reservas, packs/MP, rutinas, avisos, devoluciones, Quark/SSI.
+Issuer público (tunnel): `https://issuer.pruebasaproduccunon.uno` — Compose `BASE_URL` del quark-issuer. Ofers viejos con host Docker: la app reescribe a la URL pública. Tras cambiar `BASE_URL`, reiniciá issuer y re-ofertá (`POST /contracts/:id/credential-offer`).
+
+Pendiente: calendario/reservas, packs/MP, rutinas, avisos, devoluciones, OID4VP en puerta.

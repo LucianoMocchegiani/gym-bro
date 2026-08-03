@@ -16,6 +16,10 @@ dependencies:
   google_fonts: ^6.2.1
   provider: ^6.1.5
   mobile_scanner: ^6.0.11
+  path_provider: ^2.1.5
+  # Clon local: ssi-quark/quarkid-identity-core-dart (ver ssi-quark/README.md)
+  identity_core_dart:
+    path: ../ssi-quark/quarkid-identity-core-dart
 
 dev_dependencies:
   flutter_test:

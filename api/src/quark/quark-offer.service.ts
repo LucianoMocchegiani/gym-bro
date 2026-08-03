@@ -1,4 +1,9 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  Logger,
+  NotFoundException,
+} from '@nestjs/common';
 import {
   CredentialOffer,
   CredentialOfferStatus,
@@ -47,12 +52,17 @@ export class QuarkOfferService {
   /**
    * Asegura un offer para el contrato (idempotente por `contractId`).
    *
-   * @remarks Si ya hay PENDING con URI, lo reutiliza. Si FAILED, reintenta Quark
-   * reconstruyendo claims desde el contrato. Nunca lanza por fallo Quark.
+   * @remarks Si ya hay PENDING con URI y no es `force`, lo reutiliza. Si FAILED
+   * o `force`, reintenta Quark reconstruyendo claims desde el contrato.
+   * Nunca lanza por fallo Quark.
+   *
+   * @param options.force - Staff re-oferta: ignora PENDING previo (Credo puede
+   *   haber perdido la sesión tras restart / cambio de BASE_URL).
    */
   async ensureOfferForContract(
     tenantId: string,
     contractId: string,
+    options?: { force?: boolean },
   ): Promise<CredentialOfferListItem> {
     const existing = await this.prisma.credentialOffer.findUnique({
       where: { contractId },
@@ -61,7 +71,11 @@ export class QuarkOfferService {
         contract: { select: { startsAt: true, endsAt: true } },
       },
     });
-    if (existing?.status === CredentialOfferStatus.PENDING && existing.offerUri) {
+    if (
+      !options?.force &&
+      existing?.status === CredentialOfferStatus.PENDING &&
+      existing.offerUri
+    ) {
       return this.toListItem(existing, existing.pack.name, existing.contract, {
         includeLastError: true,
       });
@@ -175,6 +189,56 @@ export class QuarkOfferService {
         includeLastError: options?.includeLastError === true,
       }),
     );
+  }
+
+  /**
+   * Marca un offer como `ACCEPTED` tras OID4VCI exitoso en la wallet del afiliado.
+   *
+   * @remarks Idempotente si ya está `ACCEPTED`. Conserva `offerUri` (auditoría).
+   * Solo el dueño (`memberId`) puede aceptar. Tenant desde auth.
+   * @throws {NotFoundException} Si no existe para el member/tenant.
+   * @throws {BadRequestException} Si el status no es `PENDING` ni `ACCEPTED`.
+   */
+  async markAcceptedByMember(
+    tenantId: string,
+    memberId: string,
+    offerId: string,
+  ): Promise<CredentialOfferListItem> {
+    const row = await this.prisma.credentialOffer.findFirst({
+      where: { id: offerId, tenantId, memberId },
+      include: {
+        pack: { select: { name: true } },
+        contract: { select: { startsAt: true, endsAt: true } },
+      },
+    });
+    if (!row) {
+      throw new NotFoundException(`Credential offer ${offerId} not found`);
+    }
+    if (row.status === CredentialOfferStatus.ACCEPTED) {
+      return this.toListItem(row, row.pack.name, row.contract, {
+        includeLastError: false,
+      });
+    }
+    if (row.status !== CredentialOfferStatus.PENDING) {
+      throw new BadRequestException(
+        `Credential offer ${offerId} cannot be accepted (status=${row.status})`,
+      );
+    }
+
+    const updated = await this.prisma.credentialOffer.update({
+      where: { id: row.id },
+      data: {
+        status: CredentialOfferStatus.ACCEPTED,
+        lastError: null,
+      },
+      include: {
+        pack: { select: { name: true } },
+        contract: { select: { startsAt: true, endsAt: true } },
+      },
+    });
+    return this.toListItem(updated, updated.pack.name, updated.contract, {
+      includeLastError: false,
+    });
   }
 
   private async loadContractContext(
