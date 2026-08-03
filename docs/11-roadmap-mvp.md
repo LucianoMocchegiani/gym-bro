@@ -81,6 +81,7 @@
 - [x] Componentes de pack + créditos por servicio
 - [x] Política de vencimiento de créditos por pack
 - [x] Contratación tras pago aprobado
+  - vigencias RN-CON: MONTHLY apila mismo pack (un plan); ONE_TIME solapa (default +1 mes); fechas opcionales en alta (RN-CON-004)
 - [x] Cancelación pack mixto (pierde todo)
 
 ---
@@ -142,7 +143,7 @@
 - [ ] Adapter Quark / SSI (OID4VP / emisión VC)
 - [x] Spike Quark Compose: issuer+verifier + provision al crear tenant (soft-fail + `POST …/quark/provision`)
 - [x] Pack → `credentialConfigurationsSupported` en issuer Quark (soft-fail + `packs.quark_*`)
-- [x] Offer OID4VCI al pack APPROVED + `credential_offers` + `GET /me/credential-offers` + re-oferta
+- [x] Offer OID4VCI al pack APPROVED + `credential_offers` + `GET /me/credential-offers` (re-oferta = re-POST contrato misma key)
 - [x] Bandeja Flutter “Aceptar” + `identity_core_dart` + `ACCEPTED` en API (`POST /me/credential-offers/:id/accept`)
 - [x] Emitir / revocar credencial de vínculo
   - tabla `access_credentials`; Member `GET|POST /me/access-credential…`; Staff list/issue/revoke

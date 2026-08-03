@@ -233,12 +233,12 @@
 **Flujo principal:**
 1. Afiliado elige pack.
 2. Paga (MP) o se deriva a caja.
-3. Pago `aprobado` → crea Contratacion con vigencias y créditos.
+3. Pago `aprobado` → crea Contratacion con vigencias y créditos (RN-CON-001–004: MONTHLY apila mismo pack / un plan; ONE_TIME puede solapar; fechas opcionales en el alta).
 4. Comprobante + E1.
 
-**Errores:** Pago rechazado → sin contratación.
+**Errores:** Pago rechazado → sin contratación. Otro pack MONTHLY vigente → rechazado (usar ONE_TIME para extras). `startsAt` MONTHLY que solapa → rechazado.
 
-**Reglas relacionadas:** RN-PAG-002, RN-PAG-004, RN-SER-005
+**Reglas relacionadas:** RN-PAG-002, RN-PAG-004, RN-SER-005, RN-CON-001, RN-CON-002, RN-CON-003, RN-CON-004
 
 ---
 

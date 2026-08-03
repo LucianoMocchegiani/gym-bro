@@ -166,7 +166,7 @@ Diseño completo: [12-acceso-quark-oid4-diseno.md](./12-acceso-quark-oid4-diseno
 - Al `POST /api/tenants`: crea `gymbro-iss-{slug}` / `gymbro-ver-{slug}` con `oid4vc` mínimo (soft-fail → `quark_status=MISSING` + `quark_last_error`).
 - Reintento Super: `POST /api/tenants/:id/quark/provision` + UI en detalle de tenant.
 - Create/update pack → `PATCH …/records/metadata` (`pack_{id}` / `urn:gymbro:pack:{id}`; soft-fail en `packs.quark_*`).
-- Pack APPROVED → `POST …/openid4vc/offer` + `credential_offers` slim + `GET /me/credential-offers` + re-oferta (soft-fail).
+- Pack APPROVED → `POST …/openid4vc/offer` + `credential_offers` slim + `GET /me/credential-offers` (soft-fail). Re-oferta: re-POST contrato misma `idempotencyKey`.
 - App afiliado: bandeja Home + accept OID4VCI (`identity_core_dart`); `POST /me/credential-offers/:id/accept` → `ACCEPTED`; issuer tunnel `issuer.pruebasaproduccunon.uno`.
 - Clon local en `ssi-quark/` (gitignore).
 

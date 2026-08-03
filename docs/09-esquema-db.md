@@ -731,7 +731,7 @@ Contratación tras pago aprobado (CU-CON-001).
 | `tenant_id` / `member_id` / `pack_id` | uuid FK | |
 | `payment_id` | uuid FK UK | 1:1 con payment |
 | `status` | `ContractStatus` | |
-| `starts_at` / `ends_at` | timestamptz | MONTHLY → +1 mes; ONE_TIME → `creditsExpireAt` o null |
+| `starts_at` / `ends_at` | timestamptz | MONTHLY → +1 mes (apila mismo pack); ONE_TIME → `creditsExpireAt` futuro o +1 mes |
 | `has_access_libre` | boolean | |
 
 ### 4.17 `contract_credit_balances`
@@ -740,7 +740,7 @@ Contratación tras pago aprobado (CU-CON-001).
 |---------|------|--------|
 | `contract_id` / `service_id` | uuid FK | unique par |
 | `initial_amount` / `remaining` | int | |
-| `expires_at` | timestamptz nullable | copia de pack |
+| `expires_at` | timestamptz nullable | = `contracts.ends_at` del mismo contrato (RN-CON-002/003) |
 
 API: Staff `POST|GET /api/members/:memberId/contracts`, `GET /api/contracts/:id`, `PATCH /api/contracts/:id/status`; Member `GET /api/me/contracts`.
 
@@ -759,7 +759,7 @@ Claims / `configurationId` / `vct` **no** se persisten: al (re)emitir se reconst
 | `last_error` | text nullable | soft-fail |
 | `created_at` / `updated_at` | timestamptz | |
 
-API slim: Member `GET /api/me/credential-offers`; Member `POST /api/me/credential-offers/:id/accept` → `ACCEPTED` (idempotente; conserva `offerUri`); Staff `GET /api/members/:memberId/credential-offers` (`members.read`, incluye `lastError`); Staff `POST /api/contracts/:id/credential-offer` (`members.write`, re-oferta forzada). Campos list: `id`, `status`, `packId`, `packName`, `contractId`, `offerUri`, `validFrom`, `validUntil`, `createdAt`.
+API slim: Member `GET /api/me/credential-offers`; Member `POST /api/me/credential-offers/:id/accept` → `ACCEPTED` (idempotente; conserva `offerUri`); Staff `GET /api/members/:memberId/credential-offers` (`members.read`, incluye `lastError`). Re-oferta: re-POST `…/members/:id/contracts` con la misma `idempotencyKey` (force Quark). Campos list: `id`, `status`, `packId`, `packName`, `contractId`, `offerUri`, `validFrom`, `validUntil`, `createdAt`.
 
 ### 4.18 `session_recurrence_rules`
 

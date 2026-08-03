@@ -52,9 +52,9 @@ Carpeta **Receipts**: Member `GET /me/receipts`. Staff `GET /payments/:paymentId
 
 Carpeta **Services**: Staff `catalog.write`. Tipos `ACCESO_LIBRE` y `POR_SESIONES`; `dropInPrice` (ARS) habilita drop-in; desactivar con `active: false`.
 
-Carpeta **Packs**: mismos permiso. Body con `components` (serviceIds de Services). `price` pesos enteros; `creditsExpireAt` opcional ISO; `kind` en respuesta.
+Carpeta **Packs**: mismos permiso. Requests **MONTHLY** y **ONE_TIME** (como Sesiones con casos). Body con `components` (serviceIds de Services). `price` pesos enteros; `kind` en respuesta.
 
-Carpeta **Contracts**: Staff `members.write` crea contract+pago stub (+ offer OID4VCI soft-fail); `PATCH /contracts/:id/status` cancela (pierde derechos); list con `members.read`. Member: `GET /me/contracts`. Offers: Staff `GET /members/:id/credential-offers`, Member `GET /me/credential-offers`, Member `POST /me/credential-offers/:id/accept` → `ACCEPTED`, Staff `POST /contracts/:id/credential-offer` (re-oferta forzada).
+Carpeta **Contracts**: Staff **POST contract MONTHLY** (`startsAt` opcional) y **ONE_TIME** (`startsAt`/`endsAt`); apilado RN-CON; **re-POST misma `idempotencyKey`** = re-oferta. Variables `createdMonthlyPackId` / `createdOneTimePackId`. Offers: list + accept member.
 
 ## Multi-tenant
 

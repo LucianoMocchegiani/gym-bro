@@ -35,13 +35,24 @@ Formato: **RN-MODULO-NNN** — enunciado — excepciones.
 | RN-SER-004 | El admin puede componer **Packs** que combinan servicios (incl. packs mixtos). |
 | RN-SER-005 | El acceso libre y los packs compuestos de tipo suscripción se cobran en modalidad **mensual** (u otra periodicidad de suscripción definida en el pack). |
 | RN-SER-006 | Para actividad por sesiones, el gym habilita drop-in y/o packs de créditos por servicio/pack. |
-| RN-SER-007 | El vencimiento de créditos se define **por pack** (quién edita: admin; profesor si tiene permiso). |
+| RN-SER-007 | El vencimiento de créditos: en packs **MONTHLY** coincide con el `endsAt` del contrato (mismo periodo que el libre). En packs **ONE_TIME** es configurable por pack (`creditsExpireAt`; default +1 mes desde el alta). Quién edita catálogo: admin; profesor si tiene permiso. |
 | RN-SER-008 | Si el afiliado se queda sin créditos, puede comprar otro pack (si el gym lo ofrece) y/o drop-in. |
 | RN-SER-009 | Al cancelar o reembolsar un **pack compuesto**, el afiliado pierde **todos** los componentes del pack. |
 | RN-SER-010 | Toda sesión tiene cupo; staff con permiso puede **ampliar** el cupo. |
 | RN-SER-011 | Una sesión puede publicarse sin profesor; se recomienda profesor para métricas. |
 | RN-SER-012 | Las reglas de recurrencia generan sesiones futuras según patrón simple (MVP). |
 | RN-SER-013 | El profesor de una sesión, si está asignado, queda registrado para reporting. |
+
+---
+
+## 2b. Contrataciones (RN-CON)
+
+| ID | Regla |
+|----|--------|
+| RN-CON-001 | Pack **MONTHLY**: un afiliado tiene **un solo plan mensual** vigente a la vez. Renovar el **mismo** pack apila vigencia (nuevo `startsAt` = `endsAt` del tramo ACTIVE vigente; no se pisan). Otro pack MONTHLY distinto mientras haya uno vigente → rechazado; extras vía pack **ONE_TIME**. |
+| RN-CON-002 | Pack **MONTHLY**: libre y créditos del contrato comparten el mismo periodo (`startsAt` → `endsAt` = +1 mes). No se customiza duración por componente. |
+| RN-CON-003 | Pack **ONE_TIME**: puede solapar con el plan mensual y con otros únicos. Default `endsAt` = `startsAt` + 1 mes; si el pack define `creditsExpireAt` futuro, se usa esa fecha. Créditos heredan ese `endsAt`. |
+| RN-CON-004 | Al contratar, staff puede enviar fechas opcionales: **MONTHLY** solo `startsAt` (`endsAt` = +1 mes; 400 si solapa otro ACTIVE del mismo pack). **ONE_TIME** `startsAt` y/o `endsAt` (pueden solapar; `endsAt` > `startsAt`). Sin fechas → RN-CON-001–003. |
 
 ---
 

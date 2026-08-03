@@ -110,7 +110,7 @@ Destacados: **tienda/e-commerce**, white label, push/WhatsApp, AFIP, offline en 
 - Acceso libre y por sesiones son servicios distintos; el admin arma **packs**.
 - Libre → cobro **mensual**. Packs compuestos → **mensual**. Por sesiones → drop-in y/o pack de créditos.
 - **Reservar implica pagar** (MP o caja).
-- Vencimiento de créditos: **configurable por pack** (admin; profe si tiene permiso).
+- Vencimiento de créditos: **MONTHLY** = fin del contrato; **ONE_TIME** configurable (default +1 mes). Ver RN-CON / RN-SER-007.
 - Sin créditos: puede comprar otro pack.
 - Cancelar pack compuesto: pierde **todo** el pack.
 - Cupo ampliable por admin/profe.

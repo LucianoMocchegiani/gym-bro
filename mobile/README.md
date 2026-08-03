@@ -51,6 +51,6 @@ flutter run
 
 En la web, `/puerta` en modo «Afiliado escanea el local» muestra el QR `stub-venue:{tenantId}` y hace polling del resultado.
 
-Issuer público (tunnel): `https://issuer.pruebasaproduccunon.uno` — Compose `BASE_URL` del quark-issuer. Ofers viejos con host Docker: la app reescribe a la URL pública. Tras cambiar `BASE_URL`, reiniciá issuer y re-ofertá (`POST /contracts/:id/credential-offer`).
+Issuer público (tunnel): `https://issuer.pruebasaproduccunon.uno` — Compose `BASE_URL` del quark-issuer. Ofers viejos con host Docker: la app reescribe a la URL pública. Tras cambiar `BASE_URL`, reiniciá issuer y re-ofertá (re-POST contrato misma `idempotencyKey`).
 
 Pendiente: calendario/reservas, packs/MP, rutinas, avisos, devoluciones, OID4VP en puerta.

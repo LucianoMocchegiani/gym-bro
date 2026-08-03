@@ -17,9 +17,10 @@ import {
 } from './quark-offer.service';
 
 /**
- * Credential offers OID4VCI (bandeja, accept member, re-oferta staff).
+ * Credential offers OID4VCI (bandeja member + listado staff).
  *
- * @remarks Respuesta slim (sin claims). Accept = estado GymBro tras OID4VCI en wallet.
+ * @remarks Respuesta slim (sin claims). Re-oferta = re-POST contrato con la
+ * misma `idempotencyKey` (`force` en {@link QuarkOfferService.ensureOfferForContract}).
  */
 @Controller()
 @RequireTenantAuth()
@@ -68,24 +69,6 @@ export class CredentialOffersController {
   ): Promise<CredentialOfferListItem[]> {
     return this.offers.listForMember(tenantId, memberId, {
       includeLastError: true,
-    });
-  }
-
-  /**
-   * (Re)emite offer OID4VCI desde un contrato.
-   *
-   * @remarks Siempre fuerza un offer nuevo en Quark (no reutiliza `PENDING`
-   * muerto tras restart del issuer). Los hooks de contrato usan
-   * `ensureOfferForContract` sin force.
-   */
-  @Post('contracts/:contractId/credential-offer')
-  @RequirePermission('members.write')
-  reofferForContract(
-    @CurrentTenant() tenantId: string,
-    @Param('contractId', ParseUUIDPipe) contractId: string,
-  ): Promise<CredentialOfferListItem> {
-    return this.offers.ensureOfferForContract(tenantId, contractId, {
-      force: true,
     });
   }
 }

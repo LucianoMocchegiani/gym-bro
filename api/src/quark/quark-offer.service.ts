@@ -56,8 +56,8 @@ export class QuarkOfferService {
    * o `force`, reintenta Quark reconstruyendo claims desde el contrato.
    * Nunca lanza por fallo Quark.
    *
-   * @param options.force - Staff re-oferta: ignora PENDING previo (Credo puede
-   *   haber perdido la sesión tras restart / cambio de BASE_URL).
+   * @param options.force - Re-oferta (re-POST contrato misma key / confirm MP):
+   *   ignora PENDING/ACCEPTED previo (Credo puede haber perdido la sesión).
    */
   async ensureOfferForContract(
     tenantId: string,
@@ -76,6 +76,11 @@ export class QuarkOfferService {
       existing?.status === CredentialOfferStatus.PENDING &&
       existing.offerUri
     ) {
+      return this.toListItem(existing, existing.pack.name, existing.contract, {
+        includeLastError: true,
+      });
+    }
+    if (!options?.force && existing?.status === CredentialOfferStatus.ACCEPTED) {
       return this.toListItem(existing, existing.pack.name, existing.contract, {
         includeLastError: true,
       });

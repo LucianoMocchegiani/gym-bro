@@ -123,6 +123,14 @@
       "value": ""
     },
     {
+      "key": "createdMonthlyPackId",
+      "value": ""
+    },
+    {
+      "key": "createdOneTimePackId",
+      "value": ""
+    },
+    {
       "key": "createdContractId",
       "value": ""
     },
@@ -1698,10 +1706,10 @@
     },
     {
       "name": "Packs",
-      "description": "Catálogo E3 packs. Staff /packs (catalog.write). Usá serviceIds de Services (ACCESO_LIBRE + POR_SESIONES). price = pesos enteros. kind inferido.",
+      "description": "Catálogo E3 packs. Staff /packs (catalog.write). Casos MONTHLY (plan) y ONE_TIME (único). Usá serviceIds de Services. price = pesos enteros.",
       "item": [
         {
-          "name": "Staff POST pack MIXED",
+          "name": "Staff POST pack MONTHLY",
           "event": [
             {
               "listen": "test",
@@ -1710,9 +1718,11 @@
                 "exec": [
                   "pm.test('status 201', () => pm.response.to.have.status(201));",
                   "const body = pm.response.json();",
-                  "pm.test('kind MIXED', () => pm.expect(body.kind).to.eql('MIXED'));",
+                  "pm.test('MONTHLY', () => pm.expect(body.billingPeriod).to.eql('MONTHLY'));",
                   "pm.collectionVariables.set('createdPackId', body.id);",
-                  "pm.environment.set('createdPackId', body.id);"
+                  "pm.environment.set('createdPackId', body.id);",
+                  "pm.collectionVariables.set('createdMonthlyPackId', body.id);",
+                  "pm.environment.set('createdMonthlyPackId', body.id);"
                 ]
               }
             }
@@ -1727,10 +1737,43 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"Full mensual\",\n  \"description\": \"Libre + 8 funcional\",\n  \"price\": 45000,\n  \"billingPeriod\": \"MONTHLY\",\n  \"creditsExpireAt\": \"2026-12-31T23:59:59.000Z\",\n  \"components\": [\n    { \"serviceId\": \"{{accesoLibreServiceId}}\" },\n    { \"serviceId\": \"{{porSesionesServiceId}}\", \"creditAmount\": 8 }\n  ]\n}"
+              "raw": "{\n  \"name\": \"Full mensual\",\n  \"description\": \"Libre + 8 sesiones (plan mensual)\",\n  \"price\": 45000,\n  \"billingPeriod\": \"MONTHLY\",\n  \"components\": [\n    { \"serviceId\": \"{{accesoLibreServiceId}}\" },\n    { \"serviceId\": \"{{porSesionesServiceId}}\", \"creditAmount\": 8 }\n  ]\n}"
             },
             "url": "{{baseUrl}}/api/packs",
-            "description": "Reemplazá accesoLibreServiceId y porSesionesServiceId con ids reales de POST Services (o variables de environment)."
+            "description": "Plan mensual: libre + créditos comparten periodo al contratar. No hace falta creditsExpireAt."
+          }
+        },
+        {
+          "name": "Staff POST pack ONE_TIME",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 201', () => pm.response.to.have.status(201));",
+                  "const body = pm.response.json();",
+                  "pm.test('ONE_TIME', () => pm.expect(body.billingPeriod).to.eql('ONE_TIME'));",
+                  "pm.collectionVariables.set('createdOneTimePackId', body.id);",
+                  "pm.environment.set('createdOneTimePackId', body.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Pack 10 pilates\",\n  \"description\": \"Único: 10 créditos (puede solapar)\",\n  \"price\": 12000,\n  \"billingPeriod\": \"ONE_TIME\",\n  \"components\": [\n    { \"serviceId\": \"{{porSesionesServiceId}}\", \"creditAmount\": 10 }\n  ]\n}"
+            },
+            "url": "{{baseUrl}}/api/packs",
+            "description": "Pack único: al contratar se customizan startsAt/endsAt (default +1 mes). Puede solapar el plan MONTHLY."
           }
         },
         {
@@ -1786,10 +1829,10 @@
     },
     {
       "name": "Contracts",
-      "description": "CU-CON-001 / CU-CON-002. Staff POST crea Payment APPROVED + Contract (+ credential offer OID4VCI soft-fail). PATCH /contracts/:id/status → CANCELLED (pierde derechos, RN-SER-009; payment sigue APPROVED). Usá createdMemberId y createdPackId. Member: GET /me/contracts y GET /me/credential-offers.",
+      "description": "CU-CON-001 / CU-CON-002 / RN-CON-001–004. Staff POST crea Payment APPROVED + Contract (+ offer). Casos MONTHLY (solo startsAt) y ONE_TIME (startsAt/endsAt). Re-oferta: re-POST misma idempotencyKey. PATCH cancel.",
       "item": [
         {
-          "name": "Staff POST contract for member",
+          "name": "Staff POST contract MONTHLY",
           "event": [
             {
               "listen": "test",
@@ -1818,9 +1861,46 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"packId\": \"{{createdPackId}}\",\n  \"method\": \"STUB\",\n  \"idempotencyKey\": \"demo-contract-1\"\n}"
+              "raw": "{\n  \"packId\": \"{{createdMonthlyPackId}}\",\n  \"method\": \"STUB\",\n  \"idempotencyKey\": \"contract-monthly-{{$timestamp}}\",\n  \"startsAt\": \"2026-09-01T00:00:00.000Z\"\n}"
             },
-            "url": "{{baseUrl}}/api/members/{{createdMemberId}}/contracts"
+            "url": "{{baseUrl}}/api/members/{{createdMemberId}}/contracts",
+            "description": "RN-CON-004 MONTHLY: solo startsAt opcional (endsAt = +1 mes). Sin startsAt → apila. No enviar endsAt. Key nueva cada alta; misma key = re-oferta."
+          }
+        },
+        {
+          "name": "Staff POST contract ONE_TIME",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 201', () => pm.response.to.have.status(201));",
+                  "const body = pm.response.json();",
+                  "pm.test('ACTIVE', () => pm.expect(body.status).to.eql('ACTIVE'));",
+                  "pm.test('payment APPROVED', () => pm.expect(body.payment.status).to.eql('APPROVED'));",
+                  "pm.collectionVariables.set('createdContractId', body.id);",
+                  "pm.environment.set('createdContractId', body.id);",
+                  "pm.collectionVariables.set('createdPaymentId', body.payment.id);",
+                  "pm.environment.set('createdPaymentId', body.payment.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"packId\": \"{{createdOneTimePackId}}\",\n  \"method\": \"STUB\",\n  \"idempotencyKey\": \"contract-onetime-{{$timestamp}}\",\n  \"startsAt\": \"2026-08-10T00:00:00.000Z\",\n  \"endsAt\": \"2026-10-01T00:00:00.000Z\"\n}"
+            },
+            "url": "{{baseUrl}}/api/members/{{createdMemberId}}/contracts",
+            "description": "RN-CON-004 ONE_TIME: startsAt y/o endsAt opcionales (pueden solapar). Sin fechas → default +1 mes."
           }
         },
         {
@@ -1877,31 +1957,6 @@
           }
         },
         {
-          "name": "Staff POST reoffer credential from contract",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('status 200|201', () => pm.expect([200,201]).to.include(pm.response.code));",
-                  "const body = pm.response.json();",
-                  "pm.test('status PENDING|FAILED', () => pm.expect(['PENDING','FAILED']).to.include(body.status));",
-                  "pm.test('no claims', () => pm.expect(body).to.not.have.property('claims'));",
-                  "pm.collectionVariables.set('createdCredentialOfferId', body.id);",
-                  "pm.environment.set('createdCredentialOfferId', body.id);"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "POST",
-            "header": [],
-            "url": "{{baseUrl}}/api/contracts/{{createdContractId}}/credential-offer",
-            "description": "Re-emite offer OID4VCI desde el contrato (members.write). Siempre fuerza offer nuevo en Quark (no reutiliza PENDING muerto). Si FAILED/ACCEPTED, vuelve a PENDING al éxito."
-          }
-        },
-        {
           "name": "Staff GET member credential-offers",
           "event": [
             {
@@ -1930,7 +1985,7 @@
             "method": "GET",
             "header": [],
             "url": "{{baseUrl}}/api/members/{{createdMemberId}}/credential-offers",
-            "description": "OID4VCI offers del afiliado (members.read). Tras POST contract stub/caja/MP APPROVED. Soft-fail: FAILED + lastError si Quark falla."
+            "description": "OID4VCI offers del afiliado (members.read). Re-oferta: re-POST contrato con la misma idempotencyKey."
           }
         },
         {

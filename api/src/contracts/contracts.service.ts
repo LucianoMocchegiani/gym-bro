@@ -59,7 +59,7 @@ type PackForContract = {
 
 type ContractPlan = {
   startsAt: Date;
-  endsAt: Date | null;
+  endsAt: Date;
   hasAccessLibre: boolean;
   creditComponents: { serviceId: string; creditAmount: number }[];
 };
@@ -67,9 +67,10 @@ type ContractPlan = {
 /**
  * Contrataciones tras pago aprobado y cancelación de derechos.
  *
- * @remarks CU-CON-001 / CU-CON-002 / RN-PAG-004 / RN-SER-009.
+ * @remarks CU-CON-001 / CU-CON-002 / RN-PAG-004 / RN-SER-009 / RN-CON-001–003.
  * Pago CASH registra movimiento de caja (RN-PAG-007). Comprobante interno
  * RN-PAG-009. MP confirma vía webhook con {@link confirmFromApprovedPayment}.
+ * Vigencias: MONTHLY apila por pack (un plan); ONE_TIME puede solapar.
  */
 @Injectable()
 export class ContractsService {
@@ -208,9 +209,11 @@ export class ContractsService {
       },
     });
     if (existingPayment?.contract) {
+      // Misma key = idempotencia de pago/contrato + force re-oferta Quark.
       await this.quarkOffers.ensureOfferForContract(
         tenantId,
         existingPayment.contract.id,
+        { force: true },
       );
       return this.toDetail(existingPayment.contract);
     }
@@ -220,7 +223,10 @@ export class ContractsService {
       );
     }
 
-    const plan = this.buildContractPlan(pack);
+    const plan = await this.resolveContractPlan(tenantId, memberId, pack, {
+      startsAt: dto.startsAt ? new Date(dto.startsAt) : undefined,
+      endsAt: dto.endsAt ? new Date(dto.endsAt) : undefined,
+    });
 
     try {
       const contract = await this.prisma.$transaction(async (tx) => {
@@ -263,7 +269,6 @@ export class ContractsService {
           packId: pack.id,
           paymentId: payment.id,
           plan,
-          creditsExpireAt: pack.creditsExpireAt,
         });
       });
 
@@ -332,6 +337,7 @@ export class ContractsService {
       await this.quarkOffers.ensureOfferForContract(
         tenantId,
         payment.contract.id,
+        { force: true },
       );
       return this.toDetail(payment.contract);
     }
@@ -358,7 +364,11 @@ export class ContractsService {
     if (pack.components.length === 0) {
       throw new BadRequestException('Pack has no components');
     }
-    const plan = this.buildContractPlan(pack);
+    const plan = await this.resolveContractPlan(
+      tenantId,
+      payment.memberId,
+      pack,
+    );
 
     try {
       const contract = await this.prisma.$transaction(async (tx) => {
@@ -378,7 +388,6 @@ export class ContractsService {
           packId: pack.id,
           paymentId: payment.id,
           plan,
-          creditsExpireAt: pack.creditsExpireAt,
         });
       });
 
@@ -439,20 +448,25 @@ export class ContractsService {
     return pack;
   }
 
-  private buildContractPlan(pack: PackForContract): ContractPlan {
-    const startsAt = new Date();
-    const endsAt = this.computeEndsAt(
-      startsAt,
-      pack.billingPeriod,
-      pack.creditsExpireAt,
-    );
-    const hasAccessLibre = pack.components.some(
-      (c) => c.service.type === ServiceType.ACCESO_LIBRE,
-    );
+  /**
+   * Calcula vigencia del contrato según billing del pack (RN-CON-001–004).
+   *
+   * @remarks MONTHLY: un solo plan por afiliado; sin override apila desde max
+   * `endsAt`; con `startsAt` manual → +1 mes y 400 si solapa el mismo pack.
+   * ONE_TIME: puede solapar; defaults +1 mes / `creditsExpireAt`; override
+   * `startsAt` y/o `endsAt`. Créditos heredan `endsAt`.
+   * @throws {BadRequestException} Otro pack MONTHLY vigente, solape MONTHLY,
+   *   `endsAt` en MONTHLY, o rango inválido.
+   */
+  private async resolveContractPlan(
+    tenantId: string,
+    memberId: string,
+    pack: PackForContract,
+    override?: { startsAt?: Date; endsAt?: Date },
+  ): Promise<ContractPlan> {
     const creditComponents = pack.components.filter(
       (c) => c.service.type === ServiceType.POR_SESIONES,
     );
-
     for (const component of creditComponents) {
       if (!component.creditAmount || component.creditAmount < 1) {
         throw new BadRequestException(
@@ -466,15 +480,157 @@ export class ContractsService {
       }
     }
 
+    const hasAccessLibre = pack.components.some(
+      (c) => c.service.type === ServiceType.ACCESO_LIBRE,
+    );
+    const mappedCredits = creditComponents.map((c) => ({
+      serviceId: c.serviceId,
+      creditAmount: c.creditAmount!,
+    }));
+
+    const now = new Date();
+    const overrideStart = override?.startsAt;
+    const overrideEnd = override?.endsAt;
+    if (overrideStart && Number.isNaN(overrideStart.getTime())) {
+      throw new BadRequestException('startsAt is invalid');
+    }
+    if (overrideEnd && Number.isNaN(overrideEnd.getTime())) {
+      throw new BadRequestException('endsAt is invalid');
+    }
+
+    if (pack.billingPeriod === BillingPeriod.MONTHLY) {
+      if (overrideEnd) {
+        throw new BadRequestException(
+          'endsAt is not allowed for MONTHLY packs (duration is always +1 month)',
+        );
+      }
+
+      const monthlyLive = await this.prisma.contract.findMany({
+        where: {
+          AND: [
+            { tenantId },
+            { memberId },
+            { status: ContractStatus.ACTIVE },
+            { pack: { billingPeriod: BillingPeriod.MONTHLY } },
+            {
+              OR: [{ endsAt: null }, { endsAt: { gt: now } }],
+            },
+          ],
+        },
+        include: {
+          pack: { select: { id: true, name: true } },
+        },
+      });
+
+      const otherPlan = monthlyLive.find((c) => c.packId !== pack.id);
+      if (otherPlan) {
+        throw new BadRequestException(
+          `Member already has an active MONTHLY plan (${otherPlan.pack.name}). ` +
+            'Renew that pack or use a ONE_TIME pack for extras.',
+        );
+      }
+
+      let startsAt: Date;
+      if (overrideStart) {
+        startsAt = overrideStart;
+        const endsAt = this.addOneMonth(startsAt);
+        await this.assertNoMonthlyOverlap(
+          tenantId,
+          memberId,
+          pack.id,
+          startsAt,
+          endsAt,
+        );
+        return {
+          startsAt,
+          endsAt,
+          hasAccessLibre,
+          creditComponents: mappedCredits,
+        };
+      }
+
+      const samePack = monthlyLive.filter((c) => c.packId === pack.id);
+      startsAt = now;
+      if (samePack.length > 0) {
+        const maxEnd = samePack.reduce((acc, c) => {
+          if (!c.endsAt) {
+            return acc;
+          }
+          return c.endsAt > acc ? c.endsAt : acc;
+        }, samePack[0].endsAt ?? now);
+        startsAt = maxEnd > now ? maxEnd : now;
+      }
+
+      const endsAt = this.addOneMonth(startsAt);
+      return {
+        startsAt,
+        endsAt,
+        hasAccessLibre,
+        creditComponents: mappedCredits,
+      };
+    }
+
+    if (overrideEnd && !overrideStart && overrideEnd <= now) {
+      throw new BadRequestException('endsAt must be after startsAt (now)');
+    }
+
+    const startsAt = overrideStart ?? now;
+    let endsAt: Date;
+    if (overrideEnd) {
+      endsAt = overrideEnd;
+    } else {
+      const customEnd = pack.creditsExpireAt;
+      endsAt =
+        customEnd && customEnd > startsAt
+          ? customEnd
+          : this.addOneMonth(startsAt);
+    }
+    if (endsAt <= startsAt) {
+      throw new BadRequestException('endsAt must be after startsAt');
+    }
+
     return {
       startsAt,
       endsAt,
       hasAccessLibre,
-      creditComponents: creditComponents.map((c) => ({
-        serviceId: c.serviceId,
-        creditAmount: c.creditAmount!,
-      })),
+      creditComponents: mappedCredits,
     };
+  }
+
+  /**
+   * Rechaza solape abierto con contratos ACTIVE del mismo pack MONTHLY.
+   *
+   * @remarks Tocarse en el borde (`startsAt === other.endsAt`) está permitido.
+   */
+  private async assertNoMonthlyOverlap(
+    tenantId: string,
+    memberId: string,
+    packId: string,
+    startsAt: Date,
+    endsAt: Date,
+  ): Promise<void> {
+    const samePack = await this.prisma.contract.findMany({
+      where: {
+        tenantId,
+        memberId,
+        packId,
+        status: ContractStatus.ACTIVE,
+        endsAt: { not: null },
+      },
+      select: { id: true, startsAt: true, endsAt: true },
+    });
+    const clash = samePack.find((c) => {
+      if (!c.endsAt) {
+        return false;
+      }
+      return startsAt < c.endsAt && endsAt > c.startsAt;
+    });
+    if (clash) {
+      throw new BadRequestException(
+        `MONTHLY startsAt overlaps an active contract of the same pack ` +
+          `(${clash.startsAt.toISOString()} → ${clash.endsAt!.toISOString()})`,
+      );
+    }
   }
 
   private createContractInTx(
@@ -485,7 +641,6 @@ export class ContractsService {
       packId: string;
       paymentId: string;
       plan: ContractPlan;
-      creditsExpireAt: Date | null;
     },
   ) {
     return tx.contract.create({
@@ -503,7 +658,7 @@ export class ContractsService {
             serviceId: c.serviceId,
             initialAmount: c.creditAmount,
             remaining: c.creditAmount,
-            expiresAt: input.creditsExpireAt,
+            expiresAt: input.plan.endsAt,
           })),
         },
       },
@@ -511,17 +666,11 @@ export class ContractsService {
     });
   }
 
-  private computeEndsAt(
-    startsAt: Date,
-    billingPeriod: BillingPeriod,
-    creditsExpireAt: Date | null,
-  ): Date | null {
-    if (billingPeriod === BillingPeriod.MONTHLY) {
-      const ends = new Date(startsAt);
-      ends.setMonth(ends.getMonth() + 1);
-      return ends;
-    }
-    return creditsExpireAt;
+  /** Suma un mes calendario a [from] (misma heurística que antes). */
+  private addOneMonth(from: Date): Date {
+    const ends = new Date(from);
+    ends.setMonth(ends.getMonth() + 1);
+    return ends;
   }
 
   private contractInclude() {
