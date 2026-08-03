@@ -4,7 +4,6 @@ import 'package:provider/provider.dart';
 import 'core/network/api_client.dart';
 import 'core/theme/gymbro_theme.dart';
 import 'core/theme/theme_controller.dart';
-import 'features/access/access_repository.dart';
 import 'features/account/account_repository.dart';
 import 'features/auth/auth_controller.dart';
 import 'features/auth/auth_repository.dart';
@@ -36,7 +35,6 @@ class _GymBroMemberAppState extends State<GymBroMemberApp> {
   late final AuthController _auth;
   late final ThemeController _theme;
   late final AccountRepository _accountRepo;
-  late final AccessRepository _accessRepo;
   late final CredentialOffersRepository _offersRepo;
   late final MemberWalletService _wallet;
 
@@ -46,12 +44,11 @@ class _GymBroMemberAppState extends State<GymBroMemberApp> {
     _api = ApiClient();
     _store = SessionStore();
     _authRepo = AuthRepository(api: _api, store: _store);
-    _auth = AuthController(auth: _authRepo, api: _api);
     _theme = ThemeController();
     _accountRepo = AccountRepository(_api);
-    _accessRepo = AccessRepository(_api);
     _offersRepo = CredentialOffersRepository(_api);
     _wallet = MemberWalletService();
+    _auth = AuthController(auth: _authRepo, api: _api, wallet: _wallet);
     _bootstrap();
   }
 
@@ -65,9 +62,7 @@ class _GymBroMemberAppState extends State<GymBroMemberApp> {
       providers: [
         ChangeNotifierProvider.value(value: _auth),
         ChangeNotifierProvider.value(value: _theme),
-        Provider.value(value: _api),
         Provider.value(value: _accountRepo),
-        Provider.value(value: _accessRepo),
         Provider.value(value: _offersRepo),
         Provider.value(value: _wallet),
       ],

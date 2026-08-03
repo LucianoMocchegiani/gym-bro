@@ -200,8 +200,9 @@
 - [ ] Comprar pack / pagar
 - [ ] Calendario y reservar
 - [ ] Lista de espera
-- [x] Mi QR / credencial
-  - Stub: emitir/reemitir; **escanear QR del local** → `POST /me/access/check-in`; resultado en app + web puerta (polling)
+- [x] Acceso + Credenciales (SSI)
+  - Nav 3 hubs: Inicio · Acceso (Escanear default + Credenciales; offers en Acceso) · Ajustes
+  - Stub vínculo / `stub-venue` **fuera** de la app afiliado (web `/puerta` stub sigue hasta OID4VP gym)
 - [ ] Rutinas y cumplimiento
 - [ ] Avisos + preferencias
 - [ ] Solicitar devolución

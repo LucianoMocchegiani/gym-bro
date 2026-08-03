@@ -26,21 +26,28 @@ Leyenda: `[ ]` input · `(btn)` botón · `{lista}` colección
 
 ---
 
-## 2. App afiliado — Mi QR / credencial
+## 2. App afiliado — hubs (nav)
 
 ```text
+Nav: Inicio | Acceso | Ajustes
+
+Inicio
 +----------------------------------+
-| Mi acceso                        |
-|                                  |
-|        +-------------+           |
-|        | ########### |           |
-|        | ## QR/SSI ## |           |
-|        | ########### |           |
-|        +-------------+           |
-|                                  |
-| Mostrar en puerta                |
-| (Actualizar credencial)          |
+| Hola, {nombre}                   |
+| [ pack · créditos · libre ]      |
+| (Sesiones)  (Tienda)             |
 +----------------------------------+
+
+Acceso → Escanear (default) | Credenciales
++----------------------------------+
+| Escanear: cámara a pantalla      |
+| Credenciales:                    |
+|  [ pendientes de aceptación ]    |
+|    (máx ½ pantalla, scroll)      |
+|  [ cards VC en el celular ]      |
++----------------------------------+
+
+Ajustes → cuenta · tema · API · salir
 ```
 
 ---

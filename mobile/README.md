@@ -7,6 +7,7 @@ Flutter (Material 3). Estilos alineados al Admin web: tema oscuro/lima acid + cl
 - Flutter 3.41+ / Dart 3.11+
 - Device Android por USB con depuración ADB
 - API alcanzable (tunnel o red)
+- Clon local `ssi-quark/quarkid-identity-core-dart` (ver `ssi-quark/README.md`)
 
 ## API
 
@@ -42,15 +43,13 @@ flutter run
 ## Slice actual
 
 - Login afiliado (`tenantSlug`)
-- Home / estado de cuenta (`GET /me/account`)
-- **Bandeja OID4VCI:** offers `PENDING` + **Aceptar** → wallet + `POST …/accept` → `ACCEPTED` (salen de la bandeja). Si el issuer dice vencida/inválida → `POST …/fail` → `FAILED` (también sale; staff re-oferta).
-- Bottom nav: Inicio · Sesiones (placeholder) · QR · Cuenta
-- **Ingreso modo B:** pestaña «Escanear local» (cámara) → `POST /me/access/check-in`
-- Credencial stub (pestaña «Mi credencial») para modo gym escanea afiliado
-- Tema claro/oscuro
+- **3 hubs:** Inicio · Acceso · Ajustes
+  - **Inicio:** estado breve + atajos Sesiones / Tienda (placeholders)
+  - **Acceso:** Escanear (default, cámara) · Credenciales (pendientes de aceptación máx. ½ pantalla + VCs wallet)
+  - **Ajustes:** cuenta, tema, API, logout
+- Cards SSI estilo quark-wallet + detalle expandible (look GymBro)
+- Sin stub / `stub-venue` en la app
 
-En la web, `/puerta` en modo «Afiliado escanea el local» muestra el QR `stub-venue:{tenantId}` y hace polling del resultado.
+Issuer público: `https://issuer.pruebasaproduccunon.uno`.
 
-Issuer público (tunnel): `https://issuer.pruebasaproduccunon.uno` — Compose `BASE_URL` del quark-issuer. Ofers viejos con host Docker: la app reescribe a la URL pública. Tras cambiar `BASE_URL`, reiniciá issuer y re-ofertá (re-POST contrato misma `idempotencyKey`).
-
-Pendiente: calendario/reservas, packs/MP, rutinas, avisos, devoluciones, OID4VP en puerta.
+Pendiente: calendario/reservas, packs/MP, rutinas, avisos; puerta Admin web stub hasta OID4VP gym.

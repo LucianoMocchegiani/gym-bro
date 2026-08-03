@@ -1,13 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../access/qr_screen.dart';
-import '../account/account_screen.dart';
+import '../access/access_screen.dart';
 import '../auth/auth_controller.dart';
 import '../home/home_screen.dart';
-import '../sessions/sessions_placeholder_screen.dart';
+import '../settings/settings_screen.dart';
 
-/// Shell con bottom nav: Inicio · Sesiones · QR · Cuenta.
+/// Shell con 3 hubs: Inicio · Acceso · Ajustes.
 class MemberShell extends StatefulWidget {
   /// Crea el shell.
   const MemberShell({super.key});
@@ -19,12 +18,7 @@ class MemberShell extends StatefulWidget {
 class _MemberShellState extends State<MemberShell> {
   int _index = 0;
 
-  static const _pages = [
-    HomeScreen(),
-    SessionsPlaceholderScreen(),
-    QrScreen(),
-    AccountScreen(),
-  ];
+  static const _titles = ['Inicio', 'Acceso', 'Ajustes'];
 
   @override
   Widget build(BuildContext context) {
@@ -33,8 +27,17 @@ class _MemberShellState extends State<MemberShell> {
         'GYM';
 
     return Scaffold(
-      appBar: AppBar(title: Text(slug)),
-      body: IndexedStack(index: _index, children: _pages),
+      appBar: AppBar(
+        title: Text(_index == 0 ? slug : _titles[_index]),
+      ),
+      body: IndexedStack(
+        index: _index,
+        children: const [
+          HomeScreen(),
+          AccessScreen(),
+          SettingsScreen(),
+        ],
+      ),
       bottomNavigationBar: NavigationBar(
         selectedIndex: _index,
         onDestinationSelected: (i) => setState(() => _index = i),
@@ -45,19 +48,14 @@ class _MemberShellState extends State<MemberShell> {
             label: 'Inicio',
           ),
           NavigationDestination(
-            icon: Icon(Icons.calendar_today_outlined),
-            selectedIcon: Icon(Icons.calendar_today),
-            label: 'Sesiones',
+            icon: Icon(Icons.qr_code_scanner_outlined),
+            selectedIcon: Icon(Icons.qr_code_scanner),
+            label: 'Acceso',
           ),
           NavigationDestination(
-            icon: Icon(Icons.qr_code_2_outlined),
-            selectedIcon: Icon(Icons.qr_code_2),
-            label: 'QR',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.person_outline),
-            selectedIcon: Icon(Icons.person),
-            label: 'Cuenta',
+            icon: Icon(Icons.settings_outlined),
+            selectedIcon: Icon(Icons.settings),
+            label: 'Ajustes',
           ),
         ],
       ),

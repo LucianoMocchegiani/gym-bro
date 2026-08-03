@@ -84,14 +84,30 @@ export class ContractsService {
 
   /**
    * Lista contrataciones de un afiliado del tenant.
+   *
+   * @param options.coversAt - Solo contratos cuya vigencia incluye este instante
+   *   (`startsAt <= coversAt` y `endsAt` null o `> coversAt`), filtrado en DB.
+   * @param options.status - Filtro opcional de estado (p. ej. ACTIVE).
    */
   async listByMember(
     tenantId: string,
     memberId: string,
+    options: { coversAt?: Date; status?: ContractStatus } = {},
   ): Promise<ContractDetail[]> {
     await this.assertMemberInTenant(tenantId, memberId);
+    const coversAt = options.coversAt;
     const contracts = await this.prisma.contract.findMany({
-      where: { tenantId, memberId },
+      where: {
+        tenantId,
+        memberId,
+        ...(options.status ? { status: options.status } : {}),
+        ...(coversAt
+          ? {
+              startsAt: { lte: coversAt },
+              OR: [{ endsAt: null }, { endsAt: { gt: coversAt } }],
+            }
+          : {}),
+      },
       include: this.contractInclude(),
       orderBy: { createdAt: 'desc' },
     });

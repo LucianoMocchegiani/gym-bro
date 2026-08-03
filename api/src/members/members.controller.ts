@@ -49,6 +49,9 @@ export class MembersController {
 
   /**
    * Estado de cuenta del afiliado autenticado (CU-AFI-005).
+   *
+   * @remarks Default `coverage=current`: solo packs ACTIVE vigentes hoy (DB).
+   * Historial completo → `coverage=all` (futuro: historial de compras en app).
    */
   @Get('me/account')
   getMine(
@@ -56,12 +59,15 @@ export class MembersController {
     @CurrentUser() user: AuthUser,
     @Query('status', new ParseEnumPipe(ContractStatus, { optional: true }))
     contractStatus?: ContractStatus,
+    @Query('coverage') coverage?: string,
   ): Promise<MemberAccountDetail> {
     if (user.profileType !== 'MEMBER') {
       throw new ForbiddenException('Member profile required');
     }
+    const scope = coverage === 'all' ? 'all' : 'current';
     return this.membersService.getAccount(tenantId, user.userId, {
       contractStatus,
+      coverage: scope,
     });
   }
 
@@ -72,9 +78,12 @@ export class MembersController {
     @Param('memberId', ParseUUIDPipe) memberId: string,
     @Query('status', new ParseEnumPipe(ContractStatus, { optional: true }))
     contractStatus?: ContractStatus,
+    @Query('coverage') coverage?: string,
   ): Promise<MemberAccountDetail> {
+    const scope = coverage === 'current' ? 'current' : 'all';
     return this.membersService.getAccount(tenantId, memberId, {
       contractStatus,
+      coverage: scope,
     });
   }
 

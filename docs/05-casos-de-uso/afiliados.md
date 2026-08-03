@@ -99,12 +99,14 @@
 **Precondiciones:** Afiliado autenticado.
 
 **Flujo principal:**
-1. Afiliado abre perfil / cuenta.
-2. Sistema muestra sus contrataciones, créditos, deuda, comprobantes, reservas.
+1. Afiliado abre perfil / cuenta / Inicio.
+2. Sistema muestra **packs vigentes hoy** (contrataciones ACTIVE cuya vigencia incluye la fecha actual), créditos por servicio, deuda, reservas próximas.
+3. Contrataciones de otros períodos (pasado / futuro apilado) no entran en esta vista; van a un **historial de compras** (backlog).
 
 **Postcondiciones:** Solo datos propios.
 
-**Reglas relacionadas:** RN-TEN-001
+**Reglas relacionadas:** RN-TEN-001  
+**API:** `GET /me/account?coverage=current` (default member). Staff: `GET /members/:id/account` lista completa (`coverage=all` default).
 
 ---
 

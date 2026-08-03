@@ -1,20 +1,26 @@
 import 'package:flutter/foundation.dart';
 
 import '../../core/network/api_client.dart';
+import '../credentials/member_wallet_service.dart';
 import 'auth_repository.dart';
 import 'session_store.dart';
 
 /// Estado de autenticación Member para la UI.
 class AuthController extends ChangeNotifier {
   /// Crea el controller.
-  AuthController({required AuthRepository auth, required ApiClient api})
-    : _auth = auth,
-      _api = api {
+  AuthController({
+    required AuthRepository auth,
+    required ApiClient api,
+    MemberWalletService? wallet,
+  }) : _auth = auth,
+       _api = api,
+       _wallet = wallet {
     _api.onUnauthorized = refreshIfNeeded;
   }
 
   final AuthRepository _auth;
   final ApiClient _api;
+  final MemberWalletService? _wallet;
 
   MemberSession? _session;
   bool _ready = false;
@@ -84,9 +90,10 @@ class AuthController extends ChangeNotifier {
     return ok;
   }
 
-  /// Cierra sesión.
+  /// Cierra sesión GymBro y bloquea la wallet local.
   Future<void> logout() async {
     await _auth.logout();
+    await _wallet?.lock();
     _session = null;
     notifyListeners();
   }

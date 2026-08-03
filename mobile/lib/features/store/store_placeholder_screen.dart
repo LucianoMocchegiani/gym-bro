@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 
-/// Placeholder sesiones / reservas (slice siguiente).
-class SessionsPlaceholderScreen extends StatelessWidget {
+/// Placeholder tienda / packs (slice siguiente).
+class StorePlaceholderScreen extends StatelessWidget {
   /// Crea la pantalla.
-  const SessionsPlaceholderScreen({super.key});
+  const StorePlaceholderScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Sesiones')),
+      appBar: AppBar(title: const Text('Tienda')),
       body: Center(
         child: Padding(
           padding: const EdgeInsets.all(24),
@@ -16,18 +16,15 @@ class SessionsPlaceholderScreen extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               Icon(
-                Icons.calendar_month_outlined,
+                Icons.storefront_outlined,
                 size: 56,
                 color: Theme.of(context).colorScheme.primary,
               ),
               const SizedBox(height: 12),
-              Text(
-                'Sesiones',
-                style: Theme.of(context).textTheme.headlineMedium,
-              ),
+              Text('Tienda', style: Theme.of(context).textTheme.headlineMedium),
               const SizedBox(height: 8),
               Text(
-                'Calendario y reservas llegan en el próximo slice.',
+                'Comprar packs y pagar llega en un próximo slice.',
                 textAlign: TextAlign.center,
                 style: Theme.of(context).textTheme.bodySmall,
               ),

@@ -167,7 +167,7 @@ Diseño completo: [12-acceso-quark-oid4-diseno.md](./12-acceso-quark-oid4-diseno
 - Reintento Super: `POST /api/tenants/:id/quark/provision` + UI en detalle de tenant.
 - Create/update pack → `PATCH …/records/metadata` (`pack_{id}` / `urn:gymbro:pack:{id}`; soft-fail en `packs.quark_*`).
 - Pack APPROVED → `POST …/openid4vc/offer` + `credential_offers` slim + `GET /me/credential-offers` (soft-fail). Re-oferta: re-POST contrato misma `idempotencyKey`.
-- App afiliado: bandeja Home + accept OID4VCI (`identity_core_dart`); `POST /me/credential-offers/:id/accept` → `ACCEPTED`; `POST …/fail` → `FAILED` si offer vencido/inválido; issuer tunnel `issuer.pruebasaproduccunon.uno`.
+- App afiliado: 3 hubs (Inicio / Acceso / Ajustes); Acceso = scan OID4VCI/VP + Credenciales + offers; issuer tunnel `issuer.pruebasaproduccunon.uno`. Stub solo en web puerta.
 - Clon local en `ssi-quark/` (gitignore).
 
 **Pendiente:** OID4VP en puerta, adapter `AccessIdentityProvider` Quark.
@@ -299,7 +299,7 @@ Prefijo sugerido: `/api/v1`.
 | Access | `/access/verify`, `/access/manual-pass` |
 | Rutinas | `/exercises`, `/routine-templates`, `/assigned-routines` |
 | Notif | `/notifications`, `/notification-templates`, preferences |
-| Afiliados | Super/Staff CRUD members + PATCH status (`members.deactivate`); estado de cuenta `GET /members/:id/account` / `GET /me/account` |
+| Afiliados | Super/Staff CRUD members + PATCH status (`members.deactivate`); estado de cuenta `GET /members/:id/account` / `GET /me/account?coverage=current\|all` |
 | Sesiones | Staff `GET|POST|PATCH /sessions`, `PATCH /sessions/:id/capacity` (ampliar cupo) + `/session-recurrence-rules` (`sessions.write`); Super mirrors bajo `/tenants/:tid/...` |
 | Reservas | Member `/me/reservations` (crédito) + cancel; Staff `/members/:id/reservations` (crédito o drop-in stub/caja) + `/reservations/:id/status` (`reservations.write`) |
 | Waitlist | Member `/me/waitlist`; Staff `/members/:id/waitlist`, `/sessions/:id/waitlist` (`reservations.write`); promoción AUTO al liberar cupo |

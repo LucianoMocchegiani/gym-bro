@@ -15,6 +15,7 @@ import * as bcrypt from 'bcryptjs';
 import { AUDIT_ACTIONS, AuditActor } from '../audit/audit.types';
 import { AuditService } from '../audit/audit.service';
 import { ContractsService } from '../contracts/contracts.service';
+import { ContractDetail } from '../contracts/contracts.types';
 import { PrismaService } from '../prisma/prisma.service';
 import {
   CreateMemberDto,
@@ -69,39 +70,56 @@ export class MembersService {
    * Estado de cuenta: ficha + contratos + pagos + placeholders deuda/reservas.
    *
    * @remarks CU-AFI-004 / CU-AFI-005. `debt` siempre AL_DIA hasta E5.
-   * Contratos ACTIVE primero; filtro opcional por status de contrato.
+   * `coverage: 'current'` → solo contratos ACTIVE cuya vigencia incluye ahora
+   * (filtro en DB). `coverage: 'all'` (default staff) → listado completo.
    */
   async getAccount(
     tenantId: string,
     memberId: string,
-    options: { contractStatus?: ContractStatus } = {},
+    options: {
+      contractStatus?: ContractStatus;
+      coverage?: 'current' | 'all';
+    } = {},
   ): Promise<MemberAccountDetail> {
     const member = await this.findInTenant(tenantId, memberId);
-    const allContracts = await this.contractsService.listByMember(
-      tenantId,
-      memberId,
-    );
-    const active = allContracts.filter((c) => c.status === 'ACTIVE');
-    const totalCreditsRemaining = active.reduce(
+    const coverage = options.coverage ?? 'all';
+    const now = new Date();
+
+    let contracts: ContractDetail[];
+    if (coverage === 'current') {
+      contracts = await this.contractsService.listByMember(tenantId, memberId, {
+        coversAt: now,
+        status: options.contractStatus ?? ContractStatus.ACTIVE,
+      });
+    } else {
+      const allContracts = await this.contractsService.listByMember(
+        tenantId,
+        memberId,
+      );
+      if (options.contractStatus) {
+        contracts = allContracts.filter(
+          (c) => c.status === options.contractStatus,
+        );
+      } else {
+        contracts = [...allContracts].sort((a, b) => {
+          const rank = (s: string) => (s === 'ACTIVE' ? 0 : 1);
+          const byStatus = rank(a.status) - rank(b.status);
+          if (byStatus !== 0) {
+            return byStatus;
+          }
+          return b.createdAt.getTime() - a.createdAt.getTime();
+        });
+      }
+    }
+
+    const forSummary =
+      coverage === 'current'
+        ? contracts
+        : contracts.filter((c) => c.status === 'ACTIVE');
+    const totalCreditsRemaining = forSummary.reduce(
       (sum, c) => sum + c.creditBalances.reduce((s, b) => s + b.remaining, 0),
       0,
     );
-
-    let contracts = allContracts;
-    if (options.contractStatus) {
-      contracts = allContracts.filter(
-        (c) => c.status === options.contractStatus,
-      );
-    } else {
-      contracts = [...allContracts].sort((a, b) => {
-        const rank = (s: string) => (s === 'ACTIVE' ? 0 : 1);
-        const byStatus = rank(a.status) - rank(b.status);
-        if (byStatus !== 0) {
-          return byStatus;
-        }
-        return b.createdAt.getTime() - a.createdAt.getTime();
-      });
-    }
 
     const payments = await this.prisma.payment.findMany({
       where: { tenantId, memberId },
@@ -141,8 +159,8 @@ export class MembersService {
     return {
       member: this.toDetail(member),
       summary: {
-        activeContracts: active.length,
-        hasAccessLibre: active.some((c) => c.hasAccessLibre),
+        activeContracts: forSummary.length,
+        hasAccessLibre: forSummary.some((c) => c.hasAccessLibre),
         totalCreditsRemaining,
       },
       debt: { amount: 0, status: 'AL_DIA' },

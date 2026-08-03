@@ -41,6 +41,16 @@
 
 ---
 
+## App afiliado / cuenta
+
+| Ítem | Notas |
+|------|--------|
+| Historial de compras (packs de períodos pasados / futuros apilados) | Inicio solo muestra vigencia **hoy** (`GET /me/account?coverage=current`). Historial = UI + `coverage=all` o endpoint dedicado |
+| Comprar pack / pagar desde la app | E9 pendiente |
+| Calendario y reservar | E9 pendiente |
+
+---
+
 ## Sesiones / packs
 
 | Ítem | Notas |

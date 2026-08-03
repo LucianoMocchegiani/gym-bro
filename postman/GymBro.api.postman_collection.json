@@ -1526,8 +1526,8 @@
           "request": {
             "method": "GET",
             "header": [],
-            "url": "{{baseUrl}}/api/me/account",
-            "description": "CU-AFI-005. Requiere accessToken de login Member."
+            "url": "{{baseUrl}}/api/me/account?coverage=current",
+            "description": "CU-AFI-005. Default coverage=current: solo packs ACTIVE vigentes hoy (filtro DB). coverage=all = historial completo."
           }
         }
       ]

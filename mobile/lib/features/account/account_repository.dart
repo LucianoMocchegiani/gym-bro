@@ -4,45 +4,31 @@ import '../../core/network/api_client.dart';
 class MemberAccount {
   /// Crea el modelo.
   MemberAccount({
-    required this.memberName,
-    required this.memberEmail,
-    required this.activeContracts,
-    required this.hasAccessLibre,
-    required this.totalCreditsRemaining,
     required this.debtStatus,
     required this.debtAmount,
     required this.contracts,
     required this.reservations,
   });
 
-  final String? memberName;
-  final String memberEmail;
-  final int activeContracts;
-  final bool hasAccessLibre;
-  final int totalCreditsRemaining;
   final String debtStatus;
   final num debtAmount;
   final List<AccountContract> contracts;
   final List<AccountReservation> reservations;
 
+  /// Contratos vigentes hoy (la API con `coverage=current` ya filtra en DB).
+  List<AccountContract> get activeContracts => contracts;
+
   factory MemberAccount.fromJson(Map<String, dynamic> json) {
-    final member = json['member'] as Map<String, dynamic>;
-    final summary = json['summary'] as Map<String, dynamic>;
-    final debt = json['debt'] as Map<String, dynamic>;
+    final debt = json['debt'] as Map<String, dynamic>? ?? {};
     final contracts = (json['contracts'] as List<dynamic>? ?? [])
-        .whereType<Map<String, dynamic>>()
-        .map(AccountContract.fromJson)
+        .whereType<Map>()
+        .map((e) => AccountContract.fromJson(Map<String, dynamic>.from(e)))
         .toList();
     final reservations = (json['reservations'] as List<dynamic>? ?? [])
-        .whereType<Map<String, dynamic>>()
-        .map(AccountReservation.fromJson)
+        .whereType<Map>()
+        .map((e) => AccountReservation.fromJson(Map<String, dynamic>.from(e)))
         .toList();
     return MemberAccount(
-      memberName: member['name'] as String?,
-      memberEmail: member['email'] as String,
-      activeContracts: summary['activeContracts'] as int? ?? 0,
-      hasAccessLibre: summary['hasAccessLibre'] as bool? ?? false,
-      totalCreditsRemaining: summary['totalCreditsRemaining'] as int? ?? 0,
       debtStatus: debt['status'] as String? ?? 'AL_DIA',
       debtAmount: debt['amount'] as num? ?? 0,
       contracts: contracts,
@@ -51,18 +37,55 @@ class MemberAccount {
   }
 }
 
-/// Contrato en estado de cuenta.
+/// Saldo de créditos por servicio dentro de un pack.
+class AccountCreditBalance {
+  AccountCreditBalance({
+    required this.serviceName,
+    required this.remaining,
+    required this.initialAmount,
+  });
+
+  final String serviceName;
+  final int remaining;
+  final int initialAmount;
+
+  factory AccountCreditBalance.fromJson(Map<String, dynamic> json) {
+    return AccountCreditBalance(
+      serviceName: json['serviceName'] as String? ?? 'Servicio',
+      remaining: json['remaining'] as int? ?? 0,
+      initialAmount: json['initialAmount'] as int? ?? 0,
+    );
+  }
+}
+
+/// Contratación / pack en estado de cuenta.
 class AccountContract {
-  AccountContract({required this.packName, required this.status, this.endsAt});
+  AccountContract({
+    required this.packName,
+    required this.status,
+    required this.hasAccessLibre,
+    required this.creditBalances,
+    this.endsAt,
+  });
 
   final String packName;
   final String status;
+  final bool hasAccessLibre;
+  final List<AccountCreditBalance> creditBalances;
   final DateTime? endsAt;
 
   factory AccountContract.fromJson(Map<String, dynamic> json) {
+    final balances = (json['creditBalances'] as List<dynamic>? ?? [])
+        .whereType<Map>()
+        .map(
+          (e) => AccountCreditBalance.fromJson(Map<String, dynamic>.from(e)),
+        )
+        .toList();
     return AccountContract(
       packName: json['packName'] as String? ?? 'Pack',
       status: json['status'] as String? ?? '',
+      hasAccessLibre: json['hasAccessLibre'] as bool? ?? false,
+      creditBalances: balances,
       endsAt: json['endsAt'] != null
           ? DateTime.tryParse(json['endsAt'] as String)
           : null,
@@ -97,10 +120,12 @@ class AccountRepository {
 
   final ApiClient _api;
 
-  /// Trae estado de cuenta del afiliado autenticado.
+  /// Trae estado de cuenta del afiliado (packs vigentes hoy).
+  ///
+  /// `coverage=current` filtra en API/DB; no trae historial de otros períodos.
   Future<MemberAccount> fetchMine() {
     return _api.getJson(
-      '/api/me/account',
+      '/api/me/account?coverage=current',
       parse: (json) => MemberAccount.fromJson(json! as Map<String, dynamic>),
     );
   }
