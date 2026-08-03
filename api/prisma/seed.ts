@@ -1,10 +1,12 @@
 import * as bcrypt from 'bcryptjs';
 import { PrismaClient, TenantStatus, MemberStatus } from '@prisma/client';
+import { provisionDemoQuark } from './seed-quark-demo';
 
 const prisma = new PrismaClient();
 
 const DEMO_PASSWORD = 'ChangeMe123!';
 const DEMO_TENANT_ID = '00000000-0000-4000-8000-000000000001';
+const DEMO_SLUG = 'demo';
 
 const PERMISSIONS: { code: string; description: string; dangerous: boolean }[] =
   [
@@ -114,7 +116,8 @@ const PROFESOR_CODES = [
 ];
 
 /**
- * Seed de desarrollo: Super + tenant demo completo (branch, roles, staff Admin, member).
+ * Seed de desarrollo: Super + tenant demo completo (branch, roles, staff Admin, member)
+ * + provisioning Quark soft-fail (`gymbro-iss-demo` / `gymbro-ver-demo`).
  *
  * @remarks Credenciales solo para entornos locales.
  */
@@ -133,11 +136,15 @@ async function main(): Promise<void> {
 
   const tenant = await prisma.tenant.upsert({
     where: { id: DEMO_TENANT_ID },
-    update: { name: 'Demo Gym', status: TenantStatus.ACTIVE, slug: 'demo' },
+    update: {
+      name: 'Demo Gym',
+      status: TenantStatus.ACTIVE,
+      slug: DEMO_SLUG,
+    },
     create: {
       id: DEMO_TENANT_ID,
       name: 'Demo Gym',
-      slug: 'demo',
+      slug: DEMO_SLUG,
       status: TenantStatus.ACTIVE,
     },
   });
@@ -283,10 +290,12 @@ async function main(): Promise<void> {
     },
   });
 
+  const quark = await provisionDemoQuark(prisma, tenant.id, DEMO_SLUG);
+
   console.log('Seed OK');
   console.log({
     superUser: { id: superUser.id, email: superUser.email },
-    tenant: { id: tenant.id, name: tenant.name },
+    tenant: { id: tenant.id, name: tenant.name, slug: DEMO_SLUG },
     branch: { id: branch.id, name: branch.name },
     staff: {
       id: staff.id,
@@ -296,6 +305,12 @@ async function main(): Promise<void> {
     profesorRoleId: profesorRole.id,
     member: { id: member.id, email: member.email },
     password: DEMO_PASSWORD,
+    quark: {
+      status: quark.status,
+      issuerWalletId: quark.issuerWalletId,
+      verifierWalletId: quark.verifierWalletId,
+      lastError: quark.lastError,
+    },
   });
 }
 

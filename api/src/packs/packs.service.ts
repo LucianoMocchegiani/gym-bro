@@ -7,6 +7,7 @@ import { Pack, Prisma, Service, ServiceType } from '@prisma/client';
 import { AUDIT_ACTIONS, AuditActor } from '../audit/audit.types';
 import { AuditService } from '../audit/audit.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { QuarkPackSyncService } from '../quark/quark-pack-sync.service';
 import {
   CreatePackDto,
   PackComponentInputDto,
@@ -26,13 +27,15 @@ type PackWithComponents = Pack & {
 /**
  * CRUD de packs del catálogo (CU-SER-002 / RN-SER-004..007).
  *
- * @remarks Contratación y consumo de créditos quedan fuera de esta entrega.
+ * @remarks Tras create/update se sincroniza metadata OID4VCI en Quark (soft-fail).
+ * Contratación y consumo de créditos quedan fuera de esta entrega.
  */
 @Injectable()
 export class PacksService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
+    private readonly quarkPackSync: QuarkPackSyncService,
   ) {}
 
   /**
@@ -63,7 +66,7 @@ export class PacksService {
   }
 
   /**
-   * Crea pack + componentes en una transacción.
+   * Crea pack + componentes en una transacción; luego sync Quark (soft-fail).
    */
   async create(
     tenantId: string,
@@ -95,7 +98,15 @@ export class PacksService {
       return created;
     });
 
-    const detail = this.toDetail(pack);
+    await this.quarkPackSync.syncPackConfiguration(
+      tenantId,
+      pack.id,
+      pack.name,
+    );
+
+    const detail = this.toDetail(
+      await this.findInTenant(tenantId, pack.id),
+    );
     await this.audit.record({
       tenantId,
       actor,
@@ -110,6 +121,7 @@ export class PacksService {
 
   /**
    * Actualiza pack; si hay `components`, reemplaza el set completo.
+   * Re-sincroniza metadata Quark (nombre / config) con soft-fail.
    */
   async update(
     tenantId: string,
@@ -182,7 +194,15 @@ export class PacksService {
       });
     });
 
-    const detail = this.toDetail(pack);
+    await this.quarkPackSync.syncPackConfiguration(
+      tenantId,
+      pack.id,
+      pack.name,
+    );
+
+    const detail = this.toDetail(
+      await this.findInTenant(tenantId, packId),
+    );
     await this.audit.record({
       tenantId,
       actor,
@@ -360,6 +380,10 @@ export class PacksService {
       active: pack.active,
       kind: this.inferKind(pack.components),
       components,
+      quarkConfigurationId: pack.quarkConfigurationId,
+      quarkVct: pack.quarkVct,
+      quarkSyncedAt: pack.quarkSyncedAt,
+      quarkLastError: pack.quarkLastError,
       createdAt: pack.createdAt,
       updatedAt: pack.updatedAt,
     };
@@ -373,6 +397,9 @@ export class PacksService {
       creditsExpireAt: detail.creditsExpireAt?.toISOString() ?? null,
       active: detail.active,
       kind: detail.kind,
+      quarkConfigurationId: detail.quarkConfigurationId,
+      quarkSyncedAt: detail.quarkSyncedAt?.toISOString() ?? null,
+      quarkLastError: detail.quarkLastError,
       components: detail.components.map((c) => ({
         serviceId: c.serviceId,
         creditAmount: c.creditAmount,

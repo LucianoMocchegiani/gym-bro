@@ -1,6 +1,6 @@
 # Acceso Quark / OID4 — diseño GymBro
 
-**Estado:** Cerrado (diseño) — implementación pendiente  
+**Estado:** Diseño cerrado — spike tenant + pack→metadata implementados; offer/VP pendientes  
 **Fecha:** 2026-08-02  
 **Contexto:** Stub actual (`ACCESS_PROVIDER=stub`) sigue en producción MVP; este doc fija el camino a QuarkID (OID4VCI/OID4VP + Credo multi-tenant).
 
@@ -99,7 +99,7 @@ La **evaluación fina** (deuda real, cupo sesión, reingreso) puede seguir en Gy
 ## 5. Orden de implementación
 
 1. **[x] Spike:** Compose issuer+verifier (sin RabbitMQ) + al crear tenant GymBro → Quark + soft-fail + `POST …/quark/provision` + UI Super.  
-2. **Pack → configuration** en metadata issuer.  
+2. **[x] Pack → configuration** en metadata issuer (`pack_{id}` / `urn:gymbro:pack:{id}`; soft-fail; `packs.quark_*`).  
 3. **Offer al pago** + bandeja “Aceptar” en app (con `identity_core_dart`).  
 4. **Puerta OID4VP** vía verifier del gym (reemplazo gradual del stub).  
 5. Push remoto de offers (E8).  
@@ -120,10 +120,12 @@ Hasta (4), el stub y el QR `stub-venue` siguen válidos para demos.
 
 ## 7. Abierto (no bloquea el diseño)
 
-- `vct` naming exacto (`urn:gymbro:pack:{id}` vs corto).  
+- `vct` / `configurationId`: **cerrado** — `pack_{packId}` y `urn:gymbro:pack:{packId}`.  
 - ¿Drop-in comparte configuration genérica o tipo propio?  
 - Tolerancia: claim `graceUntil` vs segunda VC.  
 - Hosting Quark (issuer/verifier) en el mismo compose vs servicios externos del trabajo.
+
+**Nota ops:** issuers creados en el spike **sin** body `oid4vc` no tienen `OpenId4VcIssuerRecord`; el PATCH de pack falla (soft-fail). Provision nuevo crea issuer con `oid4vc` mínimo; tenants READY viejos pueden necesitar recrear el issuer.
 
 ---
 

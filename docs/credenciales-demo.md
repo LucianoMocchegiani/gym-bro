@@ -1,7 +1,8 @@
 # Credenciales demo (local)
 
 **Solo desarrollo.** No usar en producción.  
-Origen: seed [`api/prisma/seed.ts`](../api/prisma/seed.ts).
+Origen: seed [`api/prisma/seed.ts`](../api/prisma/seed.ts).  
+Arranque desde cero (migraciones + seed): [13-setup-db-desde-cero.md](./13-setup-db-desde-cero.md).
 
 ```powershell
 docker compose exec api npm run prisma:seed
@@ -26,6 +27,8 @@ Super Admin: **http://localhost:3000/super/login**
 
 El staff demo queda con rol sistema **Admin** tras el seed.  
 El afiliado demo queda `status: ACTIVE` (solo ACTIVE puede hacer login).
+
+Quark del demo (soft-fail si los servicios no están): wallets `gymbro-iss-demo` / `gymbro-ver-demo` en columnas `tenants.quark_*`. Ver [13-setup-db-desde-cero.md](./13-setup-db-desde-cero.md).
 
 ---
 

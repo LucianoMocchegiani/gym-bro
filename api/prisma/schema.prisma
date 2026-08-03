@@ -469,6 +469,13 @@ model Pack {
   billingPeriod   BillingPeriod @map("billing_period")
   creditsExpireAt DateTime?     @map("credits_expire_at")
   active          Boolean       @default(true)
+  /// Clave en `credentialConfigurationsSupported` del issuer Quark (`pack_{id}`).
+  quarkConfigurationId String?   @map("quark_configuration_id")
+  /// VCT OID4VCI (`urn:gymbro:pack:{id}`).
+  quarkVct             String?   @map("quark_vct")
+  quarkSyncedAt        DateTime? @map("quark_synced_at")
+  /// Último error de sync metadata (soft-fail).
+  quarkLastError       String?   @map("quark_last_error")
   createdAt       DateTime      @default(now()) @map("created_at")
   updatedAt       DateTime      @updatedAt @map("updated_at")
 

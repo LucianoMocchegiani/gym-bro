@@ -141,6 +141,7 @@
   - modos `gym_scans_member` | `member_scans_gym`; `ACCESS_PROVIDER=stub`
 - [ ] Adapter Quark / SSI (OID4VP / emisión VC)
 - [x] Spike Quark Compose: issuer+verifier + provision al crear tenant (soft-fail + `POST …/quark/provision`)
+- [x] Pack → `credentialConfigurationsSupported` en issuer Quark (soft-fail + `packs.quark_*`)
 - [x] Emitir / revocar credencial de vínculo
   - tabla `access_credentials`; Member `GET|POST /me/access-credential…`; Staff list/issue/revoke
 - [x] `POST /access/verify` (1 modo de escaneo en MVP)
@@ -268,7 +269,7 @@ E11 → E12
 
 ## Próximo paso
 
-Seguir E9 (sesiones/reservas, packs/MP), E8 notificaciones / rutinas E7, o Quark paso 2 (pack → credentialConfigurations) según [12-acceso-quark-oid4-diseno.md](./12-acceso-quark-oid4-diseno.md).
+Seguir E9 (sesiones/reservas, packs/MP), E8 notificaciones / rutinas E7, o Quark paso 3 (offer al pago + bandeja Aceptar) según [12-acceso-quark-oid4-diseno.md](./12-acceso-quark-oid4-diseno.md).
 
 ---
 

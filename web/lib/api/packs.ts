@@ -25,6 +25,11 @@ export type PackDetail = {
   active: boolean;
   kind: PackKind;
   components: PackComponentDetail[];
+  /** Clave OID4VCI (`pack_{id}`); null si aún no se intentó sync. */
+  quarkConfigurationId: string | null;
+  quarkVct: string | null;
+  quarkSyncedAt: string | null;
+  quarkLastError: string | null;
   createdAt: string;
   updatedAt: string;
 };

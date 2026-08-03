@@ -1,7 +1,7 @@
 /**
- * Puerto HTTP hacia Quark issuer/verifier (OID4 alta de wallets).
+ * Puerto HTTP hacia Quark issuer/verifier (OID4 alta de wallets + metadata).
  *
- * @remarks Solo provisioning de gym (spike). Emisión VC / OID4VP vienen después.
+ * @remarks Emisión VC / OID4VP vienen después.
  * @see docs/12-acceso-quark-oid4-diseno.md
  */
 export type QuarkCreateIssuerResult = {
@@ -31,13 +31,32 @@ export type QuarkVerifierListItem = {
 };
 
 /**
+ * Metadata OID4VCI a fusionar en el issuer (`PATCH …/records/metadata`).
+ */
+export type QuarkIssuerMetadataPatch = {
+  display?: Array<Record<string, unknown>>;
+  credentialConfigurationsSupported?: Record<string, unknown>;
+};
+
+export type QuarkPatchIssuerMetadataResult = {
+  issuerId: string;
+  recordType: string;
+  record: Record<string, unknown>;
+};
+
+/**
  * Cliente hacia los servicios Quark del Compose local.
  */
 export abstract class QuarkAdminPort {
   /**
    * Alta de issuer (`POST /v1/issuers`).
+   *
+   * @param oid4vc - Si se envía, materializa `OpenId4VcIssuerRecord` (necesario para PATCH metadata).
    */
-  abstract createIssuer(issuerId: string): Promise<QuarkCreateIssuerResult>;
+  abstract createIssuer(
+    issuerId: string,
+    oid4vc?: QuarkIssuerMetadataPatch,
+  ): Promise<QuarkCreateIssuerResult>;
 
   /**
    * Alta de verifier (`POST /v1/verifiers`).
@@ -55,4 +74,20 @@ export abstract class QuarkAdminPort {
    * Lista verifiers (`GET /v1/verifiers`).
    */
   abstract listVerifiers(): Promise<QuarkVerifierListItem[]>;
+
+  /**
+   * Merge de metadata OID4VCI (`PATCH /v1/issuers/:id/records/metadata`).
+   */
+  abstract patchIssuerMetadata(
+    issuerWalletId: string,
+    patch: QuarkIssuerMetadataPatch,
+  ): Promise<QuarkPatchIssuerMetadataResult>;
+
+  /**
+   * Lista records Credo por tipo (`GET /v1/issuers/:id/records?type=`).
+   */
+  abstract listIssuerRecords(
+    issuerWalletId: string,
+    type: string,
+  ): Promise<{ total: number }>;
 }

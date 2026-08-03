@@ -64,7 +64,8 @@ Servicios:
 1. Cloná repos oficiales en `ssi-quark/` (ver [`ssi-quark/README.md`](./ssi-quark/README.md)).
 2. `docker compose up --build` incluye `quark-issuer` y `quark-verifier` (**sin** RabbitMQ/VDR).
 3. Al crear un gym (`POST /api/tenants`) se provisionan `gymbro-iss-{slug}` + `gymbro-ver-{slug}` (soft-fail). Reintento: Super → tenant → **Reintentar Quark**, o `POST /api/tenants/:id/quark/provision`.
-4. Si el volumen de Postgres ya existía antes de este cambio, creá las DBs Quark a mano o `docker compose down -v` (borra datos) y volvé a subir.
+4. Create/update de pack sincroniza `credentialConfigurationsSupported` en el issuer (`pack_{id}` / `urn:gymbro:pack:{id}`; soft-fail → `packs.quark_*`).
+5. Si el volumen de Postgres ya existía antes de este cambio, creá las DBs Quark a mano o `docker compose down -v` (borra datos) y volvé a subir.
 
 ```powershell
 docker compose exec postgres psql -U gymbro -d gymbro -c "CREATE USER quarkid WITH PASSWORD 'quarkid';"
@@ -94,7 +95,7 @@ docker compose down -v
 docker compose up --build -d
 ```
 
-Después de `down -v` la DB queda vacía: hay que **aplicar todas las migraciones** (un solo comando las corre en orden) y el seed:
+Después de `down -v` la DB queda vacía: migraciones + generate + seed. Checklist completo: [docs/13-setup-db-desde-cero.md](./docs/13-setup-db-desde-cero.md).
 
 ```powershell
 docker compose exec api npx prisma migrate deploy
@@ -107,24 +108,24 @@ Si el health da `socket hang up` o la API no compila tras un schema nuevo, suele
 
 ### Base de datos (Prisma)
 
-ORM: **Prisma 6** en `api/prisma/` (Prisma 7 queda diferido: exige ESM + driver adapters poco amigables con Nest CJS). Migraciones **manuales** en desarrollo:
+ORM: **Prisma 6** en `api/prisma/` (Prisma 7 queda diferido: exige ESM + driver adapters poco amigables con Nest CJS). Ver [docs/13-setup-db-desde-cero.md](./docs/13-setup-db-desde-cero.md).
 
 ```powershell
-# Preferido con Compose levantado:
+# Aplicar pendientes (DB limpia / Compose):
+docker compose exec api npx prisma migrate deploy
+
+# Crear migración nueva en dev:
 docker compose exec api npm run prisma:migrate
 
-# Desde el host: en api/.env usá localhost (no el hostname `postgres`)
-cd api
-npm run prisma:migrate
+# Seed (Super + demo):
+docker compose exec api npm run prisma:seed
 ```
 
 Health con DB: `GET /api/health` → `{ status, database, checkedAt }`.
 
 ### Auth (JWT + refresh)
 
-```powershell
-docker compose exec api npm run prisma:seed
-```
+Seed y credenciales: [docs/13-setup-db-desde-cero.md](./docs/13-setup-db-desde-cero.md) · [docs/credenciales-demo.md](./docs/credenciales-demo.md).
 
 | Perfil | Endpoint | Seed |
 |--------|----------|------|

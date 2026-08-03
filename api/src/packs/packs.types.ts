@@ -15,7 +15,7 @@ export type PackComponentDetail = {
 };
 
 /**
- * Pack del catálogo con componentes y kind calculado.
+ * Pack del catálogo con componentes, kind calculado y refs Quark OID4VCI.
  */
 export type PackDetail = {
   id: string;
@@ -28,6 +28,13 @@ export type PackDetail = {
   active: boolean;
   kind: PackKind;
   components: PackComponentDetail[];
+  /** Clave en `credentialConfigurationsSupported` (`pack_{id}`). */
+  quarkConfigurationId: string | null;
+  /** VCT (`urn:gymbro:pack:{id}`). */
+  quarkVct: string | null;
+  quarkSyncedAt: Date | null;
+  /** Soft-fail de sync; null si OK o nunca intentado. */
+  quarkLastError: string | null;
   createdAt: Date;
   updatedAt: Date;
 };

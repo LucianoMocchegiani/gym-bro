@@ -1,10 +1,11 @@
 import { Module } from '@nestjs/common';
 import { HttpQuarkAdminAdapter } from './http-quark-admin.adapter';
 import { QuarkAdminPort } from './quark-admin.port';
+import { QuarkPackSyncService } from './quark-pack-sync.service';
 import { QuarkProvisionService } from './quark-provision.service';
 
 /**
- * Integración Quark (issuer/verifier) para provisioning por tenant.
+ * Integración Quark (issuer/verifier + sync metadata de packs).
  */
 @Module({
   providers: [
@@ -14,7 +15,8 @@ import { QuarkProvisionService } from './quark-provision.service';
       useExisting: HttpQuarkAdminAdapter,
     },
     QuarkProvisionService,
+    QuarkPackSyncService,
   ],
-  exports: [QuarkProvisionService, QuarkAdminPort],
+  exports: [QuarkProvisionService, QuarkPackSyncService, QuarkAdminPort],
 })
 export class QuarkModule {}

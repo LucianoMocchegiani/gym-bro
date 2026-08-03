@@ -5,6 +5,8 @@ import {
   QuarkCreateIssuerResult,
   QuarkCreateVerifierResult,
   QuarkIssuerListItem,
+  QuarkIssuerMetadataPatch,
+  QuarkPatchIssuerMetadataResult,
   QuarkVerifierListItem,
 } from './quark-admin.port';
 
@@ -39,11 +41,18 @@ export class HttpQuarkAdminAdapter extends QuarkAdminPort {
   /**
    * @inheritdoc
    */
-  async createIssuer(issuerId: string): Promise<QuarkCreateIssuerResult> {
+  async createIssuer(
+    issuerId: string,
+    oid4vc?: QuarkIssuerMetadataPatch,
+  ): Promise<QuarkCreateIssuerResult> {
+    const body: Record<string, unknown> = { issuerId };
+    if (oid4vc) {
+      body.oid4vc = oid4vc;
+    }
     return this.postJson<QuarkCreateIssuerResult>(
       this.issuerBase(),
       '/v1/issuers',
-      { issuerId },
+      body,
     );
   }
 
@@ -82,6 +91,40 @@ export class HttpQuarkAdminAdapter extends QuarkAdminPort {
     return data.verifiers ?? [];
   }
 
+  /**
+   * @inheritdoc
+   */
+  async patchIssuerMetadata(
+    issuerWalletId: string,
+    patch: QuarkIssuerMetadataPatch,
+  ): Promise<QuarkPatchIssuerMetadataResult> {
+    return this.patchJson<QuarkPatchIssuerMetadataResult>(
+      this.issuerBase(),
+      `/v1/issuers/${encodeURIComponent(issuerWalletId)}/records/metadata`,
+      patch,
+    );
+  }
+
+  /**
+   * @inheritdoc
+   */
+  async listIssuerRecords(
+    issuerWalletId: string,
+    type: string,
+  ): Promise<{ total: number }> {
+    const data = await this.getJson<{
+      pagination?: { total?: number };
+      records?: unknown[];
+    }>(
+      this.issuerBase(),
+      `/v1/issuers/${encodeURIComponent(issuerWalletId)}/records?type=${encodeURIComponent(type)}`,
+    );
+    const total =
+      data.pagination?.total ??
+      (Array.isArray(data.records) ? data.records.length : 0);
+    return { total };
+  }
+
   private issuerBase(): string {
     return (
       this.config.get<string>('QUARK_ISSUER_BASE_URL')?.replace(/\/$/, '') ??
@@ -107,58 +150,51 @@ export class HttpQuarkAdminAdapter extends QuarkAdminPort {
     path: string,
     body: unknown,
   ): Promise<T> {
-    const url = `${base}${path}`;
-    let response: Response;
-    try {
-      response = await fetch(url, {
-        method: 'POST',
-        headers: {
-          Accept: 'application/json',
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(body),
-        signal: AbortSignal.timeout(this.requestTimeoutMs()),
-      });
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err);
-      this.logger.warn(`Quark POST ${url} network error: ${msg}`);
-      throw new QuarkHttpError(`Quark unreachable: ${msg}`, 0, '');
-    }
+    return this.requestJson<T>(base, path, 'POST', body);
+  }
 
-    const text = await response.text().catch(() => '');
-    if (!response.ok) {
-      this.logger.warn(
-        `Quark POST ${url} status=${response.status} body=${text.slice(0, 300)}`,
-      );
-      throw new QuarkHttpError(
-        `Quark HTTP ${response.status}`,
-        response.status,
-        text,
-      );
-    }
-
-    return JSON.parse(text) as T;
+  private async patchJson<T>(
+    base: string,
+    path: string,
+    body: unknown,
+  ): Promise<T> {
+    return this.requestJson<T>(base, path, 'PATCH', body);
   }
 
   private async getJson<T>(base: string, path: string): Promise<T> {
+    return this.requestJson<T>(base, path, 'GET');
+  }
+
+  private async requestJson<T>(
+    base: string,
+    path: string,
+    method: 'GET' | 'POST' | 'PATCH',
+    body?: unknown,
+  ): Promise<T> {
     const url = `${base}${path}`;
     let response: Response;
     try {
       response = await fetch(url, {
-        method: 'GET',
-        headers: { Accept: 'application/json' },
+        method,
+        headers: {
+          Accept: 'application/json',
+          ...(body !== undefined
+            ? { 'Content-Type': 'application/json' }
+            : {}),
+        },
+        body: body !== undefined ? JSON.stringify(body) : undefined,
         signal: AbortSignal.timeout(this.requestTimeoutMs()),
       });
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
-      this.logger.warn(`Quark GET ${url} network error: ${msg}`);
+      this.logger.warn(`Quark ${method} ${url} network error: ${msg}`);
       throw new QuarkHttpError(`Quark unreachable: ${msg}`, 0, '');
     }
 
     const text = await response.text().catch(() => '');
     if (!response.ok) {
       this.logger.warn(
-        `Quark GET ${url} status=${response.status} body=${text.slice(0, 300)}`,
+        `Quark ${method} ${url} status=${response.status} body=${text.slice(0, 300)}`,
       );
       throw new QuarkHttpError(
         `Quark HTTP ${response.status}`,
@@ -167,6 +203,9 @@ export class HttpQuarkAdminAdapter extends QuarkAdminPort {
       );
     }
 
+    if (!text) {
+      return {} as T;
+    }
     return JSON.parse(text) as T;
   }
 }

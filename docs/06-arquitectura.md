@@ -161,13 +161,14 @@ AccessIdentityProvider
 
 Diseño completo: [12-acceso-quark-oid4-diseno.md](./12-acceso-quark-oid4-diseno.md).
 
-**Implementado (spike):**
+**Implementado:**
 - Compose: `quark-issuer` (:9001) + `quark-verifier` (:9002); DBs `quarkid_*` en Postgres; **sin** RabbitMQ/VDR.
-- Al `POST /api/tenants`: crea `gymbro-iss-{slug}` / `gymbro-ver-{slug}` (soft-fail → `quark_status=MISSING` + `quark_last_error`).
+- Al `POST /api/tenants`: crea `gymbro-iss-{slug}` / `gymbro-ver-{slug}` con `oid4vc` mínimo (soft-fail → `quark_status=MISSING` + `quark_last_error`).
 - Reintento Super: `POST /api/tenants/:id/quark/provision` + UI en detalle de tenant.
+- Create/update pack → `PATCH …/records/metadata` (`pack_{id}` / `urn:gymbro:pack:{id}`; soft-fail en `packs.quark_*`).
 - Clon local en `ssi-quark/` (gitignore).
 
-**Pendiente:** OID4VCI al pago, wallet app, OID4VP en puerta, adapter `AccessIdentityProvider` Quark.
+**Pendiente:** OID4VCI offer al pago, wallet app, OID4VP en puerta, adapter `AccessIdentityProvider` Quark.
 
 ### 6.3 Evaluación de ingreso (dominio puro)
 

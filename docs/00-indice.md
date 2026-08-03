@@ -42,6 +42,7 @@ Reglas relacionadas
 | [10-metodo-definicion-producto.md](./10-metodo-definicion-producto.md) | Cómo repetir el proceso preguntas→docs (MVP y post-MVP) | Cerrado (v1) |
 | [11-roadmap-mvp.md](./11-roadmap-mvp.md) | Épicas y tareas título para terminar el MVP | Borrador v1 |
 | [12-acceso-quark-oid4-diseno.md](./12-acceso-quark-oid4-diseno.md) | Acceso Quark / OID4VCI+VP: issuer/verifier por gym, packs, wallet, offers remotos | Cerrado (diseño) |
+| [13-setup-db-desde-cero.md](./13-setup-db-desde-cero.md) | Migraciones + seed al levantar de 0 / tras `down -v` | Viva |
 | [credenciales-demo.md](./credenciales-demo.md) | Cuentas seed locales (Super / Staff / Member) | Viva |
 | [99-backlog-post-mvp.md](./99-backlog-post-mvp.md) | Diferidos para no olvidar | Cerrado (v1) |
 | [ideas/](./ideas/) | Ideas crudas (charlas, notas) antes de definir módulo | Viva |

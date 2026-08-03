@@ -96,8 +96,22 @@ export class QuarkProvisionService {
     let verifierDid = tenant.quarkVerifierDid;
 
     try {
+      if (issuerWalletId) {
+        const oid4 = await this.quark.listIssuerRecords(
+          issuerWalletId,
+          'OpenId4VcIssuerRecord',
+        );
+        if (oid4.total < 1) {
+          this.logger.warn(
+            `Issuer ${issuerWalletId} sin OpenId4VcIssuerRecord; se recrea con oid4vc`,
+          );
+          issuerWalletId = null;
+          issuerDid = null;
+        }
+      }
+
       if (!issuerWalletId) {
-        const created = await this.ensureIssuer(issuerId);
+        const created = await this.ensureIssuer(issuerId, tenant.slug);
         issuerWalletId = created.issuerId;
         issuerDid = created.did;
       }
@@ -161,18 +175,36 @@ export class QuarkProvisionService {
     }
   }
 
-  private async ensureIssuer(issuerId: string): Promise<{
+  private async ensureIssuer(
+    issuerId: string,
+    slug: string,
+  ): Promise<{
     issuerId: string;
     did: string | null;
   }> {
+    /** Sin `oid4vc`, Quark no crea `OpenId4VcIssuerRecord` → PATCH metadata falla. */
+    const oid4vc = {
+      display: [{ name: `GymBro ${slug}`, locale: 'es' }],
+      credentialConfigurationsSupported: {},
+    };
     try {
-      const created = await this.quark.createIssuer(issuerId);
+      const created = await this.quark.createIssuer(issuerId, oid4vc);
       return { issuerId: created.issuerId, did: created.did };
     } catch (err) {
       if (err instanceof QuarkHttpError && err.status === 409) {
         const list = await this.quark.listIssuers();
         const found = list.find((i) => i.issuerId === issuerId);
         if (found) {
+          try {
+            await this.quark.listIssuerRecords(
+              found.issuerId,
+              'OpenId4VcIssuerRecord',
+            );
+          } catch (probeErr) {
+            throw new Error(
+              `Issuer '${issuerId}' es un ghost en memoria Quark (TenantRecord ausente). Reiniciá quark-issuer y limpiá quark_issuer_wallet_id. Detalle: ${this.formatError(probeErr)}`,
+            );
+          }
           return { issuerId: found.issuerId, did: found.did };
         }
       }

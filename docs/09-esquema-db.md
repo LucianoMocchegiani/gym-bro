@@ -214,6 +214,10 @@ erDiagram
     enum billing_period
     timestamptz credits_expire_at
     boolean active
+    text quark_configuration_id
+    text quark_vct
+    timestamptz quark_synced_at
+    text quark_last_error
     timestamptz created_at
     timestamptz updated_at
   }
@@ -532,7 +536,13 @@ Pack vendible (CU-SER-002). `price` = pesos enteros ARS. `kind` (`ACCESS`|`CREDI
 | `billing_period` | `BillingPeriod` | MONTHLY / ONE_TIME |
 | `credits_expire_at` | timestamptz nullable | null = sin vencimiento de catálogo |
 | `active` | boolean | default true |
+| `quark_configuration_id` | text nullable | clave OID4VCI `pack_{id}` |
+| `quark_vct` | text nullable | `urn:gymbro:pack:{id}` |
+| `quark_synced_at` | timestamptz nullable | último PATCH metadata OK |
+| `quark_last_error` | text nullable | soft-fail de sync Quark |
 | `created_at` / `updated_at` | timestamptz | |
+
+Al create/update de pack (API Staff/Super) se hace `PATCH` metadata del issuer Quark del tenant (soft-fail).
 
 ### 4.14 `pack_components`
 
@@ -858,8 +868,9 @@ API: Member `POST|GET /api/me/waitlist`, `PATCH /api/me/waitlist/:id/status`; St
 | `20260728120000_payment_drop_in_session` | `payments.session_id` para checkout drop-in MP |
 | `20260730180000_tenant_slug` | `tenants.slug` UNIQUE (subdominio) |
 | `20260802180000_tenant_quark_provision` | `tenants.quark_*` + enum `QuarkProvisionStatus` |
+| `20260802190000_pack_quark_configuration` | `packs.quark_configuration_id` / `quark_vct` / `quark_synced_at` / `quark_last_error` |
 
-Comandos:
+Comandos y checklist “desde cero”: [13-setup-db-desde-cero.md](./13-setup-db-desde-cero.md).
 
 ```powershell
 docker compose exec api npx prisma migrate deploy   # aplica todas las pendientes
@@ -868,7 +879,7 @@ docker compose exec api npm run prisma:seed
 docker compose exec api npm run prisma:migrate       # solo en dev si creás migración nueva interactiva
 ```
 
-Tras `docker compose down -v`: `up --build -d` → `migrate deploy` → `generate` → `seed` → `restart api` (detalle en [README](../README.md)).
+Tras `docker compose down -v`: `up --build -d` → `migrate deploy` → `generate` → `seed` → `restart api`.
 
 ---
 
@@ -883,7 +894,10 @@ Tras `docker compose down -v`: `up --build -d` → `migrate deploy` → `generat
 | Password (todos) | `ChangeMe123!` |
 
 Script: [`api/prisma/seed.ts`](../api/prisma/seed.ts).  
-Crea Super + tenant demo + **branch** + roles Admin/Profesor + staff `admin@demo.gym` con rol Admin + member. Password: `ChangeMe123!`.
+Crea Super + tenant demo + **branch** + roles Admin/Profesor + staff `admin@demo.gym` con rol Admin + member. Password: `ChangeMe123!`.  
+Además intenta Quark (`gymbro-iss-demo` / `gymbro-ver-demo` → `tenants.quark_*`; soft-fail).
+
+Detalle: [13-setup-db-desde-cero.md](./13-setup-db-desde-cero.md) · [credenciales-demo.md](./credenciales-demo.md).
 
 ---
 

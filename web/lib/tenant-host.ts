@@ -6,6 +6,8 @@
  *   Vacío → modo local (`demo.localhost`).
  * - `NEXT_PUBLIC_PLATFORM_HOST` — apex Super sin slug (ej. `gymbro.pruebasaproduccunon.uno`
  *   o `localhost`). Si falta: `localhost` en local, o el propio `APP_DOMAIN`.
+ * - Tenants: `{slug}.{APP_DOMAIN}` — **nunca** `{slug}.{PLATFORM_HOST}`.
+ * - Sin leer `window` al armar origins (evita hydration mismatch SSR/cliente).
  */
 
 const RESERVED_HOST_LABELS = new Set([
@@ -56,6 +58,9 @@ export function isPlatformHost(host: string): boolean {
 
 /**
  * Apex a partir del Host actual (saca el slug si viene en un tenant host).
+ *
+ * @remarks Si el host es el apex Super (`PLATFORM_HOST`), el apex de tenants
+ * es `APP_DOMAIN` (no el hostname de plataforma).
  */
 export function apexHostnameFromHost(host: string): string {
   const hostname = stripPort(host);
@@ -66,7 +71,7 @@ export function apexHostnameFromHost(host: string): string {
     return 'localhost';
   }
   if (isPlatformHost(hostname)) {
-    return hostname;
+    return appDomain() ?? hostname;
   }
   const slug = extractTenantSlugFromHost(hostname);
   if (slug && hostname.startsWith(`${slug}.`)) {
@@ -131,15 +136,22 @@ export function extractTenantSlugFromHost(host: string): string | null {
 
 /**
  * Hostname público de un tenant (`demo.localhost` o `demo.{APP_DOMAIN}`).
+ *
+ * @remarks Con `APP_DOMAIN` definido, siempre `{slug}.{APP_DOMAIN}` (ignora
+ * `fromHost` para no anidar bajo `PLATFORM_HOST`).
  */
 export function tenantHostname(slug: string, fromHost?: string): string {
-  const apex = fromHost
-    ? apexHostnameFromHost(fromHost)
-    : (appDomain() ?? 'localhost');
-  if (apex === 'localhost' || apex === '127.0.0.1') {
-    return `${slug}.localhost`;
+  const domain = appDomain();
+  if (domain) {
+    return `${slug}.${domain}`;
   }
-  return `${slug}.${apex}`;
+  if (fromHost) {
+    const apex = apexHostnameFromHost(fromHost);
+    if (apex !== 'localhost' && apex !== '127.0.0.1') {
+      return `${slug}.${apex}`;
+    }
+  }
+  return `${slug}.localhost`;
 }
 
 /**
@@ -149,26 +161,20 @@ export function tenantHostLabel(slug: string, fromHost?: string): string {
   return tenantHostname(slug, fromHost);
 }
 
+/**
+ * Origin absoluto estable (mismo en SSR y cliente; sin `window`).
+ */
 function originForHostname(hostname: string, port?: string): string {
   const isLocal =
     hostname === 'localhost' ||
     hostname === '127.0.0.1' ||
     hostname.endsWith('.localhost');
-  const protocol =
-    typeof window !== 'undefined'
-      ? window.location.protocol
-      : isLocal
-        ? 'http:'
-        : 'https:';
+  const protocol = isLocal ? 'http:' : 'https:';
   let portPart = '';
   if (port) {
     portPart = `:${port}`;
   } else if (isLocal) {
-    if (typeof window !== 'undefined' && window.location.port) {
-      portPart = `:${window.location.port}`;
-    } else if (typeof window === 'undefined') {
-      portPart = ':3000';
-    }
+    portPart = ':3000';
   }
   return `${protocol}//${hostname}${portPart}`;
 }
@@ -185,8 +191,5 @@ export function platformOrigin(): string {
  * URL del Admin de un tenant por slug.
  */
 export function tenantOrigin(slug: string, fromHost?: string): string {
-  const hostHint =
-    fromHost ??
-    (typeof window !== 'undefined' ? window.location.host : undefined);
-  return originForHostname(tenantHostname(slug, hostHint));
+  return originForHostname(tenantHostname(slug, fromHost));
 }
