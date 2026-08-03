@@ -16,6 +16,7 @@ La creación de registros sigue la skill:
 
 ## Índice
 
+- [2026-08-03 — Offer OID4VCI FAILED desde wallet (muerto/vencido)](./2026-08-03-credential-offers-fail-muertos.md)
 - [2026-08-03 — Vigencias contratos MONTHLY / ONE_TIME](./2026-08-03-contratos-vigencias-mensual-unico.md)
 - [2026-08-03 — Bandeja Flutter OID4VCI + estado ACCEPTED](./2026-08-03-credential-offers-flutter-accepted.md)
 - [2026-08-03 — Offer OID4VCI al pack APPROVED (API)](./2026-08-03-credential-offers-oid4vci-api.md)
