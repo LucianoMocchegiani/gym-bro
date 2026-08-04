@@ -16,6 +16,7 @@ La creación de registros sigue la skill:
 
 ## Índice
 
+- [2026-08-03 — Puerta OID4VP + seed verifier con oid4vp](./2026-08-03-puerta-oid4vp-seed-verifier.md)
 - [2026-08-03 — App hubs SSI + packs vigentes hoy](./2026-08-03-mobile-hubs-ssi-packs-vigentes.md)
 - [2026-08-03 — Offer OID4VCI FAILED desde wallet (muerto/vencido)](./2026-08-03-credential-offers-fail-muertos.md)
 - [2026-08-03 — Vigencias contratos MONTHLY / ONE_TIME](./2026-08-03-contratos-vigencias-mensual-unico.md)
