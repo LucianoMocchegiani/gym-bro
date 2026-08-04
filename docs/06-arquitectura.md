@@ -168,6 +168,7 @@ Diseño: [12-acceso-quark-oid4-diseno.md](./12-acceso-quark-oid4-diseno.md).
 **Implementado:**
 - Compose: `quark-issuer` (:9001) + `quark-verifier` (:9002); DBs `quarkid_*` en Postgres; **sin** RabbitMQ/VDR.
 - Al `POST /api/tenants`: crea `gymbro-iss-{slug}` / `gymbro-ver-{slug}` con `oid4vc` / `oid4vp` mínimo (soft-fail → `quark_status=MISSING` + `quark_last_error`).
+- **Listados HTTP** (Admin/API): contrato común `{ items, page, pageSize, total, hasMore }` con `page`/`pageSize`/`q`/`orderBy`/`order` (+ filtros de dominio). Ver Postman README.
 - Reintento Super: `POST /api/tenants/:id/quark/provision` + UI en detalle de tenant.
 - Create/update pack → `PATCH …/records/metadata` (`pack_{id}` / `urn:gymbro:pack:{id}`; soft-fail en `packs.quark_*`).
 - Pack APPROVED → `POST …/openid4vc/offer` + `credential_offers` slim + `GET /me/credential-offers` (soft-fail). Re-oferta: re-POST contrato misma `idempotencyKey`.

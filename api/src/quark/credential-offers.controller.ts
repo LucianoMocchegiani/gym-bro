@@ -6,9 +6,11 @@ import {
   Param,
   ParseUUIDPipe,
   Post,
+  Query,
 } from '@nestjs/common';
 import type { AuthUser } from '../auth/auth.types';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import { ListQueryDto, ListResult } from '../common/list';
 import { RequirePermission } from '../roles/decorators/require-permission.decorator';
 import { CurrentTenant } from '../tenant/decorators/current-tenant.decorator';
 import { RequireTenantAuth } from '../tenant/decorators/require-tenant-auth.decorator';
@@ -36,11 +38,12 @@ export class CredentialOffersController {
   listMine(
     @CurrentTenant() tenantId: string,
     @CurrentUser() user: AuthUser,
-  ): Promise<CredentialOfferListItem[]> {
+    @Query() query: ListQueryDto,
+  ): Promise<ListResult<CredentialOfferListItem>> {
     if (user.profileType !== 'MEMBER') {
       throw new ForbiddenException('Member profile required');
     }
-    return this.offers.listForMember(tenantId, user.userId);
+    return this.offers.listForMember(tenantId, user.userId, query);
   }
 
   /**
@@ -92,8 +95,9 @@ export class CredentialOffersController {
   listForMember(
     @CurrentTenant() tenantId: string,
     @Param('memberId', ParseUUIDPipe) memberId: string,
-  ): Promise<CredentialOfferListItem[]> {
-    return this.offers.listForMember(tenantId, memberId, {
+    @Query() query: ListQueryDto,
+  ): Promise<ListResult<CredentialOfferListItem>> {
+    return this.offers.listForMember(tenantId, memberId, query, {
       includeLastError: true,
     });
   }

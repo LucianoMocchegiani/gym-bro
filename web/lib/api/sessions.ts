@@ -3,6 +3,8 @@
  */
 
 import { apiRequest } from '@/lib/api/client';
+import { toSearchParams } from '@/lib/api/list';
+import type { ListParams, ListResult } from '@/lib/api/list';
 
 export type SessionStatus = 'PUBLISHED' | 'CANCELLED';
 
@@ -42,30 +44,23 @@ export type UpdateSessionInput = {
   status?: 'CANCELLED';
 };
 
-/**
- * Lista sesiones (`sessions.write`).
- */
-export function listSessions(input?: {
+export type ListSessionsInput = {
   serviceId?: string;
   from?: string;
   to?: string;
   status?: SessionStatus;
-}): Promise<SessionDetail[]> {
-  const params = new URLSearchParams();
-  if (input?.serviceId) {
-    params.set('serviceId', input.serviceId);
-  }
-  if (input?.from) {
-    params.set('from', input.from);
-  }
-  if (input?.to) {
-    params.set('to', input.to);
-  }
-  if (input?.status) {
-    params.set('status', input.status);
-  }
-  const q = params.toString();
-  return apiRequest<SessionDetail[]>(`/sessions${q ? `?${q}` : ''}`);
+} & ListParams;
+
+/**
+ * Lista sesiones (`sessions.write`), paginado.
+ */
+export function listSessions(
+  input?: ListSessionsInput,
+): Promise<ListResult<SessionDetail>> {
+  const qs = toSearchParams(input);
+  return apiRequest<ListResult<SessionDetail>>(
+    `/sessions${qs ? `?${qs}` : ''}`,
+  );
 }
 
 /**

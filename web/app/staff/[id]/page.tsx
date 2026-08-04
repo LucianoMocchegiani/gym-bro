@@ -39,12 +39,15 @@ function DetailInner() {
     let cancelled = false;
     void (async () => {
       try {
-        const [s, rs] = await Promise.all([getStaff(staffId), listRoles()]);
+        const [s, rs] = await Promise.all([
+          getStaff(staffId),
+          listRoles({ pageSize: 100 }),
+        ]);
         if (cancelled) {
           return;
         }
         setStaff(s);
-        setRoles(rs);
+        setRoles(rs.items);
         setRoleIds(s.roles.map((r) => r.id));
         setLoadError(null);
       } catch (err) {

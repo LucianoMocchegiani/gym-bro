@@ -5,20 +5,20 @@ import {
   HttpCode,
   HttpStatus,
   Param,
-  ParseEnumPipe,
   ParseUUIDPipe,
   Patch,
   Post,
   Query,
 } from '@nestjs/common';
-import { SessionStatus } from '@prisma/client';
 import type { AuthUser } from '../auth/auth.types';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { RequireSuperAuth } from '../auth/decorators/require-super-auth.decorator';
 import { toAuditActor } from '../audit/to-audit-actor';
+import { ListResult } from '../common/list';
 import {
   CreateSessionDto,
   ExpandSessionCapacityDto,
+  ListSessionsQueryDto,
   UpdateSessionDto,
 } from './dto/session.dto';
 import { SessionsService } from './sessions.service';
@@ -37,19 +37,9 @@ export class SuperSessionsController {
   @Get()
   list(
     @Param('tenantId', ParseUUIDPipe) tenantId: string,
-    @Query('serviceId', new ParseUUIDPipe({ optional: true }))
-    serviceId?: string,
-    @Query('status', new ParseEnumPipe(SessionStatus, { optional: true }))
-    status?: SessionStatus,
-    @Query('from') from?: string,
-    @Query('to') to?: string,
-  ): Promise<SessionDetail[]> {
-    return this.sessionsService.list(tenantId, {
-      serviceId,
-      status,
-      from,
-      to,
-    });
+    @Query() query: ListSessionsQueryDto,
+  ): Promise<ListResult<SessionDetail>> {
+    return this.sessionsService.list(tenantId, query);
   }
 
   @Get(':sessionId')

@@ -16,9 +16,14 @@ import {
 } from '@prisma/client';
 import { AUDIT_ACTIONS, AuditActor } from '../audit/audit.types';
 import { AuditService } from '../audit/audit.service';
+import { ListResult, normalizeListQuery, toListResult } from '../common/list';
 import { PrismaService } from '../prisma/prisma.service';
 import { TenantSettingsService } from '../tenant-settings/tenant-settings.service';
-import { JoinWaitlistDto, LeaveWaitlistDto } from './dto/waitlist.dto';
+import {
+  JoinWaitlistDto,
+  LeaveWaitlistDto,
+  ListWaitlistQueryDto,
+} from './dto/waitlist.dto';
 import { WaitlistEntryDetail } from './waitlist.types';
 
 type WaitlistWithRelations = {
@@ -140,32 +145,44 @@ export class WaitlistService {
   }
 
   /**
-   * Lista entradas WAITING de un afiliado (próximas primero).
+   * Lista entradas WAITING de un afiliado (paginado; próximas primero).
    */
   async listByMember(
     tenantId: string,
     memberId: string,
-  ): Promise<WaitlistEntryDetail[]> {
+    query: ListWaitlistQueryDto = {},
+  ): Promise<ListResult<WaitlistEntryDetail>> {
     await this.assertMemberInTenant(tenantId, memberId);
-    const rows = await this.prisma.waitlistEntry.findMany({
-      where: {
-        tenantId,
-        memberId,
-        status: WaitlistStatus.WAITING,
-      },
-      include: this.entryInclude(),
-      orderBy: { session: { startsAt: 'asc' } },
-    });
-    return Promise.all(rows.map((row) => this.toDetailWithPosition(row)));
+    const n = normalizeListQuery(query);
+    const where: Prisma.WaitlistEntryWhereInput = {
+      tenantId,
+      memberId,
+      status: WaitlistStatus.WAITING,
+    };
+    const [rows, total] = await this.prisma.$transaction([
+      this.prisma.waitlistEntry.findMany({
+        where,
+        include: this.entryInclude(),
+        orderBy: { session: { startsAt: n.order } },
+        skip: n.skip,
+        take: n.take,
+      }),
+      this.prisma.waitlistEntry.count({ where }),
+    ]);
+    const items = await Promise.all(
+      rows.map((row) => this.toDetailWithPosition(row)),
+    );
+    return toListResult(items, total, n.page, n.pageSize);
   }
 
   /**
-   * Lista cola WAITING de una sesión (FIFO).
+   * Lista cola WAITING de una sesión (paginado; FIFO).
    */
   async listBySession(
     tenantId: string,
     sessionId: string,
-  ): Promise<WaitlistEntryDetail[]> {
+    query: ListWaitlistQueryDto = {},
+  ): Promise<ListResult<WaitlistEntryDetail>> {
     const session = await this.prisma.session.findFirst({
       where: { id: sessionId, tenantId },
       select: { id: true },
@@ -173,16 +190,26 @@ export class WaitlistService {
     if (!session) {
       throw new NotFoundException(`Session ${sessionId} not found in tenant`);
     }
-    const rows = await this.prisma.waitlistEntry.findMany({
-      where: {
-        tenantId,
-        sessionId,
-        status: WaitlistStatus.WAITING,
-      },
-      include: this.entryInclude(),
-      orderBy: { createdAt: 'asc' },
-    });
-    return rows.map((row, index) => this.toDetail(row, index + 1));
+    const n = normalizeListQuery(query);
+    const where: Prisma.WaitlistEntryWhereInput = {
+      tenantId,
+      sessionId,
+      status: WaitlistStatus.WAITING,
+    };
+    const [rows, total] = await this.prisma.$transaction([
+      this.prisma.waitlistEntry.findMany({
+        where,
+        include: this.entryInclude(),
+        orderBy: { createdAt: 'asc' },
+        skip: n.skip,
+        take: n.take,
+      }),
+      this.prisma.waitlistEntry.count({ where }),
+    ]);
+    const items = rows.map((row, index) =>
+      this.toDetail(row, n.skip + index + 1),
+    );
+    return toListResult(items, total, n.page, n.pageSize);
   }
 
   /**

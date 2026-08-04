@@ -6,14 +6,24 @@ import {
 import { Pack, Prisma, Service, ServiceType } from '@prisma/client';
 import { AUDIT_ACTIONS, AuditActor } from '../audit/audit.types';
 import { AuditService } from '../audit/audit.service';
+import {
+  ListResult,
+  normalizeListQuery,
+  resolveOrderField,
+  toListResult,
+} from '../common/list';
 import { PrismaService } from '../prisma/prisma.service';
 import { QuarkPackSyncService } from '../quark/quark-pack-sync.service';
 import {
   CreatePackDto,
+  ListPacksQueryDto,
   PackComponentInputDto,
   UpdatePackDto,
 } from './dto/pack.dto';
 import { PackComponentDetail, PackDetail, PackKind } from './packs.types';
+
+/** Whitelist de orden para {@link PacksService.list}. */
+const PACK_ORDER_FIELDS = ['createdAt', 'name', 'price'] as const;
 
 type PackWithComponents = Pack & {
   components: {
@@ -39,22 +49,43 @@ export class PacksService {
   ) {}
 
   /**
-   * Lista packs del tenant con componentes (más recientes primero).
+   * Lista packs del tenant con componentes (paginado; más recientes primero
+   * por defecto).
+   *
+   * @remarks `q` busca en name (contains, case-insensitive).
    */
   async list(
     tenantId: string,
-    options: { active?: boolean } = {},
-  ): Promise<PackDetail[]> {
+    query: ListPacksQueryDto = {},
+  ): Promise<ListResult<PackDetail>> {
     await this.assertTenantExists(tenantId);
-    const packs = await this.prisma.pack.findMany({
-      where: {
-        tenantId,
-        ...(options.active !== undefined ? { active: options.active } : {}),
-      },
-      include: this.packInclude(),
-      orderBy: { createdAt: 'desc' },
-    });
-    return packs.map((p) => this.toDetail(p));
+    const n = normalizeListQuery(query);
+    const orderField = resolveOrderField(
+      n.orderBy,
+      PACK_ORDER_FIELDS,
+      'createdAt',
+    );
+    const where: Prisma.PackWhereInput = {
+      tenantId,
+      ...(query.active !== undefined ? { active: query.active } : {}),
+      ...(n.q ? { name: { contains: n.q, mode: 'insensitive' } } : {}),
+    };
+    const [packs, total] = await this.prisma.$transaction([
+      this.prisma.pack.findMany({
+        where,
+        include: this.packInclude(),
+        orderBy: { [orderField]: n.order },
+        skip: n.skip,
+        take: n.take,
+      }),
+      this.prisma.pack.count({ where }),
+    ]);
+    return toListResult(
+      packs.map((p) => this.toDetail(p)),
+      total,
+      n.page,
+      n.pageSize,
+    );
   }
 
   /**

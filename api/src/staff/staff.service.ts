@@ -8,9 +8,19 @@ import { Prisma, StaffUser } from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
 import { AUDIT_ACTIONS, AuditActor } from '../audit/audit.types';
 import { AuditService } from '../audit/audit.service';
+import {
+  ListQueryDto,
+  ListResult,
+  normalizeListQuery,
+  resolveOrderField,
+  toListResult,
+} from '../common/list';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateStaffDto, SetStaffRolesDto } from './dto/staff.dto';
 import { StaffUserDetail } from './staff.types';
+
+/** Whitelist de orden para {@link StaffService.list}. */
+const STAFF_ORDER_FIELDS = ['createdAt', 'name', 'email'] as const;
 
 type StaffWithRoles = StaffUser & {
   staffRoles: {
@@ -36,24 +46,56 @@ export class StaffService {
   ) {}
 
   /**
-   * Lista staff del tenant (más recientes primero).
+   * Lista staff del tenant (paginado; más recientes primero por defecto).
+   *
+   * @remarks `q` busca en email y name (contains, case-insensitive).
    */
-  async list(tenantId: string): Promise<StaffUserDetail[]> {
-    const rows = await this.prisma.staffUser.findMany({
-      where: { tenantId },
-      include: {
-        staffRoles: {
-          include: {
-            role: {
-              select: { id: true, name: true, slug: true, isSystem: true },
+  async list(
+    tenantId: string,
+    query: ListQueryDto = {},
+  ): Promise<ListResult<StaffUserDetail>> {
+    const n = normalizeListQuery(query);
+    const orderField = resolveOrderField(
+      n.orderBy,
+      STAFF_ORDER_FIELDS,
+      'createdAt',
+    );
+    const where: Prisma.StaffUserWhereInput = {
+      tenantId,
+      ...(n.q
+        ? {
+            OR: [
+              { email: { contains: n.q, mode: 'insensitive' } },
+              { name: { contains: n.q, mode: 'insensitive' } },
+            ],
+          }
+        : {}),
+    };
+    const [rows, total] = await this.prisma.$transaction([
+      this.prisma.staffUser.findMany({
+        where,
+        include: {
+          staffRoles: {
+            include: {
+              role: {
+                select: { id: true, name: true, slug: true, isSystem: true },
+              },
             },
+            orderBy: { role: { slug: 'asc' } },
           },
-          orderBy: { role: { slug: 'asc' } },
         },
-      },
-      orderBy: { createdAt: 'desc' },
-    });
-    return rows.map((s) => this.toDetail(s));
+        orderBy: { [orderField]: n.order },
+        skip: n.skip,
+        take: n.take,
+      }),
+      this.prisma.staffUser.count({ where }),
+    ]);
+    return toListResult(
+      rows.map((s) => this.toDetail(s)),
+      total,
+      n.page,
+      n.pageSize,
+    );
   }
 
   /**

@@ -8,7 +8,8 @@ import {
   MaxLength,
   MinLength,
 } from 'class-validator';
-import { PaymentMethod } from '@prisma/client';
+import { PaymentMethod, ReservationStatus } from '@prisma/client';
+import { ListQueryDto } from '../../common/list';
 
 /**
  * Alta de reserva con crédito o drop-in (CU-RES-001 / CU-RES-002).
@@ -49,4 +50,19 @@ export class CreateReservationDto {
 export class UpdateReservationStatusDto {
   @Equals('CANCELLED')
   status!: 'CANCELLED';
+}
+
+/**
+ * Query de listado de reservas de un afiliado (CU-RES-001/002/003).
+ *
+ * @remarks Sin `q`. `orderBy` acepta `startsAt` (sesión) y `createdAt`.
+ */
+export class ListReservationsQueryDto extends ListQueryDto {
+  @IsOptional()
+  @IsIn(['asc', 'desc'])
+  order?: 'asc' | 'desc' = 'asc';
+
+  @IsOptional()
+  @IsEnum(ReservationStatus)
+  status?: ReservationStatus;
 }

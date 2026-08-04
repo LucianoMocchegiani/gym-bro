@@ -3,6 +3,8 @@
  */
 
 import { apiRequest } from '@/lib/api/client';
+import { toSearchParams } from '@/lib/api/list';
+import type { ListParams, ListResult } from '@/lib/api/list';
 
 export type TenantStatus = 'ACTIVE' | 'SUSPENDED';
 
@@ -71,10 +73,15 @@ export function getTenantBySlug(slug: string): Promise<PublicTenantSummary> {
 }
 
 /**
- * Lista tenants (Super).
+ * Lista tenants (Super), paginado.
  */
-export function listTenants(): Promise<TenantDetail[]> {
-  return apiRequest<TenantDetail[]>('/tenants', { auth: 'super' });
+export function listTenants(
+  input?: ListParams,
+): Promise<ListResult<TenantDetail>> {
+  const qs = toSearchParams(input);
+  return apiRequest<ListResult<TenantDetail>>(`/tenants${qs ? `?${qs}` : ''}`, {
+    auth: 'super',
+  });
 }
 
 /**

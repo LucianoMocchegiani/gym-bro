@@ -8,12 +8,18 @@ import {
   ParseUUIDPipe,
   Patch,
   Post,
+  Query,
 } from '@nestjs/common';
 import { RequireSuperAuth } from '../auth/decorators/require-super-auth.decorator';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import type { AuthUser } from '../auth/auth.types';
 import { toAuditActor } from '../audit/to-audit-actor';
-import { CreateTenantDto, UpdateTenantDto } from './dto/tenant.dto';
+import { ListResult } from '../common/list';
+import {
+  CreateTenantDto,
+  ListTenantsQueryDto,
+  UpdateTenantDto,
+} from './dto/tenant.dto';
 import { TenantsService } from './tenants.service';
 import { TenantResponse } from './tenants.types';
 
@@ -43,11 +49,13 @@ export class TenantsController {
   }
 
   /**
-   * Lista todos los tenants.
+   * Lista tenants (paginado).
    */
   @Get()
-  findAll(): Promise<TenantResponse[]> {
-    return this.tenantsService.findAll();
+  findAll(
+    @Query() query: ListTenantsQueryDto,
+  ): Promise<ListResult<TenantResponse>> {
+    return this.tenantsService.findAll(query);
   }
 
   /**

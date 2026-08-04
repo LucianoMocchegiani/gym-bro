@@ -12,15 +12,17 @@ import {
   Post,
   Query,
 } from '@nestjs/common';
-import { ContractStatus, MemberStatus } from '@prisma/client';
+import { ContractStatus } from '@prisma/client';
 import type { AuthUser } from '../auth/auth.types';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { toAuditActor } from '../audit/to-audit-actor';
+import { ListResult } from '../common/list';
 import { RequirePermission } from '../roles/decorators/require-permission.decorator';
 import { CurrentTenant } from '../tenant/decorators/current-tenant.decorator';
 import { RequireTenantAuth } from '../tenant/decorators/require-tenant-auth.decorator';
 import {
   CreateMemberDto,
+  ListMembersQueryDto,
   UpdateMemberDto,
   UpdateMemberStatusDto,
 } from './dto/member.dto';
@@ -41,10 +43,9 @@ export class MembersController {
   @RequirePermission('members.read')
   list(
     @CurrentTenant() tenantId: string,
-    @Query('status', new ParseEnumPipe(MemberStatus, { optional: true }))
-    status?: MemberStatus,
-  ): Promise<MemberDetail[]> {
-    return this.membersService.list(tenantId, { status });
+    @Query() query: ListMembersQueryDto,
+  ): Promise<ListResult<MemberDetail>> {
+    return this.membersService.list(tenantId, query);
   }
 
   /**

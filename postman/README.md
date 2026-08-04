@@ -18,6 +18,28 @@
 
 Los logins usan `{{tenantId}}`, `{{staffEmail}}`, etc. Reimportá el environment si no los ves.
 
+## Listados paginados
+
+Todos los `GET` que devuelven colecciones (Tenants, Roles, Staff, Audit, Members, Services, Packs, Contracts, Sessions, Reservations, Waitlist, Receipts, Refunds, Credential offers, Access attempts) responden:
+
+```json
+{ "items": [...], "page": 1, "pageSize": 20, "total": 0, "hasMore": false }
+```
+
+Query params comunes (ya incluidos en cada request, algunos deshabilitados por default):
+
+| Param | Default | Notas |
+|-------|---------|-------|
+| `page` | `1` | 1-based |
+| `pageSize` | `20` | máx. `100` |
+| `q` | — | búsqueda de texto libre; no todos los recursos la soportan (ver `orderBy`/`q` deshabilitados en cada request cuando no aplica) |
+| `orderBy` | — | whitelist por recurso (ver DTOs en `api/src/**/dto`) |
+| `order` | `desc` | `asc`\|`desc`; **Sessions, Reservations y Waitlist** default `asc` |
+
+Los filtros de dominio existentes (`status`, `active`, `type`, `from`, `to`, `memberId`, `result`, etc.) se mantienen sin cambios. Se quitó `limit` de `audit-events` y `access-attempts`: usá `pageSize`.
+
+La carpeta **Auth Runner** (flow automatizado) ya fue retirada de la colección; el flujo manual (`Auth (manual)`) es el soportado.
+
 ## Manual
 
 Carpeta **Auth (manual)**: Login Super/Staff/Member → Me → Refresh → Logout.

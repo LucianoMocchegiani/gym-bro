@@ -5,19 +5,19 @@ import {
   HttpCode,
   HttpStatus,
   Param,
-  ParseEnumPipe,
   ParseUUIDPipe,
   Patch,
   Post,
   Query,
 } from '@nestjs/common';
-import { ReservationStatus } from '@prisma/client';
 import type { AuthUser } from '../auth/auth.types';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { RequireSuperAuth } from '../auth/decorators/require-super-auth.decorator';
 import { toAuditActor } from '../audit/to-audit-actor';
+import { ListResult } from '../common/list';
 import {
   CreateReservationDto,
+  ListReservationsQueryDto,
   UpdateReservationStatusDto,
 } from './dto/reservation.dto';
 import { ReservationsService } from './reservations.service';
@@ -51,12 +51,9 @@ export class SuperReservationsController {
   listByMember(
     @Param('tenantId', ParseUUIDPipe) tenantId: string,
     @Param('memberId', ParseUUIDPipe) memberId: string,
-    @Query('status', new ParseEnumPipe(ReservationStatus, { optional: true }))
-    status?: ReservationStatus,
-  ): Promise<ReservationDetail[]> {
-    return this.reservationsService.listByMember(tenantId, memberId, {
-      status,
-    });
+    @Query() query: ListReservationsQueryDto,
+  ): Promise<ListResult<ReservationDetail>> {
+    return this.reservationsService.listByMember(tenantId, memberId, query);
   }
 
   @Get('reservations/:reservationId')

@@ -55,13 +55,13 @@ function DetailInner() {
       try {
         const [p, svcs] = await Promise.all([
           getPack(packId),
-          listServices({ active: true }),
+          listServices({ active: true, pageSize: 100 }),
         ]);
         if (cancelled) {
           return;
         }
         setPack(p);
-        setServices(svcs);
+        setServices(svcs.items);
         setName(p.name);
         setDescription(p.description ?? '');
         setPrice(String(p.price));

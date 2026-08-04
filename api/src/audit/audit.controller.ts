@@ -1,4 +1,5 @@
 import { Controller, Get, Query } from '@nestjs/common';
+import { ListResult } from '../common/list';
 import { RequirePermission } from '../roles/decorators/require-permission.decorator';
 import { CurrentTenant } from '../tenant/decorators/current-tenant.decorator';
 import { RequireTenantAuth } from '../tenant/decorators/require-tenant-auth.decorator';
@@ -21,10 +22,7 @@ export class AuditController {
   list(
     @CurrentTenant() tenantId: string,
     @Query() query: ListAuditEventsQueryDto,
-  ): Promise<AuditEventDetail[]> {
-    return this.auditService.listByTenant(tenantId, {
-      limit: query.limit,
-      action: query.action,
-    });
+  ): Promise<ListResult<AuditEventDetail>> {
+    return this.auditService.listByTenant(tenantId, query);
   }
 }

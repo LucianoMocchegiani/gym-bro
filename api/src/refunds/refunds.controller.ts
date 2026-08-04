@@ -6,19 +6,22 @@ import {
   HttpCode,
   HttpStatus,
   Param,
-  ParseEnumPipe,
   ParseUUIDPipe,
   Post,
   Query,
 } from '@nestjs/common';
-import { RefundRequestStatus } from '@prisma/client';
 import type { AuthUser } from '../auth/auth.types';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { toAuditActor } from '../audit/to-audit-actor';
+import { ListResult } from '../common/list';
 import { RequirePermission } from '../roles/decorators/require-permission.decorator';
 import { CurrentTenant } from '../tenant/decorators/current-tenant.decorator';
 import { RequireTenantAuth } from '../tenant/decorators/require-tenant-auth.decorator';
-import { CreateRefundRequestDto, ExecuteRefundDto } from './dto/refund.dto';
+import {
+  CreateRefundRequestDto,
+  ExecuteRefundDto,
+  ListRefundRequestsQueryDto,
+} from './dto/refund.dto';
 import { RefundsService } from './refunds.service';
 import { RefundExecutionDetail, RefundRequestDetail } from './refunds.types';
 
@@ -51,21 +54,21 @@ export class RefundsController {
   listMine(
     @CurrentTenant() tenantId: string,
     @CurrentUser() user: AuthUser,
-  ): Promise<RefundRequestDetail[]> {
+    @Query() query: ListRefundRequestsQueryDto,
+  ): Promise<ListResult<RefundRequestDetail>> {
     if (user.profileType !== 'MEMBER') {
       throw new ForbiddenException('Member profile required');
     }
-    return this.refunds.listMine(tenantId, user.userId);
+    return this.refunds.listMine(tenantId, user.userId, query);
   }
 
   @Get('refund-requests')
   @RequirePermission('payments.refund')
   listTenant(
     @CurrentTenant() tenantId: string,
-    @Query('status', new ParseEnumPipe(RefundRequestStatus, { optional: true }))
-    status?: RefundRequestStatus,
-  ): Promise<RefundRequestDetail[]> {
-    return this.refunds.listForTenant(tenantId, status);
+    @Query() query: ListRefundRequestsQueryDto,
+  ): Promise<ListResult<RefundRequestDetail>> {
+    return this.refunds.listForTenant(tenantId, query);
   }
 
   @Post('payments/:paymentId/refunds')

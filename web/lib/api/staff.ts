@@ -3,6 +3,8 @@
  */
 
 import { apiRequest } from '@/lib/api/client';
+import { toSearchParams } from '@/lib/api/list';
+import type { ListParams, ListResult } from '@/lib/api/list';
 
 export type StaffRoleSummary = {
   id: string;
@@ -30,10 +32,13 @@ export type CreateStaffInput = {
 };
 
 /**
- * Lista staff del tenant (`staff.read`).
+ * Lista staff del tenant (`staff.read`), paginado.
  */
-export function listStaff(): Promise<StaffUserDetail[]> {
-  return apiRequest<StaffUserDetail[]>('/staff');
+export function listStaff(
+  input?: ListParams,
+): Promise<ListResult<StaffUserDetail>> {
+  const qs = toSearchParams(input);
+  return apiRequest<ListResult<StaffUserDetail>>(`/staff${qs ? `?${qs}` : ''}`);
 }
 
 /**

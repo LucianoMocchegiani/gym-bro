@@ -44,11 +44,12 @@ function NuevoInner() {
         const data = await listServices({
           type: 'POR_SESIONES',
           active: true,
+          pageSize: 100,
         });
         if (cancelled) {
           return;
         }
-        setServices(data);
+        setServices(data.items);
         setLoadError(null);
       } catch (err) {
         if (cancelled) {

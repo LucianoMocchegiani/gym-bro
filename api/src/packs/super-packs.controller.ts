@@ -5,7 +5,6 @@ import {
   HttpCode,
   HttpStatus,
   Param,
-  ParseBoolPipe,
   ParseUUIDPipe,
   Patch,
   Post,
@@ -15,7 +14,12 @@ import type { AuthUser } from '../auth/auth.types';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { RequireSuperAuth } from '../auth/decorators/require-super-auth.decorator';
 import { toAuditActor } from '../audit/to-audit-actor';
-import { CreatePackDto, UpdatePackDto } from './dto/pack.dto';
+import { ListResult } from '../common/list';
+import {
+  CreatePackDto,
+  ListPacksQueryDto,
+  UpdatePackDto,
+} from './dto/pack.dto';
 import { PacksService } from './packs.service';
 import { PackDetail } from './packs.types';
 
@@ -32,10 +36,9 @@ export class SuperPacksController {
   @Get()
   list(
     @Param('tenantId', ParseUUIDPipe) tenantId: string,
-    @Query('active', new ParseBoolPipe({ optional: true }))
-    active?: boolean,
-  ): Promise<PackDetail[]> {
-    return this.packsService.list(tenantId, { active });
+    @Query() query: ListPacksQueryDto,
+  ): Promise<ListResult<PackDetail>> {
+    return this.packsService.list(tenantId, query);
   }
 
   @Get(':packId')

@@ -56,15 +56,15 @@ function PuertaInner() {
       setAttemptsLoading(true);
     }
     try {
-      const rows = await listAccessAttempts({
-        limit: 100,
+      const data = await listAccessAttempts({
+        pageSize: 100,
         from: appliedFrom,
         to: appliedTo,
         result: resultFilter === 'ALL' ? undefined : resultFilter,
       });
-      setAttempts(rows);
+      setAttempts(data.items);
       setAttemptsError(null);
-      return rows;
+      return data.items;
     } catch (err) {
       setAttemptsError(
         err instanceof ApiClientError

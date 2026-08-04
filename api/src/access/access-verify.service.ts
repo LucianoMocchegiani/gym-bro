@@ -8,14 +8,17 @@ import {
   AccessAttemptResult,
   ContractStatus,
   MemberStatus,
+  Prisma,
   ReservationStatus,
   SessionStatus,
   TenantStatus,
 } from '@prisma/client';
 import { AUDIT_ACTIONS } from '../audit/audit.types';
 import { AuditService } from '../audit/audit.service';
+import { ListResult, normalizeListQuery, toListResult } from '../common/list';
 import { PrismaService } from '../prisma/prisma.service';
 import { TenantSettingsService } from '../tenant-settings/tenant-settings.service';
+import { ListAccessAttemptsQueryDto } from './dto/list-access-attempts.dto';
 import { ManualPassDto } from './dto/manual-pass.dto';
 import {
   ACCESS_REASON,
@@ -105,23 +108,17 @@ export class AccessVerifyService {
   }
 
   /**
-   * Historial de intentos del tenant (más recientes primero).
+   * Historial de intentos del tenant (paginado; más recientes primero).
    */
   async listAttempts(
     tenantId: string,
-    options: {
-      memberId?: string;
-      result?: AccessAttemptResult;
-      limit?: number;
-      fromYmd?: string;
-      toYmd?: string;
-    } = {},
-  ): Promise<AccessAttemptDetail[]> {
-    const limit = Math.min(Math.max(options.limit ?? 50, 1), 200);
+    query: ListAccessAttemptsQueryDto = {},
+  ): Promise<ListResult<AccessAttemptDetail>> {
+    const n = normalizeListQuery(query);
     let createdAtFilter: { gte?: Date; lt?: Date } | undefined;
-    if (options.fromYmd || options.toYmd) {
-      const from = options.fromYmd;
-      const to = options.toYmd;
+    if (query.from || query.to) {
+      const from = query.from;
+      const to = query.to;
       if (from && to && from > to) {
         throw new BadRequestException('from must be <= to');
       }
@@ -134,20 +131,30 @@ export class AccessVerifyService {
         createdAtFilter.lt = this.zonedDayStartUtc(next);
       }
     }
-    const rows = await this.prisma.accessAttempt.findMany({
-      where: {
-        tenantId,
-        ...(options.memberId ? { memberId: options.memberId } : {}),
-        ...(options.result ? { result: options.result } : {}),
-        ...(createdAtFilter ? { createdAt: createdAtFilter } : {}),
-      },
-      orderBy: { createdAt: 'desc' },
-      take: limit,
-      include: {
-        member: { select: { name: true, email: true } },
-      },
-    });
-    return rows.map((r) => this.toAttemptDetail(r, r.member));
+    const where: Prisma.AccessAttemptWhereInput = {
+      tenantId,
+      ...(query.memberId ? { memberId: query.memberId } : {}),
+      ...(query.result ? { result: query.result } : {}),
+      ...(createdAtFilter ? { createdAt: createdAtFilter } : {}),
+    };
+    const [rows, total] = await this.prisma.$transaction([
+      this.prisma.accessAttempt.findMany({
+        where,
+        orderBy: { createdAt: n.order },
+        skip: n.skip,
+        take: n.take,
+        include: {
+          member: { select: { name: true, email: true } },
+        },
+      }),
+      this.prisma.accessAttempt.count({ where }),
+    ]);
+    return toListResult(
+      rows.map((r) => this.toAttemptDetail(r, r.member)),
+      total,
+      n.page,
+      n.pageSize,
+    );
   }
 
   /**

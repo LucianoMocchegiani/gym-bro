@@ -22,15 +22,25 @@ import { randomBytes } from 'node:crypto';
 import { AUDIT_ACTIONS, AuditActor } from '../audit/audit.types';
 import { AuditService } from '../audit/audit.service';
 import { CashRegisterService } from '../cash-register/cash-register.service';
+import {
+  ListResult,
+  normalizeListQuery,
+  resolveOrderField,
+  toListResult,
+} from '../common/list';
 import { PrismaService } from '../prisma/prisma.service';
 import { ReceiptsService } from '../receipts/receipts.service';
 import { TenantSettingsService } from '../tenant-settings/tenant-settings.service';
 import { WaitlistService } from '../waitlist/waitlist.service';
 import {
   CreateReservationDto,
+  ListReservationsQueryDto,
   UpdateReservationStatusDto,
 } from './dto/reservation.dto';
 import { ReservationDetail } from './reservations.types';
+
+/** Whitelist de orden para {@link ReservationsService.listByMember}. */
+const RESERVATION_ORDER_FIELDS = ['startsAt', 'createdAt'] as const;
 
 type ReservationWithRelations = Reservation & {
   session: {
@@ -68,24 +78,45 @@ export class ReservationsService {
   ) {}
 
   /**
-   * Lista reservas de un afiliado (más próximas primero).
+   * Lista reservas de un afiliado (paginado; próximas primero por defecto).
    */
   async listByMember(
     tenantId: string,
     memberId: string,
-    options: { status?: ReservationStatus } = {},
-  ): Promise<ReservationDetail[]> {
+    query: ListReservationsQueryDto = {},
+  ): Promise<ListResult<ReservationDetail>> {
     await this.assertMemberInTenant(tenantId, memberId);
-    const rows = await this.prisma.reservation.findMany({
-      where: {
-        tenantId,
-        memberId,
-        ...(options.status ? { status: options.status } : {}),
-      },
-      include: this.reservationInclude(),
-      orderBy: { session: { startsAt: 'asc' } },
-    });
-    return rows.map((r) => this.toDetail(r));
+    const n = normalizeListQuery(query);
+    const orderField = resolveOrderField(
+      n.orderBy,
+      RESERVATION_ORDER_FIELDS,
+      'startsAt',
+    );
+    const orderBy: Prisma.ReservationOrderByWithRelationInput =
+      orderField === 'startsAt'
+        ? { session: { startsAt: n.order } }
+        : { createdAt: n.order };
+    const where: Prisma.ReservationWhereInput = {
+      tenantId,
+      memberId,
+      ...(query.status ? { status: query.status } : {}),
+    };
+    const [rows, total] = await this.prisma.$transaction([
+      this.prisma.reservation.findMany({
+        where,
+        include: this.reservationInclude(),
+        orderBy,
+        skip: n.skip,
+        take: n.take,
+      }),
+      this.prisma.reservation.count({ where }),
+    ]);
+    return toListResult(
+      rows.map((r) => this.toDetail(r)),
+      total,
+      n.page,
+      n.pageSize,
+    );
   }
 
   /**

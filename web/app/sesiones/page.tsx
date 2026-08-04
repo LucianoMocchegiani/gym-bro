@@ -27,11 +27,16 @@ export default function SesionesPage() {
   );
 }
 
+const PAGE_SIZE = 20;
+
 function SesionesInner() {
   const [rows, setRows] = useState<SessionDetail[]>([]);
+  const [total, setTotal] = useState(0);
+  const [hasMore, setHasMore] = useState(false);
   const [statusFilter, setStatusFilter] = useState<SessionStatus | 'ALL'>(
     'PUBLISHED',
   );
+  const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -42,11 +47,15 @@ function SesionesInner() {
       try {
         const data = await listSessions({
           status: statusFilter === 'ALL' ? undefined : statusFilter,
+          page,
+          pageSize: PAGE_SIZE,
         });
         if (cancelled) {
           return;
         }
-        setRows(data);
+        setRows(data.items);
+        setTotal(data.total);
+        setHasMore(data.hasMore);
         setError(null);
       } catch (err) {
         if (cancelled) {
@@ -66,7 +75,7 @@ function SesionesInner() {
     return () => {
       cancelled = true;
     };
-  }, [statusFilter]);
+  }, [statusFilter, page]);
 
   return (
     <AdminShell
@@ -82,9 +91,10 @@ function SesionesInner() {
           Estado
           <select
             value={statusFilter}
-            onChange={(e) =>
-              setStatusFilter(e.target.value as SessionStatus | 'ALL')
-            }
+            onChange={(e) => {
+              setPage(1);
+              setStatusFilter(e.target.value as SessionStatus | 'ALL');
+            }}
           >
             <option value="PUBLISHED">Publicadas</option>
             <option value="CANCELLED">Canceladas</option>
@@ -99,7 +109,7 @@ function SesionesInner() {
       {!loading && !error ? (
         <Panel
           title="Listado"
-          description={`${rows.length} sesión${rows.length === 1 ? '' : 'es'}`}
+          description={`${total} sesión${total === 1 ? '' : 'es'} · página ${page}`}
           className="table-wrap"
         >
           {rows.length === 0 ? (
@@ -142,6 +152,25 @@ function SesionesInner() {
               </tbody>
             </table>
           )}
+          <div className="pager">
+            <button
+              type="button"
+              className="btn ghost"
+              disabled={page <= 1}
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+            >
+              Anterior
+            </button>
+            <span className="muted small">Página {page}</span>
+            <button
+              type="button"
+              className="btn ghost"
+              disabled={!hasMore}
+              onClick={() => setPage((p) => p + 1)}
+            >
+              Siguiente
+            </button>
+          </div>
         </Panel>
       ) : null}
     </AdminShell>

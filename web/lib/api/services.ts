@@ -3,6 +3,8 @@
  */
 
 import { apiRequest } from '@/lib/api/client';
+import { toSearchParams } from '@/lib/api/list';
+import type { ListParams, ListResult } from '@/lib/api/list';
 
 export type ServiceType = 'ACCESO_LIBRE' | 'POR_SESIONES';
 
@@ -34,22 +36,21 @@ export type UpdateServiceInput = {
   dropInPrice?: number | null;
 };
 
-/**
- * Lista servicios (`catalog.write`).
- */
-export function listServices(input?: {
+export type ListServicesInput = {
   type?: ServiceType;
   active?: boolean;
-}): Promise<ServiceDetail[]> {
-  const params = new URLSearchParams();
-  if (input?.type) {
-    params.set('type', input.type);
-  }
-  if (input?.active !== undefined) {
-    params.set('active', String(input.active));
-  }
-  const q = params.toString();
-  return apiRequest<ServiceDetail[]>(`/services${q ? `?${q}` : ''}`);
+} & ListParams;
+
+/**
+ * Lista servicios (`catalog.write`), paginado.
+ */
+export function listServices(
+  input?: ListServicesInput,
+): Promise<ListResult<ServiceDetail>> {
+  const qs = toSearchParams(input);
+  return apiRequest<ListResult<ServiceDetail>>(
+    `/services${qs ? `?${qs}` : ''}`,
+  );
 }
 
 /**

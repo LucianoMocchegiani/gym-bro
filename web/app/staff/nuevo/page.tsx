@@ -37,11 +37,11 @@ function NuevoInner() {
     let cancelled = false;
     void (async () => {
       try {
-        const data = await listRoles();
+        const data = await listRoles({ pageSize: 100 });
         if (cancelled) {
           return;
         }
-        setRoles(data);
+        setRoles(data.items);
         setLoadError(null);
       } catch (err) {
         if (cancelled) {

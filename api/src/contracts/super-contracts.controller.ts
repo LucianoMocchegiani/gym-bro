@@ -8,11 +8,13 @@ import {
   ParseUUIDPipe,
   Patch,
   Post,
+  Query,
 } from '@nestjs/common';
 import type { AuthUser } from '../auth/auth.types';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { RequireSuperAuth } from '../auth/decorators/require-super-auth.decorator';
 import { toAuditActor } from '../audit/to-audit-actor';
+import { ListQueryDto, ListResult } from '../common/list';
 import { CreateContractDto, UpdateContractStatusDto } from './dto/contract.dto';
 import { ContractsService } from './contracts.service';
 import { ContractDetail } from './contracts.types';
@@ -45,8 +47,9 @@ export class SuperContractsController {
   listByMember(
     @Param('tenantId', ParseUUIDPipe) tenantId: string,
     @Param('memberId', ParseUUIDPipe) memberId: string,
-  ): Promise<ContractDetail[]> {
-    return this.contractsService.listByMember(tenantId, memberId);
+    @Query() query: ListQueryDto,
+  ): Promise<ListResult<ContractDetail>> {
+    return this.contractsService.listByMember(tenantId, memberId, query);
   }
 
   @Get('contracts/:contractId')

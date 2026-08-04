@@ -7,8 +7,15 @@ import {
 import {
   CredentialOffer,
   CredentialOfferStatus,
+  Prisma,
   QuarkProvisionStatus,
 } from '@prisma/client';
+import {
+  ListQueryDto,
+  ListResult,
+  normalizeListQuery,
+  toListResult,
+} from '../common/list';
 import { PrismaService } from '../prisma/prisma.service';
 import { QuarkHttpError } from './http-quark-admin.adapter';
 import { QuarkAdminPort } from './quark-admin.port';
@@ -172,27 +179,40 @@ export class QuarkOfferService {
   }
 
   /**
-   * Lista offers del afiliado (más recientes primero).
+   * Lista offers del afiliado (paginado; más recientes primero).
    *
    * @param options.includeLastError - true para staff (ops).
    */
   async listForMember(
     tenantId: string,
     memberId: string,
+    query: ListQueryDto = {},
     options?: { includeLastError?: boolean },
-  ): Promise<CredentialOfferListItem[]> {
-    const rows = await this.prisma.credentialOffer.findMany({
-      where: { tenantId, memberId },
-      include: {
-        pack: { select: { name: true } },
-        contract: { select: { startsAt: true, endsAt: true } },
-      },
-      orderBy: { createdAt: 'desc' },
-    });
-    return rows.map((r) =>
-      this.toListItem(r, r.pack.name, r.contract, {
-        includeLastError: options?.includeLastError === true,
+  ): Promise<ListResult<CredentialOfferListItem>> {
+    const n = normalizeListQuery(query);
+    const where: Prisma.CredentialOfferWhereInput = { tenantId, memberId };
+    const [rows, total] = await this.prisma.$transaction([
+      this.prisma.credentialOffer.findMany({
+        where,
+        include: {
+          pack: { select: { name: true } },
+          contract: { select: { startsAt: true, endsAt: true } },
+        },
+        orderBy: { createdAt: n.order },
+        skip: n.skip,
+        take: n.take,
       }),
+      this.prisma.credentialOffer.count({ where }),
+    ]);
+    return toListResult(
+      rows.map((r) =>
+        this.toListItem(r, r.pack.name, r.contract, {
+          includeLastError: options?.includeLastError === true,
+        }),
+      ),
+      total,
+      n.page,
+      n.pageSize,
     );
   }
 

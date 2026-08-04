@@ -5,17 +5,16 @@ import {
   HttpCode,
   HttpStatus,
   Param,
-  ParseEnumPipe,
   ParseUUIDPipe,
   Post,
   Query,
 } from '@nestjs/common';
-import { RefundRequestStatus } from '@prisma/client';
 import type { AuthUser } from '../auth/auth.types';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { RequireSuperAuth } from '../auth/decorators/require-super-auth.decorator';
 import { toAuditActor } from '../audit/to-audit-actor';
-import { ExecuteRefundDto } from './dto/refund.dto';
+import { ListResult } from '../common/list';
+import { ExecuteRefundDto, ListRefundRequestsQueryDto } from './dto/refund.dto';
 import { RefundsService } from './refunds.service';
 import { RefundExecutionDetail, RefundRequestDetail } from './refunds.types';
 
@@ -30,10 +29,9 @@ export class SuperRefundsController {
   @Get('refund-requests')
   list(
     @Param('tenantId', ParseUUIDPipe) tenantId: string,
-    @Query('status', new ParseEnumPipe(RefundRequestStatus, { optional: true }))
-    status?: RefundRequestStatus,
-  ): Promise<RefundRequestDetail[]> {
-    return this.refunds.listForTenant(tenantId, status);
+    @Query() query: ListRefundRequestsQueryDto,
+  ): Promise<ListResult<RefundRequestDetail>> {
+    return this.refunds.listForTenant(tenantId, query);
   }
 
   @Post('payments/:paymentId/refunds')

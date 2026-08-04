@@ -6,20 +6,19 @@ import {
   HttpCode,
   HttpStatus,
   Param,
-  ParseEnumPipe,
-  ParseIntPipe,
   ParseUUIDPipe,
   Post,
   Query,
 } from '@nestjs/common';
-import { AccessAttemptResult } from '@prisma/client';
 import type { AuthUser } from '../auth/auth.types';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import { ListResult } from '../common/list';
 import { RequirePermission } from '../roles/decorators/require-permission.decorator';
 import { CurrentTenant } from '../tenant/decorators/current-tenant.decorator';
 import { RequireTenantAuth } from '../tenant/decorators/require-tenant-auth.decorator';
 import { AccessOid4VpService } from './access-oid4vp.service';
 import { AccessVerifyService } from './access-verify.service';
+import { ListAccessAttemptsQueryDto } from './dto/list-access-attempts.dto';
 import { ManualPassDto } from './dto/manual-pass.dto';
 import {
   AccessAttemptDetail,
@@ -96,7 +95,7 @@ export class AccessVerifyController {
   }
 
   /**
-   * Lista intentos del gym (más recientes primero).
+   * Lista intentos del gym (paginado; más recientes primero por defecto).
    *
    * @remarks Incluye nombre/email del afiliado. `from`/`to` = YYYY-MM-DD (BA).
    */
@@ -104,20 +103,8 @@ export class AccessVerifyController {
   @RequirePermission('access.verify')
   list(
     @CurrentTenant() tenantId: string,
-    @Query('memberId', new ParseUUIDPipe({ optional: true }))
-    memberId?: string,
-    @Query('result', new ParseEnumPipe(AccessAttemptResult, { optional: true }))
-    result?: AccessAttemptResult,
-    @Query('limit', new ParseIntPipe({ optional: true })) limit?: number,
-    @Query('from') from?: string,
-    @Query('to') to?: string,
-  ): Promise<AccessAttemptDetail[]> {
-    return this.accessVerify.listAttempts(tenantId, {
-      memberId,
-      result,
-      limit,
-      fromYmd: from,
-      toYmd: to,
-    });
+    @Query() query: ListAccessAttemptsQueryDto,
+  ): Promise<ListResult<AccessAttemptDetail>> {
+    return this.accessVerify.listAttempts(tenantId, query);
   }
 }

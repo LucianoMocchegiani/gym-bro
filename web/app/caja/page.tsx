@@ -119,28 +119,29 @@ function CajaInner() {
         const to = new Date();
         to.setDate(to.getDate() + 14);
         const [memberRows, packRows, sessionRows] = await Promise.all([
-          listMembers('ACTIVE'),
-          listActivePacks(),
+          listMembers({ status: 'ACTIVE', pageSize: 100 }),
+          listActivePacks({ pageSize: 100 }),
           listSessions({
             status: 'PUBLISHED',
             from: from.toISOString(),
             to: to.toISOString(),
+            pageSize: 100,
           }),
         ]);
         if (cancelled) {
           return;
         }
-        setMembers(memberRows);
-        setPacks(packRows);
-        setSessions(sessionRows);
-        if (memberRows[0]) {
-          setMemberId(memberRows[0].id);
+        setMembers(memberRows.items);
+        setPacks(packRows.items);
+        setSessions(sessionRows.items);
+        if (memberRows.items[0]) {
+          setMemberId(memberRows.items[0].id);
         }
-        if (packRows[0]) {
-          setPackId(packRows[0].id);
+        if (packRows.items[0]) {
+          setPackId(packRows.items[0].id);
         }
-        if (sessionRows[0]) {
-          setSessionId(sessionRows[0].id);
+        if (sessionRows.items[0]) {
+          setSessionId(sessionRows.items[0].id);
         }
       } catch (err) {
         if (cancelled) {

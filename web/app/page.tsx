@@ -83,8 +83,8 @@ function DashboardInner() {
       }
 
       try {
-        const members = await listMembers('ACTIVE');
-        activeMembers = members.length;
+        const members = await listMembers({ status: 'ACTIVE', pageSize: 1 });
+        activeMembers = members.total;
       } catch (err) {
         errors.push(
           err instanceof ApiClientError
@@ -109,12 +109,12 @@ function DashboardInner() {
 
       try {
         const attempts = await listAccessAttempts({
-          limit: 100,
+          pageSize: 1,
           result: 'ALLOWED',
           from: today,
           to: today,
         });
-        doorAllowed = attempts.length;
+        doorAllowed = attempts.total;
       } catch (err) {
         errors.push(
           err instanceof ApiClientError
@@ -130,8 +130,9 @@ function DashboardInner() {
           from: new Date(dayStart).toISOString(),
           to: new Date(dayEnd).toISOString(),
           status: 'PUBLISHED',
+          pageSize: 1,
         });
-        sessionsToday = sessions.length;
+        sessionsToday = sessions.total;
       } catch (err) {
         errors.push(
           err instanceof ApiClientError
@@ -196,7 +197,7 @@ function DashboardInner() {
               <p className="stat-value">
                 {kpi.doorAllowed != null ? kpi.doorAllowed : '—'}
               </p>
-              <p className="muted small">ALLOWED hoy (últ. 100)</p>
+              <p className="muted small">ALLOWED hoy</p>
             </Panel>
             <Panel className="stat-card">
               <p className="muted small">Sesiones hoy</p>

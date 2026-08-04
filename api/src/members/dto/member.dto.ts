@@ -9,6 +9,7 @@ import {
   MinLength,
   ValidateIf,
 } from 'class-validator';
+import { ListQueryDto } from '../../common/list';
 
 /**
  * Alta de afiliado (CU-AFI-001). Staff define password inicial.
@@ -80,4 +81,16 @@ export class UpdateMemberDto {
 export class UpdateMemberStatusDto {
   @IsEnum(MemberStatus)
   status!: MemberStatus;
+}
+
+/**
+ * Query de listado de afiliados (CU-AFI-001).
+ *
+ * @remarks `q` busca en email, name y document. `orderBy` acepta
+ * `createdAt`, `name`, `email` y `status` (whitelist en el servicio).
+ */
+export class ListMembersQueryDto extends ListQueryDto {
+  @IsOptional()
+  @IsEnum(MemberStatus)
+  status?: MemberStatus;
 }

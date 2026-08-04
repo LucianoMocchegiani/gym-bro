@@ -10,6 +10,12 @@ import { Branch, Prisma, Role, Tenant, TenantStatus } from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
 import { AUDIT_ACTIONS, AuditActor } from '../audit/audit.types';
 import { AuditService } from '../audit/audit.service';
+import {
+  ListResult,
+  normalizeListQuery,
+  resolveOrderField,
+  toListResult,
+} from '../common/list';
 import { PrismaService } from '../prisma/prisma.service';
 import { QuarkProvisionService } from '../quark/quark-provision.service';
 import { SYSTEM_ROLE_SLUGS } from '../roles/permission-catalog';
@@ -18,7 +24,11 @@ import {
   SeededRoleSummary,
 } from '../roles/roles-seed.service';
 import { StaffService } from '../staff/staff.service';
-import { CreateTenantDto, UpdateTenantDto } from './dto/tenant.dto';
+import {
+  CreateTenantDto,
+  ListTenantsQueryDto,
+  UpdateTenantDto,
+} from './dto/tenant.dto';
 import { assertValidTenantSlug, normalizeTenantSlug } from './tenant-slug';
 import {
   BranchSummary,
@@ -30,6 +40,9 @@ import {
 } from './tenants.types';
 
 const DEFAULT_BRANCH_NAME = 'Sede principal';
+
+/** Whitelist de orden para {@link TenantsService.findAll}. */
+const TENANT_ORDER_FIELDS = ['createdAt', 'name', 'slug'] as const;
 
 type TenantWithRelations = Tenant & {
   branches: Branch[];
@@ -122,9 +135,7 @@ export class TenantsService {
           created.id,
           permissions,
         );
-        const adminRole = roles.find(
-          (r) => r.slug === SYSTEM_ROLE_SLUGS.admin,
-        );
+        const adminRole = roles.find((r) => r.slug === SYSTEM_ROLE_SLUGS.admin);
         if (!adminRole) {
           throw new Error('Admin system role missing after seed');
         }
@@ -184,10 +195,7 @@ export class TenantsService {
    *
    * @remarks Soft-fail: siempre responde con el estado actualizado (READY o MISSING).
    */
-  async provisionQuark(
-    id: string,
-    actor: AuditActor,
-  ): Promise<TenantResponse> {
+  async provisionQuark(id: string, actor: AuditActor): Promise<TenantResponse> {
     await this.findTenantWithRelations(id);
     const before = await this.prisma.tenant.findUniqueOrThrow({
       where: { id },
@@ -225,15 +233,47 @@ export class TenantsService {
   }
 
   /**
-   * Lista todos los tenants (más recientes primero).
+   * Lista tenants (paginado; más recientes primero por defecto).
+   *
+   * @remarks `q` busca en name y slug.
    */
-  async findAll(): Promise<TenantResponse[]> {
-    const tenants = await this.prisma.tenant.findMany({
-      orderBy: { createdAt: 'desc' },
-      include: this.tenantInclude(),
-    });
-    return tenants.map((t) =>
-      this.toResponse(t, t.branches[0] ?? null, this.mapRoles(t.roles), null),
+  async findAll(
+    query: ListTenantsQueryDto = {},
+  ): Promise<ListResult<TenantResponse>> {
+    const n = normalizeListQuery(query);
+    const orderField = resolveOrderField(
+      n.orderBy,
+      TENANT_ORDER_FIELDS,
+      'createdAt',
+    );
+    const where: Prisma.TenantWhereInput = {
+      ...(query.status ? { status: query.status } : {}),
+      ...(n.q
+        ? {
+            OR: [
+              { name: { contains: n.q, mode: 'insensitive' } },
+              { slug: { contains: n.q, mode: 'insensitive' } },
+            ],
+          }
+        : {}),
+    };
+    const [tenants, total] = await this.prisma.$transaction([
+      this.prisma.tenant.findMany({
+        where,
+        orderBy: { [orderField]: n.order },
+        skip: n.skip,
+        take: n.take,
+        include: this.tenantInclude(),
+      }),
+      this.prisma.tenant.count({ where }),
+    ]);
+    return toListResult(
+      tenants.map((t) =>
+        this.toResponse(t, t.branches[0] ?? null, this.mapRoles(t.roles), null),
+      ),
+      total,
+      n.page,
+      n.pageSize,
     );
   }
 

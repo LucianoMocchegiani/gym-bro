@@ -9,6 +9,7 @@ import {
   ContractStatus,
   PaymentMethod,
   PaymentStatus,
+  Prisma,
   RefundRequestStatus,
   ReservationStatus,
   ServiceType,
@@ -16,11 +17,16 @@ import {
 import { AUDIT_ACTIONS, AuditActor } from '../audit/audit.types';
 import { AuditService } from '../audit/audit.service';
 import { CashRegisterService } from '../cash-register/cash-register.service';
+import { ListResult, normalizeListQuery, toListResult } from '../common/list';
 import { MercadoPagoAccountService } from '../mercadopago/mercadopago-account.service';
 import { MP_ACCOUNT_PORT, MpAccountPort } from '../mercadopago/mp-account.port';
 import { PrismaService } from '../prisma/prisma.service';
 import { WaitlistService } from '../waitlist/waitlist.service';
-import { CreateRefundRequestDto, ExecuteRefundDto } from './dto/refund.dto';
+import {
+  CreateRefundRequestDto,
+  ExecuteRefundDto,
+  ListRefundRequestsQueryDto,
+} from './dto/refund.dto';
 import { RefundExecutionDetail, RefundRequestDetail } from './refunds.types';
 
 const LIBRE_REFUND_HOURS = 24;
@@ -129,34 +135,63 @@ export class RefundsService {
   }
 
   /**
-   * Lista solicitudes del afiliado.
+   * Lista solicitudes del afiliado (paginado; más recientes primero).
    */
   async listMine(
     tenantId: string,
     memberId: string,
-  ): Promise<RefundRequestDetail[]> {
-    const rows = await this.prisma.refundRequest.findMany({
-      where: { tenantId, memberId },
-      orderBy: { createdAt: 'desc' },
-    });
-    return rows.map((r) => this.toRequestDetail(r));
+    query: ListRefundRequestsQueryDto = {},
+  ): Promise<ListResult<RefundRequestDetail>> {
+    const n = normalizeListQuery(query);
+    const where: Prisma.RefundRequestWhereInput = {
+      tenantId,
+      memberId,
+      ...(query.status ? { status: query.status } : {}),
+    };
+    const [rows, total] = await this.prisma.$transaction([
+      this.prisma.refundRequest.findMany({
+        where,
+        orderBy: { createdAt: n.order },
+        skip: n.skip,
+        take: n.take,
+      }),
+      this.prisma.refundRequest.count({ where }),
+    ]);
+    return toListResult(
+      rows.map((r) => this.toRequestDetail(r)),
+      total,
+      n.page,
+      n.pageSize,
+    );
   }
 
   /**
-   * Lista solicitudes del gym (staff).
+   * Lista solicitudes del gym (paginado; staff; más recientes primero).
    */
   async listForTenant(
     tenantId: string,
-    status?: RefundRequestStatus,
-  ): Promise<RefundRequestDetail[]> {
-    const rows = await this.prisma.refundRequest.findMany({
-      where: {
-        tenantId,
-        ...(status ? { status } : {}),
-      },
-      orderBy: { createdAt: 'desc' },
-    });
-    return rows.map((r) => this.toRequestDetail(r));
+    query: ListRefundRequestsQueryDto = {},
+  ): Promise<ListResult<RefundRequestDetail>> {
+    const n = normalizeListQuery(query);
+    const where: Prisma.RefundRequestWhereInput = {
+      tenantId,
+      ...(query.status ? { status: query.status } : {}),
+    };
+    const [rows, total] = await this.prisma.$transaction([
+      this.prisma.refundRequest.findMany({
+        where,
+        orderBy: { createdAt: n.order },
+        skip: n.skip,
+        take: n.take,
+      }),
+      this.prisma.refundRequest.count({ where }),
+    ]);
+    return toListResult(
+      rows.map((r) => this.toRequestDetail(r)),
+      total,
+      n.page,
+      n.pageSize,
+    );
   }
 
   /**

@@ -8,10 +8,12 @@ import {
   ParseUUIDPipe,
   Post,
   Put,
+  Query,
 } from '@nestjs/common';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import type { AuthUser } from '../auth/auth.types';
 import { toAuditActor } from '../audit/to-audit-actor';
+import { ListQueryDto, ListResult } from '../common/list';
 import { RequirePermission } from '../roles/decorators/require-permission.decorator';
 import { RequireTenantAuth } from '../tenant/decorators/require-tenant-auth.decorator';
 import { CurrentTenant } from '../tenant/decorators/current-tenant.decorator';
@@ -31,8 +33,11 @@ export class StaffController {
 
   @Get()
   @RequirePermission('staff.read')
-  list(@CurrentTenant() tenantId: string): Promise<StaffUserDetail[]> {
-    return this.staffService.list(tenantId);
+  list(
+    @CurrentTenant() tenantId: string,
+    @Query() query: ListQueryDto,
+  ): Promise<ListResult<StaffUserDetail>> {
+    return this.staffService.list(tenantId, query);
   }
 
   @Post()

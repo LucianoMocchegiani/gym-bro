@@ -1,4 +1,5 @@
-import { Equals, IsUUID } from 'class-validator';
+import { Equals, IsIn, IsOptional, IsUUID } from 'class-validator';
+import { ListQueryDto } from '../../common/list';
 
 /**
  * Alta en lista de espera (CU-RES-004).
@@ -14,4 +15,15 @@ export class JoinWaitlistDto {
 export class LeaveWaitlistDto {
   @Equals('LEFT')
   status!: 'LEFT';
+}
+
+/**
+ * Query de listado de espera (CU-RES-004).
+ *
+ * @remarks Sin `q`. Orden FIFO por `createdAt` asc (fijo).
+ */
+export class ListWaitlistQueryDto extends ListQueryDto {
+  @IsOptional()
+  @IsIn(['asc', 'desc'])
+  order?: 'asc' | 'desc' = 'asc';
 }

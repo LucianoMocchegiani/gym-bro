@@ -4,9 +4,11 @@ import {
   Get,
   Param,
   ParseUUIDPipe,
+  Query,
 } from '@nestjs/common';
 import type { AuthUser } from '../auth/auth.types';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import { ListQueryDto, ListResult } from '../common/list';
 import { RequirePermission } from '../roles/decorators/require-permission.decorator';
 import { CurrentTenant } from '../tenant/decorators/current-tenant.decorator';
 import { RequireTenantAuth } from '../tenant/decorators/require-tenant-auth.decorator';
@@ -27,11 +29,12 @@ export class ReceiptsController {
   listMine(
     @CurrentTenant() tenantId: string,
     @CurrentUser() user: AuthUser,
-  ): Promise<ReceiptDetail[]> {
+    @Query() query: ListQueryDto,
+  ): Promise<ListResult<ReceiptDetail>> {
     if (user.profileType !== 'MEMBER') {
       throw new ForbiddenException('Member profile required');
     }
-    return this.receipts.listByMember(tenantId, user.userId);
+    return this.receipts.listByMember(tenantId, user.userId, query);
   }
 
   @Get('me/receipts/:receiptId')
@@ -53,8 +56,9 @@ export class ReceiptsController {
   listByMember(
     @CurrentTenant() tenantId: string,
     @Param('memberId', ParseUUIDPipe) memberId: string,
-  ): Promise<ReceiptDetail[]> {
-    return this.receipts.listByMember(tenantId, memberId);
+    @Query() query: ListQueryDto,
+  ): Promise<ListResult<ReceiptDetail>> {
+    return this.receipts.listByMember(tenantId, memberId, query);
   }
 
   @Get('payments/:paymentId/receipt')

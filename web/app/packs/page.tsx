@@ -25,11 +25,16 @@ export default function PacksPage() {
   );
 }
 
+const PAGE_SIZE = 20;
+
 function PacksInner() {
   const [rows, setRows] = useState<PackDetail[]>([]);
+  const [total, setTotal] = useState(0);
+  const [hasMore, setHasMore] = useState(false);
   const [activeFilter, setActiveFilter] = useState<'ALL' | 'true' | 'false'>(
     'ALL',
   );
+  const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -38,13 +43,17 @@ function PacksInner() {
     void (async () => {
       setLoading(true);
       try {
-        const data = await listPacks(
-          activeFilter === 'ALL' ? undefined : activeFilter === 'true',
-        );
+        const data = await listPacks({
+          active: activeFilter === 'ALL' ? undefined : activeFilter === 'true',
+          page,
+          pageSize: PAGE_SIZE,
+        });
         if (cancelled) {
           return;
         }
-        setRows(data);
+        setRows(data.items);
+        setTotal(data.total);
+        setHasMore(data.hasMore);
         setError(null);
       } catch (err) {
         if (cancelled) {
@@ -64,7 +73,7 @@ function PacksInner() {
     return () => {
       cancelled = true;
     };
-  }, [activeFilter]);
+  }, [activeFilter, page]);
 
   return (
     <AdminShell
@@ -80,9 +89,10 @@ function PacksInner() {
           Activo
           <select
             value={activeFilter}
-            onChange={(e) =>
-              setActiveFilter(e.target.value as 'ALL' | 'true' | 'false')
-            }
+            onChange={(e) => {
+              setPage(1);
+              setActiveFilter(e.target.value as 'ALL' | 'true' | 'false');
+            }}
           >
             <option value="ALL">Todos</option>
             <option value="true">Sí</option>
@@ -97,7 +107,7 @@ function PacksInner() {
       {!loading && !error ? (
         <Panel
           title="Listado"
-          description={`${rows.length} pack${rows.length === 1 ? '' : 's'}`}
+          description={`${total} pack${total === 1 ? '' : 's'} · página ${page}`}
           className="table-wrap"
         >
           {rows.length === 0 ? (
@@ -138,6 +148,25 @@ function PacksInner() {
               </tbody>
             </table>
           )}
+          <div className="pager">
+            <button
+              type="button"
+              className="btn ghost"
+              disabled={page <= 1}
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+            >
+              Anterior
+            </button>
+            <span className="muted small">Página {page}</span>
+            <button
+              type="button"
+              className="btn ghost"
+              disabled={!hasMore}
+              onClick={() => setPage((p) => p + 1)}
+            >
+              Siguiente
+            </button>
+          </div>
         </Panel>
       ) : null}
     </AdminShell>

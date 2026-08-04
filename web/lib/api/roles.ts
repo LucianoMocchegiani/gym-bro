@@ -3,6 +3,8 @@
  */
 
 import { apiRequest } from '@/lib/api/client';
+import { toSearchParams } from '@/lib/api/list';
+import type { ListParams, ListResult } from '@/lib/api/list';
 
 export type RoleDetail = {
   id: string;
@@ -26,10 +28,13 @@ export type UpdateRoleInput = {
 };
 
 /**
- * Lista roles del tenant (`roles.write`).
+ * Lista roles del tenant (`roles.write`), paginado.
  */
-export function listRoles(): Promise<RoleDetail[]> {
-  return apiRequest<RoleDetail[]>('/roles');
+export function listRoles(
+  input?: ListParams,
+): Promise<ListResult<RoleDetail>> {
+  const qs = toSearchParams(input);
+  return apiRequest<ListResult<RoleDetail>>(`/roles${qs ? `?${qs}` : ''}`);
 }
 
 /**

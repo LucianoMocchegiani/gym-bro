@@ -2,7 +2,7 @@
   "info": {
     "_postman_id": "gymbro-api-collection",
     "name": "GymBro API",
-    "description": "Health + auth (SUPER / STAFF / MEMBER) + tenants CRUD (Super).\n\n**Setup**\n1. Importá esta colección y `GymBro.local.postman_environment.json`.\n2. Arriba a la derecha: environment **GymBro Local** (obligatorio).\n3. Seed: `docker compose exec api npm run prisma:seed`.\n\n**Auth**\nCarpeta `Auth (manual)`: Login Super/Staff/Member → Me → Refresh → Logout.\n\n**Tenants**\nLogin Super (manual) → carpeta `Tenants (Super)`.\n\n**Credenciales seed (también en el environment)**\n- Super: `super@gymbro.local` / `ChangeMe123!`\n- Staff: `admin@demo.gym` / `ChangeMe123!` + tenantId\n- Member: `socio@demo.gym` / `ChangeMe123!` + tenantId",
+    "description": "Health + auth (SUPER / STAFF / MEMBER) + tenants CRUD (Super).\n\n**Setup**\n1. Importá esta colección y `GymBro.local.postman_environment.json`.\n2. Arriba a la derecha: environment **GymBro Local** (obligatorio).\n3. Seed: `docker compose exec api npm run prisma:seed`.\n\n**Auth**\nCarpeta `Auth (manual)`: Login Super/Staff/Member → Me → Refresh → Logout.\n\n**Tenants**\nLogin Super (manual) → carpeta `Tenants (Super)`.\n\n**Credenciales seed (también en el environment)**\n- Super: `super@gymbro.local` / `ChangeMe123!`\n- Staff: `admin@demo.gym` / `ChangeMe123!` + tenantId\n- Member: `socio@demo.gym` / `ChangeMe123!` + tenantId\n\n**Listados paginados**\nTodos los `GET` de listado devuelven `{ items, page, pageSize, total, hasMore }` (ver `postman/README.md`).",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "auth": {
@@ -487,7 +487,11 @@
                 "type": "text/javascript",
                 "exec": [
                   "pm.test('status 200', () => pm.response.to.have.status(200));",
-                  "pm.test('array', () => pm.expect(pm.response.json()).to.be.an('array'));"
+                  "const body = pm.response.json();",
+                  "pm.test('paginated list', () => {",
+                  "  pm.expect(body.items).to.be.an('array');",
+                  "  pm.expect(body.total).to.be.a('number');",
+                  "});"
                 ]
               }
             }
@@ -495,7 +499,40 @@
           "request": {
             "method": "GET",
             "header": [],
-            "url": "{{baseUrl}}/api/tenants"
+            "url": {
+              "raw": "{{baseUrl}}/api/tenants?page=1&pageSize=20&order=desc",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "tenants"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "20"
+                },
+                {
+                  "key": "q",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "orderBy",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "order",
+                  "value": "desc"
+                }
+              ]
+            }
           }
         },
         {
@@ -646,9 +683,10 @@
                 "exec": [
                   "pm.test('status 200', () => pm.response.to.have.status(200));",
                   "const body = pm.response.json();",
-                  "pm.test('array with system roles', () => {",
-                  "  pm.expect(body).to.be.an('array');",
-                  "  pm.expect(body.some((r) => r.slug === 'admin')).to.eql(true);",
+                  "pm.test('paginated list with system roles', () => {",
+                  "  pm.expect(body.items).to.be.an('array');",
+                  "  pm.expect(body.total).to.be.a('number');",
+                  "  pm.expect(body.items.some((r) => r.slug === 'admin')).to.eql(true);",
                   "});"
                 ]
               }
@@ -657,7 +695,42 @@
           "request": {
             "method": "GET",
             "header": [],
-            "url": "{{baseUrl}}/api/tenants/{{createdTenantId}}/roles"
+            "url": {
+              "raw": "{{baseUrl}}/api/tenants/{{createdTenantId}}/roles?page=1&pageSize=20&order=desc",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "tenants",
+                "{{createdTenantId}}",
+                "roles"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "20"
+                },
+                {
+                  "key": "q",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "orderBy",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "order",
+                  "value": "desc"
+                }
+              ]
+            }
           }
         },
         {
@@ -753,7 +826,11 @@
                 "type": "text/javascript",
                 "exec": [
                   "pm.test('status 200', () => pm.response.to.have.status(200));",
-                  "pm.test('array', () => pm.expect(pm.response.json()).to.be.an('array'));"
+                  "const body = pm.response.json();",
+                  "pm.test('paginated list', () => {",
+                  "  pm.expect(body.items).to.be.an('array');",
+                  "  pm.expect(body.total).to.be.a('number');",
+                  "});"
                 ]
               }
             }
@@ -761,7 +838,40 @@
           "request": {
             "method": "GET",
             "header": [],
-            "url": "{{baseUrl}}/api/roles"
+            "url": {
+              "raw": "{{baseUrl}}/api/roles?page=1&pageSize=20&order=desc",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "roles"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "20"
+                },
+                {
+                  "key": "q",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "orderBy",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "order",
+                  "value": "desc"
+                }
+              ]
+            }
           }
         },
         {
@@ -807,9 +917,12 @@
                 "type": "text/javascript",
                 "exec": [
                   "pm.test('status 200', () => pm.response.to.have.status(200));",
-                  "pm.test('array', () => pm.expect(pm.response.json()).to.be.an('array'));",
-                  "const rows = pm.response.json();",
-                  "if (rows[0]) { pm.environment.set('createdStaffId', rows[0].id); pm.collectionVariables.set('createdStaffId', rows[0].id); }"
+                  "const body = pm.response.json();",
+                  "pm.test('paginated list', () => {",
+                  "  pm.expect(body.items).to.be.an('array');",
+                  "  pm.expect(body.total).to.be.a('number');",
+                  "});",
+                  "if (body.items[0]) { pm.environment.set('createdStaffId', body.items[0].id); pm.collectionVariables.set('createdStaffId', body.items[0].id); }"
                 ]
               }
             }
@@ -817,7 +930,40 @@
           "request": {
             "method": "GET",
             "header": [],
-            "url": "{{baseUrl}}/api/staff"
+            "url": {
+              "raw": "{{baseUrl}}/api/staff?page=1&pageSize=20&order=desc",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "staff"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "20"
+                },
+                {
+                  "key": "q",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "orderBy",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "order",
+                  "value": "desc"
+                }
+              ]
+            }
           }
         },
         {
@@ -899,7 +1045,11 @@
                 "type": "text/javascript",
                 "exec": [
                   "pm.test('status 200', () => pm.response.to.have.status(200));",
-                  "pm.test('array', () => pm.expect(pm.response.json()).to.be.an('array'));"
+                  "const body = pm.response.json();",
+                  "pm.test('paginated list', () => {",
+                  "  pm.expect(body.items).to.be.an('array');",
+                  "  pm.expect(body.total).to.be.a('number');",
+                  "});"
                 ]
               }
             }
@@ -907,7 +1057,42 @@
           "request": {
             "method": "GET",
             "header": [],
-            "url": "{{baseUrl}}/api/tenants/{{createdTenantId}}/staff"
+            "url": {
+              "raw": "{{baseUrl}}/api/tenants/{{createdTenantId}}/staff?page=1&pageSize=20&order=desc",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "tenants",
+                "{{createdTenantId}}",
+                "staff"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "20"
+                },
+                {
+                  "key": "q",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "orderBy",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "order",
+                  "value": "desc"
+                }
+              ]
+            }
           }
         },
         {
@@ -995,7 +1180,11 @@
                 "type": "text/javascript",
                 "exec": [
                   "pm.test('status 200', () => pm.response.to.have.status(200));",
-                  "pm.test('array', () => pm.expect(pm.response.json()).to.be.an('array'));"
+                  "const body = pm.response.json();",
+                  "pm.test('paginated list', () => {",
+                  "  pm.expect(body.items).to.be.an('array');",
+                  "  pm.expect(body.total).to.be.a('number');",
+                  "});"
                 ]
               }
             }
@@ -1004,7 +1193,7 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/api/audit-events?limit=50",
+              "raw": "{{baseUrl}}/api/audit-events?page=1&pageSize=20&order=desc",
               "host": [
                 "{{baseUrl}}"
               ],
@@ -1014,13 +1203,31 @@
               ],
               "query": [
                 {
-                  "key": "limit",
-                  "value": "50"
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "20"
                 },
                 {
                   "key": "action",
                   "value": "",
                   "disabled": true
+                },
+                {
+                  "key": "q",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "orderBy",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "order",
+                  "value": "desc"
                 }
               ]
             }
@@ -1035,7 +1242,11 @@
                 "type": "text/javascript",
                 "exec": [
                   "pm.test('status 200', () => pm.response.to.have.status(200));",
-                  "pm.test('array', () => pm.expect(pm.response.json()).to.be.an('array'));"
+                  "const body = pm.response.json();",
+                  "pm.test('paginated list', () => {",
+                  "  pm.expect(body.items).to.be.an('array');",
+                  "  pm.expect(body.total).to.be.a('number');",
+                  "});"
                 ]
               }
             }
@@ -1044,7 +1255,7 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/api/tenants/{{tenantId}}/audit-events?limit=50",
+              "raw": "{{baseUrl}}/api/tenants/{{tenantId}}/audit-events?page=1&pageSize=20&order=desc",
               "host": [
                 "{{baseUrl}}"
               ],
@@ -1056,8 +1267,26 @@
               ],
               "query": [
                 {
-                  "key": "limit",
-                  "value": "50"
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "20"
+                },
+                {
+                  "key": "q",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "orderBy",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "order",
+                  "value": "desc"
                 }
               ]
             }
@@ -1127,7 +1356,11 @@
                 "type": "text/javascript",
                 "exec": [
                   "pm.test('status 200', () => pm.response.to.have.status(200));",
-                  "pm.test('array', () => pm.expect(pm.response.json()).to.be.an('array'));"
+                  "const body = pm.response.json();",
+                  "pm.test('paginated list', () => {",
+                  "  pm.expect(body.items).to.be.an('array');",
+                  "  pm.expect(body.total).to.be.a('number');",
+                  "});"
                 ]
               }
             }
@@ -1135,7 +1368,40 @@
           "request": {
             "method": "GET",
             "header": [],
-            "url": "{{baseUrl}}/api/members"
+            "url": {
+              "raw": "{{baseUrl}}/api/members?page=1&pageSize=20&order=desc",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "members"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "20"
+                },
+                {
+                  "key": "q",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "orderBy",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "order",
+                  "value": "desc"
+                }
+              ]
+            }
           }
         },
         {
@@ -1357,7 +1623,11 @@
                 "type": "text/javascript",
                 "exec": [
                   "pm.test('status 200', () => pm.response.to.have.status(200));",
-                  "pm.test('array', () => pm.expect(pm.response.json()).to.be.an('array'));"
+                  "const body = pm.response.json();",
+                  "pm.test('paginated list', () => {",
+                  "  pm.expect(body.items).to.be.an('array');",
+                  "  pm.expect(body.total).to.be.a('number');",
+                  "});"
                 ]
               }
             }
@@ -1366,7 +1636,7 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/api/services",
+              "raw": "{{baseUrl}}/api/services?page=1&pageSize=20&order=desc",
               "host": [
                 "{{baseUrl}}"
               ],
@@ -1376,6 +1646,14 @@
               ],
               "query": [
                 {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "20"
+                },
+                {
                   "key": "type",
                   "value": "ACCESO_LIBRE",
                   "disabled": true
@@ -1384,6 +1662,20 @@
                   "key": "active",
                   "value": "true",
                   "disabled": true
+                },
+                {
+                  "key": "q",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "orderBy",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "order",
+                  "value": "desc"
                 }
               ]
             }
@@ -1531,7 +1823,11 @@
                 "type": "text/javascript",
                 "exec": [
                   "pm.test('status 200', () => pm.response.to.have.status(200));",
-                  "pm.test('array', () => pm.expect(pm.response.json()).to.be.an('array'));"
+                  "const body = pm.response.json();",
+                  "pm.test('paginated list', () => {",
+                  "  pm.expect(body.items).to.be.an('array');",
+                  "  pm.expect(body.total).to.be.a('number');",
+                  "});"
                 ]
               }
             }
@@ -1539,7 +1835,40 @@
           "request": {
             "method": "GET",
             "header": [],
-            "url": "{{baseUrl}}/api/packs"
+            "url": {
+              "raw": "{{baseUrl}}/api/packs?page=1&pageSize=20&order=desc",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "packs"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "20"
+                },
+                {
+                  "key": "q",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "orderBy",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "order",
+                  "value": "desc"
+                }
+              ]
+            }
           }
         },
         {
@@ -1690,7 +2019,42 @@
           "request": {
             "method": "GET",
             "header": [],
-            "url": "{{baseUrl}}/api/members/{{createdMemberId}}/contracts"
+            "url": {
+              "raw": "{{baseUrl}}/api/members/{{createdMemberId}}/contracts?page=1&pageSize=20&order=desc",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "members",
+                "{{createdMemberId}}",
+                "contracts"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "20"
+                },
+                {
+                  "key": "q",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "orderBy",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "order",
+                  "value": "desc"
+                }
+              ]
+            }
           }
         },
         {
@@ -1698,7 +2062,41 @@
           "request": {
             "method": "GET",
             "header": [],
-            "url": "{{baseUrl}}/api/me/contracts",
+            "url": {
+              "raw": "{{baseUrl}}/api/me/contracts?page=1&pageSize=20&order=desc",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "me",
+                "contracts"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "20"
+                },
+                {
+                  "key": "q",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "orderBy",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "order",
+                  "value": "desc"
+                }
+              ]
+            },
             "description": "Requiere accessToken de login Member."
           }
         },
@@ -1712,16 +2110,19 @@
                 "exec": [
                   "pm.test('status 200', () => pm.response.to.have.status(200));",
                   "const body = pm.response.json();",
-                  "pm.test('array', () => pm.expect(body).to.be.an('array'));",
-                  "if (body.length) {",
-                  "  pm.test('status PENDING|FAILED|ACCEPTED', () => pm.expect(['PENDING','FAILED','ACCEPTED']).to.include(body[0].status));",
+                  "pm.test('paginated list', () => {",
+                  "  pm.expect(body.items).to.be.an('array');",
+                  "  pm.expect(body.total).to.be.a('number');",
+                  "});",
+                  "if (body.items.length) {",
+                  "  pm.test('status PENDING|FAILED|ACCEPTED', () => pm.expect(['PENDING','FAILED','ACCEPTED']).to.include(body.items[0].status));",
                   "  pm.test('slim fields', () => {",
-                  "    pm.expect(body[0]).to.have.property('packName');",
-                  "    pm.expect(body[0]).to.have.property('offerUri');",
-                  "    pm.expect(body[0]).to.not.have.property('claims');",
+                  "    pm.expect(body.items[0]).to.have.property('packName');",
+                  "    pm.expect(body.items[0]).to.have.property('offerUri');",
+                  "    pm.expect(body.items[0]).to.not.have.property('claims');",
                   "  });",
-                  "  pm.collectionVariables.set('createdCredentialOfferId', body[0].id);",
-                  "  pm.environment.set('createdCredentialOfferId', body[0].id);",
+                  "  pm.collectionVariables.set('createdCredentialOfferId', body.items[0].id);",
+                  "  pm.environment.set('createdCredentialOfferId', body.items[0].id);",
                   "}"
                 ]
               }
@@ -1730,7 +2131,42 @@
           "request": {
             "method": "GET",
             "header": [],
-            "url": "{{baseUrl}}/api/members/{{createdMemberId}}/credential-offers",
+            "url": {
+              "raw": "{{baseUrl}}/api/members/{{createdMemberId}}/credential-offers?page=1&pageSize=20&order=desc",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "members",
+                "{{createdMemberId}}",
+                "credential-offers"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "20"
+                },
+                {
+                  "key": "q",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "orderBy",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "order",
+                  "value": "desc"
+                }
+              ]
+            },
             "description": "OID4VCI offers del afiliado (members.read). Re-oferta: re-POST contrato con la misma idempotencyKey."
           }
         },
@@ -1744,13 +2180,16 @@
                 "exec": [
                   "pm.test('status 200', () => pm.response.to.have.status(200));",
                   "const body = pm.response.json();",
-                  "pm.test('array', () => pm.expect(body).to.be.an('array'));",
-                  "if (body.length) {",
+                  "pm.test('paginated list', () => {",
+                  "  pm.expect(body.items).to.be.an('array');",
+                  "  pm.expect(body.total).to.be.a('number');",
+                  "});",
+                  "if (body.items.length) {",
                   "  pm.test('slim bandeja', () => {",
-                  "    pm.expect(body[0]).to.have.property('offerUri');",
-                  "    pm.expect(body[0]).to.have.property('validFrom');",
-                  "    pm.expect(body[0]).to.not.have.property('claims');",
-                  "    pm.expect(body[0]).to.not.have.property('lastError');",
+                  "    pm.expect(body.items[0]).to.have.property('offerUri');",
+                  "    pm.expect(body.items[0]).to.have.property('validFrom');",
+                  "    pm.expect(body.items[0]).to.not.have.property('claims');",
+                  "    pm.expect(body.items[0]).to.not.have.property('lastError');",
                   "  });",
                   "}"
                 ]
@@ -1760,7 +2199,41 @@
           "request": {
             "method": "GET",
             "header": [],
-            "url": "{{baseUrl}}/api/me/credential-offers",
+            "url": {
+              "raw": "{{baseUrl}}/api/me/credential-offers?page=1&pageSize=20&order=desc",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "me",
+                "credential-offers"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "20"
+                },
+                {
+                  "key": "q",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "orderBy",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "order",
+                  "value": "desc"
+                }
+              ]
+            },
             "description": "Bandeja OID4VCI del afiliado. Requiere accessToken Member. Tras accept wallet: POST .../accept → ACCEPTED."
           }
         },
@@ -1867,7 +2340,40 @@
           "request": {
             "method": "GET",
             "header": [],
-            "url": "{{baseUrl}}/api/sessions"
+            "url": {
+              "raw": "{{baseUrl}}/api/sessions?page=1&pageSize=20&order=asc",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "sessions"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "20"
+                },
+                {
+                  "key": "q",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "orderBy",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "order",
+                  "value": "asc"
+                }
+              ]
+            }
           }
         },
         {
@@ -2077,7 +2583,36 @@
           "request": {
             "method": "GET",
             "header": [],
-            "url": "{{baseUrl}}/api/me/reservations"
+            "url": {
+              "raw": "{{baseUrl}}/api/me/reservations?page=1&pageSize=20&order=asc",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "me",
+                "reservations"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "20"
+                },
+                {
+                  "key": "orderBy",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "order",
+                  "value": "asc"
+                }
+              ]
+            }
           }
         },
         {
@@ -2178,7 +2713,37 @@
           "request": {
             "method": "GET",
             "header": [],
-            "url": "{{baseUrl}}/api/members/{{createdMemberId}}/reservations"
+            "url": {
+              "raw": "{{baseUrl}}/api/members/{{createdMemberId}}/reservations?page=1&pageSize=20&order=asc",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "members",
+                "{{createdMemberId}}",
+                "reservations"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "20"
+                },
+                {
+                  "key": "orderBy",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "order",
+                  "value": "asc"
+                }
+              ]
+            }
           }
         },
         {
@@ -2263,7 +2828,37 @@
           "request": {
             "method": "GET",
             "header": [],
-            "url": "{{baseUrl}}/api/sessions/{{createdSessionId}}/waitlist"
+            "url": {
+              "raw": "{{baseUrl}}/api/sessions/{{createdSessionId}}/waitlist?page=1&pageSize=20&order=asc",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "sessions",
+                "{{createdSessionId}}",
+                "waitlist"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "20"
+                },
+                {
+                  "key": "orderBy",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "order",
+                  "value": "asc"
+                }
+              ]
+            }
           }
         },
         {
@@ -2288,7 +2883,36 @@
           "request": {
             "method": "GET",
             "header": [],
-            "url": "{{baseUrl}}/api/me/waitlist"
+            "url": {
+              "raw": "{{baseUrl}}/api/me/waitlist?page=1&pageSize=20&order=asc",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "me",
+                "waitlist"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "20"
+                },
+                {
+                  "key": "orderBy",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "order",
+                  "value": "asc"
+                }
+              ]
+            }
           }
         },
         {
@@ -2492,7 +3116,42 @@
           "request": {
             "method": "GET",
             "header": [],
-            "url": "{{baseUrl}}/api/members/{{createdMemberId}}/receipts"
+            "url": {
+              "raw": "{{baseUrl}}/api/members/{{createdMemberId}}/receipts?page=1&pageSize=20&order=desc",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "members",
+                "{{createdMemberId}}",
+                "receipts"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "20"
+                },
+                {
+                  "key": "q",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "orderBy",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "order",
+                  "value": "desc"
+                }
+              ]
+            }
           }
         },
         {
@@ -2500,7 +3159,41 @@
           "request": {
             "method": "GET",
             "header": [],
-            "url": "{{baseUrl}}/api/me/receipts",
+            "url": {
+              "raw": "{{baseUrl}}/api/me/receipts?page=1&pageSize=20&order=desc",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "me",
+                "receipts"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "20"
+                },
+                {
+                  "key": "q",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "orderBy",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "order",
+                  "value": "desc"
+                }
+              ]
+            },
             "description": "Requiere accessToken Member."
           }
         }
@@ -2787,7 +3480,36 @@
           "request": {
             "method": "GET",
             "header": [],
-            "url": "{{baseUrl}}/api/me/refund-requests"
+            "url": {
+              "raw": "{{baseUrl}}/api/me/refund-requests?page=1&pageSize=20&order=desc",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "me",
+                "refund-requests"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "20"
+                },
+                {
+                  "key": "orderBy",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "order",
+                  "value": "desc"
+                }
+              ]
+            }
           }
         },
         {
@@ -2795,7 +3517,35 @@
           "request": {
             "method": "GET",
             "header": [],
-            "url": "{{baseUrl}}/api/refund-requests"
+            "url": {
+              "raw": "{{baseUrl}}/api/refund-requests?page=1&pageSize=20&order=desc",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "refund-requests"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "20"
+                },
+                {
+                  "key": "orderBy",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "order",
+                  "value": "desc"
+                }
+              ]
+            }
           }
         },
         {
@@ -2943,7 +3693,7 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/api/access-attempts?limit=50",
+              "raw": "{{baseUrl}}/api/access-attempts?page=1&pageSize=20&order=desc",
               "host": [
                 "{{baseUrl}}"
               ],
@@ -2953,8 +3703,12 @@
               ],
               "query": [
                 {
-                  "key": "limit",
-                  "value": "50"
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "20"
                 },
                 {
                   "key": "memberId",
@@ -2965,6 +3719,20 @@
                   "key": "result",
                   "value": "ALLOWED",
                   "disabled": true
+                },
+                {
+                  "key": "q",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "orderBy",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "order",
+                  "value": "desc"
                 }
               ]
             }

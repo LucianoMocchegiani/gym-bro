@@ -47,13 +47,13 @@ function PaseManualInner() {
     let cancelled = false;
     void (async () => {
       try {
-        const rows = await listMembers('ACTIVE');
+        const data = await listMembers({ status: 'ACTIVE', pageSize: 100 });
         if (cancelled) {
           return;
         }
-        setMembers(rows);
-        if (rows[0]) {
-          setMemberId(rows[0].id);
+        setMembers(data.items);
+        if (data.items[0]) {
+          setMemberId(data.items[0].id);
         }
       } catch (err) {
         if (cancelled) {

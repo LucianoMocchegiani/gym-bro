@@ -1,13 +1,15 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { FormEvent, useEffect, useState } from 'react';
 import { AdminShell } from '@/components/AdminShell';
 import { Panel } from '@/components/AdminUi';
 import { RequireStaff } from '@/components/RequireStaff';
 import { ApiClientError } from '@/lib/api/client';
 import { listStaff } from '@/lib/api/staff';
 import type { StaffUserDetail } from '@/lib/api/staff';
+
+const PAGE_SIZE = 20;
 
 /**
  * Listado de staff del gym (CU-ROL-004).
@@ -22,18 +24,30 @@ export default function StaffPage() {
 
 function StaffInner() {
   const [rows, setRows] = useState<StaffUserDetail[]>([]);
+  const [total, setTotal] = useState(0);
+  const [hasMore, setHasMore] = useState(false);
+  const [query, setQuery] = useState('');
+  const [appliedQuery, setAppliedQuery] = useState('');
+  const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
     void (async () => {
+      setLoading(true);
       try {
-        const data = await listStaff();
+        const data = await listStaff({
+          q: appliedQuery || undefined,
+          page,
+          pageSize: PAGE_SIZE,
+        });
         if (cancelled) {
           return;
         }
-        setRows(data);
+        setRows(data.items);
+        setTotal(data.total);
+        setHasMore(data.hasMore);
         setError(null);
       } catch (err) {
         if (cancelled) {
@@ -53,7 +67,13 @@ function StaffInner() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [appliedQuery, page]);
+
+  function onSearchSubmit(e: FormEvent) {
+    e.preventDefault();
+    setPage(1);
+    setAppliedQuery(query.trim());
+  }
 
   return (
     <AdminShell
@@ -64,13 +84,30 @@ function StaffInner() {
         </Link>
       }
     >
+      <Panel className="toolbar">
+        <form className="toolbar-field search-form" onSubmit={onSearchSubmit}>
+          <label>
+            Buscar
+            <input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Nombre o email"
+              autoComplete="off"
+            />
+          </label>
+          <button type="submit" className="btn ghost">
+            Buscar
+          </button>
+        </form>
+      </Panel>
+
       {loading ? <p className="muted">Cargando…</p> : null}
       {error ? <p className="error">{error}</p> : null}
 
       {!loading && !error ? (
         <Panel
           title="Listado"
-          description={`${rows.length} usuario${rows.length === 1 ? '' : 's'}`}
+          description={`${total} usuario${total === 1 ? '' : 's'} · página ${page}`}
           className="table-wrap"
         >
           {rows.length === 0 ? (
@@ -111,6 +148,25 @@ function StaffInner() {
               </tbody>
             </table>
           )}
+          <div className="pager">
+            <button
+              type="button"
+              className="btn ghost"
+              disabled={page <= 1}
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+            >
+              Anterior
+            </button>
+            <span className="muted small">Página {page}</span>
+            <button
+              type="button"
+              className="btn ghost"
+              disabled={!hasMore}
+              onClick={() => setPage((p) => p + 1)}
+            >
+              Siguiente
+            </button>
+          </div>
         </Panel>
       ) : null}
     </AdminShell>

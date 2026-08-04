@@ -9,15 +9,21 @@ import {
   ParseUUIDPipe,
   Patch,
   Post,
+  Query,
 } from '@nestjs/common';
 import type { AuthUser } from '../auth/auth.types';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { AuditActor } from '../audit/audit.types';
 import { toAuditActor } from '../audit/to-audit-actor';
+import { ListResult } from '../common/list';
 import { RequirePermission } from '../roles/decorators/require-permission.decorator';
 import { CurrentTenant } from '../tenant/decorators/current-tenant.decorator';
 import { RequireTenantAuth } from '../tenant/decorators/require-tenant-auth.decorator';
-import { JoinWaitlistDto, LeaveWaitlistDto } from './dto/waitlist.dto';
+import {
+  JoinWaitlistDto,
+  LeaveWaitlistDto,
+  ListWaitlistQueryDto,
+} from './dto/waitlist.dto';
 import { WaitlistService } from './waitlist.service';
 import { WaitlistEntryDetail } from './waitlist.types';
 
@@ -53,11 +59,12 @@ export class WaitlistController {
   listMine(
     @CurrentTenant() tenantId: string,
     @CurrentUser() user: AuthUser,
-  ): Promise<WaitlistEntryDetail[]> {
+    @Query() query: ListWaitlistQueryDto,
+  ): Promise<ListResult<WaitlistEntryDetail>> {
     if (user.profileType !== 'MEMBER') {
       throw new ForbiddenException('Member profile required');
     }
-    return this.waitlistService.listByMember(tenantId, user.userId);
+    return this.waitlistService.listByMember(tenantId, user.userId, query);
   }
 
   @Patch('me/waitlist/:entryId/status')
@@ -101,8 +108,9 @@ export class WaitlistController {
   listByMember(
     @CurrentTenant() tenantId: string,
     @Param('memberId', ParseUUIDPipe) memberId: string,
-  ): Promise<WaitlistEntryDetail[]> {
-    return this.waitlistService.listByMember(tenantId, memberId);
+    @Query() query: ListWaitlistQueryDto,
+  ): Promise<ListResult<WaitlistEntryDetail>> {
+    return this.waitlistService.listByMember(tenantId, memberId, query);
   }
 
   @Get('sessions/:sessionId/waitlist')
@@ -110,8 +118,9 @@ export class WaitlistController {
   listBySession(
     @CurrentTenant() tenantId: string,
     @Param('sessionId', ParseUUIDPipe) sessionId: string,
-  ): Promise<WaitlistEntryDetail[]> {
-    return this.waitlistService.listBySession(tenantId, sessionId);
+    @Query() query: ListWaitlistQueryDto,
+  ): Promise<ListResult<WaitlistEntryDetail>> {
+    return this.waitlistService.listBySession(tenantId, sessionId, query);
   }
 
   @Patch('waitlist/:entryId/status')

@@ -5,22 +5,22 @@ import {
   HttpCode,
   HttpStatus,
   Param,
-  ParseEnumPipe,
   ParseUUIDPipe,
   Patch,
   Post,
   Query,
 } from '@nestjs/common';
-import { SessionStatus } from '@prisma/client';
 import type { AuthUser } from '../auth/auth.types';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { toAuditActor } from '../audit/to-audit-actor';
+import { ListResult } from '../common/list';
 import { RequirePermission } from '../roles/decorators/require-permission.decorator';
 import { CurrentTenant } from '../tenant/decorators/current-tenant.decorator';
 import { RequireTenantAuth } from '../tenant/decorators/require-tenant-auth.decorator';
 import {
   CreateSessionDto,
   ExpandSessionCapacityDto,
+  ListSessionsQueryDto,
   UpdateSessionDto,
 } from './dto/session.dto';
 import { SessionsService } from './sessions.service';
@@ -40,19 +40,9 @@ export class SessionsController {
   @RequirePermission('sessions.write')
   list(
     @CurrentTenant() tenantId: string,
-    @Query('serviceId', new ParseUUIDPipe({ optional: true }))
-    serviceId?: string,
-    @Query('status', new ParseEnumPipe(SessionStatus, { optional: true }))
-    status?: SessionStatus,
-    @Query('from') from?: string,
-    @Query('to') to?: string,
-  ): Promise<SessionDetail[]> {
-    return this.sessionsService.list(tenantId, {
-      serviceId,
-      status,
-      from,
-      to,
-    });
+    @Query() query: ListSessionsQueryDto,
+  ): Promise<ListResult<SessionDetail>> {
+    return this.sessionsService.list(tenantId, query);
   }
 
   @Get(':sessionId')

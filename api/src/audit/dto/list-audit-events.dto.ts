@@ -1,17 +1,13 @@
-import { Type } from 'class-transformer';
-import { IsInt, IsOptional, IsString, Max, Min } from 'class-validator';
+import { IsOptional, IsString } from 'class-validator';
+import { ListQueryDto } from '../../common/list';
 
 /**
- * Query de listado de auditoría (más recientes primero).
+ * Query de listado de auditoría (CU-ROL-007).
+ *
+ * @remarks `q` busca en `action` (contains, case-insensitive). `orderBy`
+ * acepta `createdAt` (default, más recientes primero).
  */
-export class ListAuditEventsQueryDto {
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  @Max(100)
-  limit?: number = 50;
-
+export class ListAuditEventsQueryDto extends ListQueryDto {
   @IsOptional()
   @IsString()
   action?: string;

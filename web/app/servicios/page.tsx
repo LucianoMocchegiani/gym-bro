@@ -22,12 +22,17 @@ export default function ServiciosPage() {
   );
 }
 
+const PAGE_SIZE = 20;
+
 function ServiciosInner() {
   const [rows, setRows] = useState<ServiceDetail[]>([]);
+  const [total, setTotal] = useState(0);
+  const [hasMore, setHasMore] = useState(false);
   const [typeFilter, setTypeFilter] = useState<ServiceType | 'ALL'>('ALL');
   const [activeFilter, setActiveFilter] = useState<'ALL' | 'true' | 'false'>(
     'ALL',
   );
+  const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -40,11 +45,15 @@ function ServiciosInner() {
           type: typeFilter === 'ALL' ? undefined : typeFilter,
           active:
             activeFilter === 'ALL' ? undefined : activeFilter === 'true',
+          page,
+          pageSize: PAGE_SIZE,
         });
         if (cancelled) {
           return;
         }
-        setRows(data);
+        setRows(data.items);
+        setTotal(data.total);
+        setHasMore(data.hasMore);
         setError(null);
       } catch (err) {
         if (cancelled) {
@@ -64,7 +73,7 @@ function ServiciosInner() {
     return () => {
       cancelled = true;
     };
-  }, [typeFilter, activeFilter]);
+  }, [typeFilter, activeFilter, page]);
 
   return (
     <AdminShell
@@ -80,9 +89,10 @@ function ServiciosInner() {
           Tipo
           <select
             value={typeFilter}
-            onChange={(e) =>
-              setTypeFilter(e.target.value as ServiceType | 'ALL')
-            }
+            onChange={(e) => {
+              setPage(1);
+              setTypeFilter(e.target.value as ServiceType | 'ALL');
+            }}
           >
             <option value="ALL">Todos</option>
             <option value="ACCESO_LIBRE">Acceso libre</option>
@@ -93,9 +103,10 @@ function ServiciosInner() {
           Activo
           <select
             value={activeFilter}
-            onChange={(e) =>
-              setActiveFilter(e.target.value as 'ALL' | 'true' | 'false')
-            }
+            onChange={(e) => {
+              setPage(1);
+              setActiveFilter(e.target.value as 'ALL' | 'true' | 'false');
+            }}
           >
             <option value="ALL">Todos</option>
             <option value="true">Sí</option>
@@ -110,7 +121,7 @@ function ServiciosInner() {
       {!loading && !error ? (
         <Panel
           title="Listado"
-          description={`${rows.length} servicio${rows.length === 1 ? '' : 's'}`}
+          description={`${total} servicio${total === 1 ? '' : 's'} · página ${page}`}
           className="table-wrap"
         >
           {rows.length === 0 ? (
@@ -151,6 +162,25 @@ function ServiciosInner() {
               </tbody>
             </table>
           )}
+          <div className="pager">
+            <button
+              type="button"
+              className="btn ghost"
+              disabled={page <= 1}
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+            >
+              Anterior
+            </button>
+            <span className="muted small">Página {page}</span>
+            <button
+              type="button"
+              className="btn ghost"
+              disabled={!hasMore}
+              onClick={() => setPage((p) => p + 1)}
+            >
+              Siguiente
+            </button>
+          </div>
         </Panel>
       ) : null}
     </AdminShell>

@@ -14,11 +14,18 @@ import {
 import * as bcrypt from 'bcryptjs';
 import { AUDIT_ACTIONS, AuditActor } from '../audit/audit.types';
 import { AuditService } from '../audit/audit.service';
+import {
+  ListResult,
+  normalizeListQuery,
+  resolveOrderField,
+  toListResult,
+} from '../common/list';
 import { ContractsService } from '../contracts/contracts.service';
 import { ContractDetail } from '../contracts/contracts.types';
 import { PrismaService } from '../prisma/prisma.service';
 import {
   CreateMemberDto,
+  ListMembersQueryDto,
   UpdateMemberDto,
   UpdateMemberStatusDto,
 } from './dto/member.dto';
@@ -26,6 +33,9 @@ import { MemberAccountDetail, MemberDetail } from './members.types';
 
 /** Cantidad de pagos recientes en estado de cuenta. */
 const RECENT_PAYMENTS_LIMIT = 20;
+
+/** Whitelist de orden para {@link MembersService.list}. */
+const MEMBER_ORDER_FIELDS = ['createdAt', 'name', 'email', 'status'] as const;
 
 /**
  * CRUD de afiliados y estado de cuenta (CU-AFI-001..005).
@@ -41,21 +51,49 @@ export class MembersService {
   ) {}
 
   /**
-   * Lista afiliados del tenant (más recientes primero).
+   * Lista afiliados del tenant (paginado; más recientes primero por defecto).
+   *
+   * @remarks `q` busca en email, name y document (contains, case-insensitive).
    */
   async list(
     tenantId: string,
-    options: { status?: MemberStatus } = {},
-  ): Promise<MemberDetail[]> {
+    query: ListMembersQueryDto = {},
+  ): Promise<ListResult<MemberDetail>> {
     await this.assertTenantExists(tenantId);
-    const members = await this.prisma.member.findMany({
-      where: {
-        tenantId,
-        ...(options.status ? { status: options.status } : {}),
-      },
-      orderBy: { createdAt: 'desc' },
-    });
-    return members.map((m) => this.toDetail(m));
+    const n = normalizeListQuery(query);
+    const orderField = resolveOrderField(
+      n.orderBy,
+      MEMBER_ORDER_FIELDS,
+      'createdAt',
+    );
+    const where: Prisma.MemberWhereInput = {
+      tenantId,
+      ...(query.status ? { status: query.status } : {}),
+      ...(n.q
+        ? {
+            OR: [
+              { email: { contains: n.q, mode: 'insensitive' } },
+              { name: { contains: n.q, mode: 'insensitive' } },
+              { document: { contains: n.q, mode: 'insensitive' } },
+            ],
+          }
+        : {}),
+    };
+    const [members, total] = await this.prisma.$transaction([
+      this.prisma.member.findMany({
+        where,
+        orderBy: { [orderField]: n.order },
+        skip: n.skip,
+        take: n.take,
+      }),
+      this.prisma.member.count({ where }),
+    ]);
+    return toListResult(
+      members.map((m) => this.toDetail(m)),
+      total,
+      n.page,
+      n.pageSize,
+    );
   }
 
   /**
@@ -87,12 +125,16 @@ export class MembersService {
 
     let contracts: ContractDetail[];
     if (coverage === 'current') {
-      contracts = await this.contractsService.listByMember(tenantId, memberId, {
-        coversAt: now,
-        status: options.contractStatus ?? ContractStatus.ACTIVE,
-      });
+      contracts = await this.contractsService.listAllByMember(
+        tenantId,
+        memberId,
+        {
+          coversAt: now,
+          status: options.contractStatus ?? ContractStatus.ACTIVE,
+        },
+      );
     } else {
-      const allContracts = await this.contractsService.listByMember(
+      const allContracts = await this.contractsService.listAllByMember(
         tenantId,
         memberId,
       );

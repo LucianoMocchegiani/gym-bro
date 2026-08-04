@@ -5,7 +5,6 @@ import {
   HttpCode,
   HttpStatus,
   Param,
-  ParseBoolPipe,
   ParseUUIDPipe,
   Patch,
   Post,
@@ -14,10 +13,15 @@ import {
 import type { AuthUser } from '../auth/auth.types';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { toAuditActor } from '../audit/to-audit-actor';
+import { ListResult } from '../common/list';
 import { RequirePermission } from '../roles/decorators/require-permission.decorator';
 import { CurrentTenant } from '../tenant/decorators/current-tenant.decorator';
 import { RequireTenantAuth } from '../tenant/decorators/require-tenant-auth.decorator';
-import { CreatePackDto, UpdatePackDto } from './dto/pack.dto';
+import {
+  CreatePackDto,
+  ListPacksQueryDto,
+  UpdatePackDto,
+} from './dto/pack.dto';
 import { PacksService } from './packs.service';
 import { PackDetail } from './packs.types';
 
@@ -35,10 +39,9 @@ export class PacksController {
   @RequirePermission('catalog.write')
   list(
     @CurrentTenant() tenantId: string,
-    @Query('active', new ParseBoolPipe({ optional: true }))
-    active?: boolean,
-  ): Promise<PackDetail[]> {
-    return this.packsService.list(tenantId, { active });
+    @Query() query: ListPacksQueryDto,
+  ): Promise<ListResult<PackDetail>> {
+    return this.packsService.list(tenantId, query);
   }
 
   @Get(':packId')

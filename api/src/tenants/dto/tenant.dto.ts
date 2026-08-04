@@ -8,6 +8,7 @@ import {
   MaxLength,
   MinLength,
 } from 'class-validator';
+import { ListQueryDto } from '../../common/list';
 
 /**
  * Alta de tenant + owner Admin (CU-ROL-001).
@@ -58,6 +59,18 @@ export class UpdateTenantDto {
   @Matches(/^[a-z0-9]+(?:-[a-z0-9]+)*$/)
   slug?: string;
 
+  @IsOptional()
+  @IsEnum(TenantStatus)
+  status?: TenantStatus;
+}
+
+/**
+ * Query de listado de tenants (Super Admin).
+ *
+ * @remarks `q` busca en name y slug. `orderBy` acepta `createdAt`, `name`
+ * y `slug`.
+ */
+export class ListTenantsQueryDto extends ListQueryDto {
   @IsOptional()
   @IsEnum(TenantStatus)
   status?: TenantStatus;

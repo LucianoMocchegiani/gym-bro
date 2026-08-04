@@ -266,7 +266,7 @@ E11 → E12
 
 ## Próximo paso
 
-E9 / E8 / rutinas E7, o afinar OID4VP (tolerancia/reingreso), según [12-acceso-quark-oid4-diseno.md](./12-acceso-quark-oid4-diseno.md).
+Listados API/Admin estandarizados (`ListResult` + `q`/`orderBy`/`order`). Siguiente: E9 / E8 / rutinas E7, o afinar OID4VP (tolerancia/reingreso), según [12-acceso-quark-oid4-diseno.md](./12-acceso-quark-oid4-diseno.md).
 
 ---
 

@@ -6,9 +6,22 @@ import {
 import { Prisma, Service, ServiceType } from '@prisma/client';
 import { AUDIT_ACTIONS, AuditActor } from '../audit/audit.types';
 import { AuditService } from '../audit/audit.service';
+import {
+  ListResult,
+  normalizeListQuery,
+  resolveOrderField,
+  toListResult,
+} from '../common/list';
 import { PrismaService } from '../prisma/prisma.service';
-import { CreateServiceDto, UpdateServiceDto } from './dto/service.dto';
+import {
+  CreateServiceDto,
+  ListServicesQueryDto,
+  UpdateServiceDto,
+} from './dto/service.dto';
 import { ServiceDetail } from './services.types';
+
+/** Whitelist de orden para {@link ServicesService.list}. */
+const SERVICE_ORDER_FIELDS = ['createdAt', 'name', 'type'] as const;
 
 /**
  * CRUD de servicios del catálogo (CU-SER-001 / RN-SER-001..003).
@@ -23,22 +36,42 @@ export class ServicesService {
   ) {}
 
   /**
-   * Lista servicios del tenant (más recientes primero).
+   * Lista servicios del tenant (paginado; más recientes primero por defecto).
+   *
+   * @remarks `q` busca en name (contains, case-insensitive).
    */
   async list(
     tenantId: string,
-    options: { type?: ServiceType; active?: boolean } = {},
-  ): Promise<ServiceDetail[]> {
+    query: ListServicesQueryDto = {},
+  ): Promise<ListResult<ServiceDetail>> {
     await this.assertTenantExists(tenantId);
-    const services = await this.prisma.service.findMany({
-      where: {
-        tenantId,
-        ...(options.type ? { type: options.type } : {}),
-        ...(options.active !== undefined ? { active: options.active } : {}),
-      },
-      orderBy: { createdAt: 'desc' },
-    });
-    return services.map((s) => this.toDetail(s));
+    const n = normalizeListQuery(query);
+    const orderField = resolveOrderField(
+      n.orderBy,
+      SERVICE_ORDER_FIELDS,
+      'createdAt',
+    );
+    const where: Prisma.ServiceWhereInput = {
+      tenantId,
+      ...(query.type ? { type: query.type } : {}),
+      ...(query.active !== undefined ? { active: query.active } : {}),
+      ...(n.q ? { name: { contains: n.q, mode: 'insensitive' } } : {}),
+    };
+    const [services, total] = await this.prisma.$transaction([
+      this.prisma.service.findMany({
+        where,
+        orderBy: { [orderField]: n.order },
+        skip: n.skip,
+        take: n.take,
+      }),
+      this.prisma.service.count({ where }),
+    ]);
+    return toListResult(
+      services.map((s) => this.toDetail(s)),
+      total,
+      n.page,
+      n.pageSize,
+    );
   }
 
   /**

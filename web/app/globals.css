@@ -550,8 +550,22 @@ a.btn.ghost,
   min-width: 0;
 }
 
+.toolbar-field.search-form {
+  display: flex;
+  gap: 0.5rem;
+  align-items: end;
+}
+
 .table-wrap {
   overflow-x: auto;
+}
+
+.pager {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  justify-content: flex-end;
+  margin-top: 0.75rem;
 }
 
 .data-table {

@@ -1,5 +1,5 @@
 import { BillingPeriod } from '@prisma/client';
-import { Type } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
 import {
   ArrayMinSize,
   IsArray,
@@ -16,6 +16,14 @@ import {
   ValidateIf,
   ValidateNested,
 } from 'class-validator';
+import { ListQueryDto } from '../../common/list';
+
+/** Convierte `"true"`/`"false"` de query string a boolean. */
+function toBoolean({ value }: { value: unknown }): unknown {
+  if (value === 'true') return true;
+  if (value === 'false') return false;
+  return value;
+}
 
 /**
  * Componente de pack en create/update.
@@ -106,4 +114,17 @@ export class UpdatePackDto {
   @ValidateNested({ each: true })
   @Type(() => PackComponentInputDto)
   components?: PackComponentInputDto[];
+}
+
+/**
+ * Query de listado de packs del catálogo (CU-SER-002).
+ *
+ * @remarks `q` busca en name (contains, case-insensitive). `orderBy` acepta
+ * `createdAt`, `name` y `price`.
+ */
+export class ListPacksQueryDto extends ListQueryDto {
+  @IsOptional()
+  @Transform(toBoolean)
+  @IsBoolean()
+  active?: boolean;
 }

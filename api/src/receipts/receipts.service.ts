@@ -9,6 +9,12 @@ import {
   Prisma,
   ReceiptConcept,
 } from '@prisma/client';
+import {
+  ListQueryDto,
+  ListResult,
+  normalizeListQuery,
+  toListResult,
+} from '../common/list';
 import { PrismaService } from '../prisma/prisma.service';
 import { ReceiptDetail } from './receipts.types';
 
@@ -62,18 +68,31 @@ export class ReceiptsService {
   }
 
   /**
-   * Lista comprobantes de un afiliado (más recientes primero).
+   * Lista comprobantes de un afiliado (paginado; más recientes primero).
    */
   async listByMember(
     tenantId: string,
     memberId: string,
-  ): Promise<ReceiptDetail[]> {
+    query: ListQueryDto = {},
+  ): Promise<ListResult<ReceiptDetail>> {
     await this.assertMemberInTenant(tenantId, memberId);
-    const rows = await this.prisma.receipt.findMany({
-      where: { tenantId, memberId },
-      orderBy: { createdAt: 'desc' },
-    });
-    return rows.map((r) => this.toDetail(r));
+    const n = normalizeListQuery(query);
+    const where: Prisma.ReceiptWhereInput = { tenantId, memberId };
+    const [rows, total] = await this.prisma.$transaction([
+      this.prisma.receipt.findMany({
+        where,
+        orderBy: { createdAt: n.order },
+        skip: n.skip,
+        take: n.take,
+      }),
+      this.prisma.receipt.count({ where }),
+    ]);
+    return toListResult(
+      rows.map((r) => this.toDetail(r)),
+      total,
+      n.page,
+      n.pageSize,
+    );
   }
 
   /**

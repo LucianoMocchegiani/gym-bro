@@ -5,21 +5,23 @@ import {
   HttpCode,
   HttpStatus,
   Param,
-  ParseBoolPipe,
-  ParseEnumPipe,
   ParseUUIDPipe,
   Patch,
   Post,
   Query,
 } from '@nestjs/common';
-import { ServiceType } from '@prisma/client';
 import type { AuthUser } from '../auth/auth.types';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { toAuditActor } from '../audit/to-audit-actor';
+import { ListResult } from '../common/list';
 import { RequirePermission } from '../roles/decorators/require-permission.decorator';
 import { CurrentTenant } from '../tenant/decorators/current-tenant.decorator';
 import { RequireTenantAuth } from '../tenant/decorators/require-tenant-auth.decorator';
-import { CreateServiceDto, UpdateServiceDto } from './dto/service.dto';
+import {
+  CreateServiceDto,
+  ListServicesQueryDto,
+  UpdateServiceDto,
+} from './dto/service.dto';
 import { ServicesService } from './services.service';
 import { ServiceDetail } from './services.types';
 
@@ -37,12 +39,9 @@ export class ServicesController {
   @RequirePermission('catalog.write')
   list(
     @CurrentTenant() tenantId: string,
-    @Query('type', new ParseEnumPipe(ServiceType, { optional: true }))
-    type?: ServiceType,
-    @Query('active', new ParseBoolPipe({ optional: true }))
-    active?: boolean,
-  ): Promise<ServiceDetail[]> {
-    return this.servicesService.list(tenantId, { type, active });
+    @Query() query: ListServicesQueryDto,
+  ): Promise<ListResult<ServiceDetail>> {
+    return this.servicesService.list(tenantId, query);
   }
 
   @Get(':serviceId')

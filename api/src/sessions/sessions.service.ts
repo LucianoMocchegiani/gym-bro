@@ -6,14 +6,24 @@ import {
 import { Prisma, ServiceType, Session, SessionStatus } from '@prisma/client';
 import { AUDIT_ACTIONS, AuditActor } from '../audit/audit.types';
 import { AuditService } from '../audit/audit.service';
+import {
+  ListResult,
+  normalizeListQuery,
+  resolveOrderField,
+  toListResult,
+} from '../common/list';
 import { PrismaService } from '../prisma/prisma.service';
 import { WaitlistService } from '../waitlist/waitlist.service';
 import {
   CreateSessionDto,
   ExpandSessionCapacityDto,
+  ListSessionsQueryDto,
   UpdateSessionDto,
 } from './dto/session.dto';
 import { SessionDetail } from './sessions.types';
+
+/** Whitelist de orden para {@link SessionsService.list}. */
+const SESSION_ORDER_FIELDS = ['startsAt', 'createdAt'] as const;
 
 type SessionWithRelations = Session & {
   service: { id: string; name: string };
@@ -35,44 +45,54 @@ export class SessionsService {
   ) {}
 
   /**
-   * Lista sesiones del tenant (próximas primero por startsAt).
+   * Lista sesiones del tenant (paginado; próximas primero por defecto).
    */
   async list(
     tenantId: string,
-    options: {
-      serviceId?: string;
-      status?: SessionStatus;
-      from?: string;
-      to?: string;
-    } = {},
-  ): Promise<SessionDetail[]> {
+    query: ListSessionsQueryDto = {},
+  ): Promise<ListResult<SessionDetail>> {
     await this.assertTenantExists(tenantId);
-    const from = options.from
-      ? this.parseDate(options.from, 'from')
-      : undefined;
-    const to = options.to ? this.parseDate(options.to, 'to') : undefined;
+    const from = query.from ? this.parseDate(query.from, 'from') : undefined;
+    const to = query.to ? this.parseDate(query.to, 'to') : undefined;
     if (from && to && to <= from) {
       throw new BadRequestException('to must be after from');
     }
 
-    const sessions = await this.prisma.session.findMany({
-      where: {
-        tenantId,
-        ...(options.serviceId ? { serviceId: options.serviceId } : {}),
-        ...(options.status ? { status: options.status } : {}),
-        ...(from || to
-          ? {
-              startsAt: {
-                ...(from ? { gte: from } : {}),
-                ...(to ? { lte: to } : {}),
-              },
-            }
-          : {}),
-      },
-      include: this.sessionInclude(),
-      orderBy: { startsAt: 'asc' },
-    });
-    return sessions.map((s) => this.toDetail(s));
+    const n = normalizeListQuery(query);
+    const orderField = resolveOrderField(
+      n.orderBy,
+      SESSION_ORDER_FIELDS,
+      'startsAt',
+    );
+    const where: Prisma.SessionWhereInput = {
+      tenantId,
+      ...(query.serviceId ? { serviceId: query.serviceId } : {}),
+      ...(query.status ? { status: query.status } : {}),
+      ...(from || to
+        ? {
+            startsAt: {
+              ...(from ? { gte: from } : {}),
+              ...(to ? { lte: to } : {}),
+            },
+          }
+        : {}),
+    };
+    const [sessions, total] = await this.prisma.$transaction([
+      this.prisma.session.findMany({
+        where,
+        include: this.sessionInclude(),
+        orderBy: { [orderField]: n.order },
+        skip: n.skip,
+        take: n.take,
+      }),
+      this.prisma.session.count({ where }),
+    ]);
+    return toListResult(
+      sessions.map((s) => this.toDetail(s)),
+      total,
+      n.page,
+      n.pageSize,
+    );
   }
 
   /**

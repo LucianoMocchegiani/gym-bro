@@ -9,6 +9,8 @@ import { ApiClientError } from '@/lib/api/client';
 import { listRoles } from '@/lib/api/roles';
 import type { RoleDetail } from '@/lib/api/roles';
 
+const PAGE_SIZE = 20;
+
 /**
  * Listado de roles del gym (CU-ROL-003).
  */
@@ -22,18 +24,24 @@ export default function RolesPage() {
 
 function RolesInner() {
   const [rows, setRows] = useState<RoleDetail[]>([]);
+  const [total, setTotal] = useState(0);
+  const [hasMore, setHasMore] = useState(false);
+  const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
     void (async () => {
+      setLoading(true);
       try {
-        const data = await listRoles();
+        const data = await listRoles({ page, pageSize: PAGE_SIZE });
         if (cancelled) {
           return;
         }
-        setRows(data);
+        setRows(data.items);
+        setTotal(data.total);
+        setHasMore(data.hasMore);
         setError(null);
       } catch (err) {
         if (cancelled) {
@@ -53,7 +61,7 @@ function RolesInner() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [page]);
 
   return (
     <AdminShell
@@ -70,7 +78,7 @@ function RolesInner() {
       {!loading && !error ? (
         <Panel
           title="Listado"
-          description={`${rows.length} rol${rows.length === 1 ? '' : 'es'}`}
+          description={`${total} rol${total === 1 ? '' : 'es'} · página ${page}`}
           className="table-wrap"
         >
           {rows.length === 0 ? (
@@ -111,6 +119,25 @@ function RolesInner() {
               </tbody>
             </table>
           )}
+          <div className="pager">
+            <button
+              type="button"
+              className="btn ghost"
+              disabled={page <= 1}
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+            >
+              Anterior
+            </button>
+            <span className="muted small">Página {page}</span>
+            <button
+              type="button"
+              className="btn ghost"
+              disabled={!hasMore}
+              onClick={() => setPage((p) => p + 1)}
+            >
+              Siguiente
+            </button>
+          </div>
         </Panel>
       ) : null}
     </AdminShell>

@@ -1,5 +1,6 @@
 import { Controller, Get, Param, ParseUUIDPipe, Query } from '@nestjs/common';
 import { RequireSuperAuth } from '../auth/decorators/require-super-auth.decorator';
+import { ListResult } from '../common/list';
 import { AuditService } from './audit.service';
 import { AuditEventDetail } from './audit.types';
 import { ListAuditEventsQueryDto } from './dto/list-audit-events.dto';
@@ -18,10 +19,7 @@ export class SuperAuditController {
   list(
     @Param('tenantId', ParseUUIDPipe) tenantId: string,
     @Query() query: ListAuditEventsQueryDto,
-  ): Promise<AuditEventDetail[]> {
-    return this.auditService.listByTenant(tenantId, {
-      limit: query.limit,
-      action: query.action,
-    });
+  ): Promise<ListResult<AuditEventDetail>> {
+    return this.auditService.listByTenant(tenantId, query);
   }
 }

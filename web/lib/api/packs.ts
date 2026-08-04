@@ -3,6 +3,8 @@
  */
 
 import { apiRequest } from '@/lib/api/client';
+import { toSearchParams } from '@/lib/api/list';
+import type { ListParams, ListResult } from '@/lib/api/list';
 
 export type PackKind = 'ACCESS' | 'CREDITS' | 'MIXED';
 
@@ -65,19 +67,25 @@ export type UpdatePackInput = {
   components?: PackComponentInput[];
 };
 
+export type ListPacksInput = { active?: boolean } & ListParams;
+
 /**
- * Lista packs (`catalog.write`).
+ * Lista packs (`catalog.write`), paginado.
  */
-export function listPacks(active?: boolean): Promise<PackDetail[]> {
-  const q = active === undefined ? '' : `?active=${active}`;
-  return apiRequest<PackDetail[]>(`/packs${q}`);
+export function listPacks(
+  input?: ListPacksInput,
+): Promise<ListResult<PackDetail>> {
+  const qs = toSearchParams(input);
+  return apiRequest<ListResult<PackDetail>>(`/packs${qs ? `?${qs}` : ''}`);
 }
 
 /**
- * Packs activos (cobro / selects).
+ * Packs activos (cobro / selects); trae hasta 100 por defecto.
  */
-export function listActivePacks(): Promise<PackSummary[]> {
-  return listPacks(true);
+export function listActivePacks(
+  input?: ListParams,
+): Promise<ListResult<PackSummary>> {
+  return listPacks({ active: true, pageSize: 100, ...input });
 }
 
 /**

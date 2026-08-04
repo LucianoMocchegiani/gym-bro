@@ -19,11 +19,21 @@ import { randomBytes } from 'node:crypto';
 import { AUDIT_ACTIONS, AuditActor } from '../audit/audit.types';
 import { AuditService } from '../audit/audit.service';
 import { CashRegisterService } from '../cash-register/cash-register.service';
+import {
+  ListQueryDto,
+  ListResult,
+  normalizeListQuery,
+  resolveOrderField,
+  toListResult,
+} from '../common/list';
 import { PrismaService } from '../prisma/prisma.service';
 import { QuarkOfferService } from '../quark/quark-offer.service';
 import { ReceiptsService } from '../receipts/receipts.service';
 import { CreateContractDto, UpdateContractStatusDto } from './dto/contract.dto';
 import { ContractDetail } from './contracts.types';
+
+/** Whitelist de orden para {@link ContractsService.listByMember}. */
+const CONTRACT_ORDER_FIELDS = ['createdAt', 'startsAt'] as const;
 
 type ContractWithRelations = Contract & {
   pack: { id: string; name: string };
@@ -83,13 +93,51 @@ export class ContractsService {
   ) {}
 
   /**
-   * Lista contrataciones de un afiliado del tenant.
+   * Lista contrataciones de un afiliado del tenant (paginado, para HTTP).
    *
+   * @remarks Sin filtros de vigencia/estado; para lecturas internas
+   * (p. ej. estado de cuenta) usar {@link listAllByMember}.
+   */
+  async listByMember(
+    tenantId: string,
+    memberId: string,
+    query: ListQueryDto = {},
+  ): Promise<ListResult<ContractDetail>> {
+    await this.assertMemberInTenant(tenantId, memberId);
+    const n = normalizeListQuery(query);
+    const orderField = resolveOrderField(
+      n.orderBy,
+      CONTRACT_ORDER_FIELDS,
+      'createdAt',
+    );
+    const where: Prisma.ContractWhereInput = { tenantId, memberId };
+    const [contracts, total] = await this.prisma.$transaction([
+      this.prisma.contract.findMany({
+        where,
+        include: this.contractInclude(),
+        orderBy: { [orderField]: n.order },
+        skip: n.skip,
+        take: n.take,
+      }),
+      this.prisma.contract.count({ where }),
+    ]);
+    return toListResult(
+      contracts.map((c) => this.toDetail(c)),
+      total,
+      n.page,
+      n.pageSize,
+    );
+  }
+
+  /**
+   * Lista completa (sin paginar) de contrataciones de un afiliado.
+   *
+   * @remarks Uso interno (p. ej. {@link MembersService.getAccount}), no HTTP.
    * @param options.coversAt - Solo contratos cuya vigencia incluye este instante
    *   (`startsAt <= coversAt` y `endsAt` null o `> coversAt`), filtrado en DB.
    * @param options.status - Filtro opcional de estado (p. ej. ACTIVE).
    */
-  async listByMember(
+  async listAllByMember(
     tenantId: string,
     memberId: string,
     options: { coversAt?: Date; status?: ContractStatus } = {},

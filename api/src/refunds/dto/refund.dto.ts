@@ -1,10 +1,13 @@
+import { RefundRequestStatus } from '@prisma/client';
 import {
+  IsEnum,
   IsIn,
   IsOptional,
   IsString,
   MaxLength,
   MinLength,
 } from 'class-validator';
+import { ListQueryDto } from '../../common/list';
 
 /**
  * Solicitud de devolución del afiliado (CU-PAG-004).
@@ -34,4 +37,15 @@ export class ExecuteRefundDto {
   @IsOptional()
   @IsString()
   refundRequestId?: string;
+}
+
+/**
+ * Query de listado de solicitudes de devolución (CU-PAG-004/005/007).
+ *
+ * @remarks Sin `q`. `orderBy` acepta `createdAt` (default).
+ */
+export class ListRefundRequestsQueryDto extends ListQueryDto {
+  @IsOptional()
+  @IsEnum(RefundRequestStatus)
+  status?: RefundRequestStatus;
 }

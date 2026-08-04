@@ -11,13 +11,15 @@ import {
   Post,
   Query,
 } from '@nestjs/common';
-import { ContractStatus, MemberStatus } from '@prisma/client';
+import { ContractStatus } from '@prisma/client';
 import type { AuthUser } from '../auth/auth.types';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { RequireSuperAuth } from '../auth/decorators/require-super-auth.decorator';
 import { toAuditActor } from '../audit/to-audit-actor';
+import { ListResult } from '../common/list';
 import {
   CreateMemberDto,
+  ListMembersQueryDto,
   UpdateMemberDto,
   UpdateMemberStatusDto,
 } from './dto/member.dto';
@@ -37,10 +39,9 @@ export class SuperMembersController {
   @Get()
   list(
     @Param('tenantId', ParseUUIDPipe) tenantId: string,
-    @Query('status', new ParseEnumPipe(MemberStatus, { optional: true }))
-    status?: MemberStatus,
-  ): Promise<MemberDetail[]> {
-    return this.membersService.list(tenantId, { status });
+    @Query() query: ListMembersQueryDto,
+  ): Promise<ListResult<MemberDetail>> {
+    return this.membersService.list(tenantId, query);
   }
 
   @Get(':memberId/account')

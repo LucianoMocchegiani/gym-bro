@@ -59,10 +59,11 @@ class CredentialOffersRepository {
     final all = await _api.getJson<List<CredentialOfferItem>>(
       '/api/me/credential-offers',
       parse: (json) {
-        if (json is! List) {
+        final items = json is Map ? json['items'] : null;
+        if (items is! List) {
           return <CredentialOfferItem>[];
         }
-        return json
+        return items
             .whereType<Map>()
             .map(
               (e) => CredentialOfferItem.fromJson(

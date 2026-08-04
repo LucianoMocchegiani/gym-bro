@@ -8,11 +8,13 @@ import {
   ParseUUIDPipe,
   Post,
   Put,
+  Query,
 } from '@nestjs/common';
 import { RequireSuperAuth } from '../auth/decorators/require-super-auth.decorator';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import type { AuthUser } from '../auth/auth.types';
 import { toAuditActor } from '../audit/to-audit-actor';
+import { ListQueryDto, ListResult } from '../common/list';
 import { CreateStaffDto, SetStaffRolesDto } from './dto/staff.dto';
 import { StaffService } from './staff.service';
 import { StaffUserDetail } from './staff.types';
@@ -30,8 +32,9 @@ export class SuperStaffController {
   @Get()
   list(
     @Param('tenantId', ParseUUIDPipe) tenantId: string,
-  ): Promise<StaffUserDetail[]> {
-    return this.staffService.list(tenantId);
+    @Query() query: ListQueryDto,
+  ): Promise<ListResult<StaffUserDetail>> {
+    return this.staffService.list(tenantId, query);
   }
 
   @Post()

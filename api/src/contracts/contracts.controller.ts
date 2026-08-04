@@ -9,10 +9,12 @@ import {
   ParseUUIDPipe,
   Patch,
   Post,
+  Query,
 } from '@nestjs/common';
 import type { AuthUser } from '../auth/auth.types';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { toAuditActor } from '../audit/to-audit-actor';
+import { ListQueryDto, ListResult } from '../common/list';
 import { RequirePermission } from '../roles/decorators/require-permission.decorator';
 import { CurrentTenant } from '../tenant/decorators/current-tenant.decorator';
 import { RequireTenantAuth } from '../tenant/decorators/require-tenant-auth.decorator';
@@ -56,8 +58,9 @@ export class ContractsController {
   listByMember(
     @CurrentTenant() tenantId: string,
     @Param('memberId', ParseUUIDPipe) memberId: string,
-  ): Promise<ContractDetail[]> {
-    return this.contractsService.listByMember(tenantId, memberId);
+    @Query() query: ListQueryDto,
+  ): Promise<ListResult<ContractDetail>> {
+    return this.contractsService.listByMember(tenantId, memberId, query);
   }
 
   @Get('contracts/:contractId')
@@ -95,10 +98,11 @@ export class ContractsController {
   listMine(
     @CurrentTenant() tenantId: string,
     @CurrentUser() user: AuthUser,
-  ): Promise<ContractDetail[]> {
+    @Query() query: ListQueryDto,
+  ): Promise<ListResult<ContractDetail>> {
     if (user.profileType !== 'MEMBER') {
       throw new ForbiddenException('Member profile required');
     }
-    return this.contractsService.listByMember(tenantId, user.userId);
+    return this.contractsService.listByMember(tenantId, user.userId, query);
   }
 }

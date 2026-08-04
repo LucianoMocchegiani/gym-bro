@@ -1,5 +1,6 @@
-import { Controller, Get, Param, ParseUUIDPipe } from '@nestjs/common';
+import { Controller, Get, Param, ParseUUIDPipe, Query } from '@nestjs/common';
 import { RequireSuperAuth } from '../auth/decorators/require-super-auth.decorator';
+import { ListQueryDto, ListResult } from '../common/list';
 import { ReceiptsService } from './receipts.service';
 import { ReceiptDetail } from './receipts.types';
 
@@ -15,8 +16,9 @@ export class SuperReceiptsController {
   listByMember(
     @Param('tenantId', ParseUUIDPipe) tenantId: string,
     @Param('memberId', ParseUUIDPipe) memberId: string,
-  ): Promise<ReceiptDetail[]> {
-    return this.receipts.listByMember(tenantId, memberId);
+    @Query() query: ListQueryDto,
+  ): Promise<ListResult<ReceiptDetail>> {
+    return this.receipts.listByMember(tenantId, memberId, query);
   }
 
   @Get('payments/:paymentId/receipt')

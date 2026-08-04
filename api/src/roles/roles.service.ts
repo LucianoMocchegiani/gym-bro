@@ -8,11 +8,20 @@ import {
 import { Prisma, Role } from '@prisma/client';
 import { AUDIT_ACTIONS, AuditActor } from '../audit/audit.types';
 import { AuditService } from '../audit/audit.service';
+import {
+  ListQueryDto,
+  ListResult,
+  normalizeListQuery,
+  toListResult,
+} from '../common/list';
 import { PrismaService } from '../prisma/prisma.service';
 import { SYSTEM_ROLE_SLUGS } from './permission-catalog';
 import { CreateRoleDto, UpdateRoleDto } from './dto/role.dto';
 import { RolesSeedService } from './roles-seed.service';
 import { RoleDetail } from './roles.types';
+
+/** Whitelist de orden para {@link RolesService.list}. */
+const ROLE_ORDER_FIELDS = ['name', 'createdAt'] as const;
 
 type RoleWithPermissions = Role & {
   rolePermissions: { permission: { code: string } }[];
@@ -35,20 +44,49 @@ export class RolesService {
   /**
    * Lista todos los roles del tenant (sistema + custom) con permisos.
    *
+   * @remarks Paginado. Sin `orderBy` explícito, prioriza sistema primero
+   * (`isSystem desc, name asc`); con `orderBy`, ese campo es primario y
+   * `isSystem desc` queda como orden secundario estable.
    * @throws {NotFoundException} Tenant inexistente.
    */
-  async list(tenantId: string): Promise<RoleDetail[]> {
+  async list(
+    tenantId: string,
+    query: ListQueryDto = {},
+  ): Promise<ListResult<RoleDetail>> {
     await this.assertTenantExists(tenantId);
 
-    const roles = await this.prisma.role.findMany({
-      where: { tenantId },
-      include: {
-        rolePermissions: { include: { permission: true } },
-      },
-      orderBy: [{ isSystem: 'desc' }, { name: 'asc' }],
-    });
+    const n = normalizeListQuery(query);
+    const requestedField =
+      n.orderBy && (ROLE_ORDER_FIELDS as readonly string[]).includes(n.orderBy)
+        ? (n.orderBy as (typeof ROLE_ORDER_FIELDS)[number])
+        : null;
+    const orderBy: Prisma.RoleOrderByWithRelationInput[] = requestedField
+      ? [{ [requestedField]: n.order }, { isSystem: 'desc' }]
+      : [{ isSystem: 'desc' }, { name: 'asc' }];
 
-    return roles.map((role) => this.toDetail(role));
+    const where: Prisma.RoleWhereInput = {
+      tenantId,
+      ...(n.q ? { name: { contains: n.q, mode: 'insensitive' } } : {}),
+    };
+    const [roles, total] = await this.prisma.$transaction([
+      this.prisma.role.findMany({
+        where,
+        include: {
+          rolePermissions: { include: { permission: true } },
+        },
+        orderBy,
+        skip: n.skip,
+        take: n.take,
+      }),
+      this.prisma.role.count({ where }),
+    ]);
+
+    return toListResult(
+      roles.map((role) => this.toDetail(role)),
+      total,
+      n.page,
+      n.pageSize,
+    );
   }
 
   /**

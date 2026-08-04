@@ -50,11 +50,11 @@ function NuevoInner() {
     let cancelled = false;
     void (async () => {
       try {
-        const data = await listServices({ active: true });
+        const data = await listServices({ active: true, pageSize: 100 });
         if (cancelled) {
           return;
         }
-        setServices(data);
+        setServices(data.items);
         setLoadError(null);
       } catch (err) {
         if (cancelled) {

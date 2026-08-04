@@ -12,14 +12,24 @@ import {
 } from '@prisma/client';
 import { AUDIT_ACTIONS, AuditActor } from '../audit/audit.types';
 import { AuditService } from '../audit/audit.service';
+import {
+  ListResult,
+  normalizeListQuery,
+  resolveOrderField,
+  toListResult,
+} from '../common/list';
 import { PrismaService } from '../prisma/prisma.service';
 import {
   CreateRecurrenceRuleDto,
   DeactivateRecurrenceRuleDto,
+  ListRecurrenceRulesQueryDto,
 } from './dto/recurrence-rule.dto';
 import { RecurrenceRuleDetail } from './recurrence-rules.types';
 
 const MAX_RANGE_MONTHS = 6;
+
+/** Whitelist de orden para {@link RecurrenceRulesService.list}. */
+const RECURRENCE_RULE_ORDER_FIELDS = ['createdAt'] as const;
 
 const WEEKDAY_BY_UTC_DAY: Record<number, Weekday> = {
   0: Weekday.SUNDAY,
@@ -52,16 +62,37 @@ export class RecurrenceRulesService {
   ) {}
 
   /**
-   * Lista reglas del tenant, con cantidad de sesiones materializadas.
+   * Lista reglas del tenant (paginado), con cantidad de sesiones
+   * materializadas.
    */
-  async list(tenantId: string): Promise<RecurrenceRuleDetail[]> {
+  async list(
+    tenantId: string,
+    query: ListRecurrenceRulesQueryDto = {},
+  ): Promise<ListResult<RecurrenceRuleDetail>> {
     await this.assertTenantExists(tenantId);
-    const rules = await this.prisma.sessionRecurrenceRule.findMany({
-      where: { tenantId },
-      include: this.ruleInclude(),
-      orderBy: { createdAt: 'desc' },
-    });
-    return rules.map((rule) => this.toDetail(rule));
+    const n = normalizeListQuery(query);
+    const orderField = resolveOrderField(
+      n.orderBy,
+      RECURRENCE_RULE_ORDER_FIELDS,
+      'createdAt',
+    );
+    const where: Prisma.SessionRecurrenceRuleWhereInput = { tenantId };
+    const [rules, total] = await this.prisma.$transaction([
+      this.prisma.sessionRecurrenceRule.findMany({
+        where,
+        include: this.ruleInclude(),
+        orderBy: { [orderField]: n.order },
+        skip: n.skip,
+        take: n.take,
+      }),
+      this.prisma.sessionRecurrenceRule.count({ where }),
+    ]);
+    return toListResult(
+      rules.map((rule) => this.toDetail(rule)),
+      total,
+      n.page,
+      n.pageSize,
+    );
   }
 
   /**

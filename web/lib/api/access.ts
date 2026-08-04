@@ -3,6 +3,8 @@
  */
 
 import { apiRequest } from '@/lib/api/client';
+import { toSearchParams } from '@/lib/api/list';
+import type { ListParams, ListResult } from '@/lib/api/list';
 
 export type ManualPassMotive =
   | 'deuda'
@@ -90,27 +92,20 @@ export function manualPass(
   );
 }
 
-/**
- * Historial de intentos (CU-ACC-005). Incluye nombre del afiliado.
- */
-export function listAccessAttempts(input?: {
-  limit?: number;
+export type ListAccessAttemptsInput = {
   result?: 'ALLOWED' | 'DENIED';
   from?: string;
   to?: string;
-}): Promise<AccessAttemptDetail[]> {
-  const params = new URLSearchParams();
-  params.set('limit', String(input?.limit ?? 50));
-  if (input?.result) {
-    params.set('result', input.result);
-  }
-  if (input?.from) {
-    params.set('from', input.from);
-  }
-  if (input?.to) {
-    params.set('to', input.to);
-  }
-  return apiRequest<AccessAttemptDetail[]>(
-    `/access-attempts?${params.toString()}`,
+} & ListParams;
+
+/**
+ * Historial de intentos (CU-ACC-005), paginado. Incluye nombre del afiliado.
+ */
+export function listAccessAttempts(
+  input?: ListAccessAttemptsInput,
+): Promise<ListResult<AccessAttemptDetail>> {
+  const qs = toSearchParams({ pageSize: 50, ...input });
+  return apiRequest<ListResult<AccessAttemptDetail>>(
+    `/access-attempts${qs ? `?${qs}` : ''}`,
   );
 }

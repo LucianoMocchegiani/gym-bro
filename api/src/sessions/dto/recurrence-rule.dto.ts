@@ -13,6 +13,7 @@ import {
   Max,
   Min,
 } from 'class-validator';
+import { ListQueryDto } from '../../common/list';
 
 /**
  * Alta de regla semanal que materializa sesiones (CU-SER-004).
@@ -64,3 +65,10 @@ export class DeactivateRecurrenceRuleDto {
   @Equals(false)
   active!: false;
 }
+
+/**
+ * Query de listado de reglas de recurrencia (CU-SER-004).
+ *
+ * @remarks Sin `q`. `orderBy` acepta `createdAt` (default).
+ */
+export class ListRecurrenceRulesQueryDto extends ListQueryDto {}

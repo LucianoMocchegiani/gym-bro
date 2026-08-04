@@ -4,6 +4,8 @@
 
 import { apiRequest } from '@/lib/api/client';
 import type { ContractDetail } from '@/lib/api/contracts';
+import { toSearchParams } from '@/lib/api/list';
+import type { ListParams, ListResult } from '@/lib/api/list';
 
 export type MemberStatus = 'ACTIVE' | 'SUSPENDED' | 'INACTIVE';
 
@@ -69,14 +71,18 @@ export type MemberAccountDetail = {
   }[];
 };
 
+export type ListMembersInput = { status?: MemberStatus } & ListParams;
+
 /**
- * Lista afiliados del gym (`members.read`).
+ * Lista afiliados del gym (`members.read`), paginado.
  *
- * @param status Si se omite, la API devuelve todos.
+ * @param input Si se omite `status`, la API devuelve todos.
  */
-export function listMembers(status?: MemberStatus): Promise<MemberDetail[]> {
-  const q = status ? `?status=${status}` : '';
-  return apiRequest<MemberDetail[]>(`/members${q}`);
+export function listMembers(
+  input?: ListMembersInput,
+): Promise<ListResult<MemberDetail>> {
+  const qs = toSearchParams(input);
+  return apiRequest<ListResult<MemberDetail>>(`/members${qs ? `?${qs}` : ''}`);
 }
 
 /**
