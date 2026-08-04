@@ -171,7 +171,7 @@ Diseño: [12-acceso-quark-oid4-diseno.md](./12-acceso-quark-oid4-diseno.md).
 - Reintento Super: `POST /api/tenants/:id/quark/provision` + UI en detalle de tenant.
 - Create/update pack → `PATCH …/records/metadata` (`pack_{id}` / `urn:gymbro:pack:{id}`; soft-fail en `packs.quark_*`).
 - Pack APPROVED → `POST …/openid4vc/offer` + `credential_offers` slim + `GET /me/credential-offers` (soft-fail). Re-oferta: re-POST contrato misma `idempotencyKey`.
-- App afiliado: 3 hubs (Inicio / Acceso / Ajustes); Acceso = scan OID4VCI/VP + Credenciales + offers; tunnels `issuer.` / `verifier.pruebasaproduccunon.uno`.
+- App afiliado: 3 hubs (Inicio / Acceso / Ajustes); Acceso = scan OID4VCI/VP + Credenciales + offers; Ajustes = reiniciar wallet SSI / logout con confirmación; tunnels `issuer.` / `verifier.pruebasaproduccunon.uno`.
 - Puerta Admin `/puerta`: QR OID4VP + poll sesión.
 - Clon local en `ssi-quark/` (gitignore).
 

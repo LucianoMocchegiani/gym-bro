@@ -18,12 +18,6 @@
 
 Los logins usan `{{tenantId}}`, `{{staffEmail}}`, etc. Reimportá el environment si no los ves.
 
-## Secuencia automática (Collection Runner)
-
-1. Clic derecho en **Auth flow (Collection Runner)** → **Run folder**.
-2. Run: Login Super → Me → Refresh → Me → Logout.
-3. Los scripts guardan `accessToken`, `refreshToken`, `profileType`, `userId`, `userEmail` en **environment + collection**.
-
 ## Manual
 
 Carpeta **Auth (manual)**: Login Super/Staff/Member → Me → Refresh → Logout.

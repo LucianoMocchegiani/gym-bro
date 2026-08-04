@@ -64,7 +64,7 @@ class _GymBroMemberAppState extends State<GymBroMemberApp> {
         ChangeNotifierProvider.value(value: _theme),
         Provider.value(value: _accountRepo),
         Provider.value(value: _offersRepo),
-        Provider.value(value: _wallet),
+        ChangeNotifierProvider.value(value: _wallet),
       ],
       child: Consumer2<ThemeController, AuthController>(
         builder: (context, theme, auth, _) {

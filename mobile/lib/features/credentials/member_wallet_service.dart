@@ -50,7 +50,9 @@ class UnsupportedInvitationException implements Exception {
 ///
 /// @remarks El secreto NO se deriva del password GymBro ni se sube al backend
 /// (docs/12). Se usa como PIN de [WalletService] (Argon2id interno del SDK).
-class MemberWalletService {
+/// Notifica listeners tras [deleteCredential] / [resetWallet] para reiniciar
+/// el watch de la UI.
+class MemberWalletService extends ChangeNotifier {
   /// Crea el servicio.
   MemberWalletService({
     FlutterSecureStorage? storage,
@@ -168,6 +170,28 @@ class MemberWalletService {
     throw UnsupportedInvitationException(
       'Este QR no es de ingreso ni de credencial. Pedile al gym el QR correcto.',
     );
+  }
+
+  /// Elimina una VC del store local por [credentialId].
+  Future<void> deleteCredential(String credentialId) async {
+    final session = await ensureUnlocked();
+    await session.credentialStore.delete(credentialId);
+    notifyListeners();
+  }
+
+  /// Borra la wallet del device (Isar + PIN + secreto) y crea una vacía.
+  ///
+  /// No cierra la sesión GymBro. Las offers en API no se modifican.
+  Future<void> resetWallet() async {
+    final dir = await getApplicationDocumentsDirectory();
+    await _walletService.reset(
+      walletId: _walletId,
+      directory: dir.path,
+    );
+    _session = null;
+    await _storage.delete(key: _secretKey);
+    await ensureUnlocked();
+    notifyListeners();
   }
 
   /// Bloquea la wallet (p. ej. al cerrar sesión).

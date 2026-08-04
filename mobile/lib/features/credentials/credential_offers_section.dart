@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/network/api_client.dart';
+import '../../core/widgets/loading_dialog.dart';
 import 'credential_offers_repository.dart';
 import 'member_wallet_service.dart';
 
@@ -66,24 +67,21 @@ class _CredentialOffersSectionState extends State<CredentialOffersSection> {
     }
     setState(() => _accepting.add(item.id));
     final messenger = ScaffoldMessenger.of(context);
+    final wallet = context.read<MemberWalletService>();
+    final repo = context.read<CredentialOffersRepository>();
     try {
-      final wallet = context.read<MemberWalletService>();
-      final count = await wallet.acceptOffer(uri);
-      if (!mounted) {
-        return;
-      }
-      if (count < 1) {
-        messenger.showSnackBar(
-          const SnackBar(
-            content: Text(
-              'Aceptada, pero todavía no llegó la credencial. Probá de nuevo.',
-            ),
-          ),
-        );
-        return;
-      }
-      final repo = context.read<CredentialOffersRepository>();
-      await repo.markAccepted(item.id);
+      await runWithLoadingDialog(
+        context,
+        message: 'Guardando credencial…',
+        action: () async {
+          final count = await wallet.acceptOffer(uri);
+          if (count < 1) {
+            throw const _OfferEmptyException();
+          }
+          await repo.markAccepted(item.id);
+          return count;
+        },
+      );
       if (!mounted) {
         return;
       }
@@ -94,6 +92,17 @@ class _CredentialOffersSectionState extends State<CredentialOffersSection> {
       );
       widget.onAccepted?.call();
       await _reload();
+    } on _OfferEmptyException {
+      if (!mounted) {
+        return;
+      }
+      messenger.showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Aceptada, pero todavía no llegó la credencial. Probá de nuevo.',
+          ),
+        ),
+      );
     } catch (e) {
       if (!mounted) {
         return;
@@ -264,4 +273,9 @@ class _CredentialOffersSectionState extends State<CredentialOffersSection> {
     final clipped = raw.length > 400 ? '${raw.substring(0, 400)}…' : raw;
     return 'Wallet OID4VCI: $clipped';
   }
+}
+
+/// Offer aceptado pero sin VC materializada en wallet.
+class _OfferEmptyException implements Exception {
+  const _OfferEmptyException();
 }

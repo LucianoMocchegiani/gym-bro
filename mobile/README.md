@@ -46,8 +46,10 @@ flutter run
 - **3 hubs:** Inicio · Acceso · Ajustes
   - **Inicio:** estado breve + atajos Sesiones / Tienda (placeholders)
   - **Acceso:** Escanear (default, cámara) · Credenciales (pendientes de aceptación máx. ½ pantalla + VCs wallet)
-  - **Ajustes:** cuenta, tema, API, logout
-- Cards SSI estilo quark-wallet + detalle expandible (look GymBro)
+  - **Ajustes:** cuenta, reiniciar wallet SSI, tema, API, logout (con confirmación)
+- Cards SSI estilo quark-wallet + detalle expandible (look GymBro); eliminar VC una a una con confirmación
+- Diálogo de confirmación reutilizable (`showConfirmDialog`) para logout / borrar VC / reiniciar wallet
+- Diálogo de carga (`runWithLoadingDialog`) mientras terminan esas acciones y al aceptar offers
 - Sin stub / `stub-venue` en la app
 
 Issuer público: `https://issuer.pruebasaproduccunon.uno`.

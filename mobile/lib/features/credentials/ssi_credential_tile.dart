@@ -77,11 +77,19 @@ class _CredentialSheenBackground extends StatelessWidget {
 /// Card SSI fija + detalle expandible **debajo** (estilo GymBro).
 ///
 /// La card no cambia de alto al expandir; el panel de claims anima abajo.
+/// [onDelete] muestra acción destructiva en el detalle expandido.
 class SsiCredentialTile extends StatefulWidget {
   /// Crea el tile.
-  const SsiCredentialTile({super.key, required this.credential});
+  const SsiCredentialTile({
+    super.key,
+    required this.credential,
+    this.onDelete,
+  });
 
   final WalletCredentialUi credential;
+
+  /// Callback para eliminar esta VC (el padre confirma con diálogo).
+  final VoidCallback? onDelete;
 
   @override
   State<SsiCredentialTile> createState() => _SsiCredentialTileState();
@@ -179,6 +187,7 @@ class _SsiCredentialTileState extends State<SsiCredentialTile> {
                   child: _ClaimsDetailPanel(
                     claims: c.claims,
                     scheme: scheme,
+                    onDelete: widget.onDelete,
                   ),
                 )
               : const SizedBox.shrink(),
@@ -229,10 +238,12 @@ class _ClaimsDetailPanel extends StatelessWidget {
   const _ClaimsDetailPanel({
     required this.claims,
     required this.scheme,
+    this.onDelete,
   });
 
   final List<LabeledClaim> claims;
   final ColorScheme scheme;
+  final VoidCallback? onDelete;
 
   @override
   Widget build(BuildContext context) {
@@ -244,48 +255,64 @@ class _ClaimsDetailPanel extends StatelessWidget {
       ),
       child: Padding(
         padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
-        child: claims.isEmpty
-            ? Text(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            if (claims.isEmpty)
+              Text(
                 'Sin atributos para mostrar',
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                       color: scheme.onSurface.withValues(alpha: 0.6),
                     ),
               )
-            : Column(
-                children: [
-                  for (var i = 0; i < claims.length; i++) ...[
-                    if (i > 0)
-                      Divider(
-                        height: 18,
-                        color: scheme.outline.withValues(alpha: 0.45),
+            else
+              for (var i = 0; i < claims.length; i++) ...[
+                if (i > 0)
+                  Divider(
+                    height: 18,
+                    color: scheme.outline.withValues(alpha: 0.45),
+                  ),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      flex: 2,
+                      child: Text(
+                        claims[i].label,
+                        style: Theme.of(context).textTheme.labelMedium
+                            ?.copyWith(
+                          color: scheme.onSurface.withValues(alpha: 0.55),
+                        ),
                       ),
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Expanded(
-                          flex: 2,
-                          child: Text(
-                            claims[i].label,
-                            style: Theme.of(context).textTheme.labelMedium
-                                ?.copyWith(
-                              color: scheme.onSurface.withValues(alpha: 0.55),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          flex: 3,
-                          child: Text(
-                            _formatValue(claims[i].value),
-                            style: Theme.of(context).textTheme.bodyMedium
-                                ?.copyWith(fontWeight: FontWeight.w500),
-                          ),
-                        ),
-                      ],
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      flex: 3,
+                      child: Text(
+                        _formatValue(claims[i].value),
+                        style: Theme.of(context).textTheme.bodyMedium
+                            ?.copyWith(fontWeight: FontWeight.w500),
+                      ),
                     ),
                   ],
-                ],
+                ),
+              ],
+            if (onDelete != null) ...[
+              const SizedBox(height: 12),
+              Align(
+                alignment: Alignment.centerRight,
+                child: TextButton.icon(
+                  onPressed: onDelete,
+                  icon: Icon(Icons.delete_outline, color: scheme.error),
+                  label: Text(
+                    'Eliminar',
+                    style: TextStyle(color: scheme.error),
+                  ),
+                ),
               ),
+            ],
+          ],
+        ),
       ),
     );
   }

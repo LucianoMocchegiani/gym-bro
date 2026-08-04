@@ -47,8 +47,10 @@ Acceso → Escanear (default) | Credenciales
 |  [ cards VC en el celular ]      |
 +----------------------------------+
 
-Ajustes → cuenta · tema · API · salir
+Ajustes → cuenta · wallet SSI (reiniciar) · tema · API · salir
 ```
+
+Credenciales: expandir card → Eliminar (confirmación). Ajustes: Reiniciar wallet / Cerrar sesión usan el mismo diálogo de confirmación.
 
 ---
 

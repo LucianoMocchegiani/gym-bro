@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:identity_core_dart/identity_core.dart';
 import 'package:provider/provider.dart';
 
+import '../../core/widgets/confirm_dialog.dart';
+import '../../core/widgets/loading_dialog.dart';
 import 'credential_offers_section.dart';
 import 'member_wallet_service.dart';
 import 'ssi_credential_tile.dart';
@@ -28,11 +30,27 @@ class _CredentialsScreenState extends State<CredentialsScreen> {
   bool _loading = true;
   String? _error;
   int _pendingRefresh = 0;
+  MemberWalletService? _wallet;
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    _sub ??= _startWatch();
+    final wallet = context.read<MemberWalletService>();
+    if (!identical(_wallet, wallet)) {
+      _wallet?.removeListener(_onWalletChanged);
+      _wallet = wallet;
+      _wallet!.addListener(_onWalletChanged);
+      _restartWatch();
+    }
+  }
+
+  void _onWalletChanged() {
+    _restartWatch();
+  }
+
+  void _restartWatch() {
+    _sub?.cancel();
+    _sub = _startWatch();
   }
 
   StreamSubscription<List<CredentialRecord>> _startWatch() {
@@ -71,6 +89,7 @@ class _CredentialsScreenState extends State<CredentialsScreen> {
 
   @override
   void dispose() {
+    _wallet?.removeListener(_onWalletChanged);
     _sub?.cancel();
     super.dispose();
   }
@@ -97,6 +116,36 @@ class _CredentialsScreenState extends State<CredentialsScreen> {
         _loading = false;
         _error = e.toString();
       });
+    }
+  }
+
+  Future<void> _deleteCredential(WalletCredentialUi item) async {
+    final ok = await showConfirmDialog(
+      context,
+      title: 'Eliminar credencial',
+      message:
+          '¿Eliminar «${item.title}» de este celular? '
+          'Vas a tener que aceptarla de nuevo si la necesitás.',
+      confirmLabel: 'Eliminar',
+      isDestructive: true,
+    );
+    if (!ok || !mounted) return;
+    final wallet = context.read<MemberWalletService>();
+    try {
+      await runWithLoadingDialog(
+        context,
+        message: 'Eliminando credencial…',
+        action: () => wallet.deleteCredential(item.id),
+      );
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Credencial eliminada')),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('No se pudo eliminar: $e')),
+      );
     }
   }
 
@@ -153,7 +202,10 @@ class _CredentialsScreenState extends State<CredentialsScreen> {
                   )
                 else
                   for (final item in _items) ...[
-                    SsiCredentialTile(credential: item),
+                    SsiCredentialTile(
+                      credential: item,
+                      onDelete: () => _deleteCredential(item),
+                    ),
                     const SizedBox(height: 12),
                   ],
               ],
