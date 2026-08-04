@@ -1,7 +1,12 @@
 import { AccessCredentialStatus } from '@prisma/client';
 
 /**
- * Credencial de vínculo expuesta por la API.
+ * Modo de escaneo en puerta (RN-ACC-003). MVP UI: solo `member_scans_gym` vía OID4VP.
+ */
+export type AccessScanMode = 'gym_scans_member' | 'member_scans_gym';
+
+/**
+ * Credencial de vínculo (tabla legada `access_credentials`; stubs retirados).
  */
 export type AccessCredentialDetail = {
   id: string;
@@ -12,14 +17,6 @@ export type AccessCredentialDetail = {
   provider: string;
   issuedAt: Date;
   revokedAt: Date | null;
-  /**
-   * Token a mostrar/escanear en modo `gym_scans_member` (stub = credentialRef).
-   */
-  presentationToken: string;
-  /**
-   * QR del local para modo `member_scans_gym` (informativo; stub = stub-venue:{tenantId}).
-   */
-  venueToken: string;
 };
 
 /**
@@ -65,7 +62,7 @@ export type AccessAttemptDetail = {
 };
 
 /**
- * Respuesta de `POST /access/verify`.
+ * Resultado de evaluación de ingreso (OID4VP / pase manual).
  */
 export type AccessVerifyResult = {
   allowed: boolean;
@@ -76,3 +73,31 @@ export type AccessVerifyResult = {
   checkedInAt: Date | null;
   attempt: AccessAttemptDetail;
 };
+
+/**
+ * Respuesta de `POST /access/oid4vp/request`.
+ */
+export type AccessOid4VpRequestResult = {
+  requestUri: string;
+  verificationSessionId: string;
+  scanMode: 'member_scans_gym';
+};
+
+/**
+ * Respuesta de `GET /access/oid4vp/session/:id`.
+ */
+export type AccessOid4VpSessionResult =
+  | {
+      status: 'pending';
+      state: string;
+    }
+  | {
+      status: 'done';
+      state: string;
+      result: AccessVerifyResult;
+    }
+  | {
+      status: 'error';
+      state: string;
+      reasonCode: string;
+    };

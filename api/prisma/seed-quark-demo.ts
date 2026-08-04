@@ -19,7 +19,7 @@ type QuarkSeedResult = {
  * Provisiona issuer+verifier Quark para el tenant demo del seed (soft-fail).
  *
  * @remarks Misma convención que `QuarkProvisionService`: `gymbro-iss-{slug}` /
- * `gymbro-ver-{slug}` + `oid4vc` mínimo. No arranca Nest; usa fetch + env.
+ * `gymbro-ver-{slug}` + `oid4vc` / `oid4vp` mínimo. No arranca Nest; usa fetch + env.
  * @see docs/12-acceso-quark-oid4-diseno.md
  */
 export async function provisionDemoQuark(
@@ -78,10 +78,27 @@ export async function provisionDemoQuark(
       }
     }
 
+    if (verifierWalletId) {
+      const oid4 = await listVerifierRecords(verifierWalletId);
+      if (oid4.total < 1) {
+        console.warn(
+          `[seed-quark] ${verifierWalletId} sin OpenId4VcVerifierRecord; se recrea`,
+        );
+        verifierWalletId = null;
+        verifierDid = null;
+      }
+    }
+
     if (!verifierWalletId) {
       const created = await ensureVerifier(verifierId);
       verifierWalletId = created.verifierId;
       verifierDid = created.did;
+      const oid4 = await listVerifierRecords(verifierWalletId);
+      if (oid4.total < 1) {
+        throw new Error(
+          `Verifier '${verifierWalletId}' sin OpenId4VcVerifierRecord (ghost o alta sin oid4vp). Wipe DB quarkid_verifier y reintentá seed.`,
+        );
+      }
     }
 
     if (!issuerWalletId || !verifierWalletId) {
@@ -193,11 +210,14 @@ async function ensureIssuer(
 async function ensureVerifier(
   verifierId: string,
 ): Promise<{ verifierId: string; did: string | null }> {
+  const oid4vp = {
+    clientMetadata: { client_name: 'GymBro' },
+  };
   try {
     const created = await requestJson<{
       verifierId: string;
       did: string | null;
-    }>(verifierBase(), '/v1/verifiers', 'POST', { verifierId });
+    }>(verifierBase(), '/v1/verifiers', 'POST', { verifierId, oid4vp });
     return { verifierId: created.verifierId, did: created.did };
   } catch (err) {
     if (err instanceof SeedQuarkHttpError && err.status === 409) {
@@ -206,6 +226,12 @@ async function ensureVerifier(
       }>(verifierBase(), '/v1/verifiers', 'GET');
       const found = list.verifiers?.find((v) => v.verifierId === verifierId);
       if (found) {
+        const oid4 = await listVerifierRecords(found.verifierId);
+        if (oid4.total < 1) {
+          throw new Error(
+            `Verifier '${verifierId}' ya existe sin OpenId4VcVerifierRecord. Wipe DB quarkid_verifier y re-seed con oid4vp.`,
+          );
+        }
         return { verifierId: found.verifierId, did: found.did };
       }
     }
@@ -222,6 +248,24 @@ async function listIssuerRecords(
   }>(
     issuerBase(),
     `/v1/issuers/${encodeURIComponent(issuerWalletId)}/records?type=${encodeURIComponent('OpenId4VcIssuerRecord')}`,
+    'GET',
+  );
+  return {
+    total:
+      data.pagination?.total ??
+      (Array.isArray(data.records) ? data.records.length : 0),
+  };
+}
+
+async function listVerifierRecords(
+  verifierWalletId: string,
+): Promise<{ total: number }> {
+  const data = await requestJson<{
+    pagination?: { total?: number };
+    records?: unknown[];
+  }>(
+    verifierBase(),
+    `/v1/verifiers/${encodeURIComponent(verifierWalletId)}/records?type=${encodeURIComponent('OpenId4VcVerifierRecord')}`,
     'GET',
   );
   return {

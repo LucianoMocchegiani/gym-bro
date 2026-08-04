@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import QRCode from 'qrcode';
 
 /**
- * QR del local para modo afiliado escanea gym (stub-venue).
+ * QR de puerta (OID4VP `requestUri` u otro token escaneable).
  */
 export function VenueQr({
   token,
@@ -49,12 +49,15 @@ export function VenueQr({
     return <p className="muted">Generando QR…</p>;
   }
 
+  const short =
+    token.length > 64 ? `${token.slice(0, 40)}…${token.slice(-12)}` : token;
+
   return (
     <div className="venue-qr">
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={dataUrl} alt={`QR del local: ${token}`} width={size} height={size} />
+      <img src={dataUrl} alt="QR de acceso OID4VP" width={size} height={size} />
       <p className="muted small venue-qr-token">
-        <code>{token}</code>
+        <code title={token}>{short}</code>
       </p>
     </div>
   );

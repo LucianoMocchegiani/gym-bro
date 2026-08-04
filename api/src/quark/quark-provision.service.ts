@@ -114,12 +114,44 @@ export class QuarkProvisionService {
         const created = await this.ensureIssuer(issuerId, tenant.slug);
         issuerWalletId = created.issuerId;
         issuerDid = created.did;
+        const oid4 = await this.quark.listIssuerRecords(
+          issuerWalletId,
+          'OpenId4VcIssuerRecord',
+        );
+        if (oid4.total < 1) {
+          throw new Error(
+            `Issuer '${issuerWalletId}' sin OpenId4VcIssuerRecord (ghost o alta sin oid4vc). Reiniciá quark-issuer y reintentá.`,
+          );
+        }
+      }
+
+      if (verifierWalletId) {
+        const oid4 = await this.quark.listVerifierRecords(
+          verifierWalletId,
+          'OpenId4VcVerifierRecord',
+        );
+        if (oid4.total < 1) {
+          this.logger.warn(
+            `Verifier ${verifierWalletId} sin OpenId4VcVerifierRecord; se recrea con oid4vp`,
+          );
+          verifierWalletId = null;
+          verifierDid = null;
+        }
       }
 
       if (!verifierWalletId) {
         const created = await this.ensureVerifier(verifierId);
         verifierWalletId = created.verifierId;
         verifierDid = created.did;
+        const oid4 = await this.quark.listVerifierRecords(
+          verifierWalletId,
+          'OpenId4VcVerifierRecord',
+        );
+        if (oid4.total < 1) {
+          throw new Error(
+            `Verifier '${verifierWalletId}' sin OpenId4VcVerifierRecord (alta sin oid4vp o wallet incompleta). Wipe DB quarkid_verifier y reintentá.`,
+          );
+        }
       }
 
       const ready =
@@ -217,13 +249,24 @@ export class QuarkProvisionService {
     did: string | null;
   }> {
     try {
-      const created = await this.quark.createVerifier(verifierId);
+      const created = await this.quark.createVerifier(verifierId, {
+        clientMetadata: { client_name: 'GymBro' },
+      });
       return { verifierId: created.verifierId, did: created.did };
     } catch (err) {
       if (err instanceof QuarkHttpError && err.status === 409) {
         const list = await this.quark.listVerifiers();
         const found = list.find((v) => v.verifierId === verifierId);
         if (found) {
+          const oid4 = await this.quark.listVerifierRecords(
+            found.verifierId,
+            'OpenId4VcVerifierRecord',
+          );
+          if (oid4.total < 1) {
+            throw new Error(
+              `Verifier '${verifierId}' ya existe sin OpenId4VcVerifierRecord. Wipe DB quarkid_verifier (o borrá la wallet) y reintentá con oid4vp.`,
+            );
+          }
           return { verifierId: found.verifierId, did: found.did };
         }
       }

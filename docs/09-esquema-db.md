@@ -681,21 +681,19 @@ API: Member `POST /me/payments/:id/refund-requests`, `GET /me/refund-requests`. 
 
 ### 4.15h `access_credentials`
 
-Credencial de vínculo afiliado↔gym (E6 / RN-ACC-002). Stub SSI: `credential_ref` opaco (`stub:{uuid}`).
+Tabla **legada** (credencial de vínculo stub E6). API retirada; identidad de puerta = claim `memberId` de VC OID4VP.
 
 | Columna | Tipo | Notas |
 |---------|------|--------|
 | `id` | uuid PK | |
 | `tenant_id` / `member_id` | uuid FK | |
-| `credential_ref` | text UK | Ref opaca del adapter |
+| `credential_ref` | text UK | Ref opaca histórica (`stub:{uuid}`) |
 | `status` | `AccessCredentialStatus` | `ACTIVE` \| `REVOKED` |
 | `provider` | text | default `stub` |
 | `issued_at` / `revoked_at` | timestamptz | |
 | `created_at` / `updated_at` | timestamptz | |
 
 Índice único parcial: una sola `ACTIVE` por `member_id`.
-
-API: Member `GET /me/access-credential`, `POST /me/access-credential/issue`. Staff `GET /members/:id/access-credentials`, `POST .../issue`, `POST .../revoke` (`members.read` / `members.write`).
 
 ### 4.15i `access_attempts` + `reservations.checked_in_at`
 
@@ -706,10 +704,10 @@ Intentos de ingreso (CU-ACC-001 / RN-ACC-007) y marca de presente (RN-RES-007).
 | `id` | uuid PK | |
 | `tenant_id` | uuid FK | |
 | `member_id` | uuid FK nullable | SET NULL |
-| `credential_ref` | text nullable | |
+| `credential_ref` | text nullable | OID4VP: `oid4vp:{sessionId}` |
 | `result` | `AccessAttemptResult` | `ALLOWED` \| `DENIED` |
 | `reason_code` | text | p.ej. `ok_acceso_libre`, `sin_derecho` |
-| `scan_mode` | text | `gym_scans_member` \| `member_scans_gym` |
+| `scan_mode` | text | MVP puerta: `member_scans_gym` (OID4VP) \| `manual` |
 | `reservation_id` / `session_id` | uuid FK nullable | |
 | `manual_pass` | boolean | default false |
 | `motive_code` | text nullable | pase manual: `deuda` \| `olvido_celular` \| `cortesia` \| `otro` |
@@ -719,7 +717,7 @@ Intentos de ingreso (CU-ACC-001 / RN-ACC-007) y marca de presente (RN-RES-007).
 
 Reservas: `checked_in_at` timestamptz nullable (primera allow asociada).
 
-API: Staff `POST /access/verify`, `GET /access-attempts` (`access.verify`); `POST /members/:id/access/manual-pass` (`access.manual_pass`).
+API: Staff `POST /access/oid4vp/request`, `GET /access/oid4vp/session/:id`, `GET /access-attempts` (`access.verify`); `POST /members/:id/access/manual-pass` (`access.manual_pass`).
 
 ### 4.16 `contracts`
 

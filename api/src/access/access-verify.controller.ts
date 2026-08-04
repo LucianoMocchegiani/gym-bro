@@ -18,56 +18,62 @@ import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { RequirePermission } from '../roles/decorators/require-permission.decorator';
 import { CurrentTenant } from '../tenant/decorators/current-tenant.decorator';
 import { RequireTenantAuth } from '../tenant/decorators/require-tenant-auth.decorator';
+import { AccessOid4VpService } from './access-oid4vp.service';
 import { AccessVerifyService } from './access-verify.service';
 import { ManualPassDto } from './dto/manual-pass.dto';
-import { MemberCheckInDto } from './dto/member-check-in.dto';
-import { VerifyAccessDto } from './dto/verify-access.dto';
-import { AccessAttemptDetail, AccessVerifyResult } from './access.types';
+import {
+  AccessAttemptDetail,
+  AccessOid4VpRequestResult,
+  AccessOid4VpSessionResult,
+  AccessVerifyResult,
+} from './access.types';
 
 /**
- * Verificación de ingreso, pase manual e historial (CU-ACC-001 / 004 / 005).
+ * Puerta OID4VP, pase manual e historial (CU-ACC-001 / 004 / 005).
  */
 @Controller()
 @RequireTenantAuth()
 export class AccessVerifyController {
-  constructor(private readonly accessVerify: AccessVerifyService) {}
+  constructor(
+    private readonly accessVerify: AccessVerifyService,
+    private readonly oid4vp: AccessOid4VpService,
+  ) {}
 
   /**
-   * Evalúa presentación QR/credencial y registra el intento (Staff).
+   * Crea un request OID4VP (QR de puerta, modo afiliado escanea).
+   *
+   * @remarks CU-ACC-001 / RN-ACC-003. El QR es `requestUri`.
    */
-  @Post('access/verify')
+  @Post('access/oid4vp/request')
   @HttpCode(HttpStatus.OK)
   @RequirePermission('access.verify')
-  verify(
+  createOid4VpRequest(
     @CurrentTenant() tenantId: string,
     @CurrentUser() user: AuthUser,
-    @Body() dto: VerifyAccessDto,
-  ): Promise<AccessVerifyResult> {
+  ): Promise<AccessOid4VpRequestResult> {
     if (user.profileType !== 'STAFF') {
       throw new ForbiddenException('Staff profile required');
     }
-    return this.accessVerify.verify(tenantId, dto, user.userId);
+    return this.oid4vp.createRequest(tenantId);
   }
 
   /**
-   * Check-in del afiliado al escanear el QR del local (modo B).
-   *
-   * @remarks CU-ACC-001 / RN-ACC-003. No requiere permiso Staff.
+   * Poll de sesión OID4VP; al completar evalúa ingreso (idempotente).
    */
-  @Post('me/access/check-in')
-  @HttpCode(HttpStatus.OK)
-  checkIn(
+  @Get('access/oid4vp/session/:verificationSessionId')
+  @RequirePermission('access.verify')
+  getOid4VpSession(
     @CurrentTenant() tenantId: string,
     @CurrentUser() user: AuthUser,
-    @Body() dto: MemberCheckInDto,
-  ): Promise<AccessVerifyResult> {
-    if (user.profileType !== 'MEMBER') {
-      throw new ForbiddenException('Member profile required');
+    @Param('verificationSessionId') verificationSessionId: string,
+  ): Promise<AccessOid4VpSessionResult> {
+    if (user.profileType !== 'STAFF') {
+      throw new ForbiddenException('Staff profile required');
     }
-    return this.accessVerify.checkInMember(
+    return this.oid4vp.getSession(
       tenantId,
+      verificationSessionId,
       user.userId,
-      dto.venueToken,
     );
   }
 

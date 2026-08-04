@@ -68,8 +68,7 @@
 - [x] Baja / suspensión
 - [x] Estado de cuenta (staff)
 - [x] Estado de cuenta (afiliado)
-- [x] Emisión / reemisión credencial de vínculo (hook a E6)
-  - Member `POST /me/access-credential/issue`; Staff `POST /members/:id/access-credentials/issue`
+- [x] Emisión / reemisión credencial (vía pack OID4VCI en E6; stub vínculo retirado)
 
 ---
 
@@ -138,18 +137,13 @@
 
 ## E6 — Acceso QR / SSI
 
-- [x] Puerto `AccessIdentityProvider`
-  - modos `gym_scans_member` | `member_scans_gym`; `ACCESS_PROVIDER=stub`
-- [ ] Adapter Quark / SSI (OID4VP / emisión VC)
 - [x] Spike Quark Compose: issuer+verifier + provision al crear tenant (soft-fail + `POST …/quark/provision`)
 - [x] Pack → `credentialConfigurationsSupported` en issuer Quark (soft-fail + `packs.quark_*`)
 - [x] Offer OID4VCI al pack APPROVED + `credential_offers` + `GET /me/credential-offers` (re-oferta = re-POST contrato misma key)
 - [x] Bandeja Flutter “Aceptar” + `identity_core_dart` + `ACCEPTED` / `FAILED` en API (`POST …/accept` | `…/fail`)
-- [x] Emitir / revocar credencial de vínculo
-  - tabla `access_credentials`; Member `GET|POST /me/access-credential…`; Staff list/issue/revoke
-- [x] `POST /access/verify` (1 modo de escaneo en MVP)
-  - ambos modos en API; Staff `access.verify`; respuesta allow/deny + intento
-  - Member check-in modo B: `POST /me/access/check-in` `{ venueToken }`
+- [x] Puerta OID4VP (modo B) + evaluate
+  - Staff `POST /access/oid4vp/request` + `GET /access/oid4vp/session/:id`; identidad = claim `memberId`
+  - Stubs retirados (`ACCESS_PROVIDER`, `access-credentials`, `/access/verify`, `/me/access/check-in`, `stub-venue`)
 - [x] Evaluación: libre / reserva / deuda / tolerancia / multi-ingreso
   - deuda placeholder 0 días; settings `debtToleranceDays`, `multiEntry*`
 - [x] Pase manual + auditoría
@@ -158,9 +152,8 @@
   - `GET /access-attempts`; tabla `access_attempts`; `reservations.checked_in_at`
 - [x] Config políticas de acceso del gym
   - tolerancia + multi-ingreso en `tenant_settings` (CU-ACC-007 parcial)
-- [x] Pantalla / flujo puerta (tocámetro o escaneo afiliado)
-  - Admin web: `/puerta` QR del local (`stub-venue`) + polling resultado; modo gym escanea token; pase manual
-  - App: escanear QR del local → check-in; ambos ven ALLOWED/DENIED
+- [x] Pantalla / flujo puerta (tocámetro)
+  - Admin web: `/puerta` QR OID4VP + poll; App: Escanear → share VP
   - API: CORS `CORS_ORIGIN` (default `http://localhost:3000`)
 
 
@@ -201,8 +194,8 @@
 - [ ] Calendario y reservar
 - [ ] Lista de espera
 - [x] Acceso + Credenciales (SSI)
-  - Nav 3 hubs: Inicio · Acceso (Escanear default + Credenciales; offers en Acceso) · Ajustes
-  - Stub vínculo / `stub-venue` **fuera** de la app afiliado (web `/puerta` stub sigue hasta OID4VP gym)
+  - Nav 3 hubs: Inicio · Acceso (Escanear OID4VCI/VP + Credenciales) · Ajustes
+  - Puerta web `/puerta` = QR OID4VP (sin stub)
 - [ ] Rutinas y cumplimiento
 - [ ] Avisos + preferencias
 - [ ] Solicitar devolución
@@ -273,7 +266,7 @@ E11 → E12
 
 ## Próximo paso
 
-Seguir OID4VP en puerta (Quark paso 4), o E9 / E8 / rutinas E7, según [12-acceso-quark-oid4-diseno.md](./12-acceso-quark-oid4-diseno.md).
+E9 / E8 / rutinas E7, o afinar OID4VP (tolerancia/reingreso), según [12-acceso-quark-oid4-diseno.md](./12-acceso-quark-oid4-diseno.md).
 
 ---
 

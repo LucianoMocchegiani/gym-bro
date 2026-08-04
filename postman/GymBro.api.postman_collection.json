@@ -151,11 +151,11 @@
       "value": ""
     },
     {
-      "key": "accessCredentialId",
+      "key": "oid4vpSessionId",
       "value": ""
     },
     {
-      "key": "accessCredentialRef",
+      "key": "oid4vpRequestUri",
       "value": ""
     }
   ],
@@ -3102,21 +3102,36 @@
       ]
     },
     {
-      "name": "Access credentials",
-      "description": "E6 / RN-ACC-002. Credencial de vínculo stub (`ACCESS_PROVIDER=stub`). Member: GET/POST /me/access-credential…. Staff: list/issue/revoke bajo /members/:memberId/access-credentials (members.read/write). Sin POST /access/verify aún.",
+      "name": "Access OID4VP",
+      "description": "CU-ACC-001/004. Staff POST /access/oid4vp/request + GET /access/oid4vp/session/:id (modo B). Pase manual. Historial GET /access-attempts. Stubs retirados.",
       "item": [
         {
-          "name": "Member POST issue my credential",
+          "name": "Staff POST oid4vp request",
           "event": [
             {
               "listen": "test",
               "script": {
                 "exec": [
-                  "if (pm.response.code === 201) {",
-                  "  const j = pm.response.json();",
-                  "  if (j.credentialRef) pm.collectionVariables.set('accessCredentialRef', j.credentialRef);",
-                  "  if (j.id) pm.collectionVariables.set('accessCredentialId', j.id);",
-                  "  if (j.memberId) pm.collectionVariables.set('createdMemberId', j.memberId);",
+                  "const j = pm.response.json();",
+                  "pm.test('OID4VP request 200', () => pm.response.to.have.status(200));",
+                  "pm.test('requestUri', () => pm.expect(j.requestUri).to.be.a('string'));",
+                  "pm.test('verificationSessionId', () => pm.expect(j.verificationSessionId).to.be.a('string'));",
+                  "if (j.verificationSessionId) pm.collectionVariables.set('oid4vpSessionId', j.verificationSessionId);",
+                  "if (j.requestUri) {",
+                  "  pm.collectionVariables.set('oid4vpRequestUri', j.requestUri);",
+                  "  const uri = j.requestUri;",
+                  "  const sessionId = j.verificationSessionId || '';",
+                  "  pm.visualizer.set(`",
+                  "    <script src='https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js'><\\/script>",
+                  "    <div style='display:flex;flex-direction:column;align-items:center;padding:20px;font-family:sans-serif'>",
+                  "      <h3 style='margin-bottom:8px'>GymBro — OID4VP puerta</h3>",
+                  "      <p style='margin:0 0 16px 0;font-size:13px;color:#555'>Escanear con la app (Acceso → Escanear).</p>",
+                  "      <div id='qr'></div>",
+                  "      <p style='margin-top:12px;font-size:11px;word-break:break-all;max-width:360px;text-align:center'>${uri}</p>",
+                  "      <p style='font-size:12px;color:#666'>verificationSessionId: ${sessionId}</p>",
+                  "    </div>",
+                  "    <script>new QRCode(document.getElementById('qr'),{text:'${uri}',width:280,height:280,correctLevel:QRCode.CorrectLevel.L})<\\/script>",
+                  "  `, { uri, sessionId });",
                   "}"
                 ],
                 "type": "text/javascript"
@@ -3131,12 +3146,12 @@
                 "value": "Bearer {{accessToken}}"
               }
             ],
-            "url": "{{baseUrl}}/api/me/access-credential/issue",
-            "description": "Emite o reemite. Login como Member (socio@demo.gym)."
+            "url": "{{baseUrl}}/api/access/oid4vp/request",
+            "description": "Login Staff. Quark verifier READY. Guardá requestUri/sessionId. Pestaña **Visualize** → QR para la app."
           }
         },
         {
-          "name": "Member GET my credential",
+          "name": "Staff GET oid4vp session",
           "request": {
             "method": "GET",
             "header": [
@@ -3145,136 +3160,8 @@
                 "value": "Bearer {{accessToken}}"
               }
             ],
-            "url": "{{baseUrl}}/api/me/access-credential",
-            "description": "404 si aún no emitió."
-          }
-        },
-        {
-          "name": "Staff GET member credentials",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{accessToken}}"
-              }
-            ],
-            "url": "{{baseUrl}}/api/members/{{createdMemberId}}/access-credentials",
-            "description": "Historial. Usá memberId del socio demo o createdMemberId."
-          }
-        },
-        {
-          "name": "Staff POST issue member credential",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "if (pm.response.code === 201) {",
-                  "  const j = pm.response.json();",
-                  "  if (j.credentialRef) pm.collectionVariables.set('accessCredentialRef', j.credentialRef);",
-                  "  if (j.id) pm.collectionVariables.set('accessCredentialId', j.id);",
-                  "}"
-                ],
-                "type": "text/javascript"
-              }
-            }
-          ],
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{accessToken}}"
-              }
-            ],
-            "url": "{{baseUrl}}/api/members/{{createdMemberId}}/access-credentials/issue",
-            "description": "members.write. Reemite (revoca ACTIVE previa)."
-          }
-        },
-        {
-          "name": "Staff POST revoke member credential",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{accessToken}}"
-              }
-            ],
-            "url": "{{baseUrl}}/api/members/{{createdMemberId}}/access-credentials/revoke",
-            "description": "members.write. 404 si no hay ACTIVE."
-          }
-        }
-      ]
-    },
-    {
-      "name": "Access verify",
-      "description": "E6 / CU-ACC-001/004. Staff POST /access/verify (`access.verify`). Member POST /me/access/check-in (modo B). Pase manual. Historial GET /access-attempts.",
-      "item": [
-        {
-          "name": "Staff POST access verify (gym scans member)",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{accessToken}}"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"mode\": \"gym_scans_member\",\n  \"presentationToken\": \"{{accessCredentialRef}}\"\n}"
-            },
-            "url": "{{baseUrl}}/api/access/verify",
-            "description": "Login Staff. Emití credencial Member antes."
-          }
-        },
-        {
-          "name": "Staff POST access verify (member scans gym)",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{accessToken}}"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"mode\": \"member_scans_gym\",\n  \"venueToken\": \"stub-venue:{{tenantId}}\",\n  \"credentialRef\": \"{{accessCredentialRef}}\"\n}"
-            },
-            "url": "{{baseUrl}}/api/access/verify"
-          }
-        },
-        {
-          "name": "Member POST me access check-in",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{accessToken}}"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"venueToken\": \"stub-venue:{{tenantId}}\"\n}"
-            },
-            "url": "{{baseUrl}}/api/me/access/check-in",
-            "description": "Login Member + credencial ACTIVE. Escanea QR del local (modo B)."
+            "url": "{{baseUrl}}/api/access/oid4vp/session/{{oid4vpSessionId}}",
+            "description": "Poll hasta status=done (evaluate) o error. Idempotente."
           }
         },
         {

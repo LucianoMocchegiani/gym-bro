@@ -1,15 +1,11 @@
 import {
   BadRequestException,
-  HttpException,
-  Inject,
   Injectable,
   NotFoundException,
-  UnauthorizedException,
 } from '@nestjs/common';
 import {
   AccessAttempt,
   AccessAttemptResult,
-  AccessCredentialStatus,
   ContractStatus,
   MemberStatus,
   ReservationStatus,
@@ -20,17 +16,12 @@ import { AUDIT_ACTIONS } from '../audit/audit.types';
 import { AuditService } from '../audit/audit.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { TenantSettingsService } from '../tenant-settings/tenant-settings.service';
-import {
-  ACCESS_IDENTITY_PROVIDER,
-  AccessIdentityProvider,
-  AccessScanMode,
-} from './access-identity.port';
 import { ManualPassDto } from './dto/manual-pass.dto';
-import { VerifyAccessDto } from './dto/verify-access.dto';
 import {
   ACCESS_REASON,
   AccessAttemptDetail,
   AccessReasonCode,
+  AccessScanMode,
   AccessVerifyResult,
 } from './access.types';
 
@@ -47,9 +38,10 @@ type CoverageHit = {
 };
 
 /**
- * Verificación de ingreso y pase manual (CU-ACC-001..004 / RN-ACC-004..009).
+ * Evaluación de derechos de ingreso y pase manual (CU-ACC-001..004 / RN-ACC-004..009).
  *
- * @remarks Deuda real aún no modelada: `overdueDays = 0`.
+ * @remarks Identidad OID4VP llega desde `AccessOid4VpService` (claim `memberId`).
+ * Deuda real aún no modelada: `overdueDays = 0`.
  * Pases manuales no cuentan para el tope de multi-ingreso.
  */
 @Injectable()
@@ -58,121 +50,58 @@ export class AccessVerifyService {
     private readonly prisma: PrismaService,
     private readonly tenantSettings: TenantSettingsService,
     private readonly audit: AuditService,
-    @Inject(ACCESS_IDENTITY_PROVIDER)
-    private readonly identity: AccessIdentityProvider,
   ) {}
 
   /**
-   * Resuelve identidad, evalúa derechos y registra el intento.
+   * Evalúa derechos tras una presentación OID4VP ya resuelta a `memberId`.
    *
-   * @remarks HTTP 200 con `allowed` true/false (denegaciones de negocio no son 4xx).
+   * @remarks CU-ACC-001 / RN-ACC-003 (`member_scans_gym`).
    */
-  async verify(
-    tenantId: string,
-    dto: VerifyAccessDto,
-    actorStaffId: string | null,
-  ): Promise<AccessVerifyResult> {
-    const scanMode = dto.mode;
-    let memberId: string | null = null;
-    let credentialRef: string | null = null;
-
-    try {
-      const resolved = await this.identity.resolvePresentation({
-        mode: scanMode,
-        presentationToken: dto.presentationToken,
-        venueToken: dto.venueToken,
-        credentialRef: dto.credentialRef,
-      });
-      credentialRef = resolved.credentialRef;
-      memberId = resolved.afiliadoId;
-
-      if (resolved.tenantId !== tenantId) {
-        return this.persistDenied({
-          tenantId,
-          memberId,
-          credentialRef,
-          scanMode,
-          actorStaffId,
-          reasonCode: ACCESS_REASON.tenantMismatch,
-        });
-      }
-
-      return this.evaluateAndPersist({
-        tenantId,
-        memberId,
-        credentialRef,
-        scanMode,
-        actorStaffId,
-      });
-    } catch (error: unknown) {
-      if (
-        error instanceof BadRequestException ||
-        (error instanceof HttpException && error.getStatus() === 400)
-      ) {
-        return this.persistDenied({
-          tenantId,
-          memberId: null,
-          credentialRef: null,
-          scanMode,
-          actorStaffId,
-          reasonCode: ACCESS_REASON.payloadInvalido,
-        });
-      }
-      if (
-        error instanceof UnauthorizedException ||
-        (error instanceof HttpException && error.getStatus() === 401)
-      ) {
-        return this.persistDenied({
-          tenantId,
-          memberId: null,
-          credentialRef: null,
-          scanMode,
-          actorStaffId,
-          reasonCode: ACCESS_REASON.credencialInvalida,
-        });
-      }
-      throw error;
-    }
+  async evaluateOid4VpPresentation(input: {
+    tenantId: string;
+    memberId: string;
+    credentialRef: string;
+    actorStaffId: string | null;
+  }): Promise<AccessVerifyResult> {
+    return this.evaluateAndPersist({
+      ...input,
+      scanMode: 'member_scans_gym',
+    });
   }
 
   /**
-   * Check-in del afiliado autenticado al escanear el QR del local (modo B).
-   *
-   * @remarks Usa la credencial ACTIVE del member; no requiere Staff.
-   * CU-ACC-001 / RN-ACC-003 (`member_scans_gym`).
+   * Persiste un deny OID4VP sin pasar por evaluate (payload / tenant mismatch).
    */
-  async checkInMember(
-    tenantId: string,
-    memberId: string,
-    venueToken: string,
-  ): Promise<AccessVerifyResult> {
-    const active = await this.prisma.accessCredential.findFirst({
-      where: {
-        tenantId,
-        memberId,
-        status: AccessCredentialStatus.ACTIVE,
-      },
-      orderBy: { issuedAt: 'desc' },
+  async persistOid4VpDenied(input: {
+    tenantId: string;
+    memberId: string | null;
+    credentialRef: string;
+    actorStaffId: string | null;
+    reasonCode: AccessReasonCode;
+  }): Promise<AccessVerifyResult> {
+    return this.persistDenied({
+      ...input,
+      scanMode: 'member_scans_gym',
     });
-    if (!active) {
-      return this.persistDenied({
-        tenantId,
-        memberId,
-        credentialRef: null,
-        scanMode: 'member_scans_gym',
-        actorStaffId: null,
-        reasonCode: ACCESS_REASON.credencialInvalida,
-      });
-    }
-    return this.verify(
-      tenantId,
-      {
-        mode: 'member_scans_gym',
-        venueToken: venueToken.trim(),
-        credentialRef: active.credentialRef,
-      },
-      null,
-    );
+  }
+
+  /**
+   * Mapea un `access_attempt` existente a `AccessVerifyResult` (poll idempotente).
+   */
+  toVerifyResultFromAttempt(
+    row: AccessAttempt,
+    member: { name: string | null; email: string | null } | null,
+  ): AccessVerifyResult {
+    const attempt = this.toAttemptDetail(row, member);
+    return {
+      allowed: row.result === AccessAttemptResult.ALLOWED,
+      reasonCode: row.reasonCode,
+      memberId: row.memberId,
+      reservationId: row.reservationId,
+      sessionId: row.sessionId,
+      checkedInAt: null,
+      attempt,
+    };
   }
 
   /**
@@ -629,7 +558,7 @@ export class AccessVerifyService {
   private async toAttemptDetailAsync(
     row: AccessAttempt,
   ): Promise<AccessAttemptDetail> {
-    let member: { name: string | null; email: string } | null = null;
+    let member: { name: string | null; email: string | null } | null = null;
     if (row.memberId) {
       member = await this.prisma.member.findFirst({
         where: { id: row.memberId, tenantId: row.tenantId },
@@ -641,7 +570,7 @@ export class AccessVerifyService {
 
   private toAttemptDetail(
     row: AccessAttempt,
-    member?: { name: string | null; email: string } | null,
+    member?: { name: string | null; email: string | null } | null,
   ): AccessAttemptDetail {
     return {
       id: row.id,

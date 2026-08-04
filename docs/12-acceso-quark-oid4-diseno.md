@@ -2,7 +2,7 @@
 
 **Estado:** Diseño cerrado — spike tenant + pack→metadata implementados; offer/VP pendientes  
 **Fecha:** 2026-08-02  
-**Contexto:** Stub actual (`ACCESS_PROVIDER=stub`) sigue en producción MVP; este doc fija el camino a QuarkID (OID4VCI/OID4VP + Credo multi-tenant).
+**Contexto:** Acceso en puerta vía QuarkID (OID4VCI emisión + OID4VP presentación). Stubs de vínculo retirados.
 
 **Repos de referencia (clon local):** `ssi-quark/` (`quark-issuer-service`, `quark-verifier-service`, `quarkid-identity-core`, `quarkid-identity-core-dart`, `quark-wallet`).
 
@@ -24,7 +24,7 @@
 | Cambio de dispositivo | Nueva wallet local + reemitir VCs; sin backup/recovery Quark en MVP Quark |
 | Reingreso en sesión | Regla de **dominio GymBro** post-verify (ventana horaria); no “usos” mutables solo en la VC |
 | Prioridad sesión vs libre (~20 min) | GymBro arma el **OID4VP request** (o evalúa claims) según hora; una presentación, sin wallet multi-elección manual |
-| Stub actual | Se mantiene hasta cablear adapter Quark; mismo puerto `AccessIdentityProvider` evoluciona |
+| Stub histórico | Retirado; puerta = OID4VP |
 
 ---
 
@@ -33,7 +33,7 @@
 ```text
 Super: POST /tenants (GymBro)
   → Quark POST /issuers   (walletId = gymbro-iss-{slug})
-  → Quark POST /verifiers (walletId = gymbro-ver-{slug})
+  → Quark POST /verifiers (walletId = gymbro-ver-{slug}, `oid4vp.clientMetadata` → `OpenId4VcVerifierRecord`)
   → Guardar IDs/DIDs en config del tenant GymBro
 
 Admin: create/update Pack
@@ -104,11 +104,11 @@ La **evaluación fina** (deuda real, cupo sesión, reingreso) puede seguir en Gy
    - Claims VC (solo en llamada Quark): `memberId`, `memberName`, `tenantId`, `tenantName`, `packId`, `packName`, `validFrom`, `validUntil`.  
    - **Bandeja Flutter:** Home lista `PENDING` + Aceptar con `identity_core_dart` (secreto device-bound). Tras ≥1 VC → `POST /me/credential-offers/:id/accept` → `ACCEPTED`. Si el issuer responde vencido/inválido → `POST …/fail` → `FAILED` (sale de bandeja; `lastError` staff). Issuer público: `https://issuer.pruebasaproduccunon.uno` (tunnel).  
    - **App nav:** Inicio · Acceso (Escanear default; Credenciales = pendientes de aceptación + VCs) · Ajustes. Sin stub en mobile.  
-4. **Puerta OID4VP** vía verifier del gym (reemplazo gradual del stub en Admin web).  
+4. **[x] Puerta OID4VP** vía verifier del gym (`POST /access/oid4vp/request` + poll session → `memberId` → evaluate). Stubs retirados.  
 5. Push remoto de offers (E8).  
 6. Afinar tolerancia/reingreso en evaluate GymBro.  
 
-Hasta (4), el stub y el QR `stub-venue` siguen válidos para demos.
+Hasta (4) inclusive el stub quedó fuera de producción.
 
 ---
 
@@ -117,7 +117,7 @@ Hasta (4), el stub y el QR `stub-venue` siguen válidos para demos.
 - [01-documento-maestro.md](./01-documento-maestro.md) § acceso: MVP recomendaba vínculo (B); **Quark pack-typed** es la evolución acordada (2026-08-02).  
 - [06-arquitectura.md](./06-arquitectura.md) §6: puerto se mantiene; adapter Quark + este diseño.  
 - [99-backlog-post-mvp.md](./99-backlog-post-mvp.md): “credencial por pack” deja de ser solo idea; pasa a **plan Quark**.  
-- Stub E6 implementado hoy no se apaga en este documento.
+- Stub E6 histórico: reemplazado por OID4VP en puerta (paso 4).
 
 ---
 

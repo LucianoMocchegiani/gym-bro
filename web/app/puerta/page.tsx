@@ -6,32 +6,22 @@ import { AdminGrid, Panel } from '@/components/AdminUi';
 import { DoorShell } from '@/components/DoorShell';
 import { RequireStaff } from '@/components/RequireStaff';
 import { VenueQr } from '@/components/VenueQr';
-import { listAccessAttempts, verifyAccess } from '@/lib/api/access';
+import {
+  createOid4VpRequest,
+  getOid4VpSession,
+  listAccessAttempts,
+} from '@/lib/api/access';
 import type {
   AccessAttemptDetail,
-  AccessScanMode,
   AccessVerifyResult,
 } from '@/lib/api/access';
 import { todayBusinessDate } from '@/lib/api/cash-register';
 import { ApiClientError } from '@/lib/api/client';
-import { useAuth } from '@/lib/auth/AuthProvider';
-
-function attemptToResult(a: AccessAttemptDetail): AccessVerifyResult {
-  return {
-    allowed: a.result === 'ALLOWED',
-    reasonCode: a.reasonCode,
-    memberId: a.memberId,
-    reservationId: a.reservationId,
-    sessionId: a.sessionId,
-    checkedInAt: null,
-    attempt: a,
-  };
-}
 
 /**
- * Pantalla tocámetro: verificar ingreso (CU-ACC-001).
+ * Pantalla tocámetro: verificar ingreso vía OID4VP (CU-ACC-001).
  *
- * @remarks Modo B: QR del local + polling para ver el check-in del afiliado.
+ * @remarks Modo B: QR = requestUri Quark; poll sesión hasta evaluate.
  */
 export default function PuertaPage() {
   return (
@@ -42,12 +32,10 @@ export default function PuertaPage() {
 }
 
 function PuertaInner() {
-  const { session } = useAuth();
   const today = todayBusinessDate();
-  const [mode, setMode] = useState<AccessScanMode>('member_scans_gym');
-  const [presentationToken, setPresentationToken] = useState('');
-  const venueToken =
-    session?.tenantId != null ? `stub-venue:${session.tenantId}` : '';
+  const [requestUri, setRequestUri] = useState<string | null>(null);
+  const [sessionId, setSessionId] = useState<string | null>(null);
+  const [sessionState, setSessionState] = useState<string | null>(null);
   const [result, setResult] = useState<AccessVerifyResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -61,7 +49,7 @@ function PuertaInner() {
   const [attempts, setAttempts] = useState<AccessAttemptDetail[]>([]);
   const [attemptsLoading, setAttemptsLoading] = useState(true);
   const [attemptsError, setAttemptsError] = useState<string | null>(null);
-  const lastLiveAttemptId = useRef<string | null>(null);
+  const doneSessionRef = useRef<string | null>(null);
 
   async function loadAttempts(opts?: { silent?: boolean }) {
     if (!opts?.silent) {
@@ -91,52 +79,71 @@ function PuertaInner() {
     }
   }
 
+  async function startRequest() {
+    setBusy(true);
+    setError(null);
+    setResult(null);
+    setSessionState(null);
+    doneSessionRef.current = null;
+    try {
+      const res = await createOid4VpRequest();
+      setRequestUri(res.requestUri);
+      setSessionId(res.verificationSessionId);
+    } catch (err) {
+      setRequestUri(null);
+      setSessionId(null);
+      setError(
+        err instanceof ApiClientError
+          ? err.message
+          : 'No se pudo crear el QR de puerta',
+      );
+    } finally {
+      setBusy(false);
+    }
+  }
+
   useEffect(() => {
-    let cancelled = false;
-    void (async () => {
-      const rows = await loadAttempts();
-      if (cancelled || !rows?.length) {
-        return;
-      }
-      lastLiveAttemptId.current = rows[0]?.id ?? null;
-    })();
-    return () => {
-      cancelled = true;
-    };
+    void startRequest();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- montaje
+  }, []);
+
+  useEffect(() => {
+    void loadAttempts();
     // eslint-disable-next-line react-hooks/exhaustive-deps -- filtros explícitos
   }, [appliedFrom, appliedTo, resultFilter]);
 
-  /** Polling: ambos ven el resultado cuando el afiliado escanea el QR del local. */
+  /** Poll de sesión OID4VP hasta done/error. */
   useEffect(() => {
-    if (mode !== 'member_scans_gym') {
+    if (!sessionId || doneSessionRef.current === sessionId) {
       return;
     }
     const id = window.setInterval(() => {
       void (async () => {
-        const rows = await loadAttempts({ silent: true });
-        if (!rows?.length) {
-          return;
+        try {
+          const res = await getOid4VpSession(sessionId);
+          setSessionState(res.state);
+          if (res.status === 'pending') {
+            return;
+          }
+          doneSessionRef.current = sessionId;
+          if (res.status === 'done') {
+            setResult(res.result);
+            await loadAttempts({ silent: true });
+          } else {
+            setError(`Presentación fallida (${res.reasonCode})`);
+          }
+        } catch (err) {
+          setError(
+            err instanceof ApiClientError
+              ? err.message
+              : 'Error al consultar la sesión OID4VP',
+          );
         }
-        const latest = rows[0];
-        if (!latest || latest.id === lastLiveAttemptId.current) {
-          return;
-        }
-        if (latest.scanMode !== 'member_scans_gym') {
-          lastLiveAttemptId.current = latest.id;
-          return;
-        }
-        const ageMs = Date.now() - new Date(latest.createdAt).getTime();
-        if (ageMs > 60_000) {
-          lastLiveAttemptId.current = latest.id;
-          return;
-        }
-        lastLiveAttemptId.current = latest.id;
-        setResult(attemptToResult(latest));
       })();
     }, 2000);
     return () => window.clearInterval(id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mode, appliedFrom, appliedTo, resultFilter]);
+  }, [sessionId, appliedFrom, appliedTo, resultFilter]);
 
   function onFilter(e: FormEvent) {
     e.preventDefault();
@@ -144,115 +151,40 @@ function PuertaInner() {
     setAppliedTo(to);
   }
 
-  async function onVerify(e: FormEvent) {
-    e.preventDefault();
-    setBusy(true);
-    setError(null);
-    setResult(null);
-    try {
-      const res = await verifyAccess({
-        mode: 'gym_scans_member',
-        presentationToken: presentationToken.trim(),
-      });
-      setResult(res);
-      lastLiveAttemptId.current = res.attempt.id;
-      setPresentationToken('');
-      await loadAttempts({ silent: true });
-    } catch (err) {
-      setError(
-        err instanceof ApiClientError
-          ? err.message
-          : 'Error al verificar ingreso',
-      );
-    } finally {
-      setBusy(false);
-    }
-  }
-
   return (
     <DoorShell title="Acceso puerta">
       <AdminGrid className="door-dashboard">
         <Panel
           title="Verificar ingreso"
-          description={
-            mode === 'member_scans_gym'
-              ? 'Mostrá este QR; el afiliado lo escanea desde la app.'
-              : 'Pegá el token del afiliado (modo gym escanea).'
-          }
+          description="Mostrá este QR; el afiliado lo escanea desde la app (OID4VP)."
         >
-          <fieldset className="mode-toggle">
-            <legend>Modo de escaneo</legend>
-            <label>
-              <input
-                type="radio"
-                name="mode"
-                checked={mode === 'member_scans_gym'}
-                onChange={() => {
-                  setMode('member_scans_gym');
-                  setResult(null);
-                  setError(null);
-                }}
-              />
-              Afiliado escanea el local
-            </label>
-            <label>
-              <input
-                type="radio"
-                name="mode"
-                checked={mode === 'gym_scans_member'}
-                onChange={() => {
-                  setMode('gym_scans_member');
-                  setResult(null);
-                  setError(null);
-                }}
-              />
-              Gym escanea afiliado
-            </label>
-          </fieldset>
-
-          {mode === 'member_scans_gym' ? (
-            venueToken ? (
-              <VenueQr token={venueToken} />
-            ) : (
-              <p className="muted">Sin tenant en sesión.</p>
-            )
+          {error ? <p className="error">{error}</p> : null}
+          {requestUri ? (
+            <VenueQr token={requestUri} />
           ) : (
-            <form className="admin-form" onSubmit={(e) => void onVerify(e)}>
-              <label>
-                <span>
-                  Token del afiliado (stub: <code>stub:…</code>)
-                </span>
-                <input
-                  value={presentationToken}
-                  onChange={(e) => setPresentationToken(e.target.value)}
-                  placeholder="stub:xxxxxxxx-…"
-                  required
-                  autoFocus
-                  autoComplete="off"
-                />
-              </label>
-              {error ? <p className="error">{error}</p> : null}
-              <button type="submit" className="primary" disabled={busy}>
-                {busy ? 'Verificando…' : 'Verificar ingreso'}
-              </button>
-            </form>
-          )}
-
-          {mode === 'member_scans_gym' ? (
-            <p className="muted small">
-              Esperando escaneo… el resultado aparece acá y en el historial.
+            <p className="muted">
+              {busy ? 'Generando QR…' : 'Sin QR activo.'}
             </p>
-          ) : null}
+          )}
+          <p className="muted small">
+            {sessionState
+              ? `Sesión: ${sessionState}`
+              : 'Esperando escaneo del afiliado…'}
+          </p>
+          <button
+            type="button"
+            className="primary"
+            disabled={busy}
+            onClick={() => void startRequest()}
+          >
+            {busy ? 'Generando…' : 'Nuevo QR'}
+          </button>
         </Panel>
 
         <div className="admin-stack">
           <AccessResultBanner
             result={result}
-            emptyText={
-              mode === 'member_scans_gym'
-                ? 'Cuando un afiliado escanee el QR, verás PERMITIDO o DENEGADO acá.'
-                : 'El resultado del próximo ingreso aparecerá acá.'
-            }
+            emptyText="Cuando un afiliado presente su credencial, verás PERMITIDO o DENEGADO acá."
           />
           <Panel title="Historial" description="Filtrá por fecha (BA) y resultado.">
             <form className="toolbar" onSubmit={onFilter}>

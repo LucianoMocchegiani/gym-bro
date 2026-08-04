@@ -129,7 +129,8 @@ class MemberWalletService {
     }
 
     if (type == InvitationType.openid4vpRequest) {
-      final request = await session.openid4vp.resolveRequest(canonical);
+      final normalized = QuarkPublicConfig.normalizeRequestUri(canonical);
+      final request = await session.openid4vp.resolveRequest(normalized);
       if (!request.submission.areAllSatisfied) {
         return const WalletScanResult.vp(
           presentationOk: false,

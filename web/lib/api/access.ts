@@ -1,10 +1,8 @@
 /**
- * Access API (módulo `access`).
+ * Access API (módulo `access`): OID4VP puerta + pase manual + historial.
  */
 
 import { apiRequest } from '@/lib/api/client';
-
-export type AccessScanMode = 'gym_scans_member' | 'member_scans_gym';
 
 export type ManualPassMotive =
   | 'deuda'
@@ -41,19 +39,35 @@ export type AccessVerifyResult = {
   attempt: AccessAttemptDetail;
 };
 
+export type AccessOid4VpRequestResult = {
+  requestUri: string;
+  verificationSessionId: string;
+  scanMode: 'member_scans_gym';
+};
+
+export type AccessOid4VpSessionResult =
+  | { status: 'pending'; state: string }
+  | { status: 'done'; state: string; result: AccessVerifyResult }
+  | { status: 'error'; state: string; reasonCode: string };
+
 /**
- * Verifica ingreso en puerta (CU-ACC-001).
+ * Crea request OID4VP para el QR de puerta (CU-ACC-001).
  */
-export function verifyAccess(input: {
-  mode: AccessScanMode;
-  presentationToken?: string;
-  venueToken?: string;
-  credentialRef?: string;
-}): Promise<AccessVerifyResult> {
-  return apiRequest<AccessVerifyResult>('/access/verify', {
+export function createOid4VpRequest(): Promise<AccessOid4VpRequestResult> {
+  return apiRequest<AccessOid4VpRequestResult>('/access/oid4vp/request', {
     method: 'POST',
-    body: input,
   });
+}
+
+/**
+ * Poll de sesión OID4VP; al `done` incluye evaluate.
+ */
+export function getOid4VpSession(
+  verificationSessionId: string,
+): Promise<AccessOid4VpSessionResult> {
+  return apiRequest<AccessOid4VpSessionResult>(
+    `/access/oid4vp/session/${encodeURIComponent(verificationSessionId)}`,
+  );
 }
 
 /**

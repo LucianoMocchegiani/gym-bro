@@ -8,26 +8,61 @@ abstract final class QuarkPublicConfig {
     defaultValue: 'https://issuer.pruebasaproduccunon.uno',
   );
 
+  /// Base pública del verifier (requests OID4VP).
+  ///
+  /// Override: `--dart-define=QUARK_VERIFIER_PUBLIC_URL=https://…`
+  static const verifierPublicUrl = String.fromEnvironment(
+    'QUARK_VERIFIER_PUBLIC_URL',
+    defaultValue: 'https://verifier.pruebasaproduccunon.uno',
+  );
+
   /// Reescribe hosts Docker internos en un [offerUri] para el device.
   ///
   /// Ofers viejos pueden traer `http://quark-issuer:9001`; el tunnel usa HTTPS público.
   static String normalizeOfferUri(String offerUri) {
-    final public = issuerPublicUrl.replaceAll(RegExp(r'/$'), '');
-    var out = offerUri;
-    // Texto plano y percent-encoding típico de credential_offer_uri.
-    final replacements = <String, String>{
-      'http://quark-issuer:9001': public,
-      'https://quark-issuer:9001': public,
-      'http://127.0.0.1:9001': public,
-      'http://localhost:9001': public,
-      'http%3A%2F%2Fquark-issuer%3A9001': Uri.encodeComponent(public),
-      'https%3A%2F%2Fquark-issuer%3A9001': Uri.encodeComponent(public),
-      'http%3A%2F%2F127.0.0.1%3A9001': Uri.encodeComponent(public),
-      'http%3A%2F%2Flocalhost%3A9001': Uri.encodeComponent(public),
-    };
-    replacements.forEach((from, to) {
-      out = out.replaceAll(from, to);
-    });
+    return _rewriteHosts(
+      offerUri,
+      issuerPublicUrl,
+      const [
+        'quark-issuer:9001',
+        '127.0.0.1:9001',
+        'localhost:9001',
+      ],
+    );
+  }
+
+  /// Reescribe hosts Docker internos en un [requestUri] OID4VP.
+  static String normalizeRequestUri(String requestUri) {
+    return _rewriteHosts(
+      requestUri,
+      verifierPublicUrl,
+      const [
+        'quark-verifier:9002',
+        '127.0.0.1:9002',
+        'localhost:9002',
+      ],
+    );
+  }
+
+  static String _rewriteHosts(
+    String input,
+    String publicBase,
+    List<String> hosts,
+  ) {
+    final public = publicBase.replaceAll(RegExp(r'/$'), '');
+    var out = input;
+    for (final host in hosts) {
+      out = out.replaceAll('http://$host', public);
+      out = out.replaceAll('https://$host', public);
+      out = out.replaceAll(
+        Uri.encodeComponent('http://$host'),
+        Uri.encodeComponent(public),
+      );
+      out = out.replaceAll(
+        Uri.encodeComponent('https://$host'),
+        Uri.encodeComponent(public),
+      );
+    }
     return out;
   }
 }

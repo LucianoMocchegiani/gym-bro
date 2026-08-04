@@ -5,12 +5,21 @@ import {
   QuarkCreateIssuerResult,
   QuarkCreateOfferInput,
   QuarkCreateOfferResult,
+  QuarkCreatePresentationRequestInput,
+  QuarkCreatePresentationRequestResult,
+  QuarkCreateVerifierOid4vp,
   QuarkCreateVerifierResult,
   QuarkIssuerListItem,
   QuarkIssuerMetadataPatch,
   QuarkPatchIssuerMetadataResult,
+  QuarkVerificationSession,
   QuarkVerifierListItem,
 } from './quark-admin.port';
+import {
+  decodeVpTokenCredentials,
+  extractVpToken,
+  flattenPresentedClaims,
+} from './oid4vp-session-claims';
 
 /**
  * Error HTTP / red al hablar con Quark (no es error de dominio GymBro).
@@ -63,11 +72,16 @@ export class HttpQuarkAdminAdapter extends QuarkAdminPort {
    */
   async createVerifier(
     verifierId: string,
+    oid4vp?: QuarkCreateVerifierOid4vp,
   ): Promise<QuarkCreateVerifierResult> {
+    const body: Record<string, unknown> = { verifierId };
+    if (oid4vp) {
+      body.oid4vp = oid4vp;
+    }
     return this.postJson<QuarkCreateVerifierResult>(
       this.verifierBase(),
       '/v1/verifiers',
-      { verifierId },
+      body,
     );
   }
 
@@ -130,6 +144,26 @@ export class HttpQuarkAdminAdapter extends QuarkAdminPort {
   /**
    * @inheritdoc
    */
+  async listVerifierRecords(
+    verifierWalletId: string,
+    type: string,
+  ): Promise<{ total: number }> {
+    const data = await this.getJson<{
+      pagination?: { total?: number };
+      records?: unknown[];
+    }>(
+      this.verifierBase(),
+      `/v1/verifiers/${encodeURIComponent(verifierWalletId)}/records?type=${encodeURIComponent(type)}`,
+    );
+    const total =
+      data.pagination?.total ??
+      (Array.isArray(data.records) ? data.records.length : 0);
+    return { total };
+  }
+
+  /**
+   * @inheritdoc
+   */
   async createCredentialOffer(
     issuerWalletId: string,
     input: QuarkCreateOfferInput,
@@ -139,6 +173,57 @@ export class HttpQuarkAdminAdapter extends QuarkAdminPort {
       `/v1/issuers/${encodeURIComponent(issuerWalletId)}/openid4vc/offer`,
       input,
     );
+  }
+
+  /**
+   * @inheritdoc
+   */
+  async createPresentationRequest(
+    verifierWalletId: string,
+    input: QuarkCreatePresentationRequestInput,
+  ): Promise<QuarkCreatePresentationRequestResult> {
+    return this.postJson<QuarkCreatePresentationRequestResult>(
+      this.verifierBase(),
+      `/v1/verifiers/${encodeURIComponent(verifierWalletId)}/openid4vc/request`,
+      input,
+    );
+  }
+
+  /**
+   * @inheritdoc
+   *
+   * @remarks GET Quark crudo + decode SD-JWT de `vp_token` (Postman 02.7). Sin tocar Quark.
+   */
+  async getVerificationSession(
+    verifierWalletId: string,
+    verificationSessionId: string,
+  ): Promise<QuarkVerificationSession> {
+    const raw = await this.getJson<Record<string, unknown>>(
+      this.verifierBase(),
+      `/v1/verifiers/${encodeURIComponent(verifierWalletId)}/openid4vc/session/${encodeURIComponent(verificationSessionId)}`,
+    );
+    const id =
+      typeof raw.id === 'string' ? raw.id : verificationSessionId;
+    const state = typeof raw.state === 'string' ? raw.state : 'Unknown';
+    const vpToken = extractVpToken(raw);
+    if (vpToken === undefined) {
+      return { id, state, presented: false, claims: {} };
+    }
+    try {
+      const decoded = decodeVpTokenCredentials(vpToken);
+      return {
+        id,
+        state,
+        presented: true,
+        claims: flattenPresentedClaims(decoded),
+      };
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      this.logger.warn(
+        `OID4VP session ${verificationSessionId}: no se pudo decodificar vp_token (${msg})`,
+      );
+      return { id, state, presented: true, claims: {} };
+    }
   }
 
   private issuerBase(): string {

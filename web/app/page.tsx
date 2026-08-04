@@ -29,7 +29,7 @@ const SHORTCUTS: { href: string; label: string; hint: string }[] = [
   { href: '/reportes', label: 'Reportes', hint: 'Período e ingresos' },
   { href: '/afiliados', label: 'Afiliados', hint: 'Alta y ficha' },
   { href: '/caja', label: 'Caja', hint: 'Cobros y arqueo' },
-  { href: '/puerta', label: 'Puerta', hint: 'Verify e historial' },
+  { href: '/puerta', label: 'Puerta', hint: 'OID4VP e historial' },
   { href: '/sesiones', label: 'Sesiones', hint: 'Calendario puntual' },
   { href: '/servicios', label: 'Servicios', hint: 'Catálogo' },
   { href: '/packs', label: 'Packs', hint: 'Planes y créditos' },

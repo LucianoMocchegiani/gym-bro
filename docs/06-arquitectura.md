@@ -140,56 +140,57 @@ Pruebas manuales: colección Postman en [`postman/`](../postman/).
 
 ---
 
-## 6. Adapter de acceso (puerto + adaptadores)
+## 6. Adapter de acceso (OID4VP)
 
-### 6.1 Puerto (interfaz del core)
+### 6.1 Flujo OID4VP (implementado)
 
 ```text
-AccessIdentityProvider
-  resolvePresentation(input) → { tenantId, afiliadoId, credentialRef }
-  issueMembershipCredential(afiliado) → credentialRef
-  revokeCredential(credentialRef) → void
+Staff POST /access/oid4vp/request
+  → Quark verifier crea authorization request (DCQL pack VC + memberId/tenantId)
+  → QR = requestUri
+App afiliado escanea → OID4VP share
+Staff GET /access/oid4vp/session/:id (poll)
+  → Quark session cruda; si hay vp_token → decode SD-JWT (Postman 02.7) → memberId
+  → evaluateAndPersist → access_attempts
 ```
 
-### 6.2 Adaptador MVP (stub)
+Identidad = claim `memberId` de la VC de pack (`urn:gymbro:pack:{id}`). Sin stub de vínculo ni `stub-venue`. Claims se mapean en GymBro (no en Quark).
 
-- **Stub** (`ACCESS_PROVIDER=stub`): refs `stub:{uuid}`, venue `stub-venue:{tenantId}`; persistencia en `access_credentials`.
-- Check-in afiliado: `POST /me/access/check-in` `{ venueToken }` (modo B).
-- El stub **no** mete packs en la credencial (vínculo); la evaluación fina queda en dominio.
+### 6.2 Stubs retirados
 
-### 6.2b Adaptador Quark (diseño + spike provisioning)
+- Eliminados: `ACCESS_PROVIDER=stub`, `AccessIdentityProvider` stub, `POST /access/verify`, `POST /me/access/check-in`, endpoints `access-credentials`.
+- Tabla `access_credentials` queda legada (sin API).
 
-Diseño completo: [12-acceso-quark-oid4-diseno.md](./12-acceso-quark-oid4-diseno.md).
+### 6.2b Quark (OID4VCI + OID4VP)
+
+Diseño: [12-acceso-quark-oid4-diseno.md](./12-acceso-quark-oid4-diseno.md).
 
 **Implementado:**
 - Compose: `quark-issuer` (:9001) + `quark-verifier` (:9002); DBs `quarkid_*` en Postgres; **sin** RabbitMQ/VDR.
-- Al `POST /api/tenants`: crea `gymbro-iss-{slug}` / `gymbro-ver-{slug}` con `oid4vc` mínimo (soft-fail → `quark_status=MISSING` + `quark_last_error`).
+- Al `POST /api/tenants`: crea `gymbro-iss-{slug}` / `gymbro-ver-{slug}` con `oid4vc` / `oid4vp` mínimo (soft-fail → `quark_status=MISSING` + `quark_last_error`).
 - Reintento Super: `POST /api/tenants/:id/quark/provision` + UI en detalle de tenant.
 - Create/update pack → `PATCH …/records/metadata` (`pack_{id}` / `urn:gymbro:pack:{id}`; soft-fail en `packs.quark_*`).
 - Pack APPROVED → `POST …/openid4vc/offer` + `credential_offers` slim + `GET /me/credential-offers` (soft-fail). Re-oferta: re-POST contrato misma `idempotencyKey`.
-- App afiliado: 3 hubs (Inicio / Acceso / Ajustes); Acceso = scan OID4VCI/VP + Credenciales + offers; issuer tunnel `issuer.pruebasaproduccunon.uno`. Stub solo en web puerta.
+- App afiliado: 3 hubs (Inicio / Acceso / Ajustes); Acceso = scan OID4VCI/VP + Credenciales + offers; tunnels `issuer.` / `verifier.pruebasaproduccunon.uno`.
+- Puerta Admin `/puerta`: QR OID4VP + poll sesión.
 - Clon local en `ssi-quark/` (gitignore).
-
-**Pendiente:** OID4VP en puerta, adapter `AccessIdentityProvider` Quark.
 
 ### 6.3 Evaluación de ingreso (dominio puro)
 
 ```text
-resolvePresentation
+memberId (desde VC OID4VP o pase manual)
   → load Afiliado + Contrataciones + Reservas + Config
   → decide Allow/Deny + reasonCode
   → persist IntentoIngreso (access_attempts)
   → maybe mark asistencia sesión (reservations.checked_in_at)
 ```
 
-Cambiar a Quark = nuevo adaptador; **misma** evaluación de negocio (más claims tipados).
-
-Implementado en API: `POST /access/verify` (Staff) y `POST /me/access/check-in` (Member). Deuda real pendiente (hoy `overdueDays=0`).
+Implementado: `POST /access/oid4vp/request` + `GET /access/oid4vp/session/:id` (Staff) y pase manual. Deuda real pendiente (hoy `overdueDays=0`).
 
 ### 6.4 Modos de escaneo
 
-- Contrato de API: `POST /access/verify` con `mode=gym_scans_member | member_scans_gym` + payload; check-in member vía `/me/access/check-in`.
-- UI demo: `/puerta` + escaneo en app Flutter.
+- MVP UI: solo **modo B** (afiliado escanea QR de puerta = `requestUri` OID4VP).
+- Admin: `/puerta`. App: hub Acceso → Escanear.
 
 ---
 
@@ -296,7 +297,7 @@ Prefijo sugerido: `/api/v1`.
 | Catálogo | `/services`, `/packs`, `/sessions`, `/recurrence-rules` |
 | Reservas | `/sessions/:id/reservations`, waitlist |
 | Billing | `/payments/mp/checkout`, `/payments/cash`, webhooks `/webhooks/mercadopago` |
-| Access | `/access/verify`, `/access/manual-pass` |
+| Access | `/access/oid4vp/request`, `/access/oid4vp/session/:id`, `/access-attempts`, manual-pass |
 | Rutinas | `/exercises`, `/routine-templates`, `/assigned-routines` |
 | Notif | `/notifications`, `/notification-templates`, preferences |
 | Afiliados | Super/Staff CRUD members + PATCH status (`members.deactivate`); estado de cuenta `GET /members/:id/account` / `GET /me/account?coverage=current\|all` |
@@ -334,7 +335,7 @@ Todas las rutas de tenant validan membership/permiso + `tenant_id` del token.
 
 - HTTPS everywhere.
 - Secretos MP/SSI en vault/env por tenant cifrados en reposo.
-- Rate limit en `/access/verify` y login.
+- Rate limit en `/access/oid4vp/*` y login.
 - Soft delete / flags peligrosos para borrados.
 - No loguear tokens ni cuerpos de credenciales SSI.
 
@@ -368,7 +369,7 @@ Stack principal cerrado en §0. Queda por cerrar al scaffold:
 
 Ver [99-backlog-post-mvp.md](./99-backlog-post-mvp.md). Impacto arquitectónico ya previsto:
 
-- Nuevos `AccessIdentityProvider`.
+- Credenciales pack vía OID4VCI/OID4VP (Quark).
 - Nuevos `ChannelSender`.
 - Módulo `shop` aislado.
 - Feature flags por plan.
