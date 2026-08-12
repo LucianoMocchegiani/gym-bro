@@ -40,15 +40,15 @@
 
 **Actor:** Afiliado
 
-**Precondiciones:** Contratación que otorga ACCESO_LIBRE vigente; no se exige reserva.
+**Precondiciones:** Contratación que otorga ACCESO_LIBRE vigente **o** vencida dentro de `debtToleranceDays` (RN-ACC-005); no se exige reserva.
 
 **Flujo principal:**
 1. Ejecuta CU-ACC-001.
-2. La evaluación de derechos usa componente libre de la contratación (pack simple o mixto).
+2. La evaluación de derechos usa componente libre de la contratación (pack simple o mixto), o gracia `ok_deuda_tolerancia` si el pack libre ya venció y el atraso ≤ tolerancia.
 
-**Errores:** Solo packs por sesiones sin libre → deny `sin_acceso_libre` (salvo que tenga sesión reservada).
+**Errores:** Solo packs por sesiones sin libre → deny `sin_derecho` (salvo que tenga sesión reservada). Atraso > tolerancia → `deuda_excedida`.
 
-**Reglas relacionadas:** RN-SER-002, RN-ACC-004
+**Reglas relacionadas:** RN-SER-002, RN-ACC-004, RN-ACC-005
 
 ---
 

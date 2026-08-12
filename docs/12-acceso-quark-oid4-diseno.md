@@ -106,7 +106,8 @@ La **evaluación fina** (deuda real, cupo sesión, reingreso) puede seguir en Gy
    - **App nav:** Inicio · Acceso (Escanear default; Credenciales = pendientes de aceptación + VCs) · Ajustes. Sin stub en mobile.  
 4. **[x] Puerta OID4VP** vía verifier del gym (`POST /access/oid4vp/request` + poll session → `memberId` → evaluate). Stubs retirados.  
 5. Push remoto de offers (E8).  
-6. Afinar tolerancia/reingreso en evaluate GymBro.  
+6. **[x] Tolerancia en evaluate** (atraso desde `endsAt` libre + `ok_deuda_tolerancia` / `deuda_excedida`). Reingreso/ventana sesión configurable: pendiente.  
+   - Renovación MONTHLY alineada: +1 día tras `endsAt` si usó tolerancia o renueva a tiempo; día de pago si no hubo ingresos en el hueco.  
 
 Hasta (4) inclusive el stub quedó fuera de producción.
 
@@ -125,7 +126,7 @@ Hasta (4) inclusive el stub quedó fuera de producción.
 
 - `vct` / `configurationId`: **cerrado** — `pack_{packId}` y `urn:gymbro:pack:{packId}`.  
 - ¿Drop-in comparte configuration genérica o tipo propio?  
-- Tolerancia: claim `graceUntil` vs segunda VC.  
+- Tolerancia en puerta: **cerrado** en GymBro (días desde `endsAt`); claim `graceUntil` / segunda VC sigue opcional.  
 - Hosting Quark (issuer/verifier) en el mismo compose vs servicios externos del trabajo.
 
 **Nota ops:** issuers creados en el spike **sin** body `oid4vc` no tienen `OpenId4VcIssuerRecord`; el PATCH de pack falla (soft-fail). Provision nuevo crea issuer con `oid4vc` mínimo; tenants READY viejos pueden necesitar recrear el issuer.  

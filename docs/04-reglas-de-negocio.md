@@ -49,7 +49,7 @@ Formato: **RN-MODULO-NNN** — enunciado — excepciones.
 
 | ID | Regla |
 |----|--------|
-| RN-CON-001 | Pack **MONTHLY**: un afiliado tiene **un solo plan mensual** vigente a la vez. Renovar el **mismo** pack apila vigencia (nuevo `startsAt` = `endsAt` del tramo ACTIVE vigente; no se pisan). Otro pack MONTHLY distinto mientras haya uno vigente → rechazado; extras vía pack **ONE_TIME**. |
+| RN-CON-001 | Pack **MONTHLY**: un afiliado tiene **un solo plan mensual** vigente a la vez. Renovar el **mismo** pack: si el tramo previo aún no venció, o venció pero el afiliado **ingresó** en tolerancia, el nuevo `startsAt` es el **día calendario siguiente** al `endsAt` anterior; si venció **sin** ingresos en el hueco, `startsAt` = día de pago. Otro pack MONTHLY distinto mientras haya uno vigente → rechazado; extras vía pack **ONE_TIME**. |
 | RN-CON-002 | Pack **MONTHLY**: libre y créditos del contrato comparten el mismo periodo (`startsAt` → `endsAt` = +1 mes). No se customiza duración por componente. |
 | RN-CON-003 | Pack **ONE_TIME**: puede solapar con el plan mensual y con otros únicos. Default `endsAt` = `startsAt` + 1 mes; si el pack define `creditsExpireAt` futuro, se usa esa fecha. Créditos heredan ese `endsAt`. |
 | RN-CON-004 | Al contratar, staff puede enviar fechas opcionales: **MONTHLY** solo `startsAt` (`endsAt` = +1 mes; 400 si solapa otro ACTIVE del mismo pack). **ONE_TIME** `startsAt` y/o `endsAt` (pueden solapar; `endsAt` > `startsAt`). Sin fechas → RN-CON-001–003. |
@@ -97,7 +97,7 @@ Formato: **RN-MODULO-NNN** — enunciado — excepciones.
 | RN-ACC-002 | La credencial SSI de MVP es de **vínculo** afiliado↔gym; los derechos (packs, deuda, sesión) los evalúa GymBro. |
 | RN-ACC-003 | El diseño contempla escaneo gym→afiliado y afiliado→QR del local; el MVP implementa al menos uno. |
 | RN-ACC-004 | Para acceso libre se validan contrataciones vigentes que otorguen ese derecho y la política de deuda/tolerancia. |
-| RN-ACC-005 | Con atraso ≤ tolerancia → ingreso permitido (si el resto de reglas OK). Con atraso > tolerancia → denegado, salvo pase manual. |
+| RN-ACC-005 | Atraso = días calendario desde el `endsAt` del último contrato libre ACTIVE. Con atraso ≤ tolerancia → ingreso permitido (`ok_deuda_tolerancia` si el pack ya venció; RN-ACC-004). Con atraso > tolerancia → denegado (`deuda_excedida`), salvo pase manual. La tolerancia no define el `startsAt` de renovación (ver RN-CON-001). |
 | RN-ACC-006 | Staff con permiso puede otorgar **pase manual** (queda auditado). |
 | RN-ACC-007 | Todo intento (ok/deny) se registra con **motivo**. |
 | RN-ACC-008 | Offline en puerta es post-MVP; MVP asume conectividad. |

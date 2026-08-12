@@ -25,6 +25,8 @@ export type AccessCredentialDetail = {
 export const ACCESS_REASON = {
   okAccesoLibre: 'ok_acceso_libre',
   okReserva: 'ok_reserva',
+  /** Pack libre vencido pero dentro de `debtToleranceDays` (RN-ACC-005). */
+  okDeudaTolerancia: 'ok_deuda_tolerancia',
   credencialInvalida: 'credencial_invalida',
   tenantMismatch: 'tenant_mismatch',
   tenantSuspendido: 'tenant_suspendido',

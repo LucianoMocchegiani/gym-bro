@@ -36,7 +36,7 @@
 | Molinetes / hardware de terceros | |
 | Biometría (candado app / puerta) | Wallet: biometría opcional para desbloquear secreto local (ver diseño Quark) |
 | Anti-fraude avanzado (préstamo de QR) | |
-| Adapter Quark OID4 (issuer/verifier, VC pack, offers, OID4VP puerta) | Compose + provision + packs + offers + **OID4VP puerta** hechos. Pendiente: push remoto offers (E8), tolerancia/reingreso. Diseño: [12-acceso-quark-oid4-diseno.md](./12-acceso-quark-oid4-diseno.md) |
+| Adapter Quark OID4 (issuer/verifier, VC pack, offers, OID4VP puerta) | Compose + provision + packs + offers + **OID4VP puerta** + tolerancia evaluate hechos. Pendiente: push remoto offers (E8), reingreso/ventana. Diseño: [12-acceso-quark-oid4-diseno.md](./12-acceso-quark-oid4-diseno.md) |
 | Segundo modo de escaneo (gym escanea afiliado) | UI demo hoy: afiliado escanea venue (`/puerta`) |
 
 ---

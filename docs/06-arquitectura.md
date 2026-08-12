@@ -186,7 +186,7 @@ memberId (desde VC OID4VP o pase manual)
   → maybe mark asistencia sesión (reservations.checked_in_at)
 ```
 
-Implementado: `POST /access/oid4vp/request` + `GET /access/oid4vp/session/:id` (Staff) y pase manual. Deuda real pendiente (hoy `overdueDays=0`).
+Implementado: `POST /access/oid4vp/request` + `GET /access/oid4vp/session/:id` (Staff) y pase manual. Deuda = días calendario (BA) desde `endsAt` del último contrato libre; tolerancia vía `debtToleranceDays` (`ok_deuda_tolerancia` / `deuda_excedida`).
 
 ### 6.4 Modos de escaneo
 

@@ -44,7 +44,8 @@ type CoverageHit = {
  * Evaluación de derechos de ingreso y pase manual (CU-ACC-001..004 / RN-ACC-004..009).
  *
  * @remarks Identidad OID4VP llega desde `AccessOid4VpService` (claim `memberId`).
- * Deuda real aún no modelada: `overdueDays = 0`.
+ * Deuda = días calendario (BA) desde `endsAt` del último contrato libre ACTIVE;
+ * si `0 ≤ overdue ≤ debtToleranceDays` permite ingreso aunque el pack ya venció.
  * Pases manuales no cuentan para el tope de multi-ingreso.
  */
 @Injectable()
@@ -284,8 +285,25 @@ export class AccessVerifyService {
       });
     }
 
-    const coverage = await this.resolveCoverage(tenantId, memberId);
+    const settings = await this.tenantSettings.get(tenantId);
+    const overdueDays = await this.resolveOverdueDays(tenantId, memberId);
+    const coverage = await this.resolveCoverage(
+      tenantId,
+      memberId,
+      overdueDays,
+      settings.debtToleranceDays,
+    );
     if (!coverage) {
+      if (overdueDays > settings.debtToleranceDays) {
+        return this.persistDenied({
+          tenantId,
+          memberId,
+          credentialRef,
+          scanMode,
+          actorStaffId,
+          reasonCode: ACCESS_REASON.deudaExcedida,
+        });
+      }
       return this.persistDenied({
         tenantId,
         memberId,
@@ -296,8 +314,6 @@ export class AccessVerifyService {
       });
     }
 
-    const settings = await this.tenantSettings.get(tenantId);
-    const overdueDays = await this.resolveOverdueDays(tenantId, memberId);
     if (overdueDays > settings.debtToleranceDays) {
       return this.persistDenied({
         tenantId,
@@ -337,11 +353,14 @@ export class AccessVerifyService {
   }
 
   /**
-   * Derechos: reserva elegible en ventana o contrato ACCESO_LIBRE vigente.
+   * Derechos: reserva en ventana, contrato ACCESO_LIBRE vigente, o gracia por deuda
+   * (RN-ACC-004 / RN-ACC-005).
    */
   private async resolveCoverage(
     tenantId: string,
     memberId: string,
+    overdueDays: number,
+    debtToleranceDays: number,
   ): Promise<CoverageHit | null> {
     const now = new Date();
     const earlyMs = SESSION_EARLY_MINUTES * 60 * 1000;
@@ -391,17 +410,75 @@ export class AccessVerifyService {
       };
     }
 
+    if (overdueDays >= 0 && overdueDays <= debtToleranceDays) {
+      const expiredLibre = await this.findLatestLibreContract(tenantId, memberId);
+      if (
+        expiredLibre?.endsAt &&
+        expiredLibre.endsAt < now &&
+        expiredLibre.startsAt <= now
+      ) {
+        return {
+          reasonCode: ACCESS_REASON.okDeudaTolerancia,
+          reservationId: null,
+          sessionId: null,
+        };
+      }
+    }
+
     return null;
   }
 
   /**
-   * Días de atraso de deuda. Placeholder: siempre 0 hasta modelo de deuda.
+   * Días de atraso desde el `endsAt` del último contrato libre ACTIVE (RN-ACC-005).
+   *
+   * @returns `0` si no hay contrato, vigencia abierta, o aún no venció.
    */
   private async resolveOverdueDays(
-    _tenantId: string,
-    _memberId: string,
+    tenantId: string,
+    memberId: string,
   ): Promise<number> {
-    return 0;
+    const latest = await this.findLatestLibreContract(tenantId, memberId);
+    if (!latest?.endsAt) {
+      return 0;
+    }
+    const now = new Date();
+    if (latest.endsAt >= now) {
+      return 0;
+    }
+    return this.calendarDaysBetween(latest.endsAt, now);
+  }
+
+  private async findLatestLibreContract(
+    tenantId: string,
+    memberId: string,
+  ): Promise<{ startsAt: Date; endsAt: Date | null } | null> {
+    return this.prisma.contract.findFirst({
+      where: {
+        tenantId,
+        memberId,
+        status: ContractStatus.ACTIVE,
+        hasAccessLibre: true,
+      },
+      orderBy: [{ endsAt: 'desc' }, { startsAt: 'desc' }],
+      select: { startsAt: true, endsAt: true },
+    });
+  }
+
+  /**
+   * Días calendario entre dos instantes en timezone BA (mismo día → 0).
+   */
+  private calendarDaysBetween(from: Date, to: Date): number {
+    const formatter = new Intl.DateTimeFormat('en-CA', {
+      timeZone: ACCESS_TIMEZONE,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    });
+    const fromYmd = formatter.format(from);
+    const toYmd = formatter.format(to);
+    const fromUtc = Date.parse(`${fromYmd}T00:00:00.000Z`);
+    const toUtc = Date.parse(`${toYmd}T00:00:00.000Z`);
+    return Math.max(0, Math.round((toUtc - fromUtc) / (24 * 60 * 60 * 1000)));
   }
 
   private async countAllowedToday(

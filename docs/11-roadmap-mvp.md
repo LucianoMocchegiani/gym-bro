@@ -80,7 +80,7 @@
 - [x] Componentes de pack + créditos por servicio
 - [x] Política de vencimiento de créditos por pack
 - [x] Contratación tras pago aprobado
-  - vigencias RN-CON: MONTHLY apila mismo pack (un plan); ONE_TIME solapa (default +1 mes); fechas opcionales en alta (RN-CON-004)
+  - vigencias RN-CON: MONTHLY un plan; renovación +1 día tras `endsAt` (o día de pago si hueco sin uso de tolerancia); ONE_TIME solapa; fechas opcionales (RN-CON-004)
 - [x] Cancelación pack mixto (pierde todo)
 
 ---
@@ -145,7 +145,8 @@
   - Staff `POST /access/oid4vp/request` + `GET /access/oid4vp/session/:id`; identidad = claim `memberId`
   - Stubs retirados (`ACCESS_PROVIDER`, `access-credentials`, `/access/verify`, `/me/access/check-in`, `stub-venue`)
 - [x] Evaluación: libre / reserva / deuda / tolerancia / multi-ingreso
-  - deuda placeholder 0 días; settings `debtToleranceDays`, `multiEntry*`
+  - deuda = días desde `endsAt` del último libre; gracia `ok_deuda_tolerancia`; settings `debtToleranceDays`, `multiEntry*`
+  - renovación MONTHLY: +1 día tras `endsAt` si vigente o usó tolerancia; si no, día de pago
 - [x] Pase manual + auditoría
   - `POST /members/:id/access/manual-pass` (`access.manual_pass`); no cuenta para multi-ingreso
 - [x] Historial de ingresos con motivo
@@ -266,7 +267,7 @@ E11 → E12
 
 ## Próximo paso
 
-Listados API/Admin estandarizados (`ListResult` + `q`/`orderBy`/`order`). Siguiente: E9 / E8 / rutinas E7, o afinar OID4VP (tolerancia/reingreso), según [12-acceso-quark-oid4-diseno.md](./12-acceso-quark-oid4-diseno.md).
+Listados API/Admin estandarizados (`ListResult` + `q`/`orderBy`/`order`). Deuda/tolerancia en puerta y `startsAt` de renovación MONTHLY cerrados. Siguiente: E9 / E8 / rutinas E7, o reingreso/ventana configurable según [12-acceso-quark-oid4-diseno.md](./12-acceso-quark-oid4-diseno.md).
 
 ---
 

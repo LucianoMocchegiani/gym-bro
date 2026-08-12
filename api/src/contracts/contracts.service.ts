@@ -4,6 +4,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import {
+  AccessAttemptResult,
   BillingPeriod,
   CashMovementConcept,
   Contract,
@@ -80,7 +81,8 @@ type ContractPlan = {
  * @remarks CU-CON-001 / CU-CON-002 / RN-PAG-004 / RN-SER-009 / RN-CON-001–003.
  * Pago CASH registra movimiento de caja (RN-PAG-007). Comprobante interno
  * RN-PAG-009. MP confirma vía webhook con {@link confirmFromApprovedPayment}.
- * Vigencias: MONTHLY apila por pack (un plan); ONE_TIME puede solapar.
+ * Vigencias: MONTHLY apila por pack (día siguiente a `endsAt` si renueva a
+ * tiempo o usó tolerancia en puerta; si no, día de pago). ONE_TIME puede solapar.
  */
 @Injectable()
 export class ContractsService {
@@ -515,8 +517,11 @@ export class ContractsService {
   /**
    * Calcula vigencia del contrato según billing del pack (RN-CON-001–004).
    *
-   * @remarks MONTHLY: un solo plan por afiliado; sin override apila desde max
-   * `endsAt`; con `startsAt` manual → +1 mes y 400 si solapa el mismo pack.
+   * @remarks MONTHLY: un solo plan por afiliado; sin override apila desde el
+   * último contrato del mismo pack (incl. vencidos): día calendario siguiente
+   * a `endsAt` si aún vigente o si hubo ingreso ALLOWED tras el vencimiento
+   * (usó tolerancia); si el hueco no tuvo ingresos → `startsAt = now`.
+   * Con `startsAt` manual → +1 mes y 400 si solapa el mismo pack.
    * ONE_TIME: puede solapar; defaults +1 mes / `creditsExpireAt`; override
    * `startsAt` y/o `endsAt`. Créditos heredan `endsAt`.
    * @throws {BadRequestException} Otro pack MONTHLY vigente, solape MONTHLY,
@@ -613,17 +618,12 @@ export class ContractsService {
         };
       }
 
-      const samePack = monthlyLive.filter((c) => c.packId === pack.id);
-      startsAt = now;
-      if (samePack.length > 0) {
-        const maxEnd = samePack.reduce((acc, c) => {
-          if (!c.endsAt) {
-            return acc;
-          }
-          return c.endsAt > acc ? c.endsAt : acc;
-        }, samePack[0].endsAt ?? now);
-        startsAt = maxEnd > now ? maxEnd : now;
-      }
+      startsAt = await this.resolveMonthlyRenewalStartsAt(
+        tenantId,
+        memberId,
+        pack.id,
+        now,
+      );
 
       const endsAt = this.addOneMonth(startsAt);
       return {
@@ -728,6 +728,58 @@ export class ContractsService {
       },
       include: this.contractInclude(),
     });
+  }
+
+  /**
+   * `startsAt` de renovación MONTHLY sin override.
+   *
+   * @remarks Encadena al día siguiente del `endsAt` previo si el pack sigue
+   * vigente o si el afiliado ingresó (ALLOWED) después del vencimiento.
+   * Si venció sin ingresos en el hueco → día de pago (`now`).
+   */
+  private async resolveMonthlyRenewalStartsAt(
+    tenantId: string,
+    memberId: string,
+    packId: string,
+    now: Date,
+  ): Promise<Date> {
+    const lastSamePack = await this.prisma.contract.findFirst({
+      where: {
+        tenantId,
+        memberId,
+        packId,
+        status: ContractStatus.ACTIVE,
+        endsAt: { not: null },
+      },
+      orderBy: { endsAt: 'desc' },
+      select: { endsAt: true },
+    });
+    if (!lastSamePack?.endsAt) {
+      return now;
+    }
+
+    const prevEnd = lastSamePack.endsAt;
+    if (prevEnd > now) {
+      return this.dayAfter(prevEnd);
+    }
+
+    const usedTolerance = await this.prisma.accessAttempt.findFirst({
+      where: {
+        tenantId,
+        memberId,
+        result: AccessAttemptResult.ALLOWED,
+        createdAt: { gt: prevEnd },
+      },
+      select: { id: true },
+    });
+    return usedTolerance ? this.dayAfter(prevEnd) : now;
+  }
+
+  /** Día calendario siguiente al instante dado (misma hora local). */
+  private dayAfter(from: Date): Date {
+    const next = new Date(from);
+    next.setDate(next.getDate() + 1);
+    return next;
   }
 
   /** Suma un mes calendario a [from] (misma heurística que antes). */

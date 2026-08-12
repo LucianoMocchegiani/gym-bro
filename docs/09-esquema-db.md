@@ -729,7 +729,7 @@ Contratación tras pago aprobado (CU-CON-001).
 | `tenant_id` / `member_id` / `pack_id` | uuid FK | |
 | `payment_id` | uuid FK UK | 1:1 con payment |
 | `status` | `ContractStatus` | |
-| `starts_at` / `ends_at` | timestamptz | MONTHLY → +1 mes (apila mismo pack); ONE_TIME → `creditsExpireAt` futuro o +1 mes |
+| `starts_at` / `ends_at` | timestamptz | MONTHLY → +1 mes; renovación: día siguiente a `endsAt` (o día de pago si hueco sin ingresos); ONE_TIME → `creditsExpireAt` futuro o +1 mes |
 | `has_access_libre` | boolean | |
 
 ### 4.17 `contract_credit_balances`
@@ -922,7 +922,7 @@ Detalle: [13-setup-db-desde-cero.md](./13-setup-db-desde-cero.md) · [credencial
 
 ## 7. Pendiente de modelar (dominio → DB)
 
-Aún no hay tablas Prisma para (ver [03](./03-modelo-dominio.md) / roadmap): **deuda real**, **rutinas**, **notificaciones**, config Quark/SSI, etc. Se documentan aquí **al implementarlas**.
+Aún no hay tablas Prisma para (ver [03](./03-modelo-dominio.md) / roadmap): **ledger de deuda de pagos**, **rutinas**, **notificaciones**, etc. La tolerancia de acceso usa atraso desde `endsAt` del contrato libre (sin tabla aparte). Se documentan aquí **al implementarlas**.
 
 **Staff ↔ roles:** tabla `staff_user_roles`. API: Super `PUT /tenants/:tenantId/staff/:staffId/roles`, Staff `PUT /staff/:staffId/roles`. Create tenant exige owner y le asigna rol Admin.
 

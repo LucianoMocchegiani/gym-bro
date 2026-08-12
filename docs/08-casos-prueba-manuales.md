@@ -73,13 +73,16 @@ Leyenda resultado: `P` pass · `F` fail · `B` bloqueado · `-` no aplica
 
 | # | Caso | Esperado | RN/CU | R |
 |---|------|----------|-------|---|
-| X1 | Deuda 10 días / tolerancia 15 | Permitido | RN-ACC-005 | |
-| X2 | Deuda 16 días | Denegado | RN-ACC-005 | |
+| X1 | Deuda 10 días / tolerancia 15 | Permitido (`ok_deuda_tolerancia`) | RN-ACC-005 | |
+| X2 | Deuda 16 días | Denegado (`deuda_excedida`) | RN-ACC-005 | |
 | X3 | Pase manual con deuda | Permitido + auditoría | CU-ACC-004 | |
 | X4 | Multi-ingreso deshabilitado | Segundo ingreso deny | RN-ACC-009 | |
 | X5 | Credencial revocada | Deny | CU-AFI-003/006 | |
 | X6 | Historial muestra motivos | Lista ok/deny | CU-ACC-005 | |
 | X7 | Ingreso tardío si política ON | Paga/crédito + entra | CU-RES-006 | |
+| X8 | Renovar MONTHLY a tiempo | `startsAt` = día después de `endsAt` previo | RN-CON-001 | |
+| X9 | Renovar tras hueco sin ingresos | `startsAt` ≈ día de pago | RN-CON-001 | |
+| X10 | Renovar tras usar tolerancia | `startsAt` = día después de `endsAt` previo | RN-CON-001 | |
 
 ---
 

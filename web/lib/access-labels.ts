@@ -4,6 +4,7 @@
 const REASON_LABELS: Record<string, string> = {
   ok_acceso_libre: 'Permitido — acceso libre',
   ok_reserva: 'Permitido — reserva',
+  ok_deuda_tolerancia: 'Permitido — deuda dentro de tolerancia',
   ok_pase_manual: 'Permitido — pase manual',
   credencial_invalida: 'Credencial inválida o revocada',
   tenant_mismatch: 'Credencial de otro gym',
