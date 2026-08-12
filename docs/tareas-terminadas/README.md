@@ -16,6 +16,7 @@ La creación de registros sigue la skill:
 
 ## Índice
 
+- [2026-08-12 — Deuda / tolerancia + startsAt de renovación](./2026-08-12-deuda-tolerancia-renovacion-startsAt.md)
 - [2026-08-04 — Listados paginados (ListResult + q/orderBy/order)](./2026-08-04-listados-paginados-listresult.md)
 - [2026-08-03 — Reiniciar wallet, borrar VC y diálogos confirm/loading](./2026-08-03-mobile-wallet-reset-delete-dialogs.md)
 - [2026-08-03 — Puerta OID4VP + seed verifier con oid4vp](./2026-08-03-puerta-oid4vp-seed-verifier.md)
