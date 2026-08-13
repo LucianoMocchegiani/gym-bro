@@ -4,7 +4,7 @@ Next.js App Router — panel staff y Super Admin.
 
 ## Rutas Staff (tenant por subdominio)
 
-Entrar por **`http://{slug}.localhost:3000`** (demo: `http://demo.localhost:3000`).
+Entrar por **`http://{slug}.localhost:3002`** (demo: `http://demo.localhost:3002`).
 
 Con tunnel: `{slug}.{NEXT_PUBLIC_APP_DOMAIN}` (ej. `https://demo.pruebasaproduccunon.uno`).
 
@@ -19,12 +19,13 @@ Con tunnel: `{slug}.{NEXT_PUBLIC_APP_DOMAIN}` (ej. `https://demo.pruebasaproducc
 | `/roles` / `/staff` | Roles y staff |
 | `/config` | Settings + Mercado Pago |
 | `/caja` | Caja del día |
+| `/devoluciones` | Cola de solicitudes + ejecutar reembolso (`payments.refund`) |
 | `/reportes` | Ingresos del período (detalle nominado) + snapshot packs/activos |
 | `/puerta` | QR del local (afiliado escanea) + verify token + historial |
 
 ## Rutas Super (apex)
 
-**`http://localhost:3000/super/...`** (sin slug de gym).
+**`http://localhost:3002/super/...`** (sin slug de gym).
 
 | Ruta | Uso |
 |------|-----|

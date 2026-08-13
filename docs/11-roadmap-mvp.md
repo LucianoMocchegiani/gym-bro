@@ -27,8 +27,8 @@
 | E6 | Acceso QR / SSI | Credencial vínculo + verify |
 | E7 | Rutinas | Catálogo gym + asignación + cumplimiento |
 | E8 | Notificaciones N1 | Email + in-app |
-| E9 | App afiliado | Flutter: cuenta, reservar, QR, rutinas |
-| E10 | Admin web | Next: operación diaria del gym |
+| E9 | App afiliado | Flutter: cuenta + SSI hechos; falta tienda/reservas/waitlist/devolución (+ API member packs/sesiones) |
+| E10 | Admin web | Next: núcleo operativo + devoluciones; faltan thin gaps (roster, recurrencia, etc.) |
 | E11 | Reportes mínimos | Activos, deuda, ingresos |
 | E12 | Cierre MVP | Smoke QA, hardenin, deploy |
 
@@ -138,6 +138,7 @@
 ## E6 — Acceso QR / SSI
 
 - [x] Spike Quark Compose: issuer+verifier + provision al crear tenant (soft-fail + `POST …/quark/provision`)
+  - **Superseded:** Kuatia compartido — Compose sin quark local; provision = bind `KUATIA_*_WALLET_ID`
 - [x] Pack → `credentialConfigurationsSupported` en issuer Quark (soft-fail + `packs.quark_*`)
 - [x] Offer OID4VCI al pack APPROVED + `credential_offers` + `GET /me/credential-offers` (re-oferta = re-POST contrato misma key)
 - [x] Bandeja Flutter “Aceptar” + `identity_core_dart` + `ACCEPTED` / `FAILED` en API (`POST …/accept` | `…/fail`)
@@ -187,43 +188,121 @@
 
 ## E9 — App afiliado (Flutter)
 
+**Estado real (2026-08-13):** auth + cuenta + wallet SSI OK. Tienda/calendario/waitlist/devolución pendientes.  
+**Bloqueo API:** hoy `GET /packs` y `GET /sessions` exigen permisos staff; hace falta lectura member (o endpoint `/me/...`) antes de cerrar Tienda/Calendario.  
+Detalle: [14-auditoria-roadmap-vs-codigo-2026-08-13.md](./14-auditoria-roadmap-vs-codigo-2026-08-13.md).
+
+### Hecho
+
 - [x] Login afiliado
-  - Flutter: slug + email/password; API `tenantSlug` (o `tenantId`); sesión secure storage
+  - Flutter: slug + email/password; API `tenantSlug` (o `tenantId`); sesión secure storage + refresh
 - [x] Home / estado de cuenta
-  - `GET /me/account`; bottom nav Inicio · Sesiones · QR · Cuenta; tema claro/oscuro (tokens Admin)
-- [ ] Comprar pack / pagar
-- [ ] Calendario y reservar
-- [ ] Lista de espera
+  - `GET /me/account?coverage=current`; packs vigentes, créditos, deuda, próximas reservas (lectura)
+  - Nav real: **Inicio · Acceso · Ajustes** (tema claro/oscuro)
 - [x] Acceso + Credenciales (SSI)
-  - Nav 3 hubs: Inicio · Acceso (Escanear OID4VCI/VP + Credenciales) · Ajustes
-  - Puerta web `/puerta` = QR OID4VP (sin stub)
-- [ ] Rutinas y cumplimiento
-- [ ] Avisos + preferencias
+  - Escanear OID4VCI/VP + bandeja offers (`accept`/`fail`) + `identity_core_dart`
+  - Kuatia: defaults `issuer.kuatia.xyz` / `verifier.kuatia.xyz` (`KUATIA_*_PUBLIC_URL`)
+  - Puerta Admin `/puerta` = QR OID4VP (modo B)
+
+### Pendiente — prerequisito API
+
+- [ ] Lectura member de catálogo/calendario
+  - `GET` packs activos comprables (sin `catalog.write`)
+  - `GET` sesiones publicadas en ventana de fechas (sin `sessions.write`)
+  - Postman + docs al agregar endpoints
+
+### Pendiente — app (API member ya cubre gran parte)
+
+- [ ] Comprar pack / pagar (Tienda)
+  - Reemplazar `StorePlaceholderScreen`
+  - Listar packs → `POST /me/payments/mp/checkout` → abrir Preference (`url_launcher`)
+  - Parsear `recentPayments` del account (hoy la API los manda; Flutter no)
+- [ ] Calendario y reservar
+  - Reemplazar `SessionsPlaceholderScreen`
+  - Listar sesiones → `POST /me/reservations` (crédito) → cancel `PATCH …/status`
+  - Extender `ApiClient` con PATCH
+- [ ] Lista de espera
+  - Join/leave (`POST/GET/PATCH /me/waitlist`) desde sesión llena
 - [ ] Solicitar devolución
+  - `POST /me/payments/:id/refund-requests` + listado solicitudes
+  - UI desde pagos recientes / cuenta
+- [ ] Drop-in (opcional en mismo corte tienda/sesiones)
+  - `POST /me/payments/mp/drop-in-checkout` con `sessionId`
+
+### Pendiente — depende de otras épicas
+
+- [ ] Rutinas y cumplimiento → **E7** (sin API)
+- [ ] Avisos + preferencias → **E8** (sin API)
+
+### Notas
+
+- Placeholders actuales: `features/store/`, `features/sessions/`.
+- README mobile: actualizar tunnels Quark → Kuatia cuando se toque la épica.
 
 ---
 
 ## E10 — Admin web (Next.js)
 
+**Estado real (2026-08-13):** núcleo E10 usable (login, CRUD catálogo, caja CASH, puerta, roles, config, reportes, Super tenants).  
+**Overclaim previo:** varios ítems se marcaban `[x]` sin UI para APIs ya hechas — abajo queda el desglose.  
+Detalle: [14-auditoria…](./14-auditoria-roadmap-vs-codigo-2026-08-13.md).
+
+### Hecho (mínimo operativo)
+
 - [x] Login staff / Super Admin
-  - Staff: `demo.localhost:3000/login` (slug); Super: `/super/login` + UI tenants
+  - Staff: `{slug}.localhost:3002/login` (o `{slug}.{APP_DOMAIN}`); Super: `/super/login`
 - [x] Dashboard mínimo
-  - `/` Inicio: KPIs del día (caja, activos, puerta, sesiones) + atajos; deuda agregada → E11
-- [x] Afiliados
-  - listado/filtro, alta, ficha, status, estado de cuenta (`/afiliados`)
-- [x] Servicios / packs / sesiones
-  - `/servicios`, `/packs`, `/sesiones` (listado/alta/edición; sesiones: cancelar + ampliar cupo)
-- [x] Caja y cobros
+  - `/`: KPIs del día (caja, activos, sin pack proxy, puerta, sesiones) + atajos
+  - Deuda $ agregada: no hay endpoint; proxy vía reportes / sin pack
+- [x] Afiliados (CRUD + cuenta lectura)
+  - `/afiliados` listado/filtro, alta, ficha, status, estado de cuenta
+- [x] Servicios / packs / sesiones (CRUD básico)
+  - `/servicios`, `/packs`, `/sesiones` (puntual; cancelar + ampliar cupo)
+- [x] Caja y cobros CASH
   - `/caja`: día + movimientos + arqueo; cobro pack/drop-in CASH
 - [x] Pase manual / historial acceso
-  - `/puerta` + `/puerta/pase-manual` (E6 pantalla puerta)
-- [ ] Rutinas
+  - `/puerta` QR OID4VP + poll + historial; `/puerta/pase-manual`
 - [x] Roles y config gym
-  - `/roles` + `/staff` (listado/alta/asignación); `/config` (tenant-settings + MP)
-  - API: `GET|POST /staff` (+ Super equivalentes)
-- [ ] Plantillas de notificación
-- [x] Panel Super Admin (tenants)
-  - `/super/*`; slug en create; `GET /public/tenants/by-slug/:slug`
+  - `/roles` + `/staff`; `/config` (tenant-settings + cuenta MP connect/test)
+- [x] Reportes E11 en UI
+  - `/reportes` + historial puerta en `/puerta`
+- [x] Panel Super Admin (tenants) — mínimo
+  - `/super/tenants` CRUD/suspend + bind Kuatia (`…/quark/provision`) + link al gym
+  - Sin impersonate ni nested ops del tenant
+
+### Pendiente — thin gaps (API ya existe)
+
+- [x] Devoluciones staff
+  - `/devoluciones`: listar `GET /refund-requests` + ejecutar `POST /payments/:id/refunds`
+  - Motivos `solicitud` / `doble_cobro` / `otro`; confirmación tipada; atajo desde pagos APPROVED en ficha afiliado
+- [ ] Cancelar contrato desde ficha afiliado
+  - `PATCH /contracts/:id/status` → `CANCELLED` (RN-SER-009)
+- [ ] Sesión: roster + reservas staff
+  - Listar reservas de la sesión; crear reserva CREDIT en nombre del afiliado; cancelar reserva
+- [ ] Waitlist operativa (staff)
+  - Ver cola `GET /sessions/:id/waitlist`; acciones según `waitlistMode` (AUTO ya en API; confirm modos 2/3 si aplica)
+- [ ] Recurrencia de sesiones (UI)
+  - CRUD `/session-recurrence-rules` (API lista; hoy solo sesión puntual en web)
+- [ ] Packs: `creditsExpireAt` + visibilidad sync Kuatia (`packs.quark_*`)
+- [ ] Comprobantes (receipts)
+  - `GET /payments/:id/receipt`, `GET /members/:id/receipts` en caja/ficha
+- [ ] Checkout MP desde Admin (staff)
+  - `POST /members/:id/payments/mp/checkout` y drop-in (opcional si el piloto es CASH + app)
+- [ ] Auditoría UI
+  - `GET /audit-events` → `/auditoria`
+- [ ] Pase manual: selector de sesión opcional (`sessionId`)
+- [ ] Nav / páginas gated por permiso (hoy se muestran todos los links)
+
+### Pendiente — otras épicas / Super
+
+- [ ] Rutinas (Admin) → **E7**
+- [ ] Plantillas de notificación → **E8**
+- [ ] Super: impersonar o nested members/staff/caja (wireframe §14; API Super ya espeja mucho)
+
+### Clientes `web/lib/api` a agregar (thin gaps)
+
+`waitlist`, `recurrence-rules`, `receipts`, `audit`, MP checkout staff, (opcional) `credential-offers` staff.
+(`refunds` ya agregado.)
 
 ---
 
@@ -267,7 +346,19 @@ E11 → E12
 
 ## Próximo paso
 
-Listados API/Admin estandarizados (`ListResult` + `q`/`orderBy`/`order`). Deuda/tolerancia en puerta y `startsAt` de renovación MONTHLY cerrados. Siguiente: E9 / E8 / rutinas E7, o reingreso/ventana configurable según [12-acceso-quark-oid4-diseno.md](./12-acceso-quark-oid4-diseno.md).
+Roadmap E9/E10 realineados (2026-08-13) tras [auditoría](./14-auditoria-roadmap-vs-codigo-2026-08-13.md).
+
+**Orden sugerido para cerrar faltantes UI:**
+
+```text
+1) Flutter E9: Tienda/MP + calendario/reservas + waitlist + devolución
+   (prereq: API member GET packs + sesiones)
+2) Admin E10 thin: cancel contrato → roster/waitlist sesión
+   → recurrencia / creditsExpireAt / receipts (después)
+3) E5 MP live (ops) → E8 → E7 → E12
+```
+
+E7/E8 siguen `[ ]` (sin API). No marcar E9/E10 como cerradas hasta agotar las subtareas “Pendiente” de cada sección.
 
 ---
 

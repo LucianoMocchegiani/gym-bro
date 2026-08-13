@@ -331,6 +331,16 @@ function DetailInner() {
                       <li key={p.id}>
                         ${p.amount} · {p.method} · {p.status} ·{' '}
                         {new Date(p.createdAt).toLocaleString('es-AR')}
+                        {p.status === 'APPROVED' ? (
+                          <>
+                            {' · '}
+                            <Link
+                              href={`/devoluciones?paymentId=${encodeURIComponent(p.id)}`}
+                            >
+                              Devolver
+                            </Link>
+                          </>
+                        ) : null}
                       </li>
                     ))}
                   </ul>
