@@ -311,6 +311,7 @@ Detalle: [14-auditoria…](./14-auditoria-roadmap-vs-codigo-2026-08-13.md).
   - `StatusPill`; reportes, devoluciones, historial puerta (+ pager)
   - `AdminModal`; devolución directa / ejecutar solicitud en modal
   - Alta servicio/rol en modal (`?nuevo=1`; `/nuevo` redirige)
+  - Alta staff + Super tenant en modal
 
 ### Pendiente — otras épicas / Super
 

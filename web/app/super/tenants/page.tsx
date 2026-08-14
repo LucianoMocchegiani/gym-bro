@@ -1,14 +1,17 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { Suspense, useCallback, useEffect, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import {
   DataTable,
   listCountDescription,
 } from '@/components/AdminList';
+import { AdminModal } from '@/components/AdminModal';
 import { RequireSuper } from '@/components/RequireSuper';
 import { StatusPill, activeTone } from '@/components/StatusPill';
 import { SuperShell } from '@/components/SuperShell';
+import { TenantCreateForm } from '@/components/TenantCreateForm';
 import { ApiClientError } from '@/lib/api/client';
 import { listTenants } from '@/lib/api/tenants';
 import type { TenantDetail } from '@/lib/api/tenants';
@@ -18,65 +21,78 @@ const PAGE_SIZE = 20;
 
 /**
  * Listado de tenants (CU-ROL-001/002).
+ *
+ * @remarks `+ Crear` abre modal; `/super/tenants/nuevo` → `?nuevo=1`.
  */
 export default function SuperTenantsPage() {
   return (
     <RequireSuper>
-      <TenantsInner />
+      <Suspense fallback={<p className="muted">Cargando…</p>}>
+        <TenantsInner />
+      </Suspense>
     </RequireSuper>
   );
 }
 
 function TenantsInner() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const [rows, setRows] = useState<TenantDetail[]>([]);
   const [total, setTotal] = useState(0);
   const [hasMore, setHasMore] = useState(false);
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [modalOpen, setModalOpen] = useState(
+    searchParams.get('nuevo') === '1',
+  );
+  const [flashOk, setFlashOk] = useState<string | null>(null);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      const data = await listTenants({ page, pageSize: PAGE_SIZE });
+      setRows(data.items);
+      setTotal(data.total);
+      setHasMore(data.hasMore);
+      setError(null);
+    } catch (err) {
+      setError(
+        err instanceof ApiClientError
+          ? err.message
+          : 'No se pudieron cargar tenants',
+      );
+    } finally {
+      setLoading(false);
+    }
+  }, [page]);
 
   useEffect(() => {
-    let cancelled = false;
-    void (async () => {
-      setLoading(true);
-      try {
-        const data = await listTenants({ page, pageSize: PAGE_SIZE });
-        if (cancelled) {
-          return;
-        }
-        setRows(data.items);
-        setTotal(data.total);
-        setHasMore(data.hasMore);
-        setError(null);
-      } catch (err) {
-        if (cancelled) {
-          return;
-        }
-        setError(
-          err instanceof ApiClientError
-            ? err.message
-            : 'No se pudieron cargar tenants',
-        );
-      } finally {
-        if (!cancelled) {
-          setLoading(false);
-        }
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [page]);
+    void load();
+  }, [load]);
+
+  function openModal() {
+    setFlashOk(null);
+    setModalOpen(true);
+    router.replace('/super/tenants?nuevo=1', { scroll: false });
+  }
+
+  function closeModal() {
+    setModalOpen(false);
+    router.replace('/super/tenants', { scroll: false });
+  }
 
   return (
     <SuperShell
       title="Tenants"
       actions={
-        <Link href="/super/tenants/nuevo" className="btn">
+        <button type="button" className="btn" onClick={openModal}>
           + Crear
-        </Link>
+        </button>
       }
     >
+      {flashOk ? <p className="ok-msg">{flashOk}</p> : null}
+
       <DataTable
         description={listCountDescription(total, page, 'gym', 'gyms')}
         loading={loading}
@@ -122,6 +138,26 @@ function TenantsInner() {
           </tr>
         ))}
       </DataTable>
+
+      <AdminModal
+        open={modalOpen}
+        onClose={closeModal}
+        title="Nuevo tenant"
+        description="Gym + owner Admin inicial."
+      >
+        <TenantCreateForm
+          onCancel={closeModal}
+          onSuccess={(created) => {
+            setFlashOk(`Tenant creado: ${created.name}`);
+            closeModal();
+            if (page === 1) {
+              void load();
+            } else {
+              setPage(1);
+            }
+          }}
+        />
+      </AdminModal>
     </SuperShell>
   );
 }
