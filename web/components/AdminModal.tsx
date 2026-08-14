@@ -14,7 +14,6 @@ export function AdminModal({
   description,
   children,
   footer,
-  wide = false,
   size = 'default',
 }: {
   open: boolean;
@@ -23,8 +22,6 @@ export function AdminModal({
   description?: ReactNode;
   children: ReactNode;
   footer?: ReactNode;
-  /** @deprecated Preferí `size="wide"`. */
-  wide?: boolean;
   /** `comfortable` = más aire para fichas / estado de cuenta. */
   size?: 'default' | 'wide' | 'comfortable';
 }) {
@@ -50,11 +47,10 @@ export function AdminModal({
     return null;
   }
 
-  const resolvedSize = wide && size === 'default' ? 'wide' : size;
   const sizeClass =
-    resolvedSize === 'comfortable'
+    size === 'comfortable'
       ? ' admin-modal-comfortable'
-      : resolvedSize === 'wide'
+      : size === 'wide'
         ? ' admin-modal-wide'
         : '';
 

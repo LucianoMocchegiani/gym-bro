@@ -46,20 +46,6 @@ export function memberStatusTone(status: string): StatusTone {
   }
 }
 
-/** Etiqueta corta de afiliado. */
-export function memberStatusLabel(status: string): string {
-  switch (status.toUpperCase()) {
-    case 'ACTIVE':
-      return 'Activo';
-    case 'SUSPENDED':
-      return 'Suspendido';
-    case 'INACTIVE':
-      return 'Inactivo';
-    default:
-      return status;
-  }
-}
-
 /** Solicitud de devolución. */
 export function refundStatusTone(
   status: 'PENDING' | 'EXECUTED' | 'REJECTED',

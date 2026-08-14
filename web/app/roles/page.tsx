@@ -161,7 +161,7 @@ function RolesInner() {
         onClose={closeModals}
         title="Nuevo rol"
         description="Rol custom con permisos del catálogo MVP."
-        wide
+        size="wide"
       >
         <RoleCreateForm
           onCancel={closeModals}
@@ -173,7 +173,7 @@ function RolesInner() {
         open={Boolean(editId)}
         onClose={closeModals}
         title="Editar rol"
-        wide
+        size="wide"
       >
         {editId ? (
           <RoleEditForm

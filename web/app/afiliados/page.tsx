@@ -248,7 +248,7 @@ function AfiliadosInner() {
         size="comfortable"
       >
         {cuentaId ? (
-          <MemberAccountPanel key={cuentaId} memberId={cuentaId} />
+          <MemberAccountPanel key={cuentaId} memberId={cuentaId} embedded />
         ) : null}
       </AdminModal>
     </AdminShell>

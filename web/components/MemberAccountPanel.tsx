@@ -24,7 +24,14 @@ import { formatMoney } from '@/lib/cash-labels';
 /**
  * Estado de cuenta del afiliado (CU-AFI-004): contratos, pagos, offers, comprobantes.
  */
-export function MemberAccountPanel({ memberId }: { memberId: string }) {
+export function MemberAccountPanel({
+  memberId,
+  embedded = false,
+}: {
+  memberId: string;
+  /** Sin Panel/título duplicado (p. ej. dentro de AdminModal). */
+  embedded?: boolean;
+}) {
   const [account, setAccount] = useState<MemberAccountDetail | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
 
@@ -265,12 +272,8 @@ export function MemberAccountPanel({ memberId }: { memberId: string }) {
     return <p className="muted">Cargando cuenta…</p>;
   }
 
-  return (
-    <Panel
-      title="Estado de cuenta"
-      description="Contratos, créditos, reservas y pagos recientes."
-      className="account-panel"
-    >
+  const body = (
+    <>
       <div className="stat-row">
         <div>
           <p className="muted small">Contratos activos</p>
@@ -522,6 +525,20 @@ export function MemberAccountPanel({ memberId }: { memberId: string }) {
           ))}
         </ul>
       )}
+    </>
+  );
+
+  if (embedded) {
+    return <div className="account-panel admin-stack">{body}</div>;
+  }
+
+  return (
+    <Panel
+      title="Estado de cuenta"
+      description="Contratos, créditos, reservas y pagos recientes."
+      className="account-panel"
+    >
+      {body}
     </Panel>
   );
 }

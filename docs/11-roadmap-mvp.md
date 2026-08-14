@@ -316,6 +316,8 @@ Detalle: [14-auditoria…](./14-auditoria-roadmap-vs-codigo-2026-08-13.md).
   - Editar servicio/rol + alta afiliado en modal; roster/waitlist thin
   - Acciones de grilla con iconos (`RowActions`); afiliados: Ficha / Cuenta en modal comfortable
   - Staff: Roles / Credencial en modal comfortable (`?roles=` / `?credencial=`)
+  - Packs: editar + alta en modal; sesiones: Datos / Roster / Waitlist + alta (`?nuevo=1`)
+  - Cleanup: `PackComponentsEditor` compartido; sin prop `wide` deprecada; paneles `embedded` en modal
 
 ### Pendiente — otras épicas / Super
 

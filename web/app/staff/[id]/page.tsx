@@ -34,7 +34,7 @@ function DetailInner() {
         </Link>
       }
     >
-      <AdminGrid className="member-detail">
+      <AdminGrid>
         <Panel title="Roles asignados" className="form-panel">
           <StaffRolesPanel staffId={staffId} />
         </Panel>

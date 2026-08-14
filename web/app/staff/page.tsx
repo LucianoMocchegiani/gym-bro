@@ -191,7 +191,7 @@ function StaffInner() {
         onClose={closeModals}
         title="Nuevo staff"
         description="Alta con roles iniciales opcionales."
-        wide
+        size="wide"
       >
         <StaffCreateForm
           onCancel={closeModals}

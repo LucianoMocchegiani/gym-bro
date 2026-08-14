@@ -130,7 +130,7 @@ export function MemberFichaPanel({
   }
 
   return (
-    <div className="admin-stack member-ficha-stack">
+    <div className="admin-stack">
       <Panel title="Datos">
         <form className="admin-form" onSubmit={(e) => void onSave(e)}>
           <label>

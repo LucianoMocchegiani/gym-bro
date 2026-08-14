@@ -1,21 +1,27 @@
 'use client';
 
-import Link from 'next/link';
 import { Suspense, useCallback, useEffect, useState } from 'react';
-import { useSearchParams } from 'next/navigation';
-import { AdminShell } from '@/components/AdminShell';
+import { useRouter, useSearchParams } from 'next/navigation';
 import {
   DataTable,
   ListFilterField,
   ListToolbar,
   listCountDescription,
 } from '@/components/AdminList';
+import { AdminModal } from '@/components/AdminModal';
+import { AdminShell } from '@/components/AdminShell';
 import { RequireStaff } from '@/components/RequireStaff';
 import {
   IconEdit,
+  IconRoster,
+  IconWaitlist,
   RowActions,
   RowIconButton,
 } from '@/components/RowActions';
+import { SessionCreateForm } from '@/components/SessionCreateForm';
+import { SessionDatosPanel } from '@/components/SessionDatosPanel';
+import { SessionRosterPanel } from '@/components/SessionRosterPanel';
+import { SessionWaitlistPanel } from '@/components/SessionWaitlistPanel';
 import { StatusPill, activeTone } from '@/components/StatusPill';
 import { ApiClientError } from '@/lib/api/client';
 import {
@@ -59,7 +65,7 @@ function formatWeekdays(days: Weekday[]): string {
 }
 
 /**
- * Listado de sesiones y reglas de recurrencia (CU-SER-003/004).
+ * Listado de sesiones: Datos / Roster / Waitlist + alta en modal.
  */
 export default function SesionesPage() {
   return (
@@ -72,13 +78,22 @@ export default function SesionesPage() {
 }
 
 function SesionesInner() {
+  const router = useRouter();
   const searchParams = useSearchParams();
+  const datosId = searchParams.get('datos')?.trim() || null;
+  const rosterId = searchParams.get('roster')?.trim() || null;
+  const waitlistId = searchParams.get('waitlist')?.trim() || null;
+  const createOpen =
+    searchParams.get('nuevo') === '1' && !datosId && !rosterId && !waitlistId;
+
   const initialView: View =
     searchParams.get('view') === 'rules' ? 'rules' : 'sessions';
   const [view, setView] = useState<View>(initialView);
   const [statusFilter, setStatusFilter] = useState<SessionStatus | 'ALL'>(
     'PUBLISHED',
   );
+  const [flashOk, setFlashOk] = useState<string | null>(null);
+  const [listKey, setListKey] = useState(0);
 
   useEffect(() => {
     if (searchParams.get('view') === 'rules') {
@@ -86,13 +101,49 @@ function SesionesInner() {
     }
   }, [searchParams]);
 
+  function closeModals() {
+    const qs =
+      view === 'rules'
+        ? '?view=rules'
+        : searchParams.get('created')
+          ? `?view=rules&created=${searchParams.get('created')}`
+          : '';
+    router.replace(`/sesiones${qs}`, { scroll: false });
+  }
+
+  function openCreate() {
+    setFlashOk(null);
+    router.replace('/sesiones?nuevo=1', { scroll: false });
+  }
+
+  function openDatos(id: string) {
+    setFlashOk(null);
+    router.replace(`/sesiones?datos=${encodeURIComponent(id)}`, {
+      scroll: false,
+    });
+  }
+
+  function openRoster(id: string) {
+    setFlashOk(null);
+    router.replace(`/sesiones?roster=${encodeURIComponent(id)}`, {
+      scroll: false,
+    });
+  }
+
+  function openWaitlist(id: string) {
+    setFlashOk(null);
+    router.replace(`/sesiones?waitlist=${encodeURIComponent(id)}`, {
+      scroll: false,
+    });
+  }
+
   return (
     <AdminShell
       title="Sesiones"
       actions={
-        <Link href="/sesiones/nuevo" className="btn">
+        <button type="button" className="btn" onClick={openCreate}>
           + Nueva
-        </Link>
+        </button>
       }
     >
       <ListToolbar>
@@ -117,19 +168,104 @@ function SesionesInner() {
         ) : null}
       </ListToolbar>
 
+      {flashOk ? <p className="ok-msg">{flashOk}</p> : null}
+
       {view === 'sessions' ? (
-        <SessionsList key={statusFilter} statusFilter={statusFilter} />
+        <SessionsList
+          key={`${statusFilter}-${listKey}`}
+          statusFilter={statusFilter}
+          onDatos={openDatos}
+          onRoster={openRoster}
+          onWaitlist={openWaitlist}
+        />
       ) : (
         <RulesList />
       )}
+
+      <AdminModal
+        open={createOpen}
+        onClose={closeModals}
+        title="Nueva sesión"
+        description="Puntual o recurrencia semanal."
+        size="comfortable"
+      >
+        <SessionCreateForm
+          onCancel={closeModals}
+          onSuccessSession={(created) => {
+            setFlashOk(`Sesión creada: ${created.serviceName}`);
+            closeModals();
+            setView('sessions');
+            setListKey((k) => k + 1);
+          }}
+          onSuccessRule={(created) => {
+            setFlashOk(`Recurrencia creada: ${created.serviceName}`);
+            router.replace(
+              `/sesiones?view=rules&created=${encodeURIComponent(created.id)}`,
+              { scroll: false },
+            );
+            setView('rules');
+          }}
+        />
+      </AdminModal>
+
+      <AdminModal
+        open={Boolean(datosId)}
+        onClose={closeModals}
+        title="Datos de la sesión"
+        description="Horario, cupo, cancelar y ampliar."
+        size="comfortable"
+      >
+        {datosId ? (
+          <SessionDatosPanel
+            key={datosId}
+            sessionId={datosId}
+            embedded
+            onSaved={() => setListKey((k) => k + 1)}
+          />
+        ) : null}
+      </AdminModal>
+
+      <AdminModal
+        open={Boolean(rosterId)}
+        onClose={closeModals}
+        title="Roster"
+        description="Reservas y alta con crédito."
+        size="comfortable"
+      >
+        {rosterId ? (
+          <SessionRosterPanel key={rosterId} sessionId={rosterId} embedded />
+        ) : null}
+      </AdminModal>
+
+      <AdminModal
+        open={Boolean(waitlistId)}
+        onClose={closeModals}
+        title="Lista de espera"
+        description="Cola y alta staff."
+        size="comfortable"
+      >
+        {waitlistId ? (
+          <SessionWaitlistPanel
+            key={waitlistId}
+            sessionId={waitlistId}
+            embedded
+          />
+        ) : null}
+      </AdminModal>
     </AdminShell>
   );
 }
 
 function SessionsList({
   statusFilter,
+  onDatos,
+  onRoster,
+  onWaitlist,
 }: {
   statusFilter: SessionStatus | 'ALL';
+  onDatos: (id: string) => void;
+  onRoster: (id: string) => void;
+  onWaitlist: (id: string) => void;
 }) {
   const [rows, setRows] = useState<SessionDetail[]>([]);
   const [total, setTotal] = useState(0);
@@ -204,15 +340,30 @@ function SessionsList({
           <td>
             {s.bookedCount}/{s.capacity}
           </td>
-            <td>
-              <StatusPill tone={activeTone(s.status === 'PUBLISHED')}>
-                {s.status === 'PUBLISHED' ? 'Publicada' : 'Cancelada'}
-              </StatusPill>
-            </td>
+          <td>
+            <StatusPill tone={activeTone(s.status === 'PUBLISHED')}>
+              {s.status === 'PUBLISHED' ? 'Publicada' : 'Cancelada'}
+            </StatusPill>
+          </td>
           <td>
             <RowActions>
-              <RowIconButton label="Editar" href={`/sesiones/${s.id}`}>
+              <RowIconButton
+                label="Datos"
+                onClick={() => onDatos(s.id)}
+              >
                 <IconEdit />
+              </RowIconButton>
+              <RowIconButton
+                label="Roster"
+                onClick={() => onRoster(s.id)}
+              >
+                <IconRoster />
+              </RowIconButton>
+              <RowIconButton
+                label="Lista de espera"
+                onClick={() => onWaitlist(s.id)}
+              >
+                <IconWaitlist />
               </RowIconButton>
             </RowActions>
           </td>

@@ -34,7 +34,7 @@ function DetailInner() {
         </Link>
       }
     >
-      <AdminGrid className="member-detail">
+      <AdminGrid>
         <MemberFichaPanel memberId={memberId} />
         <MemberAccountPanel memberId={memberId} />
       </AdminGrid>

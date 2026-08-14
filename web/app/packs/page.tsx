@@ -1,14 +1,17 @@
 'use client';
 
-import Link from 'next/link';
-import { useEffect, useState } from 'react';
-import { AdminShell } from '@/components/AdminShell';
+import { Suspense, useCallback, useEffect, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import {
   DataTable,
   ListFilterField,
   ListToolbar,
   listCountDescription,
 } from '@/components/AdminList';
+import { AdminModal } from '@/components/AdminModal';
+import { AdminShell } from '@/components/AdminShell';
+import { PackCreateForm } from '@/components/PackCreateForm';
+import { PackEditPanel } from '@/components/PackEditPanel';
 import { RequireStaff } from '@/components/RequireStaff';
 import {
   IconEdit,
@@ -28,17 +31,24 @@ import {
 const PAGE_SIZE = 20;
 
 /**
- * Listado de packs del catálogo (CU-SER-002).
+ * Listado de packs: alta + editar en modal (CU-SER-002).
  */
 export default function PacksPage() {
   return (
     <RequireStaff>
-      <PacksInner />
+      <Suspense fallback={<p className="muted">Cargando…</p>}>
+        <PacksInner />
+      </Suspense>
     </RequireStaff>
   );
 }
 
 function PacksInner() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const editId = searchParams.get('editar')?.trim() || null;
+  const createOpen = searchParams.get('nuevo') === '1' && !editId;
+
   const [rows, setRows] = useState<PackDetail[]>([]);
   const [total, setTotal] = useState(0);
   const [hasMore, setHasMore] = useState(false);
@@ -48,51 +58,58 @@ function PacksInner() {
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [flashOk, setFlashOk] = useState<string | null>(null);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      const data = await listPacks({
+        active: activeFilter === 'ALL' ? undefined : activeFilter === 'true',
+        page,
+        pageSize: PAGE_SIZE,
+      });
+      setRows(data.items);
+      setTotal(data.total);
+      setHasMore(data.hasMore);
+      setError(null);
+    } catch (err) {
+      setError(
+        err instanceof ApiClientError
+          ? err.message
+          : 'No se pudieron cargar packs',
+      );
+    } finally {
+      setLoading(false);
+    }
+  }, [activeFilter, page]);
 
   useEffect(() => {
-    let cancelled = false;
-    void (async () => {
-      setLoading(true);
-      try {
-        const data = await listPacks({
-          active: activeFilter === 'ALL' ? undefined : activeFilter === 'true',
-          page,
-          pageSize: PAGE_SIZE,
-        });
-        if (cancelled) {
-          return;
-        }
-        setRows(data.items);
-        setTotal(data.total);
-        setHasMore(data.hasMore);
-        setError(null);
-      } catch (err) {
-        if (cancelled) {
-          return;
-        }
-        setError(
-          err instanceof ApiClientError
-            ? err.message
-            : 'No se pudieron cargar packs',
-        );
-      } finally {
-        if (!cancelled) {
-          setLoading(false);
-        }
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [activeFilter, page]);
+    void load();
+  }, [load]);
+
+  function closeModals() {
+    router.replace('/packs', { scroll: false });
+  }
+
+  function openCreate() {
+    setFlashOk(null);
+    router.replace('/packs?nuevo=1', { scroll: false });
+  }
+
+  function openEdit(id: string) {
+    setFlashOk(null);
+    router.replace(`/packs?editar=${encodeURIComponent(id)}`, {
+      scroll: false,
+    });
+  }
 
   return (
     <AdminShell
       title="Packs"
       actions={
-        <Link href="/packs/nuevo" className="btn">
+        <button type="button" className="btn" onClick={openCreate}>
           + Nuevo
-        </Link>
+        </button>
       }
     >
       <ListToolbar>
@@ -109,6 +126,8 @@ function PacksInner() {
           <option value="false">No</option>
         </ListFilterField>
       </ListToolbar>
+
+      {flashOk ? <p className="ok-msg">{flashOk}</p> : null}
 
       <DataTable
         description={listCountDescription(total, page, 'pack', 'packs')}
@@ -145,7 +164,10 @@ function PacksInner() {
             </td>
             <td>
               <RowActions>
-                <RowIconButton label="Editar" href={`/packs/${p.id}`}>
+                <RowIconButton
+                  label="Editar"
+                  onClick={() => openEdit(p.id)}
+                >
                   <IconEdit />
                 </RowIconButton>
               </RowActions>
@@ -153,6 +175,46 @@ function PacksInner() {
           </tr>
         ))}
       </DataTable>
+
+      <AdminModal
+        open={createOpen}
+        onClose={closeModals}
+        title="Nuevo pack"
+        description="Datos, componentes y sync Kuatia al crear."
+        size="comfortable"
+      >
+        <PackCreateForm
+          onCancel={closeModals}
+          onSuccess={(created) => {
+            setFlashOk(`Pack creado: ${created.name}`);
+            closeModals();
+            if (page === 1) {
+              void load();
+            } else {
+              setPage(1);
+            }
+          }}
+        />
+      </AdminModal>
+
+      <AdminModal
+        open={Boolean(editId)}
+        onClose={closeModals}
+        title="Editar pack"
+        description="Datos, componentes y estado Kuatia."
+        size="comfortable"
+      >
+        {editId ? (
+          <PackEditPanel
+            key={editId}
+            packId={editId}
+            onSaved={(p) => {
+              setFlashOk(`Pack actualizado: ${p.name}`);
+              void load();
+            }}
+          />
+        ) : null}
+      </AdminModal>
     </AdminShell>
   );
 }
