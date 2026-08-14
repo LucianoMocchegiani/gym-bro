@@ -309,6 +309,7 @@ Detalle: [14-auditoria…](./14-auditoria-roadmap-vs-codigo-2026-08-13.md).
 - [x] Listados Admin unificados (`DataTable` / `ListToolbar` / paginación)
   - afiliados, staff, servicios, packs, sesiones, roles, auditoría, Super tenants
   - `StatusPill`; reportes, devoluciones, historial puerta (+ pager)
+  - `AdminModal`; devolución directa / ejecutar solicitud en modal
 
 ### Pendiente — otras épicas / Super
 

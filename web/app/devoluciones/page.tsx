@@ -1,7 +1,14 @@
 'use client';
 
 import Link from 'next/link';
-import { FormEvent, Suspense, useCallback, useEffect, useMemo, useState } from 'react';
+import {
+  FormEvent,
+  Suspense,
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+} from 'react';
 import { useSearchParams } from 'next/navigation';
 import {
   DataTable,
@@ -9,8 +16,8 @@ import {
   ListToolbar,
   listCountDescription,
 } from '@/components/AdminList';
+import { AdminModal } from '@/components/AdminModal';
 import { AdminShell } from '@/components/AdminShell';
-import { Panel } from '@/components/AdminUi';
 import { RequireStaff } from '@/components/RequireStaff';
 import {
   StatusPill,
@@ -24,7 +31,6 @@ import {
   listRefundRequests,
 } from '@/lib/api/refunds';
 import type {
-  RefundExecutionDetail,
   RefundMotiveCode,
   RefundRequestDetail,
   RefundRequestStatus,
@@ -49,10 +55,10 @@ function formatWhen(iso: string): string {
 }
 
 /**
- * Cola de solicitudes + ejecución de devoluciones (CU-PAG-005 / CU-PAG-007).
+ * Cola de solicitudes + devolución en modal (CU-PAG-005 / CU-PAG-007).
  *
- * @remarks Requiere permiso API `payments.refund`. No hay rechazo staff en API:
- * solo ejecutar o dejar PENDING.
+ * @remarks Requiere permiso API `payments.refund`. `?paymentId=` abre el modal
+ * de devolución directa (p. ej. desde ficha afiliado).
  */
 export default function DevolucionesPage() {
   return (
@@ -76,13 +82,11 @@ function DevolucionesInner() {
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [memberLabels, setMemberLabels] = useState<MemberLabelMap>({});
+  const [flashOk, setFlashOk] = useState<string | null>(null);
 
+  const [modalOpen, setModalOpen] = useState(Boolean(prefillPaymentId));
   const [selected, setSelected] = useState<RefundRequestDetail | null>(null);
-  /** Override manual; si null, usa `?paymentId=` de la URL. */
-  const [directPaymentDraft, setDirectPaymentDraft] = useState<string | null>(
-    null,
-  );
-  const directPaymentId = directPaymentDraft ?? prefillPaymentId;
+  const [directPaymentId, setDirectPaymentId] = useState(prefillPaymentId);
   const [reason, setReason] = useState(
     prefillPaymentId ? 'Doble cobro' : '',
   );
@@ -92,10 +96,6 @@ function DevolucionesInner() {
   const [confirmText, setConfirmText] = useState('');
   const [busy, setBusy] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
-  const [actionOk, setActionOk] = useState<string | null>(null);
-  const [lastResult, setLastResult] = useState<RefundExecutionDetail | null>(
-    null,
-  );
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -154,34 +154,59 @@ function DevolucionesInner() {
   }, [load]);
 
   const paymentIdToExecute = selected?.paymentId ?? directPaymentId.trim();
+  const canExecute =
+    !selected || selected.status === 'PENDING';
 
   const canSubmit = useMemo(() => {
     return (
+      canExecute &&
       Boolean(paymentIdToExecute) &&
       reason.trim().length >= 3 &&
       confirmText.trim().toUpperCase() === 'DEVOLVER' &&
       !busy
     );
-  }, [paymentIdToExecute, reason, confirmText, busy]);
+  }, [canExecute, paymentIdToExecute, reason, confirmText, busy]);
 
-  function selectRequest(row: RefundRequestDetail) {
-    setSelected(row);
-    setDirectPaymentDraft('');
-    setActionError(null);
-    setActionOk(null);
-    setLastResult(null);
+  function resetForm(opts?: {
+    paymentId?: string;
+    request?: RefundRequestDetail | null;
+  }) {
+    const request = opts?.request ?? null;
+    const paymentId = opts?.paymentId ?? '';
+    setSelected(request);
+    setDirectPaymentId(paymentId);
     setConfirmText('');
-    if (row.status === 'PENDING') {
+    setActionError(null);
+    if (request?.status === 'PENDING') {
       setMotiveCode('solicitud');
-      setReason(row.reason?.trim() || 'Solicitud del afiliado');
+      setReason(request.reason?.trim() || 'Solicitud del afiliado');
+    } else if (paymentId) {
+      setMotiveCode('doble_cobro');
+      setReason('Doble cobro');
+    } else {
+      setMotiveCode('solicitud');
+      setReason('');
     }
   }
 
-  function clearSelection() {
-    setSelected(null);
-    setDirectPaymentDraft(null);
-    setConfirmText('');
-    setActionError(null);
+  function openDirect() {
+    setFlashOk(null);
+    resetForm();
+    setModalOpen(true);
+  }
+
+  function openRequest(row: RefundRequestDetail) {
+    setFlashOk(null);
+    resetForm({ request: row });
+    setModalOpen(true);
+  }
+
+  function closeModal() {
+    if (busy) {
+      return;
+    }
+    setModalOpen(false);
+    resetForm();
   }
 
   async function onExecute(e: FormEvent) {
@@ -191,24 +216,20 @@ function DevolucionesInner() {
     }
     setBusy(true);
     setActionError(null);
-    setActionOk(null);
-    setLastResult(null);
     try {
       const result = await executeRefund(paymentIdToExecute, {
         reason: reason.trim(),
         motiveCode,
         ...(selected ? { refundRequestId: selected.id } : {}),
       });
-      setLastResult(result);
       const mpNote = result.mpRefundManualPending
         ? ' (MP manual pendiente)'
         : '';
-      setActionOk(
+      setFlashOk(
         `Devolución OK: ${formatMoney(result.amount)} · ${result.method}${mpNote}`,
       );
-      setConfirmText('');
-      setSelected(null);
-      setDirectPaymentDraft(null);
+      setModalOpen(false);
+      resetForm();
       await load();
     } catch (err) {
       setActionError(
@@ -221,8 +242,25 @@ function DevolucionesInner() {
     }
   }
 
+  const modalTitle = selected
+    ? selected.status === 'PENDING'
+      ? 'Ejecutar solicitud'
+      : 'Solicitud'
+    : 'Devolución directa';
+
+  const modalDescription = selected
+    ? `Solicitud ${selected.id.slice(0, 8)}… · pago ${selected.paymentId.slice(0, 8)}…`
+    : 'Para doble cobro u otras devoluciones sin solicitud PENDING.';
+
   return (
-    <AdminShell title="Devoluciones">
+    <AdminShell
+      title="Devoluciones"
+      actions={
+        <button type="button" className="btn" onClick={openDirect}>
+          + Devolución directa
+        </button>
+      }
+    >
       <ListToolbar hint="Requiere permiso payments.refund.">
         <ListFilterField
           label="Estado"
@@ -238,6 +276,8 @@ function DevolucionesInner() {
           <option value="ALL">Todas</option>
         </ListFilterField>
       </ListToolbar>
+
+      {flashOk ? <p className="ok-msg">{flashOk}</p> : null}
 
       <DataTable
         title="Solicitudes"
@@ -285,7 +325,7 @@ function DevolucionesInner() {
                 <button
                   type="button"
                   className="btn ghost"
-                  onClick={() => selectRequest(row)}
+                  onClick={() => openRequest(row)}
                 >
                   Ejecutar
                 </button>
@@ -293,7 +333,7 @@ function DevolucionesInner() {
                 <button
                   type="button"
                   className="linkish"
-                  onClick={() => selectRequest(row)}
+                  onClick={() => openRequest(row)}
                 >
                   Ver
                 </button>
@@ -303,16 +343,11 @@ function DevolucionesInner() {
         ))}
       </DataTable>
 
-      <Panel
-        title={
-          selected ? 'Ejecutar desde solicitud' : 'Devolución directa (pago)'
-        }
-        description={
-          selected
-            ? `Solicitud ${selected.id.slice(0, 8)}… · pago ${selected.paymentId.slice(0, 8)}…`
-            : 'Para doble cobro u otras devoluciones sin solicitud PENDING.'
-        }
-        className="form-panel-wide"
+      <AdminModal
+        open={modalOpen}
+        onClose={closeModal}
+        title={modalTitle}
+        description={modalDescription}
       >
         {selected && selected.status !== 'PENDING' ? (
           <div className="admin-stack">
@@ -328,11 +363,17 @@ function DevolucionesInner() {
               </p>
             ) : null}
             <p className="muted small">
-              Solo las pendientes se pueden ejecutar desde acá. Para otro pago
-              usá devolución directa.
+              Solo las pendientes se pueden ejecutar. Para otro pago usá
+              devolución directa.
             </p>
-            <button type="button" className="btn ghost" onClick={clearSelection}>
-              Limpiar
+            <button
+              type="button"
+              className="btn"
+              onClick={() => {
+                resetForm();
+              }}
+            >
+              Abrir devolución directa
             </button>
           </div>
         ) : (
@@ -342,10 +383,7 @@ function DevolucionesInner() {
                 ID del pago
                 <input
                   value={directPaymentId}
-                  onChange={(e) => {
-                    setDirectPaymentDraft(e.target.value);
-                    setSelected(null);
-                  }}
+                  onChange={(e) => setDirectPaymentId(e.target.value)}
                   placeholder="uuid del payment"
                   required
                   autoComplete="off"
@@ -357,14 +395,6 @@ function DevolucionesInner() {
                 <Link href={`/afiliados/${selected.memberId}`}>
                   {memberLabels[selected.memberId] ?? selected.memberId}
                 </Link>
-                {' · '}
-                <button
-                  type="button"
-                  className="linkish"
-                  onClick={clearSelection}
-                >
-                  Cambiar a directa
-                </button>
               </p>
             )}
 
@@ -410,20 +440,27 @@ function DevolucionesInner() {
             </p>
 
             {actionError ? <p className="error">{actionError}</p> : null}
-            {actionOk ? <p className="ok-msg">{actionOk}</p> : null}
-            {lastResult?.mpRefundManualPending ? (
-              <p className="muted small">
-                El reembolso MP quedó marcado como manual pendiente: completar
-                en el panel de Mercado Pago del gym.
-              </p>
-            ) : null}
 
-            <button type="submit" className="btn danger" disabled={!canSubmit}>
-              {busy ? 'Ejecutando…' : 'Ejecutar devolución'}
-            </button>
+            <div className="admin-modal-actions">
+              <button
+                type="button"
+                className="btn ghost"
+                onClick={closeModal}
+                disabled={busy}
+              >
+                Cancelar
+              </button>
+              <button
+                type="submit"
+                className="btn danger"
+                disabled={!canSubmit}
+              >
+                {busy ? 'Ejecutando…' : 'Ejecutar devolución'}
+              </button>
+            </div>
           </form>
         )}
-      </Panel>
+      </AdminModal>
     </AdminShell>
   );
 }
