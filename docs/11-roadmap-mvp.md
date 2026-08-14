@@ -313,6 +313,7 @@ Detalle: [14-auditoria…](./14-auditoria-roadmap-vs-codigo-2026-08-13.md).
   - Alta servicio/rol en modal (`?nuevo=1`; `/nuevo` redirige)
   - Alta staff + Super tenant en modal
   - Caja: `ListToolbar` + `DataTable` movimientos (sin tabs)
+  - Editar servicio/rol + alta afiliado en modal; roster/waitlist thin
 
 ### Pendiente — otras épicas / Super
 

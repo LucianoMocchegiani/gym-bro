@@ -1,6 +1,5 @@
 'use client';
 
-import Link from 'next/link';
 import { Suspense, useCallback, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import {
@@ -11,6 +10,7 @@ import { AdminModal } from '@/components/AdminModal';
 import { AdminShell } from '@/components/AdminShell';
 import { RequireStaff } from '@/components/RequireStaff';
 import { RoleCreateForm } from '@/components/RoleCreateForm';
+import { RoleEditForm } from '@/components/RoleEditForm';
 import { StatusPill } from '@/components/StatusPill';
 import { ApiClientError } from '@/lib/api/client';
 import { listRoles } from '@/lib/api/roles';
@@ -19,9 +19,7 @@ import type { RoleDetail } from '@/lib/api/roles';
 const PAGE_SIZE = 20;
 
 /**
- * Listado de roles del gym (CU-ROL-003).
- *
- * @remarks `+ Nuevo rol` abre modal; `/roles/nuevo` redirige a `?nuevo=1`.
+ * Listado de roles (CU-ROL-003): alta/edición en modal.
  */
 export default function RolesPage() {
   return (
@@ -36,15 +34,15 @@ export default function RolesPage() {
 function RolesInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const editId = searchParams.get('editar')?.trim() || null;
+  const createOpen = searchParams.get('nuevo') === '1' && !editId;
+
   const [rows, setRows] = useState<RoleDetail[]>([]);
   const [total, setTotal] = useState(0);
   const [hasMore, setHasMore] = useState(false);
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [modalOpen, setModalOpen] = useState(
-    searchParams.get('nuevo') === '1',
-  );
   const [flashOk, setFlashOk] = useState<string | null>(null);
 
   const load = useCallback(async () => {
@@ -70,22 +68,37 @@ function RolesInner() {
     void load();
   }, [load]);
 
-  function openModal() {
+  function closeModals() {
+    router.replace('/roles', { scroll: false });
+  }
+
+  function openCreate() {
     setFlashOk(null);
-    setModalOpen(true);
     router.replace('/roles?nuevo=1', { scroll: false });
   }
 
-  function closeModal() {
-    setModalOpen(false);
-    router.replace('/roles', { scroll: false });
+  function openEdit(id: string) {
+    setFlashOk(null);
+    router.replace(`/roles?editar=${encodeURIComponent(id)}`, {
+      scroll: false,
+    });
+  }
+
+  function afterMutation(message: string) {
+    setFlashOk(message);
+    closeModals();
+    if (page === 1) {
+      void load();
+    } else {
+      setPage(1);
+    }
   }
 
   return (
     <AdminShell
       title="Roles"
       actions={
-        <button type="button" className="btn" onClick={openModal}>
+        <button type="button" className="btn" onClick={openCreate}>
           + Nuevo rol
         </button>
       }
@@ -124,33 +137,47 @@ function RolesInner() {
               </StatusPill>
             </td>
             <td className="row-actions">
-              <Link href={`/roles/${r.id}`}>
+              <button
+                type="button"
+                className="linkish"
+                onClick={() => openEdit(r.id)}
+              >
                 {r.slug === 'admin' ? 'Ver' : 'Editar'}
-              </Link>
+              </button>
             </td>
           </tr>
         ))}
       </DataTable>
 
       <AdminModal
-        open={modalOpen}
-        onClose={closeModal}
+        open={createOpen}
+        onClose={closeModals}
         title="Nuevo rol"
         description="Rol custom con permisos del catálogo MVP."
         wide
       >
         <RoleCreateForm
-          onCancel={closeModal}
-          onSuccess={(created) => {
-            setFlashOk(`Rol creado: ${created.name}`);
-            closeModal();
-            if (page === 1) {
-              void load();
-            } else {
-              setPage(1);
-            }
-          }}
+          onCancel={closeModals}
+          onSuccess={(created) => afterMutation(`Rol creado: ${created.name}`)}
         />
+      </AdminModal>
+
+      <AdminModal
+        open={Boolean(editId)}
+        onClose={closeModals}
+        title="Editar rol"
+        wide
+      >
+        {editId ? (
+          <RoleEditForm
+            key={editId}
+            roleId={editId}
+            onCancel={closeModals}
+            onSuccess={(updated) =>
+              afterMutation(`Rol guardado: ${updated.name}`)
+            }
+          />
+        ) : null}
       </AdminModal>
     </AdminShell>
   );

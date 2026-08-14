@@ -1,6 +1,5 @@
 'use client';
 
-import Link from 'next/link';
 import { Suspense, useCallback, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import {
@@ -13,6 +12,7 @@ import { AdminModal } from '@/components/AdminModal';
 import { AdminShell } from '@/components/AdminShell';
 import { RequireStaff } from '@/components/RequireStaff';
 import { ServiceCreateForm } from '@/components/ServiceCreateForm';
+import { ServiceEditForm } from '@/components/ServiceEditForm';
 import { StatusPill, activeTone } from '@/components/StatusPill';
 import { ApiClientError } from '@/lib/api/client';
 import { listServices } from '@/lib/api/services';
@@ -23,9 +23,7 @@ import { formatMoney } from '@/lib/cash-labels';
 const PAGE_SIZE = 20;
 
 /**
- * Listado de servicios del catálogo (CU-SER-001).
- *
- * @remarks `+ Nuevo` abre modal; `/servicios/nuevo` redirige a `?nuevo=1`.
+ * Listado de servicios (CU-SER-001): alta/edición en modal.
  */
 export default function ServiciosPage() {
   return (
@@ -40,6 +38,9 @@ export default function ServiciosPage() {
 function ServiciosInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const editId = searchParams.get('editar')?.trim() || null;
+  const createOpen = searchParams.get('nuevo') === '1' && !editId;
+
   const [rows, setRows] = useState<ServiceDetail[]>([]);
   const [total, setTotal] = useState(0);
   const [hasMore, setHasMore] = useState(false);
@@ -50,9 +51,6 @@ function ServiciosInner() {
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [modalOpen, setModalOpen] = useState(
-    searchParams.get('nuevo') === '1',
-  );
   const [flashOk, setFlashOk] = useState<string | null>(null);
 
   const load = useCallback(async () => {
@@ -83,22 +81,37 @@ function ServiciosInner() {
     void load();
   }, [load]);
 
-  function openModal() {
+  function closeModals() {
+    router.replace('/servicios', { scroll: false });
+  }
+
+  function openCreate() {
     setFlashOk(null);
-    setModalOpen(true);
     router.replace('/servicios?nuevo=1', { scroll: false });
   }
 
-  function closeModal() {
-    setModalOpen(false);
-    router.replace('/servicios', { scroll: false });
+  function openEdit(id: string) {
+    setFlashOk(null);
+    router.replace(`/servicios?editar=${encodeURIComponent(id)}`, {
+      scroll: false,
+    });
+  }
+
+  function afterMutation(message: string) {
+    setFlashOk(message);
+    closeModals();
+    if (page === 1) {
+      void load();
+    } else {
+      setPage(1);
+    }
   }
 
   return (
     <AdminShell
       title="Servicios"
       actions={
-        <button type="button" className="btn" onClick={openModal}>
+        <button type="button" className="btn" onClick={openCreate}>
           + Nuevo
         </button>
       }
@@ -164,30 +177,47 @@ function ServiciosInner() {
               </StatusPill>
             </td>
             <td className="row-actions">
-              <Link href={`/servicios/${s.id}`}>Editar</Link>
+              <button
+                type="button"
+                className="linkish"
+                onClick={() => openEdit(s.id)}
+              >
+                Editar
+              </button>
             </td>
           </tr>
         ))}
       </DataTable>
 
       <AdminModal
-        open={modalOpen}
-        onClose={closeModal}
+        open={createOpen}
+        onClose={closeModals}
         title="Nuevo servicio"
-        description="Alta rápida del catálogo. Después podés editarlo desde la fila."
+        description="Alta rápida del catálogo."
       >
         <ServiceCreateForm
-          onCancel={closeModal}
-          onSuccess={(created) => {
-            setFlashOk(`Servicio creado: ${created.name}`);
-            closeModal();
-            if (page === 1) {
-              void load();
-            } else {
-              setPage(1);
-            }
-          }}
+          onCancel={closeModals}
+          onSuccess={(created) =>
+            afterMutation(`Servicio creado: ${created.name}`)
+          }
         />
+      </AdminModal>
+
+      <AdminModal
+        open={Boolean(editId)}
+        onClose={closeModals}
+        title="Editar servicio"
+      >
+        {editId ? (
+          <ServiceEditForm
+            key={editId}
+            serviceId={editId}
+            onCancel={closeModals}
+            onSuccess={(updated) =>
+              afterMutation(`Servicio guardado: ${updated.name}`)
+            }
+          />
+        ) : null}
       </AdminModal>
     </AdminShell>
   );

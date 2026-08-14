@@ -1,8 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
-import { AdminShell } from '@/components/AdminShell';
+import { Suspense, useCallback, useEffect, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import {
   DataTable,
   ListFilterField,
@@ -10,6 +10,9 @@ import {
   ListToolbar,
   listCountDescription,
 } from '@/components/AdminList';
+import { AdminModal } from '@/components/AdminModal';
+import { AdminShell } from '@/components/AdminShell';
+import { MemberCreateForm } from '@/components/MemberCreateForm';
 import { RequireStaff } from '@/components/RequireStaff';
 import { StatusPill, memberStatusTone } from '@/components/StatusPill';
 import { ApiClientError } from '@/lib/api/client';
@@ -20,17 +23,21 @@ import { formatMemberStatus } from '@/lib/member-labels';
 const PAGE_SIZE = 20;
 
 /**
- * Listado de afiliados del gym (CU-AFI).
+ * Listado de afiliados (CU-AFI). Alta en modal; ficha sigue en página.
  */
 export default function AfiliadosPage() {
   return (
     <RequireStaff>
-      <AfiliadosInner />
+      <Suspense fallback={<p className="muted">Cargando…</p>}>
+        <AfiliadosInner />
+      </Suspense>
     </RequireStaff>
   );
 }
 
 function AfiliadosInner() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const [rows, setRows] = useState<MemberDetail[]>([]);
   const [total, setTotal] = useState(0);
   const [hasMore, setHasMore] = useState(false);
@@ -42,52 +49,57 @@ function AfiliadosInner() {
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [modalOpen, setModalOpen] = useState(
+    searchParams.get('nuevo') === '1',
+  );
+  const [flashOk, setFlashOk] = useState<string | null>(null);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      const data = await listMembers({
+        status: statusFilter === 'ALL' ? undefined : statusFilter,
+        q: appliedQuery || undefined,
+        page,
+        pageSize: PAGE_SIZE,
+      });
+      setRows(data.items);
+      setTotal(data.total);
+      setHasMore(data.hasMore);
+      setError(null);
+    } catch (err) {
+      setError(
+        err instanceof ApiClientError
+          ? err.message
+          : 'No se pudieron cargar afiliados',
+      );
+    } finally {
+      setLoading(false);
+    }
+  }, [statusFilter, appliedQuery, page]);
 
   useEffect(() => {
-    let cancelled = false;
-    void (async () => {
-      setLoading(true);
-      try {
-        const data = await listMembers({
-          status: statusFilter === 'ALL' ? undefined : statusFilter,
-          q: appliedQuery || undefined,
-          page,
-          pageSize: PAGE_SIZE,
-        });
-        if (cancelled) {
-          return;
-        }
-        setRows(data.items);
-        setTotal(data.total);
-        setHasMore(data.hasMore);
-        setError(null);
-      } catch (err) {
-        if (cancelled) {
-          return;
-        }
-        setError(
-          err instanceof ApiClientError
-            ? err.message
-            : 'No se pudieron cargar afiliados',
-        );
-      } finally {
-        if (!cancelled) {
-          setLoading(false);
-        }
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [statusFilter, appliedQuery, page]);
+    void load();
+  }, [load]);
+
+  function openModal() {
+    setFlashOk(null);
+    setModalOpen(true);
+    router.replace('/afiliados?nuevo=1', { scroll: false });
+  }
+
+  function closeModal() {
+    setModalOpen(false);
+    router.replace('/afiliados', { scroll: false });
+  }
 
   return (
     <AdminShell
       title="Afiliados"
       actions={
-        <Link href="/afiliados/nuevo" className="btn">
+        <button type="button" className="btn" onClick={openModal}>
           + Nuevo
-        </Link>
+        </button>
       }
     >
       <ListToolbar>
@@ -114,6 +126,8 @@ function AfiliadosInner() {
           <option value="INACTIVE">Inactivos</option>
         </ListFilterField>
       </ListToolbar>
+
+      {flashOk ? <p className="ok-msg">{flashOk}</p> : null}
 
       <DataTable
         description={listCountDescription(total, page, 'afiliado', 'afiliados')}
@@ -150,6 +164,28 @@ function AfiliadosInner() {
           </tr>
         ))}
       </DataTable>
+
+      <AdminModal
+        open={modalOpen}
+        onClose={closeModal}
+        title="Nuevo afiliado"
+        description="Alta rápida. La ficha completa sigue en Ver."
+      >
+        <MemberCreateForm
+          onCancel={closeModal}
+          onSuccess={(created) => {
+            setFlashOk(
+              `Afiliado creado: ${created.name?.trim() || created.email}`,
+            );
+            closeModal();
+            if (page === 1) {
+              void load();
+            } else {
+              setPage(1);
+            }
+          }}
+        />
+      </AdminModal>
     </AdminShell>
   );
 }

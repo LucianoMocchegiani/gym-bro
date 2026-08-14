@@ -3,9 +3,15 @@
 import Link from 'next/link';
 import { FormEvent, useCallback, useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
+import {
+  DataTable,
+  ListFilterField,
+  ListToolbar,
+} from '@/components/AdminList';
 import { AdminShell } from '@/components/AdminShell';
 import { AdminGrid, Panel } from '@/components/AdminUi';
 import { RequireStaff } from '@/components/RequireStaff';
+import { StatusPill } from '@/components/StatusPill';
 import { ApiClientError } from '@/lib/api/client';
 import { listMembers } from '@/lib/api/members';
 import type { MemberDetail } from '@/lib/api/members';
@@ -552,123 +558,173 @@ function DetailInner() {
             </Panel>
           ) : null}
 
-          <Panel
-            title="Roster"
-            description={`${rosterTotal} reserva${rosterTotal === 1 ? '' : 's'} · cupo ${session.bookedCount}/${session.capacity}`}
-            className="table-wrap"
-          >
-            <div className="toolbar">
-              <label className="toolbar-field">
-                Mostrar
-                <select
-                  value={rosterFilter}
-                  onChange={(e) =>
-                    setRosterFilter(e.target.value as RosterFilter)
-                  }
-                >
-                  <option value="CONFIRMED">Confirmadas</option>
-                  <option value="ALL">Todas</option>
-                </select>
-              </label>
-            </div>
+          <div className="admin-stack">
+            <ListToolbar>
+              <ListFilterField
+                label="Roster"
+                value={rosterFilter}
+                onChange={(v) => setRosterFilter(v as RosterFilter)}
+              >
+                <option value="CONFIRMED">Confirmadas</option>
+                <option value="ALL">Todas</option>
+              </ListFilterField>
+            </ListToolbar>
 
-            {rosterLoading ? <p className="muted">Cargando roster…</p> : null}
-            {rosterError ? <p className="error">{rosterError}</p> : null}
-
-            {!rosterLoading && roster.length === 0 ? (
-              <p className="muted">Sin reservas en este filtro.</p>
-            ) : null}
-
-            {roster.length > 0 ? (
-              <table className="data-table">
-                <thead>
-                  <tr>
-                    <th>Afiliado</th>
-                    <th>Cobertura</th>
-                    <th>Estado</th>
-                    <th />
-                  </tr>
-                </thead>
-                <tbody>
-                  {roster.map((row) => (
-                    <tr key={row.id}>
-                      <td>
-                        <Link href={`/afiliados/${row.memberId}`}>
-                          {row.memberName?.trim() || row.memberEmail}
-                        </Link>
-                      </td>
-                      <td>{row.coverage === 'CREDIT' ? 'Crédito' : 'Drop-in'}</td>
-                      <td>
-                        <span className="badge">
-                          {row.status === 'CONFIRMED'
-                            ? 'Confirmada'
-                            : 'Cancelada'}
-                        </span>
-                      </td>
-                      <td>
-                        {row.status === 'CONFIRMED' && !cancelled ? (
-                          <button
-                            type="button"
-                            className="btn ghost"
-                            onClick={() => void onCancelReservation(row)}
-                          >
-                            Quitar
-                          </button>
-                        ) : null}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            ) : null}
+            <DataTable
+              title="Roster"
+              description={`${rosterTotal} reserva${rosterTotal === 1 ? '' : 's'} · cupo ${session.bookedCount}/${session.capacity}`}
+              loading={rosterLoading}
+              error={rosterError}
+              isEmpty={roster.length === 0}
+              emptyText="Sin reservas en este filtro."
+              paginate={false}
+              header={
+                <>
+                  <th>Afiliado</th>
+                  <th>Cobertura</th>
+                  <th>Estado</th>
+                  <th />
+                </>
+              }
+            >
+              {roster.map((row) => (
+                <tr key={row.id}>
+                  <td>
+                    <Link href={`/afiliados/${row.memberId}`}>
+                      {row.memberName?.trim() || row.memberEmail}
+                    </Link>
+                  </td>
+                  <td>{row.coverage === 'CREDIT' ? 'Crédito' : 'Drop-in'}</td>
+                  <td>
+                    <StatusPill
+                      tone={row.status === 'CONFIRMED' ? 'ok' : 'muted'}
+                    >
+                      {row.status === 'CONFIRMED' ? 'Confirmada' : 'Cancelada'}
+                    </StatusPill>
+                  </td>
+                  <td className="row-actions">
+                    {row.status === 'CONFIRMED' && !cancelled ? (
+                      <button
+                        type="button"
+                        className="btn ghost"
+                        onClick={() => void onCancelReservation(row)}
+                      >
+                        Quitar
+                      </button>
+                    ) : null}
+                  </td>
+                </tr>
+              ))}
+            </DataTable>
 
             {!cancelled ? (
-              <form className="admin-form" onSubmit={(e) => void onBook(e)}>
-                <h3>Reservar con crédito</h3>
-                <p className="muted small">
-                  Consume 1 crédito del pack del afiliado. Drop-in CASH → Caja.
-                </p>
-                <label>
-                  Filtrar afiliados
-                  <input
-                    value={memberFilter}
-                    onChange={(e) => setMemberFilter(e.target.value)}
-                    placeholder="Nombre o email"
-                  />
-                </label>
-                <label>
-                  Afiliado
-                  <select
-                    value={memberId}
-                    onChange={(e) => setMemberId(e.target.value)}
-                    required
+              <Panel title="Reservar con crédito" className="form-panel">
+                <form className="admin-form" onSubmit={(e) => void onBook(e)}>
+                  <p className="muted small">
+                    Consume 1 crédito del pack del afiliado. Drop-in CASH → Caja.
+                  </p>
+                  <label>
+                    Filtrar afiliados
+                    <input
+                      value={memberFilter}
+                      onChange={(e) => setMemberFilter(e.target.value)}
+                      placeholder="Nombre o email"
+                    />
+                  </label>
+                  <label>
+                    Afiliado
+                    <select
+                      value={memberId}
+                      onChange={(e) => setMemberId(e.target.value)}
+                      required
+                    >
+                      <option value="">Elegí…</option>
+                      {memberOptions.map((m) => (
+                        <option key={m.id} value={m.id}>
+                          {m.name?.trim() || m.email}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  {bookError ? <p className="error">{bookError}</p> : null}
+                  {bookOk ? <p className="ok-msg">{bookOk}</p> : null}
+                  <button
+                    type="submit"
+                    className="primary"
+                    disabled={bookBusy || !memberId}
                   >
-                    <option value="">Elegí…</option>
-                    {memberOptions.map((m) => (
-                      <option key={m.id} value={m.id}>
-                        {m.name?.trim() || m.email}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                {bookError ? <p className="error">{bookError}</p> : null}
-                {bookOk ? <p className="ok-msg">{bookOk}</p> : null}
-                <button
-                  type="submit"
-                  className="primary"
-                  disabled={bookBusy || !memberId}
-                >
-                  {bookBusy ? 'Reservando…' : 'Agregar al roster'}
-                </button>
-              </form>
+                    {bookBusy ? 'Reservando…' : 'Agregar al roster'}
+                  </button>
+                </form>
+              </Panel>
             ) : null}
-          </Panel>
+          </div>
 
-          <Panel
-            title="Lista de espera"
-            description={`${waitlistTotal} en filtro · modo ${waitlistMode ? waitlistModeLabel(waitlistMode) : '…'}`}
-            className="table-wrap"
-          >
+          <div className="admin-stack">
+            <ListToolbar>
+              <ListFilterField
+                label="Waitlist"
+                value={waitlistFilter}
+                onChange={(v) => setWaitlistFilter(v as WaitlistFilter)}
+              >
+                <option value="WAITING">En cola</option>
+                <option value="ALL">Todas</option>
+              </ListFilterField>
+            </ListToolbar>
+
+            <DataTable
+              title="Lista de espera"
+              description={`${waitlistTotal} en filtro · modo ${waitlistMode ? waitlistModeLabel(waitlistMode) : '…'}`}
+              loading={waitlistLoading}
+              error={waitlistError}
+              isEmpty={waitlist.length === 0}
+              emptyText="Sin entradas en este filtro."
+              paginate={false}
+              header={
+                <>
+                  <th>#</th>
+                  <th>Afiliado</th>
+                  <th>Estado</th>
+                  <th />
+                </>
+              }
+            >
+              {waitlist.map((row) => (
+                <tr key={row.id}>
+                  <td>{row.position ?? '—'}</td>
+                  <td>
+                    <Link href={`/afiliados/${row.memberId}`}>
+                      {row.memberName?.trim() || row.memberEmail}
+                    </Link>
+                  </td>
+                  <td>
+                    <StatusPill
+                      tone={
+                        row.status === 'WAITING'
+                          ? 'warn'
+                          : row.status === 'PROMOTED'
+                            ? 'ok'
+                            : 'muted'
+                      }
+                    >
+                      {waitlistStatusLabel(row.status)}
+                    </StatusPill>
+                  </td>
+                  <td className="row-actions">
+                    {row.status === 'WAITING' && !cancelled ? (
+                      <button
+                        type="button"
+                        className="btn ghost"
+                        onClick={() => void onLeaveWaitlist(row)}
+                      >
+                        Quitar
+                      </button>
+                    ) : null}
+                  </td>
+                </tr>
+              ))}
+            </DataTable>
+
             <p className="muted small">
               {waitlistMode === 'AUTO_ASSIGN'
                 ? 'Al liberar cupo se promociona automáticamente al primero con crédito.'
@@ -677,116 +733,53 @@ function DetailInner() {
                   ? 'Confirmación manual (modos 2/3) aún no tiene acciones staff en Admin.'
                   : 'Modo de waitlist del gym (Config).'}
             </p>
-            <div className="toolbar">
-              <label className="toolbar-field">
-                Mostrar
-                <select
-                  value={waitlistFilter}
-                  onChange={(e) =>
-                    setWaitlistFilter(e.target.value as WaitlistFilter)
-                  }
-                >
-                  <option value="WAITING">En cola</option>
-                  <option value="ALL">Todas</option>
-                </select>
-              </label>
-            </div>
-
-            {waitlistLoading ? (
-              <p className="muted">Cargando lista de espera…</p>
-            ) : null}
-            {waitlistError ? <p className="error">{waitlistError}</p> : null}
-
-            {!waitlistLoading && waitlist.length === 0 ? (
-              <p className="muted">Sin entradas en este filtro.</p>
-            ) : null}
-
-            {waitlist.length > 0 ? (
-              <table className="data-table">
-                <thead>
-                  <tr>
-                    <th>#</th>
-                    <th>Afiliado</th>
-                    <th>Estado</th>
-                    <th />
-                  </tr>
-                </thead>
-                <tbody>
-                  {waitlist.map((row) => (
-                    <tr key={row.id}>
-                      <td>{row.position ?? '—'}</td>
-                      <td>
-                        <Link href={`/afiliados/${row.memberId}`}>
-                          {row.memberName?.trim() || row.memberEmail}
-                        </Link>
-                      </td>
-                      <td>
-                        <span className="badge">
-                          {waitlistStatusLabel(row.status)}
-                        </span>
-                      </td>
-                      <td>
-                        {row.status === 'WAITING' && !cancelled ? (
-                          <button
-                            type="button"
-                            className="btn ghost"
-                            onClick={() => void onLeaveWaitlist(row)}
-                          >
-                            Quitar
-                          </button>
-                        ) : null}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            ) : null}
 
             {!cancelled ? (
-              <form
-                className="admin-form"
-                onSubmit={(e) => void onJoinWaitlist(e)}
-              >
-                <h3>Agregar a la cola</h3>
-                <p className="muted small">
-                  Solo si la sesión está llena (o según reglas de ingreso
-                  tardío). Requiere afiliado activo sin reserva confirmada.
-                </p>
-                <label>
-                  Filtrar afiliados
-                  <input
-                    value={wlMemberFilter}
-                    onChange={(e) => setWlMemberFilter(e.target.value)}
-                    placeholder="Nombre o email"
-                  />
-                </label>
-                <label>
-                  Afiliado
-                  <select
-                    value={wlMemberId}
-                    onChange={(e) => setWlMemberId(e.target.value)}
-                    required
-                  >
-                    <option value="">Elegí…</option>
-                    {wlMemberOptions.map((m) => (
-                      <option key={m.id} value={m.id}>
-                        {m.name?.trim() || m.email}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                {wlError ? <p className="error">{wlError}</p> : null}
-                {wlOk ? <p className="ok-msg">{wlOk}</p> : null}
-                <button
-                  type="submit"
-                  className="primary"
-                  disabled={wlBusy || !wlMemberId}
+              <Panel title="Agregar a la cola" className="form-panel">
+                <form
+                  className="admin-form"
+                  onSubmit={(e) => void onJoinWaitlist(e)}
                 >
-                  {wlBusy ? 'Agregando…' : 'Agregar a waitlist'}
-                </button>
-              </form>
+                  <p className="muted small">
+                    Solo si la sesión está llena (o según reglas de ingreso
+                    tardío). Requiere afiliado activo sin reserva confirmada.
+                  </p>
+                  <label>
+                    Filtrar afiliados
+                    <input
+                      value={wlMemberFilter}
+                      onChange={(e) => setWlMemberFilter(e.target.value)}
+                      placeholder="Nombre o email"
+                    />
+                  </label>
+                  <label>
+                    Afiliado
+                    <select
+                      value={wlMemberId}
+                      onChange={(e) => setWlMemberId(e.target.value)}
+                      required
+                    >
+                      <option value="">Elegí…</option>
+                      {wlMemberOptions.map((m) => (
+                        <option key={m.id} value={m.id}>
+                          {m.name?.trim() || m.email}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  {wlError ? <p className="error">{wlError}</p> : null}
+                  {wlOk ? <p className="ok-msg">{wlOk}</p> : null}
+                  <button
+                    type="submit"
+                    className="primary"
+                    disabled={wlBusy || !wlMemberId}
+                  >
+                    {wlBusy ? 'Agregando…' : 'Agregar a waitlist'}
+                  </button>
+                </form>
+              </Panel>
             ) : null}
-          </Panel>
+          </div>
         </AdminGrid>
       ) : null}
     </AdminShell>
