@@ -2,6 +2,7 @@ import { Module, forwardRef } from '@nestjs/common';
 import { AuditModule } from '../audit/audit.module';
 import { AuthModule } from '../auth/auth.module';
 import { PermissionGuard } from './guards/permission.guard';
+import { MePermissionsController } from './me-permissions.controller';
 import { PermissionsService } from './permissions.service';
 import { RolesController } from './roles.controller';
 import { RolesSeedService } from './roles-seed.service';
@@ -13,7 +14,11 @@ import { SuperRolesController } from './super-roles.controller';
  */
 @Module({
   imports: [AuthModule, forwardRef(() => AuditModule)],
-  controllers: [RolesController, SuperRolesController],
+  controllers: [
+    RolesController,
+    SuperRolesController,
+    MePermissionsController,
+  ],
   providers: [
     RolesSeedService,
     RolesService,

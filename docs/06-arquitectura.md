@@ -314,7 +314,7 @@ Prefijo sugerido: `/api/v1`.
 | Comprobantes | Member `/me/receipts`; Staff `GET /payments/:id/receipt`, `GET /members/:id/receipts` (`members.read`) |
 | Catálogo | Super/Staff CRUD services + packs (`catalog.write`; kind inferido; `creditsExpireAt`) |
 | Contrataciones | Staff `POST /members/:id/contracts` (pago stub APPROVED); `PATCH /contracts/:id/status` → `CANCELLED` (pierde derechos, RN-SER-009); Member `GET /me/contracts` |
-| Roles | Super/Staff list-get-create-patch roles; `PUT .../staff/:id/roles` multi-rol |
+| Roles | Super/Staff list-get-create-patch roles; `PUT .../staff/:id/roles`; Staff `GET /me/permissions` (UI nav) |
 | Auditoría | Staff `/auditoria` → `GET /audit-events` (`audit.read`); Super mirror; escritura en mutaciones |
 | Reportes | Staff `GET /reports/summary?from&to` (`reports.read`); ingresos $ + snapshot afiliados/packs (puerta en `/access-attempts`) |
 | Caja | `/cash/day`, `/cash/close` |

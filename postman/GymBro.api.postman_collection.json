@@ -348,6 +348,27 @@
           }
         },
         {
+          "name": "Staff GET me permissions",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('permissionCodes array', () => pm.expect(pm.response.json().permissionCodes).to.be.an('array'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/me/permissions",
+            "description": "Unión de permisos del staff (nav Admin). Requiere JWT Staff."
+          }
+        },
+        {
           "name": "Refresh",
           "event": [
             {

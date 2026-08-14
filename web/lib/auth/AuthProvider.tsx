@@ -4,16 +4,19 @@ import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
   useSyncExternalStore,
   type ReactNode,
 } from 'react';
 import { staffLogin, staffLogout } from '@/lib/api/auth';
+import { getMyPermissions } from '@/lib/api/permissions';
 import {
   clearStaffSession,
   getStaffSessionServerSnapshot,
   readStaffSession,
   subscribeStaffSession,
+  updateStaffPermissions,
   writeStaffSession,
   type StaffSession,
 } from '@/lib/auth/session';
@@ -28,6 +31,8 @@ type AuthContextValue = {
     password: string;
   }) => Promise<void>;
   logout: () => Promise<void>;
+  /** Recarga permisos desde API (p. ej. tras cambiar roles). */
+  refreshPermissions: () => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -63,6 +68,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }) => {
       const res = await staffLogin(input);
       writeStaffSession(res, input.tenantSlug ?? null);
+      try {
+        const perms = await getMyPermissions();
+        updateStaffPermissions(perms.permissionCodes);
+      } catch {
+        // Nav queda sin filtrar hasta el próximo intento.
+      }
     },
     [],
   );
@@ -75,9 +86,37 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     clearStaffSession();
   }, []);
 
+  const refreshPermissions = useCallback(async () => {
+    if (!readStaffSession()) {
+      return;
+    }
+    const perms = await getMyPermissions();
+    updateStaffPermissions(perms.permissionCodes);
+  }, []);
+
+  useEffect(() => {
+    if (!session || session.permissionCodes != null) {
+      return;
+    }
+    let cancelled = false;
+    void (async () => {
+      try {
+        const perms = await getMyPermissions();
+        if (!cancelled) {
+          updateStaffPermissions(perms.permissionCodes);
+        }
+      } catch {
+        // Mantener nav completa si falla (API sigue autorizando).
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [session]);
+
   const value = useMemo(
-    () => ({ session, ready, login, logout }),
-    [session, ready, login, logout],
+    () => ({ session, ready, login, logout, refreshPermissions }),
+    [session, ready, login, logout, refreshPermissions],
   );
 
   return (

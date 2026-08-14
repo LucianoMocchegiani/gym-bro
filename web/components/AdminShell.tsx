@@ -1,10 +1,11 @@
 'use client';
 
 import Link from 'next/link';
-import { useState, useSyncExternalStore } from 'react';
+import { useMemo, useState, useSyncExternalStore } from 'react';
 import { usePathname } from 'next/navigation';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { useAuth } from '@/lib/auth/AuthProvider';
+import { canAccessNavHref } from '@/lib/nav-permissions';
 import { extractTenantSlugFromHost } from '@/lib/tenant-host';
 
 type AdminShellProps = {
@@ -67,6 +68,8 @@ function getServerHostSlug(): null {
 
 /**
  * Shell Admin: sidebar de navegación + topbar (tema / perfil / logout).
+ *
+ * @remarks Filtra links según `session.permissionCodes` (GET /me/permissions).
  */
 export function AdminShell({ title, children, actions }: AdminShellProps) {
   const { session, logout } = useAuth();
@@ -78,6 +81,16 @@ export function AdminShell({ title, children, actions }: AdminShellProps) {
     getServerHostSlug,
   );
   const brandSlug = hostSlug ?? session?.tenantSlug?.trim() ?? '…';
+  const permissionCodes = session?.permissionCodes ?? null;
+
+  const visibleGroups = useMemo(() => {
+    return NAV_GROUPS.map((group) => ({
+      ...group,
+      items: group.items.filter((item) =>
+        canAccessNavHref(item.href, permissionCodes),
+      ),
+    })).filter((group) => group.items.length > 0);
+  }, [permissionCodes]);
 
   function navClass(href: string): string | undefined {
     if (href === '/') {
@@ -110,7 +123,7 @@ export function AdminShell({ title, children, actions }: AdminShellProps) {
         </div>
 
         <nav className="app-nav">
-          {NAV_GROUPS.map((group) => (
+          {visibleGroups.map((group) => (
             <div key={group.label} className="app-nav-group">
               <p className="app-nav-label">{group.label}</p>
               {group.items.map((item) => (

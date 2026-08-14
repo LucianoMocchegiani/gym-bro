@@ -28,7 +28,7 @@
 | E7 | Rutinas | Catálogo gym + asignación + cumplimiento |
 | E8 | Notificaciones N1 | Email + in-app |
 | E9 | App afiliado | Flutter: cuenta + SSI hechos; falta tienda/reservas/waitlist/devolución (+ API member packs/sesiones) |
-| E10 | Admin web | Next: núcleo + thin (hasta auditoría); faltan nav permisos / MP staff / pase sesión |
+| E10 | Admin web | Next: thin casi cerrados; faltan MP staff / pase sesión opcional |
 | E11 | Reportes mínimos | Activos, deuda, ingresos |
 | E12 | Cierre MVP | Smoke QA, hardenin, deploy |
 
@@ -295,10 +295,11 @@ Detalle: [14-auditoria…](./14-auditoria-roadmap-vs-codigo-2026-08-13.md).
   - `GET /payments/:id/receipt`, `GET /members/:id/receipts` (`members.read`)
 - [x] Auditoría UI
   - `/auditoria`: `GET /audit-events` (`audit.read`); búsqueda `q` + detalle before/after
+- [x] Nav / páginas gated por permiso (hoy se muestran todos los links)
+  - `GET /me/permissions` + filtro nav/atajos; API sigue autorizando (403)
 - [ ] Checkout MP desde Admin (staff)
   - `POST /members/:id/payments/mp/checkout` y drop-in (opcional si el piloto es CASH + app)
 - [ ] Pase manual: selector de sesión opcional (`sessionId`)
-- [ ] Nav / páginas gated por permiso (hoy se muestran todos los links)
 
 ### Pendiente — otras épicas / Super
 
@@ -360,7 +361,7 @@ Roadmap E9/E10 realineados (2026-08-13) tras [auditoría](./14-auditoria-roadmap
 ```text
 1) Flutter E9: Tienda/MP + calendario/reservas + waitlist + devolución
    (prereq: API member GET packs + sesiones)
-2) Admin E10 thin: nav permisos → MP staff / pase sesión opcional
+2) Admin E10 thin: MP staff / pase sesión opcional
    → recurrencia / creditsExpireAt / receipts (después)
 3) E5 MP live (ops) → E8 → E7 → E12
 ```

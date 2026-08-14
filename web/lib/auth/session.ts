@@ -15,6 +15,11 @@ export type StaffSession = {
   userId: string;
   email: string;
   name: string | null;
+  /**
+   * Permisos efectivos (`GET /me/permissions`).
+   * `null`/ausente = aún no cargados (nav muestra todo hasta hidratar).
+   */
+  permissionCodes?: string[] | null;
 };
 
 /** Snapshot cacheado: misma referencia si el JSON no cambió (useSyncExternalStore). */
@@ -118,9 +123,25 @@ export function writeStaffSession(
     userId: login.user.id,
     email: login.user.email,
     name: login.user.name,
+    permissionCodes: null,
   };
   persist(session);
   return session;
+}
+
+/**
+ * Guarda permisos efectivos del staff (nav gated).
+ */
+export function updateStaffPermissions(
+  permissionCodes: string[],
+): StaffSession | null {
+  const current = readStaffSession();
+  if (!current) {
+    return null;
+  }
+  const next: StaffSession = { ...current, permissionCodes };
+  persist(next);
+  return next;
 }
 
 /**
