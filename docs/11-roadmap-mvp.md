@@ -306,6 +306,8 @@ Detalle: [14-auditoria…](./14-auditoria-roadmap-vs-codigo-2026-08-13.md).
 - [x] Credencial SSI **staff** para molinete
   - `staff_credential_offers` + `POST/GET /staff/:id/credential-offers`; puerta DCQL pack|staff; `ok_staff`
   - Fichaje horario → [backlog](./99-backlog-post-mvp.md)
+- [x] Listados Admin unificados (`DataTable` / `ListToolbar` / paginación)
+  - afiliados, staff, servicios, packs, sesiones, roles, auditoría, Super tenants
 
 ### Pendiente — otras épicas / Super
 

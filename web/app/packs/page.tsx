@@ -3,7 +3,12 @@
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { AdminShell } from '@/components/AdminShell';
-import { Panel } from '@/components/AdminUi';
+import {
+  DataTable,
+  ListFilterField,
+  ListToolbar,
+  listCountDescription,
+} from '@/components/AdminList';
 import { RequireStaff } from '@/components/RequireStaff';
 import { ApiClientError } from '@/lib/api/client';
 import { listPacks } from '@/lib/api/packs';
@@ -13,6 +18,8 @@ import {
   formatBillingPeriod,
   formatPackKind,
 } from '@/lib/catalog-labels';
+
+const PAGE_SIZE = 20;
 
 /**
  * Listado de packs del catálogo (CU-SER-002).
@@ -24,8 +31,6 @@ export default function PacksPage() {
     </RequireStaff>
   );
 }
-
-const PAGE_SIZE = 20;
 
 function PacksInner() {
   const [rows, setRows] = useState<PackDetail[]>([]);
@@ -84,91 +89,62 @@ function PacksInner() {
         </Link>
       }
     >
-      <Panel className="toolbar">
-        <label className="toolbar-field">
-          Activo
-          <select
-            value={activeFilter}
-            onChange={(e) => {
-              setPage(1);
-              setActiveFilter(e.target.value as 'ALL' | 'true' | 'false');
-            }}
-          >
-            <option value="ALL">Todos</option>
-            <option value="true">Sí</option>
-            <option value="false">No</option>
-          </select>
-        </label>
-      </Panel>
-
-      {loading ? <p className="muted">Cargando…</p> : null}
-      {error ? <p className="error">{error}</p> : null}
-
-      {!loading && !error ? (
-        <Panel
-          title="Listado"
-          description={`${total} pack${total === 1 ? '' : 's'} · página ${page}`}
-          className="table-wrap"
+      <ListToolbar>
+        <ListFilterField
+          label="Activo"
+          value={activeFilter}
+          onChange={(v) => {
+            setPage(1);
+            setActiveFilter(v as 'ALL' | 'true' | 'false');
+          }}
         >
-          {rows.length === 0 ? (
-            <p className="muted">No hay packs con ese filtro.</p>
-          ) : (
-            <table className="data-table">
-              <thead>
-                <tr>
-                  <th>Nombre</th>
-                  <th>Tipo</th>
-                  <th>Precio</th>
-                  <th>Periodo</th>
-                  <th>Componentes</th>
-                  <th>Estado</th>
-                  <th />
-                </tr>
-              </thead>
-              <tbody>
-                {rows.map((p) => (
-                  <tr key={p.id}>
-                    <td>{p.name}</td>
-                    <td>{formatPackKind(p.kind)}</td>
-                    <td>{formatMoney(p.price)}</td>
-                    <td>{formatBillingPeriod(p.billingPeriod)}</td>
-                    <td>{p.components.length}</td>
-                    <td>
-                      <span
-                        className={`status-pill ${p.active ? 'active' : 'inactive'}`}
-                      >
-                        {p.active ? 'Activo' : 'Inactivo'}
-                      </span>
-                    </td>
-                    <td className="row-actions">
-                      <Link href={`/packs/${p.id}`}>Editar</Link>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-          <div className="pager">
-            <button
-              type="button"
-              className="btn ghost"
-              disabled={page <= 1}
-              onClick={() => setPage((p) => Math.max(1, p - 1))}
-            >
-              Anterior
-            </button>
-            <span className="muted small">Página {page}</span>
-            <button
-              type="button"
-              className="btn ghost"
-              disabled={!hasMore}
-              onClick={() => setPage((p) => p + 1)}
-            >
-              Siguiente
-            </button>
-          </div>
-        </Panel>
-      ) : null}
+          <option value="ALL">Todos</option>
+          <option value="true">Sí</option>
+          <option value="false">No</option>
+        </ListFilterField>
+      </ListToolbar>
+
+      <DataTable
+        description={listCountDescription(total, page, 'pack', 'packs')}
+        loading={loading}
+        error={error}
+        isEmpty={rows.length === 0}
+        emptyText="No hay packs con ese filtro."
+        page={page}
+        hasMore={hasMore}
+        onPageChange={setPage}
+        header={
+          <>
+            <th>Nombre</th>
+            <th>Tipo</th>
+            <th>Precio</th>
+            <th>Periodo</th>
+            <th>Componentes</th>
+            <th>Estado</th>
+            <th />
+          </>
+        }
+      >
+        {rows.map((p) => (
+          <tr key={p.id}>
+            <td>{p.name}</td>
+            <td>{formatPackKind(p.kind)}</td>
+            <td>{formatMoney(p.price)}</td>
+            <td>{formatBillingPeriod(p.billingPeriod)}</td>
+            <td>{p.components.length}</td>
+            <td>
+              <span
+                className={`status-pill ${p.active ? 'active' : 'inactive'}`}
+              >
+                {p.active ? 'Activo' : 'Inactivo'}
+              </span>
+            </td>
+            <td className="row-actions">
+              <Link href={`/packs/${p.id}`}>Editar</Link>
+            </td>
+          </tr>
+        ))}
+      </DataTable>
     </AdminShell>
   );
 }

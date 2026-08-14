@@ -3,13 +3,20 @@
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { AdminShell } from '@/components/AdminShell';
-import { Panel } from '@/components/AdminUi';
+import {
+  DataTable,
+  ListFilterField,
+  ListToolbar,
+  listCountDescription,
+} from '@/components/AdminList';
 import { RequireStaff } from '@/components/RequireStaff';
 import { ApiClientError } from '@/lib/api/client';
 import { listServices } from '@/lib/api/services';
 import type { ServiceDetail, ServiceType } from '@/lib/api/services';
 import { formatServiceType } from '@/lib/catalog-labels';
 import { formatMoney } from '@/lib/cash-labels';
+
+const PAGE_SIZE = 20;
 
 /**
  * Listado de servicios del catálogo (CU-SER-001).
@@ -21,8 +28,6 @@ export default function ServiciosPage() {
     </RequireStaff>
   );
 }
-
-const PAGE_SIZE = 20;
 
 function ServiciosInner() {
   const [rows, setRows] = useState<ServiceDetail[]>([]);
@@ -84,105 +89,72 @@ function ServiciosInner() {
         </Link>
       }
     >
-      <Panel className="toolbar">
-        <label className="toolbar-field">
-          Tipo
-          <select
-            value={typeFilter}
-            onChange={(e) => {
-              setPage(1);
-              setTypeFilter(e.target.value as ServiceType | 'ALL');
-            }}
-          >
-            <option value="ALL">Todos</option>
-            <option value="ACCESO_LIBRE">Acceso libre</option>
-            <option value="POR_SESIONES">Por sesiones</option>
-          </select>
-        </label>
-        <label className="toolbar-field">
-          Activo
-          <select
-            value={activeFilter}
-            onChange={(e) => {
-              setPage(1);
-              setActiveFilter(e.target.value as 'ALL' | 'true' | 'false');
-            }}
-          >
-            <option value="ALL">Todos</option>
-            <option value="true">Sí</option>
-            <option value="false">No</option>
-          </select>
-        </label>
-      </Panel>
-
-      {loading ? <p className="muted">Cargando…</p> : null}
-      {error ? <p className="error">{error}</p> : null}
-
-      {!loading && !error ? (
-        <Panel
-          title="Listado"
-          description={`${total} servicio${total === 1 ? '' : 's'} · página ${page}`}
-          className="table-wrap"
+      <ListToolbar>
+        <ListFilterField
+          label="Tipo"
+          value={typeFilter}
+          onChange={(v) => {
+            setPage(1);
+            setTypeFilter(v as ServiceType | 'ALL');
+          }}
         >
-          {rows.length === 0 ? (
-            <p className="muted">No hay servicios con ese filtro.</p>
-          ) : (
-            <table className="data-table">
-              <thead>
-                <tr>
-                  <th>Nombre</th>
-                  <th>Tipo</th>
-                  <th>Drop-in</th>
-                  <th>Estado</th>
-                  <th />
-                </tr>
-              </thead>
-              <tbody>
-                {rows.map((s) => (
-                  <tr key={s.id}>
-                    <td>{s.name}</td>
-                    <td>{formatServiceType(s.type)}</td>
-                    <td>
-                      {s.dropInPrice != null
-                        ? formatMoney(s.dropInPrice)
-                        : '—'}
-                    </td>
-                    <td>
-                      <span
-                        className={`status-pill ${s.active ? 'active' : 'inactive'}`}
-                      >
-                        {s.active ? 'Activo' : 'Inactivo'}
-                      </span>
-                    </td>
-                    <td className="row-actions">
-                      <Link href={`/servicios/${s.id}`}>Editar</Link>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-          <div className="pager">
-            <button
-              type="button"
-              className="btn ghost"
-              disabled={page <= 1}
-              onClick={() => setPage((p) => Math.max(1, p - 1))}
-            >
-              Anterior
-            </button>
-            <span className="muted small">Página {page}</span>
-            <button
-              type="button"
-              className="btn ghost"
-              disabled={!hasMore}
-              onClick={() => setPage((p) => p + 1)}
-            >
-              Siguiente
-            </button>
-          </div>
-        </Panel>
-      ) : null}
+          <option value="ALL">Todos</option>
+          <option value="ACCESO_LIBRE">Acceso libre</option>
+          <option value="POR_SESIONES">Por sesiones</option>
+        </ListFilterField>
+        <ListFilterField
+          label="Activo"
+          value={activeFilter}
+          onChange={(v) => {
+            setPage(1);
+            setActiveFilter(v as 'ALL' | 'true' | 'false');
+          }}
+        >
+          <option value="ALL">Todos</option>
+          <option value="true">Sí</option>
+          <option value="false">No</option>
+        </ListFilterField>
+      </ListToolbar>
+
+      <DataTable
+        description={listCountDescription(total, page, 'servicio', 'servicios')}
+        loading={loading}
+        error={error}
+        isEmpty={rows.length === 0}
+        emptyText="No hay servicios con ese filtro."
+        page={page}
+        hasMore={hasMore}
+        onPageChange={setPage}
+        header={
+          <>
+            <th>Nombre</th>
+            <th>Tipo</th>
+            <th>Drop-in</th>
+            <th>Estado</th>
+            <th />
+          </>
+        }
+      >
+        {rows.map((s) => (
+          <tr key={s.id}>
+            <td>{s.name}</td>
+            <td>{formatServiceType(s.type)}</td>
+            <td>
+              {s.dropInPrice != null ? formatMoney(s.dropInPrice) : '—'}
+            </td>
+            <td>
+              <span
+                className={`status-pill ${s.active ? 'active' : 'inactive'}`}
+              >
+                {s.active ? 'Activo' : 'Inactivo'}
+              </span>
+            </td>
+            <td className="row-actions">
+              <Link href={`/servicios/${s.id}`}>Editar</Link>
+            </td>
+          </tr>
+        ))}
+      </DataTable>
     </AdminShell>
   );
 }

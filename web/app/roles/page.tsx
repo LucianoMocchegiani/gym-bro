@@ -3,7 +3,10 @@
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { AdminShell } from '@/components/AdminShell';
-import { Panel } from '@/components/AdminUi';
+import {
+  DataTable,
+  listCountDescription,
+} from '@/components/AdminList';
 import { RequireStaff } from '@/components/RequireStaff';
 import { ApiClientError } from '@/lib/api/client';
 import { listRoles } from '@/lib/api/roles';
@@ -72,74 +75,47 @@ function RolesInner() {
         </Link>
       }
     >
-      {loading ? <p className="muted">Cargando…</p> : null}
-      {error ? <p className="error">{error}</p> : null}
-
-      {!loading && !error ? (
-        <Panel
-          title="Listado"
-          description={`${total} rol${total === 1 ? '' : 'es'} · página ${page}`}
-          className="table-wrap"
-        >
-          {rows.length === 0 ? (
-            <p className="muted">No hay roles.</p>
-          ) : (
-            <table className="data-table">
-              <thead>
-                <tr>
-                  <th>Nombre</th>
-                  <th>Slug</th>
-                  <th>Permisos</th>
-                  <th>Tipo</th>
-                  <th />
-                </tr>
-              </thead>
-              <tbody>
-                {rows.map((r) => (
-                  <tr key={r.id}>
-                    <td>{r.name}</td>
-                    <td>
-                      <code>{r.slug}</code>
-                    </td>
-                    <td>{r.permissionCodes.length}</td>
-                    <td>
-                      <span
-                        className={`status-pill ${r.isSystem ? 'suspended' : 'active'}`}
-                      >
-                        {r.isSystem ? 'Sistema' : 'Custom'}
-                      </span>
-                    </td>
-                    <td className="row-actions">
-                      <Link href={`/roles/${r.id}`}>
-                        {r.slug === 'admin' ? 'Ver' : 'Editar'}
-                      </Link>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-          <div className="pager">
-            <button
-              type="button"
-              className="btn ghost"
-              disabled={page <= 1}
-              onClick={() => setPage((p) => Math.max(1, p - 1))}
-            >
-              Anterior
-            </button>
-            <span className="muted small">Página {page}</span>
-            <button
-              type="button"
-              className="btn ghost"
-              disabled={!hasMore}
-              onClick={() => setPage((p) => p + 1)}
-            >
-              Siguiente
-            </button>
-          </div>
-        </Panel>
-      ) : null}
+      <DataTable
+        description={listCountDescription(total, page, 'rol', 'roles')}
+        loading={loading}
+        error={error}
+        isEmpty={rows.length === 0}
+        emptyText="No hay roles."
+        page={page}
+        hasMore={hasMore}
+        onPageChange={setPage}
+        header={
+          <>
+            <th>Nombre</th>
+            <th>Slug</th>
+            <th>Permisos</th>
+            <th>Tipo</th>
+            <th />
+          </>
+        }
+      >
+        {rows.map((r) => (
+          <tr key={r.id}>
+            <td>{r.name}</td>
+            <td>
+              <code>{r.slug}</code>
+            </td>
+            <td>{r.permissionCodes.length}</td>
+            <td>
+              <span
+                className={`status-pill ${r.isSystem ? 'suspended' : 'active'}`}
+              >
+                {r.isSystem ? 'Sistema' : 'Custom'}
+              </span>
+            </td>
+            <td className="row-actions">
+              <Link href={`/roles/${r.id}`}>
+                {r.slug === 'admin' ? 'Ver' : 'Editar'}
+              </Link>
+            </td>
+          </tr>
+        ))}
+      </DataTable>
     </AdminShell>
   );
 }

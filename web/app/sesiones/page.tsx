@@ -4,7 +4,12 @@ import Link from 'next/link';
 import { Suspense, useCallback, useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { AdminShell } from '@/components/AdminShell';
-import { Panel } from '@/components/AdminUi';
+import {
+  DataTable,
+  ListFilterField,
+  ListToolbar,
+  listCountDescription,
+} from '@/components/AdminList';
 import { RequireStaff } from '@/components/RequireStaff';
 import { ApiClientError } from '@/lib/api/client';
 import {
@@ -65,6 +70,9 @@ function SesionesInner() {
   const initialView: View =
     searchParams.get('view') === 'rules' ? 'rules' : 'sessions';
   const [view, setView] = useState<View>(initialView);
+  const [statusFilter, setStatusFilter] = useState<SessionStatus | 'ALL'>(
+    'PUBLISHED',
+  );
 
   useEffect(() => {
     if (searchParams.get('view') === 'rules') {
@@ -81,31 +89,45 @@ function SesionesInner() {
         </Link>
       }
     >
-      <Panel className="toolbar">
-        <label className="toolbar-field">
-          Ver
-          <select
-            value={view}
-            onChange={(e) => setView(e.target.value as View)}
+      <ListToolbar>
+        <ListFilterField
+          label="Ver"
+          value={view}
+          onChange={(v) => setView(v as View)}
+        >
+          <option value="sessions">Sesiones</option>
+          <option value="rules">Recurrencias</option>
+        </ListFilterField>
+        {view === 'sessions' ? (
+          <ListFilterField
+            label="Estado"
+            value={statusFilter}
+            onChange={(v) => setStatusFilter(v as SessionStatus | 'ALL')}
           >
-            <option value="sessions">Sesiones</option>
-            <option value="rules">Recurrencias</option>
-          </select>
-        </label>
-      </Panel>
+            <option value="PUBLISHED">Publicadas</option>
+            <option value="CANCELLED">Canceladas</option>
+            <option value="ALL">Todas</option>
+          </ListFilterField>
+        ) : null}
+      </ListToolbar>
 
-      {view === 'sessions' ? <SessionsList /> : <RulesList />}
+      {view === 'sessions' ? (
+        <SessionsList key={statusFilter} statusFilter={statusFilter} />
+      ) : (
+        <RulesList />
+      )}
     </AdminShell>
   );
 }
 
-function SessionsList() {
+function SessionsList({
+  statusFilter,
+}: {
+  statusFilter: SessionStatus | 'ALL';
+}) {
   const [rows, setRows] = useState<SessionDetail[]>([]);
   const [total, setTotal] = useState(0);
   const [hasMore, setHasMore] = useState(false);
-  const [statusFilter, setStatusFilter] = useState<SessionStatus | 'ALL'>(
-    'PUBLISHED',
-  );
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -148,95 +170,47 @@ function SessionsList() {
   }, [statusFilter, page]);
 
   return (
-    <>
-      <Panel className="toolbar">
-        <label className="toolbar-field">
-          Estado
-          <select
-            value={statusFilter}
-            onChange={(e) => {
-              setPage(1);
-              setStatusFilter(e.target.value as SessionStatus | 'ALL');
-            }}
-          >
-            <option value="PUBLISHED">Publicadas</option>
-            <option value="CANCELLED">Canceladas</option>
-            <option value="ALL">Todas</option>
-          </select>
-        </label>
-      </Panel>
-
-      {loading ? <p className="muted">Cargando…</p> : null}
-      {error ? <p className="error">{error}</p> : null}
-
-      {!loading && !error ? (
-        <Panel
-          title="Listado"
-          description={`${total} sesión${total === 1 ? '' : 'es'} · página ${page}`}
-          className="table-wrap"
-        >
-          {rows.length === 0 ? (
-            <p className="muted">No hay sesiones con ese filtro.</p>
-          ) : (
-            <table className="data-table">
-              <thead>
-                <tr>
-                  <th>Servicio</th>
-                  <th>Inicio</th>
-                  <th>Fin</th>
-                  <th>Cupo</th>
-                  <th>Estado</th>
-                  <th />
-                </tr>
-              </thead>
-              <tbody>
-                {rows.map((s) => (
-                  <tr key={s.id}>
-                    <td>{s.serviceName}</td>
-                    <td>{formatWhen(s.startsAt)}</td>
-                    <td>{formatWhen(s.endsAt)}</td>
-                    <td>
-                      {s.bookedCount}/{s.capacity}
-                    </td>
-                    <td>
-                      <span
-                        className={`status-pill ${s.status === 'PUBLISHED' ? 'active' : 'inactive'}`}
-                      >
-                        {s.status === 'PUBLISHED'
-                          ? 'Publicada'
-                          : 'Cancelada'}
-                      </span>
-                    </td>
-                    <td className="row-actions">
-                      <Link href={`/sesiones/${s.id}`}>Editar</Link>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-          <div className="pager">
-            <button
-              type="button"
-              className="btn ghost"
-              disabled={page <= 1}
-              onClick={() => setPage((p) => Math.max(1, p - 1))}
+    <DataTable
+      description={listCountDescription(total, page, 'sesión', 'sesiones')}
+      loading={loading}
+      error={error}
+      isEmpty={rows.length === 0}
+      emptyText="No hay sesiones con ese filtro."
+      page={page}
+      hasMore={hasMore}
+      onPageChange={setPage}
+      header={
+        <>
+          <th>Servicio</th>
+          <th>Inicio</th>
+          <th>Fin</th>
+          <th>Cupo</th>
+          <th>Estado</th>
+          <th />
+        </>
+      }
+    >
+      {rows.map((s) => (
+        <tr key={s.id}>
+          <td>{s.serviceName}</td>
+          <td>{formatWhen(s.startsAt)}</td>
+          <td>{formatWhen(s.endsAt)}</td>
+          <td>
+            {s.bookedCount}/{s.capacity}
+          </td>
+          <td>
+            <span
+              className={`status-pill ${s.status === 'PUBLISHED' ? 'active' : 'inactive'}`}
             >
-              Anterior
-            </button>
-            <span className="muted small">Página {page}</span>
-            <button
-              type="button"
-              className="btn ghost"
-              disabled={!hasMore}
-              onClick={() => setPage((p) => p + 1)}
-            >
-              Siguiente
-            </button>
-          </div>
-        </Panel>
-      ) : null}
-    </>
+              {s.status === 'PUBLISHED' ? 'Publicada' : 'Cancelada'}
+            </span>
+          </td>
+          <td className="row-actions">
+            <Link href={`/sesiones/${s.id}`}>Editar</Link>
+          </td>
+        </tr>
+      ))}
+    </DataTable>
   );
 }
 
@@ -315,91 +289,62 @@ function RulesList() {
   return (
     <>
       {okMsg ? <p className="ok-msg">{okMsg}</p> : null}
-      {loading ? <p className="muted">Cargando…</p> : null}
-      {error ? <p className="error">{error}</p> : null}
-
-      {!loading && !error ? (
-        <Panel
-          title="Recurrencias"
-          description={`${total} regla${total === 1 ? '' : 's'} · página ${page}`}
-          className="table-wrap"
-        >
-          {rows.length === 0 ? (
-            <p className="muted">
-              No hay reglas. Creá una desde + Nueva → Recurrente.
-            </p>
-          ) : (
-            <table className="data-table">
-              <thead>
-                <tr>
-                  <th>Servicio</th>
-                  <th>Días</th>
-                  <th>Hora</th>
-                  <th>Rango</th>
-                  <th>Cupo</th>
-                  <th>Sesiones</th>
-                  <th>Estado</th>
-                  <th />
-                </tr>
-              </thead>
-              <tbody>
-                {rows.map((r) => (
-                  <tr key={r.id}>
-                    <td>{r.serviceName}</td>
-                    <td>{formatWeekdays(r.weekdays)}</td>
-                    <td>
-                      {r.localStartTime} · {r.durationMinutes} min
-                    </td>
-                    <td>
-                      {formatDateOnly(r.startsOn)} →{' '}
-                      {formatDateOnly(r.endsOn)}
-                    </td>
-                    <td>{r.capacity}</td>
-                    <td>{r.generatedSessionsCount}</td>
-                    <td>
-                      <span
-                        className={`status-pill ${r.active ? 'active' : 'inactive'}`}
-                      >
-                        {r.active ? 'Activa' : 'Inactiva'}
-                      </span>
-                    </td>
-                    <td className="row-actions">
-                      {r.active ? (
-                        <button
-                          type="button"
-                          className="btn ghost"
-                          onClick={() => void onDeactivate(r)}
-                        >
-                          Desactivar
-                        </button>
-                      ) : null}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-          <div className="pager">
-            <button
-              type="button"
-              className="btn ghost"
-              disabled={page <= 1}
-              onClick={() => setPage((p) => Math.max(1, p - 1))}
-            >
-              Anterior
-            </button>
-            <span className="muted small">Página {page}</span>
-            <button
-              type="button"
-              className="btn ghost"
-              disabled={!hasMore}
-              onClick={() => setPage((p) => p + 1)}
-            >
-              Siguiente
-            </button>
-          </div>
-        </Panel>
-      ) : null}
+      <DataTable
+        title="Recurrencias"
+        description={listCountDescription(total, page, 'regla', 'reglas')}
+        loading={loading}
+        error={error}
+        isEmpty={rows.length === 0}
+        emptyText="No hay reglas. Creá una desde + Nueva → Recurrente."
+        page={page}
+        hasMore={hasMore}
+        onPageChange={setPage}
+        header={
+          <>
+            <th>Servicio</th>
+            <th>Días</th>
+            <th>Hora</th>
+            <th>Rango</th>
+            <th>Cupo</th>
+            <th>Sesiones</th>
+            <th>Estado</th>
+            <th />
+          </>
+        }
+      >
+        {rows.map((r) => (
+          <tr key={r.id}>
+            <td>{r.serviceName}</td>
+            <td>{formatWeekdays(r.weekdays)}</td>
+            <td>
+              {r.localStartTime} · {r.durationMinutes} min
+            </td>
+            <td>
+              {formatDateOnly(r.startsOn)} → {formatDateOnly(r.endsOn)}
+            </td>
+            <td>{r.capacity}</td>
+            <td>{r.generatedSessionsCount}</td>
+            <td>
+              <span
+                className={`status-pill ${r.active ? 'active' : 'inactive'}`}
+              >
+                {r.active ? 'Activa' : 'Inactiva'}
+              </span>
+            </td>
+            <td className="row-actions">
+              {r.active ? (
+                <button
+                  type="button"
+                  className="btn ghost"
+                  onClick={() => void onDeactivate(r)}
+                >
+                  Desactivar
+                </button>
+              ) : null}
+            </td>
+          </tr>
+        ))}
+      </DataTable>
     </>
   );
 }

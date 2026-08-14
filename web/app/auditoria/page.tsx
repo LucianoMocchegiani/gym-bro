@@ -1,8 +1,13 @@
 'use client';
 
-import { FormEvent, Fragment, useCallback, useEffect, useState } from 'react';
+import { Fragment, useCallback, useEffect, useState } from 'react';
 import { AdminShell } from '@/components/AdminShell';
-import { Panel } from '@/components/AdminUi';
+import {
+  DataTable,
+  ListSearchField,
+  ListToolbar,
+  listCountDescription,
+} from '@/components/AdminList';
 import { RequireStaff } from '@/components/RequireStaff';
 import { listAuditEvents } from '@/lib/api/audit';
 import type { AuditEventDetail } from '@/lib/api/audit';
@@ -100,146 +105,95 @@ function AuditoriaInner() {
     void load();
   }, [load]);
 
-  function onSearch(e: FormEvent) {
-    e.preventDefault();
-    setPage(1);
-    setExpandedId(null);
-    setQ(qInput.trim());
-  }
-
   function toggleExpand(id: string) {
     setExpandedId((prev) => (prev === id ? null : id));
   }
 
   return (
     <AdminShell title="Auditoría">
-      <Panel className="toolbar">
-        <form className="toolbar-field search-form" onSubmit={onSearch}>
-          <label>
-            Buscar acción
-            <input
-              value={qInput}
-              onChange={(e) => setQInput(e.target.value)}
-              placeholder="ej. contract, refund, waitlist"
-              autoComplete="off"
-            />
-          </label>
-          <button type="submit" className="btn ghost">
-            Buscar
-          </button>
-        </form>
-        <p className="muted small toolbar-hint">
-          Eventos del gym (quién hizo qué). Requiere permiso{' '}
-          <code>audit.read</code>.
-        </p>
-      </Panel>
+      <ListToolbar hint="Eventos del gym (quién hizo qué). Requiere permiso audit.read.">
+        <ListSearchField
+          label="Buscar acción"
+          value={qInput}
+          onChange={setQInput}
+          onSubmit={() => {
+            setPage(1);
+            setExpandedId(null);
+            setQ(qInput.trim());
+          }}
+          placeholder="ej. contract, refund, waitlist"
+        />
+      </ListToolbar>
 
-      {loading ? <p className="muted">Cargando…</p> : null}
-      {error ? <p className="error">{error}</p> : null}
-
-      {!loading && !error ? (
-        <Panel
-          title="Eventos"
-          description={`${total} evento${total === 1 ? '' : 's'} · página ${page}`}
-          className="table-wrap"
-        >
-          {rows.length === 0 ? (
-            <p className="muted">Sin eventos con ese filtro.</p>
-          ) : (
-            <table className="data-table">
-              <thead>
-                <tr>
-                  <th>Cuándo</th>
-                  <th>Acción</th>
-                  <th>Entidad</th>
-                  <th>Actor</th>
-                  <th />
-                </tr>
-              </thead>
-              <tbody>
-                {rows.map((row) => (
-                  <Fragment key={row.id}>
-                    <tr>
-                      <td>{formatWhen(row.createdAt)}</td>
-                      <td>
-                        <code>{row.action}</code>
-                      </td>
-                      <td>
-                        {row.entityType}
-                        {row.entityId
-                          ? ` · ${row.entityId.slice(0, 8)}…`
-                          : ''}
-                      </td>
-                      <td>
-                        {formatActor(row.actorProfile)} ·{' '}
-                        {row.actorId.slice(0, 8)}…
-                      </td>
-                      <td className="row-actions">
-                        <button
-                          type="button"
-                          className="btn ghost"
-                          onClick={() => toggleExpand(row.id)}
-                        >
-                          {expandedId === row.id ? 'Ocultar' : 'Detalle'}
-                        </button>
-                      </td>
-                    </tr>
-                    {expandedId === row.id ? (
-                      <tr className="audit-detail-row">
-                        <td colSpan={5}>
-                          <div className="audit-detail-grid">
-                            <div>
-                              <p className="muted small">Antes</p>
-                              <pre className="audit-json">
-                                {formatJson(row.before)}
-                              </pre>
-                            </div>
-                            <div>
-                              <p className="muted small">Después</p>
-                              <pre className="audit-json">
-                                {formatJson(row.after)}
-                              </pre>
-                            </div>
-                          </div>
-                          <p className="muted small">
-                            entityId: {row.entityId ?? '—'} · actorId:{' '}
-                            {row.actorId}
-                          </p>
-                        </td>
-                      </tr>
-                    ) : null}
-                  </Fragment>
-                ))}
-              </tbody>
-            </table>
-          )}
-          <div className="pager">
-            <button
-              type="button"
-              className="btn ghost"
-              disabled={page <= 1}
-              onClick={() => {
-                setExpandedId(null);
-                setPage((p) => Math.max(1, p - 1));
-              }}
-            >
-              Anterior
-            </button>
-            <span className="muted small">Página {page}</span>
-            <button
-              type="button"
-              className="btn ghost"
-              disabled={!hasMore}
-              onClick={() => {
-                setExpandedId(null);
-                setPage((p) => p + 1);
-              }}
-            >
-              Siguiente
-            </button>
-          </div>
-        </Panel>
-      ) : null}
+      <DataTable
+        title="Eventos"
+        description={listCountDescription(total, page, 'evento', 'eventos')}
+        loading={loading}
+        error={error}
+        isEmpty={rows.length === 0}
+        emptyText="Sin eventos con ese filtro."
+        page={page}
+        hasMore={hasMore}
+        onPageChange={(p) => {
+          setExpandedId(null);
+          setPage(p);
+        }}
+        header={
+          <>
+            <th>Cuándo</th>
+            <th>Acción</th>
+            <th>Entidad</th>
+            <th>Actor</th>
+            <th />
+          </>
+        }
+      >
+        {rows.map((row) => (
+          <Fragment key={row.id}>
+            <tr>
+              <td>{formatWhen(row.createdAt)}</td>
+              <td>
+                <code>{row.action}</code>
+              </td>
+              <td>
+                {row.entityType}
+                {row.entityId ? ` · ${row.entityId.slice(0, 8)}…` : ''}
+              </td>
+              <td>
+                {formatActor(row.actorProfile)} · {row.actorId.slice(0, 8)}…
+              </td>
+              <td className="row-actions">
+                <button
+                  type="button"
+                  className="btn ghost"
+                  onClick={() => toggleExpand(row.id)}
+                >
+                  {expandedId === row.id ? 'Ocultar' : 'Detalle'}
+                </button>
+              </td>
+            </tr>
+            {expandedId === row.id ? (
+              <tr className="audit-detail-row">
+                <td colSpan={5}>
+                  <div className="audit-detail-grid">
+                    <div>
+                      <p className="muted small">Antes</p>
+                      <pre className="audit-json">{formatJson(row.before)}</pre>
+                    </div>
+                    <div>
+                      <p className="muted small">Después</p>
+                      <pre className="audit-json">{formatJson(row.after)}</pre>
+                    </div>
+                  </div>
+                  <p className="muted small">
+                    entityId: {row.entityId ?? '—'} · actorId: {row.actorId}
+                  </p>
+                </td>
+              </tr>
+            ) : null}
+          </Fragment>
+        ))}
+      </DataTable>
     </AdminShell>
   );
 }

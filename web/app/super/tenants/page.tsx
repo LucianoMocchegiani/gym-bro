@@ -2,13 +2,18 @@
 
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
+import {
+  DataTable,
+  listCountDescription,
+} from '@/components/AdminList';
 import { RequireSuper } from '@/components/RequireSuper';
 import { SuperShell } from '@/components/SuperShell';
-import { Panel } from '@/components/AdminUi';
 import { ApiClientError } from '@/lib/api/client';
 import { listTenants } from '@/lib/api/tenants';
 import type { TenantDetail } from '@/lib/api/tenants';
 import { tenantHostLabel, tenantOrigin } from '@/lib/tenant-host';
+
+const PAGE_SIZE = 20;
 
 /**
  * Listado de tenants (CU-ROL-001/002).
@@ -20,8 +25,6 @@ export default function SuperTenantsPage() {
     </RequireSuper>
   );
 }
-
-const PAGE_SIZE = 20;
 
 function TenantsInner() {
   const [rows, setRows] = useState<TenantDetail[]>([]);
@@ -73,80 +76,53 @@ function TenantsInner() {
         </Link>
       }
     >
-      {loading ? <p className="muted">Cargando…</p> : null}
-      {error ? <p className="error">{error}</p> : null}
-
-      {!loading && !error ? (
-        <Panel
-          title="Listado"
-          description={`${total} gym${total === 1 ? '' : 's'} · página ${page}`}
-          className="table-wrap"
-        >
-          {rows.length === 0 ? (
-            <p className="muted">No hay tenants.</p>
-          ) : (
-            <table className="data-table">
-              <thead>
-                <tr>
-                  <th>Nombre</th>
-                  <th>Slug</th>
-                  <th>Estado</th>
-                  <th>Admin URL</th>
-                  <th />
-                </tr>
-              </thead>
-              <tbody>
-                {rows.map((t) => (
-                  <tr key={t.id}>
-                    <td>{t.name}</td>
-                    <td>
-                      <code>{t.slug}</code>
-                    </td>
-                    <td>
-                      <span
-                        className={`status-pill ${t.status === 'ACTIVE' ? 'active' : 'inactive'}`}
-                      >
-                        {t.status === 'ACTIVE' ? 'Activo' : 'Suspendido'}
-                      </span>
-                    </td>
-                    <td>
-                      <a
-                        href={`${tenantOrigin(t.slug)}/login`}
-                        target="_blank"
-                        rel="noreferrer"
-                      >
-                        {tenantHostLabel(t.slug)}
-                      </a>
-                    </td>
-                    <td className="row-actions">
-                      <Link href={`/super/tenants/${t.id}`}>Editar</Link>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-          <div className="pager">
-            <button
-              type="button"
-              className="btn ghost"
-              disabled={page <= 1}
-              onClick={() => setPage((p) => Math.max(1, p - 1))}
-            >
-              Anterior
-            </button>
-            <span className="muted small">Página {page}</span>
-            <button
-              type="button"
-              className="btn ghost"
-              disabled={!hasMore}
-              onClick={() => setPage((p) => p + 1)}
-            >
-              Siguiente
-            </button>
-          </div>
-        </Panel>
-      ) : null}
+      <DataTable
+        description={listCountDescription(total, page, 'gym', 'gyms')}
+        loading={loading}
+        error={error}
+        isEmpty={rows.length === 0}
+        emptyText="No hay tenants."
+        page={page}
+        hasMore={hasMore}
+        onPageChange={setPage}
+        header={
+          <>
+            <th>Nombre</th>
+            <th>Slug</th>
+            <th>Estado</th>
+            <th>Admin URL</th>
+            <th />
+          </>
+        }
+      >
+        {rows.map((t) => (
+          <tr key={t.id}>
+            <td>{t.name}</td>
+            <td>
+              <code>{t.slug}</code>
+            </td>
+            <td>
+              <span
+                className={`status-pill ${t.status === 'ACTIVE' ? 'active' : 'inactive'}`}
+              >
+                {t.status === 'ACTIVE' ? 'Activo' : 'Suspendido'}
+              </span>
+            </td>
+            <td>
+              <a
+                href={`${tenantOrigin(t.slug)}/login`}
+                target="_blank"
+                rel="noreferrer"
+              >
+                {tenantHostLabel(t.slug)}
+              </a>
+            </td>
+            <td className="row-actions">
+              <Link href={`/super/tenants/${t.id}`}>Editar</Link>
+            </td>
+          </tr>
+        ))}
+      </DataTable>
     </SuperShell>
   );
 }

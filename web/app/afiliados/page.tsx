@@ -1,9 +1,15 @@
 'use client';
 
 import Link from 'next/link';
-import { FormEvent, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { AdminShell } from '@/components/AdminShell';
-import { Panel } from '@/components/AdminUi';
+import {
+  DataTable,
+  ListFilterField,
+  ListSearchField,
+  ListToolbar,
+  listCountDescription,
+} from '@/components/AdminList';
 import { RequireStaff } from '@/components/RequireStaff';
 import { ApiClientError } from '@/lib/api/client';
 import { listMembers } from '@/lib/api/members';
@@ -74,12 +80,6 @@ function AfiliadosInner() {
     };
   }, [statusFilter, appliedQuery, page]);
 
-  function onSearchSubmit(e: FormEvent) {
-    e.preventDefault();
-    setPage(1);
-    setAppliedQuery(query.trim());
-  }
-
   return (
     <AdminShell
       title="Afiliados"
@@ -89,100 +89,66 @@ function AfiliadosInner() {
         </Link>
       }
     >
-      <Panel className="toolbar">
-        <form className="toolbar-field search-form" onSubmit={onSearchSubmit}>
-          <label>
-            Buscar
-            <input
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Nombre, email, documento…"
-              autoComplete="off"
-            />
-          </label>
-          <button type="submit" className="btn ghost">
-            Buscar
-          </button>
-        </form>
-        <label className="toolbar-field">
-          Estado
-          <select
-            value={statusFilter}
-            onChange={(e) => {
-              setPage(1);
-              setStatusFilter(e.target.value as MemberStatus | 'ALL');
-            }}
-          >
-            <option value="ALL">Todos</option>
-            <option value="ACTIVE">Activos</option>
-            <option value="SUSPENDED">Suspendidos</option>
-            <option value="INACTIVE">Inactivos</option>
-          </select>
-        </label>
-      </Panel>
-
-      {loading ? <p className="muted">Cargando…</p> : null}
-      {error ? <p className="error">{error}</p> : null}
-
-      {!loading && !error ? (
-        <Panel
-          title="Listado"
-          description={`${total} afiliado${total === 1 ? '' : 's'} · página ${page}`}
-          className="table-wrap"
+      <ListToolbar>
+        <ListSearchField
+          value={query}
+          onChange={setQuery}
+          onSubmit={() => {
+            setPage(1);
+            setAppliedQuery(query.trim());
+          }}
+          placeholder="Nombre, email, documento…"
+        />
+        <ListFilterField
+          label="Estado"
+          value={statusFilter}
+          onChange={(v) => {
+            setPage(1);
+            setStatusFilter(v as MemberStatus | 'ALL');
+          }}
         >
-          {rows.length === 0 ? (
-            <p className="muted">No hay afiliados con ese filtro.</p>
-          ) : (
-            <table className="data-table">
-              <thead>
-                <tr>
-                  <th>Nombre</th>
-                  <th>Email</th>
-                  <th>Documento</th>
-                  <th>Estado</th>
-                  <th />
-                </tr>
-              </thead>
-              <tbody>
-                {rows.map((m) => (
-                  <tr key={m.id}>
-                    <td>{m.name ?? '—'}</td>
-                    <td>{m.email}</td>
-                    <td>{m.document ?? '—'}</td>
-                    <td>
-                      <span className={`status-pill ${m.status.toLowerCase()}`}>
-                        {formatMemberStatus(m.status)}
-                      </span>
-                    </td>
-                    <td className="row-actions">
-                      <Link href={`/afiliados/${m.id}`}>Ver</Link>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-          <div className="pager">
-            <button
-              type="button"
-              className="btn ghost"
-              disabled={page <= 1}
-              onClick={() => setPage((p) => Math.max(1, p - 1))}
-            >
-              Anterior
-            </button>
-            <span className="muted small">Página {page}</span>
-            <button
-              type="button"
-              className="btn ghost"
-              disabled={!hasMore}
-              onClick={() => setPage((p) => p + 1)}
-            >
-              Siguiente
-            </button>
-          </div>
-        </Panel>
-      ) : null}
+          <option value="ALL">Todos</option>
+          <option value="ACTIVE">Activos</option>
+          <option value="SUSPENDED">Suspendidos</option>
+          <option value="INACTIVE">Inactivos</option>
+        </ListFilterField>
+      </ListToolbar>
+
+      <DataTable
+        description={listCountDescription(total, page, 'afiliado', 'afiliados')}
+        loading={loading}
+        error={error}
+        isEmpty={rows.length === 0}
+        emptyText="No hay afiliados con ese filtro."
+        page={page}
+        hasMore={hasMore}
+        onPageChange={setPage}
+        header={
+          <>
+            <th>Nombre</th>
+            <th>Email</th>
+            <th>Documento</th>
+            <th>Estado</th>
+            <th />
+          </>
+        }
+      >
+        {rows.map((m) => (
+          <tr key={m.id}>
+            <td>{m.name ?? '—'}</td>
+            <td>{m.email}</td>
+            <td>{m.document ?? '—'}</td>
+            <td>
+              <span className={`status-pill ${m.status.toLowerCase()}`}>
+                {formatMemberStatus(m.status)}
+              </span>
+            </td>
+            <td className="row-actions">
+              <Link href={`/afiliados/${m.id}`}>Ver</Link>
+            </td>
+          </tr>
+        ))}
+      </DataTable>
     </AdminShell>
   );
 }

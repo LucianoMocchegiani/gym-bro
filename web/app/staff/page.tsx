@@ -1,9 +1,14 @@
 'use client';
 
 import Link from 'next/link';
-import { FormEvent, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { AdminShell } from '@/components/AdminShell';
-import { Panel } from '@/components/AdminUi';
+import {
+  DataTable,
+  ListSearchField,
+  ListToolbar,
+  listCountDescription,
+} from '@/components/AdminList';
 import { RequireStaff } from '@/components/RequireStaff';
 import { ApiClientError } from '@/lib/api/client';
 import { listStaff } from '@/lib/api/staff';
@@ -69,12 +74,6 @@ function StaffInner() {
     };
   }, [appliedQuery, page]);
 
-  function onSearchSubmit(e: FormEvent) {
-    e.preventDefault();
-    setPage(1);
-    setAppliedQuery(query.trim());
-  }
-
   return (
     <AdminShell
       title="Staff"
@@ -84,91 +83,59 @@ function StaffInner() {
         </Link>
       }
     >
-      <Panel className="toolbar">
-        <form className="toolbar-field search-form" onSubmit={onSearchSubmit}>
-          <label>
-            Buscar
-            <input
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Nombre o email"
-              autoComplete="off"
-            />
-          </label>
-          <button type="submit" className="btn ghost">
-            Buscar
-          </button>
-        </form>
-      </Panel>
+      <ListToolbar>
+        <ListSearchField
+          value={query}
+          onChange={setQuery}
+          onSubmit={() => {
+            setPage(1);
+            setAppliedQuery(query.trim());
+          }}
+          placeholder="Nombre o email"
+        />
+      </ListToolbar>
 
-      {loading ? <p className="muted">Cargando…</p> : null}
-      {error ? <p className="error">{error}</p> : null}
-
-      {!loading && !error ? (
-        <Panel
-          title="Listado"
-          description={`${total} usuario${total === 1 ? '' : 's'} · página ${page}`}
-          className="table-wrap"
-        >
-          {rows.length === 0 ? (
-            <p className="muted">No hay staff.</p>
-          ) : (
-            <table className="data-table">
-              <thead>
-                <tr>
-                  <th>Nombre</th>
-                  <th>Email</th>
-                  <th>Roles</th>
-                  <th>Estado</th>
-                  <th />
-                </tr>
-              </thead>
-              <tbody>
-                {rows.map((s) => (
-                  <tr key={s.id}>
-                    <td>{s.name ?? '—'}</td>
-                    <td>{s.email}</td>
-                    <td>
-                      {s.roles.length === 0
-                        ? '—'
-                        : s.roles.map((r) => r.name).join(', ')}
-                    </td>
-                    <td>
-                      <span
-                        className={`status-pill ${s.active ? 'active' : 'inactive'}`}
-                      >
-                        {s.active ? 'Activo' : 'Inactivo'}
-                      </span>
-                    </td>
-                    <td className="row-actions">
-                      <Link href={`/staff/${s.id}`}>Roles</Link>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-          <div className="pager">
-            <button
-              type="button"
-              className="btn ghost"
-              disabled={page <= 1}
-              onClick={() => setPage((p) => Math.max(1, p - 1))}
-            >
-              Anterior
-            </button>
-            <span className="muted small">Página {page}</span>
-            <button
-              type="button"
-              className="btn ghost"
-              disabled={!hasMore}
-              onClick={() => setPage((p) => p + 1)}
-            >
-              Siguiente
-            </button>
-          </div>
-        </Panel>
-      ) : null}
+      <DataTable
+        description={listCountDescription(total, page, 'usuario', 'usuarios')}
+        loading={loading}
+        error={error}
+        isEmpty={rows.length === 0}
+        emptyText="No hay staff."
+        page={page}
+        hasMore={hasMore}
+        onPageChange={setPage}
+        header={
+          <>
+            <th>Nombre</th>
+            <th>Email</th>
+            <th>Roles</th>
+            <th>Estado</th>
+            <th />
+          </>
+        }
+      >
+        {rows.map((s) => (
+          <tr key={s.id}>
+            <td>{s.name ?? '—'}</td>
+            <td>{s.email}</td>
+            <td>
+              {s.roles.length === 0
+                ? '—'
+                : s.roles.map((r) => r.name).join(', ')}
+            </td>
+            <td>
+              <span
+                className={`status-pill ${s.active ? 'active' : 'inactive'}`}
+              >
+                {s.active ? 'Activo' : 'Inactivo'}
+              </span>
+            </td>
+            <td className="row-actions">
+              <Link href={`/staff/${s.id}`}>Roles</Link>
+            </td>
+          </tr>
+        ))}
+      </DataTable>
     </AdminShell>
   );
 }
