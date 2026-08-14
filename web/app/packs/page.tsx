@@ -10,6 +10,11 @@ import {
   listCountDescription,
 } from '@/components/AdminList';
 import { RequireStaff } from '@/components/RequireStaff';
+import {
+  IconEdit,
+  RowActions,
+  RowIconButton,
+} from '@/components/RowActions';
 import { StatusPill, activeTone } from '@/components/StatusPill';
 import { ApiClientError } from '@/lib/api/client';
 import { listPacks } from '@/lib/api/packs';
@@ -138,8 +143,12 @@ function PacksInner() {
                 {p.active ? 'Activo' : 'Inactivo'}
               </StatusPill>
             </td>
-            <td className="row-actions">
-              <Link href={`/packs/${p.id}`}>Editar</Link>
+            <td>
+              <RowActions>
+                <RowIconButton label="Editar" href={`/packs/${p.id}`}>
+                  <IconEdit />
+                </RowIconButton>
+              </RowActions>
             </td>
           </tr>
         ))}

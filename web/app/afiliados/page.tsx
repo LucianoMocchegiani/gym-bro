@@ -1,6 +1,5 @@
 'use client';
 
-import Link from 'next/link';
 import { Suspense, useCallback, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import {
@@ -12,8 +11,16 @@ import {
 } from '@/components/AdminList';
 import { AdminModal } from '@/components/AdminModal';
 import { AdminShell } from '@/components/AdminShell';
+import { MemberAccountPanel } from '@/components/MemberAccountPanel';
 import { MemberCreateForm } from '@/components/MemberCreateForm';
+import { MemberFichaPanel } from '@/components/MemberFichaPanel';
 import { RequireStaff } from '@/components/RequireStaff';
+import {
+  IconAccount,
+  IconEdit,
+  RowActions,
+  RowIconButton,
+} from '@/components/RowActions';
 import { StatusPill, memberStatusTone } from '@/components/StatusPill';
 import { ApiClientError } from '@/lib/api/client';
 import { listMembers } from '@/lib/api/members';
@@ -23,7 +30,7 @@ import { formatMemberStatus } from '@/lib/member-labels';
 const PAGE_SIZE = 20;
 
 /**
- * Listado de afiliados (CU-AFI). Alta en modal; ficha sigue en página.
+ * Listado de afiliados: alta + Ficha / Cuenta en modal (CU-AFI).
  */
 export default function AfiliadosPage() {
   return (
@@ -38,6 +45,11 @@ export default function AfiliadosPage() {
 function AfiliadosInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const fichaId = searchParams.get('ficha')?.trim() || null;
+  const cuentaId = searchParams.get('cuenta')?.trim() || null;
+  const createOpen =
+    searchParams.get('nuevo') === '1' && !fichaId && !cuentaId;
+
   const [rows, setRows] = useState<MemberDetail[]>([]);
   const [total, setTotal] = useState(0);
   const [hasMore, setHasMore] = useState(false);
@@ -49,9 +61,6 @@ function AfiliadosInner() {
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [modalOpen, setModalOpen] = useState(
-    searchParams.get('nuevo') === '1',
-  );
   const [flashOk, setFlashOk] = useState<string | null>(null);
 
   const load = useCallback(async () => {
@@ -82,22 +91,34 @@ function AfiliadosInner() {
     void load();
   }, [load]);
 
-  function openModal() {
+  function closeModals() {
+    router.replace('/afiliados', { scroll: false });
+  }
+
+  function openCreate() {
     setFlashOk(null);
-    setModalOpen(true);
     router.replace('/afiliados?nuevo=1', { scroll: false });
   }
 
-  function closeModal() {
-    setModalOpen(false);
-    router.replace('/afiliados', { scroll: false });
+  function openFicha(id: string) {
+    setFlashOk(null);
+    router.replace(`/afiliados?ficha=${encodeURIComponent(id)}`, {
+      scroll: false,
+    });
+  }
+
+  function openCuenta(id: string) {
+    setFlashOk(null);
+    router.replace(`/afiliados?cuenta=${encodeURIComponent(id)}`, {
+      scroll: false,
+    });
   }
 
   return (
     <AdminShell
       title="Afiliados"
       actions={
-        <button type="button" className="btn" onClick={openModal}>
+        <button type="button" className="btn" onClick={openCreate}>
           + Nuevo
         </button>
       }
@@ -158,26 +179,39 @@ function AfiliadosInner() {
                 {formatMemberStatus(m.status)}
               </StatusPill>
             </td>
-            <td className="row-actions">
-              <Link href={`/afiliados/${m.id}`}>Ver</Link>
+            <td>
+              <RowActions>
+                <RowIconButton
+                  label="Ficha"
+                  onClick={() => openFicha(m.id)}
+                >
+                  <IconEdit />
+                </RowIconButton>
+                <RowIconButton
+                  label="Estado de cuenta"
+                  onClick={() => openCuenta(m.id)}
+                >
+                  <IconAccount />
+                </RowIconButton>
+              </RowActions>
             </td>
           </tr>
         ))}
       </DataTable>
 
       <AdminModal
-        open={modalOpen}
-        onClose={closeModal}
+        open={createOpen}
+        onClose={closeModals}
         title="Nuevo afiliado"
-        description="Alta rápida. La ficha completa sigue en Ver."
+        description="Alta rápida."
       >
         <MemberCreateForm
-          onCancel={closeModal}
+          onCancel={closeModals}
           onSuccess={(created) => {
             setFlashOk(
               `Afiliado creado: ${created.name?.trim() || created.email}`,
             );
-            closeModal();
+            closeModals();
             if (page === 1) {
               void load();
             } else {
@@ -185,6 +219,37 @@ function AfiliadosInner() {
             }
           }}
         />
+      </AdminModal>
+
+      <AdminModal
+        open={Boolean(fichaId)}
+        onClose={closeModals}
+        title="Ficha del afiliado"
+        description="Datos y estado ACTIVE / SUSPENDED / INACTIVE."
+        size="comfortable"
+      >
+        {fichaId ? (
+          <MemberFichaPanel
+            key={fichaId}
+            memberId={fichaId}
+            onSaved={(m) => {
+              setFlashOk(`Ficha actualizada: ${m.name?.trim() || m.email}`);
+              void load();
+            }}
+          />
+        ) : null}
+      </AdminModal>
+
+      <AdminModal
+        open={Boolean(cuentaId)}
+        onClose={closeModals}
+        title="Estado de cuenta"
+        description="Contratos, créditos, reservas, pagos y comprobantes."
+        size="comfortable"
+      >
+        {cuentaId ? (
+          <MemberAccountPanel key={cuentaId} memberId={cuentaId} />
+        ) : null}
       </AdminModal>
     </AdminShell>
   );

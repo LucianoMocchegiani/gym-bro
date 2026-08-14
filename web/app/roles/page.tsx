@@ -11,6 +11,12 @@ import { AdminShell } from '@/components/AdminShell';
 import { RequireStaff } from '@/components/RequireStaff';
 import { RoleCreateForm } from '@/components/RoleCreateForm';
 import { RoleEditForm } from '@/components/RoleEditForm';
+import {
+  IconEdit,
+  IconView,
+  RowActions,
+  RowIconButton,
+} from '@/components/RowActions';
 import { StatusPill } from '@/components/StatusPill';
 import { ApiClientError } from '@/lib/api/client';
 import { listRoles } from '@/lib/api/roles';
@@ -136,14 +142,15 @@ function RolesInner() {
                 {r.isSystem ? 'Sistema' : 'Custom'}
               </StatusPill>
             </td>
-            <td className="row-actions">
-              <button
-                type="button"
-                className="linkish"
-                onClick={() => openEdit(r.id)}
-              >
-                {r.slug === 'admin' ? 'Ver' : 'Editar'}
-              </button>
+            <td>
+              <RowActions>
+                <RowIconButton
+                  label={r.slug === 'admin' ? 'Ver' : 'Editar'}
+                  onClick={() => openEdit(r.id)}
+                >
+                  {r.slug === 'admin' ? <IconView /> : <IconEdit />}
+                </RowIconButton>
+              </RowActions>
             </td>
           </tr>
         ))}

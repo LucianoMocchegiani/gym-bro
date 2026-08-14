@@ -15,6 +15,7 @@ export function AdminModal({
   children,
   footer,
   wide = false,
+  size = 'default',
 }: {
   open: boolean;
   onClose: () => void;
@@ -22,8 +23,10 @@ export function AdminModal({
   description?: ReactNode;
   children: ReactNode;
   footer?: ReactNode;
-  /** Más ancho (p. ej. checklist de permisos). */
+  /** @deprecated Preferí `size="wide"`. */
   wide?: boolean;
+  /** `comfortable` = más aire para fichas / estado de cuenta. */
+  size?: 'default' | 'wide' | 'comfortable';
 }) {
   useEffect(() => {
     if (!open) {
@@ -47,6 +50,14 @@ export function AdminModal({
     return null;
   }
 
+  const resolvedSize = wide && size === 'default' ? 'wide' : size;
+  const sizeClass =
+    resolvedSize === 'comfortable'
+      ? ' admin-modal-comfortable'
+      : resolvedSize === 'wide'
+        ? ' admin-modal-wide'
+        : '';
+
   return (
     <div
       className="admin-modal-backdrop"
@@ -54,7 +65,7 @@ export function AdminModal({
       onClick={onClose}
     >
       <div
-        className={`admin-modal${wide ? ' admin-modal-wide' : ''}`}
+        className={`admin-modal${sizeClass}`}
         role="dialog"
         aria-modal="true"
         aria-labelledby="admin-modal-title"

@@ -13,6 +13,11 @@ import { AdminShell } from '@/components/AdminShell';
 import { RequireStaff } from '@/components/RequireStaff';
 import { ServiceCreateForm } from '@/components/ServiceCreateForm';
 import { ServiceEditForm } from '@/components/ServiceEditForm';
+import {
+  IconEdit,
+  RowActions,
+  RowIconButton,
+} from '@/components/RowActions';
 import { StatusPill, activeTone } from '@/components/StatusPill';
 import { ApiClientError } from '@/lib/api/client';
 import { listServices } from '@/lib/api/services';
@@ -176,14 +181,15 @@ function ServiciosInner() {
                 {s.active ? 'Activo' : 'Inactivo'}
               </StatusPill>
             </td>
-            <td className="row-actions">
-              <button
-                type="button"
-                className="linkish"
-                onClick={() => openEdit(s.id)}
-              >
-                Editar
-              </button>
+            <td>
+              <RowActions>
+                <RowIconButton
+                  label="Editar"
+                  onClick={() => openEdit(s.id)}
+                >
+                  <IconEdit />
+                </RowIconButton>
+              </RowActions>
             </td>
           </tr>
         ))}

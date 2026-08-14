@@ -20,6 +20,11 @@ import { AdminModal } from '@/components/AdminModal';
 import { AdminShell } from '@/components/AdminShell';
 import { RequireStaff } from '@/components/RequireStaff';
 import {
+  IconView,
+  RowActions,
+  RowIconButton,
+} from '@/components/RowActions';
+import {
   StatusPill,
   refundStatusLabel,
   refundStatusTone,
@@ -320,24 +325,25 @@ function DevolucionesInner() {
             <td className="muted small">
               {row.reason ?? row.rejectionReason ?? '—'}
             </td>
-            <td className="row-actions">
-              {row.status === 'PENDING' ? (
-                <button
-                  type="button"
-                  className="btn ghost"
-                  onClick={() => openRequest(row)}
-                >
-                  Ejecutar
-                </button>
-              ) : (
-                <button
-                  type="button"
-                  className="linkish"
-                  onClick={() => openRequest(row)}
-                >
-                  Ver
-                </button>
-              )}
+            <td>
+              <RowActions>
+                {row.status === 'PENDING' ? (
+                  <button
+                    type="button"
+                    className="btn ghost"
+                    onClick={() => openRequest(row)}
+                  >
+                    Ejecutar
+                  </button>
+                ) : (
+                  <RowIconButton
+                    label="Ver"
+                    onClick={() => openRequest(row)}
+                  >
+                    <IconView />
+                  </RowIconButton>
+                )}
+              </RowActions>
             </td>
           </tr>
         ))}

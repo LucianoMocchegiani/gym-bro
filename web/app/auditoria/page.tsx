@@ -9,6 +9,11 @@ import {
   listCountDescription,
 } from '@/components/AdminList';
 import { RequireStaff } from '@/components/RequireStaff';
+import {
+  IconView,
+  RowActions,
+  RowIconButton,
+} from '@/components/RowActions';
 import { listAuditEvents } from '@/lib/api/audit';
 import type { AuditEventDetail } from '@/lib/api/audit';
 import { ApiClientError } from '@/lib/api/client';
@@ -162,14 +167,17 @@ function AuditoriaInner() {
               <td>
                 {formatActor(row.actorProfile)} · {row.actorId.slice(0, 8)}…
               </td>
-              <td className="row-actions">
-                <button
-                  type="button"
-                  className="btn ghost"
-                  onClick={() => toggleExpand(row.id)}
-                >
-                  {expandedId === row.id ? 'Ocultar' : 'Detalle'}
-                </button>
+              <td>
+                <RowActions>
+                  <RowIconButton
+                    label={
+                      expandedId === row.id ? 'Ocultar detalle' : 'Ver detalle'
+                    }
+                    onClick={() => toggleExpand(row.id)}
+                  >
+                    <IconView />
+                  </RowIconButton>
+                </RowActions>
               </td>
             </tr>
             {expandedId === row.id ? (

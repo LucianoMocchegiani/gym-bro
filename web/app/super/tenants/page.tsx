@@ -1,6 +1,5 @@
 'use client';
 
-import Link from 'next/link';
 import { Suspense, useCallback, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import {
@@ -11,6 +10,11 @@ import { AdminModal } from '@/components/AdminModal';
 import { RequireSuper } from '@/components/RequireSuper';
 import { StatusPill, activeTone } from '@/components/StatusPill';
 import { SuperShell } from '@/components/SuperShell';
+import {
+  IconEdit,
+  RowActions,
+  RowIconButton,
+} from '@/components/RowActions';
 import { TenantCreateForm } from '@/components/TenantCreateForm';
 import { ApiClientError } from '@/lib/api/client';
 import { listTenants } from '@/lib/api/tenants';
@@ -132,8 +136,15 @@ function TenantsInner() {
                 {tenantHostLabel(t.slug)}
               </a>
             </td>
-            <td className="row-actions">
-              <Link href={`/super/tenants/${t.id}`}>Editar</Link>
+            <td>
+              <RowActions>
+                <RowIconButton
+                  label="Editar"
+                  href={`/super/tenants/${t.id}`}
+                >
+                  <IconEdit />
+                </RowIconButton>
+              </RowActions>
             </td>
           </tr>
         ))}

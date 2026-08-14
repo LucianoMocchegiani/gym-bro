@@ -314,6 +314,8 @@ Detalle: [14-auditoria…](./14-auditoria-roadmap-vs-codigo-2026-08-13.md).
   - Alta staff + Super tenant en modal
   - Caja: `ListToolbar` + `DataTable` movimientos (sin tabs)
   - Editar servicio/rol + alta afiliado en modal; roster/waitlist thin
+  - Acciones de grilla con iconos (`RowActions`); afiliados: Ficha / Cuenta en modal comfortable
+  - Staff: Roles / Credencial en modal comfortable (`?roles=` / `?credencial=`)
 
 ### Pendiente — otras épicas / Super
 

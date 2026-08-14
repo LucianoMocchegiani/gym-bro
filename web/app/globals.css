@@ -544,6 +544,56 @@ a.btn.ghost,
   max-height: min(90vh, 48rem);
 }
 
+.admin-modal-comfortable {
+  width: min(52rem, 100%);
+  max-height: min(92vh, 56rem);
+  padding: 1.35rem 1.5rem;
+}
+
+.admin-modal-comfortable .admin-modal-body {
+  gap: 1.1rem;
+}
+
+.row-actions-icons {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  flex-wrap: nowrap;
+}
+
+.row-icon-btn,
+button.row-icon-btn,
+.row-actions a.row-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  color: var(--muted);
+  font-weight: inherit;
+  box-shadow: none;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.row-icon-btn:hover:not(:disabled),
+button.row-icon-btn:hover:not(:disabled),
+.row-actions a.row-icon-btn:hover {
+  color: var(--ink);
+  background: transparent;
+  border: none;
+}
+
+.row-icon-btn:disabled,
+button.row-icon-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
 .admin-modal-head {
   display: flex;
   align-items: flex-start;

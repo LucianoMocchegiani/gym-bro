@@ -11,6 +11,11 @@ import {
   listCountDescription,
 } from '@/components/AdminList';
 import { RequireStaff } from '@/components/RequireStaff';
+import {
+  IconEdit,
+  RowActions,
+  RowIconButton,
+} from '@/components/RowActions';
 import { StatusPill, activeTone } from '@/components/StatusPill';
 import { ApiClientError } from '@/lib/api/client';
 import {
@@ -204,8 +209,12 @@ function SessionsList({
                 {s.status === 'PUBLISHED' ? 'Publicada' : 'Cancelada'}
               </StatusPill>
             </td>
-          <td className="row-actions">
-            <Link href={`/sesiones/${s.id}`}>Editar</Link>
+          <td>
+            <RowActions>
+              <RowIconButton label="Editar" href={`/sesiones/${s.id}`}>
+                <IconEdit />
+              </RowIconButton>
+            </RowActions>
           </td>
         </tr>
       ))}

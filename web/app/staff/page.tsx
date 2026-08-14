@@ -1,6 +1,5 @@
 'use client';
 
-import Link from 'next/link';
 import { Suspense, useCallback, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import {
@@ -13,6 +12,14 @@ import { AdminModal } from '@/components/AdminModal';
 import { AdminShell } from '@/components/AdminShell';
 import { RequireStaff } from '@/components/RequireStaff';
 import { StaffCreateForm } from '@/components/StaffCreateForm';
+import { StaffCredentialPanel } from '@/components/StaffCredentialPanel';
+import { StaffRolesPanel } from '@/components/StaffRolesPanel';
+import {
+  IconCredential,
+  IconRoles,
+  RowActions,
+  RowIconButton,
+} from '@/components/RowActions';
 import { StatusPill, activeTone } from '@/components/StatusPill';
 import { ApiClientError } from '@/lib/api/client';
 import { listStaff } from '@/lib/api/staff';
@@ -21,9 +28,9 @@ import type { StaffUserDetail } from '@/lib/api/staff';
 const PAGE_SIZE = 20;
 
 /**
- * Listado de staff del gym (CU-ROL-004).
+ * Listado de staff: alta + Roles / Credencial en modal (CU-ROL-004).
  *
- * @remarks `+ Nuevo` abre modal; `/staff/nuevo` redirige a `?nuevo=1`.
+ * @remarks `+ Nuevo` → `?nuevo=1`; deep links `?roles=` / `?credencial=`.
  */
 export default function StaffPage() {
   return (
@@ -38,6 +45,11 @@ export default function StaffPage() {
 function StaffInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const rolesId = searchParams.get('roles')?.trim() || null;
+  const credencialId = searchParams.get('credencial')?.trim() || null;
+  const createOpen =
+    searchParams.get('nuevo') === '1' && !rolesId && !credencialId;
+
   const [rows, setRows] = useState<StaffUserDetail[]>([]);
   const [total, setTotal] = useState(0);
   const [hasMore, setHasMore] = useState(false);
@@ -46,9 +58,6 @@ function StaffInner() {
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [modalOpen, setModalOpen] = useState(
-    searchParams.get('nuevo') === '1',
-  );
   const [flashOk, setFlashOk] = useState<string | null>(null);
 
   const load = useCallback(async () => {
@@ -78,22 +87,34 @@ function StaffInner() {
     void load();
   }, [load]);
 
-  function openModal() {
+  function closeModals() {
+    router.replace('/staff', { scroll: false });
+  }
+
+  function openCreate() {
     setFlashOk(null);
-    setModalOpen(true);
     router.replace('/staff?nuevo=1', { scroll: false });
   }
 
-  function closeModal() {
-    setModalOpen(false);
-    router.replace('/staff', { scroll: false });
+  function openRoles(id: string) {
+    setFlashOk(null);
+    router.replace(`/staff?roles=${encodeURIComponent(id)}`, {
+      scroll: false,
+    });
+  }
+
+  function openCredencial(id: string) {
+    setFlashOk(null);
+    router.replace(`/staff?credencial=${encodeURIComponent(id)}`, {
+      scroll: false,
+    });
   }
 
   return (
     <AdminShell
       title="Staff"
       actions={
-        <button type="button" className="btn" onClick={openModal}>
+        <button type="button" className="btn" onClick={openCreate}>
           + Nuevo
         </button>
       }
@@ -145,25 +166,38 @@ function StaffInner() {
                 {s.active ? 'Activo' : 'Inactivo'}
               </StatusPill>
             </td>
-            <td className="row-actions">
-              <Link href={`/staff/${s.id}`}>Roles</Link>
+            <td>
+              <RowActions>
+                <RowIconButton
+                  label="Roles asignados"
+                  onClick={() => openRoles(s.id)}
+                >
+                  <IconRoles />
+                </RowIconButton>
+                <RowIconButton
+                  label="Credencial de acceso"
+                  onClick={() => openCredencial(s.id)}
+                >
+                  <IconCredential />
+                </RowIconButton>
+              </RowActions>
             </td>
           </tr>
         ))}
       </DataTable>
 
       <AdminModal
-        open={modalOpen}
-        onClose={closeModal}
+        open={createOpen}
+        onClose={closeModals}
         title="Nuevo staff"
         description="Alta con roles iniciales opcionales."
         wide
       >
         <StaffCreateForm
-          onCancel={closeModal}
+          onCancel={closeModals}
           onSuccess={(created) => {
             setFlashOk(`Staff creado: ${created.email}`);
-            closeModal();
+            closeModals();
             if (page === 1) {
               void load();
             } else {
@@ -171,6 +205,37 @@ function StaffInner() {
             }
           }}
         />
+      </AdminModal>
+
+      <AdminModal
+        open={Boolean(rolesId)}
+        onClose={closeModals}
+        title="Roles asignados"
+        description="Reemplaza el set completo al guardar."
+        size="comfortable"
+      >
+        {rolesId ? (
+          <StaffRolesPanel
+            key={rolesId}
+            staffId={rolesId}
+            onSaved={(s) => {
+              setFlashOk(`Roles actualizados: ${s.email}`);
+              void load();
+            }}
+          />
+        ) : null}
+      </AdminModal>
+
+      <AdminModal
+        open={Boolean(credencialId)}
+        onClose={closeModals}
+        title="Credencial de acceso"
+        description="Offer OID4VCI para molinete (sin fichaje)."
+        size="comfortable"
+      >
+        {credencialId ? (
+          <StaffCredentialPanel key={credencialId} staffId={credencialId} />
+        ) : null}
       </AdminModal>
     </AdminShell>
   );
