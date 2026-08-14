@@ -2453,10 +2453,10 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"serviceId\": \"{{porSesionesServiceId}}\",\n  \"weekdays\": [\"MONDAY\", \"WEDNESDAY\"],\n  \"localStartTime\": \"08:00\",\n  \"durationMinutes\": 60,\n  \"timezone\": \"America/Argentina/Buenos_Aires\",\n  \"startsOn\": \"2026-08-03\",\n  \"endsOn\": \"2026-08-31\",\n  \"capacity\": 12,\n  \"instructorId\": \"{{userId}}\"\n}"
+              "raw": "{\n  \"serviceId\": \"{{porSesionesServiceId}}\",\n  \"weekdays\": [\"MONDAY\", \"WEDNESDAY\"],\n  \"localStartTime\": \"08:00\",\n  \"durationMinutes\": 60,\n  \"timezone\": \"America/Asuncion\",\n  \"startsOn\": \"2026-08-03\",\n  \"endsOn\": \"2026-08-31\",\n  \"capacity\": 12\n}"
             },
             "url": "{{baseUrl}}/api/session-recurrence-rules",
-            "description": "Genera 9 sesiones (lunes/miércoles) a las 08:00 ART = 11:00 UTC."
+            "description": "Genera sesiones lunes/miércoles 08:00 America/Asuncion."
           }
         },
         {

@@ -7,6 +7,11 @@ import { AdminShell } from '@/components/AdminShell';
 import { Panel } from '@/components/AdminUi';
 import { RequireStaff } from '@/components/RequireStaff';
 import { ApiClientError } from '@/lib/api/client';
+import {
+  createRecurrenceRule,
+  DEFAULT_RECURRENCE_TIMEZONE,
+} from '@/lib/api/recurrence-rules';
+import type { Weekday } from '@/lib/api/recurrence-rules';
 import { listServices } from '@/lib/api/services';
 import type { ServiceDetail } from '@/lib/api/services';
 import { createSession } from '@/lib/api/sessions';
@@ -15,8 +20,36 @@ import {
   fromDatetimeLocalValue,
 } from '@/lib/catalog-labels';
 
+type Mode = 'PUNTUAL' | 'RECURRENTE';
+
+const WEEKDAY_OPTIONS: { value: Weekday; label: string }[] = [
+  { value: 'MONDAY', label: 'L' },
+  { value: 'TUESDAY', label: 'M' },
+  { value: 'WEDNESDAY', label: 'X' },
+  { value: 'THURSDAY', label: 'J' },
+  { value: 'FRIDAY', label: 'V' },
+  { value: 'SATURDAY', label: 'S' },
+  { value: 'SUNDAY', label: 'D' },
+];
+
+function todayDateInput(): string {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function plusMonthsDateInput(months: number): string {
+  const d = new Date();
+  d.setUTCMonth(d.getUTCMonth() + months);
+  return d.toISOString().slice(0, 10);
+}
+
+/** Normaliza `HH:mm` para el DTO de la API. */
+function normalizeTime(value: string): string {
+  const [h = '0', m = '0'] = value.split(':');
+  return `${h.padStart(2, '0')}:${m.padStart(2, '0')}`;
+}
+
 /**
- * Alta de sesión puntual publicada (CU-SER-003).
+ * Alta de sesión puntual o regla de recurrencia (CU-SER-003 / CU-SER-004).
  */
 export default function NuevaSesionPage() {
   return (
@@ -28,11 +61,17 @@ export default function NuevaSesionPage() {
 
 function NuevoInner() {
   const router = useRouter();
+  const [mode, setMode] = useState<Mode>('PUNTUAL');
   const [services, setServices] = useState<ServiceDetail[]>([]);
   const [serviceId, setServiceId] = useState('');
   const [startsAt, setStartsAt] = useState('');
   const [endsAt, setEndsAt] = useState('');
   const [capacity, setCapacity] = useState('10');
+  const [weekdays, setWeekdays] = useState<Weekday[]>(['MONDAY', 'WEDNESDAY']);
+  const [localStartTime, setLocalStartTime] = useState('08:00');
+  const [durationMinutes, setDurationMinutes] = useState('60');
+  const [startsOn, setStartsOn] = useState(todayDateInput);
+  const [endsOn, setEndsOn] = useState(() => plusMonthsDateInput(2));
   const [loadError, setLoadError] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -67,23 +106,50 @@ function NuevoInner() {
     };
   }, []);
 
+  function toggleWeekday(day: Weekday) {
+    setWeekdays((prev) =>
+      prev.includes(day) ? prev.filter((d) => d !== day) : [...prev, day],
+    );
+  }
+
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
     setBusy(true);
     setError(null);
     try {
-      const created = await createSession({
+      if (mode === 'PUNTUAL') {
+        const created = await createSession({
+          serviceId,
+          startsAt: fromDatetimeLocalValue(startsAt),
+          endsAt: fromDatetimeLocalValue(endsAt),
+          capacity: Number(capacity),
+        });
+        router.replace(`/sesiones/${created.id}`);
+        return;
+      }
+      if (weekdays.length === 0) {
+        setError('Elegí al menos un día de la semana');
+        setBusy(false);
+        return;
+      }
+      const created = await createRecurrenceRule({
         serviceId,
-        startsAt: fromDatetimeLocalValue(startsAt),
-        endsAt: fromDatetimeLocalValue(endsAt),
+        weekdays,
+        localStartTime: normalizeTime(localStartTime),
+        durationMinutes: Number(durationMinutes),
+        timezone: DEFAULT_RECURRENCE_TIMEZONE,
+        startsOn,
+        endsOn,
         capacity: Number(capacity),
       });
-      router.replace(`/sesiones/${created.id}`);
+      router.replace(`/sesiones?view=rules&created=${created.id}`);
     } catch (err) {
       setError(
         err instanceof ApiClientError
           ? err.message
-          : 'No se pudo crear la sesión',
+          : mode === 'PUNTUAL'
+            ? 'No se pudo crear la sesión'
+            : 'No se pudo crear la recurrencia',
       );
     } finally {
       setBusy(false);
@@ -101,8 +167,33 @@ function NuevoInner() {
     >
       {loadError ? <p className="error">{loadError}</p> : null}
 
-      <Panel title="Sesión puntual" className="form-panel">
+      <Panel
+        title={mode === 'PUNTUAL' ? 'Sesión puntual' : 'Recurrencia semanal'}
+        className="form-panel"
+      >
         <form className="admin-form" onSubmit={(e) => void onSubmit(e)}>
+          <fieldset className="radio-row">
+            <legend>Tipo</legend>
+            <label className="checkbox-row">
+              <input
+                type="radio"
+                name="mode"
+                checked={mode === 'PUNTUAL'}
+                onChange={() => setMode('PUNTUAL')}
+              />
+              Puntual
+            </label>
+            <label className="checkbox-row">
+              <input
+                type="radio"
+                name="mode"
+                checked={mode === 'RECURRENTE'}
+                onChange={() => setMode('RECURRENTE')}
+              />
+              Recurrente
+            </label>
+          </fieldset>
+
           <label>
             Servicio (por sesiones)
             <select
@@ -118,24 +209,89 @@ function NuevoInner() {
               ))}
             </select>
           </label>
-          <label>
-            Inicio
-            <input
-              type="datetime-local"
-              value={startsAt}
-              onChange={(e) => setStartsAt(e.target.value)}
-              required
-            />
-          </label>
-          <label>
-            Fin
-            <input
-              type="datetime-local"
-              value={endsAt}
-              onChange={(e) => setEndsAt(e.target.value)}
-              required
-            />
-          </label>
+
+          {mode === 'PUNTUAL' ? (
+            <>
+              <label>
+                Inicio
+                <input
+                  type="datetime-local"
+                  value={startsAt}
+                  onChange={(e) => setStartsAt(e.target.value)}
+                  required
+                />
+              </label>
+              <label>
+                Fin
+                <input
+                  type="datetime-local"
+                  value={endsAt}
+                  onChange={(e) => setEndsAt(e.target.value)}
+                  required
+                />
+              </label>
+            </>
+          ) : (
+            <>
+              <p className="muted small">
+                Genera sesiones futuras (máx. 6 meses). Zona horaria:{' '}
+                {DEFAULT_RECURRENCE_TIMEZONE}. Desactivar la regla no cancela
+                las ya creadas.
+              </p>
+              <div className="weekday-row" role="group" aria-label="Días">
+                {WEEKDAY_OPTIONS.map((opt) => (
+                  <label key={opt.value} className="checkbox-row">
+                    <input
+                      type="checkbox"
+                      checked={weekdays.includes(opt.value)}
+                      onChange={() => toggleWeekday(opt.value)}
+                    />
+                    {opt.label}
+                  </label>
+                ))}
+              </div>
+              <label>
+                Hora de inicio
+                <input
+                  type="time"
+                  value={localStartTime}
+                  onChange={(e) => setLocalStartTime(e.target.value)}
+                  required
+                />
+              </label>
+              <label>
+                Duración (minutos)
+                <input
+                  type="number"
+                  min={1}
+                  max={1440}
+                  step={1}
+                  value={durationMinutes}
+                  onChange={(e) => setDurationMinutes(e.target.value)}
+                  required
+                />
+              </label>
+              <label>
+                Desde
+                <input
+                  type="date"
+                  value={startsOn}
+                  onChange={(e) => setStartsOn(e.target.value)}
+                  required
+                />
+              </label>
+              <label>
+                Hasta
+                <input
+                  type="date"
+                  value={endsOn}
+                  onChange={(e) => setEndsOn(e.target.value)}
+                  required
+                />
+              </label>
+            </>
+          )}
+
           <label>
             Cupo
             <input
@@ -155,7 +311,11 @@ function NuevoInner() {
             className="primary"
             disabled={busy || !!loadError}
           >
-            {busy ? 'Guardando…' : 'Crear sesión'}
+            {busy
+              ? 'Guardando…'
+              : mode === 'PUNTUAL'
+                ? 'Crear sesión'
+                : 'Crear recurrencia'}
           </button>
         </form>
       </Panel>
