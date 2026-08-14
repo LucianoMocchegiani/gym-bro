@@ -14,6 +14,7 @@ export function AdminModal({
   description,
   children,
   footer,
+  wide = false,
 }: {
   open: boolean;
   onClose: () => void;
@@ -21,6 +22,8 @@ export function AdminModal({
   description?: ReactNode;
   children: ReactNode;
   footer?: ReactNode;
+  /** Más ancho (p. ej. checklist de permisos). */
+  wide?: boolean;
 }) {
   useEffect(() => {
     if (!open) {
@@ -51,7 +54,7 @@ export function AdminModal({
       onClick={onClose}
     >
       <div
-        className="admin-modal"
+        className={`admin-modal${wide ? ' admin-modal-wide' : ''}`}
         role="dialog"
         aria-modal="true"
         aria-labelledby="admin-modal-title"

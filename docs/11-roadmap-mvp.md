@@ -310,6 +310,7 @@ Detalle: [14-auditoria…](./14-auditoria-roadmap-vs-codigo-2026-08-13.md).
   - afiliados, staff, servicios, packs, sesiones, roles, auditoría, Super tenants
   - `StatusPill`; reportes, devoluciones, historial puerta (+ pager)
   - `AdminModal`; devolución directa / ejecutar solicitud en modal
+  - Alta servicio/rol en modal (`?nuevo=1`; `/nuevo` redirige)
 
 ### Pendiente — otras épicas / Super
 

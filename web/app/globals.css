@@ -539,6 +539,11 @@ a.btn.ghost,
   padding: 1.15rem;
 }
 
+.admin-modal-wide {
+  width: min(40rem, 100%);
+  max-height: min(90vh, 48rem);
+}
+
 .admin-modal-head {
   display: flex;
   align-items: flex-start;

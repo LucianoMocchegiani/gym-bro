@@ -1,15 +1,18 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
-import { AdminShell } from '@/components/AdminShell';
+import { Suspense, useCallback, useEffect, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import {
   DataTable,
   ListFilterField,
   ListToolbar,
   listCountDescription,
 } from '@/components/AdminList';
+import { AdminModal } from '@/components/AdminModal';
+import { AdminShell } from '@/components/AdminShell';
 import { RequireStaff } from '@/components/RequireStaff';
+import { ServiceCreateForm } from '@/components/ServiceCreateForm';
 import { StatusPill, activeTone } from '@/components/StatusPill';
 import { ApiClientError } from '@/lib/api/client';
 import { listServices } from '@/lib/api/services';
@@ -21,16 +24,22 @@ const PAGE_SIZE = 20;
 
 /**
  * Listado de servicios del catálogo (CU-SER-001).
+ *
+ * @remarks `+ Nuevo` abre modal; `/servicios/nuevo` redirige a `?nuevo=1`.
  */
 export default function ServiciosPage() {
   return (
     <RequireStaff>
-      <ServiciosInner />
+      <Suspense fallback={<p className="muted">Cargando…</p>}>
+        <ServiciosInner />
+      </Suspense>
     </RequireStaff>
   );
 }
 
 function ServiciosInner() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const [rows, setRows] = useState<ServiceDetail[]>([]);
   const [total, setTotal] = useState(0);
   const [hasMore, setHasMore] = useState(false);
@@ -41,53 +50,57 @@ function ServiciosInner() {
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [modalOpen, setModalOpen] = useState(
+    searchParams.get('nuevo') === '1',
+  );
+  const [flashOk, setFlashOk] = useState<string | null>(null);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      const data = await listServices({
+        type: typeFilter === 'ALL' ? undefined : typeFilter,
+        active: activeFilter === 'ALL' ? undefined : activeFilter === 'true',
+        page,
+        pageSize: PAGE_SIZE,
+      });
+      setRows(data.items);
+      setTotal(data.total);
+      setHasMore(data.hasMore);
+      setError(null);
+    } catch (err) {
+      setError(
+        err instanceof ApiClientError
+          ? err.message
+          : 'No se pudieron cargar servicios',
+      );
+    } finally {
+      setLoading(false);
+    }
+  }, [typeFilter, activeFilter, page]);
 
   useEffect(() => {
-    let cancelled = false;
-    void (async () => {
-      setLoading(true);
-      try {
-        const data = await listServices({
-          type: typeFilter === 'ALL' ? undefined : typeFilter,
-          active:
-            activeFilter === 'ALL' ? undefined : activeFilter === 'true',
-          page,
-          pageSize: PAGE_SIZE,
-        });
-        if (cancelled) {
-          return;
-        }
-        setRows(data.items);
-        setTotal(data.total);
-        setHasMore(data.hasMore);
-        setError(null);
-      } catch (err) {
-        if (cancelled) {
-          return;
-        }
-        setError(
-          err instanceof ApiClientError
-            ? err.message
-            : 'No se pudieron cargar servicios',
-        );
-      } finally {
-        if (!cancelled) {
-          setLoading(false);
-        }
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [typeFilter, activeFilter, page]);
+    void load();
+  }, [load]);
+
+  function openModal() {
+    setFlashOk(null);
+    setModalOpen(true);
+    router.replace('/servicios?nuevo=1', { scroll: false });
+  }
+
+  function closeModal() {
+    setModalOpen(false);
+    router.replace('/servicios', { scroll: false });
+  }
 
   return (
     <AdminShell
       title="Servicios"
       actions={
-        <Link href="/servicios/nuevo" className="btn">
+        <button type="button" className="btn" onClick={openModal}>
           + Nuevo
-        </Link>
+        </button>
       }
     >
       <ListToolbar>
@@ -116,6 +129,8 @@ function ServiciosInner() {
           <option value="false">No</option>
         </ListFilterField>
       </ListToolbar>
+
+      {flashOk ? <p className="ok-msg">{flashOk}</p> : null}
 
       <DataTable
         description={listCountDescription(total, page, 'servicio', 'servicios')}
@@ -154,6 +169,26 @@ function ServiciosInner() {
           </tr>
         ))}
       </DataTable>
+
+      <AdminModal
+        open={modalOpen}
+        onClose={closeModal}
+        title="Nuevo servicio"
+        description="Alta rápida del catálogo. Después podés editarlo desde la fila."
+      >
+        <ServiceCreateForm
+          onCancel={closeModal}
+          onSuccess={(created) => {
+            setFlashOk(`Servicio creado: ${created.name}`);
+            closeModal();
+            if (page === 1) {
+              void load();
+            } else {
+              setPage(1);
+            }
+          }}
+        />
+      </AdminModal>
     </AdminShell>
   );
 }
