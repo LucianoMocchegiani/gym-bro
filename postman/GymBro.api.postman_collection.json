@@ -2168,6 +2168,85 @@
           }
         },
         {
+          "name": "Staff POST staff credential-offer",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 201', () => pm.response.to.have.status(201));",
+                  "const body = pm.response.json();",
+                  "pm.test('staff offer fields', () => {",
+                  "  pm.expect(body).to.have.property('staffUserId');",
+                  "  pm.expect(['PENDING','FAILED','ACCEPTED']).to.include(body.status);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"force\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/staff/{{createdStaffId}}/credential-offers",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "staff",
+                "{{createdStaffId}}",
+                "credential-offers"
+              ]
+            },
+            "description": "Emite/re-emite VC de acceso staff (staff.write). Soft-fail Kuatia."
+          }
+        },
+        {
+          "name": "Staff GET staff credential-offers",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/staff/{{createdStaffId}}/credential-offers?page=1&pageSize=20&order=desc",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "staff",
+                "{{createdStaffId}}",
+                "credential-offers"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "20"
+                },
+                {
+                  "key": "order",
+                  "value": "desc"
+                }
+              ]
+            },
+            "description": "Lista offers de acceso staff (staff.read)."
+          }
+        },
+        {
           "name": "Member GET me credential-offers",
           "event": [
             {

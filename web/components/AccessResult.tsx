@@ -5,7 +5,14 @@ import { formatAccessReason } from '@/lib/access-labels';
 import type { AccessAttemptDetail, AccessVerifyResult } from '@/lib/api/access';
 import { Panel } from '@/components/AdminUi';
 
-function memberLabel(a: AccessAttemptDetail): string {
+function subjectLabel(a: AccessAttemptDetail): string {
+  if (a.subjectStaffId) {
+    return (
+      a.subjectStaffName?.trim() ||
+      a.subjectStaffEmail?.trim() ||
+      a.subjectStaffId
+    );
+  }
   if (a.memberName?.trim()) {
     return a.memberName;
   }
@@ -35,10 +42,14 @@ export function AccessResultBanner({
       </Panel>
     );
   }
-  const who =
-    result.attempt.memberName?.trim() ||
-    result.attempt.memberEmail?.trim() ||
-    result.memberId;
+  const staffId = result.subjectStaffId ?? result.attempt.subjectStaffId;
+  const who = staffId
+    ? result.attempt.subjectStaffName?.trim() ||
+      result.attempt.subjectStaffEmail?.trim() ||
+      staffId
+    : result.attempt.memberName?.trim() ||
+      result.attempt.memberEmail?.trim() ||
+      result.memberId;
   return (
     <Panel
       title="Resultado"
@@ -51,8 +62,10 @@ export function AccessResultBanner({
       <p className="result-reason">{formatAccessReason(result.reasonCode)}</p>
       {who ? (
         <p className="muted small">
-          Afiliado:{' '}
-          {result.memberId ? (
+          {staffId ? 'Staff: ' : 'Afiliado: '}
+          {staffId ? (
+            <Link href={`/staff/${staffId}`}>{who}</Link>
+          ) : result.memberId ? (
             <Link href={`/afiliados/${result.memberId}`}>{who}</Link>
           ) : (
             who
@@ -64,7 +77,7 @@ export function AccessResultBanner({
 }
 
 /**
- * Lista de intentos de puerta con nombre de afiliado.
+ * Lista de intentos de puerta con nombre de afiliado o staff.
  */
 export function AttemptsList({
   attempts,
@@ -101,10 +114,14 @@ export function AttemptsList({
               {a.result === 'ALLOWED' ? 'OK' : 'NO'}
             </span>
             <span className="attempt-who">
-              {a.memberId ? (
-                <Link href={`/afiliados/${a.memberId}`}>{memberLabel(a)}</Link>
+              {a.subjectStaffId ? (
+                <Link href={`/staff/${a.subjectStaffId}`}>
+                  {subjectLabel(a)}
+                </Link>
+              ) : a.memberId ? (
+                <Link href={`/afiliados/${a.memberId}`}>{subjectLabel(a)}</Link>
               ) : (
-                memberLabel(a)
+                subjectLabel(a)
               )}
             </span>
             <span>

@@ -9,6 +9,7 @@ import { KuatiaHttpError } from '../kuatia/http-kuatia-admin.adapter';
 import { KuatiaAdminPort } from '../kuatia/kuatia-admin.port';
 import { KuatiaEnvService } from '../kuatia/kuatia-env.service';
 import { packKuatiaIds } from '../kuatia/kuatia-pack-sync.service';
+import { staffKuatiaIds } from '../kuatia/kuatia-staff-sync.service';
 import { AccessVerifyService } from './access-verify.service';
 import {
   ACCESS_REASON,
@@ -29,8 +30,8 @@ export function oid4vpCredentialRef(sessionId: string): string {
 /**
  * Puerta OID4VP modo B: crear request + poll sesión → evaluate (CU-ACC-001).
  *
- * @remarks El QR es `requestUri` Kuatia. Identidad = claim `memberId` de la VC.
- * Verifier = `KUATIA_VERIFIER_WALLET_ID` (compartido); re-bind del tenant si hace falta.
+ * @remarks QR = `requestUri`. Identidad = claim `memberId` (afiliado) o `staffId`
+ * (staff molinete). Verifier = `KUATIA_VERIFIER_WALLET_ID`.
  * @see docs/12-acceso-quark-oid4-diseno.md
  */
 @Injectable()
@@ -45,11 +46,10 @@ export class AccessOid4VpService {
   ) {}
 
   /**
-   * Crea un authorization request OID4VP para el verifier compartido Kuatia.
+   * Crea authorization request OID4VP (pack afiliado **o** VC staff).
    *
-   * @remarks DCQL pide una VC `dc+sd-jwt` de packs del gym + claims `memberId`/`tenantId`.
-   * @throws {ServiceUnavailableException} Sin `KUATIA_VERIFIER_WALLET_ID` / key.
-   * @throws {BadRequestException} Kuatia rechaza el request.
+   * @remarks DCQL: dos credentials + `credential_sets` (OR). Staff VCT =
+   * `urn:gymbro:staff:{tenantId}`.
    */
   async createRequest(tenantId: string): Promise<AccessOid4VpRequestResult> {
     const verifierWalletId = this.requireVerifierWallet();
@@ -57,9 +57,10 @@ export class AccessOid4VpService {
       where: { tenantId },
       select: { id: true },
     });
-    const vctValues = packs.map((p) => packKuatiaIds(p.id).vct);
+    const packVcts = packs.map((p) => packKuatiaIds(p.id).vct);
+    const staffVct = staffKuatiaIds(tenantId).vct;
 
-    const credentialQuery: Record<string, unknown> = {
+    const packCredential: Record<string, unknown> = {
       id: 'gymbro_pack',
       format: 'dc+sd-jwt',
       claims: [
@@ -67,11 +68,29 @@ export class AccessOid4VpService {
         { path: ['tenantId'], values: [tenantId] },
       ],
     };
-    if (vctValues.length > 0) {
-      credentialQuery.meta = { vct_values: vctValues };
+    if (packVcts.length > 0) {
+      packCredential.meta = { vct_values: packVcts };
     }
 
-    const dcqlQuery = { credentials: [credentialQuery] };
+    const staffCredential: Record<string, unknown> = {
+      id: 'gymbro_staff',
+      format: 'dc+sd-jwt',
+      meta: { vct_values: [staffVct] },
+      claims: [
+        { path: ['staffId'] },
+        { path: ['tenantId'], values: [tenantId] },
+      ],
+    };
+
+    const dcqlQuery = {
+      credentials: [packCredential, staffCredential],
+      credential_sets: [
+        {
+          options: [['gymbro_pack'], ['gymbro_staff']],
+          required: true,
+        },
+      ],
+    };
 
     try {
       const created = await this.kuatia.createPresentationRequest(
@@ -93,10 +112,7 @@ export class AccessOid4VpService {
   }
 
   /**
-   * Consulta la sesión Quark; si ya hay `vp_token`, mapea claims y evalúa.
-   *
-   * @remarks Pendiente = sin presentación (`presented=false`). Verificado = hay
-   * `vp_token` decodificado (Postman 02.7). Poll idempotente vía `oid4vp:{sessionId}`.
+   * Consulta la sesión; si hay `vp_token`, mapea claims y evalúa afiliado o staff.
    */
   async getSession(
     tenantId: string,
@@ -134,7 +150,6 @@ export class AccessOid4VpService {
       };
     }
 
-    // Sin vp_token: todavía no presentó (aunque el state intermedio cambie).
     if (!session.presented) {
       return { status: 'pending', state };
     }
@@ -145,29 +160,44 @@ export class AccessOid4VpService {
     }
 
     const claims = session.claims;
+    const staffId =
+      typeof claims.staffId === 'string' ? claims.staffId.trim() : '';
     const memberId =
       typeof claims.memberId === 'string' ? claims.memberId.trim() : '';
     const claimTenantId =
       typeof claims.tenantId === 'string' ? claims.tenantId.trim() : '';
 
-    if (!memberId) {
+    if (claimTenantId && claimTenantId !== tenantId) {
       const denied = await this.accessVerify.persistOid4VpDenied({
         tenantId,
-        memberId: null,
+        memberId: memberId || null,
+        subjectStaffId: staffId || null,
         credentialRef: oid4vpCredentialRef(sessionId),
         actorStaffId,
-        reasonCode: ACCESS_REASON.payloadInvalido,
+        reasonCode: ACCESS_REASON.tenantMismatch,
       });
       return { status: 'done', state, result: denied };
     }
 
-    if (claimTenantId && claimTenantId !== tenantId) {
-      const denied = await this.accessVerify.persistOid4VpDenied({
+    // Preferir staff si ambos (caso anómalo).
+    if (staffId) {
+      const result = await this.accessVerify.evaluateStaffOid4VpPresentation({
         tenantId,
-        memberId,
+        staffUserId: staffId,
         credentialRef: oid4vpCredentialRef(sessionId),
         actorStaffId,
-        reasonCode: ACCESS_REASON.tenantMismatch,
+      });
+      return { status: 'done', state, result };
+    }
+
+    if (!memberId) {
+      const denied = await this.accessVerify.persistOid4VpDenied({
+        tenantId,
+        memberId: null,
+        subjectStaffId: null,
+        credentialRef: oid4vpCredentialRef(sessionId),
+        actorStaffId,
+        reasonCode: ACCESS_REASON.payloadInvalido,
       });
       return { status: 'done', state, result: denied };
     }
@@ -193,17 +223,19 @@ export class AccessOid4VpService {
       orderBy: { createdAt: 'desc' },
       include: {
         member: { select: { name: true, email: true } },
+        subjectStaff: { select: { name: true, email: true } },
       },
     });
     if (!row) {
       return null;
     }
-    return this.accessVerify.toVerifyResultFromAttempt(row, row.member);
+    return this.accessVerify.toVerifyResultFromAttempt(
+      row,
+      row.member,
+      row.subjectStaff,
+    );
   }
 
-  /**
-   * Verifier Kuatia compartido (`KUATIA_VERIFIER_WALLET_ID`).
-   */
   private requireVerifierWallet(): string {
     try {
       return this.kuatiaEnv.requireSharedVerifierWalletId();

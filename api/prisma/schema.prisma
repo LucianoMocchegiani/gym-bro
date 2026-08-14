@@ -192,6 +192,7 @@ model Tenant {
   accessAttempts  AccessAttempt[]
   auditEvents     AuditEvent[]
   credentialOffers CredentialOffer[]
+  staffCredentialOffers StaffCredentialOffer[]
 
   @@map("tenants")
 }
@@ -297,6 +298,8 @@ model StaffUser {
   cashReconciliations       CashReconciliation[]    @relation("CashReconciliationStaff")
   refundRequestsResolved    RefundRequest[]         @relation("RefundRequestResolver")
   accessAttemptsRecorded    AccessAttempt[]         @relation("AccessAttemptStaff")
+  accessAttemptsAsSubject   AccessAttempt[]         @relation("AccessAttemptSubjectStaff")
+  staffCredentialOffers     StaffCredentialOffer[]
 
   @@unique([tenantId, email])
   @@index([tenantId])
@@ -806,10 +809,13 @@ model AccessCredential {
 /// Intento de ingreso en puerta (CU-ACC-001 / RN-ACC-007).
 ///
 /// @remarks Siempre se persiste (allow/deny). `manualPass` queda para el slice de pase manual.
+/// `subjectStaffId` = staff que pasó el molinete (VC staff); distinto de `actorStaffId` (quien opera la puerta).
 model AccessAttempt {
   id              String              @id @default(uuid()) @db.Uuid
   tenantId        String              @map("tenant_id") @db.Uuid
   memberId        String?             @map("member_id") @db.Uuid
+  /// Staff sujeto del ingreso (VC staff / molinete), no el operador de puerta.
+  subjectStaffId  String?             @map("subject_staff_id") @db.Uuid
   credentialRef   String?             @map("credential_ref")
   result          AccessAttemptResult
   reasonCode      String              @map("reason_code")
@@ -823,16 +829,40 @@ model AccessAttempt {
   actorStaffId    String?             @map("actor_staff_id") @db.Uuid
   createdAt       DateTime            @default(now()) @map("created_at")
 
-  tenant      Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  member      Member?      @relation(fields: [memberId], references: [id], onDelete: SetNull)
-  reservation Reservation? @relation(fields: [reservationId], references: [id], onDelete: SetNull)
-  session     Session?     @relation(fields: [sessionId], references: [id], onDelete: SetNull)
-  actorStaff  StaffUser?   @relation("AccessAttemptStaff", fields: [actorStaffId], references: [id], onDelete: SetNull)
+  tenant       Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  member       Member?      @relation(fields: [memberId], references: [id], onDelete: SetNull)
+  subjectStaff StaffUser?   @relation("AccessAttemptSubjectStaff", fields: [subjectStaffId], references: [id], onDelete: SetNull)
+  reservation  Reservation? @relation(fields: [reservationId], references: [id], onDelete: SetNull)
+  session      Session?     @relation(fields: [sessionId], references: [id], onDelete: SetNull)
+  actorStaff   StaffUser?   @relation("AccessAttemptStaff", fields: [actorStaffId], references: [id], onDelete: SetNull)
 
   @@index([tenantId, createdAt])
   @@index([memberId, createdAt])
+  @@index([subjectStaffId, createdAt])
   @@index([tenantId, memberId, result, createdAt])
   @@map("access_attempts")
+}
+
+/// Offer OID4VCI de credencial de acceso staff (molinete; sin fichaje en MVP).
+///
+/// @remarks 1 fila por staff (UK). Claims en Kuatia: staffId, staffName, tenantId.
+/// Roles se evalúan en DB al verificar, no van en la VC.
+model StaffCredentialOffer {
+  id          String                @id @default(uuid()) @db.Uuid
+  tenantId    String                @map("tenant_id") @db.Uuid
+  staffUserId String                @unique @map("staff_user_id") @db.Uuid
+  status      CredentialOfferStatus @default(PENDING)
+  offerUri    String?               @map("offer_uri")
+  lastError   String?               @map("last_error")
+  createdAt   DateTime              @default(now()) @map("created_at")
+  updatedAt   DateTime              @updatedAt @map("updated_at")
+
+  tenant    Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  staffUser StaffUser @relation(fields: [staffUserId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([status])
+  @@map("staff_credential_offers")
 }
 
 /// Solicitud de devolución del afiliado (CU-PAG-004 / RN-PAG-012).

@@ -7,9 +7,11 @@ import { KuatiaAdminPort } from './kuatia-admin.port';
 import { KuatiaEnvService } from './kuatia-env.service';
 import { KuatiaOfferService } from './kuatia-offer.service';
 import { KuatiaPackSyncService } from './kuatia-pack-sync.service';
+import { KuatiaStaffOfferService } from './kuatia-staff-offer.service';
+import { KuatiaStaffSyncService } from './kuatia-staff-sync.service';
 
 /**
- * Integración Kuatia (issuer/verifier compartidos, metadata packs, offers OID4VCI).
+ * Integración Kuatia (issuer/verifier compartidos, metadata packs/staff, offers OID4VCI).
  *
  * @see https://kuatia.xyz/docs
  */
@@ -25,11 +27,15 @@ import { KuatiaPackSyncService } from './kuatia-pack-sync.service';
     KuatiaEnvService,
     KuatiaPackSyncService,
     KuatiaOfferService,
+    KuatiaStaffSyncService,
+    KuatiaStaffOfferService,
   ],
   exports: [
     KuatiaEnvService,
     KuatiaPackSyncService,
     KuatiaOfferService,
+    KuatiaStaffSyncService,
+    KuatiaStaffOfferService,
     KuatiaAdminPort,
   ],
 })

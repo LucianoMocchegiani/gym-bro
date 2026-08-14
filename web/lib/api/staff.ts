@@ -1,5 +1,5 @@
 /**
- * Staff API (módulo `staff`).
+ * Staff API (módulo `staff` + offers Kuatia).
  */
 
 import { apiRequest } from '@/lib/api/client';
@@ -29,6 +29,20 @@ export type CreateStaffInput = {
   password: string;
   name?: string;
   roleIds?: string[];
+};
+
+export type StaffCredentialOfferStatus = 'PENDING' | 'FAILED' | 'ACCEPTED';
+
+export type StaffCredentialOfferItem = {
+  id: string;
+  status: StaffCredentialOfferStatus;
+  staffUserId: string;
+  staffName: string | null;
+  staffEmail: string;
+  offerUri: string | null;
+  lastError: string | null;
+  createdAt: string;
+  updatedAt: string;
 };
 
 /**
@@ -71,4 +85,33 @@ export function setStaffRoles(
     method: 'PUT',
     body: { roleIds },
   });
+}
+
+/**
+ * Lista offers de credencial de acceso staff (`staff.read`).
+ */
+export function listStaffCredentialOffers(
+  staffId: string,
+  input?: ListParams,
+): Promise<ListResult<StaffCredentialOfferItem>> {
+  const qs = toSearchParams(input);
+  return apiRequest<ListResult<StaffCredentialOfferItem>>(
+    `/staff/${staffId}/credential-offers${qs ? `?${qs}` : ''}`,
+  );
+}
+
+/**
+ * Emite / re-emite offer OID4VCI de acceso staff (`staff.write`).
+ */
+export function issueStaffCredentialOffer(
+  staffId: string,
+  force = true,
+): Promise<StaffCredentialOfferItem> {
+  return apiRequest<StaffCredentialOfferItem>(
+    `/staff/${staffId}/credential-offers`,
+    {
+      method: 'POST',
+      body: { force },
+    },
+  );
 }

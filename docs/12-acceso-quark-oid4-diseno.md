@@ -54,15 +54,23 @@ Puerta (afiliado escanea local o gym escanea)
   → GymBro: IntentoIngreso + reglas (tolerancia, reingreso sesión, multi-ingreso)
 ```
 
-### Claims mínimos sugeridos (instancia VC)
+### Claims mínimos sugeridos (instancia VC afiliado)
 
 - `memberId`, `memberName`
 - `tenantId`, `tenantName`
 - `packId`, `packName`
 - `validFrom` / `validUntil` (ciclo del contrato)
-- opcional luego: `graceUntil` **o** re-emisión de VC corta de gracia
 
-La **evaluación fina** (deuda real, cupo sesión, reingreso) puede seguir en GymBro usando estos claims + DB.
+### Claims VC staff (molinete)
+
+- `staffId`, `staffName`, `tenantId` (+ `tenantName` opcional)
+- Roles **no** van en la VC; se leen de DB al verificar (`active`)
+- `configurationId` = `staff_{tenantId}`; `vct` = `urn:gymbro:staff:{tenantId}`
+- Emisión Admin: `POST /staff/:id/credential-offers`; persistencia `staff_credential_offers`
+- Puerta: mismo QR; DCQL OR pack|staff; reason `ok_staff` / `staff_inactivo`
+- Fichaje horario: diferido (backlog)
+
+La **evaluación fina** (deuda real, cupo sesión, reingreso) puede seguir en GymBro usando estos claims + DB (solo afiliado).
 
 ---
 

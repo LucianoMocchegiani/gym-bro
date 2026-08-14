@@ -301,8 +301,11 @@ Detalle: [14-auditoria…](./14-auditoria-roadmap-vs-codigo-2026-08-13.md).
   - UI: reservas CONFIRMADAS del afiliado (clase no terminada); default Sin sesión
 - [x] Checkout MP desde Admin (staff)
   - Caja: medio Efectivo | MP; pack (`members.write`) y drop-in (`reservations.write`); abrir/copiar link
-- [x] Credential offers staff
+- [x] Credential offers staff (afiliado OID4VCI en ficha)
   - Ficha afiliado: `GET /members/:id/credential-offers`; copiar URI; re-emitir (re-POST contrato)
+- [x] Credencial SSI **staff** para molinete
+  - `staff_credential_offers` + `POST/GET /staff/:id/credential-offers`; puerta DCQL pack|staff; `ok_staff`
+  - Fichaje horario → [backlog](./99-backlog-post-mvp.md)
 
 ### Pendiente — otras épicas / Super
 

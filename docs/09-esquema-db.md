@@ -696,10 +696,11 @@ Intentos de ingreso (CU-ACC-001 / RN-ACC-007) y marca de presente (RN-RES-007).
 |---------|------|--------|
 | `id` | uuid PK | |
 | `tenant_id` | uuid FK | |
-| `member_id` | uuid FK nullable | SET NULL |
+| `member_id` | uuid FK nullable | SET NULL (afiliado) |
+| `subject_staff_id` | uuid FK nullable | Staff sujeto del molinete (VC staff); ≠ `actor_staff_id` |
 | `credential_ref` | text nullable | OID4VP: `oid4vp:{sessionId}` |
 | `result` | `AccessAttemptResult` | `ALLOWED` \| `DENIED` |
-| `reason_code` | text | p.ej. `ok_acceso_libre`, `sin_derecho` |
+| `reason_code` | text | p.ej. `ok_acceso_libre`, `ok_staff`, `sin_derecho` |
 | `scan_mode` | text | MVP puerta: `member_scans_gym` (OID4VP) \| `manual` |
 | `reservation_id` / `session_id` | uuid FK nullable | |
 | `manual_pass` | boolean | default false |
@@ -751,6 +752,20 @@ Claims / `configurationId` / `vct` **no** se persisten: al (re)emitir se reconst
 | `created_at` / `updated_at` | timestamptz | |
 
 API slim: Member `GET /api/me/credential-offers`; Member `POST /api/me/credential-offers/:id/accept` → `ACCEPTED` (idempotente; conserva `offerUri`); Member `POST /api/me/credential-offers/:id/fail` → `FAILED` (offer vencido/inválido en wallet; conserva `offerUri`, `reason` → `lastError` staff); Staff `GET /api/members/:memberId/credential-offers` (`members.read`, incluye `lastError`). Re-oferta: re-POST `…/members/:id/contracts` con la misma `idempotencyKey` (force Quark). Campos list: `id`, `status`, `packId`, `packName`, `contractId`, `offerUri`, `validFrom`, `validUntil`, `createdAt`.
+
+### 4.17b `staff_credential_offers`
+
+Offer OID4VCI de **acceso staff** (molinete). 1 fila por staff (`staff_user_id` UK). Claims en Kuatia: `staffId`, `staffName`, `tenantId` (roles solo en DB al verify).
+
+| Columna | Tipo | Notas |
+|---------|------|--------|
+| `id` | uuid PK | |
+| `tenant_id` / `staff_user_id` | uuid FK | `staff_user_id` UNIQUE |
+| `status` | `CredentialOfferStatus` | mismo enum que packs |
+| `offer_uri` / `last_error` | text nullable | soft-fail Kuatia |
+| `created_at` / `updated_at` | timestamptz | |
+
+API: `GET|POST /api/staff/:staffId/credential-offers` (`staff.read` / `staff.write`). `configurationId` = `staff_{tenantId}`; `vct` = `urn:gymbro:staff:{tenantId}`.
 
 ### 4.18 `session_recurrence_rules`
 
@@ -882,6 +897,7 @@ API: Member `POST|GET /api/me/waitlist`, `PATCH /api/me/waitlist/:id/status`; St
 | `20260803020000_credential_offers_slim` | quita `claims` / `configuration_id` / `vct` / `payment_id` / `issuance_session_id` |
 | `20260803030000_credential_offer_accepted` | enum `ACCEPTED` |
 | `20260813180000_kuatia_shared_env_drop_tenant_bind` | drop `tenants.quark_*` + enum; rename `packs.quark_*` → `kuatia_*` |
+| `20260814180000_staff_credential_offers` | `staff_credential_offers` + `access_attempts.subject_staff_id` |
 
 Comandos y checklist “desde cero”: [13-setup-db-desde-cero.md](./13-setup-db-desde-cero.md).
 

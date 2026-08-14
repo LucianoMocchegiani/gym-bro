@@ -79,14 +79,99 @@ export class AccessVerifyService {
   async persistOid4VpDenied(input: {
     tenantId: string;
     memberId: string | null;
+    subjectStaffId?: string | null;
     credentialRef: string;
     actorStaffId: string | null;
     reasonCode: AccessReasonCode;
   }): Promise<AccessVerifyResult> {
     return this.persistDenied({
-      ...input,
+      tenantId: input.tenantId,
+      memberId: input.memberId,
+      subjectStaffId: input.subjectStaffId ?? null,
+      credentialRef: input.credentialRef,
       scanMode: 'member_scans_gym',
+      actorStaffId: input.actorStaffId,
+      reasonCode: input.reasonCode,
     });
+  }
+
+  /**
+   * Evalúa ingreso de staff tras OID4VP (VC de vínculo; sin pack/deuda/fichaje).
+   *
+   * @remarks Allow si el staff existe en el tenant y `active`. Roles no van en la VC.
+   */
+  async evaluateStaffOid4VpPresentation(input: {
+    tenantId: string;
+    staffUserId: string;
+    credentialRef: string;
+    actorStaffId: string | null;
+  }): Promise<AccessVerifyResult> {
+    const tenant = await this.prisma.tenant.findUnique({
+      where: { id: input.tenantId },
+      select: { status: true },
+    });
+    if (!tenant || tenant.status === TenantStatus.SUSPENDED) {
+      return this.persistDenied({
+        tenantId: input.tenantId,
+        memberId: null,
+        subjectStaffId: input.staffUserId,
+        credentialRef: input.credentialRef,
+        scanMode: 'member_scans_gym',
+        actorStaffId: input.actorStaffId,
+        reasonCode: ACCESS_REASON.tenantSuspendido,
+      });
+    }
+
+    const staff = await this.prisma.staffUser.findFirst({
+      where: { id: input.staffUserId, tenantId: input.tenantId },
+      select: { id: true, active: true, name: true, email: true },
+    });
+    if (!staff) {
+      return this.persistDenied({
+        tenantId: input.tenantId,
+        memberId: null,
+        subjectStaffId: null,
+        credentialRef: input.credentialRef,
+        scanMode: 'member_scans_gym',
+        actorStaffId: input.actorStaffId,
+        reasonCode: ACCESS_REASON.credencialInvalida,
+      });
+    }
+    if (!staff.active) {
+      return this.persistDenied({
+        tenantId: input.tenantId,
+        memberId: null,
+        subjectStaffId: staff.id,
+        credentialRef: input.credentialRef,
+        scanMode: 'member_scans_gym',
+        actorStaffId: input.actorStaffId,
+        reasonCode: ACCESS_REASON.staffInactivo,
+      });
+    }
+
+    const attempt = await this.prisma.accessAttempt.create({
+      data: {
+        tenantId: input.tenantId,
+        memberId: null,
+        subjectStaffId: staff.id,
+        credentialRef: input.credentialRef,
+        result: AccessAttemptResult.ALLOWED,
+        reasonCode: ACCESS_REASON.okStaff,
+        scanMode: 'member_scans_gym',
+        actorStaffId: input.actorStaffId,
+      },
+    });
+
+    return {
+      allowed: true,
+      reasonCode: ACCESS_REASON.okStaff,
+      memberId: null,
+      subjectStaffId: staff.id,
+      reservationId: null,
+      sessionId: null,
+      checkedInAt: null,
+      attempt: this.toAttemptDetail(attempt, null, staff),
+    };
   }
 
   /**
@@ -95,12 +180,14 @@ export class AccessVerifyService {
   toVerifyResultFromAttempt(
     row: AccessAttempt,
     member: { name: string | null; email: string | null } | null,
+    subjectStaff?: { name: string | null; email: string | null } | null,
   ): AccessVerifyResult {
-    const attempt = this.toAttemptDetail(row, member);
+    const attempt = this.toAttemptDetail(row, member, subjectStaff);
     return {
       allowed: row.result === AccessAttemptResult.ALLOWED,
       reasonCode: row.reasonCode,
       memberId: row.memberId,
+      subjectStaffId: row.subjectStaffId,
       reservationId: row.reservationId,
       sessionId: row.sessionId,
       checkedInAt: null,
@@ -146,12 +233,13 @@ export class AccessVerifyService {
         take: n.take,
         include: {
           member: { select: { name: true, email: true } },
+          subjectStaff: { select: { name: true, email: true } },
         },
       }),
       this.prisma.accessAttempt.count({ where }),
     ]);
     return toListResult(
-      rows.map((r) => this.toAttemptDetail(r, r.member)),
+      rows.map((r) => this.toAttemptDetail(r, r.member, r.subjectStaff)),
       total,
       n.page,
       n.pageSize,
@@ -562,6 +650,7 @@ export class AccessVerifyService {
       allowed: true,
       reasonCode: input.reasonCode,
       memberId: input.memberId,
+      subjectStaffId: null,
       reservationId: input.reservationId,
       sessionId: input.sessionId,
       checkedInAt,
@@ -572,6 +661,7 @@ export class AccessVerifyService {
   private async persistDenied(input: {
     tenantId: string;
     memberId: string | null;
+    subjectStaffId?: string | null;
     credentialRef: string | null;
     scanMode: AccessScanMode;
     actorStaffId: string | null;
@@ -581,6 +671,7 @@ export class AccessVerifyService {
       data: {
         tenantId: input.tenantId,
         memberId: input.memberId,
+        subjectStaffId: input.subjectStaffId ?? null,
         credentialRef: input.credentialRef,
         result: AccessAttemptResult.DENIED,
         reasonCode: input.reasonCode,
@@ -592,6 +683,7 @@ export class AccessVerifyService {
       allowed: false,
       reasonCode: input.reasonCode,
       memberId: input.memberId,
+      subjectStaffId: input.subjectStaffId ?? null,
       reservationId: null,
       sessionId: null,
       checkedInAt: null,
@@ -646,18 +738,27 @@ export class AccessVerifyService {
     row: AccessAttempt,
   ): Promise<AccessAttemptDetail> {
     let member: { name: string | null; email: string | null } | null = null;
+    let subjectStaff: { name: string | null; email: string | null } | null =
+      null;
     if (row.memberId) {
       member = await this.prisma.member.findFirst({
         where: { id: row.memberId, tenantId: row.tenantId },
         select: { name: true, email: true },
       });
     }
-    return this.toAttemptDetail(row, member);
+    if (row.subjectStaffId) {
+      subjectStaff = await this.prisma.staffUser.findFirst({
+        where: { id: row.subjectStaffId, tenantId: row.tenantId },
+        select: { name: true, email: true },
+      });
+    }
+    return this.toAttemptDetail(row, member, subjectStaff);
   }
 
   private toAttemptDetail(
     row: AccessAttempt,
     member?: { name: string | null; email: string | null } | null,
+    subjectStaff?: { name: string | null; email: string | null } | null,
   ): AccessAttemptDetail {
     return {
       id: row.id,
@@ -665,6 +766,9 @@ export class AccessVerifyService {
       memberId: row.memberId,
       memberName: member?.name ?? null,
       memberEmail: member?.email ?? null,
+      subjectStaffId: row.subjectStaffId,
+      subjectStaffName: subjectStaff?.name ?? null,
+      subjectStaffEmail: subjectStaff?.email ?? null,
       credentialRef: row.credentialRef,
       result: row.result,
       reasonCode: row.reasonCode,

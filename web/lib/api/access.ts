@@ -18,6 +18,9 @@ export type AccessAttemptDetail = {
   memberId: string | null;
   memberName: string | null;
   memberEmail: string | null;
+  subjectStaffId: string | null;
+  subjectStaffName: string | null;
+  subjectStaffEmail: string | null;
   credentialRef: string | null;
   result: 'ALLOWED' | 'DENIED';
   reasonCode: string;
@@ -35,6 +38,7 @@ export type AccessVerifyResult = {
   allowed: boolean;
   reasonCode: string;
   memberId: string | null;
+  subjectStaffId: string | null;
   reservationId: string | null;
   sessionId: string | null;
   checkedInAt: string | null;

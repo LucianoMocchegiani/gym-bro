@@ -82,6 +82,8 @@ Leyenda resultado: `P` pass · `F` fail · `B` bloqueado · `-` no aplica
 | X3 | Pase manual con deuda | Permitido + auditoría | CU-ACC-004 | |
 | X3b | Pase manual + sesión (reserva CONFIRMED hoy) | Permitido + presente en sesión | CU-ACC-004 | |
 | X3c | Pase manual sin sesión | Permitido; sin marcar presente | CU-ACC-004 | |
+| X11 | Staff presenta VC acceso | ALLOWED `ok_staff` | E6 staff SSI | |
+| X12 | Staff inactivo presenta VC | DENIED `staff_inactivo` | E6 staff SSI | |
 | X4 | Multi-ingreso deshabilitado | Segundo ingreso deny | RN-ACC-009 | |
 | X5 | Credencial revocada | Deny | CU-AFI-003/006 | |
 | X6 | Historial muestra motivos | Lista ok/deny | CU-ACC-005 | |

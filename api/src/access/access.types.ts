@@ -27,10 +27,13 @@ export const ACCESS_REASON = {
   okReserva: 'ok_reserva',
   /** Pack libre vencido pero dentro de `debtToleranceDays` (RN-ACC-005). */
   okDeudaTolerancia: 'ok_deuda_tolerancia',
+  /** Staff activo con VC de acceso (molinete; sin pack/deuda). */
+  okStaff: 'ok_staff',
   credencialInvalida: 'credencial_invalida',
   tenantMismatch: 'tenant_mismatch',
   tenantSuspendido: 'tenant_suspendido',
   afiliadoInactivo: 'afiliado_inactivo',
+  staffInactivo: 'staff_inactivo',
   sinDerecho: 'sin_derecho',
   deudaExcedida: 'deuda_excedida',
   multiIngresoExcedido: 'multi_ingreso_excedido',
@@ -50,6 +53,9 @@ export type AccessAttemptDetail = {
   memberId: string | null;
   memberName: string | null;
   memberEmail: string | null;
+  subjectStaffId: string | null;
+  subjectStaffName: string | null;
+  subjectStaffEmail: string | null;
   credentialRef: string | null;
   result: 'ALLOWED' | 'DENIED';
   reasonCode: string;
@@ -70,6 +76,7 @@ export type AccessVerifyResult = {
   allowed: boolean;
   reasonCode: string;
   memberId: string | null;
+  subjectStaffId: string | null;
   reservationId: string | null;
   sessionId: string | null;
   checkedInAt: Date | null;

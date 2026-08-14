@@ -38,6 +38,8 @@
 | Anti-fraude avanzado (préstamo de QR) | |
 | Adapter Kuatia OID4 (issuer/verifier compartidos, VC pack, offers, OID4VP) | Adapter `x-api-key` + bind compartido + Compose sin Quark local. Offers/VP/packs siguen; pendiente: alinear mobile URLs públicas, push E8, reingreso. Diseño: [12-acceso-quark-oid4-diseno.md](./12-acceso-quark-oid4-diseno.md) |
 | Segundo modo de escaneo (gym escanea afiliado) | UI demo hoy: afiliado escanea venue (`/puerta`) |
+| **Fichaje horario staff** (entrada/salida laboral) | Thin actual: VC staff + molinete (`ok_staff`). Fichaje diferido |
+| Wallet / app Flutter perfil staff (aceptar offer) | Thin: Admin emite URI; aceptación en wallet de prueba |
 
 ---
 
