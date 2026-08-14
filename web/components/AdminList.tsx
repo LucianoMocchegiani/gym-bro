@@ -133,9 +133,11 @@ type DataTableProps = {
   header: ReactNode;
   /** Filas `<tr>…</tr>`. */
   children: ReactNode;
-  page: number;
-  hasMore: boolean;
-  onPageChange: (page: number) => void;
+  /** Si false, no muestra Anterior/Siguiente (p. ej. reportes sin pager API). */
+  paginate?: boolean;
+  page?: number;
+  hasMore?: boolean;
+  onPageChange?: (page: number) => void;
 };
 
 /**
@@ -152,8 +154,9 @@ export function DataTable({
   emptyText = 'No hay resultados.',
   header,
   children,
-  page,
-  hasMore,
+  paginate = true,
+  page = 1,
+  hasMore = false,
   onPageChange,
 }: DataTableProps) {
   if (loading) {
@@ -175,11 +178,13 @@ export function DataTable({
           <tbody>{children}</tbody>
         </table>
       )}
-      <ListPagination
-        page={page}
-        hasMore={hasMore}
-        onPageChange={onPageChange}
-      />
+      {paginate && onPageChange ? (
+        <ListPagination
+          page={page}
+          hasMore={hasMore}
+          onPageChange={onPageChange}
+        />
+      ) : null}
     </Panel>
   );
 }

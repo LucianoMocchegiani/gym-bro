@@ -11,6 +11,7 @@ import {
   listCountDescription,
 } from '@/components/AdminList';
 import { RequireStaff } from '@/components/RequireStaff';
+import { StatusPill, activeTone } from '@/components/StatusPill';
 import { ApiClientError } from '@/lib/api/client';
 import {
   deactivateRecurrenceRule,
@@ -198,13 +199,11 @@ function SessionsList({
           <td>
             {s.bookedCount}/{s.capacity}
           </td>
-          <td>
-            <span
-              className={`status-pill ${s.status === 'PUBLISHED' ? 'active' : 'inactive'}`}
-            >
-              {s.status === 'PUBLISHED' ? 'Publicada' : 'Cancelada'}
-            </span>
-          </td>
+            <td>
+              <StatusPill tone={activeTone(s.status === 'PUBLISHED')}>
+                {s.status === 'PUBLISHED' ? 'Publicada' : 'Cancelada'}
+              </StatusPill>
+            </td>
           <td className="row-actions">
             <Link href={`/sesiones/${s.id}`}>Editar</Link>
           </td>
@@ -325,11 +324,9 @@ function RulesList() {
             <td>{r.capacity}</td>
             <td>{r.generatedSessionsCount}</td>
             <td>
-              <span
-                className={`status-pill ${r.active ? 'active' : 'inactive'}`}
-              >
+              <StatusPill tone={activeTone(r.active)}>
                 {r.active ? 'Activa' : 'Inactiva'}
-              </span>
+              </StatusPill>
             </td>
             <td className="row-actions">
               {r.active ? (

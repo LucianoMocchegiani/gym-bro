@@ -539,11 +539,23 @@ a.btn.ghost,
   min-width: 0;
 }
 
+.admin-panel.toolbar {
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
 .toolbar {
-  display: grid;
-  grid-template-columns: 1fr auto;
+  display: flex;
+  flex-wrap: wrap;
   gap: 0.85rem;
   align-items: end;
+}
+
+.toolbar > .toolbar-field {
+  flex: 1 1 10rem;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .toolbar-field {
@@ -552,8 +564,28 @@ a.btn.ghost,
 
 .toolbar-field.search-form {
   display: flex;
+  flex-wrap: wrap;
   gap: 0.5rem;
   align-items: end;
+  flex: 1 1 16rem;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.toolbar-field.search-form > label {
+  flex: 1 1 9rem;
+  min-width: 0;
+}
+
+.toolbar-field.search-form > button {
+  flex: 0 0 auto;
+}
+
+.toolbar input,
+.toolbar select {
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .table-wrap {
@@ -629,6 +661,11 @@ a.btn.ghost,
 .status-pill.active {
   background: var(--accent-soft);
   color: var(--ok);
+}
+
+.status-pill.denied {
+  background: var(--danger-soft);
+  color: var(--danger);
 }
 
 .form-panel {
@@ -850,8 +887,9 @@ button.danger {
 }
 
 .toolbar-hint {
-  align-self: end;
-  margin-bottom: 0.35rem;
+  flex: 1 1 100%;
+  align-self: start;
+  margin: 0;
 }
 
 .cash-dashboard {
@@ -1069,8 +1107,17 @@ button.danger {
     grid-template-columns: 1fr 1fr;
   }
 
-  .toolbar {
-    grid-template-columns: 1fr;
+  .toolbar > .toolbar-field,
+  .toolbar-field.search-form {
+    flex: 1 1 100%;
+  }
+
+  .toolbar-field.search-form > label {
+    flex: 1 1 100%;
+  }
+
+  .toolbar-field.search-form > button {
+    width: 100%;
   }
 }
 

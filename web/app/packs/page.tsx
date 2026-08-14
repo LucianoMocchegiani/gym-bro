@@ -10,6 +10,7 @@ import {
   listCountDescription,
 } from '@/components/AdminList';
 import { RequireStaff } from '@/components/RequireStaff';
+import { StatusPill, activeTone } from '@/components/StatusPill';
 import { ApiClientError } from '@/lib/api/client';
 import { listPacks } from '@/lib/api/packs';
 import type { PackDetail } from '@/lib/api/packs';
@@ -133,11 +134,9 @@ function PacksInner() {
             <td>{formatBillingPeriod(p.billingPeriod)}</td>
             <td>{p.components.length}</td>
             <td>
-              <span
-                className={`status-pill ${p.active ? 'active' : 'inactive'}`}
-              >
+              <StatusPill tone={activeTone(p.active)}>
                 {p.active ? 'Activo' : 'Inactivo'}
-              </span>
+              </StatusPill>
             </td>
             <td className="row-actions">
               <Link href={`/packs/${p.id}`}>Editar</Link>

@@ -7,6 +7,7 @@ import { AdminShell } from '@/components/AdminShell';
 import { AdminGrid, Panel } from '@/components/AdminUi';
 import { ReceiptPanel } from '@/components/ReceiptPanel';
 import { RequireStaff } from '@/components/RequireStaff';
+import { StatusPill, memberStatusTone } from '@/components/StatusPill';
 import { ApiClientError } from '@/lib/api/client';
 import {
   cancelContract,
@@ -434,9 +435,9 @@ function DetailInner() {
             <form className="admin-form" onSubmit={(e) => void onStatus(e)}>
               <p className="muted small">
                 Actual:{' '}
-                <span className={`status-pill ${member.status.toLowerCase()}`}>
+                <StatusPill tone={memberStatusTone(member.status)}>
                   {formatMemberStatus(member.status)}
-                </span>
+                </StatusPill>
               </p>
               <label>
                 Nuevo estado

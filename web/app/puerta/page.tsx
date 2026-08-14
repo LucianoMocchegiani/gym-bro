@@ -1,11 +1,24 @@
 'use client';
 
-import { FormEvent, useEffect, useRef, useState } from 'react';
-import { AccessResultBanner, AttemptsList } from '@/components/AccessResult';
+import Link from 'next/link';
+import { FormEvent, useCallback, useEffect, useRef, useState } from 'react';
+import { AccessResultBanner } from '@/components/AccessResult';
+import {
+  DataTable,
+  ListFilterField,
+  ListToolbar,
+  listCountDescription,
+} from '@/components/AdminList';
 import { AdminGrid, Panel } from '@/components/AdminUi';
 import { DoorShell } from '@/components/DoorShell';
 import { RequireStaff } from '@/components/RequireStaff';
+import {
+  StatusPill,
+  accessResultLabel,
+  accessResultTone,
+} from '@/components/StatusPill';
 import { VenueQr } from '@/components/VenueQr';
+import { formatAccessReason } from '@/lib/access-labels';
 import {
   createOid4VpRequest,
   getOid4VpSession,
@@ -18,10 +31,41 @@ import type {
 import { todayBusinessDate } from '@/lib/api/cash-register';
 import { ApiClientError } from '@/lib/api/client';
 
+const PAGE_SIZE = 20;
+
+function formatWhen(iso: string): string {
+  return new Intl.DateTimeFormat('es-AR', {
+    dateStyle: 'short',
+    timeStyle: 'short',
+    timeZone: 'America/Argentina/Buenos_Aires',
+  }).format(new Date(iso));
+}
+
+function subjectLabel(a: AccessAttemptDetail): string {
+  if (a.subjectStaffId) {
+    return (
+      a.subjectStaffName?.trim() ||
+      a.subjectStaffEmail?.trim() ||
+      a.subjectStaffId
+    );
+  }
+  if (a.memberName?.trim()) {
+    return a.memberName;
+  }
+  if (a.memberEmail?.trim()) {
+    return a.memberEmail;
+  }
+  if (a.credentialRef) {
+    return a.credentialRef;
+  }
+  return '—';
+}
+
 /**
  * Pantalla tocámetro: verificar ingreso vía OID4VP (CU-ACC-001).
  *
  * @remarks Modo B: QR = requestUri Quark; poll sesión hasta evaluate.
+ * Historial con `ListToolbar` + `DataTable` paginado (CU-ACC-005).
  */
 export default function PuertaPage() {
   return (
@@ -46,38 +90,48 @@ function PuertaInner() {
   const [resultFilter, setResultFilter] = useState<
     'ALL' | 'ALLOWED' | 'DENIED'
   >('ALL');
+  const [page, setPage] = useState(1);
   const [attempts, setAttempts] = useState<AccessAttemptDetail[]>([]);
+  const [total, setTotal] = useState(0);
+  const [hasMore, setHasMore] = useState(false);
   const [attemptsLoading, setAttemptsLoading] = useState(true);
   const [attemptsError, setAttemptsError] = useState<string | null>(null);
   const doneSessionRef = useRef<string | null>(null);
 
-  async function loadAttempts(opts?: { silent?: boolean }) {
-    if (!opts?.silent) {
-      setAttemptsLoading(true);
-    }
-    try {
-      const data = await listAccessAttempts({
-        pageSize: 100,
-        from: appliedFrom,
-        to: appliedTo,
-        result: resultFilter === 'ALL' ? undefined : resultFilter,
-      });
-      setAttempts(data.items);
-      setAttemptsError(null);
-      return data.items;
-    } catch (err) {
-      setAttemptsError(
-        err instanceof ApiClientError
-          ? err.message
-          : 'No se pudo cargar el historial',
-      );
-      return null;
-    } finally {
+  const loadAttempts = useCallback(
+    async (opts?: { silent?: boolean; pageOverride?: number }) => {
+      const pageToLoad = opts?.pageOverride ?? page;
       if (!opts?.silent) {
-        setAttemptsLoading(false);
+        setAttemptsLoading(true);
       }
-    }
-  }
+      try {
+        const data = await listAccessAttempts({
+          page: pageToLoad,
+          pageSize: PAGE_SIZE,
+          from: appliedFrom,
+          to: appliedTo,
+          result: resultFilter === 'ALL' ? undefined : resultFilter,
+        });
+        setAttempts(data.items);
+        setTotal(data.total);
+        setHasMore(data.hasMore);
+        setAttemptsError(null);
+        return data.items;
+      } catch (err) {
+        setAttemptsError(
+          err instanceof ApiClientError
+            ? err.message
+            : 'No se pudo cargar el historial',
+        );
+        return null;
+      } finally {
+        if (!opts?.silent) {
+          setAttemptsLoading(false);
+        }
+      }
+    },
+    [page, appliedFrom, appliedTo, resultFilter],
+  );
 
   async function startRequest() {
     setBusy(true);
@@ -109,8 +163,7 @@ function PuertaInner() {
 
   useEffect(() => {
     void loadAttempts();
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- filtros explícitos
-  }, [appliedFrom, appliedTo, resultFilter]);
+  }, [loadAttempts]);
 
   /** Poll de sesión OID4VP hasta done/error. */
   useEffect(() => {
@@ -128,7 +181,8 @@ function PuertaInner() {
           doneSessionRef.current = sessionId;
           if (res.status === 'done') {
             setResult(res.result);
-            await loadAttempts({ silent: true });
+            setPage(1);
+            await loadAttempts({ silent: true, pageOverride: 1 });
           } else {
             setError(`Presentación fallida (${res.reasonCode})`);
           }
@@ -143,10 +197,11 @@ function PuertaInner() {
     }, 2000);
     return () => window.clearInterval(id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sessionId, appliedFrom, appliedTo, resultFilter]);
+  }, [sessionId, loadAttempts]);
 
   function onFilter(e: FormEvent) {
     e.preventDefault();
+    setPage(1);
     setAppliedFrom(from);
     setAppliedTo(to);
   }
@@ -186,9 +241,10 @@ function PuertaInner() {
             result={result}
             emptyText="Cuando un afiliado presente su credencial, verás PERMITIDO o DENEGADO acá."
           />
-          <Panel title="Historial" description="Filtrá por fecha (BA) y resultado.">
-            <form className="toolbar" onSubmit={onFilter}>
-              <label className="toolbar-field">
+
+          <ListToolbar>
+            <form className="toolbar-field search-form" onSubmit={onFilter}>
+              <label>
                 Desde
                 <input
                   type="date"
@@ -197,7 +253,7 @@ function PuertaInner() {
                   required
                 />
               </label>
-              <label className="toolbar-field">
+              <label>
                 Hasta
                 <input
                   type="date"
@@ -206,33 +262,74 @@ function PuertaInner() {
                   required
                 />
               </label>
-              <label className="toolbar-field">
-                Resultado
-                <select
-                  value={resultFilter}
-                  onChange={(e) =>
-                    setResultFilter(
-                      e.target.value as 'ALL' | 'ALLOWED' | 'DENIED',
-                    )
-                  }
-                >
-                  <option value="ALL">Todos</option>
-                  <option value="ALLOWED">ALLOWED</option>
-                  <option value="DENIED">DENIED</option>
-                </select>
-              </label>
-              <button type="submit" disabled={attemptsLoading}>
+              <button
+                type="submit"
+                className="btn ghost"
+                disabled={attemptsLoading}
+              >
                 Aplicar
               </button>
             </form>
-          </Panel>
-          <AttemptsList
-            attempts={attempts}
+            <ListFilterField
+              label="Resultado"
+              value={resultFilter}
+              onChange={(v) => {
+                setPage(1);
+                setResultFilter(v as 'ALL' | 'ALLOWED' | 'DENIED');
+              }}
+            >
+              <option value="ALL">Todos</option>
+              <option value="ALLOWED">ALLOWED</option>
+              <option value="DENIED">DENIED</option>
+            </ListFilterField>
+          </ListToolbar>
+
+          <DataTable
+            title="Historial de ingresos"
+            description={`${appliedFrom} → ${appliedTo} · ${listCountDescription(total, page, 'intento', 'intentos')}`}
             loading={attemptsLoading}
             error={attemptsError}
-            title="Ingresos"
-            description={`${appliedFrom} → ${appliedTo} · hasta 100`}
-          />
+            isEmpty={attempts.length === 0}
+            emptyText="Sin intentos en este filtro."
+            page={page}
+            hasMore={hasMore}
+            onPageChange={setPage}
+            header={
+              <>
+                <th>Resultado</th>
+                <th>Quién</th>
+                <th>Motivo</th>
+                <th>Cuándo</th>
+              </>
+            }
+          >
+            {attempts.map((a) => (
+              <tr key={a.id}>
+                <td>
+                  <StatusPill tone={accessResultTone(a.result)}>
+                    {accessResultLabel(a.result)}
+                  </StatusPill>
+                </td>
+                <td>
+                  {a.subjectStaffId ? (
+                    <Link href={`/staff/${a.subjectStaffId}`}>
+                      {subjectLabel(a)}
+                    </Link>
+                  ) : a.memberId ? (
+                    <Link href={`/afiliados/${a.memberId}`}>
+                      {subjectLabel(a)}
+                    </Link>
+                  ) : (
+                    subjectLabel(a)
+                  )}
+                </td>
+                <td className="muted small">
+                  {formatAccessReason(a.reasonCode)}
+                </td>
+                <td>{formatWhen(a.createdAt)}</td>
+              </tr>
+            ))}
+          </DataTable>
         </div>
       </AdminGrid>
     </DoorShell>

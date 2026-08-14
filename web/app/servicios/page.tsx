@@ -10,6 +10,7 @@ import {
   listCountDescription,
 } from '@/components/AdminList';
 import { RequireStaff } from '@/components/RequireStaff';
+import { StatusPill, activeTone } from '@/components/StatusPill';
 import { ApiClientError } from '@/lib/api/client';
 import { listServices } from '@/lib/api/services';
 import type { ServiceDetail, ServiceType } from '@/lib/api/services';
@@ -143,11 +144,9 @@ function ServiciosInner() {
               {s.dropInPrice != null ? formatMoney(s.dropInPrice) : '—'}
             </td>
             <td>
-              <span
-                className={`status-pill ${s.active ? 'active' : 'inactive'}`}
-              >
+              <StatusPill tone={activeTone(s.active)}>
                 {s.active ? 'Activo' : 'Inactivo'}
-              </span>
+              </StatusPill>
             </td>
             <td className="row-actions">
               <Link href={`/servicios/${s.id}`}>Editar</Link>

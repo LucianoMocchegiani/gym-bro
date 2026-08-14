@@ -308,6 +308,7 @@ Detalle: [14-auditoria…](./14-auditoria-roadmap-vs-codigo-2026-08-13.md).
   - Fichaje horario → [backlog](./99-backlog-post-mvp.md)
 - [x] Listados Admin unificados (`DataTable` / `ListToolbar` / paginación)
   - afiliados, staff, servicios, packs, sesiones, roles, auditoría, Super tenants
+  - `StatusPill`; reportes, devoluciones, historial puerta (+ pager)
 
 ### Pendiente — otras épicas / Super
 

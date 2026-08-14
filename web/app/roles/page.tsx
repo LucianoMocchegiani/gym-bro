@@ -8,6 +8,7 @@ import {
   listCountDescription,
 } from '@/components/AdminList';
 import { RequireStaff } from '@/components/RequireStaff';
+import { StatusPill } from '@/components/StatusPill';
 import { ApiClientError } from '@/lib/api/client';
 import { listRoles } from '@/lib/api/roles';
 import type { RoleDetail } from '@/lib/api/roles';
@@ -102,11 +103,9 @@ function RolesInner() {
             </td>
             <td>{r.permissionCodes.length}</td>
             <td>
-              <span
-                className={`status-pill ${r.isSystem ? 'suspended' : 'active'}`}
-              >
+              <StatusPill tone={r.isSystem ? 'warn' : 'ok'}>
                 {r.isSystem ? 'Sistema' : 'Custom'}
-              </span>
+              </StatusPill>
             </td>
             <td className="row-actions">
               <Link href={`/roles/${r.id}`}>

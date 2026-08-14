@@ -11,6 +11,7 @@ import {
   listCountDescription,
 } from '@/components/AdminList';
 import { RequireStaff } from '@/components/RequireStaff';
+import { StatusPill, memberStatusTone } from '@/components/StatusPill';
 import { ApiClientError } from '@/lib/api/client';
 import { listMembers } from '@/lib/api/members';
 import type { MemberDetail, MemberStatus } from '@/lib/api/members';
@@ -139,9 +140,9 @@ function AfiliadosInner() {
             <td>{m.email}</td>
             <td>{m.document ?? '—'}</td>
             <td>
-              <span className={`status-pill ${m.status.toLowerCase()}`}>
+              <StatusPill tone={memberStatusTone(m.status)}>
                 {formatMemberStatus(m.status)}
-              </span>
+              </StatusPill>
             </td>
             <td className="row-actions">
               <Link href={`/afiliados/${m.id}`}>Ver</Link>

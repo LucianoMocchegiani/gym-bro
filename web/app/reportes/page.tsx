@@ -3,6 +3,7 @@
 import { FormEvent, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { AdminShell } from '@/components/AdminShell';
+import { DataTable, ListToolbar } from '@/components/AdminList';
 import { Panel } from '@/components/AdminUi';
 import { RequireStaff } from '@/components/RequireStaff';
 import { ApiClientError } from '@/lib/api/client';
@@ -99,6 +100,9 @@ function ReportesInner() {
     setAppliedTo(to);
   }
 
+  const payments = data?.income.payments ?? [];
+  const paymentCount = data?.income.paymentCount ?? 0;
+
   return (
     <AdminShell
       title="Reportes"
@@ -108,12 +112,42 @@ function ReportesInner() {
         </p>
       }
     >
-      <Panel
-        title="Período"
-        description="Ingresos del rango. Afiliados y packs son estado actual. Historial de accesos en Puerta."
-      >
-        <form className="toolbar" onSubmit={onApply}>
-          <label className="toolbar-field">
+      {data && !loading ? (
+        <div className="stat-row dash-kpis">
+          <Panel className="stat-card">
+            <p className="muted small">Afiliados activos</p>
+            <p className="stat-value">{data.members.active}</p>
+            <p className="muted small">
+              Sin pack activo: {data.members.activeWithoutActiveContract}
+            </p>
+          </Panel>
+          <Panel className="stat-card">
+            <p className="muted small">Packs activos / vencidos</p>
+            <p className="stat-value">
+              {data.contracts.active} / {data.contracts.expired}
+            </p>
+            <p className="muted small">
+              Cancelados {data.contracts.cancelled} · Reemb.{' '}
+              {data.contracts.refunded}
+            </p>
+          </Panel>
+          <Panel className="stat-card">
+            <p className="muted small">Ingresos período</p>
+            <p className="stat-value">
+              {formatMoney(data.income.totalApproved)}
+            </p>
+            <p className="muted small">
+              Caja {formatMoney(data.income.byMethod.CASH)} · MP{' '}
+              {formatMoney(data.income.byMethod.MP)} · Stub{' '}
+              {formatMoney(data.income.byMethod.STUB)}
+            </p>
+          </Panel>
+        </div>
+      ) : null}
+
+      <ListToolbar hint="Ingresos del rango. Afiliados y packs son estado actual. Historial de accesos en Puerta.">
+        <form className="toolbar-field search-form" onSubmit={onApply}>
+          <label>
             Desde
             <input
               type="date"
@@ -122,7 +156,7 @@ function ReportesInner() {
               required
             />
           </label>
-          <label className="toolbar-field">
+          <label>
             Hasta
             <input
               type="date"
@@ -131,99 +165,56 @@ function ReportesInner() {
               required
             />
           </label>
-          <button type="submit" disabled={loading}>
+          <button type="submit" className="btn ghost" disabled={loading}>
             Aplicar
           </button>
         </form>
-      </Panel>
+      </ListToolbar>
 
-      {loading ? <p className="muted">Cargando…</p> : null}
-      {error ? <p className="error">{error}</p> : null}
-
-      {data && !loading ? (
-        <>
-          <div className="stat-row dash-kpis">
-            <Panel className="stat-card">
-              <p className="muted small">Afiliados activos</p>
-              <p className="stat-value">{data.members.active}</p>
-              <p className="muted small">
-                Sin pack activo: {data.members.activeWithoutActiveContract}
-              </p>
-            </Panel>
-            <Panel className="stat-card">
-              <p className="muted small">Packs activos / vencidos</p>
-              <p className="stat-value">
-                {data.contracts.active} / {data.contracts.expired}
-              </p>
-              <p className="muted small">
-                Cancelados {data.contracts.cancelled} · Reemb.{' '}
-                {data.contracts.refunded}
-              </p>
-            </Panel>
-            <Panel className="stat-card">
-              <p className="muted small">Ingresos período</p>
-              <p className="stat-value">
-                {formatMoney(data.income.totalApproved)}
-              </p>
-              <p className="muted small">
-                Caja {formatMoney(data.income.byMethod.CASH)} · MP{' '}
-                {formatMoney(data.income.byMethod.MP)} · Stub{' '}
-                {formatMoney(data.income.byMethod.STUB)}
-              </p>
-            </Panel>
-          </div>
-
-          <Panel
-            title="Ingresos (detalle)"
-            description={
-              data.income.paymentCount > data.income.payments.length
-                ? `Mostrando ${data.income.payments.length} de ${data.income.paymentCount}`
-                : `${data.income.paymentCount} pagos aprobados`
-            }
-          >
-            {data.income.payments.length === 0 ? (
-              <p className="muted">Sin pagos en el período.</p>
-            ) : (
-              <div className="table-wrap">
-                <table className="data-table">
-                  <thead>
-                    <tr>
-                      <th>Fecha</th>
-                      <th>Afiliado</th>
-                      <th>Concepto</th>
-                      <th>Medio</th>
-                      <th>Monto</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {data.income.payments.map((p) => (
-                      <tr key={p.id}>
-                        <td>{formatWhen(p.createdAt)}</td>
-                        <td>
-                          {p.memberId ? (
-                            <Link href={`/afiliados/${p.memberId}`}>
-                              {memberLabel(p.memberName, p.memberEmail)}
-                            </Link>
-                          ) : (
-                            memberLabel(p.memberName, p.memberEmail)
-                          )}
-                        </td>
-                        <td>
-                          {p.kind === 'DROP_IN'
-                            ? 'Drop-in'
-                            : (p.packName ?? 'Pack')}
-                        </td>
-                        <td>{p.method}</td>
-                        <td>{formatMoney(p.amount)}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </Panel>
-        </>
-      ) : null}
+      <DataTable
+        title="Ingresos (detalle)"
+        description={
+          data && paymentCount > payments.length
+            ? `Mostrando ${payments.length} de ${paymentCount}`
+            : data
+              ? `${paymentCount} pagos aprobados`
+              : undefined
+        }
+        loading={loading}
+        error={error}
+        isEmpty={!loading && !error && payments.length === 0}
+        emptyText="Sin pagos en el período."
+        paginate={false}
+        header={
+          <>
+            <th>Fecha</th>
+            <th>Afiliado</th>
+            <th>Concepto</th>
+            <th>Medio</th>
+            <th>Monto</th>
+          </>
+        }
+      >
+        {payments.map((p) => (
+          <tr key={p.id}>
+            <td>{formatWhen(p.createdAt)}</td>
+            <td>
+              {p.memberId ? (
+                <Link href={`/afiliados/${p.memberId}`}>
+                  {memberLabel(p.memberName, p.memberEmail)}
+                </Link>
+              ) : (
+                memberLabel(p.memberName, p.memberEmail)
+              )}
+            </td>
+            <td>
+              {p.kind === 'DROP_IN' ? 'Drop-in' : (p.packName ?? 'Pack')}
+            </td>
+            <td>{p.method}</td>
+            <td>{formatMoney(p.amount)}</td>
+          </tr>
+        ))}
+      </DataTable>
     </AdminShell>
   );
 }

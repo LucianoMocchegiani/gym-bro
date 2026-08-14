@@ -7,6 +7,7 @@ import {
   listCountDescription,
 } from '@/components/AdminList';
 import { RequireSuper } from '@/components/RequireSuper';
+import { StatusPill, activeTone } from '@/components/StatusPill';
 import { SuperShell } from '@/components/SuperShell';
 import { ApiClientError } from '@/lib/api/client';
 import { listTenants } from '@/lib/api/tenants';
@@ -102,11 +103,9 @@ function TenantsInner() {
               <code>{t.slug}</code>
             </td>
             <td>
-              <span
-                className={`status-pill ${t.status === 'ACTIVE' ? 'active' : 'inactive'}`}
-              >
+              <StatusPill tone={activeTone(t.status === 'ACTIVE')}>
                 {t.status === 'ACTIVE' ? 'Activo' : 'Suspendido'}
-              </span>
+              </StatusPill>
             </td>
             <td>
               <a
