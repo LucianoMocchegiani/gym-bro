@@ -15,7 +15,7 @@ Con tunnel: `{slug}.{NEXT_PUBLIC_APP_DOMAIN}` (ej. `https://demo.pruebasaproducc
 | `/afiliados` | Listado / alta / ficha + estado de cuenta |
 | `/servicios` | Catálogo de servicios |
 | `/packs` | Packs + componentes |
-| `/sesiones` | Sesiones puntuales |
+| `/sesiones` | Sesiones puntuales + roster / reserva CREDIT |
 | `/roles` / `/staff` | Roles y staff |
 | `/config` | Settings + Mercado Pago |
 | `/caja` | Caja del día |

@@ -113,6 +113,19 @@ export class ReservationsController {
     return this.reservationsService.listByMember(tenantId, memberId, query);
   }
 
+  /**
+   * Roster de reservas de una sesión.
+   */
+  @Get('sessions/:sessionId/reservations')
+  @RequirePermission('reservations.write')
+  listBySession(
+    @CurrentTenant() tenantId: string,
+    @Param('sessionId', ParseUUIDPipe) sessionId: string,
+    @Query() query: ListReservationsQueryDto,
+  ): Promise<ListResult<ReservationDetail>> {
+    return this.reservationsService.listBySession(tenantId, sessionId, query);
+  }
+
   @Get('reservations/:reservationId')
   @RequirePermission('reservations.write')
   findOne(

@@ -5,6 +5,9 @@ export type ReservationDetail = {
   id: string;
   tenantId: string;
   memberId: string;
+  /** Nombre del afiliado (roster / ops). */
+  memberName: string | null;
+  memberEmail: string;
   sessionId: string;
   sessionStartsAt: Date;
   sessionEndsAt: Date;

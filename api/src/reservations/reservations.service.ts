@@ -43,6 +43,7 @@ import { ReservationDetail } from './reservations.types';
 const RESERVATION_ORDER_FIELDS = ['startsAt', 'createdAt'] as const;
 
 type ReservationWithRelations = Reservation & {
+  member: { id: string; name: string | null; email: string };
   session: {
     id: string;
     startsAt: Date;
@@ -99,6 +100,57 @@ export class ReservationsService {
     const where: Prisma.ReservationWhereInput = {
       tenantId,
       memberId,
+      ...(query.status ? { status: query.status } : {}),
+    };
+    const [rows, total] = await this.prisma.$transaction([
+      this.prisma.reservation.findMany({
+        where,
+        include: this.reservationInclude(),
+        orderBy,
+        skip: n.skip,
+        take: n.take,
+      }),
+      this.prisma.reservation.count({ where }),
+    ]);
+    return toListResult(
+      rows.map((r) => this.toDetail(r)),
+      total,
+      n.page,
+      n.pageSize,
+    );
+  }
+
+  /**
+   * Roster de una sesión (paginado; confirmadas primero por defecto vía filtro).
+   *
+   * @remarks Staff `reservations.write`. Default UI: `status=CONFIRMED`.
+   */
+  async listBySession(
+    tenantId: string,
+    sessionId: string,
+    query: ListReservationsQueryDto = {},
+  ): Promise<ListResult<ReservationDetail>> {
+    const session = await this.prisma.session.findFirst({
+      where: { id: sessionId, tenantId },
+      select: { id: true },
+    });
+    if (!session) {
+      throw new NotFoundException(`Session ${sessionId} not found in tenant`);
+    }
+
+    const n = normalizeListQuery(query);
+    const orderField = resolveOrderField(
+      n.orderBy,
+      RESERVATION_ORDER_FIELDS,
+      'createdAt',
+    );
+    const orderBy: Prisma.ReservationOrderByWithRelationInput =
+      orderField === 'startsAt'
+        ? { session: { startsAt: n.order } }
+        : { createdAt: n.order };
+    const where: Prisma.ReservationWhereInput = {
+      tenantId,
+      sessionId,
       ...(query.status ? { status: query.status } : {}),
     };
     const [rows, total] = await this.prisma.$transaction([
@@ -879,6 +931,13 @@ export class ReservationsService {
 
   private reservationInclude() {
     return {
+      member: {
+        select: {
+          id: true,
+          name: true,
+          email: true,
+        },
+      },
       session: {
         select: {
           id: true,
@@ -937,6 +996,8 @@ export class ReservationsService {
       id: row.id,
       tenantId: row.tenantId,
       memberId: row.memberId,
+      memberName: row.member.name,
+      memberEmail: row.member.email,
       sessionId: row.sessionId,
       sessionStartsAt: row.session.startsAt,
       sessionEndsAt: row.session.endsAt,

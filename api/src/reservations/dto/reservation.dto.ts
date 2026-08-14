@@ -56,6 +56,7 @@ export class UpdateReservationStatusDto {
  * Query de listado de reservas de un afiliado (CU-RES-001/002/003).
  *
  * @remarks Sin `q`. `orderBy` acepta `startsAt` (sesión) y `createdAt`.
+ * También se usa en roster por sesión (`GET /sessions/:id/reservations`).
  */
 export class ListReservationsQueryDto extends ListQueryDto {
   @IsOptional()

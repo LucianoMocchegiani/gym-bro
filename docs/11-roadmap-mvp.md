@@ -278,8 +278,9 @@ Detalle: [14-auditoria…](./14-auditoria-roadmap-vs-codigo-2026-08-13.md).
 - [x] Cancelar contrato desde ficha afiliado
   - `PATCH /contracts/:id/status` → `CANCELLED` (RN-SER-009); motivo opcional → auditoría
   - UI en `/afiliados/[id]`: confirmación `CANCELAR`; no reembolsa (eso es Devolver)
-- [ ] Sesión: roster + reservas staff
-  - Listar reservas de la sesión; crear reserva CREDIT en nombre del afiliado; cancelar reserva
+- [x] Sesión: roster + reservas staff
+  - `GET /sessions/:id/reservations` (+ nombre afiliado); UI en `/sesiones/[id]`
+  - Alta CREDIT + cancelar reserva (`reservations.write`); drop-in sigue en Caja
 - [ ] Waitlist operativa (staff)
   - Ver cola `GET /sessions/:id/waitlist`; acciones según `waitlistMode` (AUTO ya en API; confirm modos 2/3 si aplica)
 - [ ] Recurrencia de sesiones (UI)

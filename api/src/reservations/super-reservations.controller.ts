@@ -56,6 +56,15 @@ export class SuperReservationsController {
     return this.reservationsService.listByMember(tenantId, memberId, query);
   }
 
+  @Get('sessions/:sessionId/reservations')
+  listBySession(
+    @Param('tenantId', ParseUUIDPipe) tenantId: string,
+    @Param('sessionId', ParseUUIDPipe) sessionId: string,
+    @Query() query: ListReservationsQueryDto,
+  ): Promise<ListResult<ReservationDetail>> {
+    return this.reservationsService.listBySession(tenantId, sessionId, query);
+  }
+
   @Get('reservations/:reservationId')
   findOne(
     @Param('tenantId', ParseUUIDPipe) tenantId: string,
