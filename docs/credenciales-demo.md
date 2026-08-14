@@ -12,8 +12,8 @@ Password común a todos: **`ChangeMe123!`**
 
 Tenant demo: slug **`demo`** · id **`00000000-0000-4000-8000-000000000001`** (`Demo Gym`)
 
-Admin web Staff: **http://demo.localhost:3000/login** (sin pegar tenantId)  
-Super Admin: **http://localhost:3000/super/login**
+Admin web Staff: **http://demo.localhost:3002/login** (sin pegar tenantId)  
+Super Admin: **http://localhost:3002/super/login**
 
 ---
 
@@ -22,13 +22,13 @@ Super Admin: **http://localhost:3000/super/login**
 | Perfil | Email | Password | Extra |
 |--------|--------|----------|--------|
 | Super Admin | `super@gymbro.local` | `ChangeMe123!` | Sin tenant · `/super/login` |
-| Staff (Admin del gym) | `admin@demo.gym` | `ChangeMe123!` | slug `demo` · `demo.localhost:3000` |
+| Staff (Admin del gym) | `admin@demo.gym` | `ChangeMe123!` | slug `demo` · `demo.localhost:3002` |
 | Afiliado (Member) | `socio@demo.gym` | `ChangeMe123!` | slug `demo` · app Flutter / API |
 
 El staff demo queda con rol sistema **Admin** tras el seed.  
 El afiliado demo queda `status: ACTIVE` (solo ACTIVE puede hacer login).
 
-Quark del demo (soft-fail si los servicios no están): wallets `gymbro-iss-demo` / `gymbro-ver-demo` en columnas `tenants.quark_*`. Ver [13-setup-db-desde-cero.md](./13-setup-db-desde-cero.md).
+Kuatia del demo: `tenants.quark_*` = `KUATIA_ISSUER_WALLET_ID` / `KUATIA_VERIFIER_WALLET_ID` (compartidos). Ver [13-setup-db-desde-cero.md](./13-setup-db-desde-cero.md).
 
 ---
 

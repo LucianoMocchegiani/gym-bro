@@ -32,8 +32,8 @@ tmp/
 .temp/
 local/
 
-# Quark SSI (clon local de repos oficiales; ver ssi-quark/README.md)
-ssi-quark/*
-!ssi-quark/README.md
+# Clon local: package Flutter identity_core_dart (wallet OID4)
+# Issuer/verifier: Kuatia en dominio (no se clonan acá)
+identity_core_dart/
 
 # `git-hooks/` del repo se versiona (plantillas). `.git/hooks/` es local y no entra en git.

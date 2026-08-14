@@ -1,8 +1,8 @@
-import { Injectable, Logger } from '@nestjs/common';
-import { QuarkProvisionStatus } from '@prisma/client';
+﻿import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { QuarkHttpError } from './http-quark-admin.adapter';
-import { QuarkAdminPort } from './quark-admin.port';
+import { KuatiaHttpError } from './http-kuatia-admin.adapter';
+import { KuatiaAdminPort } from './kuatia-admin.port';
+import { KuatiaEnvService } from './kuatia-env.service';
 
 const MAX_ERROR_LEN = 500;
 
@@ -12,7 +12,7 @@ const MAX_ERROR_LEN = 500;
  * @remarks `configurationId = pack_{packId}`; `vct = urn:gymbro:pack:{packId}`.
  * @see docs/12-acceso-quark-oid4-diseno.md
  */
-export function packQuarkIds(packId: string): {
+export function packKuatiaIds(packId: string): {
   configurationId: string;
   vct: string;
 } {
@@ -23,7 +23,7 @@ export function packQuarkIds(packId: string): {
 }
 
 /**
- * Shape `credentialConfigurationsSupported` (dc+sd-jwt) alineado a Quark/Credo.
+ * Shape `credentialConfigurationsSupported` (dc+sd-jwt) alineado a Kuatia/Credo.
  */
 export function buildPackCredentialConfiguration(
   configurationId: string,
@@ -45,22 +45,23 @@ export function buildPackCredentialConfiguration(
 }
 
 /**
- * Sincroniza un pack hacia metadata OID4VCI del issuer del gym (soft-fail).
+ * Sincroniza un pack hacia metadata OID4VCI del issuer compartido Kuatia (soft-fail).
  *
- * @remarks No bloquea create/update de pack si Quark falla o el tenant está MISSING.
- * Requiere `OpenId4VcIssuerRecord` (issuer creado con `oid4vc` en provision).
+ * @remarks No bloquea create/update de pack si Kuatia falla. Issuer =
+ * `KUATIA_ISSUER_WALLET_ID` (compartido; provision en consola Kuatia).
  */
 @Injectable()
-export class QuarkPackSyncService {
-  private readonly logger = new Logger(QuarkPackSyncService.name);
+export class KuatiaPackSyncService {
+  private readonly logger = new Logger(KuatiaPackSyncService.name);
 
   constructor(
     private readonly prisma: PrismaService,
-    private readonly quark: QuarkAdminPort,
+    private readonly kuatia: KuatiaAdminPort,
+    private readonly kuatiaEnv: KuatiaEnvService,
   ) {}
 
   /**
-   * PATCH metadata del issuer con la configuration del pack y persiste refs en `packs`.
+   * PATCH metadata del issuer compartido con la configuration del pack.
    *
    * @param tenantId - Tenant dueño del pack (nunca del body confiado).
    * @param packId - Pack ya persistido.
@@ -71,15 +72,11 @@ export class QuarkPackSyncService {
     packId: string,
     packName: string,
   ): Promise<void> {
-    const { configurationId, vct } = packQuarkIds(packId);
+    const { configurationId, vct } = packKuatiaIds(packId);
 
     const tenant = await this.prisma.tenant.findUnique({
       where: { id: tenantId },
-      select: {
-        slug: true,
-        quarkStatus: true,
-        quarkIssuerWalletId: true,
-      },
+      select: { slug: true },
     });
 
     if (!tenant) {
@@ -92,21 +89,17 @@ export class QuarkPackSyncService {
       return;
     }
 
-    if (
-      tenant.quarkStatus !== QuarkProvisionStatus.READY ||
-      !tenant.quarkIssuerWalletId
-    ) {
-      await this.persistSyncFailure(
-        packId,
-        configurationId,
-        vct,
-        `Tenant Quark not READY (status=${tenant.quarkStatus})`,
-      );
+    let issuerWalletId: string;
+    try {
+      issuerWalletId = this.kuatiaEnv.requireSharedIssuerWalletId();
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      await this.persistSyncFailure(packId, configurationId, vct, msg);
       return;
     }
 
     try {
-      await this.quark.patchIssuerMetadata(tenant.quarkIssuerWalletId, {
+      await this.kuatia.patchIssuerMetadata(issuerWalletId, {
         credentialConfigurationsSupported: buildPackCredentialConfiguration(
           configurationId,
           vct,
@@ -117,16 +110,16 @@ export class QuarkPackSyncService {
       await this.prisma.pack.update({
         where: { id: packId },
         data: {
-          quarkConfigurationId: configurationId,
-          quarkVct: vct,
-          quarkSyncedAt: new Date(),
-          quarkLastError: null,
+          kuatiaConfigurationId: configurationId,
+          kuatiaVct: vct,
+          kuatiaSyncedAt: new Date(),
+          kuatiaLastError: null,
         },
       });
     } catch (err) {
       const message = this.formatError(err);
       this.logger.warn(
-        `Quark pack sync failed tenant=${tenant.slug} pack=${packId}: ${message}`,
+        `Kuatia pack sync failed tenant=${tenant.slug} pack=${packId}: ${message}`,
       );
       await this.persistSyncFailure(packId, configurationId, vct, message);
     }
@@ -141,19 +134,19 @@ export class QuarkPackSyncService {
     await this.prisma.pack.update({
       where: { id: packId },
       data: {
-        quarkConfigurationId: configurationId,
-        quarkVct: vct,
-        quarkSyncedAt: null,
-        quarkLastError: error.slice(0, MAX_ERROR_LEN),
+        kuatiaConfigurationId: configurationId,
+        kuatiaVct: vct,
+        kuatiaSyncedAt: null,
+        kuatiaLastError: error.slice(0, MAX_ERROR_LEN),
       },
     });
   }
 
   private formatError(err: unknown): string {
-    if (err instanceof QuarkHttpError) {
+    if (err instanceof KuatiaHttpError) {
       const snippet = err.body ? ` ${err.body.slice(0, 200)}` : '';
       if (err.status === 404) {
-        return `OpenId4VcIssuerRecord missing (re-create issuer with oid4vc).${snippet}`;
+        return `Issuer metadata/record missing on Kuatia.${snippet}`;
       }
       return `${err.message}${snippet}`;
     }

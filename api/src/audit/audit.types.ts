@@ -41,7 +41,6 @@ export type AuditEventDetail = {
 export const AUDIT_ACTIONS = {
   tenantCreate: 'tenant.create',
   tenantUpdate: 'tenant.update',
-  tenantQuarkProvision: 'tenant.quark.provision',
   roleCreate: 'role.create',
   roleUpdate: 'role.update',
   staffCreate: 'staff.create',

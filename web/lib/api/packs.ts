@@ -28,10 +28,10 @@ export type PackDetail = {
   kind: PackKind;
   components: PackComponentDetail[];
   /** Clave OID4VCI (`pack_{id}`); null si aún no se intentó sync. */
-  quarkConfigurationId: string | null;
-  quarkVct: string | null;
-  quarkSyncedAt: string | null;
-  quarkLastError: string | null;
+  kuatiaConfigurationId: string | null;
+  kuatiaVct: string | null;
+  kuatiaSyncedAt: string | null;
+  kuatiaLastError: string | null;
   createdAt: string;
   updatedAt: string;
 };

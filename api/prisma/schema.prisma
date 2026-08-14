@@ -16,17 +16,11 @@ enum TenantStatus {
   SUSPENDED
 }
 
-/// Estado del provisioning Quark (issuer + verifier) por tenant.
-enum QuarkProvisionStatus {
-  MISSING
-  READY
-}
-
 /// Estado de un credential offer OID4VCI pendiente de aceptar en la wallet.
 enum CredentialOfferStatus {
   /// Offer URI listo para que el afiliado acepte.
   PENDING
-  /// Falló la creación en Quark o el canje OID4VCI en wallet (offer muerto).
+  /// Falló la creación en Kuatia o el canje OID4VCI en wallet (offer muerto).
   FAILED
   /// Afiliado aceptó en wallet (OID4VCI) y GymBro lo registró.
   ACCEPTED
@@ -172,15 +166,6 @@ model Tenant {
   /// Slug URL-safe único (subdominio: `{slug}.localhost` / `{slug}.gymbro.app`).
   slug      String       @unique
   status    TenantStatus @default(ACTIVE)
-  /// Provisioning Quark issuer+verifier (soft-fail al crear gym).
-  quarkStatus            QuarkProvisionStatus @default(MISSING) @map("quark_status")
-  quarkIssuerWalletId    String?              @map("quark_issuer_wallet_id")
-  quarkIssuerDid         String?              @map("quark_issuer_did")
-  quarkVerifierWalletId  String?              @map("quark_verifier_wallet_id")
-  quarkVerifierDid       String?              @map("quark_verifier_did")
-  /// Último error de provisioning (truncado); null si READY.
-  quarkLastError         String?              @map("quark_last_error")
-  quarkProvisionedAt     DateTime?            @map("quark_provisioned_at")
   createdAt DateTime     @default(now()) @map("created_at")
   updatedAt DateTime     @updatedAt @map("updated_at")
 
@@ -481,13 +466,13 @@ model Pack {
   billingPeriod   BillingPeriod @map("billing_period")
   creditsExpireAt DateTime?     @map("credits_expire_at")
   active          Boolean       @default(true)
-  /// Clave en `credentialConfigurationsSupported` del issuer Quark (`pack_{id}`).
-  quarkConfigurationId String?   @map("quark_configuration_id")
+  /// Clave en `credentialConfigurationsSupported` del issuer Kuatia (`pack_{id}`).
+  kuatiaConfigurationId String?   @map("kuatia_configuration_id")
   /// VCT OID4VCI (`urn:gymbro:pack:{id}`).
-  quarkVct             String?   @map("quark_vct")
-  quarkSyncedAt        DateTime? @map("quark_synced_at")
+  kuatiaVct             String?   @map("kuatia_vct")
+  kuatiaSyncedAt        DateTime? @map("kuatia_synced_at")
   /// Último error de sync metadata (soft-fail).
-  quarkLastError       String?   @map("quark_last_error")
+  kuatiaLastError       String?   @map("kuatia_last_error")
   createdAt       DateTime      @default(now()) @map("created_at")
   updatedAt       DateTime      @updatedAt @map("updated_at")
 

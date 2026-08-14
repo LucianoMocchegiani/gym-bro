@@ -13,7 +13,7 @@ import {
   toListResult,
 } from '../common/list';
 import { PrismaService } from '../prisma/prisma.service';
-import { QuarkPackSyncService } from '../quark/quark-pack-sync.service';
+import { KuatiaPackSyncService } from '../kuatia/kuatia-pack-sync.service';
 import {
   CreatePackDto,
   ListPacksQueryDto,
@@ -45,7 +45,7 @@ export class PacksService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
-    private readonly quarkPackSync: QuarkPackSyncService,
+    private readonly kuatiaPackSync: KuatiaPackSyncService,
   ) {}
 
   /**
@@ -129,15 +129,13 @@ export class PacksService {
       return created;
     });
 
-    await this.quarkPackSync.syncPackConfiguration(
+    await this.kuatiaPackSync.syncPackConfiguration(
       tenantId,
       pack.id,
       pack.name,
     );
 
-    const detail = this.toDetail(
-      await this.findInTenant(tenantId, pack.id),
-    );
+    const detail = this.toDetail(await this.findInTenant(tenantId, pack.id));
     await this.audit.record({
       tenantId,
       actor,
@@ -225,15 +223,13 @@ export class PacksService {
       });
     });
 
-    await this.quarkPackSync.syncPackConfiguration(
+    await this.kuatiaPackSync.syncPackConfiguration(
       tenantId,
       pack.id,
       pack.name,
     );
 
-    const detail = this.toDetail(
-      await this.findInTenant(tenantId, packId),
-    );
+    const detail = this.toDetail(await this.findInTenant(tenantId, packId));
     await this.audit.record({
       tenantId,
       actor,
@@ -411,10 +407,10 @@ export class PacksService {
       active: pack.active,
       kind: this.inferKind(pack.components),
       components,
-      quarkConfigurationId: pack.quarkConfigurationId,
-      quarkVct: pack.quarkVct,
-      quarkSyncedAt: pack.quarkSyncedAt,
-      quarkLastError: pack.quarkLastError,
+      kuatiaConfigurationId: pack.kuatiaConfigurationId,
+      kuatiaVct: pack.kuatiaVct,
+      kuatiaSyncedAt: pack.kuatiaSyncedAt,
+      kuatiaLastError: pack.kuatiaLastError,
       createdAt: pack.createdAt,
       updatedAt: pack.updatedAt,
     };
@@ -428,9 +424,9 @@ export class PacksService {
       creditsExpireAt: detail.creditsExpireAt?.toISOString() ?? null,
       active: detail.active,
       kind: detail.kind,
-      quarkConfigurationId: detail.quarkConfigurationId,
-      quarkSyncedAt: detail.quarkSyncedAt?.toISOString() ?? null,
-      quarkLastError: detail.quarkLastError,
+      kuatiaConfigurationId: detail.kuatiaConfigurationId,
+      kuatiaSyncedAt: detail.kuatiaSyncedAt?.toISOString() ?? null,
+      kuatiaLastError: detail.kuatiaLastError,
       components: detail.components.map((c) => ({
         serviceId: c.serviceId,
         creditAmount: c.creditAmount,

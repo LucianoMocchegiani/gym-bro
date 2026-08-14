@@ -1,15 +1,10 @@
-import {
+﻿import {
   BadRequestException,
   Injectable,
   Logger,
   NotFoundException,
 } from '@nestjs/common';
-import {
-  CredentialOffer,
-  CredentialOfferStatus,
-  Prisma,
-  QuarkProvisionStatus,
-} from '@prisma/client';
+import { CredentialOffer, CredentialOfferStatus, Prisma } from '@prisma/client';
 import {
   ListQueryDto,
   ListResult,
@@ -17,9 +12,10 @@ import {
   toListResult,
 } from '../common/list';
 import { PrismaService } from '../prisma/prisma.service';
-import { QuarkHttpError } from './http-quark-admin.adapter';
-import { QuarkAdminPort } from './quark-admin.port';
-import { packQuarkIds } from './quark-pack-sync.service';
+import { KuatiaHttpError } from './http-kuatia-admin.adapter';
+import { KuatiaAdminPort } from './kuatia-admin.port';
+import { KuatiaEnvService } from './kuatia-env.service';
+import { packKuatiaIds } from './kuatia-pack-sync.service';
 
 const MAX_ERROR_LEN = 500;
 
@@ -43,25 +39,26 @@ export type CredentialOfferListItem = {
 /**
  * Crea y lista credential offers OID4VCI tras contratación pack (soft-fail).
  *
- * @remarks No persiste claims ni config Quark: al (re)emitir se reconstruyen
+ * @remarks No persiste claims ni config Kuatia: al (re)emitir se reconstruyen
  * desde el contrato (`ensureOfferForContract`).
  * @see docs/12-acceso-quark-oid4-diseno.md
  */
 @Injectable()
-export class QuarkOfferService {
-  private readonly logger = new Logger(QuarkOfferService.name);
+export class KuatiaOfferService {
+  private readonly logger = new Logger(KuatiaOfferService.name);
 
   constructor(
     private readonly prisma: PrismaService,
-    private readonly quark: QuarkAdminPort,
+    private readonly kuatia: KuatiaAdminPort,
+    private readonly kuatiaEnv: KuatiaEnvService,
   ) {}
 
   /**
    * Asegura un offer para el contrato (idempotente por `contractId`).
    *
    * @remarks Si ya hay PENDING con URI y no es `force`, lo reutiliza. Si FAILED
-   * o `force`, reintenta Quark reconstruyendo claims desde el contrato.
-   * Nunca lanza por fallo Quark.
+   * o `force`, reintenta Kuatia reconstruyendo claims desde el contrato.
+   * Nunca lanza por fallo Kuatia.
    *
    * @param options.force - Re-oferta (re-POST contrato misma key / confirm MP):
    *   ignora PENDING/ACCEPTED previo (Credo puede haber perdido la sesión).
@@ -87,7 +84,10 @@ export class QuarkOfferService {
         includeLastError: true,
       });
     }
-    if (!options?.force && existing?.status === CredentialOfferStatus.ACCEPTED) {
+    if (
+      !options?.force &&
+      existing?.status === CredentialOfferStatus.ACCEPTED
+    ) {
       return this.toListItem(existing, existing.pack.name, existing.contract, {
         includeLastError: true,
       });
@@ -98,14 +98,15 @@ export class QuarkOfferService {
       throw new NotFoundException(`Contract ${contractId} not found`);
     }
 
-    const { configurationId, vct } = packQuarkIds(ctx.packId);
+    const { configurationId, vct } = packKuatiaIds(ctx.packId);
     const claims = this.buildClaims(tenantId, ctx);
     const claimsDisplay = this.buildClaimsDisplay();
 
-    if (
-      ctx.quarkStatus !== QuarkProvisionStatus.READY ||
-      !ctx.issuerWalletId
-    ) {
+    let issuerWalletId: string;
+    try {
+      issuerWalletId = this.kuatiaEnv.requireSharedIssuerWalletId();
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
       return this.persistOffer({
         existingId: existing?.id,
         tenantId,
@@ -117,32 +118,29 @@ export class QuarkOfferService {
         endsAt: ctx.endsAt,
         status: CredentialOfferStatus.FAILED,
         offerUri: null,
-        lastError: `Tenant Quark not READY (status=${ctx.quarkStatus})`,
+        lastError: msg,
       });
     }
 
     try {
-      const created = await this.quark.createCredentialOffer(
-        ctx.issuerWalletId,
-        {
-          credentialConfigurationId: configurationId,
-          vct,
-          claims,
-          claimsDisplay,
-          disclosureFrame: {
-            _sd: [
-              'memberId',
-              'memberName',
-              'tenantId',
-              'tenantName',
-              'packId',
-              'packName',
-              'validFrom',
-              'validUntil',
-            ],
-          },
+      const created = await this.kuatia.createCredentialOffer(issuerWalletId, {
+        credentialConfigurationId: configurationId,
+        vct,
+        claims,
+        claimsDisplay,
+        disclosureFrame: {
+          _sd: [
+            'memberId',
+            'memberName',
+            'tenantId',
+            'tenantName',
+            'packId',
+            'packName',
+            'validFrom',
+            'validUntil',
+          ],
         },
-      );
+      });
 
       return this.persistOffer({
         existingId: existing?.id,
@@ -303,12 +301,11 @@ export class QuarkOfferService {
     }
     if (row.status !== CredentialOfferStatus.PENDING) {
       throw new BadRequestException(
-        `Credential offer ${offerId} cannot be failed (status=${row.status})`,
+        `Credential offer ${offerId} cannot be failed (status=${String(row.status)})`,
       );
     }
 
-    const raw =
-      reason?.trim() || 'Offer expired or invalid at issuer';
+    const raw = reason?.trim() || 'Offer expired or invalid at issuer';
     const lastError = raw.slice(0, MAX_ERROR_LEN);
     const updated = await this.prisma.credentialOffer.update({
       where: { id: row.id },
@@ -338,8 +335,6 @@ export class QuarkOfferService {
     startsAt: Date;
     endsAt: Date | null;
     tenantName: string;
-    quarkStatus: QuarkProvisionStatus;
-    issuerWalletId: string | null;
   } | null> {
     const contract = await this.prisma.contract.findFirst({
       where: { id: contractId, tenantId },
@@ -353,8 +348,6 @@ export class QuarkOfferService {
         tenant: {
           select: {
             name: true,
-            quarkStatus: true,
-            quarkIssuerWalletId: true,
           },
         },
       },
@@ -370,8 +363,6 @@ export class QuarkOfferService {
       startsAt: contract.startsAt,
       endsAt: contract.endsAt,
       tenantName: contract.tenant.name,
-      quarkStatus: contract.tenant.quarkStatus,
-      issuerWalletId: contract.tenant.quarkIssuerWalletId,
     };
   }
 
@@ -484,7 +475,7 @@ export class QuarkOfferService {
   }
 
   private formatError(err: unknown): string {
-    if (err instanceof QuarkHttpError) {
+    if (err instanceof KuatiaHttpError) {
       const snippet = err.body ? ` ${err.body.slice(0, 200)}` : '';
       return `${err.message}${snippet}`;
     }

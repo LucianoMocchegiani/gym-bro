@@ -81,10 +81,12 @@ Estructura lógica interna:
 
 ```text
 api/                    # NestJS (módulos por dominio dentro de src/)
-web/                    # Next.js — Admin (slug.localhost) + Super (/super); login Staff/Super
+web/                    # Next.js — Admin (slug.localhost) + Super (/super)
 mobile/                 # Flutter
-# Dominios Nest (ejemplos, dentro de api/src):
-#   identity-access/, members/, catalog/, billing/, access/, ...
+# Dominios Nest (api/src):
+#   auth, tenants, members, staff, roles, services, packs, sessions,
+#   reservations, waitlist, contracts, mercadopago, cash-register,
+#   refunds, receipts, access, quark, audit, reports, tenant-settings, …
 ```
 
 CORS: la API acepta orígenes de `CORS_ORIGIN` (default `http://localhost:3000`) para el panel web.
@@ -161,20 +163,20 @@ Identidad = claim `memberId` de la VC de pack (`urn:gymbro:pack:{id}`). Sin stub
 - Eliminados: `ACCESS_PROVIDER=stub`, `AccessIdentityProvider` stub, `POST /access/verify`, `POST /me/access/check-in`, endpoints `access-credentials`.
 - Tabla `access_credentials` queda legada (sin API).
 
-### 6.2b Quark (OID4VCI + OID4VP)
+### 6.2b Kuatia (OID4VCI + OID4VP)
 
-Diseño: [12-acceso-quark-oid4-diseno.md](./12-acceso-quark-oid4-diseno.md).
+Diseño: [12-acceso-quark-oid4-diseno.md](./12-acceso-quark-oid4-diseno.md). Docs API: [kuatia.xyz/docs](https://kuatia.xyz/docs).
 
-**Implementado:**
-- Compose: `quark-issuer` (:9001) + `quark-verifier` (:9002); DBs `quarkid_*` en Postgres; **sin** RabbitMQ/VDR.
-- Al `POST /api/tenants`: crea `gymbro-iss-{slug}` / `gymbro-ver-{slug}` con `oid4vc` / `oid4vp` mínimo (soft-fail → `quark_status=MISSING` + `quark_last_error`).
-- **Listados HTTP** (Admin/API): contrato común `{ items, page, pageSize, total, hasMore }` con `page`/`pageSize`/`q`/`orderBy`/`order` (+ filtros de dominio). Ver Postman README.
-- Reintento Super: `POST /api/tenants/:id/quark/provision` + UI en detalle de tenant.
-- Create/update pack → `PATCH …/records/metadata` (`pack_{id}` / `urn:gymbro:pack:{id}`; soft-fail en `packs.quark_*`).
-- Pack APPROVED → `POST …/openid4vc/offer` + `credential_offers` slim + `GET /me/credential-offers` (soft-fail). Re-oferta: re-POST contrato misma `idempotencyKey`.
-- App afiliado: 3 hubs (Inicio / Acceso / Ajustes); Acceso = scan OID4VCI/VP + Credenciales + offers; Ajustes = reiniciar wallet SSI / logout con confirmación; tunnels `issuer.` / `verifier.pruebasaproduccunon.uno`.
-- Puerta Admin `/puerta`: QR OID4VP + poll sesión.
-- Clon local en `ssi-quark/` (gitignore).
+**Modelo:** 1 producto Kuatia “GymBro” → **1 issuer + 1 verifier** compartidos. Gyms se distinguen por claims (`tenantId`, `packId`), no por wallets.
+
+**Implementado (corte adapter):**
+- Compose **sin** `quark-issuer` / `quark-verifier`; bases y keys en `KUATIA_*` (`api/.env`).
+- Auth admin: header `x-api-key` (`iss_live_…` / `ver_live_…`) en `HttpQuarkAdminAdapter`.
+- Al `POST /api/tenants`: solo DB GymBro + **bind** de wallet IDs compartidos (`READY` / `MISSING` si falta env). No crea issuer/verifier.
+- Reintento Super: `POST /api/tenants/:id/quark/provision` (mismo bind).
+- Create/update pack → `PATCH …/records/metadata` del issuer compartido (`pack_{id}` / `urn:gymbro:pack:{id}`; soft-fail en `packs.quark_*`).
+- Offer / VP: mismos flujos, contra IDs fijos de env.
+- Columnas/módulo `quark_*` se mantienen por compatibilidad de schema/API.
 
 ### 6.3 Evaluación de ingreso (dominio puro)
 
@@ -290,8 +292,8 @@ Canales futuros (WhatsApp/Push) = nuevos `ChannelSender` sin tocar el dispatcher
 
 Prefijo sugerido: `/api/v1`.
 
-| Área | Ejemplos |
-|------|----------|
+| Área | Endpoints / CU relacionados |
+|------|------------------------------|
 | Auth | `POST /auth/login`, refresh |
 | Super | `GET|POST /tenants`, `GET|PATCH /tenants/:id` (nombre y/o `status` ACTIVE\|SUSPENDED) |
 | Afiliados | CRUD `/tenants/:tid/members` |

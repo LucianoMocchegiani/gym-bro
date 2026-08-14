@@ -78,9 +78,7 @@ export function normalizeListQuery(
 ): NormalizedListQuery {
   const page = query?.page && query.page > 0 ? query.page : 1;
   const pageSize =
-    query?.pageSize && query.pageSize > 0
-      ? Math.min(query.pageSize, 100)
-      : 20;
+    query?.pageSize && query.pageSize > 0 ? Math.min(query.pageSize, 100) : 20;
   const q = query?.q?.trim();
   return {
     page,

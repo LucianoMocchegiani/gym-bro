@@ -283,7 +283,7 @@ Detalle: [14-auditoria…](./14-auditoria-roadmap-vs-codigo-2026-08-13.md).
   - Ver cola `GET /sessions/:id/waitlist`; acciones según `waitlistMode` (AUTO ya en API; confirm modos 2/3 si aplica)
 - [ ] Recurrencia de sesiones (UI)
   - CRUD `/session-recurrence-rules` (API lista; hoy solo sesión puntual en web)
-- [ ] Packs: `creditsExpireAt` + visibilidad sync Kuatia (`packs.quark_*`)
+- [ ] Packs: `creditsExpireAt` + visibilidad sync Kuatia (`packs.kuatia_*`)
 - [ ] Comprobantes (receipts)
   - `GET /payments/:id/receipt`, `GET /members/:id/receipts` en caja/ficha
 - [ ] Checkout MP desde Admin (staff)

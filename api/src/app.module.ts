@@ -10,7 +10,7 @@ import { MembersModule } from './members/members.module';
 import { MercadoPagoModule } from './mercadopago/mercadopago.module';
 import { PacksModule } from './packs/packs.module';
 import { PrismaModule } from './prisma/prisma.module';
-import { QuarkModule } from './quark/quark.module';
+import { KuatiaModule } from './kuatia/kuatia.module';
 import { ReceiptsModule } from './receipts/receipts.module';
 import { RefundsModule } from './refunds/refunds.module';
 import { ReportsModule } from './reports/reports.module';
@@ -42,7 +42,7 @@ import { WaitlistModule } from './waitlist/waitlist.module';
     ServicesModule,
     PacksModule,
     ContractsModule,
-    QuarkModule,
+    KuatiaModule,
     SessionsModule,
     ReservationsModule,
     WaitlistModule,

@@ -4,11 +4,11 @@ import {
   Logger,
   ServiceUnavailableException,
 } from '@nestjs/common';
-import { QuarkProvisionStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
-import { QuarkHttpError } from '../quark/http-quark-admin.adapter';
-import { QuarkAdminPort } from '../quark/quark-admin.port';
-import { packQuarkIds } from '../quark/quark-pack-sync.service';
+import { KuatiaHttpError } from '../kuatia/http-kuatia-admin.adapter';
+import { KuatiaAdminPort } from '../kuatia/kuatia-admin.port';
+import { KuatiaEnvService } from '../kuatia/kuatia-env.service';
+import { packKuatiaIds } from '../kuatia/kuatia-pack-sync.service';
 import { AccessVerifyService } from './access-verify.service';
 import {
   ACCESS_REASON,
@@ -29,8 +29,9 @@ export function oid4vpCredentialRef(sessionId: string): string {
 /**
  * Puerta OID4VP modo B: crear request + poll sesión → evaluate (CU-ACC-001).
  *
- * @remarks El QR es `requestUri` Quark. Identidad = claim `memberId` de la VC.
- * @see docs/12-acceso-quark-oid4-diseno.md paso 4
+ * @remarks El QR es `requestUri` Kuatia. Identidad = claim `memberId` de la VC.
+ * Verifier = `KUATIA_VERIFIER_WALLET_ID` (compartido); re-bind del tenant si hace falta.
+ * @see docs/12-acceso-quark-oid4-diseno.md
  */
 @Injectable()
 export class AccessOid4VpService {
@@ -38,26 +39,25 @@ export class AccessOid4VpService {
 
   constructor(
     private readonly prisma: PrismaService,
-    private readonly quark: QuarkAdminPort,
+    private readonly kuatia: KuatiaAdminPort,
+    private readonly kuatiaEnv: KuatiaEnvService,
     private readonly accessVerify: AccessVerifyService,
   ) {}
 
   /**
-   * Crea un authorization request OID4VP para el verifier del tenant.
+   * Crea un authorization request OID4VP para el verifier compartido Kuatia.
    *
    * @remarks DCQL pide una VC `dc+sd-jwt` de packs del gym + claims `memberId`/`tenantId`.
-   * @throws {ServiceUnavailableException} Tenant sin Quark READY / verifier.
-   * @throws {BadRequestException} Quark rechaza el request.
+   * @throws {ServiceUnavailableException} Sin `KUATIA_VERIFIER_WALLET_ID` / key.
+   * @throws {BadRequestException} Kuatia rechaza el request.
    */
-  async createRequest(
-    tenantId: string,
-  ): Promise<AccessOid4VpRequestResult> {
-    const verifierWalletId = await this.requireVerifierWallet(tenantId);
+  async createRequest(tenantId: string): Promise<AccessOid4VpRequestResult> {
+    const verifierWalletId = this.requireVerifierWallet();
     const packs = await this.prisma.pack.findMany({
       where: { tenantId },
       select: { id: true },
     });
-    const vctValues = packs.map((p) => packQuarkIds(p.id).vct);
+    const vctValues = packs.map((p) => packKuatiaIds(p.id).vct);
 
     const credentialQuery: Record<string, unknown> = {
       id: 'gymbro_pack',
@@ -74,7 +74,7 @@ export class AccessOid4VpService {
     const dcqlQuery = { credentials: [credentialQuery] };
 
     try {
-      const created = await this.quark.createPresentationRequest(
+      const created = await this.kuatia.createPresentationRequest(
         verifierWalletId,
         {
           dcqlQuery,
@@ -88,7 +88,7 @@ export class AccessOid4VpService {
         scanMode: 'member_scans_gym',
       };
     } catch (err) {
-      throw this.mapQuarkError(err, 'create OID4VP request');
+      throw this.mapKuatiaError(err, 'create OID4VP request');
     }
   }
 
@@ -113,16 +113,16 @@ export class AccessOid4VpService {
       return { status: 'done', state: 'Done', result: existing };
     }
 
-    const verifierWalletId = await this.requireVerifierWallet(tenantId);
+    const verifierWalletId = this.requireVerifierWallet();
 
     let session;
     try {
-      session = await this.quark.getVerificationSession(
+      session = await this.kuatia.getVerificationSession(
         verifierWalletId,
         sessionId,
       );
     } catch (err) {
-      throw this.mapQuarkError(err, 'get OID4VP session');
+      throw this.mapKuatiaError(err, 'get OID4VP session');
     }
 
     const state = session.state;
@@ -201,40 +201,36 @@ export class AccessOid4VpService {
     return this.accessVerify.toVerifyResultFromAttempt(row, row.member);
   }
 
-  private async requireVerifierWallet(tenantId: string): Promise<string> {
-    const tenant = await this.prisma.tenant.findUnique({
-      where: { id: tenantId },
-      select: {
-        quarkStatus: true,
-        quarkVerifierWalletId: true,
-      },
-    });
-    if (
-      !tenant ||
-      tenant.quarkStatus !== QuarkProvisionStatus.READY ||
-      !tenant.quarkVerifierWalletId
-    ) {
+  /**
+   * Verifier Kuatia compartido (`KUATIA_VERIFIER_WALLET_ID`).
+   */
+  private requireVerifierWallet(): string {
+    try {
+      return this.kuatiaEnv.requireSharedVerifierWalletId();
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
       throw new ServiceUnavailableException(
-        'Quark verifier no está READY para este gym. Provisioná el tenant.',
+        `Kuatia verifier no configurado (${msg}). Revisá KUATIA_VERIFIER_WALLET_ID.`,
       );
     }
-    return tenant.quarkVerifierWalletId;
   }
 
-  private mapQuarkError(err: unknown, op: string): Error {
-    if (err instanceof QuarkHttpError) {
-      this.logger.warn(`Quark ${op} failed: ${err.status} ${err.body.slice(0, 200)}`);
+  private mapKuatiaError(err: unknown, op: string): Error {
+    if (err instanceof KuatiaHttpError) {
+      this.logger.warn(
+        `Kuatia ${op} failed: ${err.status} ${err.body.slice(0, 200)}`,
+      );
       if (err.status === 0) {
-        return new ServiceUnavailableException('Quark verifier unreachable');
+        return new ServiceUnavailableException('Kuatia verifier unreachable');
       }
       if (err.status === 404) {
         return new BadRequestException('OID4VP session not found');
       }
-      return new BadRequestException(`Quark OID4VP error (${err.status})`);
+      return new BadRequestException(`Kuatia OID4VP error (${err.status})`);
     }
     this.logger.warn(
-      `Quark ${op} unexpected: ${err instanceof Error ? err.message : String(err)}`,
+      `Kuatia ${op} unexpected: ${err instanceof Error ? err.message : String(err)}`,
     );
-    return new ServiceUnavailableException('Quark OID4VP unavailable');
+    return new ServiceUnavailableException('Kuatia OID4VP unavailable');
   }
 }

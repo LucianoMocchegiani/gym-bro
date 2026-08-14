@@ -1,24 +1,26 @@
-/// Config de red / Quark pública (tunnel).
+/// Bases públicas Kuatia para reescribir URIs de offer/request en el device.
+///
+/// @remarks Con Kuatia las URIs ya suelen ser HTTPS públicas; este helper
+/// corrige hosts viejos (tunnel Quark / Docker) si quedaran en offers cacheados.
 abstract final class QuarkPublicConfig {
-  /// Base pública del issuer (offers OID4VCI).
+  /// Base pública del issuer (OID4VCI).
   ///
-  /// Override: `--dart-define=QUARK_ISSUER_PUBLIC_URL=https://…`
+  /// Override: `--dart-define=KUATIA_ISSUER_PUBLIC_URL=https://…`
+  /// (también acepta `QUARK_ISSUER_PUBLIC_URL` legacy vía mismo default).
   static const issuerPublicUrl = String.fromEnvironment(
-    'QUARK_ISSUER_PUBLIC_URL',
-    defaultValue: 'https://issuer.pruebasaproduccunon.uno',
+    'KUATIA_ISSUER_PUBLIC_URL',
+    defaultValue: 'https://issuer.kuatia.xyz',
   );
 
-  /// Base pública del verifier (requests OID4VP).
+  /// Base pública del verifier (OID4VP).
   ///
-  /// Override: `--dart-define=QUARK_VERIFIER_PUBLIC_URL=https://…`
+  /// Override: `--dart-define=KUATIA_VERIFIER_PUBLIC_URL=https://…`
   static const verifierPublicUrl = String.fromEnvironment(
-    'QUARK_VERIFIER_PUBLIC_URL',
-    defaultValue: 'https://verifier.pruebasaproduccunon.uno',
+    'KUATIA_VERIFIER_PUBLIC_URL',
+    defaultValue: 'https://verifier.kuatia.xyz',
   );
 
-  /// Reescribe hosts Docker internos en un [offerUri] para el device.
-  ///
-  /// Ofers viejos pueden traer `http://quark-issuer:9001`; el tunnel usa HTTPS público.
+  /// Reescribe hosts internos / tunnels viejos en un [offerUri].
   static String normalizeOfferUri(String offerUri) {
     return _rewriteHosts(
       offerUri,
@@ -27,11 +29,12 @@ abstract final class QuarkPublicConfig {
         'quark-issuer:9001',
         '127.0.0.1:9001',
         'localhost:9001',
+        'issuer.pruebasaproduccunon.uno',
       ],
     );
   }
 
-  /// Reescribe hosts Docker internos en un [requestUri] OID4VP.
+  /// Reescribe hosts internos / tunnels viejos en un [requestUri] OID4VP.
   static String normalizeRequestUri(String requestUri) {
     return _rewriteHosts(
       requestUri,
@@ -40,6 +43,7 @@ abstract final class QuarkPublicConfig {
         'quark-verifier:9002',
         '127.0.0.1:9002',
         'localhost:9002',
+        'verifier.pruebasaproduccunon.uno',
       ],
     );
   }

@@ -3,6 +3,21 @@
 **Estado:** Cerrado (v1) — módulos MVP redactados  
 Los CU usan la plantilla de [00-indice.md](../00-indice.md) y citan IDs de [04-reglas-de-negocio.md](../04-reglas-de-negocio.md).
 
+## Núcleo (lectura rápida)
+
+| ID | Qué hace | Doc |
+|----|----------|-----|
+| CU-AFI-001 | Registrar afiliado | [afiliados](./afiliados.md) |
+| CU-CON-001 | Comprar pack | [servicios-sesiones-packs](./servicios-sesiones-packs.md) |
+| CU-RES-001 | Reservar sesión | [servicios-sesiones-packs](./servicios-sesiones-packs.md) |
+| CU-PAG-001 | Pago Mercado Pago | [pagos-caja](./pagos-caja.md) |
+| CU-PAG-002 | Cobro en caja | [pagos-caja](./pagos-caja.md) |
+| CU-ACC-001 | Verificar ingreso (OID4VP) | [acceso-qr](./acceso-qr.md) |
+| CU-ACC-004 | Pase manual | [acceso-qr](./acceso-qr.md) |
+| CU-ROL-001 | Crear gym (Super) | [roles-permisos](./roles-permisos.md) |
+
+## Módulos
+
 | Archivo | Módulo | Estado |
 |---------|--------|--------|
 | [afiliados.md](./afiliados.md) | Alta y ficha de afiliados | Cerrado (v1) |

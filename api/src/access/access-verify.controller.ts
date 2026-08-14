@@ -69,11 +69,7 @@ export class AccessVerifyController {
     if (user.profileType !== 'STAFF') {
       throw new ForbiddenException('Staff profile required');
     }
-    return this.oid4vp.getSession(
-      tenantId,
-      verificationSessionId,
-      user.userId,
-    );
+    return this.oid4vp.getSession(tenantId, verificationSessionId, user.userId);
   }
 
   /**

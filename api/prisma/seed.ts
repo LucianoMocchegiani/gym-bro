@@ -1,6 +1,5 @@
 import * as bcrypt from 'bcryptjs';
 import { PrismaClient, TenantStatus, MemberStatus } from '@prisma/client';
-import { provisionDemoQuark } from './seed-quark-demo';
 
 const prisma = new PrismaClient();
 
@@ -116,10 +115,10 @@ const PROFESOR_CODES = [
 ];
 
 /**
- * Seed de desarrollo: Super + tenant demo completo (branch, roles, staff Admin, member)
- * + provisioning Quark soft-fail (`gymbro-iss-demo` / `gymbro-ver-demo`).
+ * Seed de desarrollo: Super + tenant demo completo (branch, roles, staff Admin, member).
  *
- * @remarks Credenciales solo para entornos locales.
+ * @remarks Credenciales solo para entornos locales. Kuatia: wallets compartidos
+ * vía `KUATIA_*` en env (consola Kuatia); el seed no bindea por tenant.
  */
 async function main(): Promise<void> {
   const passwordHash = await bcrypt.hash(DEMO_PASSWORD, 12);
@@ -290,8 +289,6 @@ async function main(): Promise<void> {
     },
   });
 
-  const quark = await provisionDemoQuark(prisma, tenant.id, DEMO_SLUG);
-
   console.log('Seed OK');
   console.log({
     superUser: { id: superUser.id, email: superUser.email },
@@ -305,12 +302,8 @@ async function main(): Promise<void> {
     profesorRoleId: profesorRole.id,
     member: { id: member.id, email: member.email },
     password: DEMO_PASSWORD,
-    quark: {
-      status: quark.status,
-      issuerWalletId: quark.issuerWalletId,
-      verifierWalletId: quark.verifierWalletId,
-      lastError: quark.lastError,
-    },
+    kuatia:
+      'Shared wallets via KUATIA_ISSUER_WALLET_ID / KUATIA_VERIFIER_WALLET_ID',
   });
 }
 

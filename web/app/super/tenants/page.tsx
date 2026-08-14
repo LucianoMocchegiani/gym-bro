@@ -91,7 +91,6 @@ function TenantsInner() {
                   <th>Nombre</th>
                   <th>Slug</th>
                   <th>Estado</th>
-                  <th>Quark</th>
                   <th>Admin URL</th>
                   <th />
                 </tr>
@@ -108,13 +107,6 @@ function TenantsInner() {
                         className={`status-pill ${t.status === 'ACTIVE' ? 'active' : 'inactive'}`}
                       >
                         {t.status === 'ACTIVE' ? 'Activo' : 'Suspendido'}
-                      </span>
-                    </td>
-                    <td>
-                      <span
-                        className={`status-pill ${t.quark?.status === 'READY' ? 'active' : 'inactive'}`}
-                      >
-                        {t.quark?.status === 'READY' ? 'Quark OK' : 'Quark —'}
                       </span>
                     </td>
                     <td>

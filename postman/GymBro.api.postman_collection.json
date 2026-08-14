@@ -642,30 +642,6 @@
             },
             "url": "{{baseUrl}}/api/tenants/{{createdTenantId}}"
           }
-        },
-        {
-          "name": "POST quark provision",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('status 200', () => pm.response.to.have.status(200));",
-                  "const body = pm.response.json();",
-                  "pm.test('has quark', () => {",
-                  "  pm.expect(body.quark).to.be.an('object');",
-                  "  pm.expect(['MISSING','READY']).to.include(body.quark.status);",
-                  "});"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "POST",
-            "header": [],
-            "url": "{{baseUrl}}/api/tenants/{{createdTenantId}}/quark/provision"
-          }
         }
       ]
     },

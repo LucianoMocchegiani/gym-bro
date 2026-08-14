@@ -135,7 +135,7 @@ export function decodeSdJwtCompact(compact: string): Oid4VpDecodedCredential {
     return { vct: null, issuer: null, issuedAt: null, claims: {} };
   }
 
-  const payload = JSON.parse(b64urlDecodeToString(parts[1]!)) as Record<
+  const payload = JSON.parse(b64urlDecodeToString(parts[1])) as Record<
     string,
     unknown
   >;
@@ -153,7 +153,11 @@ export function decodeSdJwtCompact(compact: string): Oid4VpDecodedCredential {
     }
     try {
       const arr = JSON.parse(b64urlDecodeToString(piece)) as unknown;
-      if (Array.isArray(arr) && arr.length === 3 && typeof arr[1] === 'string') {
+      if (
+        Array.isArray(arr) &&
+        arr.length === 3 &&
+        typeof arr[1] === 'string'
+      ) {
         claims[arr[1]] = arr[2];
       }
     } catch {

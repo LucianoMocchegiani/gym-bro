@@ -29,12 +29,12 @@ export type PackDetail = {
   kind: PackKind;
   components: PackComponentDetail[];
   /** Clave en `credentialConfigurationsSupported` (`pack_{id}`). */
-  quarkConfigurationId: string | null;
+  kuatiaConfigurationId: string | null;
   /** VCT (`urn:gymbro:pack:{id}`). */
-  quarkVct: string | null;
-  quarkSyncedAt: Date | null;
+  kuatiaVct: string | null;
+  kuatiaSyncedAt: Date | null;
   /** Soft-fail de sync; null si OK o nunca intentado. */
-  quarkLastError: string | null;
+  kuatiaLastError: string | null;
   createdAt: Date;
   updatedAt: Date;
 };

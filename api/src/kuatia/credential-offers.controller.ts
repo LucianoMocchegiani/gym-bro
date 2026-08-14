@@ -1,4 +1,4 @@
-import {
+﻿import {
   Body,
   Controller,
   ForbiddenException,
@@ -17,19 +17,19 @@ import { RequireTenantAuth } from '../tenant/decorators/require-tenant-auth.deco
 import { FailCredentialOfferDto } from './dto/fail-credential-offer.dto';
 import {
   CredentialOfferListItem,
-  QuarkOfferService,
-} from './quark-offer.service';
+  KuatiaOfferService,
+} from './kuatia-offer.service';
 
 /**
  * Credential offers OID4VCI (bandeja member + listado staff).
  *
  * @remarks Respuesta slim (sin claims). Re-oferta = re-POST contrato con la
- * misma `idempotencyKey` (`force` en {@link QuarkOfferService.ensureOfferForContract}).
+ * misma `idempotencyKey` (`force` en {@link KuatiaOfferService.ensureOfferForContract}).
  */
 @Controller()
 @RequireTenantAuth()
 export class CredentialOffersController {
-  constructor(private readonly offers: QuarkOfferService) {}
+  constructor(private readonly offers: KuatiaOfferService) {}
 
   /**
    * Offers del afiliado autenticado (bandeja).

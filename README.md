@@ -10,8 +10,8 @@ Punto de entrada: [docs/00-indice.md](./docs/00-indice.md)
 
 Roadmap del MVP: [docs/11-roadmap-mvp.md](./docs/11-roadmap-mvp.md)
 
-Diseño acceso Quark / OID4: [docs/12-acceso-quark-oid4-diseno.md](./docs/12-acceso-quark-oid4-diseno.md)  
-Spike Compose + provisioning al crear gym: ver sección Quark abajo.
+Diseño acceso OID4 (Kuatia): [docs/12-acceso-quark-oid4-diseno.md](./docs/12-acceso-quark-oid4-diseno.md)  
+Issuer/verifier compartidos en Kuatia: ver sección Kuatia abajo.
 
 ## Estructura
 
@@ -20,9 +20,10 @@ api/                 # NestJS — puerto 3001 — GET /api/health
 web/                 # Next.js — puerto 3000
 mobile/              # Flutter (fuera de Docker)
 postman/             # Colección + environment de prueba
-docker-compose.yml   # postgres + redis + api + web + quark-issuer/verifier (dev)
-docker/              # Dockerfiles Quark + init SQL Postgres
-ssi-quark/           # Clon local de repos Quark (gitignore; ver ssi-quark/README.md)
+docker-compose.yml   # postgres + redis + api + web (dev)
+docker/              # pgAdmin config
+ssi-quark/           # README redirect → identity_core_dart/
+identity_core_dart/  # Package Flutter wallet (gitignore; clon local)
 docs/
 git-hooks/
 ```
@@ -40,6 +41,8 @@ Copy-Item api\.env.example api\.env
 Copy-Item web\.env.example web\.env
 ```
 
+Completá en `api/.env` las claves y wallet IDs de Kuatia (`KUATIA_*`).
+
 2. Levantá todo:
 
 ```powershell
@@ -50,30 +53,25 @@ Servicios:
 
 | Servicio | URL / puerto |
 |----------|----------------|
-| Web | http://demo.localhost:3000 — Admin Staff (slug); http://localhost:3000/super — Super Admin |
+| Web | http://demo.localhost:3002 — Admin Staff (slug); http://localhost:3002/super — Super Admin |
 | API health | http://localhost:3001/api/health |
-| Quark issuer | http://localhost:9001/v1/health |
-| Quark verifier | http://localhost:9002/v1/health |
+| Kuatia | URLs públicas del producto (ver `KUATIA_*_BASE_URL` en `api/.env`) |
 | Postman | [`postman/`](./postman/) |
-| Postgres | `localhost:5432` (user/pass/db: `gymbro`; DBs Quark: `quarkid_issuer` / `quarkid_verifier`) |
+| Postgres | `localhost:5433` → contenedor `5432` (user/pass/db: `gymbro`) |
 | pgAdmin | http://localhost:5050 — `admin@example.com` / `gymbro` (server: host `postgres`, pass DB `gymbro`) |
 | Redis | `localhost:6379` |
 
-### Quark (spike issuer/verifier)
+### Kuatia (OID4VCI + OID4VP)
 
-1. Cloná repos oficiales en `ssi-quark/` (ver [`ssi-quark/README.md`](./ssi-quark/README.md)).
-2. `docker compose up --build` incluye `quark-issuer` y `quark-verifier` (**sin** RabbitMQ/VDR).
-3. Al crear un gym (`POST /api/tenants`) se provisionan `gymbro-iss-{slug}` + `gymbro-ver-{slug}` (soft-fail). Reintento: Super → tenant → **Reintentar Quark**, o `POST /api/tenants/:id/quark/provision`.
-4. Create/update de pack sincroniza `credentialConfigurationsSupported` en el issuer (`pack_{id}` / `urn:gymbro:pack:{id}`; soft-fail → `packs.quark_*`).
-5. Pack APPROVED crea offer OID4VCI → `credential_offers` + bandeja app (Aceptar → `ACCEPTED`). Issuer `BASE_URL` pública (tunnel `issuer.pruebasaproduccunon.uno`).
-6. Si el volumen de Postgres ya existía antes de este cambio, creá las DBs Quark a mano o `docker compose down -v` (borra datos) y volvé a subir.
+Modelo: **1 producto** GymBro → **1 issuer + 1 verifier** compartidos para todos los gyms. Distinción por claims (`tenantId`, `packId`). Docs: [kuatia.xyz/docs](https://kuatia.xyz/docs).
 
-```powershell
-docker compose exec postgres psql -U gymbro -d gymbro -c "CREATE USER quarkid WITH PASSWORD 'quarkid';"
-docker compose exec postgres psql -U gymbro -d gymbro -c "CREATE DATABASE quarkid_issuer OWNER quarkid;"
-docker compose exec postgres psql -U gymbro -d gymbro -c "CREATE DATABASE quarkid_verifier OWNER quarkid;"
-```
+1. Creá el producto en la consola Kuatia; copiá API keys (`iss_live_…` / `ver_live_…`) y `walletId` a `api/.env`.
+2. Compose **no** levanta issuer/verifier locales.
+3. Crear un gym solo persiste GymBro; **no** hay provision/bind por tenant. Wallets = env `KUATIA_*`.
+4. Create/update de pack → `PATCH` metadata del issuer compartido (`pack_{id}` / `urn:gymbro:pack:{id}`; soft-fail → `packs.kuatia_*`).
+5. Pack APPROVED → offer OID4VCI; puerta → OID4VP contra el verifier compartido (auth `x-api-key`).
 
+Deuda rename/SDK: [docs/15-kuatia-deuda-rename.md](./docs/15-kuatia-deuda-rename.md).
 Parar:
 
 ```powershell
@@ -144,7 +142,7 @@ Super Admin — tenants: `POST /api/tenants` requiere `ownerEmail` / `ownerPassw
 
 Probar con Postman: importá [`postman/`](./postman/) (colección + environment local). Los logins guardan `accessToken` / `refreshToken` vía scripts.
 
-> Nota: si en el host el puerto `5432` ya lo usa otro Postgres, la CLI de Prisma fallará con error de auth; usá el `exec` del contenedor.
+> Nota: Postgres del Compose se publica en el host como `localhost:5433`. Desde el host, Prisma CLI usa ese puerto; dentro de Docker la API sigue con `postgres:5432`.
 
 Mobile en el host (device USB / ADB):
 

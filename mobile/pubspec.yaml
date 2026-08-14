@@ -17,9 +17,9 @@ dependencies:
   provider: ^6.1.5
   mobile_scanner: ^6.0.11
   path_provider: ^2.1.5
-  # Clon local: ssi-quark/quarkid-identity-core-dart (ver ssi-quark/README.md)
+  # Clon local en la raíz del monorepo (ver docs/15-kuatia-deuda-rename.md)
   identity_core_dart:
-    path: ../ssi-quark/quarkid-identity-core-dart
+    path: ../identity_core_dart
 
 dev_dependencies:
   flutter_test:

@@ -411,7 +411,10 @@ export class AccessVerifyService {
     }
 
     if (overdueDays >= 0 && overdueDays <= debtToleranceDays) {
-      const expiredLibre = await this.findLatestLibreContract(tenantId, memberId);
+      const expiredLibre = await this.findLatestLibreContract(
+        tenantId,
+        memberId,
+      );
       if (
         expiredLibre?.endsAt &&
         expiredLibre.endsAt < now &&

@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 import { AuditModule } from '../audit/audit.module';
 import { AuthModule } from '../auth/auth.module';
-import { QuarkModule } from '../quark/quark.module';
+import { KuatiaModule } from '../kuatia/kuatia.module';
 import { RolesModule } from '../roles/roles.module';
 import { TenantSettingsModule } from '../tenant-settings/tenant-settings.module';
 import { AccessOid4VpService } from './access-oid4vp.service';
@@ -19,7 +19,7 @@ import { AccessVerifyService } from './access-verify.service';
     RolesModule,
     AuditModule,
     TenantSettingsModule,
-    QuarkModule,
+    KuatiaModule,
   ],
   controllers: [AccessVerifyController],
   providers: [AccessVerifyService, AccessOid4VpService],

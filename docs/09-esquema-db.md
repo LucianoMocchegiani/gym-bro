@@ -214,10 +214,10 @@ erDiagram
     enum billing_period
     timestamptz credits_expire_at
     boolean active
-    text quark_configuration_id
-    text quark_vct
-    timestamptz quark_synced_at
-    text quark_last_error
+    text kuatia_configuration_id
+    text kuatia_vct
+    timestamptz kuatia_synced_at
+    text kuatia_last_error
     timestamptz created_at
     timestamptz updated_at
   }
@@ -283,7 +283,7 @@ erDiagram
 | Enum (Prisma) | Valores | Uso |
 |---------------|---------|-----|
 | `TenantStatus` | `ACTIVE`, `SUSPENDED` | Estado del gym (RN-TEN-002) |
-| `QuarkProvisionStatus` | `MISSING`, `READY` | Issuer+verifier Quark del tenant |
+| `QuarkProvisionStatus` | _(eliminado)_ | Histórico; wallets ahora solo env Kuatia |
 | `CredentialOfferStatus` | `PENDING`, `FAILED`, `ACCEPTED` | Offer OID4VCI (soft-fail + accept wallet) |
 | `AuthProfileType` | `SUPER`, `STAFF`, `MEMBER` | Dueño del refresh token (RN-ROL-005) |
 | `MemberStatus` | `ACTIVE`, `SUSPENDED`, `INACTIVE` | Estado del afiliado (CU-AFI-003) |
@@ -319,19 +319,12 @@ Gimnasio / estudio = tenant SaaS.
 | `name` | text | |
 | `slug` | text UNIQUE | subdominio (`demo.localhost` / `{slug}.gymbro.app`) |
 | `status` | `TenantStatus` | default `ACTIVE` |
-| `quark_status` | `QuarkProvisionStatus` | default `MISSING` — soft-fail al crear |
-| `quark_issuer_wallet_id` | text nullable | p. ej. `gymbro-iss-{slug}` |
-| `quark_issuer_did` | text nullable | DID web del issuer |
-| `quark_verifier_wallet_id` | text nullable | p. ej. `gymbro-ver-{slug}` |
-| `quark_verifier_did` | text nullable | |
-| `quark_last_error` | text nullable | último error de provisioning |
-| `quark_provisioned_at` | timestamptz nullable | cuando pasó a `READY` |
 | `created_at` | timestamptz | |
 | `updated_at` | timestamptz | |
 
 **Relaciones:** 1→N staff/members/branches/roles/services/packs/sessions/…; 1→1 `tenant_settings` y `mercadopago_accounts`; 1→N `access_credentials`, `access_attempts`, `audit_events`, caja, pagos, etc.
 
-Al `POST /api/tenants` se intenta `POST` Quark issuer+verifier (soft-fail). Reintento: `POST /api/tenants/:id/quark/provision`.
+Kuatia: issuer/verifier **compartidos** vía env `KUATIA_*` (consola Kuatia). No hay columnas ni `POST …/quark/provision` por tenant.
 
 ---
 
@@ -537,13 +530,13 @@ Pack vendible (CU-SER-002). `price` = pesos enteros ARS. `kind` (`ACCESS`|`CREDI
 | `billing_period` | `BillingPeriod` | MONTHLY / ONE_TIME |
 | `credits_expire_at` | timestamptz nullable | null = sin vencimiento de catálogo |
 | `active` | boolean | default true |
-| `quark_configuration_id` | text nullable | clave OID4VCI `pack_{id}` |
-| `quark_vct` | text nullable | `urn:gymbro:pack:{id}` |
-| `quark_synced_at` | timestamptz nullable | último PATCH metadata OK |
-| `quark_last_error` | text nullable | soft-fail de sync Quark |
+| `kuatia_configuration_id` | text nullable | clave OID4VCI `pack_{id}` |
+| `kuatia_vct` | text nullable | `urn:gymbro:pack:{id}` |
+| `kuatia_synced_at` | timestamptz nullable | último PATCH metadata OK |
+| `kuatia_last_error` | text nullable | soft-fail de sync Kuatia |
 | `created_at` / `updated_at` | timestamptz | |
 
-Al create/update de pack (API Staff/Super) se hace `PATCH` metadata del issuer Quark del tenant (soft-fail).
+Al create/update de pack (API Staff/Super) se hace `PATCH` metadata del issuer Kuatia compartido (soft-fail).
 
 ### 4.14 `pack_components`
 
@@ -883,11 +876,12 @@ API: Member `POST|GET /api/me/waitlist`, `PATCH /api/me/waitlist/:id/status`; St
 | `20260727230000_access_manual_pass` | `motive_code` + `note` en `access_attempts` |
 | `20260728120000_payment_drop_in_session` | `payments.session_id` para checkout drop-in MP |
 | `20260730180000_tenant_slug` | `tenants.slug` UNIQUE (subdominio) |
-| `20260802180000_tenant_quark_provision` | `tenants.quark_*` + enum `QuarkProvisionStatus` |
-| `20260802190000_pack_quark_configuration` | `packs.quark_configuration_id` / `quark_vct` / `quark_synced_at` / `quark_last_error` |
+| `20260802180000_tenant_quark_provision` | `tenants.quark_*` + enum `QuarkProvisionStatus` (histórico) |
+| `20260802190000_pack_quark_configuration` | `packs.quark_*` (histórico; renombrado abajo) |
 | `20260803010000_credential_offers` | enum `CredentialOfferStatus` + tabla `credential_offers` |
 | `20260803020000_credential_offers_slim` | quita `claims` / `configuration_id` / `vct` / `payment_id` / `issuance_session_id` |
 | `20260803030000_credential_offer_accepted` | enum `ACCEPTED` |
+| `20260813180000_kuatia_shared_env_drop_tenant_bind` | drop `tenants.quark_*` + enum; rename `packs.quark_*` → `kuatia_*` |
 
 Comandos y checklist “desde cero”: [13-setup-db-desde-cero.md](./13-setup-db-desde-cero.md).
 
@@ -914,7 +908,7 @@ Tras `docker compose down -v`: `up --build -d` → `migrate deploy` → `generat
 
 Script: [`api/prisma/seed.ts`](../api/prisma/seed.ts).  
 Crea Super + tenant demo + **branch** + roles Admin/Profesor + staff `admin@demo.gym` con rol Admin + member. Password: `ChangeMe123!`.  
-Además intenta Quark (`gymbro-iss-demo` / `gymbro-ver-demo` → `tenants.quark_*`; soft-fail).
+Además bindea Kuatia compartido (`KUATIA_*_WALLET_ID` → `tenants.quark_*`; soft-fail si falta env).
 
 Detalle: [13-setup-db-desde-cero.md](./13-setup-db-desde-cero.md) · [credenciales-demo.md](./credenciales-demo.md).
 

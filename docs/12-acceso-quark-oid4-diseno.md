@@ -1,10 +1,10 @@
 # Acceso Quark / OID4 — diseño GymBro
 
-**Estado:** Diseño cerrado — spike tenant + pack→metadata implementados; offer/VP pendientes  
-**Fecha:** 2026-08-02  
-**Contexto:** Acceso en puerta vía QuarkID (OID4VCI emisión + OID4VP presentación). Stubs de vínculo retirados.
+**Estado:** Migración a **Kuatia** en curso (issuer/verifier compartidos; Compose sin Quark local)  
+**Fecha:** 2026-08-02 (actualizado 2026-08-12)  
+**Contexto:** Acceso en puerta vía OpenID4 (OID4VCI emisión + OID4VP presentación). Stubs de vínculo retirados. Transporte: [Kuatia](https://kuatia.xyz/docs).
 
-**Repos de referencia (clon local):** `ssi-quark/` (`quark-issuer-service`, `quark-verifier-service`, `quarkid-identity-core`, `quarkid-identity-core-dart`, `quark-wallet`).
+**Repos Flutter:** `ssi-quark/quarkid-identity-core-dart` (gitignore). Issuer/verifier = Kuatia en dominio.
 
 ---
 
@@ -13,41 +13,43 @@
 | Tema | Decisión |
 |------|----------|
 | Protocolo | **OpenID4**: OID4VCI (emisión) + OID4VP (presentación en puerta) |
-| Por gym (Super crea tenant) | Crear **1 issuer** + **1 verifier** Quark (wallets Credo multi-tenant) |
-| Por pack | Nuevo **tipo** en metadata OID4VCI del issuer (`credentialConfigurationsSupported` + `vct`) |
+| Proveedor | **Kuatia** (1 producto GymBro; auth `x-api-key`) |
+| Por gym (Super crea tenant) | **No** crear issuer/verifier; solo DB GymBro + bind de wallet IDs compartidos |
+| Issuer / verifier | **1 + 1 compartidos** para todos los gyms; distinción por claims (`tenantId`, `packId`) |
+| Por pack | Nuevo **tipo** en metadata OID4VCI del issuer compartido (`credentialConfigurationsSupported` + `vct`) |
 | Emisión de instancia | Al **pago APPROVED** (pack / renovación / drop-in según tipo) |
 | Renovación online | **Offer remoto** (URI in-app / deep link / push luego); usuario **Acepta** (1 tap), sin escanear QR |
 | Celu perdido / sin batería | Misma cuenta GymBro; recepción **reemite** VC del pack vigente (revoca la anterior vía StatusList) |
 | Wallet en GymBro app | `identity_core_dart` (no copiar UX completa de `quark-wallet`) |
 | Cuenta afiliado | Email + password (API GymBro), como hoy |
 | Candado SSI local | **Secreto random invisible** en Keystore/Keychain + biometría opcional; el usuario **no** elige ni memoriza PIN |
-| Cambio de dispositivo | Nueva wallet local + reemitir VCs; sin backup/recovery Quark en MVP Quark |
+| Cambio de dispositivo | Nueva wallet local + reemitir VCs; sin backup/recovery en MVP |
 | Reingreso en sesión | Regla de **dominio GymBro** post-verify (ventana horaria); no “usos” mutables solo en la VC |
 | Prioridad sesión vs libre (~20 min) | GymBro arma el **OID4VP request** (o evalúa claims) según hora; una presentación, sin wallet multi-elección manual |
 | Stub histórico | Retirado; puerta = OID4VP |
 
 ---
 
-## 2. Mapa GymBro ↔ Quark
+## 2. Mapa GymBro ↔ Kuatia
 
 ```text
 Super: POST /tenants (GymBro)
-  → Quark POST /issuers   (walletId = gymbro-iss-{slug})
-  → Quark POST /verifiers (walletId = gymbro-ver-{slug}, `oid4vp.clientMetadata` → `OpenId4VcVerifierRecord`)
-  → Guardar IDs/DIDs en config del tenant GymBro
+  → Solo DB GymBro
+  → Bind KUATIA_ISSUER_WALLET_ID / KUATIA_VERIFIER_WALLET_ID en tenant.quark_*
 
 Admin: create/update Pack
-  → Quark PATCH issuer …/metadata
+  → Kuatia PATCH issuer …/metadata (x-api-key)
       credentialConfigurationsSupported[pack_{packId}] = { vct, display, … }
 
 Pago APPROVED / reemitir staff
   → (opcional) revocar StatusList de VC previa del mismo pack
-  → Quark POST …/openid4vc/offer (configurationId, claims, exp)
+  → Kuatia POST …/openid4vc/offer (configurationId, claims, exp)
   → Persistir offer pendiente en GymBro (memberId, offerUri, packId)
   → App: bandeja “Aceptar credencial” → OID4VCI pre-authorized
 
 Puerta (afiliado escanea local o gym escanea)
   → Verifier OID4VP request (DCQL/PEX filtrando vct del gym)
+
   → Wallet presenta
   → GymBro: IntentoIngreso + reglas (tolerancia, reingreso sesión, multi-ingreso)
 ```
@@ -127,10 +129,9 @@ Hasta (4) inclusive el stub quedó fuera de producción.
 - `vct` / `configurationId`: **cerrado** — `pack_{packId}` y `urn:gymbro:pack:{packId}`.  
 - ¿Drop-in comparte configuration genérica o tipo propio?  
 - Tolerancia en puerta: **cerrado** en GymBro (días desde `endsAt`); claim `graceUntil` / segunda VC sigue opcional.  
-- Hosting Quark (issuer/verifier) en el mismo compose vs servicios externos del trabajo.
+- Hosting issuer/verifier: **cerrado** — Kuatia en dominio (no Compose local).
 
-**Nota ops:** issuers creados en el spike **sin** body `oid4vc` no tienen `OpenId4VcIssuerRecord`; el PATCH de pack falla (soft-fail). Provision nuevo crea issuer con `oid4vc` mínimo; tenants READY viejos pueden necesitar recrear el issuer.  
-RabbitMQ es **opcional** (event bus index/audit). Sin broker, `MessagingClient` skipea publish y no cuelga `allocateIndex` / offer. Compose sigue sin Rabbit.
+**Nota:** columnas API siguen prefijo `quark_*` por compatibilidad de schema; el transporte es Kuatia.
 
 ---
 

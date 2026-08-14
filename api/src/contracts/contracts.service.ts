@@ -28,7 +28,7 @@ import {
   toListResult,
 } from '../common/list';
 import { PrismaService } from '../prisma/prisma.service';
-import { QuarkOfferService } from '../quark/quark-offer.service';
+import { KuatiaOfferService } from '../kuatia/kuatia-offer.service';
 import { ReceiptsService } from '../receipts/receipts.service';
 import { CreateContractDto, UpdateContractStatusDto } from './dto/contract.dto';
 import { ContractDetail } from './contracts.types';
@@ -91,7 +91,7 @@ export class ContractsService {
     private readonly audit: AuditService,
     private readonly cashRegister: CashRegisterService,
     private readonly receipts: ReceiptsService,
-    private readonly quarkOffers: QuarkOfferService,
+    private readonly kuatiaOffers: KuatiaOfferService,
   ) {}
 
   /**
@@ -276,7 +276,7 @@ export class ContractsService {
     });
     if (existingPayment?.contract) {
       // Misma key = idempotencia de pago/contrato + force re-oferta Quark.
-      await this.quarkOffers.ensureOfferForContract(
+      await this.kuatiaOffers.ensureOfferForContract(
         tenantId,
         existingPayment.contract.id,
         { force: true },
@@ -348,7 +348,7 @@ export class ContractsService {
         before: null,
         after: this.auditSnapshot(detail),
       });
-      await this.quarkOffers.ensureOfferForContract(tenantId, contract.id);
+      await this.kuatiaOffers.ensureOfferForContract(tenantId, contract.id);
       return detail;
     } catch (error: unknown) {
       if (
@@ -364,7 +364,7 @@ export class ContractsService {
           },
         });
         if (again?.contract) {
-          await this.quarkOffers.ensureOfferForContract(
+          await this.kuatiaOffers.ensureOfferForContract(
             tenantId,
             again.contract.id,
           );
@@ -400,7 +400,7 @@ export class ContractsService {
       throw new NotFoundException(`Payment ${paymentId} not found in tenant`);
     }
     if (payment.contract) {
-      await this.quarkOffers.ensureOfferForContract(
+      await this.kuatiaOffers.ensureOfferForContract(
         tenantId,
         payment.contract.id,
         { force: true },
@@ -467,7 +467,7 @@ export class ContractsService {
         before: null,
         after: this.auditSnapshot(detail),
       });
-      await this.quarkOffers.ensureOfferForContract(tenantId, contract.id);
+      await this.kuatiaOffers.ensureOfferForContract(tenantId, contract.id);
       return detail;
     } catch (error: unknown) {
       if (
@@ -481,7 +481,7 @@ export class ContractsService {
           },
         });
         if (again?.contract) {
-          await this.quarkOffers.ensureOfferForContract(
+          await this.kuatiaOffers.ensureOfferForContract(
             tenantId,
             again.contract.id,
           );

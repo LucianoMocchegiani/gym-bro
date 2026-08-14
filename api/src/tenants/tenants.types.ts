@@ -31,19 +31,6 @@ export type OwnerSummary = {
 };
 
 /**
- * Snapshot Quark issuer/verifier del tenant (Super).
- */
-export type TenantQuarkSummary = {
-  status: 'MISSING' | 'READY';
-  issuerWalletId: string | null;
-  issuerDid: string | null;
-  verifierWalletId: string | null;
-  verifierDid: string | null;
-  lastError: string | null;
-  provisionedAt: Date | null;
-};
-
-/**
  * Representación pública de un tenant para respuestas Super Admin.
  */
 export type TenantResponse = {
@@ -57,7 +44,6 @@ export type TenantResponse = {
   systemRoles: RoleSummary[];
   /** Presente en create; en get/list puede ser null si no se resolvió. */
   owner: OwnerSummary | null;
-  quark: TenantQuarkSummary;
 };
 
 /**
