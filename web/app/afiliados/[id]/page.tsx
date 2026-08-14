@@ -7,6 +7,8 @@ import { AdminShell } from '@/components/AdminShell';
 import { AdminGrid, Panel } from '@/components/AdminUi';
 import { RequireStaff } from '@/components/RequireStaff';
 import { ApiClientError } from '@/lib/api/client';
+import { cancelContract } from '@/lib/api/contracts';
+import type { ContractDetail } from '@/lib/api/contracts';
 import {
   getMember,
   getMemberAccount,
@@ -22,6 +24,8 @@ import { formatMemberStatus } from '@/lib/member-labels';
 
 /**
  * Ficha + estado de cuenta del afiliado (CU-AFI-002/003/004).
+ *
+ * @remarks Cancelar contrato ACTIVE: CU-CON-002 / RN-SER-009 (sin reembolso).
  */
 export default function AfiliadoDetailPage() {
   return (
@@ -48,6 +52,13 @@ function DetailInner() {
   const [saveOk, setSaveOk] = useState(false);
   const [busy, setBusy] = useState(false);
   const [statusBusy, setStatusBusy] = useState(false);
+
+  const [cancelTarget, setCancelTarget] = useState<ContractDetail | null>(null);
+  const [cancelReason, setCancelReason] = useState('');
+  const [cancelConfirm, setCancelConfirm] = useState('');
+  const [cancelBusy, setCancelBusy] = useState(false);
+  const [cancelError, setCancelError] = useState<string | null>(null);
+  const [cancelOk, setCancelOk] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -159,6 +170,51 @@ function DetailInner() {
       setStatus(member.status);
     } finally {
       setStatusBusy(false);
+    }
+  }
+
+  function openCancel(contract: ContractDetail) {
+    setCancelTarget(contract);
+    setCancelReason('');
+    setCancelConfirm('');
+    setCancelError(null);
+    setCancelOk(null);
+  }
+
+  function closeCancel() {
+    setCancelTarget(null);
+    setCancelReason('');
+    setCancelConfirm('');
+    setCancelError(null);
+  }
+
+  async function onCancelContract(e: FormEvent) {
+    e.preventDefault();
+    if (!cancelTarget) {
+      return;
+    }
+    if (cancelConfirm.trim().toUpperCase() !== 'CANCELAR') {
+      setCancelError('Escribí CANCELAR para confirmar');
+      return;
+    }
+    setCancelBusy(true);
+    setCancelError(null);
+    setCancelOk(null);
+    try {
+      await cancelContract(cancelTarget.id, cancelReason);
+      setCancelOk(`Contrato «${cancelTarget.packName}» cancelado.`);
+      setCancelTarget(null);
+      setCancelReason('');
+      setCancelConfirm('');
+      await reload();
+    } catch (err) {
+      setCancelError(
+        err instanceof ApiClientError
+          ? err.message
+          : 'No se pudo cancelar el contrato',
+      );
+    } finally {
+      setCancelBusy(false);
     }
   }
 
@@ -302,10 +358,78 @@ function DetailInner() {
                               )
                               .join(', ')}`
                           : ''}
+                        {c.status === 'ACTIVE' ? (
+                          <>
+                            {' · '}
+                            <button
+                              type="button"
+                              className="linkish"
+                              onClick={() => openCancel(c)}
+                            >
+                              Cancelar
+                            </button>
+                          </>
+                        ) : null}
                       </li>
                     ))}
                   </ul>
                 )}
+
+                {cancelOk ? <p className="ok-msg">{cancelOk}</p> : null}
+
+                {cancelTarget ? (
+                  <form
+                    className="admin-form"
+                    onSubmit={(e) => void onCancelContract(e)}
+                  >
+                    <h3>Cancelar «{cancelTarget.packName}»</h3>
+                    <p className="muted small">
+                      Corta acceso libre y créditos. <strong>No</strong>{' '}
+                      reembolsa el pago (para eso usá Devolver). El motivo
+                      opcional queda en auditoría.
+                    </p>
+                    <label>
+                      Motivo (opcional)
+                      <textarea
+                        value={cancelReason}
+                        onChange={(e) => setCancelReason(e.target.value)}
+                        rows={2}
+                        maxLength={500}
+                        placeholder="Ej. incumplimiento de normas"
+                      />
+                    </label>
+                    <label>
+                      Escribí <strong>CANCELAR</strong> para confirmar
+                      <input
+                        value={cancelConfirm}
+                        onChange={(e) => setCancelConfirm(e.target.value)}
+                        autoComplete="off"
+                        placeholder="CANCELAR"
+                      />
+                    </label>
+                    {cancelError ? <p className="error">{cancelError}</p> : null}
+                    <div className="form-actions">
+                      <button
+                        type="submit"
+                        className="btn danger"
+                        disabled={
+                          cancelBusy ||
+                          cancelConfirm.trim().toUpperCase() !== 'CANCELAR'
+                        }
+                      >
+                        {cancelBusy ? 'Cancelando…' : 'Confirmar cancelación'}
+                      </button>
+                      <button
+                        type="button"
+                        className="btn ghost"
+                        onClick={closeCancel}
+                        disabled={cancelBusy}
+                      >
+                        Cerrar
+                      </button>
+                    </div>
+                  </form>
+                ) : null}
 
                 <h3>Próximas reservas</h3>
                 {account.reservations.length === 0 ? (

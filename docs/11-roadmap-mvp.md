@@ -275,8 +275,9 @@ Detalle: [14-auditoria…](./14-auditoria-roadmap-vs-codigo-2026-08-13.md).
 - [x] Devoluciones staff
   - `/devoluciones`: listar `GET /refund-requests` + ejecutar `POST /payments/:id/refunds`
   - Motivos `solicitud` / `doble_cobro` / `otro`; confirmación tipada; atajo desde pagos APPROVED en ficha afiliado
-- [ ] Cancelar contrato desde ficha afiliado
-  - `PATCH /contracts/:id/status` → `CANCELLED` (RN-SER-009)
+- [x] Cancelar contrato desde ficha afiliado
+  - `PATCH /contracts/:id/status` → `CANCELLED` (RN-SER-009); motivo opcional → auditoría
+  - UI en `/afiliados/[id]`: confirmación `CANCELAR`; no reembolsa (eso es Devolver)
 - [ ] Sesión: roster + reservas staff
   - Listar reservas de la sesión; crear reserva CREDIT en nombre del afiliado; cancelar reserva
 - [ ] Waitlist operativa (staff)
