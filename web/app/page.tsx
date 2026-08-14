@@ -37,6 +37,7 @@ const SHORTCUTS: { href: string; label: string; hint: string }[] = [
   { href: '/roles', label: 'Roles', hint: 'Permisos' },
   { href: '/staff', label: 'Staff', hint: 'Usuarios del gym' },
   { href: '/config', label: 'Config', hint: 'Operación y MP' },
+  { href: '/auditoria', label: 'Auditoría', hint: 'Eventos del gym' },
 ];
 
 /**

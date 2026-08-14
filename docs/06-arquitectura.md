@@ -315,7 +315,7 @@ Prefijo sugerido: `/api/v1`.
 | Catálogo | Super/Staff CRUD services + packs (`catalog.write`; kind inferido; `creditsExpireAt`) |
 | Contrataciones | Staff `POST /members/:id/contracts` (pago stub APPROVED); `PATCH /contracts/:id/status` → `CANCELLED` (pierde derechos, RN-SER-009); Member `GET /me/contracts` |
 | Roles | Super/Staff list-get-create-patch roles; `PUT .../staff/:id/roles` multi-rol |
-| Auditoría | Super/Staff `GET .../audit-events`; escritura en mutaciones E1 |
+| Auditoría | Staff `/auditoria` → `GET /audit-events` (`audit.read`); Super mirror; escritura en mutaciones |
 | Reportes | Staff `GET /reports/summary?from&to` (`reports.read`); ingresos $ + snapshot afiliados/packs (puerta en `/access-attempts`) |
 | Caja | `/cash/day`, `/cash/close` |
 

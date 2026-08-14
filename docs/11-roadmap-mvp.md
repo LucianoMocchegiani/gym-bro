@@ -28,7 +28,7 @@
 | E7 | Rutinas | Catálogo gym + asignación + cumplimiento |
 | E8 | Notificaciones N1 | Email + in-app |
 | E9 | App afiliado | Flutter: cuenta + SSI hechos; falta tienda/reservas/waitlist/devolución (+ API member packs/sesiones) |
-| E10 | Admin web | Next: núcleo + thin (hasta receipts); faltan auditoría / nav permisos / MP staff |
+| E10 | Admin web | Next: núcleo + thin (hasta auditoría); faltan nav permisos / MP staff / pase sesión |
 | E11 | Reportes mínimos | Activos, deuda, ingresos |
 | E12 | Cierre MVP | Smoke QA, hardenin, deploy |
 
@@ -243,7 +243,7 @@ Detalle: [14-auditoria-roadmap-vs-codigo-2026-08-13.md](./14-auditoria-roadmap-v
 
 ## E10 — Admin web (Next.js)
 
-**Estado real (2026-08-14):** núcleo E10 + devoluciones + cancel contrato + roster/waitlist + recurrencia UI + packs expire/Kuatia.  
+**Estado real (2026-08-14):** núcleo E10 + thin hasta comprobantes y auditoría UI.  
 **Overclaim previo:** varios ítems se marcaban `[x]` sin UI para APIs ya hechas — abajo queda el desglose.  
 Detalle: [14-auditoria…](./14-auditoria-roadmap-vs-codigo-2026-08-13.md).
 
@@ -293,10 +293,10 @@ Detalle: [14-auditoria…](./14-auditoria-roadmap-vs-codigo-2026-08-13.md).
 - [x] Comprobantes (receipts)
   - Caja: link en movimientos + panel tras cobro; ficha afiliado: listado + por pago
   - `GET /payments/:id/receipt`, `GET /members/:id/receipts` (`members.read`)
+- [x] Auditoría UI
+  - `/auditoria`: `GET /audit-events` (`audit.read`); búsqueda `q` + detalle before/after
 - [ ] Checkout MP desde Admin (staff)
   - `POST /members/:id/payments/mp/checkout` y drop-in (opcional si el piloto es CASH + app)
-- [ ] Auditoría UI
-  - `GET /audit-events` → `/auditoria`
 - [ ] Pase manual: selector de sesión opcional (`sessionId`)
 - [ ] Nav / páginas gated por permiso (hoy se muestran todos los links)
 
@@ -308,8 +308,8 @@ Detalle: [14-auditoria…](./14-auditoria-roadmap-vs-codigo-2026-08-13.md).
 
 ### Clientes `web/lib/api` a agregar (thin gaps)
 
-`audit`, MP checkout staff, (opcional) `credential-offers` staff.
-(`refunds`, `waitlist`, `recurrence-rules`, `receipts` ya agregados.)
+MP checkout staff, (opcional) `credential-offers` staff.
+(`refunds`, `waitlist`, `recurrence-rules`, `receipts`, `audit` ya agregados.)
 
 ---
 
@@ -360,7 +360,7 @@ Roadmap E9/E10 realineados (2026-08-13) tras [auditoría](./14-auditoria-roadmap
 ```text
 1) Flutter E9: Tienda/MP + calendario/reservas + waitlist + devolución
    (prereq: API member GET packs + sesiones)
-2) Admin E10 thin: auditoría → nav permisos / MP staff / pase sesión
+2) Admin E10 thin: nav permisos → MP staff / pase sesión opcional
    → recurrencia / creditsExpireAt / receipts (después)
 3) E5 MP live (ops) → E8 → E7 → E12
 ```

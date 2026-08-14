@@ -723,6 +723,38 @@ a.btn.ghost,
   font-size: 0.85em;
 }
 
+.audit-detail-row td {
+  background: var(--table-row);
+  vertical-align: top;
+}
+
+.audit-detail-grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: 1fr 1fr;
+}
+
+@media (max-width: 800px) {
+  .audit-detail-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.audit-json {
+  margin: 0;
+  padding: 0.65rem 0.75rem;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--input-bg);
+  color: var(--ink);
+  font-size: 0.78rem;
+  line-height: 1.45;
+  max-height: 240px;
+  overflow: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
 .pack-components {
   border: 1px solid var(--line);
   border-radius: 8px;
