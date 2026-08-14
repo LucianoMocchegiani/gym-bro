@@ -8,8 +8,13 @@ import { AdminGrid, Panel } from '@/components/AdminUi';
 import { ReceiptPanel } from '@/components/ReceiptPanel';
 import { RequireStaff } from '@/components/RequireStaff';
 import { ApiClientError } from '@/lib/api/client';
-import { cancelContract } from '@/lib/api/contracts';
+import {
+  cancelContract,
+  reissueCredentialOffer,
+} from '@/lib/api/contracts';
 import type { ContractDetail } from '@/lib/api/contracts';
+import { listMemberCredentialOffers } from '@/lib/api/credential-offers';
+import type { CredentialOfferItem } from '@/lib/api/credential-offers';
 import {
   getMember,
   getMemberAccount,
@@ -33,6 +38,7 @@ import { formatMemberStatus } from '@/lib/member-labels';
  * Ficha + estado de cuenta del afiliado (CU-AFI-002/003/004).
  *
  * @remarks Cancelar contrato ACTIVE: CU-CON-002 / RN-SER-009 (sin reembolso).
+ * Credential offers staff: listado + re-oferta OID4VCI.
  */
 export default function AfiliadoDetailPage() {
   return (
@@ -73,6 +79,31 @@ function DetailInner() {
     useState<ReceiptDetail | null>(null);
   const [receiptBusyId, setReceiptBusyId] = useState<string | null>(null);
 
+  const [offers, setOffers] = useState<CredentialOfferItem[]>([]);
+  const [offersError, setOffersError] = useState<string | null>(null);
+  const [offersBusy, setOffersBusy] = useState(false);
+  const [reissueBusyId, setReissueBusyId] = useState<string | null>(null);
+  const [offersOk, setOffersOk] = useState<string | null>(null);
+  const [copiedOfferId, setCopiedOfferId] = useState<string | null>(null);
+
+  async function loadOffers() {
+    try {
+      const result = await listMemberCredentialOffers(memberId, {
+        pageSize: 50,
+        order: 'desc',
+      });
+      setOffers(result.items);
+      setOffersError(null);
+    } catch (err) {
+      setOffers([]);
+      setOffersError(
+        err instanceof ApiClientError
+          ? err.message
+          : 'No se pudieron cargar credential offers',
+      );
+    }
+  }
+
   useEffect(() => {
     let cancelled = false;
     void (async () => {
@@ -112,6 +143,41 @@ function DetailInner() {
             ? err.message
             : 'No se pudo cargar el afiliado',
         );
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [memberId]);
+
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      setOffersBusy(true);
+      try {
+        const result = await listMemberCredentialOffers(memberId, {
+          pageSize: 50,
+          order: 'desc',
+        });
+        if (cancelled) {
+          return;
+        }
+        setOffers(result.items);
+        setOffersError(null);
+      } catch (err) {
+        if (cancelled) {
+          return;
+        }
+        setOffers([]);
+        setOffersError(
+          err instanceof ApiClientError
+            ? err.message
+            : 'No se pudieron cargar credential offers',
+        );
+      } finally {
+        if (!cancelled) {
+          setOffersBusy(false);
+        }
       }
     })();
     return () => {
@@ -257,6 +323,55 @@ function DetailInner() {
       );
     } finally {
       setCancelBusy(false);
+    }
+  }
+
+  async function copyOfferUri(offer: CredentialOfferItem) {
+    if (!offer.offerUri) {
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(offer.offerUri);
+      setCopiedOfferId(offer.id);
+      window.setTimeout(() => setCopiedOfferId(null), 2000);
+    } catch {
+      setOffersError('No se pudo copiar el offer URI');
+    }
+  }
+
+  async function onReissue(offer: CredentialOfferItem) {
+    const contract = account?.contracts.find((c) => c.id === offer.contractId);
+    const key = contract?.payment.idempotencyKey;
+    if (!contract || !key) {
+      setOffersError(
+        'No se encontró la idempotencyKey del contrato para re-emitir',
+      );
+      return;
+    }
+    const ok = window.confirm(
+      `¿Re-emitir credential offer de «${offer.packName}»? Fuerza una nueva oferta OID4VCI en Kuatia.`,
+    );
+    if (!ok) {
+      return;
+    }
+    setReissueBusyId(offer.id);
+    setOffersError(null);
+    setOffersOk(null);
+    try {
+      await reissueCredentialOffer(memberId, {
+        packId: offer.packId,
+        idempotencyKey: key,
+      });
+      setOffersOk(`Offer re-emitido para «${offer.packName}».`);
+      await loadOffers();
+    } catch (err) {
+      setOffersError(
+        err instanceof ApiClientError
+          ? err.message
+          : 'No se pudo re-emitir el offer',
+      );
+    } finally {
+      setReissueBusyId(null);
     }
   }
 
@@ -471,6 +586,77 @@ function DetailInner() {
                       </button>
                     </div>
                   </form>
+                ) : null}
+
+                <h3>Credential offers (OID4VCI)</h3>
+                <p className="muted small">
+                  Ofertas de credencial del afiliado. Re-emitir usa la misma
+                  idempotencyKey del pago (`members.write`).
+                </p>
+                {offersBusy ? (
+                  <p className="muted">Cargando offers…</p>
+                ) : null}
+                {offersError ? <p className="error">{offersError}</p> : null}
+                {offersOk ? <p className="ok-msg">{offersOk}</p> : null}
+                {!offersBusy && offers.length === 0 ? (
+                  <p className="muted">Sin credential offers.</p>
+                ) : null}
+                {offers.length > 0 ? (
+                  <ul className="plain-list">
+                    {offers.map((o) => {
+                      const canReissue = Boolean(
+                        account?.contracts.find((c) => c.id === o.contractId)
+                          ?.payment.idempotencyKey,
+                      );
+                      return (
+                        <li key={o.id}>
+                          <strong>{o.packName}</strong> — {o.status}
+                          {' · '}
+                          {new Date(o.createdAt).toLocaleString('es-AR')}
+                          {o.validUntil
+                            ? ` · hasta ${new Date(o.validUntil).toLocaleDateString('es-AR')}`
+                            : ''}
+                          {o.lastError ? (
+                            <span className="error">
+                              {' '}
+                              · error: {o.lastError}
+                            </span>
+                          ) : null}
+                          {o.offerUri ? (
+                            <>
+                              {' · '}
+                              <button
+                                type="button"
+                                className="linkish"
+                                onClick={() => void copyOfferUri(o)}
+                              >
+                                {copiedOfferId === o.id
+                                  ? 'URI copiado'
+                                  : 'Copiar URI'}
+                              </button>
+                            </>
+                          ) : (
+                            <span className="muted"> · sin URI</span>
+                          )}
+                          {canReissue ? (
+                            <>
+                              {' · '}
+                              <button
+                                type="button"
+                                className="linkish"
+                                disabled={reissueBusyId === o.id}
+                                onClick={() => void onReissue(o)}
+                              >
+                                {reissueBusyId === o.id
+                                  ? 'Re-emitiendo…'
+                                  : 'Re-emitir'}
+                              </button>
+                            </>
+                          ) : null}
+                        </li>
+                      );
+                    })}
+                  </ul>
                 ) : null}
 
                 <h3>Próximas reservas</h3>

@@ -301,6 +301,8 @@ Detalle: [14-auditoria…](./14-auditoria-roadmap-vs-codigo-2026-08-13.md).
   - UI: reservas CONFIRMADAS del afiliado (clase no terminada); default Sin sesión
 - [x] Checkout MP desde Admin (staff)
   - Caja: medio Efectivo | MP; pack (`members.write`) y drop-in (`reservations.write`); abrir/copiar link
+- [x] Credential offers staff
+  - Ficha afiliado: `GET /members/:id/credential-offers`; copiar URI; re-emitir (re-POST contrato)
 
 ### Pendiente — otras épicas / Super
 
@@ -310,8 +312,8 @@ Detalle: [14-auditoria…](./14-auditoria-roadmap-vs-codigo-2026-08-13.md).
 
 ### Clientes `web/lib/api` a agregar (thin gaps)
 
-(opcional) `credential-offers` staff.
-(`refunds`, `waitlist`, `recurrence-rules`, `receipts`, `audit`, MP checkout staff ya agregados.)
+(ninguno crítico).
+(`refunds`, `waitlist`, `recurrence-rules`, `receipts`, `audit`, MP checkout staff, `credential-offers` ya agregados.)
 
 ---
 

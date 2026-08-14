@@ -32,6 +32,8 @@ Leyenda resultado: `P` pass · `F` fail · `B` bloqueado · `-` no aplica
 | A1 | Alta con email duplicado | Rechaza o avisa según regla implementada | CU-AFI-001 | |
 | A2 | Baja afiliado | No ingresa; auditoría | CU-AFI-003 | |
 | A3 | Afiliado ve solo su cuenta | No ve datos de otros | CU-AFI-005, RN-TEN-001 | |
+| A4 | Staff ve credential offers en ficha | Lista status + lastError; copiar URI | E6 OID4VCI | |
+| A5 | Staff re-emite offer | Misma key; nuevo PENDING/URI (o soft-fail) | E6 OID4VCI | |
 
 ---
 

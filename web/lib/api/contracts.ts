@@ -25,6 +25,8 @@ export type ContractDetail = {
     amount: number;
     status: string;
     method: string;
+    /** Necesaria para re-oferta OID4VCI (misma key + force). */
+    idempotencyKey: string;
   };
   creditBalances: ContractCreditBalance[];
 };
@@ -43,6 +45,26 @@ export function createCashContract(
       packId,
       method: 'CASH',
       idempotencyKey,
+    },
+  });
+}
+
+/**
+ * Re-emite credential offer OID4VCI re-POSTeando el contrato con la misma key.
+ *
+ * @remarks `members.write`. No crea otro pago/contrato; fuerza Kuatia (`force`).
+ * El `method` del body se ignora si la key ya existe (evitar `MP` → 400).
+ */
+export function reissueCredentialOffer(
+  memberId: string,
+  input: { packId: string; idempotencyKey: string },
+): Promise<ContractDetail> {
+  return apiRequest<ContractDetail>(`/members/${memberId}/contracts`, {
+    method: 'POST',
+    body: {
+      packId: input.packId,
+      method: 'STUB',
+      idempotencyKey: input.idempotencyKey,
     },
   });
 }
