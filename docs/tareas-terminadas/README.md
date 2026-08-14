@@ -16,6 +16,7 @@ La creación de registros sigue la skill:
 
 ## Índice
 
+- [2026-08-14 — Página de auditoría Admin](./2026-08-14-admin-auditoria.md)
 - [2026-08-14 — Comprobantes en Caja y ficha afiliado](./2026-08-14-admin-comprobantes.md)
 - [2026-08-14 — Packs: creditsExpireAt + sync Kuatia](./2026-08-14-admin-packs-expire-kuatia.md)
 - [2026-08-13 — Recurrencia de sesiones en Admin](./2026-08-13-admin-recurrencia-sesiones.md)
