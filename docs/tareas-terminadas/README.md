@@ -16,6 +16,7 @@ La creación de registros sigue la skill:
 
 ## Índice
 
+- [2026-08-14 — Credential offers staff en ficha](./2026-08-14-admin-credential-offers-staff.md)
 - [2026-08-14 — Checkout MP pack/drop-in en Caja](./2026-08-14-admin-caja-mp-checkout.md)
 - [2026-08-14 — Pase manual: selector de sesión](./2026-08-14-admin-pase-manual-sesion.md)
 - [2026-08-14 — Nav e Inicio gated por permisos](./2026-08-14-admin-nav-permisos.md)
