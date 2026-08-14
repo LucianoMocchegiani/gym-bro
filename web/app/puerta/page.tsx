@@ -1,7 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import { FormEvent, useCallback, useEffect, useRef, useState } from 'react';
+import { FormEvent, Suspense, useCallback, useEffect, useRef, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { AccessResultBanner } from '@/components/AccessResult';
 import {
   DataTable,
@@ -10,7 +11,9 @@ import {
   listCountDescription,
 } from '@/components/AdminList';
 import { AdminGrid, Panel } from '@/components/AdminUi';
-import { DoorShell } from '@/components/DoorShell';
+import { DoorManualPassPanel } from '@/components/DoorManualPassPanel';
+import { DoorShell, parseDoorTab } from '@/components/DoorShell';
+import type { DoorTab } from '@/components/DoorShell';
 import { RequireStaff } from '@/components/RequireStaff';
 import {
   StatusPill,
@@ -62,21 +65,23 @@ function subjectLabel(a: AccessAttemptDetail): string {
 }
 
 /**
- * Pantalla tocámetro: verificar ingreso vía OID4VP (CU-ACC-001).
- *
- * @remarks Modo B: QR = requestUri Quark; poll sesión hasta evaluate.
- * Historial con `ListToolbar` + `DataTable` paginado (CU-ACC-005).
+ * Puerta unificada: Verificar | Pase manual | Historial (CU-ACC-001/004/005).
  */
 export default function PuertaPage() {
   return (
     <RequireStaff>
-      <PuertaInner />
+      <Suspense fallback={<p className="muted">Cargando…</p>}>
+        <PuertaInner />
+      </Suspense>
     </RequireStaff>
   );
 }
 
 function PuertaInner() {
+  const searchParams = useSearchParams();
+  const tab: DoorTab = parseDoorTab(searchParams.get('tab'));
   const today = todayBusinessDate();
+
   const [requestUri, setRequestUri] = useState<string | null>(null);
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [sessionState, setSessionState] = useState<string | null>(null);
@@ -97,6 +102,7 @@ function PuertaInner() {
   const [attemptsLoading, setAttemptsLoading] = useState(true);
   const [attemptsError, setAttemptsError] = useState<string | null>(null);
   const doneSessionRef = useRef<string | null>(null);
+  const verifyStartedRef = useRef(false);
 
   const loadAttempts = useCallback(
     async (opts?: { silent?: boolean; pageOverride?: number }) => {
@@ -156,14 +162,26 @@ function PuertaInner() {
     }
   }
 
+  /** Genera QR al entrar a Verificar (una vez por visita a la pestaña). */
   useEffect(() => {
+    if (tab !== 'verificar') {
+      verifyStartedRef.current = false;
+      return;
+    }
+    if (verifyStartedRef.current) {
+      return;
+    }
+    verifyStartedRef.current = true;
     void startRequest();
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- montaje
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- solo al activar tab
+  }, [tab]);
 
   useEffect(() => {
+    if (tab !== 'historial') {
+      return;
+    }
     void loadAttempts();
-  }, [loadAttempts]);
+  }, [tab, loadAttempts]);
 
   /** Poll de sesión OID4VP hasta done/error. */
   useEffect(() => {
@@ -196,7 +214,6 @@ function PuertaInner() {
       })();
     }, 2000);
     return () => window.clearInterval(id);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sessionId, loadAttempts]);
 
   function onFilter(e: FormEvent) {
@@ -206,42 +223,55 @@ function PuertaInner() {
     setAppliedTo(to);
   }
 
+  function refreshHistorial() {
+    setPage(1);
+    void loadAttempts({ silent: true, pageOverride: 1 });
+  }
+
   return (
     <DoorShell title="Acceso puerta">
-      <AdminGrid className="door-dashboard">
-        <Panel
-          title="Verificar ingreso"
-          description="Mostrá este QR; el afiliado lo escanea desde la app (OID4VP)."
-        >
-          {error ? <p className="error">{error}</p> : null}
-          {requestUri ? (
-            <VenueQr token={requestUri} />
-          ) : (
-            <p className="muted">
-              {busy ? 'Generando QR…' : 'Sin QR activo.'}
-            </p>
-          )}
-          <p className="muted small">
-            {sessionState
-              ? `Sesión: ${sessionState}`
-              : 'Esperando escaneo del afiliado…'}
-          </p>
-          <button
-            type="button"
-            className="primary"
-            disabled={busy}
-            onClick={() => void startRequest()}
+      {tab === 'verificar' ? (
+        <AdminGrid className="door-dashboard">
+          <Panel
+            title="Verificar ingreso"
+            description="Mostrá este QR; el afiliado lo escanea desde la app (OID4VP)."
           >
-            {busy ? 'Generando…' : 'Nuevo QR'}
-          </button>
-        </Panel>
+            {error ? <p className="error">{error}</p> : null}
+            {requestUri ? (
+              <VenueQr token={requestUri} />
+            ) : (
+              <p className="muted">
+                {busy ? 'Generando QR…' : 'Sin QR activo.'}
+              </p>
+            )}
+            <p className="muted small">
+              {sessionState
+                ? `Sesión: ${sessionState}`
+                : 'Esperando escaneo del afiliado…'}
+            </p>
+            <button
+              type="button"
+              className="primary"
+              disabled={busy}
+              onClick={() => void startRequest()}
+            >
+              {busy ? 'Generando…' : 'Nuevo QR'}
+            </button>
+          </Panel>
 
-        <div className="admin-stack">
           <AccessResultBanner
             result={result}
             emptyText="Cuando un afiliado presente su credencial, verás PERMITIDO o DENEGADO acá."
           />
+        </AdminGrid>
+      ) : null}
 
+      {tab === 'pase' ? (
+        <DoorManualPassPanel onPassRegistered={refreshHistorial} />
+      ) : null}
+
+      {tab === 'historial' ? (
+        <div className="admin-stack">
           <ListToolbar>
             <form className="toolbar-field search-form" onSubmit={onFilter}>
               <label>
@@ -331,7 +361,7 @@ function PuertaInner() {
             ))}
           </DataTable>
         </div>
-      </AdminGrid>
+      ) : null}
     </DoorShell>
   );
 }

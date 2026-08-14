@@ -21,7 +21,7 @@ Con tunnel: `{slug}.{NEXT_PUBLIC_APP_DOMAIN}` (ej. `https://demo.pruebasaproducc
 | `/caja` | Caja del día |
 | `/devoluciones` | Cola de solicitudes + ejecutar reembolso (`payments.refund`) |
 | `/reportes` | Ingresos del período (detalle nominado) + snapshot packs/activos |
-| `/puerta` | QR del local (afiliado escanea) + verify token + historial |
+| `/puerta` | Tabs: Verificar (OID4VP) · Pase manual · Historial; `/puerta/pase-manual` → `?tab=pase` |
 
 ## Rutas Super (apex)
 

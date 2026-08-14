@@ -261,7 +261,7 @@ Detalle: [14-auditoria…](./14-auditoria-roadmap-vs-codigo-2026-08-13.md).
 - [x] Caja y cobros CASH
   - `/caja`: día + movimientos + arqueo; cobro pack/drop-in CASH
 - [x] Pase manual / historial acceso
-  - `/puerta` QR OID4VP + poll + historial; `/puerta/pase-manual`
+  - `/puerta` tabs Verificar | Pase manual | Historial; `/puerta/pase-manual` → `?tab=pase`
 - [x] Roles y config gym
   - `/roles` + `/staff`; `/config` (tenant-settings + cuenta MP connect/test)
 - [x] Reportes E11 en UI
