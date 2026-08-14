@@ -1,10 +1,12 @@
 'use client';
 
 import { FormEvent, useEffect, useMemo, useState } from 'react';
+import { DataTable, ListToolbar } from '@/components/AdminList';
 import { AdminShell } from '@/components/AdminShell';
 import { AdminGrid, Panel } from '@/components/AdminUi';
 import { ReceiptPanel } from '@/components/ReceiptPanel';
 import { RequireStaff } from '@/components/RequireStaff';
+import { StatusPill } from '@/components/StatusPill';
 import {
   getCashDay,
   reconcileCashDay,
@@ -360,7 +362,7 @@ function CajaInner() {
 
   return (
     <AdminShell title="Caja">
-      <Panel className="toolbar">
+      <ListToolbar hint="Movimientos CASH del día. MP no suma al arqueo de efectivo.">
         <label className="toolbar-field">
           Día (timezone BA)
           <input
@@ -369,13 +371,8 @@ function CajaInner() {
             onChange={(e) => setDate(e.target.value)}
           />
         </label>
-        <p className="muted small toolbar-hint">
-          Movimientos CASH del día. MP no suma al arqueo de efectivo.
-        </p>
-      </Panel>
+      </ListToolbar>
 
-      {loading ? <p className="muted">Cargando caja…</p> : null}
-      {loadError ? <p className="error">{loadError}</p> : null}
       {receiptError ? <p className="error">{receiptError}</p> : null}
 
       {receipt ? (
@@ -655,67 +652,66 @@ function CajaInner() {
               )}
             </Panel>
           </AdminGrid>
-
-          <Panel
-            title="Movimientos"
-            description={`${day.movements.length} del ${day.businessDate}`}
-            className="table-wrap"
-          >
-            {day.movements.length === 0 ? (
-              <p className="muted">Sin movimientos CASH en este día.</p>
-            ) : (
-              <table className="data-table">
-                <thead>
-                  <tr>
-                    <th>Hora</th>
-                    <th>Afiliado</th>
-                    <th>Concepto</th>
-                    <th>Tipo</th>
-                    <th>Monto</th>
-                    <th>Staff</th>
-                    <th />
-                  </tr>
-                </thead>
-                <tbody>
-                  {day.movements.map((m) => (
-                    <tr key={m.id}>
-                      <td>
-                        {new Date(m.createdAt).toLocaleTimeString('es-AR', {
-                          hour: '2-digit',
-                          minute: '2-digit',
-                        })}
-                      </td>
-                      <td>{m.memberName ?? m.memberId.slice(0, 8)}</td>
-                      <td>{formatCashConcept(m.concept)}</td>
-                      <td>{m.kind === 'INCOME' ? 'Ingreso' : 'Egreso'}</td>
-                      <td>{formatMoney(m.amount)}</td>
-                      <td>{m.recordedByStaffName ?? '—'}</td>
-                      <td className="row-actions">
-                        {m.kind === 'INCOME' &&
-                        (m.concept === 'PACK_CONTRACT' ||
-                          m.concept === 'DROP_IN') ? (
-                          <button
-                            type="button"
-                            className="btn ghost"
-                            disabled={receiptBusyId === m.paymentId}
-                            onClick={() =>
-                              void openReceiptForPayment(m.paymentId)
-                            }
-                          >
-                            {receiptBusyId === m.paymentId
-                              ? '…'
-                              : 'Comprobante'}
-                          </button>
-                        ) : null}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
-          </Panel>
         </>
       ) : null}
+
+      <DataTable
+        title="Movimientos"
+        description={
+          day
+            ? `${day.movements.length} del ${day.businessDate}`
+            : undefined
+        }
+        loading={loading}
+        error={loadError}
+        isEmpty={!day || day.movements.length === 0}
+        emptyText="Sin movimientos CASH en este día."
+        paginate={false}
+        header={
+          <>
+            <th>Hora</th>
+            <th>Afiliado</th>
+            <th>Concepto</th>
+            <th>Tipo</th>
+            <th>Monto</th>
+            <th>Staff</th>
+            <th />
+          </>
+        }
+      >
+        {(day?.movements ?? []).map((m) => (
+          <tr key={m.id}>
+            <td>
+              {new Date(m.createdAt).toLocaleTimeString('es-AR', {
+                hour: '2-digit',
+                minute: '2-digit',
+              })}
+            </td>
+            <td>{m.memberName ?? m.memberId.slice(0, 8)}</td>
+            <td>{formatCashConcept(m.concept)}</td>
+            <td>
+              <StatusPill tone={m.kind === 'INCOME' ? 'ok' : 'danger'}>
+                {m.kind === 'INCOME' ? 'Ingreso' : 'Egreso'}
+              </StatusPill>
+            </td>
+            <td>{formatMoney(m.amount)}</td>
+            <td>{m.recordedByStaffName ?? '—'}</td>
+            <td className="row-actions">
+              {m.kind === 'INCOME' &&
+              (m.concept === 'PACK_CONTRACT' || m.concept === 'DROP_IN') ? (
+                <button
+                  type="button"
+                  className="btn ghost"
+                  disabled={receiptBusyId === m.paymentId}
+                  onClick={() => void openReceiptForPayment(m.paymentId)}
+                >
+                  {receiptBusyId === m.paymentId ? '…' : 'Comprobante'}
+                </button>
+              ) : null}
+            </td>
+          </tr>
+        ))}
+      </DataTable>
     </AdminShell>
   );
 }
