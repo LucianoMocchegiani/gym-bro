@@ -16,6 +16,7 @@ La creación de registros sigue la skill:
 
 ## Índice
 
+- [2026-08-13 — Roster de sesión + reserva CREDIT staff](./2026-08-13-admin-roster-sesion.md)
 - [2026-08-13 — Cancelar contrato desde ficha afiliado](./2026-08-13-admin-cancelar-contrato.md)
 - [2026-08-13 — Kuatia compartido + limpieza Quark](./2026-08-13-kuatia-compartido-limpieza-quark.md)
 - [2026-08-13 — Admin devoluciones staff](./2026-08-13-admin-devoluciones-staff.md)
