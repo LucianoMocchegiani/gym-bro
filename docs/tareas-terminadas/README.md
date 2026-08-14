@@ -16,6 +16,7 @@ La creación de registros sigue la skill:
 
 ## Índice
 
+- [2026-08-14 — Modales packs/sesiones + cleanup](./2026-08-14-admin-modales-packs-sesiones-cleanup.md)
 - [2026-08-14 — Acciones icono + modales afiliados/staff](./2026-08-14-admin-row-actions-modales-afiliados-staff.md)
 - [2026-08-14 — Modales editar/alta + roster thin](./2026-08-14-admin-modales-edit-alta-roster.md)
 - [2026-08-14 — Caja ListToolbar + DataTable](./2026-08-14-admin-caja-listtoolbar-datatable.md)
