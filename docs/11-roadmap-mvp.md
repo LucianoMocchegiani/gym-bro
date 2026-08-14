@@ -28,7 +28,7 @@
 | E7 | Rutinas | Catálogo gym + asignación + cumplimiento |
 | E8 | Notificaciones N1 | Email + in-app |
 | E9 | App afiliado | Flutter: cuenta + SSI hechos; falta tienda/reservas/waitlist/devolución (+ API member packs/sesiones) |
-| E10 | Admin web | Next: núcleo operativo + devoluciones; faltan thin gaps (roster, recurrencia, etc.) |
+| E10 | Admin web | Next: núcleo + devoluciones + roster/waitlist sesión; faltan thin gaps (recurrencia, etc.) |
 | E11 | Reportes mínimos | Activos, deuda, ingresos |
 | E12 | Cierre MVP | Smoke QA, hardenin, deploy |
 
@@ -243,7 +243,7 @@ Detalle: [14-auditoria-roadmap-vs-codigo-2026-08-13.md](./14-auditoria-roadmap-v
 
 ## E10 — Admin web (Next.js)
 
-**Estado real (2026-08-13):** núcleo E10 usable (login, CRUD catálogo, caja CASH, puerta, roles, config, reportes, Super tenants).  
+**Estado real (2026-08-13):** núcleo E10 usable + devoluciones + cancel contrato + roster/waitlist en sesión.  
 **Overclaim previo:** varios ítems se marcaban `[x]` sin UI para APIs ya hechas — abajo queda el desglose.  
 Detalle: [14-auditoria…](./14-auditoria-roadmap-vs-codigo-2026-08-13.md).
 
@@ -281,8 +281,9 @@ Detalle: [14-auditoria…](./14-auditoria-roadmap-vs-codigo-2026-08-13.md).
 - [x] Sesión: roster + reservas staff
   - `GET /sessions/:id/reservations` (+ nombre afiliado); UI en `/sesiones/[id]`
   - Alta CREDIT + cancelar reserva (`reservations.write`); drop-in sigue en Caja
-- [ ] Waitlist operativa (staff)
-  - Ver cola `GET /sessions/:id/waitlist`; acciones según `waitlistMode` (AUTO ya en API; confirm modos 2/3 si aplica)
+- [x] Waitlist operativa (staff)
+  - Cola en `/sesiones/[id]`: `GET /sessions/:id/waitlist` (+ `allStatuses`); alta staff; quitar (`LEFT`)
+  - Badge `waitlistMode`; AUTO ya promociona al liberar cupo; modos 2/3 sin acciones nuevas
 - [ ] Recurrencia de sesiones (UI)
   - CRUD `/session-recurrence-rules` (API lista; hoy solo sesión puntual en web)
 - [ ] Packs: `creditsExpireAt` + visibilidad sync Kuatia (`packs.kuatia_*`)
@@ -303,8 +304,8 @@ Detalle: [14-auditoria…](./14-auditoria-roadmap-vs-codigo-2026-08-13.md).
 
 ### Clientes `web/lib/api` a agregar (thin gaps)
 
-`waitlist`, `recurrence-rules`, `receipts`, `audit`, MP checkout staff, (opcional) `credential-offers` staff.
-(`refunds` ya agregado.)
+`recurrence-rules`, `receipts`, `audit`, MP checkout staff, (opcional) `credential-offers` staff.
+(`refunds`, `waitlist` ya agregados.)
 
 ---
 
@@ -355,7 +356,7 @@ Roadmap E9/E10 realineados (2026-08-13) tras [auditoría](./14-auditoria-roadmap
 ```text
 1) Flutter E9: Tienda/MP + calendario/reservas + waitlist + devolución
    (prereq: API member GET packs + sesiones)
-2) Admin E10 thin: cancel contrato → roster/waitlist sesión
+2) Admin E10 thin: recurrencia → packs Kuatia/expira → receipts / auditoría / nav permisos
    → recurrencia / creditsExpireAt / receipts (después)
 3) E5 MP live (ops) → E8 → E7 → E12
 ```

@@ -21,15 +21,50 @@ import {
   updateSession,
 } from '@/lib/api/sessions';
 import type { SessionDetail } from '@/lib/api/sessions';
+import { getTenantSettings } from '@/lib/api/tenant-settings';
+import type { WaitlistMode } from '@/lib/api/tenant-settings';
+import {
+  joinWaitlistForMember,
+  leaveWaitlist,
+  listSessionWaitlist,
+} from '@/lib/api/waitlist';
+import type { WaitlistEntryDetail } from '@/lib/api/waitlist';
 import {
   fromDatetimeLocalValue,
   toDatetimeLocalValue,
 } from '@/lib/catalog-labels';
 
 type RosterFilter = 'CONFIRMED' | 'ALL';
+type WaitlistFilter = 'WAITING' | 'ALL';
+
+function waitlistModeLabel(mode: WaitlistMode): string {
+  switch (mode) {
+    case 'AUTO_ASSIGN':
+      return 'Auto-asignar';
+    case 'MEMBER_CONFIRM':
+      return 'Confirma afiliado';
+    case 'STAFF_CONFIRM':
+      return 'Confirma staff';
+    default:
+      return mode;
+  }
+}
+
+function waitlistStatusLabel(status: WaitlistEntryDetail['status']): string {
+  switch (status) {
+    case 'WAITING':
+      return 'En cola';
+    case 'PROMOTED':
+      return 'Promovido';
+    case 'LEFT':
+      return 'Salió';
+    default:
+      return status;
+  }
+}
 
 /**
- * Edición / cancelación / ampliar cupo + roster de reservas (CU-SER-003/005, CU-RES).
+ * Edición / cancelación / ampliar cupo + roster + waitlist (CU-SER, CU-RES-004).
  */
 export default function SesionDetailPage() {
   return (
@@ -69,6 +104,19 @@ function DetailInner() {
   const [bookError, setBookError] = useState<string | null>(null);
   const [bookOk, setBookOk] = useState<string | null>(null);
 
+  const [waitlistFilter, setWaitlistFilter] =
+    useState<WaitlistFilter>('WAITING');
+  const [waitlist, setWaitlist] = useState<WaitlistEntryDetail[]>([]);
+  const [waitlistTotal, setWaitlistTotal] = useState(0);
+  const [waitlistLoading, setWaitlistLoading] = useState(true);
+  const [waitlistError, setWaitlistError] = useState<string | null>(null);
+  const [waitlistMode, setWaitlistMode] = useState<WaitlistMode | null>(null);
+  const [wlMemberFilter, setWlMemberFilter] = useState('');
+  const [wlMemberId, setWlMemberId] = useState('');
+  const [wlBusy, setWlBusy] = useState(false);
+  const [wlError, setWlError] = useState<string | null>(null);
+  const [wlOk, setWlOk] = useState<string | null>(null);
+
   const loadRoster = useCallback(async () => {
     setRosterLoading(true);
     try {
@@ -94,15 +142,46 @@ function DetailInner() {
     }
   }, [sessionId, rosterFilter]);
 
+  const loadWaitlist = useCallback(async () => {
+    setWaitlistLoading(true);
+    try {
+      const result = await listSessionWaitlist(sessionId, {
+        allStatuses: waitlistFilter === 'ALL' ? true : undefined,
+        status: waitlistFilter === 'WAITING' ? 'WAITING' : undefined,
+        pageSize: 100,
+        order: 'asc',
+      });
+      setWaitlist(result.items);
+      setWaitlistTotal(result.total);
+      setWaitlistError(null);
+    } catch (err) {
+      setWaitlist([]);
+      setWaitlistTotal(0);
+      setWaitlistError(
+        err instanceof ApiClientError
+          ? err.message
+          : 'No se pudo cargar la lista de espera',
+      );
+    } finally {
+      setWaitlistLoading(false);
+    }
+  }, [sessionId, waitlistFilter]);
+
   useEffect(() => {
     let cancelled = false;
     void (async () => {
       try {
-        const s = await getSession(sessionId);
+        const [s, settings] = await Promise.all([
+          getSession(sessionId),
+          getTenantSettings().catch(() => null),
+        ]);
         if (cancelled) {
           return;
         }
         applySession(s);
+        if (settings) {
+          setWaitlistMode(settings.waitlistMode);
+        }
         setLoadError(null);
       } catch (err) {
         if (cancelled) {
@@ -125,6 +204,12 @@ function DetailInner() {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- carga API
     void loadRoster();
   }, [loadRoster]);
+
+  useEffect(() => {
+    // Fetch remoto al cambiar filtro/sesión.
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- carga API
+    void loadWaitlist();
+  }, [loadWaitlist]);
 
   useEffect(() => {
     let cancelled = false;
@@ -158,10 +243,10 @@ function DetailInner() {
     setExpandTo(String(s.capacity + 1));
   }
 
-  async function refreshSessionAndRoster() {
+  async function refreshSessionLists() {
     const s = await getSession(sessionId);
     applySession(s);
-    await loadRoster();
+    await Promise.all([loadRoster(), loadWaitlist()]);
   }
 
   async function onSubmit(e: FormEvent) {
@@ -232,6 +317,7 @@ function DetailInner() {
         Number(expandTo),
       );
       applySession(updated);
+      await Promise.all([loadRoster(), loadWaitlist()]);
     } catch (err) {
       setExpandError(
         err instanceof ApiClientError
@@ -257,7 +343,7 @@ function DetailInner() {
         res.memberName?.trim() || res.memberEmail || res.memberId.slice(0, 8);
       setBookOk(`Reservado: ${label}`);
       setMemberId('');
-      await refreshSessionAndRoster();
+      await refreshSessionLists();
     } catch (err) {
       setBookError(
         err instanceof ApiClientError
@@ -280,7 +366,7 @@ function DetailInner() {
     setRosterError(null);
     try {
       await cancelReservation(row.id);
-      await refreshSessionAndRoster();
+      await refreshSessionLists();
     } catch (err) {
       setRosterError(
         err instanceof ApiClientError
@@ -290,9 +376,68 @@ function DetailInner() {
     }
   }
 
+  async function onJoinWaitlist(e: FormEvent) {
+    e.preventDefault();
+    if (!wlMemberId || !session || session.status === 'CANCELLED') {
+      return;
+    }
+    setWlBusy(true);
+    setWlError(null);
+    setWlOk(null);
+    try {
+      const entry = await joinWaitlistForMember(wlMemberId, sessionId);
+      const label =
+        entry.memberName?.trim() ||
+        entry.memberEmail ||
+        entry.memberId.slice(0, 8);
+      setWlOk(`En cola: ${label}`);
+      setWlMemberId('');
+      await loadWaitlist();
+    } catch (err) {
+      setWlError(
+        err instanceof ApiClientError
+          ? err.message
+          : 'No se pudo agregar a la lista de espera',
+      );
+    } finally {
+      setWlBusy(false);
+    }
+  }
+
+  async function onLeaveWaitlist(row: WaitlistEntryDetail) {
+    if (row.status !== 'WAITING') {
+      return;
+    }
+    const label = row.memberName?.trim() || row.memberEmail;
+    if (!window.confirm(`¿Sacar a ${label} de la lista de espera?`)) {
+      return;
+    }
+    setWaitlistError(null);
+    try {
+      await leaveWaitlist(row.id);
+      await loadWaitlist();
+    } catch (err) {
+      setWaitlistError(
+        err instanceof ApiClientError
+          ? err.message
+          : 'No se pudo sacar de la lista de espera',
+      );
+    }
+  }
+
   const cancelled = session?.status === 'CANCELLED';
   const memberOptions = members.filter((m) => {
     const q = memberFilter.trim().toLowerCase();
+    if (!q) {
+      return true;
+    }
+    return (
+      (m.name?.toLowerCase().includes(q) ?? false) ||
+      m.email.toLowerCase().includes(q)
+    );
+  });
+  const wlMemberOptions = members.filter((m) => {
+    const q = wlMemberFilter.trim().toLowerCase();
     if (!q) {
       return true;
     }
@@ -514,6 +659,130 @@ function DetailInner() {
                   disabled={bookBusy || !memberId}
                 >
                   {bookBusy ? 'Reservando…' : 'Agregar al roster'}
+                </button>
+              </form>
+            ) : null}
+          </Panel>
+
+          <Panel
+            title="Lista de espera"
+            description={`${waitlistTotal} en filtro · modo ${waitlistMode ? waitlistModeLabel(waitlistMode) : '…'}`}
+            className="table-wrap"
+          >
+            <p className="muted small">
+              {waitlistMode === 'AUTO_ASSIGN'
+                ? 'Al liberar cupo se promociona automáticamente al primero con crédito.'
+                : waitlistMode === 'MEMBER_CONFIRM' ||
+                    waitlistMode === 'STAFF_CONFIRM'
+                  ? 'Confirmación manual (modos 2/3) aún no tiene acciones staff en Admin.'
+                  : 'Modo de waitlist del gym (Config).'}
+            </p>
+            <div className="toolbar">
+              <label className="toolbar-field">
+                Mostrar
+                <select
+                  value={waitlistFilter}
+                  onChange={(e) =>
+                    setWaitlistFilter(e.target.value as WaitlistFilter)
+                  }
+                >
+                  <option value="WAITING">En cola</option>
+                  <option value="ALL">Todas</option>
+                </select>
+              </label>
+            </div>
+
+            {waitlistLoading ? (
+              <p className="muted">Cargando lista de espera…</p>
+            ) : null}
+            {waitlistError ? <p className="error">{waitlistError}</p> : null}
+
+            {!waitlistLoading && waitlist.length === 0 ? (
+              <p className="muted">Sin entradas en este filtro.</p>
+            ) : null}
+
+            {waitlist.length > 0 ? (
+              <table className="data-table">
+                <thead>
+                  <tr>
+                    <th>#</th>
+                    <th>Afiliado</th>
+                    <th>Estado</th>
+                    <th />
+                  </tr>
+                </thead>
+                <tbody>
+                  {waitlist.map((row) => (
+                    <tr key={row.id}>
+                      <td>{row.position ?? '—'}</td>
+                      <td>
+                        <Link href={`/afiliados/${row.memberId}`}>
+                          {row.memberName?.trim() || row.memberEmail}
+                        </Link>
+                      </td>
+                      <td>
+                        <span className="badge">
+                          {waitlistStatusLabel(row.status)}
+                        </span>
+                      </td>
+                      <td>
+                        {row.status === 'WAITING' && !cancelled ? (
+                          <button
+                            type="button"
+                            className="btn ghost"
+                            onClick={() => void onLeaveWaitlist(row)}
+                          >
+                            Quitar
+                          </button>
+                        ) : null}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            ) : null}
+
+            {!cancelled ? (
+              <form
+                className="admin-form"
+                onSubmit={(e) => void onJoinWaitlist(e)}
+              >
+                <h3>Agregar a la cola</h3>
+                <p className="muted small">
+                  Solo si la sesión está llena (o según reglas de ingreso
+                  tardío). Requiere afiliado activo sin reserva confirmada.
+                </p>
+                <label>
+                  Filtrar afiliados
+                  <input
+                    value={wlMemberFilter}
+                    onChange={(e) => setWlMemberFilter(e.target.value)}
+                    placeholder="Nombre o email"
+                  />
+                </label>
+                <label>
+                  Afiliado
+                  <select
+                    value={wlMemberId}
+                    onChange={(e) => setWlMemberId(e.target.value)}
+                    required
+                  >
+                    <option value="">Elegí…</option>
+                    {wlMemberOptions.map((m) => (
+                      <option key={m.id} value={m.id}>
+                        {m.name?.trim() || m.email}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                {wlError ? <p className="error">{wlError}</p> : null}
+                {wlOk ? <p className="ok-msg">{wlOk}</p> : null}
+                <button
+                  type="submit"
+                  className="primary"
+                  disabled={wlBusy || !wlMemberId}
+                >
+                  {wlBusy ? 'Agregando…' : 'Agregar a waitlist'}
                 </button>
               </form>
             ) : null}

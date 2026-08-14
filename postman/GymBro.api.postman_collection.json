@@ -2859,7 +2859,7 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/api/sessions/{{createdSessionId}}/waitlist?page=1&pageSize=20&order=asc",
+              "raw": "{{baseUrl}}/api/sessions/{{createdSessionId}}/waitlist?page=1&pageSize=20&order=asc&status=WAITING",
               "host": [
                 "{{baseUrl}}"
               ],
@@ -2886,6 +2886,17 @@
                 {
                   "key": "order",
                   "value": "asc"
+                },
+                {
+                  "key": "status",
+                  "value": "WAITING",
+                  "description": "WAITING | PROMOTED | LEFT (default WAITING si se omite)"
+                },
+                {
+                  "key": "allStatuses",
+                  "value": "true",
+                  "disabled": true,
+                  "description": "true = histórico completo (ignora status)"
                 }
               ]
             }

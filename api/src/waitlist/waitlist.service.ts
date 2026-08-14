@@ -145,7 +145,9 @@ export class WaitlistService {
   }
 
   /**
-   * Lista entradas WAITING de un afiliado (paginado; próximas primero).
+   * Lista entradas de un afiliado (paginado; próximas primero).
+   *
+   * @remarks Sin `status` → solo `WAITING` (vista afiliado). Con `status` → filtro exacto.
    */
   async listByMember(
     tenantId: string,
@@ -157,7 +159,7 @@ export class WaitlistService {
     const where: Prisma.WaitlistEntryWhereInput = {
       tenantId,
       memberId,
-      status: WaitlistStatus.WAITING,
+      status: query.status ?? WaitlistStatus.WAITING,
     };
     const [rows, total] = await this.prisma.$transaction([
       this.prisma.waitlistEntry.findMany({
@@ -176,7 +178,10 @@ export class WaitlistService {
   }
 
   /**
-   * Lista cola WAITING de una sesión (paginado; FIFO).
+   * Lista cola de una sesión (paginado; FIFO por `createdAt`).
+   *
+   * @remarks Default `WAITING`. `allStatuses` lista histórico; con solo
+   * `WAITING` la posición es el índice FIFO de la página.
    */
   async listBySession(
     tenantId: string,
@@ -191,10 +196,15 @@ export class WaitlistService {
       throw new NotFoundException(`Session ${sessionId} not found in tenant`);
     }
     const n = normalizeListQuery(query);
+    const waitingOnly =
+      !query.allStatuses &&
+      (query.status === undefined || query.status === WaitlistStatus.WAITING);
     const where: Prisma.WaitlistEntryWhereInput = {
       tenantId,
       sessionId,
-      status: WaitlistStatus.WAITING,
+      ...(query.allStatuses
+        ? {}
+        : { status: query.status ?? WaitlistStatus.WAITING }),
     };
     const [rows, total] = await this.prisma.$transaction([
       this.prisma.waitlistEntry.findMany({
@@ -206,9 +216,9 @@ export class WaitlistService {
       }),
       this.prisma.waitlistEntry.count({ where }),
     ]);
-    const items = rows.map((row, index) =>
-      this.toDetail(row, n.skip + index + 1),
-    );
+    const items = waitingOnly
+      ? rows.map((row, index) => this.toDetail(row, n.skip + index + 1))
+      : await Promise.all(rows.map((row) => this.toDetailWithPosition(row)));
     return toListResult(items, total, n.page, n.pageSize);
   }
 
