@@ -16,6 +16,7 @@ La creación de registros sigue la skill:
 
 ## Índice
 
+- [2026-08-14 — Puerta en tabs](./2026-08-14-admin-puerta-tabs.md)
 - [2026-08-14 — StatusPill + reportes/devoluciones/puerta](./2026-08-14-admin-statuspill-reportes-puerta.md)
 - [2026-08-14 — Listados Admin unificados](./2026-08-14-admin-listados-unificados.md)
 - [2026-08-14 — Credencial SSI staff molinete](./2026-08-14-staff-credential-molinete.md)
