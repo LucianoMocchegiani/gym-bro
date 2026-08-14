@@ -299,8 +299,8 @@ Detalle: [14-auditoria…](./14-auditoria-roadmap-vs-codigo-2026-08-13.md).
   - `GET /me/permissions` + filtro nav/atajos; API sigue autorizando (403)
 - [x] Pase manual: selector de sesión opcional (`sessionId`)
   - UI: reservas CONFIRMADAS del afiliado (clase no terminada); default Sin sesión
-- [ ] Checkout MP desde Admin (staff)
-  - `POST /members/:id/payments/mp/checkout` y drop-in (opcional si el piloto es CASH + app)
+- [x] Checkout MP desde Admin (staff)
+  - Caja: medio Efectivo | MP; pack (`members.write`) y drop-in (`reservations.write`); abrir/copiar link
 
 ### Pendiente — otras épicas / Super
 
@@ -310,8 +310,8 @@ Detalle: [14-auditoria…](./14-auditoria-roadmap-vs-codigo-2026-08-13.md).
 
 ### Clientes `web/lib/api` a agregar (thin gaps)
 
-MP checkout staff, (opcional) `credential-offers` staff.
-(`refunds`, `waitlist`, `recurrence-rules`, `receipts`, `audit` ya agregados.)
+(opcional) `credential-offers` staff.
+(`refunds`, `waitlist`, `recurrence-rules`, `receipts`, `audit`, MP checkout staff ya agregados.)
 
 ---
 

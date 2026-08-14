@@ -15,9 +15,9 @@
 - Concepto: mensualidad/pack/drop-in.
 
 **Flujo principal:**
-1. Actor inicia cobro con `idempotencyKey` de negocio.
+1. Actor inicia cobro con `idempotencyKey` de negocio (afiliado self-service o Staff en Admin `/caja` con medio Mercado Pago: pack o drop-in).
 2. Sistema crea Pago `pendiente`.
-3. Redirige/checkout MP del gym.
+3. Redirige/checkout MP del gym (Staff: abrir/copiar link).
 4. Webhook/confirmación MP → sistema marca `aprobado` o `rechazado` (idempotente).
 5. Si `aprobado`: confirma Contratacion y/o Reserva; comprobante interno; N1 E1.
 6. Si `rechazado`: no confirma derechos.

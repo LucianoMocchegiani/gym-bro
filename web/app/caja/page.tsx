@@ -15,6 +15,11 @@ import { ApiClientError, newIdempotencyKey } from '@/lib/api/client';
 import { createCashContract } from '@/lib/api/contracts';
 import { listMembers } from '@/lib/api/members';
 import type { MemberDetail } from '@/lib/api/members';
+import {
+  pickMpCheckoutUrl,
+  startStaffMpDropInCheckout,
+  startStaffMpPackCheckout,
+} from '@/lib/api/mercadopago';
 import { listActivePacks } from '@/lib/api/packs';
 import type { PackSummary } from '@/lib/api/packs';
 import { createCashDropIn } from '@/lib/api/reservations';
@@ -25,9 +30,10 @@ import type { SessionSummary } from '@/lib/api/sessions';
 import { formatCashConcept, formatMoney } from '@/lib/cash-labels';
 
 type CobroKind = 'PACK' | 'DROP_IN';
+type CobroMedio = 'CASH' | 'MP';
 
 /**
- * Caja del día + cobro efectivo + arqueo + comprobantes (CU-PAG / RN-PAG-009).
+ * Caja del día + cobro CASH/MP + arqueo + comprobantes (CU-PAG / RN-PAG-009).
  */
 export default function CajaPage() {
   return (
@@ -49,6 +55,7 @@ function CajaInner() {
   const [catalogError, setCatalogError] = useState<string | null>(null);
 
   const [cobroKind, setCobroKind] = useState<CobroKind>('PACK');
+  const [cobroMedio, setCobroMedio] = useState<CobroMedio>('CASH');
   const [memberFilter, setMemberFilter] = useState('');
   const [memberId, setMemberId] = useState('');
   const [packId, setPackId] = useState('');
@@ -56,6 +63,8 @@ function CajaInner() {
   const [cobroBusy, setCobroBusy] = useState(false);
   const [cobroError, setCobroError] = useState<string | null>(null);
   const [cobroOk, setCobroOk] = useState<string | null>(null);
+  const [mpCheckoutUrl, setMpCheckoutUrl] = useState<string | null>(null);
+  const [copyOk, setCopyOk] = useState(false);
 
   const [receipt, setReceipt] = useState<ReceiptDetail | null>(null);
   const [receiptError, setReceiptError] = useState<string | null>(null);
@@ -205,6 +214,16 @@ function CajaInner() {
     }
   }
 
+  async function copyMpUrl(url: string) {
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopyOk(true);
+      window.setTimeout(() => setCopyOk(false), 2000);
+    } catch {
+      setCobroError('No se pudo copiar el link');
+    }
+  }
+
   async function onCobro(e: FormEvent) {
     e.preventDefault();
     if (!memberId) {
@@ -214,8 +233,55 @@ function CajaInner() {
     setCobroBusy(true);
     setCobroError(null);
     setCobroOk(null);
+    setMpCheckoutUrl(null);
+    setCopyOk(false);
     setReceiptError(null);
     try {
+      if (cobroMedio === 'MP') {
+        if (cobroKind === 'PACK') {
+          if (!packId) {
+            setCobroError('Elegí un pack');
+            setCobroBusy(false);
+            return;
+          }
+          const result = await startStaffMpPackCheckout(memberId, {
+            packId,
+            idempotencyKey: newIdempotencyKey('mp-pack'),
+          });
+          const url = pickMpCheckoutUrl(result);
+          if (!url) {
+            setCobroError('Checkout creado sin URL (revisá cuenta MP / modo)');
+            return;
+          }
+          setMpCheckoutUrl(url);
+          setCobroOk(
+            `Link MP listo (pago ${result.status}). El pack se activa al aprobarse el pago.`,
+          );
+          window.open(url, '_blank', 'noopener,noreferrer');
+        } else {
+          if (!sessionId) {
+            setCobroError('Elegí una sesión');
+            setCobroBusy(false);
+            return;
+          }
+          const result = await startStaffMpDropInCheckout(memberId, {
+            sessionId,
+            idempotencyKey: newIdempotencyKey('mp-dropin'),
+          });
+          const url = pickMpCheckoutUrl(result);
+          if (!url) {
+            setCobroError('Checkout creado sin URL (revisá cuenta MP / modo)');
+            return;
+          }
+          setMpCheckoutUrl(url);
+          setCobroOk(
+            `Link MP listo (pago ${result.status}). La reserva se confirma al aprobarse el pago.`,
+          );
+          window.open(url, '_blank', 'noopener,noreferrer');
+        }
+        return;
+      }
+
       let paymentId: string | null = null;
       if (cobroKind === 'PACK') {
         if (!packId) {
@@ -304,7 +370,7 @@ function CajaInner() {
           />
         </label>
         <p className="muted small toolbar-hint">
-          Movimientos CASH del día. STUB no entra a caja.
+          Movimientos CASH del día. MP no suma al arqueo de efectivo.
         </p>
       </Panel>
 
@@ -344,7 +410,7 @@ function CajaInner() {
           <AdminGrid className="cash-dashboard">
             <Panel
               title="Cobro en caja"
-              description="Pack o drop-in con método efectivo."
+              description="Pack o drop-in en efectivo o con link de Mercado Pago."
             >
               {catalogError ? <p className="error">{catalogError}</p> : null}
               <form className="admin-form" onSubmit={(e) => void onCobro(e)}>
@@ -367,6 +433,28 @@ function CajaInner() {
                       onChange={() => setCobroKind('DROP_IN')}
                     />
                     Drop-in
+                  </label>
+                </fieldset>
+
+                <fieldset className="mode-toggle">
+                  <legend>Medio</legend>
+                  <label>
+                    <input
+                      type="radio"
+                      name="medio"
+                      checked={cobroMedio === 'CASH'}
+                      onChange={() => setCobroMedio('CASH')}
+                    />
+                    Efectivo
+                  </label>
+                  <label>
+                    <input
+                      type="radio"
+                      name="medio"
+                      checked={cobroMedio === 'MP'}
+                      onChange={() => setCobroMedio('MP')}
+                    />
+                    Mercado Pago
                   </label>
                 </fieldset>
 
@@ -430,15 +518,66 @@ function CajaInner() {
 
                 {cobroKind === 'PACK' && selectedPack ? (
                   <p className="muted small">
-                    Monto: {formatMoney(selectedPack.price)} · Medio: Efectivo
+                    Monto: {formatMoney(selectedPack.price)} · Medio:{' '}
+                    {cobroMedio === 'CASH' ? 'Efectivo' : 'Mercado Pago'}
+                  </p>
+                ) : (
+                  <p className="muted small">
+                    Medio:{' '}
+                    {cobroMedio === 'CASH' ? 'Efectivo' : 'Mercado Pago'}
+                  </p>
+                )}
+
+                {cobroMedio === 'MP' ? (
+                  <p className="muted small">
+                    Requiere cuenta MP en Config. El pack/reserva se activa al
+                    aprobarse el pago (webhook). Drop-in no reserva cupo hasta
+                    entonces.
                   </p>
                 ) : null}
 
                 {cobroError ? <p className="error">{cobroError}</p> : null}
                 {cobroOk ? <p className="ok-msg">{cobroOk}</p> : null}
 
+                {mpCheckoutUrl ? (
+                  <div className="admin-stack">
+                    <label>
+                      Link de pago
+                      <input readOnly value={mpCheckoutUrl} />
+                    </label>
+                    <div className="row-actions">
+                      <button
+                        type="button"
+                        className="btn ghost"
+                        onClick={() =>
+                          window.open(
+                            mpCheckoutUrl,
+                            '_blank',
+                            'noopener,noreferrer',
+                          )
+                        }
+                      >
+                        Abrir link
+                      </button>
+                      <button
+                        type="button"
+                        className="btn ghost"
+                        onClick={() => void copyMpUrl(mpCheckoutUrl)}
+                      >
+                        {copyOk ? 'Copiado' : 'Copiar link'}
+                      </button>
+                    </div>
+                  </div>
+                ) : null}
+
                 <button type="submit" className="primary" disabled={cobroBusy}>
-                  {cobroBusy ? 'Cobrando…' : 'Cobrar'}
+                  {cobroMedio === 'MP'
+                    ? cobroBusy
+                      ? 'Generando link…'
+                      : 'Generar link MP'
+                    : cobroBusy
+                      ? 'Cobrando…'
+                      : 'Cobrar'}
                 </button>
               </form>
             </Panel>
