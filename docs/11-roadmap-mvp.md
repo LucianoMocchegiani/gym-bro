@@ -28,7 +28,7 @@
 | E7 | Rutinas | Catálogo gym + asignación + cumplimiento |
 | E8 | Notificaciones N1 | Email + in-app |
 | E9 | App afiliado | Flutter: cuenta + SSI hechos; falta tienda/reservas/waitlist/devolución (+ API member packs/sesiones) |
-| E10 | Admin web | Next: núcleo + thin (roster/waitlist/recurrencia/packs Kuatia); faltan receipts/auditoría/etc. |
+| E10 | Admin web | Next: núcleo + thin (hasta receipts); faltan auditoría / nav permisos / MP staff |
 | E11 | Reportes mínimos | Activos, deuda, ingresos |
 | E12 | Cierre MVP | Smoke QA, hardenin, deploy |
 
@@ -290,8 +290,9 @@ Detalle: [14-auditoria…](./14-auditoria-roadmap-vs-codigo-2026-08-13.md).
   - Nota: desactivar hoy no cancela sesiones → [backlog](./99-backlog-post-mvp.md)
 - [x] Packs: `creditsExpireAt` + visibilidad sync Kuatia (`packs.kuatia_*`)
   - Fecha opcional en nuevo/editar; bloque solo lectura Kuatia en `/packs/[id]`
-- [ ] Comprobantes (receipts)
-  - `GET /payments/:id/receipt`, `GET /members/:id/receipts` en caja/ficha
+- [x] Comprobantes (receipts)
+  - Caja: link en movimientos + panel tras cobro; ficha afiliado: listado + por pago
+  - `GET /payments/:id/receipt`, `GET /members/:id/receipts` (`members.read`)
 - [ ] Checkout MP desde Admin (staff)
   - `POST /members/:id/payments/mp/checkout` y drop-in (opcional si el piloto es CASH + app)
 - [ ] Auditoría UI
@@ -307,8 +308,8 @@ Detalle: [14-auditoria…](./14-auditoria-roadmap-vs-codigo-2026-08-13.md).
 
 ### Clientes `web/lib/api` a agregar (thin gaps)
 
-`receipts`, `audit`, MP checkout staff, (opcional) `credential-offers` staff.
-(`refunds`, `waitlist`, `recurrence-rules` ya agregados.)
+`audit`, MP checkout staff, (opcional) `credential-offers` staff.
+(`refunds`, `waitlist`, `recurrence-rules`, `receipts` ya agregados.)
 
 ---
 
@@ -359,7 +360,7 @@ Roadmap E9/E10 realineados (2026-08-13) tras [auditoría](./14-auditoria-roadmap
 ```text
 1) Flutter E9: Tienda/MP + calendario/reservas + waitlist + devolución
    (prereq: API member GET packs + sesiones)
-2) Admin E10 thin: receipts → auditoría → nav permisos / MP staff / pase sesión
+2) Admin E10 thin: auditoría → nav permisos / MP staff / pase sesión
    → recurrencia / creditsExpireAt / receipts (después)
 3) E5 MP live (ops) → E8 → E7 → E12
 ```

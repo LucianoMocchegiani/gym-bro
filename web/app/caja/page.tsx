@@ -3,6 +3,7 @@
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { AdminShell } from '@/components/AdminShell';
 import { AdminGrid, Panel } from '@/components/AdminUi';
+import { ReceiptPanel } from '@/components/ReceiptPanel';
 import { RequireStaff } from '@/components/RequireStaff';
 import {
   getCashDay,
@@ -17,6 +18,8 @@ import type { MemberDetail } from '@/lib/api/members';
 import { listActivePacks } from '@/lib/api/packs';
 import type { PackSummary } from '@/lib/api/packs';
 import { createCashDropIn } from '@/lib/api/reservations';
+import { getReceiptByPayment } from '@/lib/api/receipts';
+import type { ReceiptDetail } from '@/lib/api/receipts';
 import { listSessions } from '@/lib/api/sessions';
 import type { SessionSummary } from '@/lib/api/sessions';
 import { formatCashConcept, formatMoney } from '@/lib/cash-labels';
@@ -24,7 +27,7 @@ import { formatCashConcept, formatMoney } from '@/lib/cash-labels';
 type CobroKind = 'PACK' | 'DROP_IN';
 
 /**
- * Caja del día + cobro efectivo + arqueo (CU-PAG-002 / CU-PAG-003).
+ * Caja del día + cobro efectivo + arqueo + comprobantes (CU-PAG / RN-PAG-009).
  */
 export default function CajaPage() {
   return (
@@ -53,6 +56,10 @@ function CajaInner() {
   const [cobroBusy, setCobroBusy] = useState(false);
   const [cobroError, setCobroError] = useState<string | null>(null);
   const [cobroOk, setCobroOk] = useState<string | null>(null);
+
+  const [receipt, setReceipt] = useState<ReceiptDetail | null>(null);
+  const [receiptError, setReceiptError] = useState<string | null>(null);
+  const [receiptBusyId, setReceiptBusyId] = useState<string | null>(null);
 
   const [declaredAmount, setDeclaredAmount] = useState('');
   const [reconcileNote, setReconcileNote] = useState('');
@@ -111,6 +118,7 @@ function CajaInner() {
       setLoading(false);
     }
   }
+
   useEffect(() => {
     let cancelled = false;
     void (async () => {
@@ -118,9 +126,14 @@ function CajaInner() {
         const from = new Date();
         const to = new Date();
         to.setDate(to.getDate() + 14);
-        const [memberRows, packRows, sessionRows] = await Promise.all([
-          listMembers({ status: 'ACTIVE', pageSize: 100 }),
-          listActivePacks({ pageSize: 100 }),
+        const [membersResult, packsResult, sessionsResult] = await Promise.all([
+          listMembers({
+            status: 'ACTIVE',
+            pageSize: 100,
+            order: 'asc',
+            orderBy: 'name',
+          }),
+          listActivePacks(),
           listSessions({
             status: 'PUBLISHED',
             from: from.toISOString(),
@@ -131,18 +144,19 @@ function CajaInner() {
         if (cancelled) {
           return;
         }
-        setMembers(memberRows.items);
-        setPacks(packRows.items);
-        setSessions(sessionRows.items);
-        if (memberRows.items[0]) {
-          setMemberId(memberRows.items[0].id);
+        setMembers(membersResult.items);
+        setPacks(packsResult.items);
+        setSessions(sessionsResult.items);
+        if (membersResult.items.length > 0) {
+          setMemberId((prev) => prev || membersResult.items[0].id);
         }
-        if (packRows.items[0]) {
-          setPackId(packRows.items[0].id);
+        if (packsResult.items.length > 0) {
+          setPackId((prev) => prev || packsResult.items[0].id);
         }
-        if (sessionRows.items[0]) {
-          setSessionId(sessionRows.items[0].id);
+        if (sessionsResult.items.length > 0) {
+          setSessionId((prev) => prev || sessionsResult.items[0].id);
         }
+        setCatalogError(null);
       } catch (err) {
         if (cancelled) {
           return;
@@ -150,7 +164,7 @@ function CajaInner() {
         setCatalogError(
           err instanceof ApiClientError
             ? err.message
-            : 'No se pudo cargar catálogo para cobros',
+            : 'No se pudo cargar catálogo de cobro',
         );
       }
     })();
@@ -166,12 +180,30 @@ function CajaInner() {
     }
     return members.filter(
       (m) =>
-        (m.name ?? '').toLowerCase().includes(q) ||
+        (m.name?.toLowerCase().includes(q) ?? false) ||
         m.email.toLowerCase().includes(q),
     );
   }, [members, memberFilter]);
 
   const selectedPack = packs.find((p) => p.id === packId);
+
+  async function openReceiptForPayment(paymentId: string) {
+    setReceiptBusyId(paymentId);
+    setReceiptError(null);
+    try {
+      const r = await getReceiptByPayment(paymentId);
+      setReceipt(r);
+    } catch (err) {
+      setReceipt(null);
+      setReceiptError(
+        err instanceof ApiClientError
+          ? err.message
+          : 'No se pudo cargar el comprobante',
+      );
+    } finally {
+      setReceiptBusyId(null);
+    }
+  }
 
   async function onCobro(e: FormEvent) {
     e.preventDefault();
@@ -182,31 +214,40 @@ function CajaInner() {
     setCobroBusy(true);
     setCobroError(null);
     setCobroOk(null);
+    setReceiptError(null);
     try {
+      let paymentId: string | null = null;
       if (cobroKind === 'PACK') {
         if (!packId) {
           setCobroError('Elegí un pack');
+          setCobroBusy(false);
           return;
         }
-        await createCashContract(
+        const contract = await createCashContract(
           memberId,
           packId,
           newIdempotencyKey('cash-pack'),
         );
+        paymentId = contract.payment.id;
         setCobroOk('Pack cobrado en efectivo.');
       } else {
         if (!sessionId) {
           setCobroError('Elegí una sesión');
+          setCobroBusy(false);
           return;
         }
-        await createCashDropIn(
+        const reservation = await createCashDropIn(
           memberId,
           sessionId,
           newIdempotencyKey('cash-dropin'),
         );
+        paymentId = reservation.paymentId;
         setCobroOk('Drop-in cobrado en efectivo.');
       }
       await reloadDay(date);
+      if (paymentId) {
+        await openReceiptForPayment(paymentId);
+      }
     } catch (err) {
       setCobroError(
         err instanceof ApiClientError
@@ -269,6 +310,15 @@ function CajaInner() {
 
       {loading ? <p className="muted">Cargando caja…</p> : null}
       {loadError ? <p className="error">{loadError}</p> : null}
+      {receiptError ? <p className="error">{receiptError}</p> : null}
+
+      {receipt ? (
+        <ReceiptPanel
+          receipt={receipt}
+          title="Comprobante emitido"
+          onClose={() => setReceipt(null)}
+        />
+      ) : null}
 
       {day ? (
         <>
@@ -438,7 +488,8 @@ function CajaInner() {
                   </label>
                   <p className="muted small">
                     Esperado neto: {formatMoney(day.totals.net)}
-                    {declaredAmount !== '' && Number.isInteger(Number(declaredAmount))
+                    {declaredAmount !== '' &&
+                    Number.isInteger(Number(declaredAmount))
                       ? ` · Diff: ${formatMoney(Number(declaredAmount) - day.totals.net)}`
                       : ''}
                   </p>
@@ -483,6 +534,7 @@ function CajaInner() {
                     <th>Tipo</th>
                     <th>Monto</th>
                     <th>Staff</th>
+                    <th />
                   </tr>
                 </thead>
                 <tbody>
@@ -499,6 +551,24 @@ function CajaInner() {
                       <td>{m.kind === 'INCOME' ? 'Ingreso' : 'Egreso'}</td>
                       <td>{formatMoney(m.amount)}</td>
                       <td>{m.recordedByStaffName ?? '—'}</td>
+                      <td className="row-actions">
+                        {m.kind === 'INCOME' &&
+                        (m.concept === 'PACK_CONTRACT' ||
+                          m.concept === 'DROP_IN') ? (
+                          <button
+                            type="button"
+                            className="btn ghost"
+                            disabled={receiptBusyId === m.paymentId}
+                            onClick={() =>
+                              void openReceiptForPayment(m.paymentId)
+                            }
+                          >
+                            {receiptBusyId === m.paymentId
+                              ? '…'
+                              : 'Comprobante'}
+                          </button>
+                        ) : null}
+                      </td>
                     </tr>
                   ))}
                 </tbody>

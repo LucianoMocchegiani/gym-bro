@@ -5,6 +5,7 @@ import { FormEvent, useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import { AdminShell } from '@/components/AdminShell';
 import { AdminGrid, Panel } from '@/components/AdminUi';
+import { ReceiptPanel } from '@/components/ReceiptPanel';
 import { RequireStaff } from '@/components/RequireStaff';
 import { ApiClientError } from '@/lib/api/client';
 import { cancelContract } from '@/lib/api/contracts';
@@ -20,6 +21,12 @@ import type {
   MemberDetail,
   MemberStatus,
 } from '@/lib/api/members';
+import {
+  getReceiptByPayment,
+  listMemberReceipts,
+} from '@/lib/api/receipts';
+import type { ReceiptDetail } from '@/lib/api/receipts';
+import { formatMoney } from '@/lib/cash-labels';
 import { formatMemberStatus } from '@/lib/member-labels';
 
 /**
@@ -60,13 +67,23 @@ function DetailInner() {
   const [cancelError, setCancelError] = useState<string | null>(null);
   const [cancelOk, setCancelOk] = useState<string | null>(null);
 
+  const [receipts, setReceipts] = useState<ReceiptDetail[]>([]);
+  const [receiptsError, setReceiptsError] = useState<string | null>(null);
+  const [selectedReceipt, setSelectedReceipt] =
+    useState<ReceiptDetail | null>(null);
+  const [receiptBusyId, setReceiptBusyId] = useState<string | null>(null);
+
   useEffect(() => {
     let cancelled = false;
     void (async () => {
       try {
-        const [m, acc] = await Promise.all([
+        const [m, acc, receiptsResult] = await Promise.all([
           getMember(memberId),
           getMemberAccount(memberId),
+          listMemberReceipts(memberId, {
+            pageSize: 20,
+            order: 'desc',
+          }).catch(() => null),
         ]);
         if (cancelled) {
           return;
@@ -78,6 +95,13 @@ function DetailInner() {
         setPhone(m.phone ?? '');
         setDocument(m.document ?? '');
         setStatus(m.status);
+        if (receiptsResult) {
+          setReceipts(receiptsResult.items);
+          setReceiptsError(null);
+        } else {
+          setReceipts([]);
+          setReceiptsError('No se pudieron cargar comprobantes');
+        }
         setLoadError(null);
       } catch (err) {
         if (cancelled) {
@@ -179,6 +203,24 @@ function DetailInner() {
     setCancelConfirm('');
     setCancelError(null);
     setCancelOk(null);
+  }
+
+  async function openReceiptForPayment(paymentId: string) {
+    setReceiptBusyId(paymentId);
+    try {
+      const r = await getReceiptByPayment(paymentId);
+      setSelectedReceipt(r);
+      setReceiptsError(null);
+    } catch (err) {
+      setSelectedReceipt(null);
+      setReceiptsError(
+        err instanceof ApiClientError
+          ? err.message
+          : 'No se pudo cargar el comprobante',
+      );
+    } finally {
+      setReceiptBusyId(null);
+    }
   }
 
   function closeCancel() {
@@ -458,6 +500,17 @@ function DetailInner() {
                         {p.status === 'APPROVED' ? (
                           <>
                             {' · '}
+                            <button
+                              type="button"
+                              className="linkish"
+                              disabled={receiptBusyId === p.id}
+                              onClick={() => void openReceiptForPayment(p.id)}
+                            >
+                              {receiptBusyId === p.id
+                                ? '…'
+                                : 'Comprobante'}
+                            </button>
+                            {' · '}
                             <Link
                               href={`/devoluciones?paymentId=${encodeURIComponent(p.id)}`}
                             >
@@ -465,6 +518,35 @@ function DetailInner() {
                             </Link>
                           </>
                         ) : null}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+
+                <h3>Comprobantes</h3>
+                {receiptsError ? <p className="error">{receiptsError}</p> : null}
+                {selectedReceipt ? (
+                  <ReceiptPanel
+                    receipt={selectedReceipt}
+                    onClose={() => setSelectedReceipt(null)}
+                  />
+                ) : null}
+                {receipts.length === 0 ? (
+                  <p className="muted">Sin comprobantes emitidos.</p>
+                ) : (
+                  <ul className="plain-list">
+                    {receipts.map((r) => (
+                      <li key={r.id}>
+                        <button
+                          type="button"
+                          className="linkish"
+                          onClick={() => setSelectedReceipt(r)}
+                        >
+                          {r.code}
+                        </button>
+                        {' — '}
+                        {formatMoney(r.amount)} · {r.method} ·{' '}
+                        {new Date(r.createdAt).toLocaleString('es-AR')}
                       </li>
                     ))}
                   </ul>

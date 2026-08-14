@@ -20,6 +20,12 @@ export type ContractDetail = {
   startsAt: string;
   endsAt: string | null;
   hasAccessLibre: boolean;
+  payment: {
+    id: string;
+    amount: number;
+    status: string;
+    method: string;
+  };
   creditBalances: ContractCreditBalance[];
 };
 
