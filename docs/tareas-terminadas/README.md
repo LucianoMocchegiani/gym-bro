@@ -16,6 +16,7 @@ La creación de registros sigue la skill:
 
 ## Índice
 
+- [2026-08-14 — Nav e Inicio gated por permisos](./2026-08-14-admin-nav-permisos.md)
 - [2026-08-14 — Página de auditoría Admin](./2026-08-14-admin-auditoria.md)
 - [2026-08-14 — Comprobantes en Caja y ficha afiliado](./2026-08-14-admin-comprobantes.md)
 - [2026-08-14 — Packs: creditsExpireAt + sync Kuatia](./2026-08-14-admin-packs-expire-kuatia.md)
