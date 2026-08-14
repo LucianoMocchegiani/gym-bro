@@ -16,6 +16,7 @@ La creación de registros sigue la skill:
 
 ## Índice
 
+- [2026-08-14 — Alta servicio/rol en modal](./2026-08-14-admin-modal-alta-servicio-rol.md)
 - [2026-08-14 — AdminModal y devoluciones](./2026-08-14-admin-modal-devoluciones.md)
 - [2026-08-14 — Puerta en tabs](./2026-08-14-admin-puerta-tabs.md)
 - [2026-08-14 — StatusPill + reportes/devoluciones/puerta](./2026-08-14-admin-statuspill-reportes-puerta.md)
