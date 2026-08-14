@@ -77,10 +77,10 @@
 
 **Flujo principal:**
 1. Staff selecciona afiliado (o registra visita con datos mínimos si se permite — MVP: afiliado existente).
-2. Indica motivo (deuda, olvido de celular, cortesía, etc.).
-3. Sistema registra IntentoIngreso `permitido` con flag paseManual + actor.
-4. EventoAuditoria.
-5. Si hay sesión elegida, puede marcar presente.
+2. Opcionalmente elige sesión (default: sin sesión). En Admin: reservas `CONFIRMED` del afiliado en clases que aún no terminaron (no el calendario del gym); si envía `sessionId`, la API exige esa reserva confirmada y marca presente.
+3. Indica motivo (deuda, olvido de celular, cortesía, etc.).
+4. Sistema registra IntentoIngreso `permitido` con flag paseManual + actor.
+5. EventoAuditoria.
 
 **Errores:** Sin permiso → denegado.
 

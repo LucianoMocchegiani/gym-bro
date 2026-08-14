@@ -177,12 +177,13 @@ export class MembersService {
       },
     });
 
+    // Incluye clases en curso (útil en puerta); no solo startsAt futuro.
     const upcomingReservations = await this.prisma.reservation.findMany({
       where: {
         tenantId,
         memberId,
         status: ReservationStatus.CONFIRMED,
-        session: { startsAt: { gte: new Date() } },
+        session: { endsAt: { gte: new Date() } },
       },
       include: {
         session: {

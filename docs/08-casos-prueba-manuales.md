@@ -76,6 +76,8 @@ Leyenda resultado: `P` pass · `F` fail · `B` bloqueado · `-` no aplica
 | X1 | Deuda 10 días / tolerancia 15 | Permitido (`ok_deuda_tolerancia`) | RN-ACC-005 | |
 | X2 | Deuda 16 días | Denegado (`deuda_excedida`) | RN-ACC-005 | |
 | X3 | Pase manual con deuda | Permitido + auditoría | CU-ACC-004 | |
+| X3b | Pase manual + sesión (reserva CONFIRMED hoy) | Permitido + presente en sesión | CU-ACC-004 | |
+| X3c | Pase manual sin sesión | Permitido; sin marcar presente | CU-ACC-004 | |
 | X4 | Multi-ingreso deshabilitado | Segundo ingreso deny | RN-ACC-009 | |
 | X5 | Credencial revocada | Deny | CU-AFI-003/006 | |
 | X6 | Historial muestra motivos | Lista ok/deny | CU-ACC-005 | |

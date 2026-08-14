@@ -61,7 +61,7 @@ export type MemberAccountReservation = {
 /**
  * Estado de cuenta (CU-AFI-004 / CU-AFI-005).
  *
- * @remarks `debt` placeholder hasta E5. `reservations` = próximas CONFIRMED.
+ * @remarks `debt` placeholder hasta E5. `reservations` = CONFIRMED con `endsAt` ≥ ahora.
  */
 export type MemberAccountDetail = {
   member: MemberDetail;

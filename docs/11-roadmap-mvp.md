@@ -297,9 +297,10 @@ Detalle: [14-auditoria…](./14-auditoria-roadmap-vs-codigo-2026-08-13.md).
   - `/auditoria`: `GET /audit-events` (`audit.read`); búsqueda `q` + detalle before/after
 - [x] Nav / páginas gated por permiso (hoy se muestran todos los links)
   - `GET /me/permissions` + filtro nav/atajos; API sigue autorizando (403)
+- [x] Pase manual: selector de sesión opcional (`sessionId`)
+  - UI: reservas CONFIRMADAS del afiliado (clase no terminada); default Sin sesión
 - [ ] Checkout MP desde Admin (staff)
   - `POST /members/:id/payments/mp/checkout` y drop-in (opcional si el piloto es CASH + app)
-- [ ] Pase manual: selector de sesión opcional (`sessionId`)
 
 ### Pendiente — otras épicas / Super
 

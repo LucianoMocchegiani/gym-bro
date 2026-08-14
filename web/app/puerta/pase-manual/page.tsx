@@ -1,6 +1,6 @@
 'use client';
 
-import { FormEvent, useEffect, useState } from 'react';
+import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { AccessResultBanner } from '@/components/AccessResult';
 import { AdminGrid, Panel } from '@/components/AdminUi';
 import { DoorShell } from '@/components/DoorShell';
@@ -11,7 +11,7 @@ import type {
   ManualPassMotive,
 } from '@/lib/api/access';
 import { ApiClientError } from '@/lib/api/client';
-import { listMembers } from '@/lib/api/members';
+import { getMemberAccount, listMembers } from '@/lib/api/members';
 import type { MemberSummary } from '@/lib/api/members';
 
 const MOTIVES: { value: ManualPassMotive; label: string }[] = [
@@ -21,8 +21,21 @@ const MOTIVES: { value: ManualPassMotive; label: string }[] = [
   { value: 'otro', label: 'Otro' },
 ];
 
+type SessionOption = {
+  sessionId: string;
+  label: string;
+};
+
+function formatSessionWhen(iso: string): string {
+  return new Date(iso).toLocaleString('es-AR', {
+    dateStyle: 'short',
+    timeStyle: 'short',
+    timeZone: 'America/Argentina/Buenos_Aires',
+  });
+}
+
 /**
- * Pase manual en puerta (CU-ACC-004).
+ * Pase manual en puerta (CU-ACC-004) con sesión opcional.
  */
 export default function PaseManualPage() {
   return (
@@ -35,6 +48,10 @@ export default function PaseManualPage() {
 function PaseManualInner() {
   const [members, setMembers] = useState<MemberSummary[]>([]);
   const [memberId, setMemberId] = useState('');
+  const [sessionId, setSessionId] = useState('');
+  const [sessionOptions, setSessionOptions] = useState<SessionOption[]>([]);
+  const [sessionsLoading, setSessionsLoading] = useState(false);
+  const [sessionsHint, setSessionsHint] = useState<string | null>(null);
   const [motiveCode, setMotiveCode] = useState<ManualPassMotive>('cortesia');
   const [note, setNote] = useState('');
   const [filter, setFilter] = useState('');
@@ -71,16 +88,65 @@ function PaseManualInner() {
     };
   }, []);
 
-  const filtered = members.filter((m) => {
+  useEffect(() => {
+    if (!memberId) {
+      setSessionOptions([]);
+      setSessionId('');
+      setSessionsHint(null);
+      return;
+    }
+    let cancelled = false;
+    void (async () => {
+      setSessionsLoading(true);
+      setSessionId('');
+      setSessionsHint(null);
+      try {
+        const account = await getMemberAccount(memberId);
+        if (cancelled) {
+          return;
+        }
+        // Cuenta: reservas CONFIRMED de clases que aún no terminaron.
+        const options = account.reservations
+          .filter((r) => r.status === 'CONFIRMED')
+          .map((r) => ({
+            sessionId: r.sessionId,
+            label: `${r.serviceName} — ${formatSessionWhen(r.startsAt)}`,
+          }));
+        setSessionOptions(options);
+        if (options.length === 0) {
+          setSessionsHint(
+            'Este afiliado no tiene reservas confirmadas próximas. Podés registrar el pase sin sesión, o primero reservale una clase.',
+          );
+        }
+      } catch {
+        if (!cancelled) {
+          setSessionOptions([]);
+          setSessionsHint(
+            'No se pudieron cargar las reservas del afiliado. Podés seguir sin sesión.',
+          );
+        }
+      } finally {
+        if (!cancelled) {
+          setSessionsLoading(false);
+        }
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [memberId]);
+
+  const filtered = useMemo(() => {
     const q = filter.trim().toLowerCase();
     if (!q) {
-      return true;
+      return members;
     }
-    return (
-      (m.name ?? '').toLowerCase().includes(q) ||
-      m.email.toLowerCase().includes(q)
+    return members.filter(
+      (m) =>
+        (m.name ?? '').toLowerCase().includes(q) ||
+        m.email.toLowerCase().includes(q),
     );
-  });
+  }, [members, filter]);
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
@@ -95,9 +161,11 @@ function PaseManualInner() {
       const res = await manualPass(memberId, {
         motiveCode,
         note: note.trim() || undefined,
+        sessionId: sessionId || undefined,
       });
       setResult(res);
       setNote('');
+      setSessionId('');
     } catch (err) {
       setError(
         err instanceof ApiClientError
@@ -143,6 +211,30 @@ function PaseManualInner() {
                 ))}
               </select>
             </label>
+
+            <label>
+              Sesión (opcional)
+              <select
+                value={sessionId}
+                onChange={(e) => setSessionId(e.target.value)}
+                disabled={sessionsLoading}
+              >
+                <option value="">Sin sesión</option>
+                {sessionOptions.map((s) => (
+                  <option key={s.sessionId} value={s.sessionId}>
+                    {s.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <p className="muted small">
+              No es el listado de clases del día: solo reservas confirmadas de
+              este afiliado (clases que aún no terminaron). Si elegís sesión,
+              marca presente.
+            </p>
+            {sessionsHint ? (
+              <p className="muted small">{sessionsHint}</p>
+            ) : null}
 
             <label>
               Motivo
