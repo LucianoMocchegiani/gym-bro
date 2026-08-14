@@ -39,6 +39,7 @@ function NuevoInner() {
   const [billingPeriod, setBillingPeriod] = useState<'MONTHLY' | 'ONE_TIME'>(
     'MONTHLY',
   );
+  const [creditsExpireAt, setCreditsExpireAt] = useState('');
   const [components, setComponents] = useState<ComponentDraft[]>([
     { key: 'c0', serviceId: '', creditAmount: '' },
   ]);
@@ -116,6 +117,10 @@ function NuevoInner() {
         description: description.trim() || undefined,
         price: Number(price),
         billingPeriod,
+        creditsExpireAt:
+          billingPeriod === 'ONE_TIME' && creditsExpireAt
+            ? `${creditsExpireAt}T23:59:59.999Z`
+            : undefined,
         components: comps,
       });
       router.replace(`/packs/${created.id}`);
@@ -183,6 +188,27 @@ function NuevoInner() {
               <option value="ONE_TIME">Único</option>
             </select>
           </label>
+          {billingPeriod === 'MONTHLY' ? (
+            <p className="muted small">
+              Pack mensual: los créditos vencen con el mes del contrato (+1 mes
+              / renovación). No se usa fecha fija de catálogo.
+            </p>
+          ) : (
+            <>
+              <label>
+                Vencimiento de créditos
+                <input
+                  type="date"
+                  value={creditsExpireAt}
+                  onChange={(e) => setCreditsExpireAt(e.target.value)}
+                />
+              </label>
+              <p className="muted small">
+                Opcional. Vacío = +1 mes desde el alta del contrato. Si
+                cargás fecha, los créditos de sesiones vencen ese día.
+              </p>
+            </>
+          )}
 
           <fieldset className="pack-components">
             <legend>Componentes</legend>

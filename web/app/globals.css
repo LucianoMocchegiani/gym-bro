@@ -674,6 +674,55 @@ a.btn.ghost,
   width: auto;
 }
 
+.radio-row {
+  border: none;
+  padding: 0;
+  margin: 0 0 0.5rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  align-items: center;
+}
+
+.radio-row legend {
+  font-weight: 600;
+  margin-right: 0.5rem;
+  padding: 0;
+}
+
+.weekday-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-bottom: 0.35rem;
+}
+
+.detail-dl {
+  display: grid;
+  gap: 0.85rem;
+  margin: 0;
+}
+
+.detail-dl div {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.detail-dl dt {
+  font-size: 0.8rem;
+  color: var(--muted, #6b7280);
+  font-weight: 600;
+}
+
+.detail-dl dd {
+  margin: 0;
+  word-break: break-word;
+}
+
+.detail-dl code {
+  font-size: 0.85em;
+}
+
 .pack-components {
   border: 1px solid var(--line);
   border-radius: 8px;

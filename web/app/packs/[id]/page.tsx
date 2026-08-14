@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { FormEvent, useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import { AdminShell } from '@/components/AdminShell';
-import { Panel } from '@/components/AdminUi';
+import { AdminGrid, Panel } from '@/components/AdminUi';
 import { RequireStaff } from '@/components/RequireStaff';
 import { ApiClientError } from '@/lib/api/client';
 import { getPack, updatePack } from '@/lib/api/packs';
@@ -18,6 +18,39 @@ type ComponentDraft = {
   serviceId: string;
   creditAmount: string;
 };
+
+function toDateInput(iso: string | null): string {
+  return iso ? iso.slice(0, 10) : '';
+}
+
+function formatWhen(iso: string | null): string {
+  if (!iso) {
+    return '—';
+  }
+  return new Date(iso).toLocaleString('es-AR', {
+    dateStyle: 'short',
+    timeStyle: 'short',
+  });
+}
+
+/**
+ * Resumen de sync Kuatia del pack (solo lectura).
+ */
+function kuatiaStatus(pack: PackDetail): {
+  label: string;
+  tone: 'ok' | 'error' | 'muted';
+} {
+  if (pack.kuatiaLastError) {
+    return { label: 'Error de sync', tone: 'error' };
+  }
+  if (pack.kuatiaSyncedAt) {
+    return { label: 'Sincronizado', tone: 'ok' };
+  }
+  if (pack.kuatiaConfigurationId) {
+    return { label: 'Configurada (sin timestamp)', tone: 'muted' };
+  }
+  return { label: 'Sin sync aún', tone: 'muted' };
+}
 
 /**
  * Edición de pack; components reemplaza el set completo (CU-SER-002).
@@ -42,6 +75,7 @@ function DetailInner() {
   const [billingPeriod, setBillingPeriod] = useState<'MONTHLY' | 'ONE_TIME'>(
     'MONTHLY',
   );
+  const [creditsExpireAt, setCreditsExpireAt] = useState('');
   const [active, setActive] = useState(true);
   const [components, setComponents] = useState<ComponentDraft[]>([]);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -60,21 +94,8 @@ function DetailInner() {
         if (cancelled) {
           return;
         }
-        setPack(p);
+        applyPack(p);
         setServices(svcs.items);
-        setName(p.name);
-        setDescription(p.description ?? '');
-        setPrice(String(p.price));
-        setBillingPeriod(p.billingPeriod);
-        setActive(p.active);
-        setComponents(
-          p.components.map((c, i) => ({
-            key: `c${i}`,
-            serviceId: c.serviceId,
-            creditAmount:
-              c.creditAmount != null ? String(c.creditAmount) : '',
-          })),
-        );
         setLoadError(null);
       } catch (err) {
         if (cancelled) {
@@ -91,6 +112,23 @@ function DetailInner() {
       cancelled = true;
     };
   }, [packId]);
+
+  function applyPack(p: PackDetail) {
+    setPack(p);
+    setName(p.name);
+    setDescription(p.description ?? '');
+    setPrice(String(p.price));
+    setBillingPeriod(p.billingPeriod);
+    setCreditsExpireAt(toDateInput(p.creditsExpireAt));
+    setActive(p.active);
+    setComponents(
+      p.components.map((c, i) => ({
+        key: `c${i}`,
+        serviceId: c.serviceId,
+        creditAmount: c.creditAmount != null ? String(c.creditAmount) : '',
+      })),
+    );
+  }
 
   function serviceById(id: string): ServiceDetail | undefined {
     return services.find((s) => s.id === id);
@@ -137,10 +175,16 @@ function DetailInner() {
         description: description.trim() || null,
         price: Number(price),
         billingPeriod,
+        creditsExpireAt:
+          billingPeriod === 'MONTHLY'
+            ? null
+            : creditsExpireAt
+              ? `${creditsExpireAt}T23:59:59.999Z`
+              : null,
         active,
         components: comps,
       });
-      setPack(updated);
+      applyPack(updated);
       setSaveOk(true);
     } catch (err) {
       setSaveError(
@@ -152,6 +196,8 @@ function DetailInner() {
       setBusy(false);
     }
   }
+
+  const kuatia = pack ? kuatiaStatus(pack) : null;
 
   return (
     <AdminShell
@@ -166,154 +212,230 @@ function DetailInner() {
       {!pack && !loadError ? <p className="muted">Cargando…</p> : null}
 
       {pack ? (
-        <Panel title="Editar pack" className="form-panel">
-          <p className="muted small">
-            Tipo calculado: {formatPackKind(pack.kind)}
-          </p>
-          <form className="admin-form" onSubmit={(e) => void onSubmit(e)}>
-            <label>
-              Nombre
-              <input
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                required
-                minLength={2}
-              />
-            </label>
-            <label>
-              Descripción
-              <textarea
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                rows={2}
-              />
-            </label>
-            <label>
-              Precio (ARS)
-              <input
-                type="number"
-                min={0}
-                step={1}
-                value={price}
-                onChange={(e) => setPrice(e.target.value)}
-                required
-              />
-            </label>
-            <label>
-              Periodo de facturación
-              <select
-                value={billingPeriod}
-                onChange={(e) =>
-                  setBillingPeriod(e.target.value as 'MONTHLY' | 'ONE_TIME')
-                }
-              >
-                <option value="MONTHLY">Mensual</option>
-                <option value="ONE_TIME">Único</option>
-              </select>
-            </label>
-            <label className="checkbox-row">
-              <input
-                type="checkbox"
-                checked={active}
-                onChange={(e) => setActive(e.target.checked)}
-              />
-              Activo
-            </label>
+        <AdminGrid>
+          <Panel title="Editar pack" className="form-panel">
+            <p className="muted small">
+              Tipo calculado: {formatPackKind(pack.kind)}
+            </p>
+            <form className="admin-form" onSubmit={(e) => void onSubmit(e)}>
+              <label>
+                Nombre
+                <input
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  required
+                  minLength={2}
+                />
+              </label>
+              <label>
+                Descripción
+                <textarea
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  rows={2}
+                />
+              </label>
+              <label>
+                Precio (ARS)
+                <input
+                  type="number"
+                  min={0}
+                  step={1}
+                  value={price}
+                  onChange={(e) => setPrice(e.target.value)}
+                  required
+                />
+              </label>
+              <label>
+                Periodo de facturación
+                <select
+                  value={billingPeriod}
+                  onChange={(e) =>
+                    setBillingPeriod(e.target.value as 'MONTHLY' | 'ONE_TIME')
+                  }
+                >
+                  <option value="MONTHLY">Mensual</option>
+                  <option value="ONE_TIME">Único</option>
+                </select>
+              </label>
+              {billingPeriod === 'MONTHLY' ? (
+                <p className="muted small">
+                  Pack mensual: los créditos vencen con el mes del contrato (+1
+                  mes / renovación). Al guardar se limpia cualquier fecha fija
+                  de catálogo.
+                </p>
+              ) : (
+                <>
+                  <label>
+                    Vencimiento de créditos
+                    <input
+                      type="date"
+                      value={creditsExpireAt}
+                      onChange={(e) => setCreditsExpireAt(e.target.value)}
+                    />
+                  </label>
+                  <p className="muted small">
+                    Opcional. Vacío = +1 mes desde el alta. Si cargás fecha, los
+                    créditos vencen ese día. Vaciar y guardar limpia el valor.
+                  </p>
+                </>
+              )}
+              <label className="checkbox-row">
+                <input
+                  type="checkbox"
+                  checked={active}
+                  onChange={(e) => setActive(e.target.checked)}
+                />
+                Activo
+              </label>
 
-            <fieldset className="pack-components">
-              <legend>Componentes</legend>
-              <p className="muted small">
-                Al guardar se reemplaza el set completo.
-              </p>
-              {components.map((c, idx) => {
-                const svc = serviceById(c.serviceId);
-                return (
-                  <div key={c.key} className="pack-component-row">
-                    <label>
-                      Servicio
-                      <select
-                        value={c.serviceId}
-                        onChange={(e) => {
-                          const next = [...components];
-                          next[idx] = {
-                            ...c,
-                            serviceId: e.target.value,
-                            creditAmount: '',
-                          };
-                          setComponents(next);
-                        }}
-                        required
-                      >
-                        <option value="">Elegir…</option>
-                        {services.map((s) => (
-                          <option key={s.id} value={s.id}>
-                            {s.name} ({formatServiceType(s.type)})
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-                    {svc?.type === 'POR_SESIONES' ? (
+              <fieldset className="pack-components">
+                <legend>Componentes</legend>
+                <p className="muted small">
+                  Al guardar se reemplaza el set completo.
+                </p>
+                {components.map((c, idx) => {
+                  const svc = serviceById(c.serviceId);
+                  return (
+                    <div key={c.key} className="pack-component-row">
                       <label>
-                        Créditos
-                        <input
-                          type="number"
-                          min={1}
-                          step={1}
-                          value={c.creditAmount}
+                        Servicio
+                        <select
+                          value={c.serviceId}
                           onChange={(e) => {
                             const next = [...components];
                             next[idx] = {
                               ...c,
-                              creditAmount: e.target.value,
+                              serviceId: e.target.value,
+                              creditAmount: '',
                             };
                             setComponents(next);
                           }}
                           required
-                        />
+                        >
+                          <option value="">Elegir…</option>
+                          {services.map((s) => (
+                            <option key={s.id} value={s.id}>
+                              {s.name} ({formatServiceType(s.type)})
+                            </option>
+                          ))}
+                        </select>
                       </label>
-                    ) : null}
-                    {components.length > 1 ? (
-                      <button
-                        type="button"
-                        className="linkish"
-                        onClick={() =>
-                          setComponents(
-                            components.filter((_, i) => i !== idx),
-                          )
-                        }
-                      >
-                        Quitar
-                      </button>
-                    ) : null}
-                  </div>
-                );
-              })}
-              <button
-                type="button"
-                className="btn ghost"
-                onClick={() =>
-                  setComponents([
-                    ...components,
-                    {
-                      key: `c${Date.now()}`,
-                      serviceId: '',
-                      creditAmount: '',
-                    },
-                  ])
-                }
-              >
-                + Agregar servicio
+                      {svc?.type === 'POR_SESIONES' ? (
+                        <label>
+                          Créditos
+                          <input
+                            type="number"
+                            min={1}
+                            step={1}
+                            value={c.creditAmount}
+                            onChange={(e) => {
+                              const next = [...components];
+                              next[idx] = {
+                                ...c,
+                                creditAmount: e.target.value,
+                              };
+                              setComponents(next);
+                            }}
+                            required
+                          />
+                        </label>
+                      ) : null}
+                      {components.length > 1 ? (
+                        <button
+                          type="button"
+                          className="linkish"
+                          onClick={() =>
+                            setComponents(
+                              components.filter((_, i) => i !== idx),
+                            )
+                          }
+                        >
+                          Quitar
+                        </button>
+                      ) : null}
+                    </div>
+                  );
+                })}
+                <button
+                  type="button"
+                  className="btn ghost"
+                  onClick={() =>
+                    setComponents([
+                      ...components,
+                      {
+                        key: `c${Date.now()}`,
+                        serviceId: '',
+                        creditAmount: '',
+                      },
+                    ])
+                  }
+                >
+                  + Agregar servicio
+                </button>
+              </fieldset>
+
+              {saveError ? <p className="error">{saveError}</p> : null}
+              {saveOk ? <p className="ok-msg">Guardado.</p> : null}
+
+              <button type="submit" className="primary" disabled={busy}>
+                {busy ? 'Guardando…' : 'Guardar'}
               </button>
-            </fieldset>
+            </form>
+          </Panel>
 
-            {saveError ? <p className="error">{saveError}</p> : null}
-            {saveOk ? <p className="ok-msg">Guardado.</p> : null}
-
-            <button type="submit" className="primary" disabled={busy}>
-              {busy ? 'Guardando…' : 'Guardar'}
-            </button>
-          </form>
-        </Panel>
+          <Panel
+            title="Sync Kuatia"
+            description={
+              kuatia ? (
+                <span
+                  className={
+                    kuatia.tone === 'error'
+                      ? 'error'
+                      : kuatia.tone === 'ok'
+                        ? 'ok-msg'
+                        : 'muted'
+                  }
+                >
+                  {kuatia.label}
+                </span>
+              ) : null
+            }
+          >
+            <dl className="detail-dl">
+              <div>
+                <dt>Configuration ID</dt>
+                <dd>
+                  <code>{pack.kuatiaConfigurationId ?? '—'}</code>
+                </dd>
+              </div>
+              <div>
+                <dt>VCT</dt>
+                <dd>
+                  <code>{pack.kuatiaVct ?? '—'}</code>
+                </dd>
+              </div>
+              <div>
+                <dt>Última sync</dt>
+                <dd>{formatWhen(pack.kuatiaSyncedAt)}</dd>
+              </div>
+              <div>
+                <dt>Último error</dt>
+                <dd>
+                  {pack.kuatiaLastError ? (
+                    <span className="error">{pack.kuatiaLastError}</span>
+                  ) : (
+                    '—'
+                  )}
+                </dd>
+              </div>
+            </dl>
+            <p className="muted small">
+              Se actualiza al crear o guardar el pack. No hay re-sync manual en
+              este corte.
+            </p>
+          </Panel>
+        </AdminGrid>
       ) : null}
     </AdminShell>
   );
