@@ -1,6 +1,6 @@
 'use client';
 
-import { Fragment, useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { AdminShell } from '@/components/AdminShell';
 import {
   DataTable,
@@ -8,6 +8,7 @@ import {
   ListToolbar,
   listCountDescription,
 } from '@/components/AdminList';
+import { AdminModal } from '@/components/AdminModal';
 import { RequireStaff } from '@/components/RequireStaff';
 import {
   IconView,
@@ -55,7 +56,7 @@ function formatJson(value: unknown): string {
 /**
  * Lectura de auditoría del gym (CU-ROL-007 / RN-ROL-008).
  *
- * @remarks Requiere permiso API `audit.read`.
+ * @remarks Requiere permiso API `audit.read`. Detalle en modal (alineado al resto del Admin).
  */
 export default function AuditoriaPage() {
   return (
@@ -74,7 +75,7 @@ function AuditoriaInner() {
   const [hasMore, setHasMore] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [selected, setSelected] = useState<AuditEventDetail | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -110,10 +111,6 @@ function AuditoriaInner() {
     void load();
   }, [load]);
 
-  function toggleExpand(id: string) {
-    setExpandedId((prev) => (prev === id ? null : id));
-  }
-
   return (
     <AdminShell title="Auditoría">
       <ListToolbar hint="Eventos del gym (quién hizo qué). Requiere permiso audit.read.">
@@ -123,7 +120,7 @@ function AuditoriaInner() {
           onChange={setQInput}
           onSubmit={() => {
             setPage(1);
-            setExpandedId(null);
+            setSelected(null);
             setQ(qInput.trim());
           }}
           placeholder="ej. contract, refund, waitlist"
@@ -140,7 +137,7 @@ function AuditoriaInner() {
         page={page}
         hasMore={hasMore}
         onPageChange={(p) => {
-          setExpandedId(null);
+          setSelected(null);
           setPage(p);
         }}
         header={
@@ -154,54 +151,65 @@ function AuditoriaInner() {
         }
       >
         {rows.map((row) => (
-          <Fragment key={row.id}>
-            <tr>
-              <td>{formatWhen(row.createdAt)}</td>
-              <td>
-                <code>{row.action}</code>
-              </td>
-              <td>
-                {row.entityType}
-                {row.entityId ? ` · ${row.entityId.slice(0, 8)}…` : ''}
-              </td>
-              <td>
-                {formatActor(row.actorProfile)} · {row.actorId.slice(0, 8)}…
-              </td>
-              <td>
-                <RowActions>
-                  <RowIconButton
-                    label={
-                      expandedId === row.id ? 'Ocultar detalle' : 'Ver detalle'
-                    }
-                    onClick={() => toggleExpand(row.id)}
-                  >
-                    <IconView />
-                  </RowIconButton>
-                </RowActions>
-              </td>
-            </tr>
-            {expandedId === row.id ? (
-              <tr className="audit-detail-row">
-                <td colSpan={5}>
-                  <div className="audit-detail-grid">
-                    <div>
-                      <p className="muted small">Antes</p>
-                      <pre className="audit-json">{formatJson(row.before)}</pre>
-                    </div>
-                    <div>
-                      <p className="muted small">Después</p>
-                      <pre className="audit-json">{formatJson(row.after)}</pre>
-                    </div>
-                  </div>
-                  <p className="muted small">
-                    entityId: {row.entityId ?? '—'} · actorId: {row.actorId}
-                  </p>
-                </td>
-              </tr>
-            ) : null}
-          </Fragment>
+          <tr key={row.id}>
+            <td>{formatWhen(row.createdAt)}</td>
+            <td>
+              <code>{row.action}</code>
+            </td>
+            <td>
+              {row.entityType}
+              {row.entityId ? ` · ${row.entityId.slice(0, 8)}…` : ''}
+            </td>
+            <td>
+              {formatActor(row.actorProfile)} · {row.actorId.slice(0, 8)}…
+            </td>
+            <td>
+              <RowActions>
+                <RowIconButton
+                  label="Ver detalle"
+                  onClick={() => setSelected(row)}
+                >
+                  <IconView />
+                </RowIconButton>
+              </RowActions>
+            </td>
+          </tr>
         ))}
       </DataTable>
+
+      <AdminModal
+        open={Boolean(selected)}
+        onClose={() => setSelected(null)}
+        title="Detalle del evento"
+        description={
+          selected
+            ? `${formatWhen(selected.createdAt)} · ${selected.action}`
+            : undefined
+        }
+        size="wide"
+      >
+        {selected ? (
+          <>
+            <p className="muted small">
+              {formatActor(selected.actorProfile)} · actorId:{' '}
+              {selected.actorId}
+              <br />
+              {selected.entityType}
+              {selected.entityId ? ` · entityId: ${selected.entityId}` : ''}
+            </p>
+            <div className="audit-detail-grid">
+              <div>
+                <p className="muted small">Antes</p>
+                <pre className="audit-json">{formatJson(selected.before)}</pre>
+              </div>
+              <div>
+                <p className="muted small">Después</p>
+                <pre className="audit-json">{formatJson(selected.after)}</pre>
+              </div>
+            </div>
+          </>
+        ) : null}
+      </AdminModal>
     </AdminShell>
   );
 }

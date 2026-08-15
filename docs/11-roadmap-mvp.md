@@ -318,6 +318,9 @@ Detalle: [14-auditoria…](./14-auditoria-roadmap-vs-codigo-2026-08-13.md).
   - Staff: Roles / Credencial en modal comfortable (`?roles=` / `?credencial=`)
   - Packs: editar + alta en modal; sesiones: Datos / Roster / Waitlist + alta (`?nuevo=1`)
   - Cleanup: `PackComponentsEditor` compartido; sin prop `wide` deprecada; paneles `embedded` en modal
+  - Estética Admin oleada 1: nav activo con barra lima, modal sobrio (blur + acento), Inicio display “Hola”
+  - Oleada 2 Inicio≈mockup: iconos nav, Soporte, KPIs (sin atajos; menú MVP intacto)
+  - Navegación: barra progreso lima (`nextjs-toploader`) Admin + Super
 
 ### Pendiente — otras épicas / Super
 

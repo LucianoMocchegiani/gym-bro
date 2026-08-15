@@ -33,6 +33,7 @@ import type {
 } from '@/lib/api/access';
 import { todayBusinessDate } from '@/lib/api/cash-register';
 import { ApiClientError } from '@/lib/api/client';
+import { VenueQrSkeleton } from '@/components/VenueQrSkeleton';
 
 const PAGE_SIZE = 20;
 
@@ -240,9 +241,7 @@ function PuertaInner() {
             {requestUri ? (
               <VenueQr token={requestUri} />
             ) : (
-              <p className="muted">
-                {busy ? 'Generando QR…' : 'Sin QR activo.'}
-              </p>
+              <VenueQrSkeleton />
             )}
             <p className="muted small">
               {sessionState

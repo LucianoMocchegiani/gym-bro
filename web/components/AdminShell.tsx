@@ -1,18 +1,32 @@
 'use client';
 
 import Link from 'next/link';
-import { useMemo, useState, useSyncExternalStore } from 'react';
+import {
+  useMemo,
+  useState,
+  useSyncExternalStore,
+  type ReactNode,
+} from 'react';
 import { usePathname } from 'next/navigation';
+import {
+  NavIconDumbbell,
+  NavIconForHref,
+  NavIconSupport,
+} from '@/components/AdminNavIcons';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { useAuth } from '@/lib/auth/AuthProvider';
 import { canAccessNavHref } from '@/lib/nav-permissions';
 import { extractTenantSlugFromHost } from '@/lib/tenant-host';
 
 type AdminShellProps = {
-  title: string;
-  children: React.ReactNode;
+  title: ReactNode;
+  children: ReactNode;
   /** Acciones extra a la derecha del título (ej. botones o tabs). */
-  actions?: React.ReactNode;
+  actions?: ReactNode;
+  /** Subtítulo bajo el título (p. ej. hero de Inicio). */
+  subtitle?: ReactNode;
+  /** Variante de página para atmósfera (Inicio). */
+  variant?: 'default' | 'home';
 };
 
 type NavItem = { href: string; label: string };
@@ -71,7 +85,13 @@ function getServerHostSlug(): null {
  *
  * @remarks Filtra links según `session.permissionCodes` (GET /me/permissions).
  */
-export function AdminShell({ title, children, actions }: AdminShellProps) {
+export function AdminShell({
+  title,
+  children,
+  actions,
+  subtitle,
+  variant = 'default',
+}: AdminShellProps) {
   const { session, logout } = useAuth();
   const pathname = usePathname();
   const [navOpen, setNavOpen] = useState(false);
@@ -82,6 +102,8 @@ export function AdminShell({ title, children, actions }: AdminShellProps) {
   );
   const brandSlug = hostSlug ?? session?.tenantSlug?.trim() ?? '…';
   const permissionCodes = session?.permissionCodes ?? null;
+  const userLabel =
+    session?.name?.trim() || session?.email?.split('@')[0] || 'Admin';
 
   const visibleGroups = useMemo(() => {
     return NAV_GROUPS.map((group) => ({
@@ -92,13 +114,12 @@ export function AdminShell({ title, children, actions }: AdminShellProps) {
     })).filter((group) => group.items.length > 0);
   }, [permissionCodes]);
 
-  function navClass(href: string): string | undefined {
-    if (href === '/') {
-      return pathname === '/' ? 'active' : undefined;
-    }
-    return pathname === href || pathname.startsWith(`${href}/`)
-      ? 'active'
-      : undefined;
+  function navClass(href: string): string {
+    const active =
+      href === '/'
+        ? pathname === '/'
+        : pathname === href || pathname.startsWith(`${href}/`);
+    return `app-nav-link${active ? ' active' : ''}`;
   }
 
   function closeNav(): void {
@@ -106,7 +127,9 @@ export function AdminShell({ title, children, actions }: AdminShellProps) {
   }
 
   return (
-    <div className={`app-shell${navOpen ? ' nav-open' : ''}`}>
+    <div
+      className={`app-shell${navOpen ? ' nav-open' : ''}${variant === 'home' ? ' app-shell-home' : ''}`}
+    >
       <button
         type="button"
         className="app-overlay"
@@ -116,10 +139,15 @@ export function AdminShell({ title, children, actions }: AdminShellProps) {
 
       <aside className="app-sidebar" id="admin-sidebar" aria-label="Navegación">
         <div className="app-sidebar-brand">
-          <Link href="/" className="brand" onClick={closeNav}>
-            {brandSlug}
+          <Link href="/" className="brand-row" onClick={closeNav}>
+            <span className="brand-mark" aria-hidden="true">
+              <NavIconDumbbell />
+            </span>
+            <span className="brand-text">
+              <span className="brand">{brandSlug}</span>
+              <span className="eyebrow">Admin</span>
+            </span>
           </Link>
-          <span className="eyebrow">Admin</span>
         </div>
 
         <nav className="app-nav">
@@ -133,12 +161,25 @@ export function AdminShell({ title, children, actions }: AdminShellProps) {
                   className={navClass(item.href)}
                   onClick={closeNav}
                 >
-                  {item.label}
+                  <span className="app-nav-icon">
+                    <NavIconForHref href={item.href} />
+                  </span>
+                  <span>{item.label}</span>
                 </Link>
               ))}
             </div>
           ))}
         </nav>
+
+        <div className="app-sidebar-support">
+          <span className="app-sidebar-support-icon" aria-hidden="true">
+            <NavIconSupport />
+          </span>
+          <div>
+            <p className="app-sidebar-support-title">Soporte</p>
+            <p className="muted small">¿Necesitás ayuda? Escribinos.</p>
+          </div>
+        </div>
       </aside>
 
       <div className="app-main">
@@ -154,9 +195,18 @@ export function AdminShell({ title, children, actions }: AdminShellProps) {
               >
                 Menú
               </button>
+              {variant === 'home' ? (
+                <p className="app-topbar-tagline muted small">
+                  Panel de administración / Gestioná tu gym de forma{' '}
+                  <span className="accent-text">simple y eficiente</span>.
+                </p>
+              ) : null}
             </div>
             <div className="app-topbar-right">
               <ThemeToggle />
+              <span className="app-topbar-user" title={session?.email ?? ''}>
+                {userLabel}
+              </span>
               <button
                 type="button"
                 className="linkish"
@@ -170,7 +220,12 @@ export function AdminShell({ title, children, actions }: AdminShellProps) {
 
         <div className="app-content">
           <div className="app-page-head admin-page-head">
-            <h1>{title}</h1>
+            <div className="app-page-head-copy">
+              <h1>{title}</h1>
+              {subtitle ? (
+                <div className="app-page-subtitle">{subtitle}</div>
+              ) : null}
+            </div>
             {actions}
           </div>
           {children}

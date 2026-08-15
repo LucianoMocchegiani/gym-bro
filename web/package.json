@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "next": "^16.2.10",
+    "nextjs-toploader": "^3.9.17",
     "qrcode": "^1.5.4",
     "react": "^19.2.7",
     "react-dom": "^19.2.7"

@@ -113,7 +113,7 @@ function ReportesInner() {
       }
     >
       {data && !loading ? (
-        <div className="stat-row dash-kpis">
+        <div className="stat-row">
           <Panel className="stat-card">
             <p className="muted small">Afiliados activos</p>
             <p className="stat-value">{data.members.active}</p>

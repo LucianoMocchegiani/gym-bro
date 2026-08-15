@@ -1,7 +1,13 @@
 'use client';
 
-import Link from 'next/link';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
+import {
+  KpiIconCash,
+  KpiIconDoor,
+  KpiIconPack,
+  KpiIconPeople,
+  KpiIconSession,
+} from '@/components/AdminNavIcons';
 import { AdminShell } from '@/components/AdminShell';
 import { Panel } from '@/components/AdminUi';
 import { RequireStaff } from '@/components/RequireStaff';
@@ -30,23 +36,8 @@ type KpiState = {
   errors: string[];
 };
 
-const SHORTCUTS: { href: string; label: string; hint: string }[] = [
-  { href: '/reportes', label: 'Reportes', hint: 'Período e ingresos' },
-  { href: '/afiliados', label: 'Afiliados', hint: 'Alta y ficha' },
-  { href: '/caja', label: 'Caja', hint: 'Cobros y arqueo' },
-  { href: '/devoluciones', label: 'Devoluciones', hint: 'Cola y reembolsos' },
-  { href: '/puerta', label: 'Puerta', hint: 'Verificar, pase e historial' },
-  { href: '/sesiones', label: 'Sesiones', hint: 'Calendario puntual' },
-  { href: '/servicios', label: 'Servicios', hint: 'Catálogo' },
-  { href: '/packs', label: 'Packs', hint: 'Planes y créditos' },
-  { href: '/roles', label: 'Roles', hint: 'Permisos' },
-  { href: '/staff', label: 'Staff', hint: 'Usuarios del gym' },
-  { href: '/config', label: 'Config', hint: 'Operación y MP' },
-  { href: '/auditoria', label: 'Auditoría', hint: 'Eventos del gym' },
-];
-
 /**
- * Dashboard mínimo del Admin (wireframe §7): KPIs del día + atajos.
+ * Dashboard Admin: hero + KPIs (estilo mockup Inicio).
  *
  * @remarks Solo pide APIs / muestra KPIs según permisos del staff.
  */
@@ -69,11 +60,6 @@ function DashboardInner() {
   const canDoor = hasAnyPermission(permissionCodes, ['access.verify']);
   const canSessions = canAccessNavHref('/sesiones', permissionCodes);
 
-  const shortcuts = useMemo(
-    () =>
-      SHORTCUTS.filter((s) => canAccessNavHref(s.href, permissionCodes)),
-    [permissionCodes],
-  );
   const today = todayBusinessDate();
   const [kpi, setKpi] = useState<KpiState>({
     income: null,
@@ -204,15 +190,82 @@ function DashboardInner() {
     canSessions,
   ]);
 
-  const showKpis =
-    canCaja || canMembers || canReports || canDoor || canSessions;
+  const kpiCards = [
+    canMembers || canReports
+      ? {
+          key: 'members',
+          label: 'Afiliados activos',
+          value:
+            kpi.activeMembers != null ? String(kpi.activeMembers) : '—',
+          hint: 'Estado activo',
+          icon: <KpiIconPeople />,
+        }
+      : null,
+    canCaja
+      ? {
+          key: 'income',
+          label: 'Ingresos del día',
+          value: kpi.income != null ? formatMoney(kpi.income) : '—',
+          hint: 'Caja · hoy',
+          icon: <KpiIconCash />,
+        }
+      : null,
+    canDoor
+      ? {
+          key: 'door',
+          label: 'Accesos hoy',
+          value: kpi.doorAllowed != null ? String(kpi.doorAllowed) : '—',
+          hint: 'En tiempo real',
+          icon: <KpiIconDoor />,
+          live: true,
+        }
+      : null,
+    canReports
+      ? {
+          key: 'nopack',
+          label: 'Sin pack activo',
+          value: kpi.withoutPack != null ? String(kpi.withoutPack) : '—',
+          hint: 'Proxy deuda · Reportes',
+          icon: <KpiIconPack />,
+        }
+      : null,
+    canSessions
+      ? {
+          key: 'sessions',
+          label: 'Sesiones hoy',
+          value:
+            kpi.sessionsToday != null ? String(kpi.sessionsToday) : '—',
+          hint: 'Publicadas',
+          icon: <KpiIconSession />,
+        }
+      : null,
+  ].filter(Boolean) as {
+    key: string;
+    label: string;
+    value: string;
+    hint: string | null;
+    icon: ReactNode;
+    live?: boolean;
+  }[];
+
+  const greetName =
+    session?.name?.trim() || session?.email?.split('@')[0] || 'Admin';
 
   return (
     <AdminShell
-      title="Inicio"
-      actions={
-        <p className="muted small toolbar-hint">Hoy · {today}</p>
+      variant="home"
+      title={
+        <span className="dash-hero-title">
+          Hola, <span className="dash-hero-accent">{greetName}</span>
+        </span>
       }
+      subtitle={
+        <p className="dash-hero-sub">
+          Tenés el <span className="accent-text">control total</span> de tu
+          gimnasio.
+        </p>
+      }
+      actions={<p className="muted small toolbar-hint">Hoy · {today}</p>}
     >
       {!permissionsReady || loading ? (
         <p className="muted">Cargando…</p>
@@ -222,78 +275,31 @@ function DashboardInner() {
       ) : null}
 
       {permissionsReady && !loading ? (
-        <>
-          {showKpis ? (
-            <div className="stat-row dash-kpis">
-              {canCaja ? (
-                <Panel className="stat-card">
-                  <p className="muted small">Ingresos caja</p>
-                  <p className="stat-value">
-                    {kpi.income != null ? formatMoney(kpi.income) : '—'}
+        kpiCards.length > 0 ? (
+          <div className="dash-kpi-primary">
+            {kpiCards.map((card) => (
+              <Panel key={card.key} className="dash-kpi-card">
+                <div className="dash-kpi-card-head">
+                  <span className="dash-kpi-icon">{card.icon}</span>
+                  <p className="dash-kpi-label">{card.label}</p>
+                </div>
+                <p className="stat-value dash-kpi-value">{card.value}</p>
+                {card.hint ? (
+                  <p className="dash-kpi-hint">
+                    {card.live ? (
+                      <span className="dash-live-dot" aria-hidden="true" />
+                    ) : null}
+                    {card.hint}
                   </p>
-                </Panel>
-              ) : null}
-              {canMembers || canReports ? (
-                <Panel className="stat-card">
-                  <p className="muted small">Afiliados activos</p>
-                  <p className="stat-value">
-                    {kpi.activeMembers != null ? kpi.activeMembers : '—'}
-                  </p>
-                </Panel>
-              ) : null}
-              {canReports ? (
-                <Panel className="stat-card">
-                  <p className="muted small">Sin pack activo</p>
-                  <p className="stat-value">
-                    {kpi.withoutPack != null ? kpi.withoutPack : '—'}
-                  </p>
-                  <p className="muted small">Proxy deuda · ver Reportes</p>
-                </Panel>
-              ) : null}
-              {canDoor ? (
-                <Panel className="stat-card">
-                  <p className="muted small">Ingresos puerta</p>
-                  <p className="stat-value">
-                    {kpi.doorAllowed != null ? kpi.doorAllowed : '—'}
-                  </p>
-                  <p className="muted small">ALLOWED hoy</p>
-                </Panel>
-              ) : null}
-              {canSessions ? (
-                <Panel className="stat-card">
-                  <p className="muted small">Sesiones hoy</p>
-                  <p className="stat-value">
-                    {kpi.sessionsToday != null ? kpi.sessionsToday : '—'}
-                  </p>
-                </Panel>
-              ) : null}
-            </div>
-          ) : (
-            <p className="muted">
-              No hay KPIs disponibles con tus permisos. Usá los atajos de
-              abajo.
-            </p>
-          )}
-
-          <Panel
-            title="Atajos"
-            description="Solo se muestran módulos permitidos por tu rol."
-            className="dash-shortcuts-panel"
-          >
-            <div className="dash-shortcuts">
-              {shortcuts.length === 0 ? (
-                <p className="muted">Sin atajos para tu rol.</p>
-              ) : (
-                shortcuts.map((s) => (
-                  <Link key={s.href} href={s.href} className="dash-shortcut">
-                    <span className="dash-shortcut-label">{s.label}</span>
-                    <span className="muted small">{s.hint}</span>
-                  </Link>
-                ))
-              )}
-            </div>
-          </Panel>
-        </>
+                ) : null}
+              </Panel>
+            ))}
+          </div>
+        ) : (
+          <p className="muted">
+            No hay KPIs disponibles con tus permisos. Usá el menú lateral.
+          </p>
+        )
       ) : null}
     </AdminShell>
   );
