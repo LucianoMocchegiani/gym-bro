@@ -16,6 +16,7 @@ La creación de registros sigue la skill:
 
 ## Índice
 
+- [2026-08-18 — Skeletons shimmer en carga async](./2026-08-18-skeletons-shimmer.md)
 - [2026-08-18 — Puerta: tabs en header fijo (PageTabs)](./2026-08-18-puerta-tabs-header-fijo.md)
 - [2026-08-18 — Popup de confirmación reutilizable + dirty-check](./2026-08-18-popup-confirmacion-reutilizable.md)
 - [2026-08-14 — Modales packs/sesiones + cleanup](./2026-08-14-admin-modales-packs-sesiones-cleanup.md)
