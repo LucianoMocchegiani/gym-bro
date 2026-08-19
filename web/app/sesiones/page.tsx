@@ -12,6 +12,7 @@ import { AdminModal } from '@/components/AdminModal';
 import { AdminShell } from '@/components/AdminShell';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { RequireStaff } from '@/components/RequireStaff';
+import { PageSkeleton } from '@/components/Skeleton';
 import {
   IconEdit,
   IconRoster,
@@ -71,7 +72,7 @@ function formatWeekdays(days: Weekday[]): string {
 export default function SesionesPage() {
   return (
     <RequireStaff>
-      <Suspense fallback={<p className="muted">Cargando…</p>}>
+      <Suspense fallback={<PageSkeleton />}>
         <SesionesInner />
       </Suspense>
     </RequireStaff>

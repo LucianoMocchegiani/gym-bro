@@ -7,6 +7,7 @@ import {
   type PackComponentDraft,
 } from '@/components/PackComponentsEditor';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
+import { SkeletonForm } from '@/components/Skeleton';
 import { ApiClientError } from '@/lib/api/client';
 import { getPack, updatePack } from '@/lib/api/packs';
 import type { PackDetail } from '@/lib/api/packs';
@@ -206,7 +207,7 @@ export function PackEditPanel({
     return <p className="error">{loadError}</p>;
   }
   if (!pack) {
-    return <p className="muted">Cargando pack…</p>;
+    return <SkeletonForm fields={4} />;
   }
 
   const kuatia = kuatiaStatus(pack);

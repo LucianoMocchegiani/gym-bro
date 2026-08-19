@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useState } from 'react';
 import {
   KpiIconCash,
   KpiIconDoor,
@@ -9,7 +9,7 @@ import {
   KpiIconSession,
 } from '@/components/AdminNavIcons';
 import { AdminShell } from '@/components/AdminShell';
-import { Panel } from '@/components/AdminUi';
+import { DashboardKpis, type KpiCardData } from '@/components/DashboardKpis';
 import { RequireStaff } from '@/components/RequireStaff';
 import { listAccessAttempts } from '@/lib/api/access';
 import {
@@ -239,14 +239,7 @@ function DashboardInner() {
           icon: <KpiIconSession />,
         }
       : null,
-  ].filter(Boolean) as {
-    key: string;
-    label: string;
-    value: string;
-    hint: string | null;
-    icon: ReactNode;
-    live?: boolean;
-  }[];
+  ].filter((c) => c !== null) as KpiCardData[];
 
   const greetName =
     session?.name?.trim() || session?.email?.split('@')[0] || 'Admin';
@@ -267,39 +260,8 @@ function DashboardInner() {
       }
       actions={<p className="muted small toolbar-hint">Hoy · {today}</p>}
     >
-      {!permissionsReady || loading ? (
-        <p className="muted">Cargando…</p>
-      ) : null}
-      {permissionsReady && !loading && kpi.errors.length > 0 ? (
-        <p className="error">{kpi.errors.join(' · ')}</p>
-      ) : null}
-
-      {permissionsReady && !loading ? (
-        kpiCards.length > 0 ? (
-          <div className="dash-kpi-primary">
-            {kpiCards.map((card) => (
-              <Panel key={card.key} className="dash-kpi-card">
-                <div className="dash-kpi-card-head">
-                  <span className="dash-kpi-icon">{card.icon}</span>
-                  <p className="dash-kpi-label">{card.label}</p>
-                </div>
-                <p className="stat-value dash-kpi-value">{card.value}</p>
-                {card.hint ? (
-                  <p className="dash-kpi-hint">
-                    {card.live ? (
-                      <span className="dash-live-dot" aria-hidden="true" />
-                    ) : null}
-                    {card.hint}
-                  </p>
-                ) : null}
-              </Panel>
-            ))}
-          </div>
-        ) : (
-          <p className="muted">
-            No hay KPIs disponibles con tus permisos. Usá el menú lateral.
-          </p>
-        )
+      {permissionsReady ? (
+        <DashboardKpis loading={loading} cards={kpiCards} errors={kpi.errors} />
       ) : null}
     </AdminShell>
   );

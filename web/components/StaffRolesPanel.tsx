@@ -2,6 +2,7 @@
 
 import { FormEvent, useEffect, useState } from 'react';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
+import { SkeletonForm } from '@/components/Skeleton';
 import { ApiClientError } from '@/lib/api/client';
 import { listRoles } from '@/lib/api/roles';
 import type { RoleDetail } from '@/lib/api/roles';
@@ -108,7 +109,7 @@ export function StaffRolesPanel({
     return <p className="error">{loadError}</p>;
   }
   if (!staff) {
-    return <p className="muted">Cargando roles…</p>;
+    return <SkeletonForm fields={3} />;
   }
 
   return (

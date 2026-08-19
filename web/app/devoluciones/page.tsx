@@ -20,6 +20,7 @@ import { AdminModal } from '@/components/AdminModal';
 import { AdminShell } from '@/components/AdminShell';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { RequireStaff } from '@/components/RequireStaff';
+import { PageSkeleton } from '@/components/Skeleton';
 import {
   IconView,
   RowActions,
@@ -69,7 +70,7 @@ function formatWhen(iso: string): string {
 export default function DevolucionesPage() {
   return (
     <RequireStaff>
-      <Suspense fallback={<p className="muted">Cargando…</p>}>
+      <Suspense fallback={<PageSkeleton />}>
         <DevolucionesInner />
       </Suspense>
     </RequireStaff>

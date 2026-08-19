@@ -11,6 +11,7 @@ import {
 import { AdminModal } from '@/components/AdminModal';
 import { AdminShell } from '@/components/AdminShell';
 import { RequireStaff } from '@/components/RequireStaff';
+import { PageSkeleton } from '@/components/Skeleton';
 import { ServiceCreateForm } from '@/components/ServiceCreateForm';
 import { ServiceEditForm } from '@/components/ServiceEditForm';
 import {
@@ -33,7 +34,7 @@ const PAGE_SIZE = 20;
 export default function ServiciosPage() {
   return (
     <RequireStaff>
-      <Suspense fallback={<p className="muted">Cargando…</p>}>
+      <Suspense fallback={<PageSkeleton />}>
         <ServiciosInner />
       </Suspense>
     </RequireStaff>

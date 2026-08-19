@@ -3,6 +3,7 @@
 import { FormEvent, useEffect, useState } from 'react';
 import { Panel } from '@/components/AdminUi';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
+import { SkeletonForm } from '@/components/Skeleton';
 import { ApiClientError } from '@/lib/api/client';
 import {
   expandSessionCapacity,
@@ -174,7 +175,7 @@ export function SessionDatosPanel({
     return <p className="error">{loadError}</p>;
   }
   if (!session) {
-    return <p className="muted">Cargando…</p>;
+    return <SkeletonForm fields={4} />;
   }
 
   const cancelled = session.status === 'CANCELLED';

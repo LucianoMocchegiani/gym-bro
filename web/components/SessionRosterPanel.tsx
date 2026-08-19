@@ -9,6 +9,7 @@ import {
 } from '@/components/AdminList';
 import { Panel } from '@/components/AdminUi';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
+import { SkeletonTable } from '@/components/Skeleton';
 import { StatusPill } from '@/components/StatusPill';
 import { ApiClientError } from '@/lib/api/client';
 import { listMembers } from '@/lib/api/members';
@@ -212,7 +213,7 @@ export function SessionRosterPanel({
     return <p className="error">{loadError}</p>;
   }
   if (!session) {
-    return <p className="muted">Cargando…</p>;
+    return <SkeletonTable rows={5} cols={4} />;
   }
 
   const cancelled = session.status === 'CANCELLED';

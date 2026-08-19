@@ -9,6 +9,7 @@ import {
 import { AdminModal } from '@/components/AdminModal';
 import { AdminShell } from '@/components/AdminShell';
 import { RequireStaff } from '@/components/RequireStaff';
+import { PageSkeleton } from '@/components/Skeleton';
 import { RoleCreateForm } from '@/components/RoleCreateForm';
 import { RoleEditForm } from '@/components/RoleEditForm';
 import {
@@ -30,7 +31,7 @@ const PAGE_SIZE = 20;
 export default function RolesPage() {
   return (
     <RequireStaff>
-      <Suspense fallback={<p className="muted">Cargando…</p>}>
+      <Suspense fallback={<PageSkeleton />}>
         <RolesInner />
       </Suspense>
     </RequireStaff>

@@ -7,6 +7,7 @@ import { AdminGrid, Panel } from '@/components/AdminUi';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { ReceiptPanel } from '@/components/ReceiptPanel';
 import { RequireStaff } from '@/components/RequireStaff';
+import { SkeletonCards, SkeletonPanel } from '@/components/Skeleton';
 import { StatusPill } from '@/components/StatusPill';
 import {
   getCashDay,
@@ -382,6 +383,13 @@ function CajaInner() {
           title="Comprobante emitido"
           onClose={() => setReceipt(null)}
         />
+      ) : null}
+
+      {loading && !day ? (
+        <>
+          <SkeletonCards count={4} />
+          <SkeletonPanel lines={4} />
+        </>
       ) : null}
 
       {day ? (

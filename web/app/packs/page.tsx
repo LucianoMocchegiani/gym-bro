@@ -13,6 +13,7 @@ import { AdminShell } from '@/components/AdminShell';
 import { PackCreateForm } from '@/components/PackCreateForm';
 import { PackEditPanel } from '@/components/PackEditPanel';
 import { RequireStaff } from '@/components/RequireStaff';
+import { PageSkeleton } from '@/components/Skeleton';
 import {
   IconEdit,
   RowActions,
@@ -36,7 +37,7 @@ const PAGE_SIZE = 20;
 export default function PacksPage() {
   return (
     <RequireStaff>
-      <Suspense fallback={<p className="muted">Cargando…</p>}>
+      <Suspense fallback={<PageSkeleton />}>
         <PacksInner />
       </Suspense>
     </RequireStaff>

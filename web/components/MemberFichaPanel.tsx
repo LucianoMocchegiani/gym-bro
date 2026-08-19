@@ -3,6 +3,7 @@
 import { FormEvent, useEffect, useState } from 'react';
 import { Panel } from '@/components/AdminUi';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
+import { SkeletonForm } from '@/components/Skeleton';
 import { StatusPill, memberStatusTone } from '@/components/StatusPill';
 import { ApiClientError } from '@/lib/api/client';
 import {
@@ -151,7 +152,7 @@ export function MemberFichaPanel({
     return <p className="error">{loadError}</p>;
   }
   if (!member) {
-    return <p className="muted">Cargando ficha…</p>;
+    return <SkeletonForm fields={4} />;
   }
 
   return (

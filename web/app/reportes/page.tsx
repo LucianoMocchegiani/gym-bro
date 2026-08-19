@@ -6,6 +6,7 @@ import { AdminShell } from '@/components/AdminShell';
 import { DataTable, ListToolbar } from '@/components/AdminList';
 import { Panel } from '@/components/AdminUi';
 import { RequireStaff } from '@/components/RequireStaff';
+import { SkeletonCards } from '@/components/Skeleton';
 import { ApiClientError } from '@/lib/api/client';
 import { getReportsSummary } from '@/lib/api/reports';
 import type { ReportsSummary } from '@/lib/api/reports';
@@ -112,6 +113,7 @@ function ReportesInner() {
         </p>
       }
     >
+      {loading ? <SkeletonCards count={3} /> : null}
       {data && !loading ? (
         <div className="stat-row">
           <Panel className="stat-card">

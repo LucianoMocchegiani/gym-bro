@@ -15,6 +15,7 @@ import { DoorManualPassPanel } from '@/components/DoorManualPassPanel';
 import { DoorShell, parseDoorTab } from '@/components/DoorShell';
 import type { DoorTab } from '@/components/DoorShell';
 import { RequireStaff } from '@/components/RequireStaff';
+import { PageSkeleton } from '@/components/Skeleton';
 import {
   StatusPill,
   accessResultLabel,
@@ -71,7 +72,7 @@ function subjectLabel(a: AccessAttemptDetail): string {
 export default function PuertaPage() {
   return (
     <RequireStaff>
-      <Suspense fallback={<p className="muted">Cargando…</p>}>
+      <Suspense fallback={<PageSkeleton />}>
         <PuertaInner />
       </Suspense>
     </RequireStaff>

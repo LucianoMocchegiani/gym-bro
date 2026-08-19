@@ -22,6 +22,7 @@
   --radius: 14px;
   --shadow: 0 16px 48px rgba(0, 0, 0, 0.45);
   --sidebar-width: 15.5rem;
+  --skeleton-shimmer: rgba(255, 255, 255, 0.08);
 }
 
 [data-theme='light'] {
@@ -43,6 +44,7 @@
   --input-bg: #ffffff;
   --table-row: #fafafa;
   --shadow: 0 12px 40px rgba(18, 20, 18, 0.08);
+  --skeleton-shimmer: rgba(18, 20, 18, 0.08);
 }
 
 html,
@@ -616,6 +618,114 @@ button.linkish:hover {
   background: var(--accent);
   border-color: var(--accent);
   color: var(--accent-ink);
+}
+
+/* ---- Skeletons (shimmer) ---- */
+
+.skeleton {
+  position: relative;
+  overflow: hidden;
+  background: var(--line);
+  border-radius: 0.4rem;
+}
+
+.skeleton::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    var(--skeleton-shimmer),
+    transparent
+  );
+  animation: skeleton-shimmer 1.5s infinite;
+}
+
+@keyframes skeleton-shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+.skeleton-table {
+  display: grid;
+  gap: 0;
+  overflow: hidden;
+}
+
+.skeleton-table-row {
+  display: grid;
+  gap: 0.75rem;
+  align-items: center;
+  padding: 0.6rem 0.9rem;
+  border-bottom: 1px solid var(--line);
+}
+
+.skeleton-table-row:first-child .skeleton-cell {
+  height: 0.75rem;
+  opacity: 0.65;
+}
+
+.skeleton-cell {
+  height: 0.9rem;
+}
+
+.skeleton-form {
+  display: grid;
+  gap: 1rem;
+  padding: 0.1rem 0;
+}
+
+.skeleton-field {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.skeleton-label {
+  height: 0.8rem;
+  width: 30%;
+}
+
+.skeleton-input {
+  height: 2.35rem;
+  width: 100%;
+}
+
+.skeleton-button {
+  height: 2.35rem;
+  width: 40%;
+}
+
+.skeleton-panel-body {
+  display: grid;
+  gap: 0.6rem;
+  padding-top: 0.6rem;
+}
+
+.skeleton-panel-body .skeleton {
+  height: 0.9rem;
+}
+
+.skeleton-title {
+  height: 1.15rem;
+  width: 40%;
+}
+
+.skeleton-subtitle {
+  height: 0.75rem;
+  width: 60%;
+}
+
+.skeleton-card-label {
+  height: 0.75rem;
+  width: 45%;
+}
+
+.skeleton-card-value {
+  height: 1.6rem;
+  width: 55%;
 }
 
 a.btn,

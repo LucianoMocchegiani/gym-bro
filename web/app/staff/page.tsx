@@ -11,6 +11,7 @@ import {
 import { AdminModal } from '@/components/AdminModal';
 import { AdminShell } from '@/components/AdminShell';
 import { RequireStaff } from '@/components/RequireStaff';
+import { PageSkeleton } from '@/components/Skeleton';
 import { StaffCreateForm } from '@/components/StaffCreateForm';
 import { StaffCredentialPanel } from '@/components/StaffCredentialPanel';
 import { StaffRolesPanel } from '@/components/StaffRolesPanel';
@@ -35,7 +36,7 @@ const PAGE_SIZE = 20;
 export default function StaffPage() {
   return (
     <RequireStaff>
-      <Suspense fallback={<p className="muted">Cargando…</p>}>
+      <Suspense fallback={<PageSkeleton />}>
         <StaffInner />
       </Suspense>
     </RequireStaff>

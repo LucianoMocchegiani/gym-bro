@@ -8,6 +8,7 @@ import {
 } from '@/components/AdminList';
 import { AdminModal } from '@/components/AdminModal';
 import { RequireSuper } from '@/components/RequireSuper';
+import { PageSkeleton } from '@/components/Skeleton';
 import { StatusPill, activeTone } from '@/components/StatusPill';
 import { SuperShell } from '@/components/SuperShell';
 import {
@@ -31,7 +32,7 @@ const PAGE_SIZE = 20;
 export default function SuperTenantsPage() {
   return (
     <RequireSuper>
-      <Suspense fallback={<p className="muted">Cargando…</p>}>
+      <Suspense fallback={<PageSkeleton />}>
         <TenantsInner />
       </Suspense>
     </RequireSuper>

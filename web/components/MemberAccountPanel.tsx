@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { FormEvent, useEffect, useState } from 'react';
 import { Panel } from '@/components/AdminUi';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
+import { SkeletonPanel } from '@/components/Skeleton';
 import { ReceiptPanel } from '@/components/ReceiptPanel';
 import { ApiClientError } from '@/lib/api/client';
 import {
@@ -274,7 +275,7 @@ export function MemberAccountPanel({
     return <p className="error">{loadError}</p>;
   }
   if (!account) {
-    return <p className="muted">Cargando cuenta…</p>;
+    return <SkeletonPanel lines={5} />;
   }
 
   const body = (

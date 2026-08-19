@@ -5,6 +5,7 @@ import { AdminShell } from '@/components/AdminShell';
 import { AdminGrid, Panel } from '@/components/AdminUi';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { RequireStaff } from '@/components/RequireStaff';
+import { SkeletonForm } from '@/components/Skeleton';
 import { ApiClientError } from '@/lib/api/client';
 import {
   disconnectMercadoPagoAccount,
@@ -223,7 +224,7 @@ function ConfigInner() {
     <AdminShell title="Config">
       {loadError ? <p className="error">{loadError}</p> : null}
       {!settings && mp === null && !loadError ? (
-        <p className="muted">Cargando…</p>
+        <SkeletonForm fields={3} />
       ) : null}
 
       {settings || mp !== null ? (

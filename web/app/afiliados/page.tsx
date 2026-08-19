@@ -15,6 +15,7 @@ import { MemberAccountPanel } from '@/components/MemberAccountPanel';
 import { MemberCreateForm } from '@/components/MemberCreateForm';
 import { MemberFichaPanel } from '@/components/MemberFichaPanel';
 import { RequireStaff } from '@/components/RequireStaff';
+import { PageSkeleton } from '@/components/Skeleton';
 import {
   IconAccount,
   IconEdit,
@@ -35,7 +36,7 @@ const PAGE_SIZE = 20;
 export default function AfiliadosPage() {
   return (
     <RequireStaff>
-      <Suspense fallback={<p className="muted">Cargando…</p>}>
+      <Suspense fallback={<PageSkeleton />}>
         <AfiliadosInner />
       </Suspense>
     </RequireStaff>

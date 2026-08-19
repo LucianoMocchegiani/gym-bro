@@ -2,6 +2,7 @@
 
 import { FormEvent, useEffect, useState } from 'react';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
+import { SkeletonForm } from '@/components/Skeleton';
 import { PermissionsChecklist } from '@/components/PermissionsChecklist';
 import { ApiClientError } from '@/lib/api/client';
 import { getRole, updateRole } from '@/lib/api/roles';
@@ -102,7 +103,7 @@ export function RoleEditForm({
     return <p className="error">{loadError}</p>;
   }
   if (!role) {
-    return <p className="muted">Cargando…</p>;
+    return <SkeletonForm fields={3} />;
   }
 
   return (

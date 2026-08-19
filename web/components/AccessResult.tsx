@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { formatAccessReason } from '@/lib/access-labels';
 import type { AccessAttemptDetail, AccessVerifyResult } from '@/lib/api/access';
 import { Panel } from '@/components/AdminUi';
+import { Skeleton } from '@/components/Skeleton';
 
 function subjectLabel(a: AccessAttemptDetail): string {
   if (a.subjectStaffId) {
@@ -102,7 +103,13 @@ export function AttemptsList({
           En listado: {allowed} ALLOWED · {denied} DENIED
         </p>
       ) : null}
-      {loading ? <p className="muted">Cargando…</p> : null}
+      {loading ? (
+        <div className="skeleton-form" role="status" aria-label="Cargando">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <Skeleton key={i} style={{ width: `${88 - (i % 3) * 14}%` }} />
+          ))}
+        </div>
+      ) : null}
       {error ? <p className="error">{error}</p> : null}
       {!loading && !error && attempts.length === 0 ? (
         <p className="muted">Sin intentos todavía.</p>

@@ -6,6 +6,7 @@ import { useParams } from 'next/navigation';
 import { RequireSuper } from '@/components/RequireSuper';
 import { SuperShell } from '@/components/SuperShell';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
+import { SkeletonForm } from '@/components/Skeleton';
 import { Panel } from '@/components/AdminUi';
 import { ApiClientError } from '@/lib/api/client';
 import { getTenant, updateTenant } from '@/lib/api/tenants';
@@ -138,7 +139,7 @@ function DetailInner() {
       }
     >
       {loadError ? <p className="error">{loadError}</p> : null}
-      {!tenant && !loadError ? <p className="muted">Cargando…</p> : null}
+      {!tenant && !loadError ? <SkeletonForm fields={3} /> : null}
 
       {tenant ? (
         <Panel

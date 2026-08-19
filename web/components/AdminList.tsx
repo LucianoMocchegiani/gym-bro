@@ -2,6 +2,7 @@
 
 import type { FormEvent, ReactNode } from 'react';
 import { Panel } from '@/components/AdminUi';
+import { SkeletonTable } from '@/components/Skeleton';
 
 /**
  * Barra superior de filtros / búsqueda de listados Admin.
@@ -186,7 +187,15 @@ export function DataTable({
   onPageChange,
 }: DataTableProps) {
   if (loading) {
-    return <p className="muted">Cargando…</p>;
+    return (
+      <Panel
+        title={title}
+        description={description}
+        className="table-wrap"
+      >
+        <SkeletonTable rows={6} cols={5} />
+      </Panel>
+    );
   }
   if (error) {
     return <p className="error">{error}</p>;

@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
+import { SkeletonForm } from '@/components/Skeleton';
 import { ApiClientError } from '@/lib/api/client';
 import {
   getStaff,
@@ -114,7 +115,7 @@ export function StaffCredentialPanel({ staffId }: { staffId: string }) {
     return <p className="error">{loadError}</p>;
   }
   if (!staff) {
-    return <p className="muted">Cargando credencial…</p>;
+    return <SkeletonForm fields={3} />;
   }
 
   return (

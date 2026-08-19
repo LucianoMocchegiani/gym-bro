@@ -2,6 +2,7 @@
 
 import { FormEvent, useEffect, useState } from 'react';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
+import { SkeletonForm } from '@/components/Skeleton';
 import { ApiClientError } from '@/lib/api/client';
 import { getService, updateService } from '@/lib/api/services';
 import type { ServiceDetail } from '@/lib/api/services';
@@ -112,7 +113,7 @@ export function ServiceEditForm({
     return <p className="error">{loadError}</p>;
   }
   if (!service) {
-    return <p className="muted">Cargando…</p>;
+    return <SkeletonForm fields={3} />;
   }
 
   return (
