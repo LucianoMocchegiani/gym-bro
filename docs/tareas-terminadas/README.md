@@ -16,6 +16,7 @@ La creación de registros sigue la skill:
 
 ## Índice
 
+- [2026-08-18 — Popup de confirmación reutilizable + dirty-check](./2026-08-18-popup-confirmacion-reutilizable.md)
 - [2026-08-14 — Modales packs/sesiones + cleanup](./2026-08-14-admin-modales-packs-sesiones-cleanup.md)
 - [2026-08-14 — Acciones icono + modales afiliados/staff](./2026-08-14-admin-row-actions-modales-afiliados-staff.md)
 - [2026-08-14 — Modales editar/alta + roster thin](./2026-08-14-admin-modales-edit-alta-roster.md)
