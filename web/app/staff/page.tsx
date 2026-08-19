@@ -218,6 +218,7 @@ function StaffInner() {
           <StaffRolesPanel
             key={rolesId}
             staffId={rolesId}
+            onCancel={closeModals}
             onSaved={(s) => {
               setFlashOk(`Roles actualizados: ${s.email}`);
               void load();

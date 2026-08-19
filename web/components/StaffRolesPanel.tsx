@@ -1,6 +1,7 @@
 'use client';
 
 import { FormEvent, useEffect, useState } from 'react';
+import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { ApiClientError } from '@/lib/api/client';
 import { listRoles } from '@/lib/api/roles';
 import type { RoleDetail } from '@/lib/api/roles';
@@ -13,9 +14,12 @@ import type { StaffUserDetail } from '@/lib/api/staff';
 export function StaffRolesPanel({
   staffId,
   onSaved,
+  onCancel,
 }: {
   staffId: string;
   onSaved?: (staff: StaffUserDetail) => void;
+  /** Si el panel se renderiza en un modal: cierra al guardar sin cambios. */
+  onCancel?: () => void;
 }) {
   const [staff, setStaff] = useState<StaffUserDetail | null>(null);
   const [roles, setRoles] = useState<RoleDetail[]>([]);
@@ -24,6 +28,7 @@ export function StaffRolesPanel({
   const [saveError, setSaveError] = useState<string | null>(null);
   const [saveOk, setSaveOk] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [confirmSave, setConfirmSave] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -64,6 +69,21 @@ export function StaffRolesPanel({
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
+    if (!staff) {
+      return;
+    }
+    const dirty =
+      JSON.stringify([...roleIds].sort()) !==
+      JSON.stringify(staff.roles.map((r) => r.id).sort());
+    if (!dirty) {
+      // Sin cambios: no pegarle a la API; si es modal, cerrar.
+      onCancel?.();
+      return;
+    }
+    setConfirmSave(true);
+  }
+
+  async function doSave() {
     setBusy(true);
     setSaveError(null);
     setSaveOk(false);
@@ -121,6 +141,19 @@ export function StaffRolesPanel({
       <button type="submit" className="primary" disabled={busy}>
         {busy ? 'Guardando…' : 'Guardar roles'}
       </button>
+
+      <ConfirmDialog
+        open={confirmSave}
+        title="Guardar cambios"
+        description="¿Confirmás guardar los roles del staff? Se reemplaza el set completo (puede quedar vacío)."
+        confirmLabel="Guardar"
+        busy={busy}
+        onConfirm={() => {
+          setConfirmSave(false);
+          void doSave();
+        }}
+        onCancel={() => setConfirmSave(false)}
+      />
     </form>
   );
 }

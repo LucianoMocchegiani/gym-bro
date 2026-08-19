@@ -232,6 +232,7 @@ function AfiliadosInner() {
           <MemberFichaPanel
             key={fichaId}
             memberId={fichaId}
+            onCancel={closeModals}
             onSaved={(m) => {
               setFlashOk(`Ficha actualizada: ${m.name?.trim() || m.email}`);
               void load();

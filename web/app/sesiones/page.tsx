@@ -10,6 +10,7 @@ import {
 } from '@/components/AdminList';
 import { AdminModal } from '@/components/AdminModal';
 import { AdminShell } from '@/components/AdminShell';
+import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { RequireStaff } from '@/components/RequireStaff';
 import {
   IconEdit,
@@ -220,6 +221,7 @@ function SesionesInner() {
             key={datosId}
             sessionId={datosId}
             embedded
+            onCancel={closeModals}
             onSaved={() => setListKey((k) => k + 1)}
           />
         ) : null}
@@ -385,6 +387,9 @@ function RulesList() {
   const [okMsg, setOkMsg] = useState<string | null>(
     createdId ? 'Recurrencia creada.' : null,
   );
+  const [deactivateTarget, setDeactivateTarget] =
+    useState<RecurrenceRuleDetail | null>(null);
+  const [deactivateBusy, setDeactivateBusy] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -419,29 +424,27 @@ function RulesList() {
     void load();
   }, [load]);
 
-  async function onDeactivate(rule: RecurrenceRuleDetail) {
-    if (!rule.active) {
+  async function doDeactivate() {
+    const rule = deactivateTarget;
+    if (!rule || !rule.active) {
       return;
     }
-    if (
-      !window.confirm(
-        `¿Desactivar la recurrencia de ${rule.serviceName}? Las sesiones ya generadas no se cancelan.`,
-      )
-    ) {
-      return;
-    }
+    setDeactivateBusy(true);
     setError(null);
     setOkMsg(null);
     try {
       await deactivateRecurrenceRule(rule.id);
       setOkMsg('Recurrencia desactivada.');
       await load();
+      setDeactivateTarget(null);
     } catch (err) {
       setError(
         err instanceof ApiClientError
           ? err.message
           : 'No se pudo desactivar la recurrencia',
       );
+    } finally {
+      setDeactivateBusy(false);
     }
   }
 
@@ -493,7 +496,7 @@ function RulesList() {
                 <button
                   type="button"
                   className="btn ghost"
-                  onClick={() => void onDeactivate(r)}
+                  onClick={() => setDeactivateTarget(r)}
                 >
                   Desactivar
                 </button>
@@ -502,6 +505,17 @@ function RulesList() {
           </tr>
         ))}
       </DataTable>
+
+      <ConfirmDialog
+        open={deactivateTarget !== null}
+        title="Desactivar recurrencia"
+        description={`¿Desactivar la recurrencia de ${deactivateTarget?.serviceName ?? ''}? Las sesiones ya generadas no se cancelan.`}
+        confirmLabel="Desactivar"
+        tone="danger"
+        busy={deactivateBusy}
+        onConfirm={() => void doDeactivate()}
+        onCancel={() => setDeactivateTarget(null)}
+      />
     </>
   );
 }

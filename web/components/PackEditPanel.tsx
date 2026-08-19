@@ -6,6 +6,7 @@ import {
   buildPackComponents,
   type PackComponentDraft,
 } from '@/components/PackComponentsEditor';
+import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { ApiClientError } from '@/lib/api/client';
 import { getPack, updatePack } from '@/lib/api/packs';
 import type { PackDetail } from '@/lib/api/packs';
@@ -49,9 +50,12 @@ function kuatiaStatus(pack: PackDetail): {
 export function PackEditPanel({
   packId,
   onSaved,
+  onCancel,
 }: {
   packId: string;
   onSaved?: (pack: PackDetail) => void;
+  /** Si el form se renderiza en un modal: cierra al guardar sin cambios. */
+  onCancel?: () => void;
 }) {
   const [pack, setPack] = useState<PackDetail | null>(null);
   const [services, setServices] = useState<ServiceDetail[]>([]);
@@ -68,6 +72,8 @@ export function PackEditPanel({
   const [saveError, setSaveError] = useState<string | null>(null);
   const [saveOk, setSaveOk] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [initialJson, setInitialJson] = useState('');
+  const [confirmSave, setConfirmSave] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -107,12 +113,22 @@ export function PackEditPanel({
     setBillingPeriod(p.billingPeriod);
     setCreditsExpireAt(toDateInput(p.creditsExpireAt));
     setActive(p.active);
-    setComponents(
-      p.components.map((c, i) => ({
-        key: `c${i}`,
-        serviceId: c.serviceId,
-        creditAmount: c.creditAmount != null ? String(c.creditAmount) : '',
-      })),
+    const comps = p.components.map((c, i) => ({
+      key: `c${i}`,
+      serviceId: c.serviceId,
+      creditAmount: c.creditAmount != null ? String(c.creditAmount) : '',
+    }));
+    setComponents(comps);
+    setInitialJson(
+      JSON.stringify({
+        name: p.name,
+        description: p.description ?? '',
+        price: String(p.price),
+        billingPeriod: p.billingPeriod,
+        creditsExpireAt: toDateInput(p.creditsExpireAt),
+        active: p.active,
+        components: comps,
+      }),
     );
   }
 
@@ -133,6 +149,27 @@ export function PackEditPanel({
         return;
       }
     }
+    const dirty =
+      initialJson !== '' &&
+      JSON.stringify({
+        name,
+        description,
+        price,
+        billingPeriod,
+        creditsExpireAt,
+        active,
+        components,
+      }) !== initialJson;
+    if (!dirty) {
+      // Sin cambios: no pegarle a la API; si es modal, cerrar.
+      onCancel?.();
+      return;
+    }
+    setConfirmSave(true);
+  }
+
+  async function doSave() {
+    const comps = buildPackComponents(components, services);
     setBusy(true);
     setSaveError(null);
     setSaveOk(false);
@@ -262,6 +299,19 @@ export function PackEditPanel({
           {busy ? 'Guardando…' : 'Guardar'}
         </button>
       </form>
+
+      <ConfirmDialog
+        open={confirmSave}
+        title="Guardar cambios"
+        description="¿Confirmás guardar los cambios del pack? Se re-sincroniza la metadata en Kuatia."
+        confirmLabel="Guardar"
+        busy={busy}
+        onConfirm={() => {
+          setConfirmSave(false);
+          void doSave();
+        }}
+        onCancel={() => setConfirmSave(false)}
+      />
 
       <div className="admin-stack">
         <p className="muted small">

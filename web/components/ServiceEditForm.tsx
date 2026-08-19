@@ -1,6 +1,7 @@
 'use client';
 
 import { FormEvent, useEffect, useState } from 'react';
+import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { ApiClientError } from '@/lib/api/client';
 import { getService, updateService } from '@/lib/api/services';
 import type { ServiceDetail } from '@/lib/api/services';
@@ -26,6 +27,7 @@ export function ServiceEditForm({
   const [loadError, setLoadError] = useState<string | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [confirmSave, setConfirmSave] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -59,6 +61,24 @@ export function ServiceEditForm({
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
+    if (!service) {
+      return;
+    }
+    const dirty =
+      name !== service.name ||
+      description !== (service.description ?? '') ||
+      dropInPrice !==
+        (service.dropInPrice != null ? String(service.dropInPrice) : '') ||
+      active !== service.active;
+    if (!dirty) {
+      // Sin cambios: no pegarle a la API; si es modal, cerrar.
+      onCancel?.();
+      return;
+    }
+    setConfirmSave(true);
+  }
+
+  async function doSave() {
     if (!service) {
       return;
     }
@@ -156,6 +176,19 @@ export function ServiceEditForm({
           {busy ? 'Guardando…' : 'Guardar'}
         </button>
       </div>
+
+      <ConfirmDialog
+        open={confirmSave}
+        title="Guardar cambios"
+        description="¿Confirmás guardar los cambios del servicio?"
+        confirmLabel="Guardar"
+        busy={busy}
+        onConfirm={() => {
+          setConfirmSave(false);
+          void doSave();
+        }}
+        onCancel={() => setConfirmSave(false)}
+      />
     </form>
   );
 }

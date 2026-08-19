@@ -5,6 +5,7 @@ import { FormEvent, useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import { RequireSuper } from '@/components/RequireSuper';
 import { SuperShell } from '@/components/SuperShell';
+import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { Panel } from '@/components/AdminUi';
 import { ApiClientError } from '@/lib/api/client';
 import { getTenant, updateTenant } from '@/lib/api/tenants';
@@ -36,6 +37,8 @@ function DetailInner() {
   const [saveOk, setSaveOk] = useState(false);
   const [busy, setBusy] = useState(false);
   const [statusBusy, setStatusBusy] = useState(false);
+  const [confirmSave, setConfirmSave] = useState(false);
+  const [statusTarget, setStatusTarget] = useState<TenantStatus | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -67,6 +70,18 @@ function DetailInner() {
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
+    if (!tenant) {
+      return;
+    }
+    const dirty = name !== tenant.name || slug !== tenant.slug;
+    if (!dirty) {
+      // Sin cambios: no pegarle a la API.
+      return;
+    }
+    setConfirmSave(true);
+  }
+
+  async function doSave() {
     setBusy(true);
     setSaveError(null);
     setSaveOk(false);
@@ -90,11 +105,12 @@ function DetailInner() {
     }
   }
 
-  async function setStatus(status: TenantStatus) {
-    const label = status === 'SUSPENDED' ? 'suspender' : 'reactivar';
-    if (!window.confirm(`¿Confirmás ${label} este gym?`)) {
+  async function doSetStatus() {
+    if (!statusTarget) {
       return;
     }
+    const status = statusTarget;
+    const label = status === 'SUSPENDED' ? 'suspender' : 'reactivar';
     setStatusBusy(true);
     setSaveError(null);
     try {
@@ -108,6 +124,7 @@ function DetailInner() {
       );
     } finally {
       setStatusBusy(false);
+      setStatusTarget(null);
     }
   }
 
@@ -170,7 +187,7 @@ function DetailInner() {
                   type="button"
                   className="btn danger"
                   disabled={statusBusy}
-                  onClick={() => void setStatus('SUSPENDED')}
+                  onClick={() => setStatusTarget('SUSPENDED')}
                 >
                   Suspender
                 </button>
@@ -179,7 +196,7 @@ function DetailInner() {
                   type="button"
                   className="btn"
                   disabled={statusBusy}
-                  onClick={() => void setStatus('ACTIVE')}
+                  onClick={() => setStatusTarget('ACTIVE')}
                 >
                   Reactivar
                 </button>
@@ -188,6 +205,36 @@ function DetailInner() {
           </form>
         </Panel>
       ) : null}
+
+      <ConfirmDialog
+        open={confirmSave}
+        title="Guardar cambios"
+        description="¿Confirmás guardar los cambios del gym?"
+        confirmLabel="Guardar"
+        busy={busy}
+        onConfirm={() => {
+          setConfirmSave(false);
+          void doSave();
+        }}
+        onCancel={() => setConfirmSave(false)}
+      />
+
+      <ConfirmDialog
+        open={statusTarget !== null}
+        title={
+          statusTarget === 'SUSPENDED' ? 'Suspender gym' : 'Reactivar gym'
+        }
+        description={`¿Confirmás ${
+          statusTarget === 'SUSPENDED' ? 'suspender' : 'reactivar'
+        } este gym?`}
+        confirmLabel={
+          statusTarget === 'SUSPENDED' ? 'Suspender' : 'Reactivar'
+        }
+        tone={statusTarget === 'SUSPENDED' ? 'danger' : 'default'}
+        busy={statusBusy}
+        onConfirm={() => void doSetStatus()}
+        onCancel={() => setStatusTarget(null)}
+      />
     </SuperShell>
   );
 }

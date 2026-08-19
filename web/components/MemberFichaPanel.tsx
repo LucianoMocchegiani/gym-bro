@@ -2,6 +2,7 @@
 
 import { FormEvent, useEffect, useState } from 'react';
 import { Panel } from '@/components/AdminUi';
+import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { StatusPill, memberStatusTone } from '@/components/StatusPill';
 import { ApiClientError } from '@/lib/api/client';
 import {
@@ -18,9 +19,12 @@ import { formatMemberStatus } from '@/lib/member-labels';
 export function MemberFichaPanel({
   memberId,
   onSaved,
+  onCancel,
 }: {
   memberId: string;
   onSaved?: (member: MemberDetail) => void;
+  /** Si el panel se renderiza en un modal: cierra al guardar sin cambios. */
+  onCancel?: () => void;
 }) {
   const [member, setMember] = useState<MemberDetail | null>(null);
   const [name, setName] = useState('');
@@ -34,6 +38,8 @@ export function MemberFichaPanel({
   const [saveOk, setSaveOk] = useState(false);
   const [busy, setBusy] = useState(false);
   const [statusBusy, setStatusBusy] = useState(false);
+  const [confirmSave, setConfirmSave] = useState(false);
+  const [confirmStatus, setConfirmStatus] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -68,6 +74,23 @@ export function MemberFichaPanel({
 
   async function onSave(e: FormEvent) {
     e.preventDefault();
+    if (!member) {
+      return;
+    }
+    const dirty =
+      name !== (member.name ?? '') ||
+      email !== member.email ||
+      phone !== (member.phone ?? '') ||
+      document !== (member.document ?? '');
+    if (!dirty) {
+      // Sin cambios: no pegarle a la API; si es modal, cerrar.
+      onCancel?.();
+      return;
+    }
+    setConfirmSave(true);
+  }
+
+  async function doSave() {
     setBusy(true);
     setSaveError(null);
     setSaveOk(false);
@@ -97,10 +120,11 @@ export function MemberFichaPanel({
     if (!member || status === member.status) {
       return;
     }
-    const ok = window.confirm(
-      `¿Cambiar estado a ${formatMemberStatus(status)}?`,
-    );
-    if (!ok) {
+    setConfirmStatus(true);
+  }
+
+  async function doStatus() {
+    if (!member) {
       return;
     }
     setStatusBusy(true);
@@ -119,6 +143,7 @@ export function MemberFichaPanel({
       setStatus(member.status);
     } finally {
       setStatusBusy(false);
+      setConfirmStatus(false);
     }
   }
 
@@ -199,6 +224,30 @@ export function MemberFichaPanel({
           </button>
         </form>
       </Panel>
+
+      <ConfirmDialog
+        open={confirmSave}
+        title="Guardar cambios"
+        description="¿Confirmás guardar los cambios de la ficha del afiliado?"
+        confirmLabel="Guardar"
+        busy={busy}
+        onConfirm={() => {
+          setConfirmSave(false);
+          void doSave();
+        }}
+        onCancel={() => setConfirmSave(false)}
+      />
+
+      <ConfirmDialog
+        open={confirmStatus}
+        title="Cambiar estado"
+        description={`¿Cambiar estado a ${formatMemberStatus(status)}?`}
+        confirmLabel="Cambiar estado"
+        tone={status === 'ACTIVE' ? 'default' : 'danger'}
+        busy={statusBusy}
+        onConfirm={() => void doStatus()}
+        onCancel={() => setConfirmStatus(false)}
+      />
     </div>
   );
 }

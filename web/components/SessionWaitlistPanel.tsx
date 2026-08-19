@@ -8,6 +8,7 @@ import {
   ListToolbar,
 } from '@/components/AdminList';
 import { Panel } from '@/components/AdminUi';
+import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { StatusPill } from '@/components/StatusPill';
 import { ApiClientError } from '@/lib/api/client';
 import { listMembers } from '@/lib/api/members';
@@ -81,6 +82,10 @@ export function SessionWaitlistPanel({
   const [wlBusy, setWlBusy] = useState(false);
   const [wlError, setWlError] = useState<string | null>(null);
   const [wlOk, setWlOk] = useState<string | null>(null);
+  const [leaveTarget, setLeaveTarget] = useState<WaitlistEntryDetail | null>(
+    null,
+  );
+  const [leaveBusy, setLeaveBusy] = useState(false);
 
   const loadWaitlist = useCallback(async () => {
     setWaitlistLoading(true);
@@ -197,24 +202,25 @@ export function SessionWaitlistPanel({
     }
   }
 
-  async function onLeaveWaitlist(row: WaitlistEntryDetail) {
-    if (row.status !== 'WAITING') {
+  async function doLeaveWaitlist() {
+    const row = leaveTarget;
+    if (!row || row.status !== 'WAITING') {
       return;
     }
-    const label = row.memberName?.trim() || row.memberEmail;
-    if (!window.confirm(`¿Sacar a ${label} de la lista de espera?`)) {
-      return;
-    }
+    setLeaveBusy(true);
     setWaitlistError(null);
     try {
       await leaveWaitlist(row.id);
       await loadWaitlist();
+      setLeaveTarget(null);
     } catch (err) {
       setWaitlistError(
         err instanceof ApiClientError
           ? err.message
           : 'No se pudo sacar de la lista de espera',
       );
+    } finally {
+      setLeaveBusy(false);
     }
   }
 
@@ -293,7 +299,7 @@ export function SessionWaitlistPanel({
                 <button
                   type="button"
                   className="btn ghost"
-                  onClick={() => void onLeaveWaitlist(row)}
+                  onClick={() => setLeaveTarget(row)}
                 >
                   Quitar
                 </button>
@@ -357,6 +363,19 @@ export function SessionWaitlistPanel({
           </form>
         </Panel>
       ) : null}
+
+      <ConfirmDialog
+        open={leaveTarget !== null}
+        title="Quitar de la lista de espera"
+        description={`¿Sacar a ${
+          leaveTarget?.memberName?.trim() || leaveTarget?.memberEmail || ''
+        } de la lista de espera?`}
+        confirmLabel="Quitar"
+        tone="danger"
+        busy={leaveBusy}
+        onConfirm={() => void doLeaveWaitlist()}
+        onCancel={() => setLeaveTarget(null)}
+      />
     </div>
   );
 }

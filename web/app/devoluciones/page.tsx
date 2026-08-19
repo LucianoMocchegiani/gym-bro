@@ -18,6 +18,7 @@ import {
 } from '@/components/AdminList';
 import { AdminModal } from '@/components/AdminModal';
 import { AdminShell } from '@/components/AdminShell';
+import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { RequireStaff } from '@/components/RequireStaff';
 import {
   IconView,
@@ -98,7 +99,7 @@ function DevolucionesInner() {
   const [motiveCode, setMotiveCode] = useState<RefundMotiveCode>(
     prefillPaymentId ? 'doble_cobro' : 'solicitud',
   );
-  const [confirmText, setConfirmText] = useState('');
+  const [confirmOpen, setConfirmOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
 
@@ -167,10 +168,9 @@ function DevolucionesInner() {
       canExecute &&
       Boolean(paymentIdToExecute) &&
       reason.trim().length >= 3 &&
-      confirmText.trim().toUpperCase() === 'DEVOLVER' &&
       !busy
     );
-  }, [canExecute, paymentIdToExecute, reason, confirmText, busy]);
+  }, [canExecute, paymentIdToExecute, reason, busy]);
 
   function resetForm(opts?: {
     paymentId?: string;
@@ -180,7 +180,7 @@ function DevolucionesInner() {
     const paymentId = opts?.paymentId ?? '';
     setSelected(request);
     setDirectPaymentId(paymentId);
-    setConfirmText('');
+    setConfirmOpen(false);
     setActionError(null);
     if (request?.status === 'PENDING') {
       setMotiveCode('solicitud');
@@ -217,6 +217,13 @@ function DevolucionesInner() {
   async function onExecute(e: FormEvent) {
     e.preventDefault();
     if (!canSubmit || !paymentIdToExecute) {
+      return;
+    }
+    setConfirmOpen(true);
+  }
+
+  async function doExecute() {
+    if (!paymentIdToExecute) {
       return;
     }
     setBusy(true);
@@ -430,21 +437,6 @@ function DevolucionesInner() {
               />
             </label>
 
-            <label>
-              Escribí <strong>DEVOLVER</strong> para confirmar
-              <input
-                value={confirmText}
-                onChange={(e) => setConfirmText(e.target.value)}
-                autoComplete="off"
-                placeholder="DEVOLVER"
-              />
-            </label>
-
-            <p className="muted small">
-              Acción irreversible: revierte contrato/reserva asociados y genera
-              egreso CASH o refund MP según el medio.
-            </p>
-
             {actionError ? <p className="error">{actionError}</p> : null}
 
             <div className="admin-modal-actions">
@@ -467,6 +459,21 @@ function DevolucionesInner() {
           </form>
         )}
       </AdminModal>
+
+      <ConfirmDialog
+        open={confirmOpen}
+        title="Confirmar devolución"
+        description="Acción irreversible: revierte contrato/reserva asociados y genera egreso CASH o refund MP según el medio."
+        confirmLabel="Ejecutar devolución"
+        tone="danger"
+        confirmWord="DEVOLVER"
+        busy={busy}
+        onConfirm={() => {
+          setConfirmOpen(false);
+          void doExecute();
+        }}
+        onCancel={() => setConfirmOpen(false)}
+      />
     </AdminShell>
   );
 }

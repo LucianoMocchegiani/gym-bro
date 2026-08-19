@@ -678,6 +678,10 @@ a.btn.ghost:hover,
   backdrop-filter: blur(6px);
 }
 
+.admin-modal-backdrop-elevated {
+  z-index: 90;
+}
+
 .admin-modal {
   width: min(32rem, 100%);
   max-height: min(90vh, 40rem);

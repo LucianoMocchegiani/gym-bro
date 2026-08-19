@@ -3,6 +3,7 @@
 import { FormEvent, useEffect, useState } from 'react';
 import { AdminShell } from '@/components/AdminShell';
 import { AdminGrid, Panel } from '@/components/AdminUi';
+import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { RequireStaff } from '@/components/RequireStaff';
 import { ApiClientError } from '@/lib/api/client';
 import {
@@ -53,6 +54,8 @@ function ConfigInner() {
   const [mpOk, setMpOk] = useState<string | null>(null);
   const [settingsBusy, setSettingsBusy] = useState(false);
   const [mpBusy, setMpBusy] = useState(false);
+  const [confirmSettings, setConfirmSettings] = useState(false);
+  const [confirmMpDisconnect, setConfirmMpDisconnect] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -103,6 +106,24 @@ function ConfigInner() {
 
   async function onSaveSettings(e: FormEvent) {
     e.preventDefault();
+    if (!settings) {
+      return;
+    }
+    const dirty =
+      cancellationHours !== String(settings.reservationCancellationHours) ||
+      waitlistMode !== settings.waitlistMode ||
+      allowLate !== settings.allowLateSessionEntry ||
+      debtDays !== String(settings.debtToleranceDays) ||
+      multiEntry !== settings.multiEntryEnabled ||
+      multiMax !== String(settings.multiEntryMaxPerDay);
+    if (!dirty) {
+      // Sin cambios: no pegarle a la API.
+      return;
+    }
+    setConfirmSettings(true);
+  }
+
+  async function doSaveSettings() {
     setSettingsBusy(true);
     setSettingsError(null);
     setSettingsOk(false);
@@ -178,10 +199,7 @@ function ConfigInner() {
     }
   }
 
-  async function onDisconnectMp() {
-    if (!window.confirm('¿Desconectar la cuenta Mercado Pago?')) {
-      return;
-    }
+  async function doDisconnectMp() {
     setMpBusy(true);
     setMpError(null);
     setMpOk(null);
@@ -197,6 +215,7 @@ function ConfigInner() {
       );
     } finally {
       setMpBusy(false);
+      setConfirmMpDisconnect(false);
     }
   }
 
@@ -354,7 +373,7 @@ function ConfigInner() {
                         type="button"
                         className="btn danger"
                         disabled={mpBusy}
-                        onClick={() => void onDisconnectMp()}
+                        onClick={() => setConfirmMpDisconnect(true)}
                       >
                         Desconectar
                       </button>
@@ -366,6 +385,30 @@ function ConfigInner() {
           ) : null}
         </AdminGrid>
       ) : null}
+
+      <ConfirmDialog
+        open={confirmSettings}
+        title="Guardar cambios"
+        description="¿Confirmás guardar la configuración de operación del gym?"
+        confirmLabel="Guardar"
+        busy={settingsBusy}
+        onConfirm={() => {
+          setConfirmSettings(false);
+          void doSaveSettings();
+        }}
+        onCancel={() => setConfirmSettings(false)}
+      />
+
+      <ConfirmDialog
+        open={confirmMpDisconnect}
+        title="Desconectar Mercado Pago"
+        description="¿Desconectar la cuenta Mercado Pago? Los cobros MP dejan de funcionar hasta conectar otra cuenta."
+        confirmLabel="Desconectar"
+        tone="danger"
+        busy={mpBusy}
+        onConfirm={() => void doDisconnectMp()}
+        onCancel={() => setConfirmMpDisconnect(false)}
+      />
     </AdminShell>
   );
 }

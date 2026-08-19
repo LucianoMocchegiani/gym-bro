@@ -12,18 +12,24 @@ export function AdminModal({
   onClose,
   title,
   description,
+  showCloseButton = true,
   children,
   footer,
   size = 'default',
+  elevated = false,
 }: {
   open: boolean;
   onClose: () => void;
   title: string;
-  description?: ReactNode;
   children: ReactNode;
+  description?: ReactNode;
   footer?: ReactNode;
+  /** Si `false`, no se muestra el botón de cerrar. */
+  showCloseButton?: boolean;
   /** `comfortable` = más aire para fichas / estado de cuenta. */
   size?: 'default' | 'wide' | 'comfortable';
+  /** z-index por encima de otro AdminModal (confirmaciones anidadas). */
+  elevated?: boolean;
 }) {
   useEffect(() => {
     if (!open) {
@@ -33,7 +39,7 @@ export function AdminModal({
     document.body.style.overflow = 'hidden';
     function onKey(e: KeyboardEvent) {
       if (e.key === 'Escape') {
-        onClose();
+        onClose?.();
       }
     }
     document.addEventListener('keydown', onKey);
@@ -56,7 +62,11 @@ export function AdminModal({
 
   return (
     <div
-      className="admin-modal-backdrop"
+      className={
+        elevated
+          ? 'admin-modal-backdrop admin-modal-backdrop-elevated'
+          : 'admin-modal-backdrop'
+      }
       role="presentation"
       onClick={onClose}
     >
@@ -74,14 +84,16 @@ export function AdminModal({
               <p className="muted small">{description}</p>
             ) : null}
           </div>
+          {showCloseButton ? (
           <button
             type="button"
             className="btn ghost"
             aria-label="Cerrar"
             onClick={onClose}
           >
-            Cerrar
+            x 
           </button>
+          ) : null}
         </header>
         <div className="admin-modal-body">{children}</div>
         {footer ? <footer className="admin-modal-footer">{footer}</footer> : null}

@@ -8,6 +8,7 @@ import {
   ListToolbar,
 } from '@/components/AdminList';
 import { Panel } from '@/components/AdminUi';
+import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { StatusPill } from '@/components/StatusPill';
 import { ApiClientError } from '@/lib/api/client';
 import { listMembers } from '@/lib/api/members';
@@ -51,6 +52,10 @@ export function SessionRosterPanel({
   const [bookBusy, setBookBusy] = useState(false);
   const [bookError, setBookError] = useState<string | null>(null);
   const [bookOk, setBookOk] = useState<string | null>(null);
+  const [cancelTarget, setCancelTarget] = useState<ReservationDetail | null>(
+    null,
+  );
+  const [cancelBusy, setCancelBusy] = useState(false);
 
   const loadSession = useCallback(async () => {
     try {
@@ -181,24 +186,25 @@ export function SessionRosterPanel({
     }
   }
 
-  async function onCancelReservation(row: ReservationDetail) {
-    if (row.status !== 'CONFIRMED') {
+  async function doCancelReservation() {
+    const row = cancelTarget;
+    if (!row || row.status !== 'CONFIRMED') {
       return;
     }
-    const label = row.memberName?.trim() || row.memberEmail;
-    if (!window.confirm(`¿Cancelar la reserva de ${label}?`)) {
-      return;
-    }
+    setCancelBusy(true);
     setRosterError(null);
     try {
       await cancelReservation(row.id);
       await refreshAfterMutation();
+      setCancelTarget(null);
     } catch (err) {
       setRosterError(
         err instanceof ApiClientError
           ? err.message
           : 'No se pudo cancelar la reserva',
       );
+    } finally {
+      setCancelBusy(false);
     }
   }
 
@@ -271,7 +277,7 @@ export function SessionRosterPanel({
                 <button
                   type="button"
                   className="btn ghost"
-                  onClick={() => void onCancelReservation(row)}
+                  onClick={() => setCancelTarget(row)}
                 >
                   Quitar
                 </button>
@@ -322,6 +328,19 @@ export function SessionRosterPanel({
           </form>
         </Panel>
       ) : null}
+
+      <ConfirmDialog
+        open={cancelTarget !== null}
+        title="Cancelar reserva"
+        description={`¿Cancelar la reserva de ${
+          cancelTarget?.memberName?.trim() || cancelTarget?.memberEmail || ''
+        }?`}
+        confirmLabel="Cancelar reserva"
+        tone="danger"
+        busy={cancelBusy}
+        onConfirm={() => void doCancelReservation()}
+        onCancel={() => setCancelTarget(null)}
+      />
     </div>
   );
 }

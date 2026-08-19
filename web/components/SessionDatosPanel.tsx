@@ -2,6 +2,7 @@
 
 import { FormEvent, useEffect, useState } from 'react';
 import { Panel } from '@/components/AdminUi';
+import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { ApiClientError } from '@/lib/api/client';
 import {
   expandSessionCapacity,
@@ -23,11 +24,14 @@ export function SessionDatosPanel({
   sessionId,
   onSaved,
   embedded = false,
+  onCancel,
 }: {
   sessionId: string;
   onSaved?: (session: SessionDetail) => void;
   /** Omite título "Datos" si el modal ya lo muestra. */
   embedded?: boolean;
+  /** Si el panel se renderiza en un modal: cierra al guardar sin cambios. */
+  onCancel?: () => void;
 }) {
   const [session, setSession] = useState<SessionDetail | null>(null);
   const [startsAt, setStartsAt] = useState('');
@@ -41,6 +45,8 @@ export function SessionDatosPanel({
   const [busy, setBusy] = useState(false);
   const [expandBusy, setExpandBusy] = useState(false);
   const [cancelBusy, setCancelBusy] = useState(false);
+  const [confirmSave, setConfirmSave] = useState(false);
+  const [confirmCancel, setConfirmCancel] = useState(false);
 
   function applySession(s: SessionDetail) {
     setSession(s);
@@ -81,6 +87,19 @@ export function SessionDatosPanel({
     if (!session || session.status === 'CANCELLED') {
       return;
     }
+    const dirty =
+      startsAt !== toDatetimeLocalValue(session.startsAt) ||
+      endsAt !== toDatetimeLocalValue(session.endsAt) ||
+      capacity !== String(session.capacity);
+    if (!dirty) {
+      // Sin cambios: no pegarle a la API; si es modal, cerrar.
+      onCancel?.();
+      return;
+    }
+    setConfirmSave(true);
+  }
+
+  async function doSave() {
     setBusy(true);
     setSaveError(null);
     setSaveOk(false);
@@ -104,15 +123,8 @@ export function SessionDatosPanel({
     }
   }
 
-  async function onCancel() {
+  async function doCancel() {
     if (!session || session.status === 'CANCELLED') {
-      return;
-    }
-    if (
-      !window.confirm(
-        '¿Cancelar esta sesión? Las reservas asociadas pueden verse afectadas.',
-      )
-    ) {
       return;
     }
     setCancelBusy(true);
@@ -129,6 +141,7 @@ export function SessionDatosPanel({
       );
     } finally {
       setCancelBusy(false);
+      setConfirmCancel(false);
     }
   }
 
@@ -218,13 +231,37 @@ export function SessionDatosPanel({
               type="button"
               className="btn danger"
               disabled={cancelBusy}
-              onClick={() => void onCancel()}
+              onClick={() => setConfirmCancel(true)}
             >
               {cancelBusy ? 'Cancelando…' : 'Cancelar sesión'}
             </button>
           </div>
         ) : null}
       </form>
+
+      <ConfirmDialog
+        open={confirmSave}
+        title="Guardar cambios"
+        description="¿Confirmás guardar los cambios de la sesión (horario/cupo)?"
+        confirmLabel="Guardar"
+        busy={busy}
+        onConfirm={() => {
+          setConfirmSave(false);
+          void doSave();
+        }}
+        onCancel={() => setConfirmSave(false)}
+      />
+
+      <ConfirmDialog
+        open={confirmCancel}
+        title="Cancelar sesión"
+        description="¿Cancelar esta sesión? Las reservas asociadas pueden verse afectadas."
+        confirmLabel="Cancelar sesión"
+        tone="danger"
+        busy={cancelBusy}
+        onConfirm={() => void doCancel()}
+        onCancel={() => setConfirmCancel(false)}
+      />
     </>
   );
 

@@ -1,6 +1,7 @@
 'use client';
 
 import { FormEvent, useEffect, useState } from 'react';
+import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { PermissionsChecklist } from '@/components/PermissionsChecklist';
 import { ApiClientError } from '@/lib/api/client';
 import { getRole, updateRole } from '@/lib/api/roles';
@@ -24,6 +25,7 @@ export function RoleEditForm({
   const [loadError, setLoadError] = useState<string | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [confirmSave, setConfirmSave] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -64,6 +66,19 @@ export function RoleEditForm({
       setSaveError('Seleccioná al menos un permiso');
       return;
     }
+    const dirty =
+      name !== role.name ||
+      JSON.stringify([...permissionCodes].sort()) !==
+        JSON.stringify([...role.permissionCodes].sort());
+    if (!dirty) {
+      // Sin cambios: no pegarle a la API; si es modal, cerrar.
+      onCancel?.();
+      return;
+    }
+    setConfirmSave(true);
+  }
+
+  async function doSave() {
     setBusy(true);
     setSaveError(null);
     try {
@@ -133,6 +148,19 @@ export function RoleEditForm({
           </button>
         ) : null}
       </div>
+
+      <ConfirmDialog
+        open={confirmSave}
+        title="Guardar cambios"
+        description="¿Confirmás guardar los cambios del rol? Afecta los permisos de los staff que lo tengan asignado."
+        confirmLabel="Guardar"
+        busy={busy}
+        onConfirm={() => {
+          setConfirmSave(false);
+          void doSave();
+        }}
+        onCancel={() => setConfirmSave(false)}
+      />
     </form>
   );
 }

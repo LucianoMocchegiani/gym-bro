@@ -208,6 +208,7 @@ function PacksInner() {
           <PackEditPanel
             key={editId}
             packId={editId}
+            onCancel={closeModals}
             onSaved={(p) => {
               setFlashOk(`Pack actualizado: ${p.name}`);
               void load();

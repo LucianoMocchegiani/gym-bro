@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { FormEvent, useEffect, useState } from 'react';
 import { Panel } from '@/components/AdminUi';
+import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { ReceiptPanel } from '@/components/ReceiptPanel';
 import { ApiClientError } from '@/lib/api/client';
 import {
@@ -37,7 +38,7 @@ export function MemberAccountPanel({
 
   const [cancelTarget, setCancelTarget] = useState<ContractDetail | null>(null);
   const [cancelReason, setCancelReason] = useState('');
-  const [cancelConfirm, setCancelConfirm] = useState('');
+  const [cancelConfirmOpen, setCancelConfirmOpen] = useState(false);
   const [cancelBusy, setCancelBusy] = useState(false);
   const [cancelError, setCancelError] = useState<string | null>(null);
   const [cancelOk, setCancelOk] = useState<string | null>(null);
@@ -54,6 +55,8 @@ export function MemberAccountPanel({
   const [reissueBusyId, setReissueBusyId] = useState<string | null>(null);
   const [offersOk, setOffersOk] = useState<string | null>(null);
   const [copiedOfferId, setCopiedOfferId] = useState<string | null>(null);
+  const [reissueTarget, setReissueTarget] =
+    useState<CredentialOfferItem | null>(null);
 
   async function loadOffers() {
     try {
@@ -174,7 +177,7 @@ export function MemberAccountPanel({
   function openCancel(contract: ContractDetail) {
     setCancelTarget(contract);
     setCancelReason('');
-    setCancelConfirm('');
+    setCancelConfirmOpen(false);
     setCancelError(null);
     setCancelOk(null);
   }
@@ -182,7 +185,7 @@ export function MemberAccountPanel({
   function closeCancel() {
     setCancelTarget(null);
     setCancelReason('');
-    setCancelConfirm('');
+    setCancelConfirmOpen(false);
     setCancelError(null);
   }
 
@@ -191,8 +194,11 @@ export function MemberAccountPanel({
     if (!cancelTarget) {
       return;
     }
-    if (cancelConfirm.trim().toUpperCase() !== 'CANCELAR') {
-      setCancelError('Escribí CANCELAR para confirmar');
+    setCancelConfirmOpen(true);
+  }
+
+  async function doCancelContract() {
+    if (!cancelTarget) {
       return;
     }
     setCancelBusy(true);
@@ -203,7 +209,6 @@ export function MemberAccountPanel({
       setCancelOk(`Contrato «${cancelTarget.packName}» cancelado.`);
       setCancelTarget(null);
       setCancelReason('');
-      setCancelConfirm('');
       await reloadAccount();
     } catch (err) {
       setCancelError(
@@ -229,19 +234,18 @@ export function MemberAccountPanel({
     }
   }
 
-  async function onReissue(offer: CredentialOfferItem) {
+  async function doReissue() {
+    const offer = reissueTarget;
+    if (!offer) {
+      return;
+    }
     const contract = account?.contracts.find((c) => c.id === offer.contractId);
     const key = contract?.payment.idempotencyKey;
     if (!contract || !key) {
       setOffersError(
         'No se encontró la idempotencyKey del contrato para re-emitir',
       );
-      return;
-    }
-    const ok = window.confirm(
-      `¿Re-emitir credential offer de «${offer.packName}»? Fuerza una nueva oferta OID4VCI en Kuatia.`,
-    );
-    if (!ok) {
+      setReissueTarget(null);
       return;
     }
     setReissueBusyId(offer.id);
@@ -262,6 +266,7 @@ export function MemberAccountPanel({
       );
     } finally {
       setReissueBusyId(null);
+      setReissueTarget(null);
     }
   }
 
@@ -355,26 +360,14 @@ export function MemberAccountPanel({
               placeholder="Ej. incumplimiento de normas"
             />
           </label>
-          <label>
-            Escribí <strong>CANCELAR</strong> para confirmar
-            <input
-              value={cancelConfirm}
-              onChange={(e) => setCancelConfirm(e.target.value)}
-              autoComplete="off"
-              placeholder="CANCELAR"
-            />
-          </label>
           {cancelError ? <p className="error">{cancelError}</p> : null}
           <div className="form-actions">
             <button
               type="submit"
               className="btn danger"
-              disabled={
-                cancelBusy ||
-                cancelConfirm.trim().toUpperCase() !== 'CANCELAR'
-              }
+              disabled={cancelBusy}
             >
-              {cancelBusy ? 'Cancelando…' : 'Confirmar cancelación'}
+              {cancelBusy ? 'Cancelando…' : 'Cancelar contrato'}
             </button>
             <button
               type="button"
@@ -438,7 +431,7 @@ export function MemberAccountPanel({
                       type="button"
                       className="linkish"
                       disabled={reissueBusyId === o.id}
-                      onClick={() => void onReissue(o)}
+                      onClick={() => setReissueTarget(o)}
                     >
                       {reissueBusyId === o.id ? 'Re-emitiendo…' : 'Re-emitir'}
                     </button>
@@ -525,6 +518,31 @@ export function MemberAccountPanel({
           ))}
         </ul>
       )}
+
+      <ConfirmDialog
+        open={cancelConfirmOpen}
+        title={`Cancelar «${cancelTarget?.packName ?? ''}»`}
+        description="Corta acceso libre y créditos. No reembolsa el pago (para eso usá Devolver). El motivo queda en auditoría."
+        confirmLabel="Confirmar cancelación"
+        tone="danger"
+        confirmWord="CANCELAR"
+        busy={cancelBusy}
+        onConfirm={() => {
+          setCancelConfirmOpen(false);
+          void doCancelContract();
+        }}
+        onCancel={() => setCancelConfirmOpen(false)}
+      />
+
+      <ConfirmDialog
+        open={reissueTarget !== null}
+        title="Re-emitir credential offer"
+        description={`¿Re-emitir credential offer de «${reissueTarget?.packName ?? ''}»? Fuerza una nueva oferta OID4VCI en Kuatia.`}
+        confirmLabel="Re-emitir"
+        busy={reissueBusyId !== null}
+        onConfirm={() => void doReissue()}
+        onCancel={() => setReissueTarget(null)}
+      />
     </>
   );
 

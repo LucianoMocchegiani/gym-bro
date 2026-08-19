@@ -4,6 +4,7 @@ import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { DataTable, ListToolbar } from '@/components/AdminList';
 import { AdminShell } from '@/components/AdminShell';
 import { AdminGrid, Panel } from '@/components/AdminUi';
+import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { ReceiptPanel } from '@/components/ReceiptPanel';
 import { RequireStaff } from '@/components/RequireStaff';
 import { StatusPill } from '@/components/StatusPill';
@@ -76,6 +77,7 @@ function CajaInner() {
   const [reconcileNote, setReconcileNote] = useState('');
   const [reconcileBusy, setReconcileBusy] = useState(false);
   const [reconcileError, setReconcileError] = useState<string | null>(null);
+  const [reconcileConfirm, setReconcileConfirm] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -334,12 +336,11 @@ function CajaInner() {
       setReconcileError('Declará un monto entero ≥ 0');
       return;
     }
-    const ok = window.confirm(
-      `¿Confirmar arqueo con ${formatMoney(declared)}? Solo se puede una vez por día.`,
-    );
-    if (!ok) {
-      return;
-    }
+    setReconcileConfirm(true);
+  }
+
+  async function doReconcile() {
+    const declared = Number(declaredAmount);
     setReconcileBusy(true);
     setReconcileError(null);
     try {
@@ -712,6 +713,21 @@ function CajaInner() {
           </tr>
         ))}
       </DataTable>
+
+      <ConfirmDialog
+        open={reconcileConfirm}
+        title="Cerrar arqueo"
+        description={`¿Confirmar arqueo con ${formatMoney(
+          Number(declaredAmount) || 0,
+        )}? Solo se puede una vez por día.`}
+        confirmLabel="Cerrar arqueo"
+        busy={reconcileBusy}
+        onConfirm={() => {
+          setReconcileConfirm(false);
+          void doReconcile();
+        }}
+        onCancel={() => setReconcileConfirm(false)}
+      />
     </AdminShell>
   );
 }
