@@ -81,3 +81,16 @@ export class LogoutDto {
   @MinLength(20)
   refreshToken!: string;
 }
+
+/**
+ * Cambio de contraseña autenticado (staff / super).
+ */
+export class ChangePasswordDto {
+  @IsString()
+  @MinLength(8)
+  currentPassword!: string;
+
+  @IsString()
+  @MinLength(8)
+  newPassword!: string;
+}

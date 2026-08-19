@@ -129,6 +129,13 @@ h2 {
   border-radius: 8px;
 }
 
+.success {
+  color: var(--ok);
+  background: var(--ok-soft);
+  padding: 0.65rem 0.85rem;
+  border-radius: 8px;
+}
+
 code {
   font-size: 0.9em;
   background: var(--accent-soft);
@@ -534,13 +541,50 @@ button.linkish:hover {
   flex-shrink: 0;
 }
 
-.app-topbar-user {
+.account-avatar-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2.25rem;
+  height: 2.25rem;
+  padding: 0 0.5rem;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--accent-soft);
+  color: var(--accent-ink);
+  font-weight: 600;
   font-size: 0.85rem;
-  color: var(--muted);
-  max-width: 12rem;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  text-decoration: none;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.account-avatar-btn:hover {
+  border-color: var(--accent);
+}
+
+.account-summary {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.account-avatar-lg {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 3.5rem;
+  height: 3.5rem;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent-ink);
+  font-weight: 700;
+  font-size: 1.15rem;
+  flex-shrink: 0;
+}
+
+.account-name {
+  font-weight: 600;
+  font-size: 1.05rem;
 }
 
 .app-menu-btn {
@@ -1609,9 +1653,5 @@ button.danger {
 
   .attempts-list li time {
     grid-column: 2;
-  }
-
-  .app-topbar-user {
-    display: none;
   }
 }

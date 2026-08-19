@@ -14,8 +14,13 @@ import {
   assertValidTenantSlug,
   normalizeTenantSlug,
 } from '../tenants/tenant-slug';
-import { AuthTokens, JwtAccessPayload } from './auth.types';
-import { MemberLoginDto, StaffLoginDto, SuperLoginDto } from './dto/auth.dto';
+import { AuthTokens, JwtAccessPayload, type AuthUser } from './auth.types';
+import {
+  ChangePasswordDto,
+  MemberLoginDto,
+  StaffLoginDto,
+  SuperLoginDto,
+} from './dto/auth.dto';
 
 type TokenOwner = {
   profileType: AuthProfileType;
@@ -208,6 +213,62 @@ export class AuthService {
       data: { revokedAt: new Date() },
     });
     return { ok: true };
+  }
+
+  /**
+   * Cambia la contraseña del usuario autenticado (STAFF o SUPER).
+   *
+   * @remarks Verifica la actual con bcrypt; si cambia, revoca todos los
+   * refresh tokens del usuario (obliga a re-login).
+   * @throws {UnauthorizedException} Contraseña actual inválida o perfil sin soporte.
+   */
+  async changePassword(
+    user: AuthUser,
+    dto: ChangePasswordDto,
+  ): Promise<{ ok: true }> {
+    const newHash = await bcrypt.hash(dto.newPassword, 12);
+
+    if (user.profileType === AuthProfileType.STAFF) {
+      const staffUser = await this.prisma.staffUser.findUnique({
+        where: { id: user.userId },
+      });
+      if (!staffUser) {
+        throw new UnauthorizedException('Invalid credentials');
+      }
+      await this.assertPassword(dto.currentPassword, staffUser.passwordHash);
+      await this.prisma.staffUser.update({
+        where: { id: user.userId },
+        data: { passwordHash: newHash },
+      });
+      await this.prisma.refreshToken.updateMany({
+        where: { staffUserId: user.userId, revokedAt: null },
+        data: { revokedAt: new Date() },
+      });
+      return { ok: true };
+    }
+
+    if (user.profileType === AuthProfileType.SUPER) {
+      const superUser = await this.prisma.superUser.findUnique({
+        where: { id: user.userId },
+      });
+      if (!superUser) {
+        throw new UnauthorizedException('Invalid credentials');
+      }
+      await this.assertPassword(dto.currentPassword, superUser.passwordHash);
+      await this.prisma.superUser.update({
+        where: { id: user.userId },
+        data: { passwordHash: newHash },
+      });
+      await this.prisma.refreshToken.updateMany({
+        where: { superUserId: user.userId, revokedAt: null },
+        data: { revokedAt: new Date() },
+      });
+      return { ok: true };
+    }
+
+    throw new BadRequestException(
+      'Cambio de contraseña no disponible para este perfil',
+    );
   }
 
   private async resolveTenantId(dto: {

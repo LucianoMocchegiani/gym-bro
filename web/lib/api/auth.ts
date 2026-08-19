@@ -70,3 +70,20 @@ export async function staffLogout(refreshToken: string): Promise<void> {
 export async function superLogout(refreshToken: string): Promise<void> {
   return staffLogout(refreshToken);
 }
+
+/**
+ * Cambia la contraseña del usuario autenticado.
+ *
+ * @remarks Revoca refresh tokens → obliga a re-login. Usar `auth: 'super'`
+ * desde el contexto super admin.
+ */
+export function changePassword(
+  input: { currentPassword: string; newPassword: string },
+  auth: 'staff' | 'super' = 'staff',
+): Promise<{ ok: true }> {
+  return apiRequest<{ ok: true }>('/auth/change-password', {
+    method: 'POST',
+    body: input,
+    auth,
+  });
+}

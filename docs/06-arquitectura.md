@@ -130,7 +130,7 @@ Login por perfil → access JWT + refresh (Postgres)
 | Staff | `tenantId` obligatorio | `POST /api/auth/staff/login` |
 | Afiliado | Perfil separado (RN-ROL-005) | `POST /api/auth/member/login` |
 
-También: `POST /api/auth/refresh`, `POST /api/auth/logout`, `GET /api/auth/me` (incluye `tenantId` para staff/member).
+También: `POST /api/auth/refresh`, `POST /api/auth/logout`, `GET /api/auth/me` (incluye `tenantId` para staff/member), `POST /api/auth/change-password` (JWT; verifica la actual con bcrypt y revoca todos los refresh tokens del usuario → obliga a re-login).
 
 Rutas de negocio del gym: `@RequireTenantAuth()` + `@CurrentTenant()` (módulo `tenant/`).
 Rutas de plataforma (Super): `@RequireSuperAuth()` — `GET|POST|PATCH /api/tenants` (create seedéa branch + roles Admin/Profesor; catálogo global `permissions`).

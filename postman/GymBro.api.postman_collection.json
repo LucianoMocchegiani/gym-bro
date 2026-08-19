@@ -369,6 +369,41 @@
           }
         },
         {
+          "name": "Change password (JWT)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('ok true', () => pm.expect(pm.response.json().ok).to.be.true);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"currentPassword\": \"{{staffPassword}}\",\n  \"newPassword\": \"{{staffPassword}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/api/auth/change-password",
+            "description": "Cambia contraseña del staff/super autenticado (JWT). Revoca todos los refresh tokens → obliga a re-login. Ajustá newPassword antes de correrlo."
+          }
+        },
+        {
           "name": "Refresh",
           "event": [
             {

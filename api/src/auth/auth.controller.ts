@@ -3,6 +3,7 @@ import { AuthService } from './auth.service';
 import { AuthTokens, type AuthUser } from './auth.types';
 import { CurrentUser } from './decorators/current-user.decorator';
 import {
+  ChangePasswordDto,
   LogoutDto,
   MemberLoginDto,
   RefreshTokenDto,
@@ -58,6 +59,20 @@ export class AuthController {
   @Post('logout')
   logout(@Body() dto: LogoutDto): Promise<{ ok: true }> {
     return this.authService.logout(dto.refreshToken);
+  }
+
+  /**
+   * Cambia la contraseña del usuario autenticado (staff / super).
+   *
+   * @remarks Revoca todos los refresh tokens → obliga a re-login.
+   */
+  @UseGuards(JwtAuthGuard)
+  @Post('change-password')
+  changePassword(
+    @CurrentUser() user: AuthUser,
+    @Body() dto: ChangePasswordDto,
+  ): Promise<{ ok: true }> {
+    return this.authService.changePassword(user, dto);
   }
 
   /**

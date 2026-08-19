@@ -3,8 +3,20 @@
 import Link from 'next/link';
 import { useState } from 'react';
 import { usePathname } from 'next/navigation';
+import { NavIconMenu } from '@/components/AdminNavIcons';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { useSuperAuth } from '@/lib/auth/SuperAuthProvider';
+
+function accountInitials(name: string | null, email: string): string {
+  const src = name?.trim();
+  if (!src) {
+    return email.slice(0, 1).toUpperCase();
+  }
+  const parts = src.split(/\s+/);
+  const first = parts[0]?.[0] ?? '';
+  const last = parts.length > 1 ? (parts[parts.length - 1][0] ?? '') : '';
+  return (first + last).toUpperCase();
+}
 
 type SuperShellProps = {
   title: string;
@@ -16,7 +28,7 @@ type SuperShellProps = {
  * Shell Super Admin: sidebar + topbar (tema / perfil / logout).
  */
 export function SuperShell({ title, children, actions }: SuperShellProps) {
-  const { session, logout } = useSuperAuth();
+  const { session } = useSuperAuth();
   const pathname = usePathname();
   const [navOpen, setNavOpen] = useState(false);
 
@@ -75,20 +87,22 @@ export function SuperShell({ title, children, actions }: SuperShellProps) {
                 className="app-menu-btn"
                 aria-expanded={navOpen}
                 aria-controls="super-sidebar"
+                aria-label="Abrir menú"
                 onClick={() => setNavOpen((open) => !open)}
               >
-                Menú
+                <NavIconMenu />
               </button>
             </div>
             <div className="app-topbar-right">
               <ThemeToggle />
-              <button
-                type="button"
-                className="linkish"
-                onClick={() => void logout()}
+              <Link
+                href="/super/cuenta"
+                className="account-avatar-btn"
+                title={session?.email ?? 'Mi cuenta'}
+                aria-label="Mi cuenta"
               >
-                Salir
-              </button>
+                {accountInitials(session?.name ?? null, session?.email ?? '')}
+              </Link>
             </div>
           </div>
         </header>

@@ -19,6 +19,17 @@ import { useAuth } from '@/lib/auth/AuthProvider';
 import { canAccessNavHref } from '@/lib/nav-permissions';
 import { extractTenantSlugFromHost } from '@/lib/tenant-host';
 
+function accountInitials(name: string | null, email: string): string {
+  const src = name?.trim();
+  if (!src) {
+    return email.slice(0, 1).toUpperCase();
+  }
+  const parts = src.split(/\s+/);
+  const first = parts[0]?.[0] ?? '';
+  const last = parts.length > 1 ? (parts[parts.length - 1][0] ?? '') : '';
+  return (first + last).toUpperCase();
+}
+
 type AdminShellProps = {
   title: ReactNode;
   children: ReactNode;
@@ -93,7 +104,7 @@ export function AdminShell({
   subtitle,
   variant = 'default',
 }: AdminShellProps) {
-  const { session, logout } = useAuth();
+  const { session } = useAuth();
   const pathname = usePathname();
   const [navOpen, setNavOpen] = useState(false);
   const hostSlug = useSyncExternalStore(
@@ -103,8 +114,6 @@ export function AdminShell({
   );
   const brandSlug = hostSlug ?? session?.tenantSlug?.trim() ?? '…';
   const permissionCodes = session?.permissionCodes ?? null;
-  const userLabel =
-    session?.name?.trim() || session?.email?.split('@')[0] || 'Admin';
 
   const visibleGroups = useMemo(() => {
     return NAV_GROUPS.map((group) => ({
@@ -206,16 +215,14 @@ export function AdminShell({
             </div>
             <div className="app-topbar-right">
               <ThemeToggle />
-              <span className="app-topbar-user" title={session?.email ?? ''}>
-                {userLabel}
-              </span>
-              <button
-                type="button"
-                className="linkish"
-                onClick={() => void logout()}
+              <Link
+                href="/cuenta"
+                className="account-avatar-btn"
+                title={session?.email ?? 'Mi cuenta'}
+                aria-label="Mi cuenta"
               >
-                Salir
-              </button>
+                {accountInitials(session?.name ?? null, session?.email ?? '')}
+              </Link>
             </div>
           </div>
         </header>
