@@ -1,9 +1,13 @@
 'use client';
 
+import {
+  NavIconMoon,
+  NavIconSun,
+} from '@/components/AdminNavIcons';
 import { useTheme } from '@/lib/theme/ThemeProvider';
 
 /**
- * Alterna tema claro / oscuro en el topbar.
+ * Alterna tema claro / oscuro en el topbar (icono del estado objetivo).
  */
 export function ThemeToggle() {
   const { theme, toggleTheme } = useTheme();
@@ -17,7 +21,7 @@ export function ThemeToggle() {
       aria-label={`Cambiar a tema ${nextLabel.toLowerCase()}`}
       title={`Tema ${nextLabel.toLowerCase()}`}
     >
-      {theme === 'dark' ? 'Claro' : 'Oscuro'}
+      {theme === 'dark' ? <NavIconSun /> : <NavIconMoon />}
     </button>
   );
 }

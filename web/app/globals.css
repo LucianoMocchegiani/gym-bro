@@ -233,13 +233,14 @@ button.linkish:hover {
 }
 
 .theme-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   background: transparent;
   color: var(--muted);
   border: 1px solid var(--line);
   border-radius: 999px;
-  padding: 0.35rem 0.75rem;
-  font-size: 0.8rem;
-  font-weight: 600;
+  padding: 0.42rem;
 }
 
 .theme-toggle:hover {
@@ -544,13 +545,13 @@ button.linkish:hover {
 
 .app-menu-btn {
   display: none;
+  align-items: center;
+  justify-content: center;
   background: transparent;
   color: var(--ink);
   border: 1px solid var(--line);
   border-radius: 8px;
-  padding: 0.4rem 0.65rem;
-  font-size: 0.85rem;
-  font-weight: 600;
+  padding: 0.5rem;
 }
 
 .app-overlay {

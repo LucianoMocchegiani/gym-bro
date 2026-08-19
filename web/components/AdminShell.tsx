@@ -11,6 +11,7 @@ import { usePathname } from 'next/navigation';
 import {
   NavIconDumbbell,
   NavIconForHref,
+  NavIconMenu,
   NavIconSupport,
 } from '@/components/AdminNavIcons';
 import { ThemeToggle } from '@/components/ThemeToggle';
@@ -191,9 +192,10 @@ export function AdminShell({
                 className="app-menu-btn"
                 aria-expanded={navOpen}
                 aria-controls="admin-sidebar"
+                aria-label="Abrir menú"
                 onClick={() => setNavOpen((open) => !open)}
               >
-                Menú
+                <NavIconMenu />
               </button>
               {variant === 'home' ? (
                 <p className="app-topbar-tagline muted small">
