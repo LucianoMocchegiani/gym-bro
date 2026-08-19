@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { FormEvent, Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { AccessResultBanner } from '@/components/AccessResult';
+import { memberFichaHref } from '@/lib/member-link';
 import {
   DataTable,
   ListFilterField,
@@ -346,7 +347,12 @@ function PuertaInner() {
                       {subjectLabel(a)}
                     </Link>
                   ) : a.memberId ? (
-                    <Link href={`/afiliados/${a.memberId}`}>
+                    <Link
+                      href={memberFichaHref(
+                        a.memberId,
+                        a.memberName ?? a.memberEmail ?? '',
+                      )}
+                    >
                       {subjectLabel(a)}
                     </Link>
                   ) : (

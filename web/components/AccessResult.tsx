@@ -5,6 +5,7 @@ import { formatAccessReason } from '@/lib/access-labels';
 import type { AccessAttemptDetail, AccessVerifyResult } from '@/lib/api/access';
 import { Panel } from '@/components/AdminUi';
 import { Skeleton } from '@/components/Skeleton';
+import { memberFichaHref } from '@/lib/member-link';
 
 function subjectLabel(a: AccessAttemptDetail): string {
   if (a.subjectStaffId) {
@@ -67,7 +68,14 @@ export function AccessResultBanner({
           {staffId ? (
             <Link href={`/staff/${staffId}`}>{who}</Link>
           ) : result.memberId ? (
-            <Link href={`/afiliados/${result.memberId}`}>{who}</Link>
+            <Link
+              href={memberFichaHref(
+                result.memberId,
+                result.attempt.memberName ?? result.attempt.memberEmail ?? '',
+              )}
+            >
+              {who}
+            </Link>
           ) : (
             who
           )}
@@ -126,7 +134,14 @@ export function AttemptsList({
                   {subjectLabel(a)}
                 </Link>
               ) : a.memberId ? (
-                <Link href={`/afiliados/${a.memberId}`}>{subjectLabel(a)}</Link>
+                <Link
+                  href={memberFichaHref(
+                    a.memberId,
+                    a.memberName ?? a.memberEmail ?? '',
+                  )}
+                >
+                  {subjectLabel(a)}
+                </Link>
               ) : (
                 subjectLabel(a)
               )}

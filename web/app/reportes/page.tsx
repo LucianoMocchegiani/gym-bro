@@ -7,6 +7,7 @@ import { DataTable, ListToolbar } from '@/components/AdminList';
 import { Panel } from '@/components/AdminUi';
 import { RequireStaff } from '@/components/RequireStaff';
 import { SkeletonCards } from '@/components/Skeleton';
+import { memberFichaHref } from '@/lib/member-link';
 import { ApiClientError } from '@/lib/api/client';
 import { getReportsSummary } from '@/lib/api/reports';
 import type { ReportsSummary } from '@/lib/api/reports';
@@ -202,7 +203,12 @@ function ReportesInner() {
             <td>{formatWhen(p.createdAt)}</td>
             <td>
               {p.memberId ? (
-                <Link href={`/afiliados/${p.memberId}`}>
+                <Link
+                  href={memberFichaHref(
+                    p.memberId,
+                    p.memberName ?? p.memberEmail ?? '',
+                  )}
+                >
                   {memberLabel(p.memberName, p.memberEmail)}
                 </Link>
               ) : (

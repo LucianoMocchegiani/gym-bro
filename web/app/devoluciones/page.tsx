@@ -10,6 +10,7 @@ import {
   useState,
 } from 'react';
 import { useSearchParams } from 'next/navigation';
+import { memberFichaHref } from '@/lib/member-link';
 import {
   DataTable,
   ListFilterField,
@@ -321,7 +322,12 @@ function DevolucionesInner() {
           <tr key={row.id}>
             <td>{formatWhen(row.createdAt)}</td>
             <td>
-              <Link href={`/afiliados/${row.memberId}`}>
+              <Link
+                href={memberFichaHref(
+                  row.memberId,
+                  memberLabels[row.memberId] ?? '',
+                )}
+              >
                 {memberLabels[row.memberId] ?? row.memberId.slice(0, 8)}
               </Link>
             </td>
@@ -406,7 +412,12 @@ function DevolucionesInner() {
             ) : (
               <p className="muted small">
                 Afiliado:{' '}
-                <Link href={`/afiliados/${selected.memberId}`}>
+                <Link
+                  href={memberFichaHref(
+                    selected.memberId,
+                    memberLabels[selected.memberId] ?? '',
+                  )}
+                >
                   {memberLabels[selected.memberId] ?? selected.memberId}
                 </Link>
               </p>

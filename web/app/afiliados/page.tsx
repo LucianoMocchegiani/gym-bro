@@ -51,14 +51,15 @@ function AfiliadosInner() {
   const createOpen =
     searchParams.get('nuevo') === '1' && !fichaId && !cuentaId;
 
+  const appliedQuery = searchParams.get('q')?.trim() || '';
+
   const [rows, setRows] = useState<MemberDetail[]>([]);
   const [total, setTotal] = useState(0);
   const [hasMore, setHasMore] = useState(false);
   const [statusFilter, setStatusFilter] = useState<MemberStatus | 'ALL'>(
     'ALL',
   );
-  const [query, setQuery] = useState('');
-  const [appliedQuery, setAppliedQuery] = useState('');
+  const [query, setQuery] = useState(appliedQuery);
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -92,8 +93,24 @@ function AfiliadosInner() {
     void load();
   }, [load]);
 
+  useEffect(() => {
+    // ?q= puede llegar de Sesiones (Roster/Waitlist): sincroniza input y página.
+    if (query !== appliedQuery) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- sincroniza ?q= (Roster/Waitlist)
+      setQuery(appliedQuery);
+    }
+    if (page !== 1) {
+      setPage(1);
+    }
+  }, [appliedQuery]); // eslint-disable-line react-hooks/exhaustive-deps -- solo ?q=
+
   function closeModals() {
-    router.replace('/afiliados', { scroll: false });
+    router.replace(
+      appliedQuery
+        ? `/afiliados?q=${encodeURIComponent(appliedQuery)}`
+        : '/afiliados',
+      { scroll: false },
+    );
   }
 
   function openCreate() {
@@ -103,16 +120,18 @@ function AfiliadosInner() {
 
   function openFicha(id: string) {
     setFlashOk(null);
-    router.replace(`/afiliados?ficha=${encodeURIComponent(id)}`, {
-      scroll: false,
-    });
+    router.replace(
+      `/afiliados?${appliedQuery ? `q=${encodeURIComponent(appliedQuery)}&` : ''}ficha=${encodeURIComponent(id)}`,
+      { scroll: false },
+    );
   }
 
   function openCuenta(id: string) {
     setFlashOk(null);
-    router.replace(`/afiliados?cuenta=${encodeURIComponent(id)}`, {
-      scroll: false,
-    });
+    router.replace(
+      `/afiliados?${appliedQuery ? `q=${encodeURIComponent(appliedQuery)}&` : ''}cuenta=${encodeURIComponent(id)}`,
+      { scroll: false },
+    );
   }
 
   return (
@@ -129,8 +148,11 @@ function AfiliadosInner() {
           value={query}
           onChange={setQuery}
           onSubmit={() => {
-            setPage(1);
-            setAppliedQuery(query.trim());
+            const q = query.trim();
+            router.replace(
+              q ? `/afiliados?q=${encodeURIComponent(q)}` : '/afiliados',
+              { scroll: false },
+            );
           }}
           placeholder="Nombre, email, documento…"
         />

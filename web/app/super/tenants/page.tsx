@@ -17,6 +17,7 @@ import {
   RowIconButton,
 } from '@/components/RowActions';
 import { TenantCreateForm } from '@/components/TenantCreateForm';
+import { TenantEditPanel } from '@/components/TenantEditPanel';
 import { ApiClientError } from '@/lib/api/client';
 import { listTenants } from '@/lib/api/tenants';
 import type { TenantDetail } from '@/lib/api/tenants';
@@ -51,6 +52,7 @@ function TenantsInner() {
   const [modalOpen, setModalOpen] = useState(
     searchParams.get('nuevo') === '1',
   );
+  const editarId = searchParams.get('editar')?.trim() || null;
   const [flashOk, setFlashOk] = useState<string | null>(null);
 
   const load = useCallback(async () => {
@@ -85,6 +87,13 @@ function TenantsInner() {
   function closeModal() {
     setModalOpen(false);
     router.replace('/super/tenants', { scroll: false });
+  }
+
+  function openEdit(id: string) {
+    setFlashOk(null);
+    router.replace(`/super/tenants?editar=${encodeURIComponent(id)}`, {
+      scroll: false,
+    });
   }
 
   return (
@@ -141,7 +150,7 @@ function TenantsInner() {
               <RowActions>
                 <RowIconButton
                   label="Editar"
-                  href={`/super/tenants/${t.id}`}
+                  onClick={() => openEdit(t.id)}
                 >
                   <IconEdit />
                 </RowIconButton>
@@ -169,6 +178,26 @@ function TenantsInner() {
             }
           }}
         />
+      </AdminModal>
+
+      <AdminModal
+        open={Boolean(editarId)}
+        onClose={closeModal}
+        title="Editar tenant"
+        description="Datos del gym, slug y estado."
+      >
+        {editarId ? (
+          <TenantEditPanel
+            key={editarId}
+            tenantId={editarId}
+            onCancel={closeModal}
+            onSaved={(updated) => {
+              setFlashOk(`Tenant guardado: ${updated.name}`);
+              closeModal();
+              void load();
+            }}
+          />
+        ) : null}
       </AdminModal>
     </SuperShell>
   );

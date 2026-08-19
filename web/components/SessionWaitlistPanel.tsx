@@ -10,6 +10,7 @@ import {
 import { Panel } from '@/components/AdminUi';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { SkeletonTable } from '@/components/Skeleton';
+import { memberFichaHref } from '@/lib/member-link';
 import { StatusPill } from '@/components/StatusPill';
 import { ApiClientError } from '@/lib/api/client';
 import { listMembers } from '@/lib/api/members';
@@ -278,7 +279,12 @@ export function SessionWaitlistPanel({
           <tr key={row.id}>
             <td>{row.position ?? '—'}</td>
             <td>
-              <Link href={`/afiliados/${row.memberId}`}>
+              <Link
+                href={memberFichaHref(
+                  row.memberId,
+                  row.memberName ?? row.memberEmail ?? '',
+                )}
+              >
                 {row.memberName?.trim() || row.memberEmail}
               </Link>
             </td>
