@@ -557,11 +557,13 @@ button.linkish:hover {
 
 .app-content {
   width: min(1100px, 100%);
+  min-height: 100vh;
   margin: 0 auto;
   padding: 1.25rem clamp(1rem, 3vw, 1.5rem) 2.5rem;
-  display: grid;
   gap: 1.1rem;
-  justify-items: stretch;
+  display: flex;
+  flex-direction: column;
+  justify-content: start;
 }
 
 .app-page-head {
@@ -595,7 +597,10 @@ button.linkish:hover {
 
 .page-tabs {
   display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
   gap: 0.4rem;
+  min-height: 2.35rem;
 }
 
 .page-tabs a {

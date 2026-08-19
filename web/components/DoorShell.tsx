@@ -1,9 +1,9 @@
 'use client';
 
-import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { Suspense } from 'react';
 import { AdminShell } from '@/components/AdminShell';
+import { PageTabs } from '@/components/PageTabs';
 
 export type DoorTab = 'verificar' | 'pase' | 'historial';
 
@@ -22,31 +22,30 @@ function DoorTabsNav() {
   const tab = parseDoorTab(searchParams.get('tab'));
 
   return (
-    <nav className="page-tabs" aria-label="Secciones de puerta">
-      <Link
-        href="/puerta"
-        className={tab === 'verificar' ? 'active' : undefined}
-      >
-        Verificar
-      </Link>
-      <Link
-        href="/puerta?tab=pase"
-        className={tab === 'pase' ? 'active' : undefined}
-      >
-        Pase manual
-      </Link>
-      <Link
-        href="/puerta?tab=historial"
-        className={tab === 'historial' ? 'active' : undefined}
-      >
-        Historial
-      </Link>
-    </nav>
+    <PageTabs
+      label="Secciones de puerta"
+      tabs={[
+        { href: '/puerta', label: 'Verificar', active: tab === 'verificar' },
+        {
+          href: '/puerta?tab=pase',
+          label: 'Pase manual',
+          active: tab === 'pase',
+        },
+        {
+          href: '/puerta?tab=historial',
+          label: 'Historial',
+          active: tab === 'historial',
+        },
+      ]}
+    />
   );
 }
 
 /**
  * Shell del flujo puerta (nav Admin + tabs Verificar / Pase / Historial).
+ *
+ * Las tabs van como barra propia (altura fija) debajo del título para que
+ * cambiar de tab no altere el tamaño del header.
  */
 export function DoorShell({
   title,
@@ -56,14 +55,10 @@ export function DoorShell({
   children: React.ReactNode;
 }) {
   return (
-    <AdminShell
-      title={title}
-      actions={
-        <Suspense fallback={<nav className="page-tabs" aria-hidden />}>
-          <DoorTabsNav />
-        </Suspense>
-      }
-    >
+    <AdminShell title={title}>
+      <Suspense fallback={<nav className="page-tabs" aria-hidden />}>
+        <DoorTabsNav />
+      </Suspense>
       {children}
     </AdminShell>
   );
