@@ -24,6 +24,7 @@ import {
 import { StaffService } from '../staff/staff.service';
 import {
   CreateTenantDto,
+  DeleteTenantDto,
   ListTenantsQueryDto,
   UpdateTenantDto,
 } from './dto/tenant.dto';
@@ -307,6 +308,47 @@ export class TenantsService {
       },
     });
     return response;
+  }
+
+  /**
+   * Eliminación física de un tenant (Super Admin, cascada total).
+   *
+   * @remarks Confirmación estricta: `confirmWord` debe ser `ELIMINAR` y
+   * `slug` debe coincidir con el del tenant. Registra auditoría antes de
+   * borrar (el evento se elimina con el tenant).
+   * @throws {BadRequestException} Si no coincide el confirmWord o el slug.
+   */
+  async remove(
+    id: string,
+    dto: DeleteTenantDto,
+    actor: AuditActor,
+  ): Promise<{ deleted: true }> {
+    const tenant = await this.prisma.tenant.findUnique({
+      where: { id },
+      select: { id: true, name: true, slug: true },
+    });
+    if (!tenant) {
+      throw new NotFoundException(`Tenant ${id} not found`);
+    }
+
+    if (dto.confirmWord.trim().toUpperCase() !== 'ELIMINAR') {
+      throw new BadRequestException('confirmWord must be ELIMINAR');
+    }
+    if (dto.slug.trim().toLowerCase() !== tenant.slug.toLowerCase()) {
+      throw new BadRequestException('slug does not match tenant slug');
+    }
+
+    await this.prisma.tenant.delete({ where: { id } });
+    await this.audit.record({
+      tenantId: id,
+      actor,
+      action: AUDIT_ACTIONS.tenantDelete,
+      entityType: 'tenant',
+      entityId: id,
+      before: { name: tenant.name, slug: tenant.slug },
+      after: null,
+    });
+    return { deleted: true };
   }
 
   private tenantInclude() {

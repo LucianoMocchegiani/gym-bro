@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   HttpCode,
   HttpStatus,
@@ -78,5 +79,15 @@ export class ServicesController {
       dto,
       toAuditActor(user),
     );
+  }
+
+  @Delete(':serviceId')
+  @RequirePermission('catalog.write')
+  remove(
+    @CurrentTenant() tenantId: string,
+    @CurrentUser() user: AuthUser,
+    @Param('serviceId', ParseUUIDPipe) serviceId: string,
+  ): ReturnType<ServicesService['remove']> {
+    return this.servicesService.remove(tenantId, serviceId, toAuditActor(user));
   }
 }

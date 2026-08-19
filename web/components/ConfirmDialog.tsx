@@ -23,6 +23,7 @@ export function ConfirmDialog({
   cancelLabel = 'Cancelar',
   tone = 'default',
   confirmWord,
+  confirmWord2,
   busy = false,
   onConfirm,
   onCancel,
@@ -36,6 +37,8 @@ export function ConfirmDialog({
   tone?: 'default' | 'danger';
   /** Si se define, exige escribir la palabra para confirmar. */
   confirmWord?: string;
+  /** Segunda palabra exigida (p. ej. slug en borrado de tenant). */
+  confirmWord2?: string;
   busy?: boolean;
   onConfirm: () => void;
   onCancel: () => void;
@@ -61,6 +64,7 @@ export function ConfirmDialog({
         cancelLabel={cancelLabel}
         tone={tone}
         confirmWord={confirmWord}
+        confirmWord2={confirmWord2}
         busy={busy}
         onConfirm={onConfirm}
         onCancel={handleClose}
@@ -74,6 +78,7 @@ function ConfirmForm({
   cancelLabel,
   tone,
   confirmWord,
+  confirmWord2,
   busy,
   onConfirm,
   onCancel,
@@ -82,19 +87,24 @@ function ConfirmForm({
   cancelLabel: string;
   tone: 'default' | 'danger';
   confirmWord?: string;
+  confirmWord2?: string;
   busy: boolean;
   onConfirm: () => void;
   onCancel: () => void;
 }) {
   const [typed, setTyped] = useState('');
+  const [typed2, setTyped2] = useState('');
 
   const wordOk = confirmWord
     ? typed.trim().toUpperCase() === confirmWord.toUpperCase()
     : true;
+  const word2Ok = confirmWord2
+    ? typed2.trim().toUpperCase() === confirmWord2.toUpperCase()
+    : true;
 
   function onSubmit(e: FormEvent) {
     e.preventDefault();
-    if (!wordOk || busy) {
+    if (!wordOk || !word2Ok || busy) {
       return;
     }
     onConfirm();
@@ -113,6 +123,17 @@ function ConfirmForm({
           />
         </label>
       ) : null}
+      {confirmWord2 ? (
+        <label>
+          Escribí el slug <strong>{confirmWord2}</strong> para confirmar
+          <input
+            value={typed2}
+            onChange={(e) => setTyped2(e.target.value)}
+            autoComplete="off"
+            placeholder={confirmWord2}
+          />
+        </label>
+      ) : null}
       <div className="admin-modal-actions">
         <button
           type="button"
@@ -125,7 +146,7 @@ function ConfirmForm({
         <button
           type="submit"
           className={tone === 'danger' ? 'btn danger' : 'btn'}
-          disabled={!wordOk || busy}
+          disabled={!wordOk || !word2Ok || busy}
         >
           {busy ? 'Procesando…' : confirmLabel}
         </button>

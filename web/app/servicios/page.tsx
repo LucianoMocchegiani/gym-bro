@@ -10,6 +10,7 @@ import {
 } from '@/components/AdminList';
 import { AdminModal } from '@/components/AdminModal';
 import { AdminShell } from '@/components/AdminShell';
+import { DeleteRowButton } from '@/components/DeleteRowButton';
 import { RequireStaff } from '@/components/RequireStaff';
 import { PageSkeleton } from '@/components/Skeleton';
 import { ServiceCreateForm } from '@/components/ServiceCreateForm';
@@ -21,7 +22,7 @@ import {
 } from '@/components/RowActions';
 import { StatusPill, activeTone } from '@/components/StatusPill';
 import { ApiClientError } from '@/lib/api/client';
-import { listServices } from '@/lib/api/services';
+import { deleteService, listServices } from '@/lib/api/services';
 import type { ServiceDetail, ServiceType } from '@/lib/api/services';
 import { formatServiceType } from '@/lib/catalog-labels';
 import { formatMoney } from '@/lib/cash-labels';
@@ -58,6 +59,7 @@ function ServiciosInner() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [flashOk, setFlashOk] = useState<string | null>(null);
+  const [flashError, setFlashError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -150,6 +152,7 @@ function ServiciosInner() {
       </ListToolbar>
 
       {flashOk ? <p className="ok-msg">{flashOk}</p> : null}
+      {flashError ? <p className="err-msg">{flashError}</p> : null}
 
       <DataTable
         description={listCountDescription(total, page, 'servicio', 'servicios')}
@@ -190,6 +193,16 @@ function ServiciosInner() {
                 >
                   <IconEdit />
                 </RowIconButton>
+                <DeleteRowButton
+                  dialogTitle={`Eliminar servicio ${s.name}?`}
+                  description="Solo se elimina si no está en uso por packs, sesiones o saldos."
+                  onDelete={() => deleteService(s.id)}
+                  onSuccess={() => {
+                    setFlashOk(`Servicio eliminado: ${s.name}`);
+                    void load();
+                  }}
+                  onError={(err) => setFlashError(err.message)}
+                />
               </RowActions>
             </td>
           </tr>

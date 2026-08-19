@@ -207,6 +207,97 @@ export class StaffService {
   }
 
   /**
+   * Eliminación segura de un staff (flag peligroso).
+   *
+   * @remarks Si el staff tiene actividad (accesos registrados o como sujeto,
+   * movimientos de caja, arqueos, devoluciones resueltas, sesiones/reglas como
+   * instructor u ofertas de credencial) → bloqueo con recomendación de
+   * desactivar (`active=false`). Sin actividad → borrado físico.
+   * @throws {ConflictException} `STAFF_HAS_ACTIVITY` si tiene actividad.
+   */
+  async remove(
+    tenantId: string,
+    staffUserId: string,
+    actor: AuditActor,
+  ): Promise<{ deleted: true }> {
+    const staff = await this.prisma.staffUser.findFirst({
+      where: { id: staffUserId, tenantId },
+    });
+    if (!staff) {
+      throw new NotFoundException(
+        `Staff ${staffUserId} not found in tenant ${tenantId}`,
+      );
+    }
+
+    const counts = await this.prisma.staffUser.findUnique({
+      where: { id: staffUserId },
+      select: {
+        _count: {
+          select: {
+            accessAttemptsAsSubject: true,
+            accessAttemptsRecorded: true,
+            cashMovementsRecorded: true,
+            cashReconciliations: true,
+            refundRequestsResolved: true,
+            instructedSessions: true,
+            instructedRecurrenceRules: true,
+            staffCredentialOffers: true,
+          },
+        },
+      },
+    });
+    const c = counts?._count ?? {
+      accessAttemptsAsSubject: 0,
+      accessAttemptsRecorded: 0,
+      cashMovementsRecorded: 0,
+      cashReconciliations: 0,
+      refundRequestsResolved: 0,
+      instructedSessions: 0,
+      instructedRecurrenceRules: 0,
+      staffCredentialOffers: 0,
+    };
+    const hasActivity = Object.values(c).some((n) => n > 0);
+
+    if (hasActivity) {
+      const reasons: string[] = [];
+      if (c.accessAttemptsAsSubject > 0)
+        reasons.push(`${c.accessAttemptsAsSubject} acceso(s) como sujeto`);
+      if (c.accessAttemptsRecorded > 0)
+        reasons.push(`${c.accessAttemptsRecorded} acceso(s) registrados`);
+      if (c.cashMovementsRecorded > 0)
+        reasons.push(`${c.cashMovementsRecorded} movimiento(s) de caja`);
+      if (c.cashReconciliations > 0)
+        reasons.push(`${c.cashReconciliations} arqueo(s)`);
+      if (c.refundRequestsResolved > 0)
+        reasons.push(`${c.refundRequestsResolved} devolución(es) resueltas`);
+      if (c.instructedSessions > 0)
+        reasons.push(`${c.instructedSessions} sesión(es) como instructor`);
+      if (c.instructedRecurrenceRules > 0)
+        reasons.push(`${c.instructedRecurrenceRules} regla(s) de recurrencia`);
+      if (c.staffCredentialOffers > 0)
+        reasons.push(`${c.staffCredentialOffers} oferta(s) de credencial`);
+      throw new ConflictException({
+        statusCode: 409,
+        message: `No se puede eliminar: el staff tiene actividad (${reasons.join(', ')}). Desactivalo desde el listado.`,
+        code: 'STAFF_HAS_ACTIVITY',
+        counts: c,
+      });
+    }
+
+    await this.prisma.staffUser.delete({ where: { id: staffUserId } });
+    await this.audit.record({
+      tenantId,
+      actor,
+      action: AUDIT_ACTIONS.staffDelete,
+      entityType: 'staff_user',
+      entityId: staffUserId,
+      before: { email: staff.email, name: staff.name, active: staff.active },
+      after: null,
+    });
+    return { deleted: true };
+  }
+
+  /**
    * Detalle de staff con roles.
    */
   async findOne(

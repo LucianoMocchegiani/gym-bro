@@ -4,21 +4,25 @@ import { FormEvent, useEffect, useState } from 'react';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { SkeletonForm } from '@/components/Skeleton';
 import { ApiClientError } from '@/lib/api/client';
-import { getTenant, updateTenant } from '@/lib/api/tenants';
+import { deleteTenant, getTenant, updateTenant } from '@/lib/api/tenants';
 import type { TenantDetail, TenantStatus } from '@/lib/api/tenants';
 
 /**
- * Edición / suspensión de tenant (CU-ROL-002), usable en modal o página.
+ * Edición / suspensión / eliminación de tenant (CU-ROL-002), usable en modal o página.
  *
  * @remarks Kuatia es compartido vía env API (`KUATIA_*`); no hay provision por gym.
+ * La eliminación es física en cascada: exige `ELIMINAR` + slug.
  */
 export function TenantEditPanel({
   tenantId,
   onSaved,
+  onDeleted,
   onCancel,
 }: {
   tenantId: string;
   onSaved?: (tenant: TenantDetail) => void;
+  /** Se invoca tras eliminar el tenant (el panel se desmonta). */
+  onDeleted?: () => void;
   /** Si el panel se renderiza en un modal: cierra al guardar sin cambios. */
   onCancel?: () => void;
 }) {
@@ -32,6 +36,8 @@ export function TenantEditPanel({
   const [statusBusy, setStatusBusy] = useState(false);
   const [confirmSave, setConfirmSave] = useState(false);
   const [statusTarget, setStatusTarget] = useState<TenantStatus | null>(null);
+  const [deleteConfirm, setDeleteConfirm] = useState(false);
+  const [deleteBusy, setDeleteBusy] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -125,6 +131,27 @@ export function TenantEditPanel({
     }
   }
 
+  async function doDelete() {
+    if (!tenant) {
+      return;
+    }
+    setDeleteBusy(true);
+    setSaveError(null);
+    try {
+      await deleteTenant(tenant.id, 'ELIMINAR', tenant.slug);
+      onDeleted?.();
+    } catch (err) {
+      setSaveError(
+        err instanceof ApiClientError
+          ? err.message
+          : 'No se pudo eliminar el tenant',
+      );
+      setDeleteConfirm(false);
+    } finally {
+      setDeleteBusy(false);
+    }
+  }
+
   if (loadError) {
     return <p className="error">{loadError}</p>;
   }
@@ -191,6 +218,14 @@ export function TenantEditPanel({
               Reactivar
             </button>
           )}
+          <button
+            type="button"
+            className="btn danger"
+            disabled={busy || statusBusy}
+            onClick={() => setDeleteConfirm(true)}
+          >
+            Eliminar gym
+          </button>
         </div>
       </form>
 
@@ -218,6 +253,23 @@ export function TenantEditPanel({
         busy={statusBusy}
         onConfirm={() => void doSetStatus()}
         onCancel={() => setStatusTarget(null)}
+      />
+
+      <ConfirmDialog
+        open={deleteConfirm}
+        title="Eliminar gym"
+        description={
+          tenant
+            ? `Esto borra en físico el gym ${tenant.name} (slug ${tenant.slug}) con todo su contenido: staff, afiliados, contratos, pagos, caja y auditoría. No se puede deshacer.`
+            : undefined
+        }
+        confirmLabel="Eliminar gym"
+        tone="danger"
+        confirmWord="ELIMINAR"
+        confirmWord2={tenant?.slug}
+        busy={deleteBusy}
+        onConfirm={() => void doDelete()}
+        onCancel={() => setDeleteConfirm(false)}
       />
     </div>
   );

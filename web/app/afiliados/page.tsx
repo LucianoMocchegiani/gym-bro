@@ -11,6 +11,7 @@ import {
 } from '@/components/AdminList';
 import { AdminModal } from '@/components/AdminModal';
 import { AdminShell } from '@/components/AdminShell';
+import { DeleteRowButton } from '@/components/DeleteRowButton';
 import { MemberAccountPanel } from '@/components/MemberAccountPanel';
 import { MemberCreateForm } from '@/components/MemberCreateForm';
 import { MemberFichaPanel } from '@/components/MemberFichaPanel';
@@ -24,7 +25,7 @@ import {
 } from '@/components/RowActions';
 import { StatusPill, memberStatusTone } from '@/components/StatusPill';
 import { ApiClientError } from '@/lib/api/client';
-import { listMembers } from '@/lib/api/members';
+import { deleteMember, listMembers } from '@/lib/api/members';
 import type { MemberDetail, MemberStatus } from '@/lib/api/members';
 import { formatMemberStatus } from '@/lib/member-labels';
 
@@ -64,6 +65,7 @@ function AfiliadosInner() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [flashOk, setFlashOk] = useState<string | null>(null);
+  const [flashError, setFlashError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -172,6 +174,7 @@ function AfiliadosInner() {
       </ListToolbar>
 
       {flashOk ? <p className="ok-msg">{flashOk}</p> : null}
+      {flashError ? <p className="err-msg">{flashError}</p> : null}
 
       <DataTable
         description={listCountDescription(total, page, 'afiliado', 'afiliados')}
@@ -216,6 +219,18 @@ function AfiliadosInner() {
                 >
                   <IconAccount />
                 </RowIconButton>
+                <DeleteRowButton
+                  dialogTitle={`Eliminar afiliado?`}
+                  description={`Se eliminará en físico a ${m.name?.trim() || m.email} si no tiene historial. Con pagos, contratos, reservas u otra actividad no se podrá: conviene dar de baja o suspender.`}
+                  onDelete={() => deleteMember(m.id)}
+                  onSuccess={() => {
+                    setFlashOk(
+                      `Afiliado eliminado: ${m.name?.trim() || m.email}`,
+                    );
+                    void load();
+                  }}
+                  onError={(err) => setFlashError(err.message)}
+                />
               </RowActions>
             </td>
           </tr>

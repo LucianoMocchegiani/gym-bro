@@ -115,3 +115,14 @@ export function issueStaffCredentialOffer(
     },
   );
 }
+
+/**
+ * Eliminación segura de staff (`staff.write`).
+ *
+ * @remarks 409 `STAFF_HAS_ACTIVITY` si tiene actividad registrada.
+ */
+export function deleteStaff(staffId: string): Promise<{ deleted: true }> {
+  return apiRequest<{ deleted: true }>(`/staff/${staffId}`, {
+    method: 'DELETE',
+  });
+}

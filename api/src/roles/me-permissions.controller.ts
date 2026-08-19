@@ -1,8 +1,4 @@
-import {
-  Controller,
-  ForbiddenException,
-  Get,
-} from '@nestjs/common';
+import { Controller, ForbiddenException, Get } from '@nestjs/common';
 import type { AuthUser } from '../auth/auth.types';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { CurrentTenant } from '../tenant/decorators/current-tenant.decorator';

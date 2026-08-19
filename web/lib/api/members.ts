@@ -136,3 +136,14 @@ export function updateMemberStatus(
     body: { status },
   });
 }
+
+/**
+ * Eliminación segura de afiliado (`members.deactivate`).
+ *
+ * @remarks 409 `MEMBER_HAS_HISTORY` si tiene pagos/contratos/reservas/etc.
+ */
+export function deleteMember(memberId: string): Promise<{ deleted: true }> {
+  return apiRequest<{ deleted: true }>(`/members/${memberId}`, {
+    method: 'DELETE',
+  });
+}

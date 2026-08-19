@@ -134,3 +134,15 @@ export function IconWaitlist() {
     </svg>
   );
 }
+
+/** Icono basura — eliminar (destructivo). */
+export function IconTrash() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
+      <path
+        fill="currentColor"
+        d="M6 19a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V7H6v12zM8 9h8v10H8V9zm.5-5 1-1h5l1 1H20v2H4V4h4.5z"
+      />
+    </svg>
+  );
+}

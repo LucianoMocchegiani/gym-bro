@@ -8,6 +8,7 @@ import {
 } from '@/components/AdminList';
 import { AdminModal } from '@/components/AdminModal';
 import { AdminShell } from '@/components/AdminShell';
+import { DeleteRowButton } from '@/components/DeleteRowButton';
 import { RequireStaff } from '@/components/RequireStaff';
 import { PageSkeleton } from '@/components/Skeleton';
 import { RoleCreateForm } from '@/components/RoleCreateForm';
@@ -20,7 +21,7 @@ import {
 } from '@/components/RowActions';
 import { StatusPill } from '@/components/StatusPill';
 import { ApiClientError } from '@/lib/api/client';
-import { listRoles } from '@/lib/api/roles';
+import { deleteRole, listRoles } from '@/lib/api/roles';
 import type { RoleDetail } from '@/lib/api/roles';
 
 const PAGE_SIZE = 20;
@@ -51,6 +52,7 @@ function RolesInner() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [flashOk, setFlashOk] = useState<string | null>(null);
+  const [flashError, setFlashError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -111,6 +113,7 @@ function RolesInner() {
       }
     >
       {flashOk ? <p className="ok-msg">{flashOk}</p> : null}
+      {flashError ? <p className="err-msg">{flashError}</p> : null}
 
       <DataTable
         description={listCountDescription(total, page, 'rol', 'roles')}
@@ -151,6 +154,17 @@ function RolesInner() {
                 >
                   {r.slug === 'admin' ? <IconView /> : <IconEdit />}
                 </RowIconButton>
+                <DeleteRowButton
+                  hidden={r.isSystem}
+                  dialogTitle={`Eliminar rol ${r.name}?`}
+                  description="Se elimina aunque tenga staff asignado."
+                  onDelete={() => deleteRole(r.id)}
+                  onSuccess={() => {
+                    setFlashOk(`Rol eliminado: ${r.name}`);
+                    void load();
+                  }}
+                  onError={(err) => setFlashError(err.message)}
+                />
               </RowActions>
             </td>
           </tr>

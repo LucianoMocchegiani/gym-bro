@@ -14,11 +14,7 @@ import { SuperRolesController } from './super-roles.controller';
  */
 @Module({
   imports: [AuthModule, forwardRef(() => AuditModule)],
-  controllers: [
-    RolesController,
-    SuperRolesController,
-    MePermissionsController,
-  ],
+  controllers: [RolesController, SuperRolesController, MePermissionsController],
   providers: [
     RolesSeedService,
     RolesService,

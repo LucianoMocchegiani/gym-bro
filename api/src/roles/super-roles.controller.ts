@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   HttpCode,
   HttpStatus,
@@ -75,5 +76,17 @@ export class SuperRolesController {
     @Body() dto: UpdateRoleDto,
   ): Promise<RoleDetail> {
     return this.rolesService.update(tenantId, roleId, dto, toAuditActor(user));
+  }
+
+  /**
+   * Elimina un rol custom del tenant indicado (de sistema → 403).
+   */
+  @Delete(':roleId')
+  remove(
+    @Param('tenantId', ParseUUIDPipe) tenantId: string,
+    @Param('roleId', ParseUUIDPipe) roleId: string,
+    @CurrentUser() user: AuthUser,
+  ): ReturnType<RolesService['remove']> {
+    return this.rolesService.remove(tenantId, roleId, toAuditActor(user));
   }
 }

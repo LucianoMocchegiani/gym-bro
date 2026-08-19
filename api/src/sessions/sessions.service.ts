@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ConflictException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -303,6 +304,46 @@ export class SessionsService {
       after: this.auditSnapshot(detail),
     });
     return detail;
+  }
+
+  /**
+   * Eliminación segura de una sesión (RN-SER / flag peligroso).
+   *
+   * @remarks Si la sesión tiene reservas (cualquier estado, aun canceladas)
+   * → no se elimina; se recomienda cancelarla (`status CANCELLED`).
+   * Sin reservas → borrado físico (waitlist en cascada, accesos/pagos a null).
+   * @throws {ConflictException} `SESSION_HAS_RESERVATIONS` si hay reservas.
+   */
+  async remove(
+    tenantId: string,
+    sessionId: string,
+    actor: AuditActor,
+  ): Promise<{ deleted: true }> {
+    const session = await this.findInTenant(tenantId, sessionId);
+    const reservationCount = await this.prisma.reservation.count({
+      where: { sessionId, tenantId },
+    });
+
+    if (reservationCount > 0) {
+      throw new ConflictException({
+        statusCode: 409,
+        message: `No se puede eliminar: la sesión tiene ${reservationCount} reserva/s. Cancelala en su lugar.`,
+        code: 'SESSION_HAS_RESERVATIONS',
+        reservations: reservationCount,
+      });
+    }
+
+    await this.prisma.session.delete({ where: { id: sessionId } });
+    await this.audit.record({
+      tenantId,
+      actor,
+      action: AUDIT_ACTIONS.sessionDelete,
+      entityType: 'session',
+      entityId: sessionId,
+      before: this.auditSnapshot(this.toDetail(session)),
+      after: null,
+    });
+    return { deleted: true };
   }
 
   private sessionInclude() {

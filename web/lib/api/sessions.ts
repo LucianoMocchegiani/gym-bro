@@ -107,3 +107,12 @@ export function expandSessionCapacity(
     body: { capacity },
   });
 }
+
+/**
+ * Eliminación segura de sesión (409 `SESSION_HAS_RESERVATIONS` si tiene reservas).
+ */
+export function deleteSession(sessionId: string): Promise<{ deleted: true }> {
+  return apiRequest<{ deleted: true }>(`/sessions/${sessionId}`, {
+    method: 'DELETE',
+  });
+}

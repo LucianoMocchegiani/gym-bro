@@ -84,3 +84,12 @@ export function updateService(
     body: input,
   });
 }
+
+/**
+ * Eliminación segura de servicio (409 `SERVICE_IN_USE` si está en uso).
+ */
+export function deleteService(serviceId: string): Promise<{ deleted: true }> {
+  return apiRequest<{ deleted: true }>(`/services/${serviceId}`, {
+    method: 'DELETE',
+  });
+}

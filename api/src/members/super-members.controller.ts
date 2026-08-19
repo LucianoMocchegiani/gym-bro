@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   HttpCode,
   HttpStatus,
@@ -102,5 +103,14 @@ export class SuperMembersController {
       dto,
       toAuditActor(user),
     );
+  }
+
+  @Delete(':memberId')
+  remove(
+    @Param('tenantId', ParseUUIDPipe) tenantId: string,
+    @Param('memberId', ParseUUIDPipe) memberId: string,
+    @CurrentUser() user: AuthUser,
+  ): ReturnType<MembersService['remove']> {
+    return this.membersService.remove(tenantId, memberId, toAuditActor(user));
   }
 }

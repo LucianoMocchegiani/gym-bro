@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   HttpCode,
   HttpStatus,
@@ -17,6 +18,7 @@ import { toAuditActor } from '../audit/to-audit-actor';
 import { ListResult } from '../common/list';
 import {
   CreateTenantDto,
+  DeleteTenantDto,
   ListTenantsQueryDto,
   UpdateTenantDto,
 } from './dto/tenant.dto';
@@ -78,5 +80,17 @@ export class TenantsController {
     @Body() dto: UpdateTenantDto,
   ): Promise<TenantResponse> {
     return this.tenantsService.update(id, dto, toAuditActor(user));
+  }
+
+  /**
+   * Elimina un tenant (cascada total). Requiere `ELIMINAR` + slug.
+   */
+  @Delete(':id')
+  remove(
+    @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUser() user: AuthUser,
+    @Body() dto: DeleteTenantDto,
+  ): ReturnType<TenantsService['remove']> {
+    return this.tenantsService.remove(id, dto, toAuditActor(user));
   }
 }

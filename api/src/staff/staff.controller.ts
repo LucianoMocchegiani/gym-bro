@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   HttpCode,
   HttpStatus,
@@ -77,5 +78,18 @@ export class StaffController {
       dto,
       toAuditActor(user),
     );
+  }
+
+  /**
+   * Elimina un staff sin actividad (si tiene, se bloquea).
+   */
+  @Delete(':staffId')
+  @RequirePermission('staff.write')
+  remove(
+    @CurrentTenant() tenantId: string,
+    @CurrentUser() user: AuthUser,
+    @Param('staffId', ParseUUIDPipe) staffId: string,
+  ): ReturnType<StaffService['remove']> {
+    return this.staffService.remove(tenantId, staffId, toAuditActor(user));
   }
 }

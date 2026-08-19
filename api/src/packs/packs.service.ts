@@ -1,9 +1,16 @@
 import {
   BadRequestException,
+  ConflictException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { Pack, Prisma, Service, ServiceType } from '@prisma/client';
+import {
+  ContractStatus,
+  Pack,
+  Prisma,
+  Service,
+  ServiceType,
+} from '@prisma/client';
 import { AUDIT_ACTIONS, AuditActor } from '../audit/audit.types';
 import { AuditService } from '../audit/audit.service';
 import {
@@ -229,7 +236,7 @@ export class PacksService {
       pack.name,
     );
 
-    const detail = this.toDetail(await this.findInTenant(tenantId, packId));
+    const detail = this.toDetail(await this.findInTenant(tenantId, pack.id));
     await this.audit.record({
       tenantId,
       actor,
@@ -240,6 +247,84 @@ export class PacksService {
       after: this.auditSnapshot(detail),
     });
     return detail;
+  }
+
+  /**
+   * Eliminación segura de un pack (RN-SER / flag peligroso).
+   *
+   * @remarks Si el pack NO tiene contrataciones → borrado físico.
+   * Si tiene contrataciones → no se borra en físico (FK `Contract.pack`
+   * Restrict): requiere `confirm='deactivate'` y queda dado de baja
+   * (`active=false`) con sync Kuatia, avisando que dejará de funcionar
+   * el mes siguiente.
+   * @throws {ConflictException} `PACK_HAS_CONTRACTS` si hay contrataciones y
+   * no viene `confirm=deactivate`.
+   */
+  async remove(
+    tenantId: string,
+    packId: string,
+    actor: AuditActor,
+    confirmDeactivate: boolean,
+  ): Promise<{
+    deleted?: boolean;
+    deactivated?: boolean;
+    activeContracts?: number;
+    totalContracts?: number;
+  }> {
+    const pack = await this.findInTenant(tenantId, packId);
+    const totalContracts = await this.prisma.contract.count({
+      where: { packId, tenantId },
+    });
+
+    if (totalContracts > 0) {
+      const activeContracts = await this.prisma.contract.count({
+        where: { packId, tenantId, status: ContractStatus.ACTIVE },
+      });
+      if (!confirmDeactivate) {
+        throw new ConflictException({
+          statusCode: 409,
+          message: `El pack tiene ${totalContracts} contratación/es y no se puede eliminar en físico. Puede quedar dado de baja: dejará de funcionar el mes siguiente.`,
+          code: 'PACK_HAS_CONTRACTS',
+          activeContracts,
+          totalContracts,
+        });
+      }
+
+      const updated = await this.prisma.pack.update({
+        where: { id: packId },
+        data: { active: false },
+        include: this.packInclude(),
+      });
+      await this.kuatiaPackSync.syncPackConfiguration(
+        tenantId,
+        packId,
+        updated.name,
+      );
+
+      const detail = this.toDetail(updated);
+      await this.audit.record({
+        tenantId,
+        actor,
+        action: AUDIT_ACTIONS.packDeactivate,
+        entityType: 'pack',
+        entityId: packId,
+        before: this.auditSnapshot(this.toDetail(pack)),
+        after: this.auditSnapshot(detail),
+      });
+      return { deactivated: true, activeContracts, totalContracts };
+    }
+
+    await this.prisma.pack.delete({ where: { id: packId } });
+    await this.audit.record({
+      tenantId,
+      actor,
+      action: AUDIT_ACTIONS.packDelete,
+      entityType: 'pack',
+      entityId: packId,
+      before: this.auditSnapshot(this.toDetail(pack)),
+      after: null,
+    });
+    return { deleted: true };
   }
 
   private packInclude() {

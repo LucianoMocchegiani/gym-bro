@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   HttpCode,
   HttpStatus,
@@ -68,5 +69,14 @@ export class SuperStaffController {
       dto,
       toAuditActor(user),
     );
+  }
+
+  @Delete(':staffId')
+  remove(
+    @Param('tenantId', ParseUUIDPipe) tenantId: string,
+    @Param('staffId', ParseUUIDPipe) staffId: string,
+    @CurrentUser() user: AuthUser,
+  ): ReturnType<StaffService['remove']> {
+    return this.staffService.remove(tenantId, staffId, toAuditActor(user));
   }
 }

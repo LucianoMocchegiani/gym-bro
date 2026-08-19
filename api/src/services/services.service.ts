@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ConflictException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -181,6 +182,81 @@ export class ServicesService {
       after: this.auditSnapshot(detail),
     });
     return detail;
+  }
+
+  /**
+   * Eliminación segura de un servicio del catálogo.
+   *
+   * @remarks Si el servicio está en uso (packs, sesiones, reglas de
+   * recurrencia o saldos de crédito) → bloqueo con recomendación de dar de
+   * baja (`active=false`). Sin uso → borrado físico.
+   * @throws {ConflictException} `SERVICE_IN_USE` si tiene referencias.
+   */
+  async remove(
+    tenantId: string,
+    serviceId: string,
+    actor: AuditActor,
+  ): Promise<{ deleted: true }> {
+    const service = await this.findInTenant(tenantId, serviceId);
+
+    const useCounts = await this.prisma.service.findUnique({
+      where: { id: serviceId },
+      select: {
+        _count: {
+          select: {
+            packComponents: true,
+            sessions: true,
+            recurrenceRules: true,
+            creditBalances: true,
+          },
+        },
+      },
+    });
+    const counts = useCounts?._count ?? {
+      packComponents: 0,
+      sessions: 0,
+      recurrenceRules: 0,
+      creditBalances: 0,
+    };
+    const hasUse =
+      counts.packComponents > 0 ||
+      counts.sessions > 0 ||
+      counts.recurrenceRules > 0 ||
+      counts.creditBalances > 0;
+
+    if (hasUse) {
+      const reasons: string[] = [];
+      if (counts.packComponents > 0) {
+        reasons.push(`${counts.packComponents} pack(s)`);
+      }
+      if (counts.sessions > 0) {
+        reasons.push(`${counts.sessions} sesión(es)`);
+      }
+      if (counts.recurrenceRules > 0) {
+        reasons.push(`${counts.recurrenceRules} regla(s) de recurrencia`);
+      }
+      if (counts.creditBalances > 0) {
+        reasons.push(`${counts.creditBalances} saldo(s) de crédito`);
+      }
+      throw new ConflictException({
+        statusCode: 409,
+        message: `No se puede eliminar: el servicio está en uso (${reasons.join(', ')}). Dalo de baja desde editar.`,
+        code: 'SERVICE_IN_USE',
+        counts,
+      });
+    }
+
+    await this.prisma.service.delete({ where: { id: serviceId } });
+    await this.audit.record({
+      tenantId,
+      actor,
+      action: AUDIT_ACTIONS.serviceDelete,
+      entityType: 'service',
+      entityId: serviceId,
+      before: this.auditSnapshot(this.toDetail(service)),
+      after: null,
+    });
+    return { deleted: true };
   }
 
   private async assertTenantExists(tenantId: string): Promise<void> {

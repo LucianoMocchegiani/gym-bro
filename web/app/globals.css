@@ -1438,6 +1438,13 @@ button.danger {
   border-radius: 8px;
 }
 
+.err-msg {
+  color: var(--danger);
+  background: var(--danger-soft);
+  padding: 0.55rem 0.75rem;
+  border-radius: 8px;
+}
+
 .mode-toggle {
   border: 1px dashed var(--line);
   border-radius: 8px;

@@ -75,3 +75,17 @@ export class ListTenantsQueryDto extends ListQueryDto {
   @IsEnum(TenantStatus)
   status?: TenantStatus;
 }
+
+/**
+ * Confirmación de borrado de un tenant (Super Admin).
+ *
+ * @remarks Destrucción total en cascada: exige escribir `ELIMINAR` y el slug
+ * del tenant. Super nunca queda sin tenant (su perfil es plataforma).
+ */
+export class DeleteTenantDto {
+  @IsString()
+  confirmWord!: string;
+
+  @IsString()
+  slug!: string;
+}

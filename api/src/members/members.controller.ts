@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   ForbiddenException,
   Get,
   HttpCode,
@@ -138,5 +139,15 @@ export class MembersController {
       dto,
       toAuditActor(user),
     );
+  }
+
+  @Delete('members/:memberId')
+  @RequirePermission('members.deactivate')
+  remove(
+    @CurrentTenant() tenantId: string,
+    @CurrentUser() user: AuthUser,
+    @Param('memberId', ParseUUIDPipe) memberId: string,
+  ): ReturnType<MembersService['remove']> {
+    return this.membersService.remove(tenantId, memberId, toAuditActor(user));
   }
 }

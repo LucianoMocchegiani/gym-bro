@@ -117,3 +117,27 @@ export function updatePack(
     body: input,
   });
 }
+
+export type DeletePackResult = {
+  deleted?: boolean;
+  deactivated?: boolean;
+  activeContracts?: number;
+  totalContracts?: number;
+};
+
+/**
+ * Eliminación segura de pack.
+ *
+ * @remarks Sin contrataciones → borrado físico. Con contrataciones → 409
+ * `PACK_HAS_CONTRACTS`; con `confirmDeactivate` queda dado de baja
+ * (`active=false`, dejará de funcionar el mes siguiente).
+ */
+export function deletePack(
+  packId: string,
+  confirmDeactivate = false,
+): Promise<DeletePackResult> {
+  const qs = confirmDeactivate ? '?confirm=deactivate' : '';
+  return apiRequest<DeletePackResult>(`/packs/${packId}${qs}`, {
+    method: 'DELETE',
+  });
+}

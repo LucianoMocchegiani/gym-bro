@@ -10,6 +10,7 @@ import {
 } from '@/components/AdminList';
 import { AdminModal } from '@/components/AdminModal';
 import { AdminShell } from '@/components/AdminShell';
+import { DeleteRowButton } from '@/components/DeleteRowButton';
 import { RequireStaff } from '@/components/RequireStaff';
 import { PageSkeleton } from '@/components/Skeleton';
 import { StaffCreateForm } from '@/components/StaffCreateForm';
@@ -25,6 +26,7 @@ import { StatusPill, activeTone } from '@/components/StatusPill';
 import { ApiClientError } from '@/lib/api/client';
 import { listStaff } from '@/lib/api/staff';
 import type { StaffUserDetail } from '@/lib/api/staff';
+import { deleteStaff } from '@/lib/api/staff';
 
 const PAGE_SIZE = 20;
 
@@ -60,6 +62,7 @@ function StaffInner() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [flashOk, setFlashOk] = useState<string | null>(null);
+  const [flashError, setFlashError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -133,6 +136,7 @@ function StaffInner() {
       </ListToolbar>
 
       {flashOk ? <p className="ok-msg">{flashOk}</p> : null}
+      {flashError ? <p className="err-msg">{flashError}</p> : null}
 
       <DataTable
         description={listCountDescription(total, page, 'usuario', 'usuarios')}
@@ -181,6 +185,16 @@ function StaffInner() {
                 >
                   <IconCredential />
                 </RowIconButton>
+                <DeleteRowButton
+                  dialogTitle={`Eliminar staff?`}
+                  description={`Se eliminará en físico a ${s.name?.trim() || s.email} si no tiene actividad registrada (accesos, caja, devoluciones, etc.). Si la tiene, conviene desactivarlo.`}
+                  onDelete={() => deleteStaff(s.id)}
+                  onSuccess={() => {
+                    setFlashOk(`Staff eliminado: ${s.name?.trim() || s.email}`);
+                    void load();
+                  }}
+                  onError={(err) => setFlashError(err.message)}
+                />
               </RowActions>
             </td>
           </tr>

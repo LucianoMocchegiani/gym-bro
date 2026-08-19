@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   HttpCode,
   HttpStatus,
@@ -95,5 +96,15 @@ export class SessionsController {
       dto,
       toAuditActor(user),
     );
+  }
+
+  @Delete(':sessionId')
+  @RequirePermission('sessions.write')
+  remove(
+    @CurrentTenant() tenantId: string,
+    @CurrentUser() user: AuthUser,
+    @Param('sessionId', ParseUUIDPipe) sessionId: string,
+  ): ReturnType<SessionsService['remove']> {
+    return this.sessionsService.remove(tenantId, sessionId, toAuditActor(user));
   }
 }

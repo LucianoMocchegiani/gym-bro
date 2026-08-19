@@ -229,6 +229,40 @@ export class RolesService {
     return after;
   }
 
+  /**
+   * Eliminación de un rol (no de sistema).
+   *
+   * @remarks Los roles de sistema (`isSystem`, Admin/Profesor) no se eliminan.
+   * Un rol custom se elimina aunque esté asignado a staff (pierden el rol).
+   * @throws {ForbiddenException} Si el rol es de sistema.
+   */
+  async remove(
+    tenantId: string,
+    roleId: string,
+    actor: AuditActor,
+  ): Promise<{ deleted: true }> {
+    const role = await this.findRoleInTenant(tenantId, roleId);
+    if (role.isSystem) {
+      throw new ForbiddenException({
+        statusCode: 403,
+        message: 'Los roles de sistema no se pueden eliminar.',
+        code: 'ROLE_IS_SYSTEM',
+      });
+    }
+
+    await this.prisma.role.delete({ where: { id: roleId } });
+    await this.audit.record({
+      tenantId,
+      actor,
+      action: AUDIT_ACTIONS.roleDelete,
+      entityType: 'role',
+      entityId: roleId,
+      before: { name: role.name, slug: role.slug },
+      after: null,
+    });
+    return { deleted: true };
+  }
+
   private async assertTenantExists(tenantId: string): Promise<void> {
     const tenant = await this.prisma.tenant.findUnique({
       where: { id: tenantId },

@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   HttpCode,
   HttpStatus,
@@ -72,5 +73,14 @@ export class SuperServicesController {
       dto,
       toAuditActor(user),
     );
+  }
+
+  @Delete(':serviceId')
+  remove(
+    @Param('tenantId', ParseUUIDPipe) tenantId: string,
+    @Param('serviceId', ParseUUIDPipe) serviceId: string,
+    @CurrentUser() user: AuthUser,
+  ): ReturnType<ServicesService['remove']> {
+    return this.servicesService.remove(tenantId, serviceId, toAuditActor(user));
   }
 }

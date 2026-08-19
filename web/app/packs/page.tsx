@@ -10,6 +10,8 @@ import {
 } from '@/components/AdminList';
 import { AdminModal } from '@/components/AdminModal';
 import { AdminShell } from '@/components/AdminShell';
+import { ConfirmDialog } from '@/components/ConfirmDialog';
+import { DeleteRowButton } from '@/components/DeleteRowButton';
 import { PackCreateForm } from '@/components/PackCreateForm';
 import { PackEditPanel } from '@/components/PackEditPanel';
 import { RequireStaff } from '@/components/RequireStaff';
@@ -21,7 +23,7 @@ import {
 } from '@/components/RowActions';
 import { StatusPill, activeTone } from '@/components/StatusPill';
 import { ApiClientError } from '@/lib/api/client';
-import { listPacks } from '@/lib/api/packs';
+import { deletePack, listPacks, type DeletePackResult } from '@/lib/api/packs';
 import type { PackDetail } from '@/lib/api/packs';
 import { formatMoney } from '@/lib/cash-labels';
 import {
@@ -60,6 +62,13 @@ function PacksInner() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [flashOk, setFlashOk] = useState<string | null>(null);
+  const [flashError, setFlashError] = useState<string | null>(null);
+  const [packWarn, setPackWarn] = useState<{
+    pack: PackDetail;
+    totalContracts: number;
+    activeContracts: number;
+  } | null>(null);
+  const [deactivating, setDeactivating] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -104,6 +113,30 @@ function PacksInner() {
     });
   }
 
+  async function confirmDeactivate() {
+    if (!packWarn) {
+      return;
+    }
+    setDeactivating(true);
+    try {
+      await deletePack(packWarn.pack.id, true);
+      setFlashOk(
+        `Pack dado de baja: dejará de funcionar el mes siguiente.`,
+      );
+      setPackWarn(null);
+      void load();
+    } catch (err) {
+      setFlashError(
+        err instanceof ApiClientError
+          ? err.message
+          : 'No se pudo dar de baja el pack',
+      );
+      setPackWarn(null);
+    } finally {
+      setDeactivating(false);
+    }
+  }
+
   return (
     <AdminShell
       title="Packs"
@@ -129,6 +162,7 @@ function PacksInner() {
       </ListToolbar>
 
       {flashOk ? <p className="ok-msg">{flashOk}</p> : null}
+      {flashError ? <p className="err-msg">{flashError}</p> : null}
 
       <DataTable
         description={listCountDescription(total, page, 'pack', 'packs')}
@@ -171,6 +205,41 @@ function PacksInner() {
                 >
                   <IconEdit />
                 </RowIconButton>
+                <DeleteRowButton
+                  dialogTitle={`Eliminar pack ${p.name}?`}
+                  description="Si tiene contrataciones no se eliminará en físico: quedará dado de baja."
+                  onDelete={() => deletePack(p.id)}
+                  onSuccess={(res) => {
+                    const r = res as DeletePackResult;
+                    if (r.deactivated) {
+                      setFlashOk(
+                        'Pack dado de baja: dejará de funcionar el mes siguiente.',
+                      );
+                    } else {
+                      setFlashOk(`Pack eliminado: ${p.name}`);
+                    }
+                    void load();
+                  }}
+                  onError={(err) => {
+                    if (
+                      err.status === 409 &&
+                      (err.body as { code?: string } | null)?.code ===
+                        'PACK_HAS_CONTRACTS'
+                    ) {
+                      const body = (err.body ?? {}) as {
+                        totalContracts?: number;
+                        activeContracts?: number;
+                      };
+                      setPackWarn({
+                        pack: p,
+                        totalContracts: body.totalContracts ?? 0,
+                        activeContracts: body.activeContracts ?? 0,
+                      });
+                    } else {
+                      setFlashError(err.message);
+                    }
+                  }}
+                />
               </RowActions>
             </td>
           </tr>
@@ -217,6 +286,29 @@ function PacksInner() {
           />
         ) : null}
       </AdminModal>
+
+      <ConfirmDialog
+        open={Boolean(packWarn)}
+        title={`Dar de baja el pack ${packWarn?.pack.name ?? ''}?`}
+        description={
+          <>
+            Este pack tiene {packWarn?.totalContracts ?? 0} contratación(es)
+            {packWarn && packWarn.activeContracts > 0
+              ? ` (${packWarn.activeContracts} activas)`
+              : ''}{' '}
+            y no se puede eliminar en físico. Al confirmar quedará{' '}
+            <strong>dado de baja</strong> y dejará de funcionar el mes
+            siguiente; las contrataciones vigentes siguen hasta que termine su
+            período.
+          </>
+        }
+        tone="danger"
+        confirmLabel="Dar de baja"
+        confirmWord="ELIMINAR"
+        busy={deactivating}
+        onConfirm={confirmDeactivate}
+        onCancel={() => setPackWarn(null)}
+      />
     </AdminShell>
   );
 }

@@ -104,3 +104,18 @@ export function updateTenant(
     auth: 'super',
   });
 }
+
+/**
+ * Eliminación de tenant (cascada total). Requiere `ELIMINAR` + slug.
+ */
+export function deleteTenant(
+  id: string,
+  confirmWord: string,
+  slug: string,
+): Promise<{ deleted: true }> {
+  return apiRequest<{ deleted: true }>(`/tenants/${id}`, {
+    method: 'DELETE',
+    body: { confirmWord, slug },
+    auth: 'super',
+  });
+}

@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   HttpCode,
   HttpStatus,
@@ -81,5 +82,18 @@ export class RolesController {
     @Body() dto: UpdateRoleDto,
   ): Promise<RoleDetail> {
     return this.rolesService.update(tenantId, roleId, dto, toAuditActor(user));
+  }
+
+  /**
+   * Elimina un rol custom del tenant del JWT (no de sistema).
+   */
+  @Delete(':roleId')
+  @RequirePermission('roles.write')
+  remove(
+    @CurrentTenant() tenantId: string,
+    @CurrentUser() user: AuthUser,
+    @Param('roleId', ParseUUIDPipe) roleId: string,
+  ): ReturnType<RolesService['remove']> {
+    return this.rolesService.remove(tenantId, roleId, toAuditActor(user));
   }
 }

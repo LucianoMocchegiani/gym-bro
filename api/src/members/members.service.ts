@@ -376,6 +376,93 @@ export class MembersService {
     return detail;
   }
 
+  /**
+   * Eliminación segura de un afiliado (flag peligroso).
+   *
+   * @remarks Si el afiliado tiene historial (pagos, contratos, reservas,
+   * waitlist, devoluciones, comprobantes, credenciales, movimientos de caja o
+   * intentos de acceso) → bloqueo con recomendación de dar de baja
+   * (`status INACTIVE` vía `members.deactivate`). Sin historial → borrado físico.
+   * @throws {ConflictException} `MEMBER_HAS_HISTORY` si tiene historial.
+   */
+  async remove(
+    tenantId: string,
+    memberId: string,
+    actor: AuditActor,
+  ): Promise<{ deleted: true }> {
+    const member = await this.findInTenant(tenantId, memberId);
+
+    const counts = await this.prisma.member.findUnique({
+      where: { id: memberId },
+      select: {
+        _count: {
+          select: {
+            payments: true,
+            contracts: true,
+            reservations: true,
+            waitlistEntries: true,
+            refundRequests: true,
+            receipts: true,
+            accessCredentials: true,
+            credentialOffers: true,
+            cashMovements: true,
+            accessAttempts: true,
+          },
+        },
+      },
+    });
+    const c = counts?._count ?? {
+      payments: 0,
+      contracts: 0,
+      reservations: 0,
+      waitlistEntries: 0,
+      refundRequests: 0,
+      receipts: 0,
+      accessCredentials: 0,
+      credentialOffers: 0,
+      cashMovements: 0,
+      accessAttempts: 0,
+    };
+    const hasHistory = Object.values(c).some((n) => n > 0);
+
+    if (hasHistory) {
+      const reasons: string[] = [];
+      if (c.payments > 0) reasons.push(`${c.payments} pago(s)`);
+      if (c.contracts > 0) reasons.push(`${c.contracts} contratación(es)`);
+      if (c.reservations > 0) reasons.push(`${c.reservations} reserva(s)`);
+      if (c.waitlistEntries > 0) reasons.push(`${c.waitlistEntries} waitlist`);
+      if (c.refundRequests > 0)
+        reasons.push(`${c.refundRequests} devolución(es)`);
+      if (c.receipts > 0) reasons.push(`${c.receipts} comprobante(s)`);
+      if (c.accessCredentials > 0)
+        reasons.push(`${c.accessCredentials} credencial(es)`);
+      if (c.credentialOffers > 0)
+        reasons.push(`${c.credentialOffers} oferta(s)`);
+      if (c.cashMovements > 0)
+        reasons.push(`${c.cashMovements} movimiento(s) de caja`);
+      if (c.accessAttempts > 0)
+        reasons.push(`${c.accessAttempts} intento(s) de acceso`);
+      throw new ConflictException({
+        statusCode: 409,
+        message: `No se puede eliminar: el afiliado tiene historial (${reasons.join(', ')}). Dalo de baja desde la ficha.`,
+        code: 'MEMBER_HAS_HISTORY',
+        counts: c,
+      });
+    }
+
+    await this.prisma.member.delete({ where: { id: memberId } });
+    await this.audit.record({
+      tenantId,
+      actor,
+      action: AUDIT_ACTIONS.memberDelete,
+      entityType: 'member',
+      entityId: memberId,
+      before: this.auditSnapshot(this.toDetail(member)),
+      after: null,
+    });
+    return { deleted: true };
+  }
+
   private async assertTenantExists(tenantId: string): Promise<void> {
     const tenant = await this.prisma.tenant.findUnique({
       where: { id: tenantId },

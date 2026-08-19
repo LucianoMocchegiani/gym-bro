@@ -66,3 +66,12 @@ export function updateRole(
     body: input,
   });
 }
+
+/**
+ * Eliminación de rol custom (roles de sistema → 403 `ROLE_IS_SYSTEM`).
+ */
+export function deleteRole(roleId: string): Promise<{ deleted: true }> {
+  return apiRequest<{ deleted: true }>(`/roles/${roleId}`, {
+    method: 'DELETE',
+  });
+}

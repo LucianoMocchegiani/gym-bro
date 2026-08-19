@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   HttpCode,
   HttpStatus,
@@ -73,5 +74,21 @@ export class PacksController {
     @Body() dto: UpdatePackDto,
   ): Promise<PackDetail> {
     return this.packsService.update(tenantId, packId, dto, toAuditActor(user));
+  }
+
+  @Delete(':packId')
+  @RequirePermission('catalog.write')
+  remove(
+    @CurrentTenant() tenantId: string,
+    @CurrentUser() user: AuthUser,
+    @Param('packId', ParseUUIDPipe) packId: string,
+    @Query('confirm') confirm?: string,
+  ): ReturnType<PacksService['remove']> {
+    return this.packsService.remove(
+      tenantId,
+      packId,
+      toAuditActor(user),
+      confirm === 'deactivate',
+    );
   }
 }

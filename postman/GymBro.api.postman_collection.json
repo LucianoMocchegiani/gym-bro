@@ -91,6 +91,10 @@
       "value": ""
     },
     {
+      "key": "createdTenantSlug",
+      "value": ""
+    },
+    {
       "key": "createdBranchId",
       "value": ""
     },
@@ -507,6 +511,8 @@
                   "});",
                   "pm.collectionVariables.set('createdTenantId', body.id);",
                   "pm.environment.set('createdTenantId', body.id);",
+                  "pm.collectionVariables.set('createdTenantSlug', body.slug);",
+                  "pm.environment.set('createdTenantSlug', body.slug);",
                   "if (body.defaultBranch) {",
                   "  pm.collectionVariables.set('createdBranchId', body.defaultBranch.id);",
                   "  pm.environment.set('createdBranchId', body.defaultBranch.id);",
@@ -697,6 +703,46 @@
               "raw": "{\n  \"status\": \"ACTIVE\"\n}"
             },
             "url": "{{baseUrl}}/api/tenants/{{createdTenantId}}"
+          }
+        },
+        {
+          "name": "DELETE tenant (ELIMINAR + slug)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('deleted', () => pm.expect(pm.response.json().deleted).to.eql(true));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"confirmWord\": \"ELIMINAR\",\n  \"slug\": \"{{createdTenantSlug}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/tenants/{{createdTenantId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "tenants",
+                "{{createdTenantId}}"
+              ]
+            },
+            "description": "Cascada total. confirmWord ELIMINAR + slug deben coincidir; si no, 400."
           }
         }
       ]
@@ -932,6 +978,37 @@
               "raw": "{\n  \"name\": \"Coach auxiliar\",\n  \"permissionCodes\": [\"routines.write\", \"members.read\"]\n}"
             },
             "url": "{{baseUrl}}/api/roles"
+          }
+        },
+        {
+          "name": "Staff DELETE role custom",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('deleted', () => pm.expect(pm.response.json().deleted).to.eql(true));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/roles/{{createdRoleId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "roles",
+                "{{createdRoleId}}"
+              ]
+            },
+            "description": "Custom: se elimina aunque tenga staff asignado. Roles de sistema (admin/profesor) → 403 ROLE_IS_SYSTEM."
           }
         }
       ]
@@ -1195,6 +1272,42 @@
             "method": "GET",
             "header": [],
             "url": "{{baseUrl}}/api/tenants/{{createdTenantId}}/staff/{{createdOwnerId}}"
+          }
+        },
+        {
+          "name": "Staff DELETE staff",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200 or 409', () => pm.expect(pm.response.code).to.be.oneOf([200, 409]));",
+                  "if (pm.response.code === 200) {",
+                  "  pm.test('deleted', () => pm.expect(pm.response.json().deleted).to.eql(true));",
+                  "}",
+                  "if (pm.response.code === 409) {",
+                  "  pm.test('STAFF_HAS_ACTIVITY', () => pm.expect(pm.response.json().code).to.eql('STAFF_HAS_ACTIVITY'));",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/staff/{{createdStaffId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "staff",
+                "{{createdStaffId}}"
+              ]
+            },
+            "description": "Físico solo si el staff no tiene actividad (accesos, caja, devoluciones, sesiones, offers). Con actividad → 409 STAFF_HAS_ACTIVITY (recomienda desactivar)."
           }
         }
       ]
@@ -1573,6 +1686,42 @@
             "url": "{{baseUrl}}/api/me/account?coverage=current",
             "description": "CU-AFI-005. Default coverage=current: solo packs ACTIVE vigentes hoy (filtro DB). coverage=all = historial completo."
           }
+        },
+        {
+          "name": "Staff DELETE member",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200 or 409', () => pm.expect(pm.response.code).to.be.oneOf([200, 409]));",
+                  "if (pm.response.code === 200) {",
+                  "  pm.test('deleted', () => pm.expect(pm.response.json().deleted).to.eql(true));",
+                  "}",
+                  "if (pm.response.code === 409) {",
+                  "  pm.test('MEMBER_HAS_HISTORY', () => pm.expect(pm.response.json().code).to.eql('MEMBER_HAS_HISTORY'));",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/members/{{createdMemberId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "members",
+                "{{createdMemberId}}"
+              ]
+            },
+            "description": "members.deactivate. Físico solo sin historial (pagos, contratos, reservas, waitlist, devoluciones, accesos, caja). Con historial → 409 MEMBER_HAS_HISTORY (recomienda suspender/inactivar)."
+          }
         }
       ]
     },
@@ -1771,6 +1920,42 @@
             },
             "url": "{{baseUrl}}/api/services/{{createdServiceId}}"
           }
+        },
+        {
+          "name": "Staff DELETE service",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200 or 409', () => pm.expect(pm.response.code).to.be.oneOf([200, 409]));",
+                  "if (pm.response.code === 200) {",
+                  "  pm.test('deleted', () => pm.expect(pm.response.json().deleted).to.eql(true));",
+                  "}",
+                  "if (pm.response.code === 409) {",
+                  "  pm.test('SERVICE_IN_USE', () => pm.expect(pm.response.json().code).to.eql('SERVICE_IN_USE'));",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/services/{{createdServiceId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "services",
+                "{{createdServiceId}}"
+              ]
+            },
+            "description": "Físico solo si no está en uso (packs, sesiones, reglas de recurrencia, saldos). En uso → 409 SERVICE_IN_USE (recomienda dar de baja active=false)."
+          }
         }
       ]
     },
@@ -1930,6 +2115,105 @@
               "raw": "{\n  \"price\": 49000\n}"
             },
             "url": "{{baseUrl}}/api/packs/{{createdPackId}}"
+          }
+        },
+        {
+          "name": "Staff DELETE pack con confirm=deactivate",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('deactivated', () => pm.expect(body.deactivated).to.eql(true));",
+                  "pm.test('contracts counted', () => {",
+                  "  pm.expect(body.activeContracts).to.be.a('number');",
+                  "  pm.expect(body.totalContracts).to.be.a('number');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/packs/{{createdMonthlyPackId}}?confirm=deactivate",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "packs",
+                "{{createdMonthlyPackId}}"
+              ],
+              "query": [
+                {
+                  "key": "confirm",
+                  "value": "deactivate"
+                }
+              ]
+            },
+            "description": "Pack con contrataciones: sin ?confirm → 409 PACK_HAS_CONTRACTS. Con confirm=deactivate → active=false (dejará de funcionar el mes siguiente) + sync Kuatia."
+          }
+        },
+        {
+          "name": "Staff DELETE pack físico (sin contratos)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const base = pm.variables.replaceIn('{{baseUrl}}') + '/api';",
+                  "const token = pm.environment.get('accessToken') || pm.collectionVariables.get('accessToken');",
+                  "const body = {",
+                  "  name: 'Pack desechable ' + Date.now(),",
+                  "  description: 'Para probar DELETE físico',",
+                  "  price: 100,",
+                  "  billingPeriod: 'ONE_TIME',",
+                  "  components: [{ serviceId: pm.variables.get('createdServiceId'), creditAmount: 1 }]",
+                  "};",
+                  "pm.sendRequest({",
+                  "  url: base + '/packs',",
+                  "  method: 'POST',",
+                  "  header: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token },",
+                  "  body: { mode: 'raw', raw: JSON.stringify(body) }",
+                  "}, (err, res) => {",
+                  "  if (err) { console.log(err); return; }",
+                  "  pm.variables.set('freshPackId', res.json().id);",
+                  "});"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('deleted', () => pm.expect(pm.response.json().deleted).to.eql(true));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/packs/{{freshPackId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "packs",
+                "{{freshPackId}}"
+              ]
+            },
+            "description": "Pre-request crea un pack sin contrataciones y lo borra en físico (200 {deleted:true})."
           }
         }
       ]
@@ -2647,6 +2931,42 @@
             },
             "url": "{{baseUrl}}/api/session-recurrence-rules/{{createdRecurrenceRuleId}}/status",
             "description": "No cancela ni elimina las sesiones ya materializadas."
+          }
+        },
+        {
+          "name": "Staff DELETE session",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200 or 409', () => pm.expect(pm.response.code).to.be.oneOf([200, 409]));",
+                  "if (pm.response.code === 200) {",
+                  "  pm.test('deleted', () => pm.expect(pm.response.json().deleted).to.eql(true));",
+                  "}",
+                  "if (pm.response.code === 409) {",
+                  "  pm.test('SESSION_HAS_RESERVATIONS', () => pm.expect(pm.response.json().code).to.eql('SESSION_HAS_RESERVATIONS'));",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/sessions/{{createdSessionId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "sessions",
+                "{{createdSessionId}}"
+              ]
+            },
+            "description": "Físico solo sin reservas (cualquier estado, incluso canceladas). Con reservas → 409 SESSION_HAS_RESERVATIONS (recomienda cancelar la sesión)."
           }
         }
       ]

@@ -11,6 +11,7 @@ import {
 import { AdminModal } from '@/components/AdminModal';
 import { AdminShell } from '@/components/AdminShell';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
+import { DeleteRowButton } from '@/components/DeleteRowButton';
 import { RequireStaff } from '@/components/RequireStaff';
 import { PageSkeleton } from '@/components/Skeleton';
 import {
@@ -36,6 +37,7 @@ import type {
 } from '@/lib/api/recurrence-rules';
 import { listSessions } from '@/lib/api/sessions';
 import type { SessionDetail, SessionStatus } from '@/lib/api/sessions';
+import { deleteSession } from '@/lib/api/sessions';
 
 type View = 'sessions' | 'rules';
 
@@ -179,6 +181,7 @@ function SesionesInner() {
           onDatos={openDatos}
           onRoster={openRoster}
           onWaitlist={openWaitlist}
+          onDeleted={() => setListKey((k) => k + 1)}
         />
       ) : (
         <RulesList />
@@ -264,11 +267,13 @@ function SessionsList({
   onDatos,
   onRoster,
   onWaitlist,
+  onDeleted,
 }: {
   statusFilter: SessionStatus | 'ALL';
   onDatos: (id: string) => void;
   onRoster: (id: string) => void;
   onWaitlist: (id: string) => void;
+  onDeleted: () => void;
 }) {
   const [rows, setRows] = useState<SessionDetail[]>([]);
   const [total, setTotal] = useState(0);
@@ -276,6 +281,7 @@ function SessionsList({
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [delErr, setDelErr] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -315,8 +321,10 @@ function SessionsList({
   }, [statusFilter, page]);
 
   return (
-    <DataTable
-      description={listCountDescription(total, page, 'sesión', 'sesiones')}
+    <>
+      {delErr ? <p className="err-msg">{delErr}</p> : null}
+      <DataTable
+        description={listCountDescription(total, page, 'sesión', 'sesiones')}
       loading={loading}
       error={error}
       isEmpty={rows.length === 0}
@@ -368,11 +376,22 @@ function SessionsList({
               >
                 <IconWaitlist />
               </RowIconButton>
+              <DeleteRowButton
+                dialogTitle={`Eliminar sesión?`}
+                description={`Se eliminará la sesión de ${s.serviceName} (${formatWhen(s.startsAt)}). Si tiene reservas, no se podrá eliminar.`}
+                onDelete={() => deleteSession(s.id)}
+                onSuccess={() => {
+                  setDelErr(null);
+                  onDeleted();
+                }}
+                onError={(err) => setDelErr(err.message)}
+              />
             </RowActions>
           </td>
         </tr>
       ))}
     </DataTable>
+    </>
   );
 }
 

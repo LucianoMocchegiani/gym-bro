@@ -196,6 +196,11 @@ function TenantsInner() {
               closeModal();
               void load();
             }}
+            onDeleted={() => {
+              setFlashOk('Tenant eliminado (cascada total).');
+              closeModal();
+              void load();
+            }}
           />
         ) : null}
       </AdminModal>
