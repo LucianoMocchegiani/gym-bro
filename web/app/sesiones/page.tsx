@@ -1,26 +1,18 @@
 'use client';
 
-import { Suspense, useCallback, useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import {
   DataTable,
-  ListFilterField,
-  ListToolbar,
   listCountDescription,
 } from '@/components/AdminList';
 import { AdminModal } from '@/components/AdminModal';
 import { AdminShell } from '@/components/AdminShell';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
-import { DeleteRowButton } from '@/components/DeleteRowButton';
+import { PageTabs } from '@/components/PageTabs';
 import { RequireStaff } from '@/components/RequireStaff';
+import { SessionCalendar, startOfWeek } from '@/components/SessionCalendar';
 import { PageSkeleton } from '@/components/Skeleton';
-import {
-  IconEdit,
-  IconRoster,
-  IconWaitlist,
-  RowActions,
-  RowIconButton,
-} from '@/components/RowActions';
 import { SessionCreateForm } from '@/components/SessionCreateForm';
 import { SessionDatosPanel } from '@/components/SessionDatosPanel';
 import { SessionRosterPanel } from '@/components/SessionRosterPanel';
@@ -35,11 +27,8 @@ import type {
   RecurrenceRuleDetail,
   Weekday,
 } from '@/lib/api/recurrence-rules';
-import { listSessions } from '@/lib/api/sessions';
-import type { SessionDetail, SessionStatus } from '@/lib/api/sessions';
-import { deleteSession } from '@/lib/api/sessions';
 
-type View = 'sessions' | 'rules';
+type View = 'calendar' | 'rules';
 
 const PAGE_SIZE = 20;
 
@@ -53,13 +42,6 @@ const WEEKDAY_SHORT: Record<Weekday, string> = {
   SUNDAY: 'D',
 };
 
-function formatWhen(iso: string): string {
-  return new Date(iso).toLocaleString('es-AR', {
-    dateStyle: 'short',
-    timeStyle: 'short',
-  });
-}
-
 function formatDateOnly(iso: string): string {
   return iso.slice(0, 10);
 }
@@ -69,7 +51,7 @@ function formatWeekdays(days: Weekday[]): string {
 }
 
 /**
- * Listado de sesiones: Datos / Roster / Waitlist + alta en modal.
+ * Sesiones: calendario semanal y recurrencias + modales Datos/Roster/Waitlist.
  */
 export default function SesionesPage() {
   return (
@@ -90,34 +72,33 @@ function SesionesInner() {
   const createOpen =
     searchParams.get('nuevo') === '1' && !datosId && !rosterId && !waitlistId;
 
-  const initialView: View =
-    searchParams.get('view') === 'rules' ? 'rules' : 'sessions';
-  const [view, setView] = useState<View>(initialView);
-  const [statusFilter, setStatusFilter] = useState<SessionStatus | 'ALL'>(
-    'PUBLISHED',
+  const [view, setView] = useState<View>(
+    searchParams.get('view') === 'rules' ? 'rules' : 'calendar',
+  );
+  const [weekStart, setWeekStart] = useState<Date>(() =>
+    startOfWeek(new Date()),
   );
   const [flashOk, setFlashOk] = useState<string | null>(null);
   const [listKey, setListKey] = useState(0);
 
   useEffect(() => {
-    if (searchParams.get('view') === 'rules') {
-      setView('rules');
-    }
+    setView(searchParams.get('view') === 'rules' ? 'rules' : 'calendar');
   }, [searchParams]);
 
   function closeModals() {
-    const qs =
-      view === 'rules'
+    const created = searchParams.get('created');
+    const qs = created
+      ? `?view=rules&created=${created}`
+      : view === 'rules'
         ? '?view=rules'
-        : searchParams.get('created')
-          ? `?view=rules&created=${searchParams.get('created')}`
-          : '';
+        : '';
     router.replace(`/sesiones${qs}`, { scroll: false });
   }
 
   function openCreate() {
     setFlashOk(null);
-    router.replace('/sesiones?nuevo=1', { scroll: false });
+    const qs = view === 'rules' ? '?view=rules&nuevo=1' : '?nuevo=1';
+    router.replace(`/sesiones${qs}`, { scroll: false });
   }
 
   function openDatos(id: string) {
@@ -150,42 +131,31 @@ function SesionesInner() {
         </button>
       }
     >
-      <ListToolbar>
-        <ListFilterField
-          label="Ver"
-          value={view}
-          onChange={(v) => setView(v as View)}
-        >
-          <option value="sessions">Sesiones</option>
-          <option value="rules">Recurrencias</option>
-        </ListFilterField>
-        {view === 'sessions' ? (
-          <ListFilterField
-            label="Estado"
-            value={statusFilter}
-            onChange={(v) => setStatusFilter(v as SessionStatus | 'ALL')}
-          >
-            <option value="PUBLISHED">Publicadas</option>
-            <option value="CANCELLED">Canceladas</option>
-            <option value="ALL">Todas</option>
-          </ListFilterField>
-        ) : null}
-      </ListToolbar>
+      <PageTabs
+        label="Secciones de sesiones"
+        tabs={[
+          { href: '/sesiones', label: 'Calendario', active: view === 'calendar' },
+          {
+            href: '/sesiones?view=rules',
+            label: 'Recurrencias',
+            active: view === 'rules',
+          },
+        ]}
+      />
 
       {flashOk ? <p className="ok-msg">{flashOk}</p> : null}
 
-      {view === 'sessions' ? (
-        <SessionsList
-          key={`${statusFilter}-${listKey}`}
-          statusFilter={statusFilter}
-          onDatos={openDatos}
-          onRoster={openRoster}
-          onWaitlist={openWaitlist}
-          onDeleted={() => setListKey((k) => k + 1)}
+      {view === 'calendar' ? (
+        <SessionCalendar
+          weekStart={weekStart}
+          onWeekChange={setWeekStart}
+          onOpenDatos={openDatos}
+          onOpenRoster={openRoster}
+          onOpenWaitlist={openWaitlist}
+          refreshKey={listKey}
         />
-      ) : (
-        <RulesList />
-      )}
+      ) : null}
+      {view === 'rules' ? <RulesList /> : null}
 
       <AdminModal
         open={createOpen}
@@ -198,17 +168,17 @@ function SesionesInner() {
           onCancel={closeModals}
           onSuccessSession={(created) => {
             setFlashOk(`Sesión creada: ${created.serviceName}`);
-            closeModals();
-            setView('sessions');
+            setView('calendar');
             setListKey((k) => k + 1);
+            router.replace('/sesiones', { scroll: false });
           }}
           onSuccessRule={(created) => {
             setFlashOk(`Recurrencia creada: ${created.serviceName}`);
+            setView('rules');
             router.replace(
               `/sesiones?view=rules&created=${encodeURIComponent(created.id)}`,
               { scroll: false },
             );
-            setView('rules');
           }}
         />
       </AdminModal>
@@ -262,139 +232,6 @@ function SesionesInner() {
   );
 }
 
-function SessionsList({
-  statusFilter,
-  onDatos,
-  onRoster,
-  onWaitlist,
-  onDeleted,
-}: {
-  statusFilter: SessionStatus | 'ALL';
-  onDatos: (id: string) => void;
-  onRoster: (id: string) => void;
-  onWaitlist: (id: string) => void;
-  onDeleted: () => void;
-}) {
-  const [rows, setRows] = useState<SessionDetail[]>([]);
-  const [total, setTotal] = useState(0);
-  const [hasMore, setHasMore] = useState(false);
-  const [page, setPage] = useState(1);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [delErr, setDelErr] = useState<string | null>(null);
-
-  useEffect(() => {
-    let cancelled = false;
-    void (async () => {
-      setLoading(true);
-      try {
-        const data = await listSessions({
-          status: statusFilter === 'ALL' ? undefined : statusFilter,
-          page,
-          pageSize: PAGE_SIZE,
-        });
-        if (cancelled) {
-          return;
-        }
-        setRows(data.items);
-        setTotal(data.total);
-        setHasMore(data.hasMore);
-        setError(null);
-      } catch (err) {
-        if (cancelled) {
-          return;
-        }
-        setError(
-          err instanceof ApiClientError
-            ? err.message
-            : 'No se pudieron cargar sesiones',
-        );
-      } finally {
-        if (!cancelled) {
-          setLoading(false);
-        }
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [statusFilter, page]);
-
-  return (
-    <>
-      {delErr ? <p className="err-msg">{delErr}</p> : null}
-      <DataTable
-        description={listCountDescription(total, page, 'sesión', 'sesiones')}
-      loading={loading}
-      error={error}
-      isEmpty={rows.length === 0}
-      emptyText="No hay sesiones con ese filtro."
-      page={page}
-      hasMore={hasMore}
-      onPageChange={setPage}
-      header={
-        <>
-          <th>Servicio</th>
-          <th>Inicio</th>
-          <th>Fin</th>
-          <th>Cupo</th>
-          <th>Estado</th>
-          <th />
-        </>
-      }
-    >
-      {rows.map((s) => (
-        <tr key={s.id}>
-          <td>{s.serviceName}</td>
-          <td>{formatWhen(s.startsAt)}</td>
-          <td>{formatWhen(s.endsAt)}</td>
-          <td>
-            {s.bookedCount}/{s.capacity}
-          </td>
-          <td>
-            <StatusPill tone={activeTone(s.status === 'PUBLISHED')}>
-              {s.status === 'PUBLISHED' ? 'Publicada' : 'Cancelada'}
-            </StatusPill>
-          </td>
-          <td>
-            <RowActions>
-              <RowIconButton
-                label="Datos"
-                onClick={() => onDatos(s.id)}
-              >
-                <IconEdit />
-              </RowIconButton>
-              <RowIconButton
-                label="Roster"
-                onClick={() => onRoster(s.id)}
-              >
-                <IconRoster />
-              </RowIconButton>
-              <RowIconButton
-                label="Lista de espera"
-                onClick={() => onWaitlist(s.id)}
-              >
-                <IconWaitlist />
-              </RowIconButton>
-              <DeleteRowButton
-                dialogTitle={`Eliminar sesión?`}
-                description={`Se eliminará la sesión de ${s.serviceName} (${formatWhen(s.startsAt)}). Si tiene reservas, no se podrá eliminar.`}
-                onDelete={() => deleteSession(s.id)}
-                onSuccess={() => {
-                  setDelErr(null);
-                  onDeleted();
-                }}
-                onError={(err) => setDelErr(err.message)}
-              />
-            </RowActions>
-          </td>
-        </tr>
-      ))}
-    </DataTable>
-    </>
-  );
-}
-
 function RulesList() {
   const searchParams = useSearchParams();
   const createdId = searchParams.get('created');
@@ -411,7 +248,9 @@ function RulesList() {
     useState<RecurrenceRuleDetail | null>(null);
   const [deactivateBusy, setDeactivateBusy] = useState(false);
 
-  const load = useCallback(async () => {
+  const [reload, setReload] = useState(0);
+
+  async function load() {
     setLoading(true);
     try {
       const data = await listRecurrenceRules({
@@ -436,13 +275,14 @@ function RulesList() {
     } finally {
       setLoading(false);
     }
-  }, [page]);
+  }
 
   useEffect(() => {
     // Fetch remoto al cambiar página.
     // eslint-disable-next-line react-hooks/set-state-in-effect -- carga API
     void load();
-  }, [load]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page, reload]);
 
   async function doDeactivate() {
     const rule = deactivateTarget;
@@ -455,7 +295,7 @@ function RulesList() {
     try {
       await deactivateRecurrenceRule(rule.id);
       setOkMsg('Recurrencia desactivada.');
-      await load();
+      setReload((r) => r + 1);
       setDeactivateTarget(null);
     } catch (err) {
       setError(

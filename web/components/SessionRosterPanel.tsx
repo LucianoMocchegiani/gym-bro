@@ -231,7 +231,51 @@ export function SessionRosterPanel({
 
   return (
     <div className="admin-stack">
-      <ListToolbar>
+      {!cancelled ? (
+        <Panel title="Reservar con crédito" className="form-panel">
+          <form className="admin-form" onSubmit={(e) => void onBook(e)}>
+            <p className="muted small">
+              Consume 1 crédito del pack del afiliado. Drop-in CASH → Caja.
+            </p>
+            <label>
+              Filtrar afiliados
+              <input
+                value={memberFilter}
+                onChange={(e) => setMemberFilter(e.target.value)}
+                placeholder="Nombre o email"
+              />
+            </label>
+            <label>
+              Afiliado
+              <select
+                value={memberId}
+                onChange={(e) => setMemberId(e.target.value)}
+                required
+              >
+                <option value="">Elegí…</option>
+                {memberOptions.map((m) => (
+                  <option key={m.id} value={m.id}>
+                    {m.name?.trim() || m.email}
+                  </option>
+                ))}
+              </select>
+            </label>
+            {bookError ? <p className="error">{bookError}</p> : null}
+            {bookOk ? <p className="ok-msg">{bookOk}</p> : null}
+            <button
+              type="submit"
+              className="primary"
+              disabled={bookBusy || !memberId}
+            >
+              {bookBusy ? 'Reservando…' : 'Agregar al roster'}
+            </button>
+          </form>
+        </Panel>
+      ) : null}
+
+      <ListToolbar
+        hint={`Staff a cargo: ${session.instructorName ?? 'Sin asignar'}`}
+      >
         <ListFilterField
           label="Roster"
           value={rosterFilter}
@@ -293,48 +337,6 @@ export function SessionRosterPanel({
           </tr>
         ))}
       </DataTable>
-
-      {!cancelled ? (
-        <Panel title="Reservar con crédito" className="form-panel">
-          <form className="admin-form" onSubmit={(e) => void onBook(e)}>
-            <p className="muted small">
-              Consume 1 crédito del pack del afiliado. Drop-in CASH → Caja.
-            </p>
-            <label>
-              Filtrar afiliados
-              <input
-                value={memberFilter}
-                onChange={(e) => setMemberFilter(e.target.value)}
-                placeholder="Nombre o email"
-              />
-            </label>
-            <label>
-              Afiliado
-              <select
-                value={memberId}
-                onChange={(e) => setMemberId(e.target.value)}
-                required
-              >
-                <option value="">Elegí…</option>
-                {memberOptions.map((m) => (
-                  <option key={m.id} value={m.id}>
-                    {m.name?.trim() || m.email}
-                  </option>
-                ))}
-              </select>
-            </label>
-            {bookError ? <p className="error">{bookError}</p> : null}
-            {bookOk ? <p className="ok-msg">{bookOk}</p> : null}
-            <button
-              type="submit"
-              className="primary"
-              disabled={bookBusy || !memberId}
-            >
-              {bookBusy ? 'Reservando…' : 'Agregar al roster'}
-            </button>
-          </form>
-        </Panel>
-      ) : null}
 
       <ConfirmDialog
         open={cancelTarget !== null}

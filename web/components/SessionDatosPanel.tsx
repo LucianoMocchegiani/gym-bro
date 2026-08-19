@@ -11,6 +11,8 @@ import {
   updateSession,
 } from '@/lib/api/sessions';
 import type { SessionDetail } from '@/lib/api/sessions';
+import { listStaff } from '@/lib/api/staff';
+import type { StaffUserDetail } from '@/lib/api/staff';
 import {
   fromDatetimeLocalValue,
   toDatetimeLocalValue,
@@ -39,6 +41,9 @@ export function SessionDatosPanel({
   const [endsAt, setEndsAt] = useState('');
   const [capacity, setCapacity] = useState('');
   const [expandTo, setExpandTo] = useState('');
+  const [instructorId, setInstructorId] = useState('');
+  const [instructors, setInstructors] = useState<StaffUserDetail[]>([]);
+  const [instructorHint, setInstructorHint] = useState<string | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [expandError, setExpandError] = useState<string | null>(null);
@@ -55,7 +60,36 @@ export function SessionDatosPanel({
     setEndsAt(toDatetimeLocalValue(s.endsAt));
     setCapacity(String(s.capacity));
     setExpandTo(String(s.capacity + 1));
+    setInstructorId(s.instructorId ?? '');
   }
+
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      try {
+        const result = await listStaff({
+          pageSize: 100,
+          order: 'asc',
+          orderBy: 'name',
+        });
+        if (!cancelled) {
+          setInstructors(result.items.filter((st) => st.active));
+        }
+      } catch (err) {
+        if (!cancelled) {
+          // Sin staff.read no se puede editar; se muestra solo lectura.
+          setInstructorHint(
+            err instanceof ApiClientError
+              ? `No se pudo cargar staff (${err.message})`
+              : 'No se pudo cargar staff',
+          );
+        }
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -91,7 +125,8 @@ export function SessionDatosPanel({
     const dirty =
       startsAt !== toDatetimeLocalValue(session.startsAt) ||
       endsAt !== toDatetimeLocalValue(session.endsAt) ||
-      capacity !== String(session.capacity);
+      capacity !== String(session.capacity) ||
+      instructorId !== (session.instructorId ?? '');
     if (!dirty) {
       // Sin cambios: no pegarle a la API; si es modal, cerrar.
       onCancel?.();
@@ -109,6 +144,7 @@ export function SessionDatosPanel({
         startsAt: fromDatetimeLocalValue(startsAt),
         endsAt: fromDatetimeLocalValue(endsAt),
         capacity: Number(capacity),
+        instructorId: instructorId || null,
       });
       applySession(updated);
       setSaveOk(true);
@@ -219,6 +255,30 @@ export function SessionDatosPanel({
             disabled={cancelled}
           />
         </label>
+        {instructors.length > 0 ? (
+          <label>
+            Staff a cargo
+            <select
+              value={instructorId}
+              onChange={(e) => setInstructorId(e.target.value)}
+              disabled={cancelled}
+            >
+              <option value="">Sin asignar</option>
+              {instructors.map((st) => (
+                <option key={st.id} value={st.id}>
+                  {st.name?.trim() || st.email}
+                </option>
+              ))}
+            </select>
+          </label>
+        ) : (
+          <p className="muted small">
+            Staff a cargo:{' '}
+            {session.instructorName ??
+              'Sin asignar'}
+            {instructorHint ? ` · ${instructorHint}` : ''}
+          </p>
+        )}
 
         {saveError ? <p className="error">{saveError}</p> : null}
         {saveOk ? <p className="ok-msg">Guardado.</p> : null}

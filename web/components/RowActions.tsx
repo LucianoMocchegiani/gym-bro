@@ -1,6 +1,6 @@
 'use client';
 
-import type { ReactNode } from 'react';
+import type { MouseEvent, ReactNode } from 'react';
 
 /**
  * Botón de acción en fila de grilla (icono + tooltip nativo).
@@ -13,7 +13,7 @@ export function RowIconButton({
   disabled,
 }: {
   label: string;
-  onClick?: () => void;
+  onClick?: (e: MouseEvent<HTMLButtonElement>) => void;
   href?: string;
   children: ReactNode;
   disabled?: boolean;
@@ -142,6 +142,18 @@ export function IconTrash() {
       <path
         fill="currentColor"
         d="M6 19a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V7H6v12zM8 9h8v10H8V9zm.5-5 1-1h5l1 1H20v2H4V4h4.5z"
+      />
+    </svg>
+  );
+}
+
+/** Icono puntos verticales — más acciones. */
+export function IconDots() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
+      <path
+        fill="currentColor"
+        d="M12 8a2 2 0 1 0 0-4 2 2 0 0 0 0 4zm0 6a2 2 0 1 0 0-4 2 2 0 0 0 0 4zm0 6a2 2 0 1 0 0-4 2 2 0 0 0 0 4z"
       />
     </svg>
   );

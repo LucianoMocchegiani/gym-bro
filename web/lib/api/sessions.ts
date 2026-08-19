@@ -41,6 +41,7 @@ export type UpdateSessionInput = {
   startsAt?: string;
   endsAt?: string;
   capacity?: number;
+  instructorId?: string | null;
   status?: 'CANCELLED';
 };
 

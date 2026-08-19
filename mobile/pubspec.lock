@@ -307,7 +307,7 @@ packages:
   identity_core_dart:
     dependency: "direct main"
     description:
-      path: "../ssi-quark/quarkid-identity-core-dart"
+      path: "../identity_core_dart"
       relative: true
     source: path
     version: "0.1.0"
