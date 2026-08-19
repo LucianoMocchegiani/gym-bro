@@ -16,6 +16,7 @@ La creación de registros sigue la skill:
 
 ## Índice
 
+- [2026-08-19 — Eliminar vistas [id] sin uso (modales en grilla)](./2026-08-19-eliminar-vistas-id-sin-uso.md)
 - [2026-08-19 — Super: editar tenant en modal + ficha de afiliado desde grilla con búsqueda](./2026-08-19-super-editar-modal-ficha-grilla-busqueda.md)
 - [2026-08-18 — Avatar de cuenta + pantalla de cuenta + cambio de contraseña](./2026-08-18-avatar-cuenta-cambio-contrasena.md)
 - [2026-08-18 — Tema con icono + hamburguesa responsive](./2026-08-18-tema-icono-hamburguesa.md)
