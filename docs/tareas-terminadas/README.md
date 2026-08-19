@@ -16,6 +16,7 @@ La creación de registros sigue la skill:
 
 ## Índice
 
+- [2026-08-18 — Avatar de cuenta + pantalla de cuenta + cambio de contraseña](./2026-08-18-avatar-cuenta-cambio-contrasena.md)
 - [2026-08-18 — Tema con icono + hamburguesa responsive](./2026-08-18-tema-icono-hamburguesa.md)
 - [2026-08-18 — Skeletons shimmer en carga async](./2026-08-18-skeletons-shimmer.md)
 - [2026-08-18 — Puerta: tabs en header fijo (PageTabs)](./2026-08-18-puerta-tabs-header-fijo.md)
