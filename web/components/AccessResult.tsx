@@ -66,7 +66,9 @@ export function AccessResultBanner({
         <p className="muted small">
           {staffId ? 'Staff: ' : 'Afiliado: '}
           {staffId ? (
-            <Link href={`/staff/${staffId}`}>{who}</Link>
+            <Link href={`/staff?roles=${encodeURIComponent(staffId)}`}>
+              {who}
+            </Link>
           ) : result.memberId ? (
             <Link
               href={memberFichaHref(
@@ -130,7 +132,9 @@ export function AttemptsList({
             </span>
             <span className="attempt-who">
               {a.subjectStaffId ? (
-                <Link href={`/staff/${a.subjectStaffId}`}>
+                <Link
+                  href={`/staff?roles=${encodeURIComponent(a.subjectStaffId)}`}
+                >
                   {subjectLabel(a)}
                 </Link>
               ) : a.memberId ? (

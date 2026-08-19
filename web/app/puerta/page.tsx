@@ -343,7 +343,9 @@ function PuertaInner() {
                 </td>
                 <td>
                   {a.subjectStaffId ? (
-                    <Link href={`/staff/${a.subjectStaffId}`}>
+                    <Link
+                      href={`/staff?roles=${encodeURIComponent(a.subjectStaffId)}`}
+                    >
                       {subjectLabel(a)}
                     </Link>
                   ) : a.memberId ? (
