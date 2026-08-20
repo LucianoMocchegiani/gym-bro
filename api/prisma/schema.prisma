@@ -193,6 +193,7 @@ model Tenant {
   auditEvents     AuditEvent[]
   credentialOffers CredentialOffer[]
   staffCredentialOffers StaffCredentialOffer[]
+  cartCheckouts   CartCheckout[]
 
   @@map("tenants")
 }
@@ -333,6 +334,7 @@ model Member {
   accessCredentials AccessCredential[]
   accessAttempts AccessAttempt[]
   credentialOffers CredentialOffer[]
+  cartCheckouts   CartCheckout[]
 
   @@unique([tenantId, email])
   @@unique([tenantId, document])
@@ -585,6 +587,8 @@ model Payment {
   packId           String?       @map("pack_id") @db.Uuid
   /// Sesión objetivo del checkout drop-in MP (null en pack/caja stub).
   sessionId        String?       @map("session_id") @db.Uuid
+  /// Carrito MP al que pertenece este payment (1 preference con items[]).
+  cartId           String?       @map("cart_id") @db.Uuid
   amount           Int
   status           PaymentStatus
   method           PaymentMethod
@@ -607,6 +611,7 @@ model Payment {
   member   Member    @relation(fields: [memberId], references: [id], onDelete: Cascade)
   pack     Pack?         @relation(fields: [packId], references: [id], onDelete: SetNull)
   session  Session?      @relation(fields: [sessionId], references: [id], onDelete: SetNull)
+  cart     CartCheckout? @relation(fields: [cartId], references: [id], onDelete: SetNull)
   contract Contract?
   reservation Reservation?
   cashMovements CashMovement[]
@@ -617,8 +622,41 @@ model Payment {
   @@index([tenantId])
   @@index([memberId])
   @@index([sessionId])
+  @@index([cartId])
   @@index([mpPreferenceId])
   @@map("payments")
+}
+
+/// Carrito de compra MP de Caja (CU-PAG-001). 1 preference con items[] → 1 pago.
+///
+/// @remarks Modelo MercadoLibre: el carrito agrega ítems, pero el checkout es
+/// un solo total y un solo pago. Al webhook APPROVED se confirma cada pack /
+/// reserva de sus payments.
+model CartCheckout {
+  id                 String        @id @default(uuid()) @db.Uuid
+  tenantId           String        @map("tenant_id") @db.Uuid
+  memberId           String        @map("member_id") @db.Uuid
+  /// Total del carrito (suma de unit_price × quantity de los items).
+  amount             Int
+  status             PaymentStatus
+  idempotencyKey     String        @map("idempotency_key")
+  /// Preference Checkout Pro del gym.
+  mpPreferenceId     String?       @map("mp_preference_id")
+  /// Id del pago en Mercado Pago (dedup webhook).
+  mpPaymentId        String?       @map("mp_payment_id")
+  mpInitPoint        String?       @map("mp_init_point")
+  mpSandboxInitPoint String?       @map("mp_sandbox_init_point")
+  createdAt          DateTime      @default(now()) @map("created_at")
+  updatedAt          DateTime      @updatedAt @map("updated_at")
+
+  tenant   Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  member   Member    @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  payments Payment[]
+
+  @@unique([tenantId, idempotencyKey])
+  @@index([tenantId])
+  @@index([memberId])
+  @@map("cart_checkouts")
 }
 
 /// Contratación de pack tras pago aprobado (CU-CON-001 / RN-PAG-004).

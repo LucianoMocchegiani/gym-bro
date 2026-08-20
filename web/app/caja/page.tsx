@@ -1,28 +1,18 @@
 'use client';
 
-import { FormEvent, useEffect, useMemo, useState } from 'react';
-import { DataTable, ListToolbar } from '@/components/AdminList';
+import { FormEvent, useEffect, useMemo, useRef, useState } from 'react';
+import { ListToolbar } from '@/components/AdminList';
 import { AdminShell } from '@/components/AdminShell';
-import { AdminGrid, Panel } from '@/components/AdminUi';
-import { ConfirmDialog } from '@/components/ConfirmDialog';
+import { Panel } from '@/components/AdminUi';
+import { MemberPicker } from '@/components/MemberPicker';
 import { ReceiptPanel } from '@/components/ReceiptPanel';
 import { RequireStaff } from '@/components/RequireStaff';
-import { SkeletonCards, SkeletonPanel } from '@/components/Skeleton';
-import { StatusPill } from '@/components/StatusPill';
-import {
-  getCashDay,
-  reconcileCashDay,
-  todayBusinessDate,
-} from '@/lib/api/cash-register';
-import type { CashDayDetail } from '@/lib/api/cash-register';
+import { SkeletonPanel } from '@/components/Skeleton';
 import { ApiClientError, newIdempotencyKey } from '@/lib/api/client';
 import { createCashContract } from '@/lib/api/contracts';
-import { listMembers } from '@/lib/api/members';
-import type { MemberDetail } from '@/lib/api/members';
 import {
-  pickMpCheckoutUrl,
-  startStaffMpDropInCheckout,
-  startStaffMpPackCheckout,
+  pickMpCartCheckoutUrl,
+  startStaffMpCartCheckout,
 } from '@/lib/api/mercadopago';
 import { listActivePacks } from '@/lib/api/packs';
 import type { PackSummary } from '@/lib/api/packs';
@@ -31,13 +21,23 @@ import { getReceiptByPayment } from '@/lib/api/receipts';
 import type { ReceiptDetail } from '@/lib/api/receipts';
 import { listSessions } from '@/lib/api/sessions';
 import type { SessionSummary } from '@/lib/api/sessions';
-import { formatCashConcept, formatMoney } from '@/lib/cash-labels';
+import { listServices } from '@/lib/api/services';
+import { formatMoney } from '@/lib/cash-labels';
 
-type CobroKind = 'PACK' | 'DROP_IN';
-type CobroMedio = 'CASH' | 'MP';
+type CartItem = {
+  key: string;
+  kind: 'PACK' | 'DROP_IN';
+  refId: string;
+  label: string;
+  sub: string;
+  price: number;
+};
+
+type CatalogTab = 'SERVICIOS' | 'PACKS';
 
 /**
- * Caja del día + cobro CASH/MP + arqueo + comprobantes (CU-PAG / RN-PAG-009).
+ * Caja: carrito de cobros (packs + drop-in) en efectivo o con links de MP
+ * (CU-PAG / RN-PAG-009). Arqueo y movimientos viven en /arqueo.
  */
 export default function CajaPage() {
   return (
@@ -48,90 +48,28 @@ export default function CajaPage() {
 }
 
 function CajaInner() {
-  const [date, setDate] = useState(todayBusinessDate);
-  const [day, setDay] = useState<CashDayDetail | null>(null);
-  const [loadError, setLoadError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  const [members, setMembers] = useState<MemberDetail[]>([]);
+  const [catalogTab, setCatalogTab] = useState<CatalogTab>('SERVICIOS');
   const [packs, setPacks] = useState<PackSummary[]>([]);
   const [sessions, setSessions] = useState<SessionSummary[]>([]);
+  const [services, setServices] = useState<
+    { id: string; dropInPrice: number | null }[]
+  >([]);
+  const [catalogLoading, setCatalogLoading] = useState(true);
   const [catalogError, setCatalogError] = useState<string | null>(null);
 
-  const [cobroKind, setCobroKind] = useState<CobroKind>('PACK');
-  const [cobroMedio, setCobroMedio] = useState<CobroMedio>('CASH');
-  const [memberFilter, setMemberFilter] = useState('');
   const [memberId, setMemberId] = useState('');
-  const [packId, setPackId] = useState('');
-  const [sessionId, setSessionId] = useState('');
+  const [cart, setCart] = useState<CartItem[]>([]);
+  const [cobroMedio, setCobroMedio] = useState<'CASH' | 'MP'>('CASH');
   const [cobroBusy, setCobroBusy] = useState(false);
   const [cobroError, setCobroError] = useState<string | null>(null);
   const [cobroOk, setCobroOk] = useState<string | null>(null);
   const [mpCheckoutUrl, setMpCheckoutUrl] = useState<string | null>(null);
-  const [copyOk, setCopyOk] = useState(false);
+  const [copyKey, setCopyKey] = useState<string | null>(null);
 
   const [receipt, setReceipt] = useState<ReceiptDetail | null>(null);
   const [receiptError, setReceiptError] = useState<string | null>(null);
-  const [receiptBusyId, setReceiptBusyId] = useState<string | null>(null);
 
-  const [declaredAmount, setDeclaredAmount] = useState('');
-  const [reconcileNote, setReconcileNote] = useState('');
-  const [reconcileBusy, setReconcileBusy] = useState(false);
-  const [reconcileError, setReconcileError] = useState<string | null>(null);
-  const [reconcileConfirm, setReconcileConfirm] = useState(false);
-
-  useEffect(() => {
-    let cancelled = false;
-    void (async () => {
-      try {
-        const data = await getCashDay(date);
-        if (cancelled) {
-          return;
-        }
-        setDay(data);
-        setLoadError(null);
-        if (!data.reconciliation) {
-          setDeclaredAmount(String(data.totals.net));
-        }
-      } catch (err) {
-        if (cancelled) {
-          return;
-        }
-        setLoadError(
-          err instanceof ApiClientError
-            ? err.message
-            : 'No se pudo cargar la caja del día',
-        );
-      } finally {
-        if (!cancelled) {
-          setLoading(false);
-        }
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [date]);
-
-  async function reloadDay(targetDate = date) {
-    setLoading(true);
-    setLoadError(null);
-    try {
-      const data = await getCashDay(targetDate);
-      setDay(data);
-      if (!data.reconciliation) {
-        setDeclaredAmount(String(data.totals.net));
-      }
-    } catch (err) {
-      setLoadError(
-        err instanceof ApiClientError
-          ? err.message
-          : 'No se pudo cargar la caja del día',
-      );
-    } finally {
-      setLoading(false);
-    }
-  }
+  const itemSeq = useRef(0);
 
   useEffect(() => {
     let cancelled = false;
@@ -140,13 +78,7 @@ function CajaInner() {
         const from = new Date();
         const to = new Date();
         to.setDate(to.getDate() + 14);
-        const [membersResult, packsResult, sessionsResult] = await Promise.all([
-          listMembers({
-            status: 'ACTIVE',
-            pageSize: 100,
-            order: 'asc',
-            orderBy: 'name',
-          }),
+        const [packsResult, sessionsResult, servicesResult] = await Promise.all([
           listActivePacks(),
           listSessions({
             status: 'PUBLISHED',
@@ -154,22 +86,19 @@ function CajaInner() {
             to: to.toISOString(),
             pageSize: 100,
           }),
+          listServices({ active: true, pageSize: 100 }),
         ]);
         if (cancelled) {
           return;
         }
-        setMembers(membersResult.items);
         setPacks(packsResult.items);
         setSessions(sessionsResult.items);
-        if (membersResult.items.length > 0) {
-          setMemberId((prev) => prev || membersResult.items[0].id);
-        }
-        if (packsResult.items.length > 0) {
-          setPackId((prev) => prev || packsResult.items[0].id);
-        }
-        if (sessionsResult.items.length > 0) {
-          setSessionId((prev) => prev || sessionsResult.items[0].id);
-        }
+        setServices(
+          servicesResult.items.map((s) => ({
+            id: s.id,
+            dropInPrice: s.dropInPrice,
+          })),
+        );
         setCatalogError(null);
       } catch (err) {
         if (cancelled) {
@@ -178,8 +107,12 @@ function CajaInner() {
         setCatalogError(
           err instanceof ApiClientError
             ? err.message
-            : 'No se pudo cargar catálogo de cobro',
+            : 'No se pudo cargar el catálogo de cobro',
         );
+      } finally {
+        if (!cancelled) {
+          setCatalogLoading(false);
+        }
       }
     })();
     return () => {
@@ -187,22 +120,64 @@ function CajaInner() {
     };
   }, []);
 
-  const filteredMembers = useMemo(() => {
-    const q = memberFilter.trim().toLowerCase();
-    if (!q) {
-      return members;
-    }
-    return members.filter(
-      (m) =>
-        (m.name?.toLowerCase().includes(q) ?? false) ||
-        m.email.toLowerCase().includes(q),
-    );
-  }, [members, memberFilter]);
+  const servicePrice = useMemo(
+    () => new Map(services.map((s) => [s.id, s.dropInPrice])),
+    [services],
+  );
 
-  const selectedPack = packs.find((p) => p.id === packId);
+  const total = useMemo(
+    () => cart.reduce((sum, item) => sum + item.price, 0),
+    [cart],
+  );
+
+  function addPack(pack: PackSummary) {
+    const key = `PACK-${pack.id}-${++itemSeq.current}`;
+    setCart((prev) => [
+      ...prev,
+      {
+        key,
+        kind: 'PACK',
+        refId: pack.id,
+        label: pack.name,
+        sub:
+          pack.kind === 'ACCESS'
+            ? 'Acceso libre'
+            : pack.kind === 'CREDITS'
+              ? 'Créditos'
+              : 'Mixto',
+        price: pack.price,
+      },
+    ]);
+  }
+
+  function addDropIn(session: SessionSummary) {
+    const price = servicePrice.get(session.serviceId) ?? 0;
+    const when = new Date(session.startsAt).toLocaleString('es-AR', {
+      weekday: 'short',
+      day: '2-digit',
+      month: 'short',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+    const key = `DROP_IN-${session.id}-${++itemSeq.current}`;
+    setCart((prev) => [
+      ...prev,
+      {
+        key,
+        kind: 'DROP_IN',
+        refId: session.id,
+        label: session.serviceName,
+        sub: `${when} · ${session.branchName} (${session.bookedCount}/${session.capacity})`,
+        price,
+      },
+    ]);
+  }
+
+  function removeItem(key: string) {
+    setCart((prev) => prev.filter((item) => item.key !== key));
+  }
 
   async function openReceiptForPayment(paymentId: string) {
-    setReceiptBusyId(paymentId);
     setReceiptError(null);
     try {
       const r = await getReceiptByPayment(paymentId);
@@ -214,16 +189,14 @@ function CajaInner() {
           ? err.message
           : 'No se pudo cargar el comprobante',
       );
-    } finally {
-      setReceiptBusyId(null);
     }
   }
 
   async function copyMpUrl(url: string) {
     try {
       await navigator.clipboard.writeText(url);
-      setCopyOk(true);
-      window.setTimeout(() => setCopyOk(false), 2000);
+      setCopyKey(url);
+      window.setTimeout(() => setCopyKey(null), 2000);
     } catch {
       setCobroError('No se pudo copiar el link');
     }
@@ -235,144 +208,97 @@ function CajaInner() {
       setCobroError('Elegí un afiliado');
       return;
     }
+    if (cart.length === 0) {
+      setCobroError('Agregá al menos un ítem al carrito');
+      return;
+    }
     setCobroBusy(true);
     setCobroError(null);
     setCobroOk(null);
     setMpCheckoutUrl(null);
-    setCopyOk(false);
+    setCopyKey(null);
     setReceiptError(null);
+    setReceipt(null);
     try {
       if (cobroMedio === 'MP') {
-        if (cobroKind === 'PACK') {
-          if (!packId) {
-            setCobroError('Elegí un pack');
-            setCobroBusy(false);
-            return;
-          }
-          const result = await startStaffMpPackCheckout(memberId, {
-            packId,
-            idempotencyKey: newIdempotencyKey('mp-pack'),
-          });
-          const url = pickMpCheckoutUrl(result);
-          if (!url) {
-            setCobroError('Checkout creado sin URL (revisá cuenta MP / modo)');
-            return;
-          }
-          setMpCheckoutUrl(url);
-          setCobroOk(
-            `Link MP listo (pago ${result.status}). El pack se activa al aprobarse el pago.`,
+        const result = await startStaffMpCartCheckout(memberId, {
+          items: cart.map((item) => ({
+            kind: item.kind,
+            id: item.refId,
+          })),
+          idempotencyKey: newIdempotencyKey('mp-cart'),
+        });
+        const url = pickMpCartCheckoutUrl(result);
+        if (!url) {
+          throw new Error(
+            'Checkout creado sin URL (revisá cuenta MP / modo)',
           );
-          window.open(url, '_blank', 'noopener,noreferrer');
-        } else {
-          if (!sessionId) {
-            setCobroError('Elegí una sesión');
-            setCobroBusy(false);
-            return;
-          }
-          const result = await startStaffMpDropInCheckout(memberId, {
-            sessionId,
-            idempotencyKey: newIdempotencyKey('mp-dropin'),
-          });
-          const url = pickMpCheckoutUrl(result);
-          if (!url) {
-            setCobroError('Checkout creado sin URL (revisá cuenta MP / modo)');
-            return;
-          }
-          setMpCheckoutUrl(url);
-          setCobroOk(
-            `Link MP listo (pago ${result.status}). La reserva se confirma al aprobarse el pago.`,
-          );
-          window.open(url, '_blank', 'noopener,noreferrer');
         }
+        setMpCheckoutUrl(url);
+        setCobroOk(
+          `Link MP generado por ${formatMoney(result.amount)}. Cada pack/reserva del carrito se activa al aprobarse el pago.`,
+        );
+        window.open(url, '_blank', 'noopener,noreferrer');
+        setCart([]);
         return;
       }
 
-      let paymentId: string | null = null;
-      if (cobroKind === 'PACK') {
-        if (!packId) {
-          setCobroError('Elegí un pack');
-          setCobroBusy(false);
-          return;
+      const paymentIds: string[] = [];
+      const labels: string[] = [];
+      for (const item of cart) {
+        if (item.kind === 'PACK') {
+          const contract = await createCashContract(
+            memberId,
+            item.refId,
+            newIdempotencyKey('cash-pack'),
+          );
+          paymentIds.push(contract.payment.id);
+        } else {
+          const reservation = await createCashDropIn(
+            memberId,
+            item.refId,
+            newIdempotencyKey('cash-dropin'),
+          );
+          if (reservation.paymentId) {
+            paymentIds.push(reservation.paymentId);
+          }
         }
-        const contract = await createCashContract(
-          memberId,
-          packId,
-          newIdempotencyKey('cash-pack'),
-        );
-        paymentId = contract.payment.id;
-        setCobroOk('Pack cobrado en efectivo.');
-      } else {
-        if (!sessionId) {
-          setCobroError('Elegí una sesión');
-          setCobroBusy(false);
-          return;
-        }
-        const reservation = await createCashDropIn(
-          memberId,
-          sessionId,
-          newIdempotencyKey('cash-dropin'),
-        );
-        paymentId = reservation.paymentId;
-        setCobroOk('Drop-in cobrado en efectivo.');
+        labels.push(item.label);
       }
-      await reloadDay(date);
-      if (paymentId) {
-        await openReceiptForPayment(paymentId);
+      setCart([]);
+      setCobroOk(
+        `${labels.length} cobro${labels.length === 1 ? '' : 's'} en efectivo: ${labels.join(' · ')}`,
+      );
+      const last = paymentIds[paymentIds.length - 1];
+      if (last) {
+        await openReceiptForPayment(last);
       }
     } catch (err) {
       setCobroError(
         err instanceof ApiClientError
           ? err.message
-          : 'No se pudo registrar el cobro',
+          : err instanceof Error
+            ? err.message
+            : 'No se pudo registrar el cobro',
       );
     } finally {
       setCobroBusy(false);
     }
   }
 
-  async function onReconcile(e: FormEvent) {
-    e.preventDefault();
-    const declared = Number(declaredAmount);
-    if (!Number.isInteger(declared) || declared < 0) {
-      setReconcileError('Declará un monto entero ≥ 0');
-      return;
-    }
-    setReconcileConfirm(true);
-  }
-
-  async function doReconcile() {
-    const declared = Number(declaredAmount);
-    setReconcileBusy(true);
-    setReconcileError(null);
-    try {
-      const data = await reconcileCashDay({
-        date,
-        declaredAmount: declared,
-        note: reconcileNote.trim() || undefined,
-      });
-      setDay(data);
-    } catch (err) {
-      setReconcileError(
-        err instanceof ApiClientError
-          ? err.message
-          : 'No se pudo cerrar el arqueo',
-      );
-    } finally {
-      setReconcileBusy(false);
-    }
-  }
-
   return (
-    <AdminShell title="Caja">
-      <ListToolbar hint="Movimientos CASH del día. MP no suma al arqueo de efectivo.">
-        <label className="toolbar-field">
-          Día (timezone BA)
-          <input
-            type="date"
-            value={date}
-            onChange={(e) => setDate(e.target.value)}
-          />
-        </label>
+    <AdminShell
+      title="Caja"
+      subtitle="Cobros con carrito: packs y drop-in en efectivo o Mercado Pago."
+    >
+      <ListToolbar hint="Movimientos y arqueo del día se ven en Arqueo. MP no suma al arqueo de efectivo.">
+        <MemberPicker
+          label="Afiliado"
+          value={memberId}
+          onChange={setMemberId}
+          placeholder="Buscar por nombre o email…"
+          autoFocus
+        />
       </ListToolbar>
 
       {receiptError ? <p className="error">{receiptError}</p> : null}
@@ -385,357 +311,269 @@ function CajaInner() {
         />
       ) : null}
 
-      {loading && !day ? (
-        <>
-          <SkeletonCards count={4} />
-          <SkeletonPanel lines={4} />
-        </>
-      ) : null}
-
-      {day ? (
-        <>
-          <div className="stat-row cash-stats">
-            <div className="admin-panel stat-card">
-              <p className="muted small">Ingresos</p>
-              <p className="stat-value">{formatMoney(day.totals.income)}</p>
-            </div>
-            <div className="admin-panel stat-card">
-              <p className="muted small">Egresos</p>
-              <p className="stat-value">{formatMoney(day.totals.outcome)}</p>
-            </div>
-            <div className="admin-panel stat-card">
-              <p className="muted small">Neto esperado</p>
-              <p className="stat-value">{formatMoney(day.totals.net)}</p>
-            </div>
-            <div className="admin-panel stat-card">
-              <p className="muted small">Movimientos</p>
-              <p className="stat-value">{day.totals.movementCount}</p>
-            </div>
+      <div className="cash-layout">
+        <Panel
+          title="Catálogo"
+          description="Agregá ítems al carrito con el botón +."
+        >
+          <div className="cash-tabs" role="tablist">
+            <button
+              type="button"
+              role="tab"
+              aria-selected={catalogTab === 'SERVICIOS'}
+              className={catalogTab === 'SERVICIOS' ? 'active' : undefined}
+              onClick={() => setCatalogTab('SERVICIOS')}
+            >
+              Servicios
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={catalogTab === 'PACKS'}
+              className={catalogTab === 'PACKS' ? 'active' : undefined}
+              onClick={() => setCatalogTab('PACKS')}
+            >
+              Packs
+            </button>
           </div>
 
-          <AdminGrid className="cash-dashboard">
-            <Panel
-              title="Cobro en caja"
-              description="Pack o drop-in en efectivo o con link de Mercado Pago."
-            >
-              {catalogError ? <p className="error">{catalogError}</p> : null}
-              <form className="admin-form" onSubmit={(e) => void onCobro(e)}>
-                <fieldset className="mode-toggle">
-                  <legend>Concepto</legend>
-                  <label>
-                    <input
-                      type="radio"
-                      name="cobro"
-                      checked={cobroKind === 'PACK'}
-                      onChange={() => setCobroKind('PACK')}
-                    />
-                    Pack
-                  </label>
-                  <label>
-                    <input
-                      type="radio"
-                      name="cobro"
-                      checked={cobroKind === 'DROP_IN'}
-                      onChange={() => setCobroKind('DROP_IN')}
-                    />
-                    Drop-in
-                  </label>
-                </fieldset>
+          {catalogError ? <p className="error">{catalogError}</p> : null}
 
-                <fieldset className="mode-toggle">
-                  <legend>Medio</legend>
-                  <label>
-                    <input
-                      type="radio"
-                      name="medio"
-                      checked={cobroMedio === 'CASH'}
-                      onChange={() => setCobroMedio('CASH')}
-                    />
-                    Efectivo
-                  </label>
-                  <label>
-                    <input
-                      type="radio"
-                      name="medio"
-                      checked={cobroMedio === 'MP'}
-                      onChange={() => setCobroMedio('MP')}
-                    />
-                    Mercado Pago
-                  </label>
-                </fieldset>
+          {catalogLoading ? <SkeletonPanel lines={5} /> : null}
 
-                <label>
-                  Buscar afiliado
-                  <input
-                    value={memberFilter}
-                    onChange={(e) => setMemberFilter(e.target.value)}
-                    placeholder="Nombre o email"
-                    autoComplete="off"
-                  />
-                </label>
-                <label>
-                  Afiliado
-                  <select
-                    value={memberId}
-                    onChange={(e) => setMemberId(e.target.value)}
-                    required
-                  >
-                    {filteredMembers.map((m) => (
-                      <option key={m.id} value={m.id}>
-                        {(m.name ?? 'Sin nombre') + ` — ${m.email}`}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-
-                {cobroKind === 'PACK' ? (
-                  <label>
-                    Pack
-                    <select
-                      value={packId}
-                      onChange={(e) => setPackId(e.target.value)}
-                      required
-                    >
-                      {packs.map((p) => (
-                        <option key={p.id} value={p.id}>
-                          {p.name} — {formatMoney(p.price)}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                ) : (
-                  <label>
-                    Sesión
-                    <select
-                      value={sessionId}
-                      onChange={(e) => setSessionId(e.target.value)}
-                      required
-                    >
-                      {sessions.map((s) => (
-                        <option key={s.id} value={s.id}>
-                          {s.serviceName} —{' '}
-                          {new Date(s.startsAt).toLocaleString('es-AR')} (
-                          {s.bookedCount}/{s.capacity})
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                )}
-
-                {cobroKind === 'PACK' && selectedPack ? (
-                  <p className="muted small">
-                    Monto: {formatMoney(selectedPack.price)} · Medio:{' '}
-                    {cobroMedio === 'CASH' ? 'Efectivo' : 'Mercado Pago'}
-                  </p>
-                ) : (
-                  <p className="muted small">
-                    Medio:{' '}
-                    {cobroMedio === 'CASH' ? 'Efectivo' : 'Mercado Pago'}
-                  </p>
-                )}
-
-                {cobroMedio === 'MP' ? (
-                  <p className="muted small">
-                    Requiere cuenta MP en Config. El pack/reserva se activa al
-                    aprobarse el pago (webhook). Drop-in no reserva cupo hasta
-                    entonces.
-                  </p>
-                ) : null}
-
-                {cobroError ? <p className="error">{cobroError}</p> : null}
-                {cobroOk ? <p className="ok-msg">{cobroOk}</p> : null}
-
-                {mpCheckoutUrl ? (
-                  <div className="admin-stack">
-                    <label>
-                      Link de pago
-                      <input readOnly value={mpCheckoutUrl} />
-                    </label>
-                    <div className="row-actions">
+          {!catalogLoading && catalogTab === 'SERVICIOS' ? (
+            sessions.length === 0 ? (
+              <p className="muted small">
+                Sin sesiones publicadas en los próximos 14 días.
+              </p>
+            ) : (
+              <ul className="plain-list">
+                {sessions.map((s) => {
+                  const price = servicePrice.get(s.serviceId);
+                  return (
+                    <li key={s.id} className="catalog-row">
+                      <div>
+                        <p className="catalog-name">{s.serviceName}</p>
+                        <p className="muted small">
+                          {new Date(s.startsAt).toLocaleString('es-AR', {
+                            weekday: 'short',
+                            day: '2-digit',
+                            month: 'short',
+                            hour: '2-digit',
+                            minute: '2-digit',
+                          })}
+                          {' · '}
+                          {s.branchName} ({s.bookedCount}/{s.capacity})
+                        </p>
+                        <p className="small">
+                          {price === null || price === undefined ? (
+                            <span className="muted">
+                              Sin precio de drop-in configurado
+                            </span>
+                          ) : (
+                            formatMoney(price)
+                          )}
+                        </p>
+                      </div>
                       <button
                         type="button"
-                        className="btn ghost"
-                        onClick={() =>
-                          window.open(
-                            mpCheckoutUrl,
-                            '_blank',
-                            'noopener,noreferrer',
-                          )
+                        className="catalog-add"
+                        title={
+                          price === null || price === undefined
+                            ? 'Configurá el precio de drop-in del servicio para poder cobrarlo'
+                            : 'Agregar al carrito'
                         }
+                        aria-label={`Agregar ${s.serviceName} al carrito`}
+                        disabled={price === null || price === undefined}
+                        onClick={() => addDropIn(s)}
                       >
-                        Abrir link
+                        +
                       </button>
-                      <button
-                        type="button"
-                        className="btn ghost"
-                        onClick={() => void copyMpUrl(mpCheckoutUrl)}
-                      >
-                        {copyOk ? 'Copiado' : 'Copiar link'}
-                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            )
+          ) : null}
+
+          {!catalogLoading && catalogTab === 'PACKS' ? (
+            packs.length === 0 ? (
+              <p className="muted small">Sin packs activos.</p>
+            ) : (
+              <ul className="plain-list">
+                {packs.map((p) => (
+                  <li key={p.id} className="catalog-row">
+                    <div>
+                      <p className="catalog-name">{p.name}</p>
+                      <p className="muted small">
+                        {p.kind === 'ACCESS'
+                          ? 'Acceso libre'
+                          : p.kind === 'CREDITS'
+                            ? 'Créditos'
+                            : 'Mixto'}{' '}
+                        · {formatMoney(p.price)}
+                      </p>
                     </div>
-                  </div>
-                ) : null}
+                    <button
+                      type="button"
+                      className="catalog-add"
+                      title="Agregar al carrito"
+                      aria-label={`Agregar ${p.name} al carrito`}
+                      onClick={() => addPack(p)}
+                    >
+                      +
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )
+          ) : null}
+        </Panel>
 
-                <button type="submit" className="primary" disabled={cobroBusy}>
-                  {cobroMedio === 'MP'
-                    ? cobroBusy
-                      ? 'Generando link…'
-                      : 'Generar link MP'
-                    : cobroBusy
-                      ? 'Cobrando…'
-                      : 'Cobrar'}
-                </button>
-              </form>
-            </Panel>
+        <Panel
+          title="Carrito"
+          description={
+            memberId
+              ? 'Ítems a cobrar'
+              : 'Elegí el afiliado para habilitar el cobro.'
+          }
+          className="cash-cart"
+        >
+          {cart.length === 0 ? (
+            <p className="muted small">Carrito vacío. Agregá servicios o packs.</p>
+          ) : (
+            <>
+              <ul className="plain-list">
+                {cart.map((item) => (
+                  <li key={item.key} className="cart-line">
+                    <div>
+                      <p className="cart-name">{item.label}</p>
+                      <p className="muted small">{item.sub}</p>
+                      <p className="small">
+                        {item.price === 0 ? (
+                          <span className="muted">Sin precio</span>
+                        ) : (
+                          formatMoney(item.price)
+                        )}
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      className="cart-remove"
+                      title="Quitar del carrito"
+                      aria-label={`Quitar ${item.label} del carrito`}
+                      onClick={() => removeItem(item.key)}
+                    >
+                      ✕
+                    </button>
+                  </li>
+                ))}
+              </ul>
+              <div className="cart-total">
+                <span>Total</span>
+                <strong>{formatMoney(total)}</strong>
+              </div>
+            </>
+          )}
 
-            <Panel title="Arqueo" description="Un cierre por día de negocio.">
-              {day.reconciliation ? (
-                <div className="admin-stack">
-                  <p className="ok-msg">Arqueo cerrado</p>
-                  <ul className="plain-list">
-                    <li>
-                      Esperado:{' '}
-                      {formatMoney(day.reconciliation.expectedAmount)}
-                    </li>
-                    <li>
-                      Declarado:{' '}
-                      {formatMoney(day.reconciliation.declaredAmount)}
-                    </li>
-                    <li>
-                      Diferencia:{' '}
-                      {formatMoney(day.reconciliation.difference)}
-                    </li>
-                    {day.reconciliation.reconciledByStaffName ? (
-                      <li>
-                        Por: {day.reconciliation.reconciledByStaffName}
-                      </li>
-                    ) : null}
-                    {day.reconciliation.note ? (
-                      <li>Nota: {day.reconciliation.note}</li>
-                    ) : null}
-                  </ul>
+          <form className="admin-form" onSubmit={(e) => void onCobro(e)}>
+            <fieldset className="mode-toggle">
+              <legend>Medio</legend>
+              <label>
+                <input
+                  type="radio"
+                  name="medio"
+                  checked={cobroMedio === 'CASH'}
+                  onChange={() => setCobroMedio('CASH')}
+                />
+                Efectivo (suma a Arqueo)
+              </label>
+              <label>
+                <input
+                  type="radio"
+                  name="medio"
+                  checked={cobroMedio === 'MP'}
+                  onChange={() => setCobroMedio('MP')}
+                />
+                Mercado Pago (link único)
+              </label>
+            </fieldset>
+
+            {cobroMedio === 'MP' ? (
+              <p className="muted small">
+                Se genera un solo link con el total del carrito (como Mercado
+                Libre: 1 carrito → 1 pago). Cada pack/reserva se activa al
+                aprobarse el pago (webhook). Requiere cuenta MP en Config.
+              </p>
+            ) : null}
+
+            {cobroError ? <p className="error">{cobroError}</p> : null}
+            {cobroOk ? <p className="ok-msg">{cobroOk}</p> : null}
+
+            {mpCheckoutUrl ? (
+              <div className="cart-line">
+                <div>
+                  <p className="cart-name">Link de pago MP</p>
+                  <p className="muted small mp-link-url">{mpCheckoutUrl}</p>
                 </div>
-              ) : (
-                <form
-                  className="admin-form"
-                  onSubmit={(e) => void onReconcile(e)}
-                >
-                  <label>
-                    Efectivo declarado
-                    <input
-                      type="number"
-                      min={0}
-                      step={1}
-                      value={declaredAmount}
-                      onChange={(e) => setDeclaredAmount(e.target.value)}
-                      required
-                    />
-                  </label>
-                  <p className="muted small">
-                    Esperado neto: {formatMoney(day.totals.net)}
-                    {declaredAmount !== '' &&
-                    Number.isInteger(Number(declaredAmount))
-                      ? ` · Diff: ${formatMoney(Number(declaredAmount) - day.totals.net)}`
-                      : ''}
-                  </p>
-                  <label>
-                    Nota (opcional)
-                    <textarea
-                      value={reconcileNote}
-                      onChange={(e) => setReconcileNote(e.target.value)}
-                      rows={2}
-                      maxLength={500}
-                    />
-                  </label>
-                  {reconcileError ? (
-                    <p className="error">{reconcileError}</p>
-                  ) : null}
+                <div className="row-actions">
                   <button
-                    type="submit"
-                    className="primary"
-                    disabled={reconcileBusy}
+                    type="button"
+                    className="btn ghost"
+                    onClick={() =>
+                      window.open(mpCheckoutUrl, '_blank', 'noopener,noreferrer')
+                    }
                   >
-                    {reconcileBusy ? 'Cerrando…' : 'Cerrar arqueo'}
+                    Abrir
                   </button>
-                </form>
-              )}
-            </Panel>
-          </AdminGrid>
-        </>
-      ) : null}
+                  <button
+                    type="button"
+                    className="btn ghost"
+                    onClick={() => void copyMpUrl(mpCheckoutUrl)}
+                  >
+                    {copyKey === mpCheckoutUrl ? 'Copiado' : 'Copiar'}
+                  </button>
+                </div>
+              </div>
+            ) : null}
 
-      <DataTable
-        title="Movimientos"
-        description={
-          day
-            ? `${day.movements.length} del ${day.businessDate}`
-            : undefined
-        }
-        loading={loading}
-        error={loadError}
-        isEmpty={!day || day.movements.length === 0}
-        emptyText="Sin movimientos CASH en este día."
-        paginate={false}
-        header={
-          <>
-            <th>Hora</th>
-            <th>Afiliado</th>
-            <th>Concepto</th>
-            <th>Tipo</th>
-            <th>Monto</th>
-            <th>Staff</th>
-            <th />
-          </>
-        }
-      >
-        {(day?.movements ?? []).map((m) => (
-          <tr key={m.id}>
-            <td>
-              {new Date(m.createdAt).toLocaleTimeString('es-AR', {
-                hour: '2-digit',
-                minute: '2-digit',
-              })}
-            </td>
-            <td>{m.memberName ?? m.memberId.slice(0, 8)}</td>
-            <td>{formatCashConcept(m.concept)}</td>
-            <td>
-              <StatusPill tone={m.kind === 'INCOME' ? 'ok' : 'danger'}>
-                {m.kind === 'INCOME' ? 'Ingreso' : 'Egreso'}
-              </StatusPill>
-            </td>
-            <td>{formatMoney(m.amount)}</td>
-            <td>{m.recordedByStaffName ?? '—'}</td>
-            <td className="row-actions">
-              {m.kind === 'INCOME' &&
-              (m.concept === 'PACK_CONTRACT' || m.concept === 'DROP_IN') ? (
+            <div className="row-actions cart-actions">
+              {cart.length > 0 ? (
                 <button
                   type="button"
-                  className="btn ghost"
-                  disabled={receiptBusyId === m.paymentId}
-                  onClick={() => void openReceiptForPayment(m.paymentId)}
+                  className="linkish"
+                  onClick={() => setCart([])}
+                  disabled={cobroBusy}
                 >
-                  {receiptBusyId === m.paymentId ? '…' : 'Comprobante'}
+                  Vaciar carrito
                 </button>
-              ) : null}
-            </td>
-          </tr>
-        ))}
-      </DataTable>
-
-      <ConfirmDialog
-        open={reconcileConfirm}
-        title="Cerrar arqueo"
-        description={`¿Confirmar arqueo con ${formatMoney(
-          Number(declaredAmount) || 0,
-        )}? Solo se puede una vez por día.`}
-        confirmLabel="Cerrar arqueo"
-        busy={reconcileBusy}
-        onConfirm={() => {
-          setReconcileConfirm(false);
-          void doReconcile();
-        }}
-        onCancel={() => setReconcileConfirm(false)}
-      />
+              ) : (
+                <span />
+              )}
+              <button
+                type="submit"
+                className="primary"
+                disabled={cobroBusy || cart.length === 0 || !memberId}
+                title={
+                  !memberId
+                    ? 'Elegí el afiliado de la lista de búsqueda'
+                    : cart.length === 0
+                      ? 'Agregá al menos un ítem al carrito'
+                      : undefined
+                }
+              >
+                {cobroBusy
+                  ? cobroMedio === 'MP'
+                    ? 'Generando link…'
+                    : 'Cobrando…'
+                  : cobroMedio === 'MP'
+                    ? 'Generar link MP'
+                    : `Cobrar en efectivo${cart.length > 1 ? ` (${cart.length})` : ''}`}
+              </button>
+            </div>
+          </form>
+        </Panel>
+      </div>
     </AdminShell>
   );
 }

@@ -1,16 +1,16 @@
 'use client';
 
-import { FormEvent, useEffect, useMemo, useState } from 'react';
+import { FormEvent, useEffect, useState } from 'react';
 import { AccessResultBanner } from '@/components/AccessResult';
 import { AdminGrid, Panel } from '@/components/AdminUi';
+import { MemberPicker } from '@/components/MemberPicker';
 import { manualPass } from '@/lib/api/access';
 import type {
   AccessVerifyResult,
   ManualPassMotive,
 } from '@/lib/api/access';
 import { ApiClientError } from '@/lib/api/client';
-import { getMemberAccount, listMembers } from '@/lib/api/members';
-import type { MemberSummary } from '@/lib/api/members';
+import { getMemberAccount } from '@/lib/api/members';
 
 const MOTIVES: { value: ManualPassMotive; label: string }[] = [
   { value: 'deuda', label: 'Deuda' },
@@ -41,7 +41,6 @@ export function DoorManualPassPanel({
   /** Tras un pase OK (p. ej. refrescar historial). */
   onPassRegistered?: () => void;
 }) {
-  const [members, setMembers] = useState<MemberSummary[]>([]);
   const [memberId, setMemberId] = useState('');
   const [sessionId, setSessionId] = useState('');
   const [sessionOptions, setSessionOptions] = useState<SessionOption[]>([]);
@@ -49,39 +48,9 @@ export function DoorManualPassPanel({
   const [sessionsHint, setSessionsHint] = useState<string | null>(null);
   const [motiveCode, setMotiveCode] = useState<ManualPassMotive>('cortesia');
   const [note, setNote] = useState('');
-  const [filter, setFilter] = useState('');
   const [result, setResult] = useState<AccessVerifyResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  const [loadError, setLoadError] = useState<string | null>(null);
-
-  useEffect(() => {
-    let cancelled = false;
-    void (async () => {
-      try {
-        const data = await listMembers({ status: 'ACTIVE', pageSize: 100 });
-        if (cancelled) {
-          return;
-        }
-        setMembers(data.items);
-        if (data.items[0]) {
-          setMemberId(data.items[0].id);
-        }
-      } catch (err) {
-        if (cancelled) {
-          return;
-        }
-        setLoadError(
-          err instanceof ApiClientError
-            ? err.message
-            : 'No se pudieron cargar afiliados',
-        );
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
 
   useEffect(() => {
     if (!memberId) {
@@ -130,18 +99,6 @@ export function DoorManualPassPanel({
     };
   }, [memberId]);
 
-  const filtered = useMemo(() => {
-    const q = filter.trim().toLowerCase();
-    if (!q) {
-      return members;
-    }
-    return members.filter(
-      (m) =>
-        (m.name ?? '').toLowerCase().includes(q) ||
-        m.email.toLowerCase().includes(q),
-    );
-  }, [members, filter]);
-
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
     if (!memberId) {
@@ -179,32 +136,12 @@ export function DoorManualPassPanel({
         description="El pase manual omite las reglas automáticas y queda auditado."
       >
         <form className="admin-form" onSubmit={(e) => void onSubmit(e)}>
-          {loadError ? <p className="error">{loadError}</p> : null}
-
-          <label>
-            Buscar afiliado
-            <input
-              value={filter}
-              onChange={(e) => setFilter(e.target.value)}
-              placeholder="Nombre o email"
-              autoComplete="off"
-            />
-          </label>
-
-          <label>
-            Afiliado
-            <select
-              value={memberId}
-              onChange={(e) => setMemberId(e.target.value)}
-              required
-            >
-              {filtered.map((m) => (
-                <option key={m.id} value={m.id}>
-                  {(m.name ?? 'Sin nombre') + ` — ${m.email}`}
-                </option>
-              ))}
-            </select>
-          </label>
+          <MemberPicker
+            label="Afiliado"
+            value={memberId}
+            onChange={setMemberId}
+            autoFocus
+          />
 
           <label>
             Sesión (opcional)

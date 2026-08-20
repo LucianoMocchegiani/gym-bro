@@ -93,14 +93,12 @@ export class HttpMpAccountAdapter extends MpAccountPort {
         Accept: 'application/json',
       },
       body: JSON.stringify({
-        items: [
-          {
-            title: input.title,
-            quantity: 1,
-            unit_price: input.amount,
-            currency_id: 'ARS',
-          },
-        ],
+        items: input.items.map((item) => ({
+          title: item.title,
+          quantity: item.quantity,
+          unit_price: item.unit_price,
+          currency_id: 'ARS',
+        })),
         external_reference: input.externalReference,
         notification_url: input.notificationUrl,
         payer: input.payerEmail ? { email: input.payerEmail } : undefined,

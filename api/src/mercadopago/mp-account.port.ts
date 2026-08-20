@@ -28,12 +28,21 @@ export type MpRemotePayment = {
 };
 
 /**
- * Input para crear Preference de un pack.
+ * Ítem de una Preference Checkout Pro.
+ */
+export type MpPreferenceItem = {
+  id?: string;
+  title: string;
+  quantity: number;
+  unit_price: number;
+};
+
+/**
+ * Input para crear Preference (1 ítem → pack/drop-in; varios → carrito MP).
  */
 export type CreateMpPreferenceInput = {
   accessToken: string;
-  title: string;
-  amount: number;
+  items: MpPreferenceItem[];
   externalReference: string;
   notificationUrl: string;
   payerEmail?: string;

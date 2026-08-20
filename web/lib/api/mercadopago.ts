@@ -34,29 +34,6 @@ export type MpCheckoutStatus =
   | 'REJECTED'
   | 'REFUNDED';
 
-/** Respuesta de Preference MP (pack o drop-in staff/member). */
-export type MpCheckoutResult = {
-  paymentId: string;
-  status: MpCheckoutStatus;
-  amount: number;
-  kind: MpCheckoutKind;
-  packId: string | null;
-  sessionId: string | null;
-  idempotencyKey: string;
-  mpPreferenceId: string | null;
-  checkoutUrl: string | null;
-  sandboxCheckoutUrl: string | null;
-  contractId: string | null;
-  reservationId: string | null;
-};
-
-/**
- * URL preferida para abrir el checkout (sandbox si existe).
- */
-export function pickMpCheckoutUrl(result: MpCheckoutResult): string | null {
-  return result.sandboxCheckoutUrl ?? result.checkoutUrl;
-}
-
 /**
  * Estado de cuenta MP (`mp.connect`).
  */
@@ -94,15 +71,45 @@ export function disconnectMercadoPagoAccount(): Promise<MercadoPagoAccountStatus
   });
 }
 
+export type MpCartItemInput = {
+  kind: MpCheckoutKind;
+  id: string;
+  quantity?: number;
+};
+
+export type MpCartLine = {
+  kind: MpCheckoutKind;
+  refId: string;
+  quantity: number;
+  amount: number;
+  paymentIds: string[];
+};
+
+/** Respuesta de checkout de carrito MP (1 preference → 1 pago). */
+export type MpCartCheckoutResult = {
+  cartId: string;
+  memberId: string;
+  status: MpCheckoutStatus;
+  amount: number;
+  idempotencyKey: string;
+  mpPreferenceId: string | null;
+  checkoutUrl: string | null;
+  sandboxCheckoutUrl: string | null;
+  lines: MpCartLine[];
+};
+
 /**
- * Checkout MP pack para un afiliado (staff, `members.write`). CU-PAG-001.
+ * Checkout MP de carrito para un afiliado (staff, `members.write`).
+ *
+ * @remarks Modelo MercadoLibre: un solo total y un solo pago. Cada pack /
+ * reserva del carrito se activa al aprobarse el pago (webhook APPROVED).
  */
-export function startStaffMpPackCheckout(
+export function startStaffMpCartCheckout(
   memberId: string,
-  input: { packId: string; idempotencyKey?: string },
-): Promise<MpCheckoutResult> {
-  return apiRequest<MpCheckoutResult>(
-    `/members/${memberId}/payments/mp/checkout`,
+  input: { items: MpCartItemInput[]; idempotencyKey?: string },
+): Promise<MpCartCheckoutResult> {
+  return apiRequest<MpCartCheckoutResult>(
+    `/members/${memberId}/payments/mp/cart`,
     {
       method: 'POST',
       body: input,
@@ -111,19 +118,10 @@ export function startStaffMpPackCheckout(
 }
 
 /**
- * Checkout MP drop-in para un afiliado (staff, `reservations.write`).
- *
- * @remarks La reserva se confirma al webhook APPROVED, no al crear Preference.
+ * URL preferida para abrir un checkout MP (sandbox si existe).
  */
-export function startStaffMpDropInCheckout(
-  memberId: string,
-  input: { sessionId: string; idempotencyKey?: string },
-): Promise<MpCheckoutResult> {
-  return apiRequest<MpCheckoutResult>(
-    `/members/${memberId}/payments/mp/drop-in-checkout`,
-    {
-      method: 'POST',
-      body: input,
-    },
-  );
+export function pickMpCartCheckoutUrl(
+  result: MpCartCheckoutResult,
+): string | null {
+  return result.sandboxCheckoutUrl ?? result.checkoutUrl;
 }

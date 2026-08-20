@@ -7,7 +7,7 @@ import {
   ServiceUnavailableException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { PaymentMethod, PaymentStatus } from '@prisma/client';
+import { CartCheckout, PaymentMethod, PaymentStatus } from '@prisma/client';
 import { ContractsService } from '../contracts/contracts.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { ReservationsService } from '../reservations/reservations.service';
@@ -19,7 +19,9 @@ import { MpWebhookProcessResult } from './mp-checkout.types';
 /**
  * Webhook Mercado Pago idempotente (CU-PAG-001 / CU-RES-001 / RN-PAG-005).
  *
- * @remarks Pack → contrato; drop-in (`sessionId`) → reserva. Simulate solo stub.
+ * @remarks Pack → contrato; drop-in (`sessionId`) → reserva; carrito MP
+ * (externalReference = cartId) → confirma cada payment al APPROVED.
+ * Simulate solo stub.
  */
 @Injectable()
 export class MpWebhookService {
@@ -53,6 +55,7 @@ export class MpWebhookService {
       return {
         handled: false,
         paymentId: null,
+        cartId: null,
         status: null,
         contractId: null,
         reservationId: null,
@@ -74,23 +77,19 @@ export class MpWebhookService {
       );
     }
 
-    const paymentId = remote.externalReference;
-    if (!paymentId) {
+    const refId = remote.externalReference;
+    if (!refId) {
       return {
         handled: false,
         paymentId: null,
+        cartId: null,
         status: remote.status,
         contractId: null,
         reservationId: null,
       };
     }
 
-    return this.applyRemoteStatus(
-      tenantId,
-      paymentId,
-      mpPaymentId,
-      remote.status,
-    );
+    return this.applyRemoteStatus(tenantId, refId, mpPaymentId, remote.status);
   }
 
   /**
@@ -102,9 +101,32 @@ export class MpWebhookService {
         'Webhook simulate is only available when MP_CHECKOUT_MODE=stub',
       );
     }
+    if (Boolean(dto.cartId) === Boolean(dto.paymentId)) {
+      throw new BadRequestException(
+        'Provide exactly one of paymentId or cartId',
+      );
+    }
+
+    if (dto.cartId) {
+      const cart = await this.prisma.cartCheckout.findUnique({
+        where: { id: dto.cartId },
+      });
+      if (!cart) {
+        throw new NotFoundException(`Cart ${dto.cartId} not found`);
+      }
+      const mpPaymentId =
+        cart.mpPaymentId ??
+        `stub-cart-pay-${cart.id.replace(/-/g, '').slice(0, 16)}`;
+      return this.applyRemoteStatusCart(
+        cart.tenantId,
+        cart.id,
+        mpPaymentId,
+        dto.status === 'APPROVED' ? 'approved' : 'rejected',
+      );
+    }
 
     const payment = await this.prisma.payment.findUnique({
-      where: { id: dto.paymentId },
+      where: { id: dto.paymentId as string },
     });
     if (!payment) {
       throw new NotFoundException(`Payment ${dto.paymentId} not found`);
@@ -138,7 +160,19 @@ export class MpWebhookService {
         reservation: { select: { id: true } },
       },
     });
+
     if (!payment) {
+      const cart = await this.prisma.cartCheckout.findFirst({
+        where: { id: paymentId, tenantId },
+      });
+      if (cart) {
+        return this.applyRemoteStatusCart(
+          tenantId,
+          cart.id,
+          mpPaymentId,
+          remoteStatus,
+        );
+      }
       throw new NotFoundException(`Payment ${paymentId} not found in tenant`);
     }
     if (payment.method !== PaymentMethod.MP) {
@@ -156,6 +190,7 @@ export class MpWebhookService {
       return {
         handled: true,
         paymentId: payment.id,
+        cartId: null,
         status: payment.status,
         contractId: payment.contract?.id ?? null,
         reservationId: payment.reservation?.id ?? null,
@@ -167,6 +202,7 @@ export class MpWebhookService {
       return {
         handled: false,
         paymentId: payment.id,
+        cartId: null,
         status: remoteStatus,
         contractId: payment.contract?.id ?? null,
         reservationId: payment.reservation?.id ?? null,
@@ -184,6 +220,7 @@ export class MpWebhookService {
       return {
         handled: true,
         paymentId: payment.id,
+        cartId: null,
         status: payment.status,
         contractId: payment.contract?.id ?? null,
         reservationId: payment.reservation?.id ?? null,
@@ -212,9 +249,174 @@ export class MpWebhookService {
     return {
       handled: true,
       paymentId: payment.id,
+      cartId: null,
       status: mapped,
       contractId: null,
       reservationId: null,
+    };
+  }
+
+  private async applyRemoteStatusCart(
+    tenantId: string,
+    cartId: string,
+    mpPaymentId: string,
+    remoteStatus: string,
+  ): Promise<MpWebhookProcessResult> {
+    const cart = await this.prisma.cartCheckout.findFirst({
+      where: { id: cartId, tenantId },
+      include: {
+        payments: {
+          include: {
+            contract: { select: { id: true } },
+            reservation: { select: { id: true } },
+          },
+        },
+      },
+    });
+    if (!cart) {
+      throw new NotFoundException(`Cart ${cartId} not found in tenant`);
+    }
+
+    if (
+      cart.mpPaymentId &&
+      cart.mpPaymentId !== mpPaymentId &&
+      cart.status !== PaymentStatus.PENDING
+    ) {
+      this.logger.warn(
+        `Ignoring webhook with different mpPaymentId for cart ${cartId}`,
+      );
+      return {
+        handled: true,
+        paymentId: cart.id,
+        cartId: cart.id,
+        status: cart.status,
+        contractId: null,
+        reservationId: null,
+      };
+    }
+
+    const mapped = this.mapMpStatus(remoteStatus);
+    if (!mapped) {
+      return {
+        handled: false,
+        paymentId: cart.id,
+        cartId: cart.id,
+        status: remoteStatus,
+        contractId: null,
+        reservationId: null,
+      };
+    }
+
+    if (
+      cart.status === PaymentStatus.APPROVED ||
+      cart.status === PaymentStatus.REJECTED ||
+      cart.status === PaymentStatus.REFUNDED
+    ) {
+      if (cart.status === PaymentStatus.APPROVED) {
+        return this.ensureCartRights(tenantId, cart);
+      }
+      return {
+        handled: true,
+        paymentId: cart.id,
+        cartId: cart.id,
+        status: cart.status,
+        contractId: null,
+        reservationId: null,
+      };
+    }
+
+    await this.prisma.cartCheckout.update({
+      where: { id: cart.id },
+      data: { status: mapped, mpPaymentId },
+    });
+
+    if (mapped === PaymentStatus.APPROVED) {
+      await this.prisma.payment.updateMany({
+        where: { cartId: cart.id },
+        data: { status: PaymentStatus.APPROVED },
+      });
+      const refreshed = await this.prisma.cartCheckout.findFirstOrThrow({
+        where: { id: cart.id, tenantId },
+        include: {
+          payments: {
+            include: {
+              contract: { select: { id: true } },
+              reservation: { select: { id: true } },
+            },
+          },
+        },
+      });
+      return this.ensureCartRights(tenantId, refreshed);
+    }
+
+    await this.prisma.payment.updateMany({
+      where: { cartId: cart.id },
+      data: { status: PaymentStatus.REJECTED },
+    });
+    return {
+      handled: true,
+      paymentId: cart.id,
+      cartId: cart.id,
+      status: mapped,
+      contractId: null,
+      reservationId: null,
+    };
+  }
+
+  private async ensureCartRights(
+    tenantId: string,
+    cart: CartCheckout & {
+      payments: Array<{
+        id: string;
+        status: PaymentStatus;
+        sessionId: string | null;
+        packId: string | null;
+        contract: { id: string } | null;
+        reservation: { id: string } | null;
+      }>;
+    },
+  ): Promise<MpWebhookProcessResult> {
+    const actor = {
+      profileType: 'MEMBER' as const,
+      userId: cart.memberId,
+    };
+    let contractId: string | null = null;
+    let reservationId: string | null = null;
+
+    for (const payment of cart.payments) {
+      if (payment.sessionId) {
+        if (payment.reservation) {
+          reservationId = payment.reservation.id;
+          continue;
+        }
+        const reservation =
+          await this.reservations.confirmDropInFromApprovedPayment(
+            tenantId,
+            payment.id,
+            actor,
+          );
+        reservationId = reservation.id;
+        continue;
+      }
+      if (payment.contract) {
+        contractId = payment.contract.id;
+        continue;
+      }
+      const contract = await this.contracts.confirmFromApprovedPayment(
+        tenantId,
+        payment.id,
+        actor,
+      );
+      contractId = contract.id;
+    }
+
+    return {
+      handled: true,
+      paymentId: cart.id,
+      cartId: cart.id,
+      status: cart.status,
+      contractId,
+      reservationId,
     };
   }
 
@@ -240,6 +442,7 @@ export class MpWebhookService {
         return {
           handled: true,
           paymentId: payment.id,
+          cartId: null,
           status: payment.status,
           contractId: null,
           reservationId: payment.reservation.id,
@@ -254,6 +457,7 @@ export class MpWebhookService {
       return {
         handled: true,
         paymentId: payment.id,
+        cartId: null,
         status: payment.status,
         contractId: null,
         reservationId: reservation.id,
@@ -264,6 +468,7 @@ export class MpWebhookService {
       return {
         handled: true,
         paymentId: payment.id,
+        cartId: null,
         status: payment.status,
         contractId: payment.contract.id,
         reservationId: null,
@@ -278,6 +483,7 @@ export class MpWebhookService {
     return {
       handled: true,
       paymentId: payment.id,
+      cartId: null,
       status: payment.status,
       contractId: contract.id,
       reservationId: null,

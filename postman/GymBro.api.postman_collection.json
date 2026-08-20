@@ -155,6 +155,10 @@
       "value": ""
     },
     {
+      "key": "mpCartId",
+      "value": ""
+    },
+    {
       "key": "oid4vpSessionId",
       "value": ""
     },
@@ -3697,7 +3701,7 @@
     },
     {
       "name": "Mercado Pago",
-      "description": "CU-PAG-006 + CU-PAG-001. Cuenta: GET|PUT|DELETE /mercadopago/account + test (mp.connect). Checkout pack: Member POST /me/payments/mp/checkout; Staff POST /members/:id/payments/mp/checkout. Drop-in MP: .../drop-in-checkout. Webhook + simulate stub.",
+      "description": "CU-PAG-006 + CU-PAG-001. Cuenta: GET|PUT|DELETE /mercadopago/account + test (mp.connect). Checkout pack: Member POST /me/payments/mp/checkout; Staff POST /members/:id/payments/mp/checkout. Drop-in MP: .../drop-in-checkout. Cart (Caja): Staff POST /members/:id/payments/mp/cart con items[] → 1 link. Webhook + simulate stub (paymentId | cartId).",
       "item": [
         {
           "name": "Staff GET MP account status",
@@ -3888,6 +3892,76 @@
           }
         },
         {
+          "name": "Staff POST MP cart checkout",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 201', () => pm.response.to.have.status(201));",
+                  "const body = pm.response.json();",
+                  "pm.test('pending', () => pm.expect(body.status).to.eql('PENDING'));",
+                  "pm.test('one checkoutUrl', () => pm.expect(body.checkoutUrl).to.be.a('string'));",
+                  "pm.test('lines array', () => pm.expect(body.lines).to.be.an('array'));",
+                  "if (body.cartId) {",
+                  "  pm.collectionVariables.set('mpCartId', body.cartId);",
+                  "  pm.environment.set('mpCartId', body.cartId);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"items\": [\n    { \"kind\": \"PACK\", \"id\": \"{{createdPackId}}\" },\n    { \"kind\": \"DROP_IN\", \"id\": \"{{createdSessionId}}\" }\n  ],\n  \"idempotencyKey\": \"mp-cart-{{$timestamp}}\"\n}"
+            },
+            "url": "{{baseUrl}}/api/members/{{createdMemberId}}/payments/mp/cart",
+            "description": "members.write. Caja: 1 preference con items[] → 1 link con el total (modelo MercadoLibre). Requiere pack activo y sesión publicada con dropInPrice."
+          }
+        },
+        {
+          "name": "Simulate MP cart webhook APPROVED",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('handled', () => pm.expect(body.handled).to.eql(true));",
+                  "pm.test('approved', () => pm.expect(body.status).to.eql('APPROVED'));",
+                  "pm.test('cartId', () => pm.expect(body.cartId).to.eql(pm.environment.get('mpCartId') || pm.collectionVariables.get('mpCartId')));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"cartId\": \"{{mpCartId}}\",\n  \"status\": \"APPROVED\"\n}"
+            },
+            "url": "{{baseUrl}}/api/webhooks/mercadopago/simulate",
+            "description": "Solo con MP_CHECKOUT_MODE=stub. Confirma 1 contrato/reserva por payment del carrito (externalReference = cartId)."
+          }
+        },
+        {
           "name": "Simulate MP webhook APPROVED",
           "event": [
             {
@@ -3924,7 +3998,7 @@
               "raw": "{\n  \"paymentId\": \"{{mpPaymentId}}\",\n  \"status\": \"APPROVED\"\n}"
             },
             "url": "{{baseUrl}}/api/webhooks/mercadopago/simulate",
-            "description": "Solo con MP_CHECKOUT_MODE=stub. Pack → contractId; drop-in → reservationId."
+            "description": "Solo con MP_CHECKOUT_MODE=stub. paymentId → pack/drop-in (contractId/reservationId); cartId → carrito completo (1 contrato/reserva por payment)."
           }
         },
         {

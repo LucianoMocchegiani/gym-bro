@@ -12,9 +12,8 @@ import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { SkeletonTable } from '@/components/Skeleton';
 import { memberFichaHref } from '@/lib/member-link';
 import { StatusPill } from '@/components/StatusPill';
+import { MemberPicker } from '@/components/MemberPicker';
 import { ApiClientError } from '@/lib/api/client';
-import { listMembers } from '@/lib/api/members';
-import type { MemberDetail } from '@/lib/api/members';
 import { getSession } from '@/lib/api/sessions';
 import type { SessionDetail } from '@/lib/api/sessions';
 import { getTenantSettings } from '@/lib/api/tenant-settings';
@@ -78,8 +77,6 @@ export function SessionWaitlistPanel({
   const [waitlistLoading, setWaitlistLoading] = useState(true);
   const [waitlistError, setWaitlistError] = useState<string | null>(null);
 
-  const [members, setMembers] = useState<MemberDetail[]>([]);
-  const [wlMemberFilter, setWlMemberFilter] = useState('');
   const [wlMemberId, setWlMemberId] = useState('');
   const [wlBusy, setWlBusy] = useState(false);
   const [wlError, setWlError] = useState<string | null>(null);
@@ -152,30 +149,6 @@ export function SessionWaitlistPanel({
     void loadWaitlist();
   }, [loadWaitlist]);
 
-  useEffect(() => {
-    let cancelled = false;
-    void (async () => {
-      try {
-        const result = await listMembers({
-          status: 'ACTIVE',
-          pageSize: 100,
-          order: 'asc',
-          orderBy: 'name',
-        });
-        if (!cancelled) {
-          setMembers(result.items);
-        }
-      } catch {
-        if (!cancelled) {
-          setMembers([]);
-        }
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
   async function onJoinWaitlist(e: FormEvent) {
     e.preventDefault();
     if (!wlMemberId || !session || session.status === 'CANCELLED') {
@@ -234,16 +207,6 @@ export function SessionWaitlistPanel({
   }
 
   const cancelled = session.status === 'CANCELLED';
-  const wlMemberOptions = members.filter((m) => {
-    const q = wlMemberFilter.trim().toLowerCase();
-    if (!q) {
-      return true;
-    }
-    return (
-      (m.name?.toLowerCase().includes(q) ?? false) ||
-      m.email.toLowerCase().includes(q)
-    );
-  });
 
   return (
     <div className="admin-stack">
@@ -335,29 +298,11 @@ export function SessionWaitlistPanel({
               Solo si la sesión está llena (o según reglas de ingreso tardío).
               Requiere afiliado activo sin reserva confirmada.
             </p>
-            <label>
-              Filtrar afiliados
-              <input
-                value={wlMemberFilter}
-                onChange={(e) => setWlMemberFilter(e.target.value)}
-                placeholder="Nombre o email"
-              />
-            </label>
-            <label>
-              Afiliado
-              <select
-                value={wlMemberId}
-                onChange={(e) => setWlMemberId(e.target.value)}
-                required
-              >
-                <option value="">Elegí…</option>
-                {wlMemberOptions.map((m) => (
-                  <option key={m.id} value={m.id}>
-                    {m.name?.trim() || m.email}
-                  </option>
-                ))}
-              </select>
-            </label>
+            <MemberPicker
+              label="Afiliado"
+              value={wlMemberId}
+              onChange={setWlMemberId}
+            />
             {wlError ? <p className="error">{wlError}</p> : null}
             {wlOk ? <p className="ok-msg">{wlOk}</p> : null}
             <button

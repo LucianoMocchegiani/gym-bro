@@ -13,8 +13,7 @@ import { SkeletonTable } from '@/components/Skeleton';
 import { memberFichaHref } from '@/lib/member-link';
 import { StatusPill } from '@/components/StatusPill';
 import { ApiClientError } from '@/lib/api/client';
-import { listMembers } from '@/lib/api/members';
-import type { MemberDetail } from '@/lib/api/members';
+import { MemberPicker } from '@/components/MemberPicker';
 import {
   cancelReservation,
   createCreditReservation,
@@ -48,8 +47,6 @@ export function SessionRosterPanel({
   const [rosterLoading, setRosterLoading] = useState(true);
   const [rosterError, setRosterError] = useState<string | null>(null);
 
-  const [members, setMembers] = useState<MemberDetail[]>([]);
-  const [memberFilter, setMemberFilter] = useState('');
   const [memberId, setMemberId] = useState('');
   const [bookBusy, setBookBusy] = useState(false);
   const [bookError, setBookError] = useState<string | null>(null);
@@ -134,30 +131,6 @@ export function SessionRosterPanel({
     void loadRoster();
   }, [loadRoster]);
 
-  useEffect(() => {
-    let cancelled = false;
-    void (async () => {
-      try {
-        const result = await listMembers({
-          status: 'ACTIVE',
-          pageSize: 100,
-          order: 'asc',
-          orderBy: 'name',
-        });
-        if (!cancelled) {
-          setMembers(result.items);
-        }
-      } catch {
-        if (!cancelled) {
-          setMembers([]);
-        }
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
   async function refreshAfterMutation() {
     await Promise.all([loadSession(), loadRoster()]);
   }
@@ -218,16 +191,6 @@ export function SessionRosterPanel({
   }
 
   const cancelled = session.status === 'CANCELLED';
-  const memberOptions = members.filter((m) => {
-    const q = memberFilter.trim().toLowerCase();
-    if (!q) {
-      return true;
-    }
-    return (
-      (m.name?.toLowerCase().includes(q) ?? false) ||
-      m.email.toLowerCase().includes(q)
-    );
-  });
 
   return (
     <div className="admin-stack">
@@ -237,29 +200,11 @@ export function SessionRosterPanel({
             <p className="muted small">
               Consume 1 crédito del pack del afiliado. Drop-in CASH → Caja.
             </p>
-            <label>
-              Filtrar afiliados
-              <input
-                value={memberFilter}
-                onChange={(e) => setMemberFilter(e.target.value)}
-                placeholder="Nombre o email"
-              />
-            </label>
-            <label>
-              Afiliado
-              <select
-                value={memberId}
-                onChange={(e) => setMemberId(e.target.value)}
-                required
-              >
-                <option value="">Elegí…</option>
-                {memberOptions.map((m) => (
-                  <option key={m.id} value={m.id}>
-                    {m.name?.trim() || m.email}
-                  </option>
-                ))}
-              </select>
-            </label>
+            <MemberPicker
+              label="Afiliado"
+              value={memberId}
+              onChange={setMemberId}
+            />
             {bookError ? <p className="error">{bookError}</p> : null}
             {bookOk ? <p className="ok-msg">{bookOk}</p> : null}
             <button

@@ -6,20 +6,26 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import {
+  CartCheckout,
   MemberStatus,
   PaymentMethod,
   PaymentStatus,
   Prisma,
   SessionStatus,
 } from '@prisma/client';
-import { randomBytes } from 'node:crypto';
+import { randomBytes, randomUUID } from 'node:crypto';
 import { PrismaService } from '../prisma/prisma.service';
 import { TenantSettingsService } from '../tenant-settings/tenant-settings.service';
+import { CreateMpCartCheckoutDto } from './dto/create-mp-cart-checkout.dto';
 import { CreateMpCheckoutDto } from './dto/create-mp-checkout.dto';
 import { CreateMpDropInCheckoutDto } from './dto/create-mp-drop-in-checkout.dto';
 import { MercadoPagoAccountService } from './mercadopago-account.service';
 import { MP_ACCOUNT_PORT, MpAccountPort } from './mp-account.port';
-import { MpCheckoutResult } from './mp-checkout.types';
+import {
+  MpCartCheckoutResult,
+  MpCartLine,
+  MpCheckoutResult,
+} from './mp-checkout.types';
 
 /**
  * Checkout Mercado Pago: pack y drop-in (CU-PAG-001 / CU-RES-001 / RN-PAG-004).
@@ -194,6 +200,294 @@ export class MpCheckoutService {
     });
   }
 
+  /**
+   * Inicia o reutiliza checkout de carrito MP (Caja): 1 preference con
+   * items[] → 1 pago. Al webhook APPROVED se confirma cada pack/reserva.
+   *
+   * @remarks Modelo MercadoLibre: el carrito agrega ítems, pero el checkout
+   * es un solo total y un solo pago (RN-PAG-009 / CU-PAG-001).
+   */
+  async startCartCheckout(
+    tenantId: string,
+    memberId: string,
+    dto: CreateMpCartCheckoutDto,
+  ): Promise<MpCartCheckoutResult> {
+    const member = await this.requireActiveMember(tenantId, memberId);
+    await this.requireMpConnected(tenantId);
+
+    const idempotencyKey =
+      dto.idempotencyKey?.trim() ||
+      `mp-cart-${randomBytes(16).toString('hex')}`;
+
+    const existing = await this.prisma.cartCheckout.findUnique({
+      where: {
+        tenantId_idempotencyKey: { tenantId, idempotencyKey },
+      },
+      include: {
+        payments: { orderBy: { createdAt: 'asc' } },
+      },
+    });
+    if (existing && existing.memberId !== memberId) {
+      throw new BadRequestException(
+        'Idempotency key already used for a different checkout',
+      );
+    }
+    if (
+      existing &&
+      (this.isTerminal(existing.status) || existing.mpPreferenceId)
+    ) {
+      return this.toCartResult(existing, existing.payments);
+    }
+
+    const lines = await this.resolveCartLines(tenantId, dto.items);
+    const total = lines.reduce(
+      (sum, line) => sum + line.amount * line.quantity,
+      0,
+    );
+
+    let cart: CartCheckout | null = existing;
+    const payments: {
+      id: string;
+      sessionId: string | null;
+      packId: string | null;
+      amount: number;
+    }[] = existing?.payments ?? [];
+
+    if (!cart) {
+      const cartId = randomUUID();
+      cart = await this.prisma.cartCheckout.create({
+        data: {
+          id: cartId,
+          tenantId,
+          memberId,
+          amount: total,
+          status: PaymentStatus.PENDING,
+          idempotencyKey,
+        },
+      });
+
+      let itemIndex = 0;
+      for (const line of lines) {
+        for (let n = 0; n < line.quantity; n++) {
+          const payment = await this.prisma.payment.create({
+            data: {
+              tenantId,
+              memberId,
+              packId: line.kind === 'PACK' ? line.refId : null,
+              sessionId: line.kind === 'DROP_IN' ? line.refId : null,
+              amount: line.amount,
+              status: PaymentStatus.PENDING,
+              method: PaymentMethod.MP,
+              idempotencyKey: `${idempotencyKey}:${itemIndex++}`,
+              cartId: cart.id,
+            },
+          });
+          payments.push(payment);
+        }
+      }
+    }
+
+    const accessToken = await this.accounts.getDecryptedAccessToken(tenantId);
+    const notificationUrl = this.buildNotificationUrl(tenantId);
+
+    try {
+      const preference = await this.mp.createPreference({
+        accessToken,
+        items: lines.map((line) => ({
+          title: line.title ?? '',
+          quantity: line.quantity,
+          unit_price: line.amount,
+        })),
+        externalReference: cart.id,
+        notificationUrl,
+        payerEmail: member.email,
+      });
+
+      const updated = await this.prisma.cartCheckout.update({
+        where: { id: cart.id },
+        data: {
+          mpPreferenceId: preference.preferenceId,
+          mpInitPoint: preference.initPoint,
+          mpSandboxInitPoint: preference.sandboxInitPoint,
+        },
+      });
+      await this.prisma.payment.updateMany({
+        where: { cartId: cart.id },
+        data: {
+          mpPreferenceId: preference.preferenceId,
+          mpInitPoint: preference.initPoint,
+          mpSandboxInitPoint: preference.sandboxInitPoint,
+        },
+      });
+
+      return this.toCartResult(updated, payments);
+    } catch (error: unknown) {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2002'
+      ) {
+        const again = await this.prisma.cartCheckout.findUnique({
+          where: {
+            tenantId_idempotencyKey: { tenantId, idempotencyKey },
+          },
+          include: {
+            payments: { orderBy: { createdAt: 'asc' } },
+          },
+        });
+        if (again) {
+          return this.toCartResult(again, again.payments);
+        }
+      }
+      if (error instanceof Error && error.message.includes('Mercado Pago')) {
+        throw new BadRequestException(error.message);
+      }
+      throw error;
+    }
+  }
+
+  private async resolveCartLines(
+    tenantId: string,
+    items: CreateMpCartCheckoutDto['items'],
+  ): Promise<MpCartLine[]> {
+    const lines: MpCartLine[] = [];
+    for (const item of items) {
+      const quantity = item.quantity ?? 1;
+      if (item.kind === 'PACK') {
+        const pack = await this.prisma.pack.findFirst({
+          where: { id: item.id, tenantId },
+          include: { components: true },
+        });
+        if (!pack) {
+          throw new NotFoundException(`Pack ${item.id} not found in tenant`);
+        }
+        if (!pack.active) {
+          throw new BadRequestException('Pack is inactive');
+        }
+        if (pack.components.length === 0) {
+          throw new BadRequestException('Pack has no components');
+        }
+        if (pack.price < 1) {
+          throw new BadRequestException('Pack price must be at least 1');
+        }
+        lines.push({
+          kind: 'PACK',
+          refId: pack.id,
+          title: pack.name,
+          quantity,
+          amount: pack.price,
+          paymentIds: [],
+        });
+        continue;
+      }
+
+      const session = await this.prisma.session.findFirst({
+        where: { id: item.id, tenantId },
+        select: {
+          id: true,
+          status: true,
+          startsAt: true,
+          endsAt: true,
+          capacity: true,
+          bookedCount: true,
+          service: {
+            select: {
+              name: true,
+              active: true,
+              dropInPrice: true,
+            },
+          },
+        },
+      });
+      if (!session) {
+        throw new NotFoundException(`Session ${item.id} not found in tenant`);
+      }
+      if (session.status !== SessionStatus.PUBLISHED) {
+        throw new BadRequestException('Session is not published');
+      }
+      if (!session.service.active) {
+        throw new BadRequestException('Service is inactive');
+      }
+      if (
+        session.service.dropInPrice === null ||
+        session.service.dropInPrice < 1
+      ) {
+        throw new BadRequestException(
+          'Drop-in is not enabled for this service (set dropInPrice)',
+        );
+      }
+      await this.tenantSettings.assertSessionOpenForBooking(tenantId, session);
+      if (session.bookedCount >= session.capacity) {
+        throw new BadRequestException('Session is full');
+      }
+      lines.push({
+        kind: 'DROP_IN',
+        refId: session.id,
+        title: `Drop-in: ${session.service.name}`,
+        quantity,
+        amount: session.service.dropInPrice,
+        paymentIds: [],
+      });
+    }
+    return lines;
+  }
+
+  private toCartResult(
+    cart: {
+      id: string;
+      memberId: string;
+      status: PaymentStatus;
+      amount: number;
+      idempotencyKey: string;
+      mpPreferenceId: string | null;
+      mpInitPoint?: string | null;
+      mpSandboxInitPoint?: string | null;
+    },
+    payments: {
+      id: string;
+      sessionId: string | null;
+      packId: string | null;
+      amount: number;
+    }[],
+  ): MpCartCheckoutResult {
+    const grouped = new Map<string, MpCartLine>();
+    for (const payment of payments) {
+      const kind = payment.sessionId ? 'DROP_IN' : 'PACK';
+      const refId = payment.sessionId ?? payment.packId ?? '';
+      const key = `${kind}:${refId}:${payment.amount}`;
+      const line = grouped.get(key);
+      if (line) {
+        line.quantity += 1;
+        line.paymentIds.push(payment.id);
+      } else {
+        grouped.set(key, {
+          kind,
+          refId,
+          quantity: 1,
+          amount: payment.amount,
+          paymentIds: [payment.id],
+        });
+      }
+    }
+    return {
+      cartId: cart.id,
+      memberId: cart.memberId,
+      status: cart.status,
+      amount: cart.amount,
+      idempotencyKey: cart.idempotencyKey,
+      mpPreferenceId: cart.mpPreferenceId,
+      checkoutUrl: cart.mpInitPoint ?? null,
+      sandboxCheckoutUrl: cart.mpSandboxInitPoint ?? null,
+      lines: [...grouped.values()],
+    };
+  }
+
+  private buildNotificationUrl(tenantId: string): string {
+    const publicBase =
+      this.config.get<string>('PUBLIC_API_BASE_URL')?.replace(/\/$/, '') ||
+      'http://localhost:3001';
+    return `${publicBase}/api/webhooks/mercadopago?tenantId=${tenantId}`;
+  }
+
   private async requireActiveMember(tenantId: string, memberId: string) {
     const member = await this.prisma.member.findFirst({
       where: { id: memberId, tenantId },
@@ -244,15 +538,19 @@ export class MpCheckoutService {
     }
   }
 
+  private isTerminal(status: PaymentStatus): boolean {
+    return (
+      status === PaymentStatus.APPROVED ||
+      status === PaymentStatus.REJECTED ||
+      status === PaymentStatus.REFUNDED
+    );
+  }
+
   private isTerminalOrHasPreference(existing: {
     status: PaymentStatus;
     mpPreferenceId: string | null;
   }): boolean {
-    if (
-      existing.status === PaymentStatus.APPROVED ||
-      existing.status === PaymentStatus.REJECTED ||
-      existing.status === PaymentStatus.REFUNDED
-    ) {
+    if (this.isTerminal(existing.status)) {
       return true;
     }
     return Boolean(existing.mpPreferenceId);
@@ -284,10 +582,7 @@ export class MpCheckoutService {
     const accessToken = await this.accounts.getDecryptedAccessToken(
       input.tenantId,
     );
-    const publicBase =
-      this.config.get<string>('PUBLIC_API_BASE_URL')?.replace(/\/$/, '') ||
-      'http://localhost:3001';
-    const notificationUrl = `${publicBase}/api/webhooks/mercadopago?tenantId=${input.tenantId}`;
+    const notificationUrl = this.buildNotificationUrl(input.tenantId);
 
     try {
       const payment =
@@ -311,8 +606,13 @@ export class MpCheckoutService {
 
       const preference = await this.mp.createPreference({
         accessToken,
-        title: input.title,
-        amount: input.amount,
+        items: [
+          {
+            title: input.title,
+            quantity: 1,
+            unit_price: input.amount,
+          },
+        ],
         externalReference: payment.id,
         notificationUrl,
         payerEmail: input.memberEmail,
