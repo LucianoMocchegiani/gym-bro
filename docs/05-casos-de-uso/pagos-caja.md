@@ -12,14 +12,14 @@
 
 **Precondiciones:**
 - Tenant con CuentaMercadoPago configurada (MP del gym).
-- Concepto: mensualidad/pack/drop-in.
+- Concepto: mensualidad/pack/drop-in, o **carrito de Caja** (pack + drop-in en un solo link).
 
 **Flujo principal:**
-1. Actor inicia cobro con `idempotencyKey` de negocio (afiliado self-service o Staff en Admin `/caja` con medio Mercado Pago: pack o drop-in).
-2. Sistema crea Pago `pendiente`.
-3. Redirige/checkout MP del gym (Staff: abrir/copiar link).
-4. Webhook/confirmación MP → sistema marca `aprobado` o `rechazado` (idempotente).
-5. Si `aprobado`: confirma Contratacion y/o Reserva; comprobante interno; N1 E1.
+1. Actor inicia cobro con `idempotencyKey` de negocio (afiliado self-service o Staff en Admin `/caja` con medio Mercado Pago: pack, drop-in, o **carrito** con `items[]`).
+2. Sistema crea Pago `pendiente` (carrito: `cart_checkouts` + un Payment por ítem, todos con el mismo `cart_id`).
+3. Redirige/checkout MP del gym (Staff: abrir/copiar link; carrito → **un solo link** con el total).
+4. Webhook/confirmación MP → sistema marca `aprobado` o `rechazado` (idempotente; carrito: `externalReference` = `cart_id`).
+5. Si `aprobado`: confirma Contratacion y/o Reserva (carrito: **una por cada payment**); comprobante interno; N1 E1.
 6. Si `rechazado`: no confirma derechos.
 
 **Errores:**

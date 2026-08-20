@@ -653,9 +653,28 @@ Extensión checkout/webhook (CU-PAG-001 / drop-in):
 | `mp_payment_id` | text nullable UK | dedup webhook |
 | `mp_init_point` / `mp_sandbox_init_point` | text nullable | URLs checkout |
 
-API: pack `POST /me|members/:id/payments/mp/checkout`; drop-in `.../drop-in-checkout`. Webhook: `POST /api/webhooks/mercadopago?tenantId=` (+ `/simulate` stub). Al `APPROVED`: pack → contrato; drop-in → reserva `DROP_IN` + recibo.
+API: pack `POST /me|members/:id/payments/mp/checkout`; drop-in `.../drop-in-checkout`. Webhook: `POST /api/webhooks/mercadopago?tenantId=` (+ `/simulate` stub). Al `APPROVED`: pack → contrato; drop-in → reserva `DROP_IN` + recibo. `payments.cart_id` nullable FK → `cart_checkouts` (columna agregada en la migración carrito).
 
-### 4.15g `refund_requests` + refund en `payments`
+### 4.15g `cart_checkouts` + `payments.cart_id`
+
+Carrito de Caja con Mercado Pago (CU-PAG-001 / modelo MercadoLibre): 1 preference con `items[]` → **1 link con el total** → 1 pago. Al webhook APPROVED se confirma un contrato/reserva por cada payment del carrito.
+
+| Columna | Tipo | Notas |
+|---------|------|--------|
+| `id` | uuid PK | usado como `externalReference` de la Preference |
+| `tenant_id` / `member_id` | uuid FK | CASCADE |
+| `amount` | int | suma de los payments (total) |
+| `status` | `PaymentStatus` | `PENDING` \| `APPROVED` \| `REJECTED` |
+| `idempotency_key` | text | unique `(tenant_id, idempotency_key)`; sub-keys `:idx` en payments |
+| `mp_preference_id` / `mp_init_point` / `mp_sandbox_init_point` | text nullable | Preference + URLs checkout |
+| `mp_payment_id` | text nullable | **solo aquí** (no en los payments del carrito; `payments.mp_payment_id` es UK) |
+| `created_at` / `updated_at` | timestamptz | |
+
+Payments del carrito: `cart_id` FK nullable; `idempotency_key = "<cartKey>:<idx>"`. Refund de carrito MP **no soportado** (limitación conocida).
+
+API Staff: `POST /api/members/:memberId/payments/mp/cart` (`members.write`; body `{ items: [{ kind: PACK|DROP_IN, id, quantity? }], idempotencyKey? }`). Simulate: `POST /api/webhooks/mercadopago/simulate` con `cartId` (exactamente uno entre `paymentId`/`cartId`).
+
+### 4.15h `refund_requests` + refund en `payments`
 
 Devoluciones (CU-PAG-004/005/007 / RN-PAG-011/012).
 
@@ -672,7 +691,7 @@ Pagos: `refunded_at`, `refund_reason`, `mp_refund_manual_pending`. Caja: `OUTCOM
 
 API: Member `POST /me/payments/:id/refund-requests`, `GET /me/refund-requests`. Staff `GET /refund-requests`, `POST /payments/:id/refunds` (`payments.refund`).
 
-### 4.15h `access_credentials`
+### 4.15i `access_credentials`
 
 Tabla **legada** (credencial de vínculo stub E6). API retirada; identidad de puerta = claim `memberId` de VC OID4VP.
 
@@ -688,7 +707,7 @@ Tabla **legada** (credencial de vínculo stub E6). API retirada; identidad de pu
 
 Índice único parcial: una sola `ACTIVE` por `member_id`.
 
-### 4.15i `access_attempts` + `reservations.checked_in_at`
+### 4.15j `access_attempts` + `reservations.checked_in_at`
 
 Intentos de ingreso (CU-ACC-001 / RN-ACC-007) y marca de presente (RN-RES-007).
 
@@ -898,6 +917,7 @@ API: Member `POST|GET /api/me/waitlist`, `PATCH /api/me/waitlist/:id/status`; St
 | `20260803030000_credential_offer_accepted` | enum `ACCEPTED` |
 | `20260813180000_kuatia_shared_env_drop_tenant_bind` | drop `tenants.quark_*` + enum; rename `packs.quark_*` → `kuatia_*` |
 | `20260814180000_staff_credential_offers` | `staff_credential_offers` + `access_attempts.subject_staff_id` |
+| `20260820090000_cart_checkout` | tabla `cart_checkouts` (carrito Caja MP) + `payments.cart_id` FK |
 
 Comandos y checklist “desde cero”: [13-setup-db-desde-cero.md](./13-setup-db-desde-cero.md).
 
