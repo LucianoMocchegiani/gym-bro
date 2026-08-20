@@ -52,11 +52,16 @@ export function DoorManualPassPanel({
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
+  const [prevMemberId, setPrevMemberId] = useState(memberId);
+  if (memberId !== prevMemberId) {
+    setPrevMemberId(memberId);
+    setSessionOptions([]);
+    setSessionId('');
+    setSessionsHint(null);
+  }
+
   useEffect(() => {
     if (!memberId) {
-      setSessionOptions([]);
-      setSessionId('');
-      setSessionsHint(null);
       return;
     }
     let cancelled = false;

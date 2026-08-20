@@ -144,9 +144,14 @@ export function SessionWaitlistPanel({
   }, [sessionId]);
 
   useEffect(() => {
-    // Fetch remoto al cambiar filtro/sesión.
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- carga API
-    void loadWaitlist();
+    let cancelled = false;
+    void (async () => {
+      if (cancelled) return;
+      await loadWaitlist();
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, [loadWaitlist]);
 
   async function onJoinWaitlist(e: FormEvent) {

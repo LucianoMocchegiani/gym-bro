@@ -156,9 +156,14 @@ function DevolucionesInner() {
   }, [statusFilter, page]);
 
   useEffect(() => {
-    // Fetch remoto al cambiar filtro/página.
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- carga API
-    void load();
+    let cancelled = false;
+    void (async () => {
+      if (cancelled) return;
+      await load();
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, [load]);
 
   const paymentIdToExecute = selected?.paymentId ?? directPaymentId.trim();

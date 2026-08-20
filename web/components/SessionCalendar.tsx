@@ -249,9 +249,14 @@ export function SessionCalendar({
   }, [weekStart]);
 
   useEffect(() => {
-    // Fetch remoto al cambiar semana.
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- carga API
-    void load();
+    let cancelled = false;
+    void (async () => {
+      if (cancelled) return;
+      await load();
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, [load, refreshKey]);
 
   const today = new Date();

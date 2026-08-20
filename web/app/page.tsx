@@ -73,7 +73,6 @@ function DashboardInner() {
 
   useEffect(() => {
     if (!permissionsReady) {
-      setLoading(true);
       return;
     }
 

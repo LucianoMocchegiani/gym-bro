@@ -126,9 +126,14 @@ export function SessionRosterPanel({
   }, [sessionId]);
 
   useEffect(() => {
-    // Fetch remoto al cambiar filtro/sesión.
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- carga API
-    void loadRoster();
+    let cancelled = false;
+    void (async () => {
+      if (cancelled) return;
+      await loadRoster();
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, [loadRoster]);
 
   async function refreshAfterMutation() {

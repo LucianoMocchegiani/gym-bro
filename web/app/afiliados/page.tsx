@@ -92,19 +92,23 @@ function AfiliadosInner() {
   }, [statusFilter, appliedQuery, page]);
 
   useEffect(() => {
-    void load();
+    let cancelled = false;
+    void (async () => {
+      if (cancelled) return;
+      await load();
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, [load]);
 
-  useEffect(() => {
+  const [prevAppliedQuery, setPrevAppliedQuery] = useState(appliedQuery);
+  if (appliedQuery !== prevAppliedQuery) {
     // ?q= puede llegar de Sesiones (Roster/Waitlist): sincroniza input y página.
-    if (query !== appliedQuery) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- sincroniza ?q= (Roster/Waitlist)
-      setQuery(appliedQuery);
-    }
-    if (page !== 1) {
-      setPage(1);
-    }
-  }, [appliedQuery]); // eslint-disable-line react-hooks/exhaustive-deps -- solo ?q=
+    setPrevAppliedQuery(appliedQuery);
+    setQuery(appliedQuery);
+    setPage(1);
+  }
 
   function closeModals() {
     router.replace(

@@ -176,14 +176,20 @@ function PuertaInner() {
     }
     verifyStartedRef.current = true;
     void startRequest();
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- solo al activar tab
   }, [tab]);
 
   useEffect(() => {
     if (tab !== 'historial') {
       return;
     }
-    void loadAttempts();
+    let cancelled = false;
+    void (async () => {
+      if (cancelled) return;
+      await loadAttempts();
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, [tab, loadAttempts]);
 
   /** Poll de sesión OID4VP hasta done/error. */

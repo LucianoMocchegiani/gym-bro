@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, useEffect, useState } from 'react';
+import { Suspense, useCallback, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import {
   DataTable,
@@ -75,15 +75,19 @@ function SesionesInner() {
   const [view, setView] = useState<View>(
     searchParams.get('view') === 'rules' ? 'rules' : 'calendar',
   );
+  const [prevViewParam, setPrevViewParam] = useState<string | null>(() =>
+    searchParams.get('view'),
+  );
+  const viewParam = searchParams.get('view');
+  if (viewParam !== prevViewParam) {
+    setPrevViewParam(viewParam);
+    setView(viewParam === 'rules' ? 'rules' : 'calendar');
+  }
   const [weekStart, setWeekStart] = useState<Date>(() =>
     startOfWeek(new Date()),
   );
   const [flashOk, setFlashOk] = useState<string | null>(null);
   const [listKey, setListKey] = useState(0);
-
-  useEffect(() => {
-    setView(searchParams.get('view') === 'rules' ? 'rules' : 'calendar');
-  }, [searchParams]);
 
   function closeModals() {
     const created = searchParams.get('created');
@@ -250,7 +254,7 @@ function RulesList() {
 
   const [reload, setReload] = useState(0);
 
-  async function load() {
+  const load = useCallback(async () => {
     setLoading(true);
     try {
       const data = await listRecurrenceRules({
@@ -275,14 +279,18 @@ function RulesList() {
     } finally {
       setLoading(false);
     }
-  }
+  }, [page]);
 
   useEffect(() => {
-    // Fetch remoto al cambiar página.
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- carga API
-    void load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page, reload]);
+    let cancelled = false;
+    void (async () => {
+      if (cancelled) return;
+      await load();
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [load, reload]);
 
   async function doDeactivate() {
     const rule = deactivateTarget;

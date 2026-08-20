@@ -70,7 +70,14 @@ export function StaffCredentialPanel({ staffId }: { staffId: string }) {
   }, [staffId]);
 
   useEffect(() => {
-    void loadOffer();
+    let cancelled = false;
+    void (async () => {
+      if (cancelled) return;
+      await loadOffer();
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, [loadOffer]);
 
   async function onIssueOffer() {

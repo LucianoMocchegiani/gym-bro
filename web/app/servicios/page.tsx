@@ -86,7 +86,14 @@ function ServiciosInner() {
   }, [typeFilter, activeFilter, page]);
 
   useEffect(() => {
-    void load();
+    let cancelled = false;
+    void (async () => {
+      if (cancelled) return;
+      await load();
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, [load]);
 
   function closeModals() {

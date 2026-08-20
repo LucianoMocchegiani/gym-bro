@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Image from 'next/image';
 import QRCode from 'qrcode';
 import { VenueQrSkeleton } from './VenueQrSkeleton';
 
@@ -55,7 +56,13 @@ export function VenueQr({
 
   return (
     <div className="venue-qr">
-      <img src={dataUrl} alt="QR de acceso OID4VP" width={size} height={size} />
+      <Image
+        src={dataUrl}
+        alt="QR de acceso OID4VP"
+        width={size}
+        height={size}
+        unoptimized
+      />
       <p className="muted small venue-qr-token">
         <code title={token}>{short}</code>
       </p>

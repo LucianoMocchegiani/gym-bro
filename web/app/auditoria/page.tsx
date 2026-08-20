@@ -106,9 +106,14 @@ function AuditoriaInner() {
   }, [page, q]);
 
   useEffect(() => {
-    // Fetch remoto al cambiar página/filtro.
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- carga API
-    void load();
+    let cancelled = false;
+    void (async () => {
+      if (cancelled) return;
+      await load();
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, [load]);
 
   return (
