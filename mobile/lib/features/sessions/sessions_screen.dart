@@ -428,6 +428,22 @@ class _SessionCard extends StatelessWidget {
     final isReserved = reservation != null;
     final inWaitlist = waitlistEntry != null;
 
+    final String statusLabel;
+    final Color statusColor;
+    if (isReserved) {
+      statusLabel = 'Reservada';
+      statusColor = scheme.primary;
+    } else if (inWaitlist) {
+      statusLabel = 'En espera';
+      statusColor = scheme.secondary;
+    } else if (session.hasSlots) {
+      statusLabel = '${session.slotsLeft} cupo${session.slotsLeft == 1 ? '' : 's'}';
+      statusColor = scheme.primary;
+    } else {
+      statusLabel = 'Llena';
+      statusColor = scheme.error;
+    }
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -440,14 +456,13 @@ class _SessionCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              Icon(Icons.fitness_center_outlined, color: scheme.primary),
-              const SizedBox(width: 10),
               Expanded(
                 child: Text(
                   session.serviceName,
                   style: Theme.of(context).textTheme.titleLarge,
                 ),
               ),
+              _Badge(label: statusLabel, color: statusColor),
             ],
           ),
           const SizedBox(height: 8),
@@ -459,56 +474,79 @@ class _SessionCard extends StatelessWidget {
               icon: Icons.person_outline,
               text: 'Con ${session.instructorName}',
             ),
-          const SizedBox(height: 12),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              _Chip(
-                icon: Icons.people_outline,
-                label: session.hasSlots
-                    ? '${session.slotsLeft} cupo${session.slotsLeft == 1 ? '' : 's'}'
-                    : 'Llena',
-                color: session.hasSlots ? scheme.primary : scheme.error,
-              ),
-              if (session.dropInPrice != null)
-                _Chip(
-                  icon: Icons.payments_outlined,
-                  label: 'Drop-in \$${session.dropInPrice}',
-                  color: scheme.secondary,
-                ),
-            ],
-          ),
+          if (session.dropInPrice != null) ...[
+            const SizedBox(height: 4),
+            _InfoLine(
+              icon: Icons.payments_outlined,
+              text: 'Drop-in \$${session.dropInPrice}',
+            ),
+          ],
           const SizedBox(height: 14),
           if (isReserved)
-            _ActionRow(
-              label: 'Reservada',
-              onPressed: busy ? null : onCancelReservation,
-              buttonLabel: 'Cancelar',
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton(
+                onPressed: busy ? null : onCancelReservation,
+                child: busy
+                    ? const SizedBox(
+                        height: 20,
+                        width: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Text('Cancelar reserva'),
+              ),
             )
-          else if (session.hasSlots)
-            _ActionRow(
-              label: null,
-              onPressed: busy ? null : onReserve,
-              buttonLabel: 'Reservar',
-              onSecondary: session.dropInPrice != null
-                  ? (busy ? null : onDropIn)
-                  : null,
-              secondaryLabel: session.dropInPrice != null
-                  ? 'Drop-in \$${session.dropInPrice}'
-                  : null,
-            )
-          else if (inWaitlist)
-            _ActionRow(
-              label: 'En espera',
-              onPressed: busy ? null : onLeaveWaitlist,
-              buttonLabel: 'Salir',
+          else if (session.hasSlots) ...[
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton(
+                onPressed: busy ? null : onReserve,
+                child: busy
+                    ? const SizedBox(
+                        height: 20,
+                        width: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Text('Reservar'),
+              ),
+            ),
+            if (session.dropInPrice != null) ...[
+              const SizedBox(height: 8),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton(
+                  onPressed: busy ? null : onDropIn,
+                  child: const Text('Drop-in'),
+                ),
+              ),
+            ],
+          ] else if (inWaitlist)
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton(
+                onPressed: busy ? null : onLeaveWaitlist,
+                child: busy
+                    ? const SizedBox(
+                        height: 20,
+                        width: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Text('Salir de la lista'),
+              ),
             )
           else
-            _ActionRow(
-              label: null,
-              onPressed: busy ? null : onJoinWaitlist,
-              buttonLabel: 'Unirme a la lista',
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton(
+                onPressed: busy ? null : onJoinWaitlist,
+                child: busy
+                    ? const SizedBox(
+                        height: 20,
+                        width: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Text('Unirme a la lista'),
+              ),
             ),
         ],
       ),
@@ -542,14 +580,13 @@ class _ReservationCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              Icon(Icons.event_available, color: scheme.primary),
-              const SizedBox(width: 10),
               Expanded(
                 child: Text(
                   reservation.serviceName,
                   style: Theme.of(context).textTheme.titleLarge,
                 ),
               ),
+              _Badge(label: 'Reservada', color: scheme.primary),
             ],
           ),
           const SizedBox(height: 8),
@@ -598,13 +635,15 @@ class _WaitlistCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              Icon(Icons.hourglass_top, color: scheme.primary),
-              const SizedBox(width: 10),
               Expanded(
                 child: Text(
                   entry.serviceName,
                   style: Theme.of(context).textTheme.titleLarge,
                 ),
+              ),
+              _Badge(
+                label: entry.position != null ? '#${entry.position}' : 'En espera',
+                color: scheme.secondary,
               ),
             ],
           ),
@@ -630,42 +669,27 @@ class _WaitlistCard extends StatelessWidget {
   }
 }
 
-class _ActionRow extends StatelessWidget {
-  const _ActionRow({
-    required this.label,
-    required this.onPressed,
-    required this.buttonLabel,
-    this.secondaryLabel,
-    this.onSecondary,
-  });
+class _Badge extends StatelessWidget {
+  const _Badge({required this.label, required this.color});
 
-  final String? label;
-  final VoidCallback? onPressed;
-  final String buttonLabel;
-  final String? secondaryLabel;
-  final VoidCallback? onSecondary;
+  final String label;
+  final Color color;
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    return Row(
-      children: [
-        if (label != null)
-          Expanded(
-            child: Text(
-              label!,
-              style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                    color: scheme.primary,
-                    fontWeight: FontWeight.w600,
-                  ),
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(12),
+        color: color.withValues(alpha: 0.12),
+      ),
+      child: Text(
+        label,
+        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+              color: color,
+              fontWeight: FontWeight.w600,
             ),
-          ),
-        if (secondaryLabel != null && onSecondary != null) ...[
-          TextButton(onPressed: onSecondary, child: Text(secondaryLabel!)),
-          const SizedBox(width: 8),
-        ],
-        FilledButton(onPressed: onPressed, child: Text(buttonLabel)),
-      ],
+      ),
     );
   }
 }
@@ -692,39 +716,6 @@ class _InfoLine extends StatelessWidget {
                     color: scheme.onSurface.withValues(alpha: 0.8),
                   ),
             ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _Chip extends StatelessWidget {
-  const _Chip({required this.icon, required this.label, required this.color});
-
-  final IconData icon;
-  final String label;
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(20),
-        color: color.withValues(alpha: 0.12),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 14, color: color),
-          const SizedBox(width: 4),
-          Text(
-            label,
-            style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                  color: color,
-                  fontWeight: FontWeight.w600,
-                ),
           ),
         ],
       ),
