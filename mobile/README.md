@@ -44,7 +44,9 @@ flutter run
 
 - Login afiliado (`tenantSlug`)
 - **3 hubs:** Inicio · Acceso · Ajustes
-  - **Inicio:** estado breve + atajos Sesiones / Tienda (placeholders)
+  - **Inicio:** estado breve + atajos Sesiones / Tienda
+    - **Sesiones:** catálogo de clases publicadas (sede, horario, instructor, cupos), reservar con crédito, drop-in MP, cancelar reserva, lista de espera (join/leave)
+    - **Tienda:** placeholder (pendiente packs + MP)
   - **Acceso:** Escanear (default, cámara) · Credenciales (pendientes de aceptación máx. ½ pantalla + VCs wallet)
   - **Ajustes:** cuenta, reiniciar wallet SSI, tema, API, logout (con confirmación)
 - Cards SSI estilo quark-wallet + detalle expandible (look GymBro); eliminar VC una a una con confirmación
@@ -54,4 +56,4 @@ flutter run
 
 Issuer público: `https://issuer.pruebasaproduccunon.uno`.
 
-Pendiente: calendario/reservas, packs/MP, rutinas, avisos; puerta Admin web stub hasta OID4VP gym.
+Pendiente: Tienda (packs + MP), devolución, rutinas, avisos; puerta Admin web stub hasta OID4VP gym.

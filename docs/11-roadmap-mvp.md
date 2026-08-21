@@ -27,7 +27,7 @@
 | E6 | Acceso QR / SSI | Credencial vínculo + verify |
 | E7 | Rutinas | Catálogo gym + asignación + cumplimiento |
 | E8 | Notificaciones N1 | Email + in-app |
-| E9 | App afiliado | Flutter: cuenta + SSI hechos; falta tienda/reservas/waitlist/devolución (+ API member packs/sesiones) |
+| E9 | App afiliado | Flutter: cuenta + SSI + sesiones/reservas/waitlist + drop-in hechos; falta Tienda/MP + devolución |
 | E10 | Admin web | Next: thin casi cerrados; faltan MP staff / pase sesión opcional |
 | E11 | Reportes mínimos | Activos, deuda, ingresos |
 | E12 | Cierre MVP | Smoke QA, hardenin, deploy |
@@ -188,8 +188,8 @@
 
 ## E9 — App afiliado (Flutter)
 
-**Estado real (2026-08-13):** auth + cuenta + wallet SSI OK. Tienda/calendario/waitlist/devolución pendientes.  
-**Bloqueo API:** hoy `GET /packs` y `GET /sessions` exigen permisos staff; hace falta lectura member (o endpoint `/me/...`) antes de cerrar Tienda/Calendario.  
+**Estado real (2026-08-21):** auth + cuenta + wallet SSI + sesiones/reservas/waitlist/drop-in hechos. Tienda y devolución pendientes.  
+**API resuelta:** `GET /me/sessions` y `GET /me/packs` (member catalog) creados en `member-catalog` module.  
 Detalle: [14-auditoria-roadmap-vs-codigo-2026-08-13.md](./14-auditoria-roadmap-vs-codigo-2026-08-13.md).
 
 ### Hecho
@@ -203,31 +203,24 @@ Detalle: [14-auditoria-roadmap-vs-codigo-2026-08-13.md](./14-auditoria-roadmap-v
   - Escanear OID4VCI/VP + bandeja offers (`accept`/`fail`) + `identity_core_dart`
   - Kuatia: defaults `issuer.kuatia.xyz` / `verifier.kuatia.xyz` (`KUATIA_*_PUBLIC_URL`)
   - Puerta Admin `/puerta` = QR OID4VP (modo B)
+- [x] API: catálogo member (`member-catalog` module)
+  - `GET /me/sessions` — sesiones publicadas, servicios activos, próximas por defecto; campos públicos + `dropInPrice`
+  - `GET /me/packs` — packs activos con precio ≥1 y componentes; sin refs Kuatia
+- [x] Sesiones + reservas + waitlist (Flutter)
+  - Catálogo de clases (sede, horario, cupos, drop-in price)
+  - Reservar con crédito, drop-in MP (link checkout en dialog), cancelar reserva
+  - Lista de espera (join/leave con posición), pestañas Clases/Reservas/Espera
+  - `ApiClient` extendido con `patchJson` para PATCH endpoints
 
-### Pendiente — prerequisito API
-
-- [ ] Lectura member de catálogo/calendario
-  - `GET` packs activos comprables (sin `catalog.write`)
-  - `GET` sesiones publicadas en ventana de fechas (sin `sessions.write`)
-  - Postman + docs al agregar endpoints
-
-### Pendiente — app (API member ya cubre gran parte)
+### Pendiente — app
 
 - [ ] Comprar pack / pagar (Tienda)
   - Reemplazar `StorePlaceholderScreen`
   - Listar packs → `POST /me/payments/mp/checkout` → abrir Preference (`url_launcher`)
   - Parsear `recentPayments` del account (hoy la API los manda; Flutter no)
-- [ ] Calendario y reservar
-  - Reemplazar `SessionsPlaceholderScreen`
-  - Listar sesiones → `POST /me/reservations` (crédito) → cancel `PATCH …/status`
-  - Extender `ApiClient` con PATCH
-- [ ] Lista de espera
-  - Join/leave (`POST/GET/PATCH /me/waitlist`) desde sesión llena
 - [ ] Solicitar devolución
   - `POST /me/payments/:id/refund-requests` + listado solicitudes
   - UI desde pagos recientes / cuenta
-- [ ] Drop-in (opcional en mismo corte tienda/sesiones)
-  - `POST /me/payments/mp/drop-in-checkout` con `sessionId`
 
 ### Pendiente — depende de otras épicas
 
@@ -236,7 +229,7 @@ Detalle: [14-auditoria-roadmap-vs-codigo-2026-08-13.md](./14-auditoria-roadmap-v
 
 ### Notas
 
-- Placeholders actuales: `features/store/`, `features/sessions/`.
+- Placeholders actuales: `features/store/`.
 - README mobile: actualizar tunnels Quark → Kuatia cuando se toque la épica.
 
 ---
@@ -380,8 +373,8 @@ Roadmap E9/E10 realineados (2026-08-13) tras [auditoría](./14-auditoria-roadmap
 **Orden sugerido para cerrar faltantes UI:**
 
 ```text
-1) Flutter E9: Tienda/MP + calendario/reservas + waitlist + devolución
-   (prereq: API member GET packs + sesiones)
+1) Flutter E9: Tienda/MP + devolución
+   (API member packs/sesiones ya resueltas)
 2) Admin E10 thin: MP staff / pase sesión opcional
    → recurrencia / creditsExpireAt / receipts (después)
 3) E5 MP live (ops) → E8 → E7 → E12
