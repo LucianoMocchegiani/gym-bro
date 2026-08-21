@@ -99,7 +99,10 @@ abstract final class GymBroTheme {
       ),
       cardTheme: CardThemeData(
         color: base.colorScheme.surface,
-        elevation: 0,
+        elevation: brightness == Brightness.dark ? 4 : 1,
+        shadowColor: brightness == Brightness.dark
+            ? Colors.black.withValues(alpha: 0.45)
+            : Colors.black.withValues(alpha: 0.08),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(14),
           side: BorderSide(color: base.colorScheme.outline),
@@ -109,15 +112,15 @@ abstract final class GymBroTheme {
         filled: true,
         fillColor: base.colorScheme.surface,
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(10),
+          borderRadius: BorderRadius.circular(8),
           borderSide: BorderSide(color: base.colorScheme.outline),
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(10),
+          borderRadius: BorderRadius.circular(8),
           borderSide: BorderSide(color: base.colorScheme.outline),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(10),
+          borderRadius: BorderRadius.circular(8),
           borderSide: const BorderSide(color: GymBroColors.lime, width: 2),
         ),
       ),
@@ -127,7 +130,7 @@ abstract final class GymBroTheme {
           foregroundColor: GymBroColors.darkBg,
           padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 18),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: BorderRadius.circular(8),
           ),
           textStyle: const TextStyle(fontWeight: FontWeight.w700),
         ),
@@ -143,6 +146,17 @@ abstract final class GymBroTheme {
             color: selected ? GymBroColors.lime : muted,
           );
         }),
+      ),
+      dialogTheme: DialogThemeData(
+        backgroundColor: base.colorScheme.surface,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(14),
+          side: BorderSide(color: base.colorScheme.outline),
+        ),
+        titleTextStyle: display.titleLarge?.copyWith(
+          color: base.colorScheme.onSurface,
+          fontWeight: FontWeight.w700,
+        ),
       ),
     );
   }

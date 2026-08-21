@@ -3,6 +3,7 @@ import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/network/api_client.dart';
+import '../../core/widgets/gym_bro_tabs.dart';
 import '../credentials/credential_offers_repository.dart';
 import '../credentials/credentials_screen.dart';
 import '../credentials/member_wallet_service.dart';
@@ -16,49 +17,35 @@ class AccessScreen extends StatefulWidget {
   State<AccessScreen> createState() => _AccessScreenState();
 }
 
-class _AccessScreenState extends State<AccessScreen>
-    with SingleTickerProviderStateMixin {
-  late final TabController _tabs;
+class _AccessScreenState extends State<AccessScreen> {
+  int _tab = 0;
   int _credsRefresh = 0;
-
-  @override
-  void initState() {
-    super.initState();
-    _tabs = TabController(length: 2, vsync: this);
-  }
-
-  @override
-  void dispose() {
-    _tabs.dispose();
-    super.dispose();
-  }
 
   @override
   Widget build(BuildContext context) {
     return Column(
       children: [
-        TabBar(
-          controller: _tabs,
-          labelColor: Theme.of(context).colorScheme.primary,
-          unselectedLabelColor: Theme.of(context).colorScheme.onSurface,
+        GymBroTabs(
           tabs: const [
-            Tab(text: 'Escanear'),
-            Tab(text: 'Credenciales'),
+            GymBroTab(label: 'Escanear', icon: Icons.qr_code_scanner),
+            GymBroTab(label: 'Credenciales', icon: Icons.badge_outlined),
           ],
+          selectedIndex: _tab,
+          onChanged: (i) => setState(() => _tab = i),
         ),
         Expanded(
-          child: TabBarView(
-            controller: _tabs,
+          child: IndexedStack(
+            index: _tab,
             children: [
               _ScanTab(
                 onCredentialIssued: () {
-                  setState(() => _credsRefresh++);
-                  _tabs.animateTo(1);
+                  setState(() {
+                    _credsRefresh++;
+                    _tab = 1;
+                  });
                 },
               ),
-              CredentialsScreen(
-                refreshToken: _credsRefresh,
-              ),
+              CredentialsScreen(refreshToken: _credsRefresh),
             ],
           ),
         ),
@@ -76,7 +63,7 @@ class _ScanTab extends StatefulWidget {
   State<_ScanTab> createState() => _ScanTabState();
 }
 
-class _ScanTabState extends State<_ScanTab> with AutomaticKeepAliveClientMixin {
+class _ScanTabState extends State<_ScanTab> {
   final MobileScannerController _scanner = MobileScannerController(
     detectionSpeed: DetectionSpeed.normal,
     facing: CameraFacing.back,
@@ -85,9 +72,6 @@ class _ScanTabState extends State<_ScanTab> with AutomaticKeepAliveClientMixin {
   String? _statusTitle;
   String? _statusDetail;
   bool? _ok;
-
-  @override
-  bool get wantKeepAlive => true;
 
   @override
   void dispose() {
@@ -200,7 +184,6 @@ class _ScanTabState extends State<_ScanTab> with AutomaticKeepAliveClientMixin {
 
   @override
   Widget build(BuildContext context) {
-    super.build(context);
     final scheme = Theme.of(context).colorScheme;
 
     if (_statusTitle != null) {

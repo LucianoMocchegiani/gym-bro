@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/network/api_client.dart';
+import '../../core/widgets/gym_bro_tabs.dart';
 import 'sessions_repository.dart';
 
 /// Slice sesiones + reservas + waitlist del afiliado (E9).
@@ -240,30 +241,14 @@ class _SessionsScreenState extends State<SessionsScreen> {
       appBar: AppBar(title: const Text('Sesiones')),
       body: Column(
         children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(20, 8, 20, 4),
-            child: SegmentedButton<_SessionsTab>(
-              segments: const [
-                ButtonSegment(
-                  value: _SessionsTab.classes,
-                  label: Text('Clases'),
-                  icon: Icon(Icons.calendar_month_outlined),
-                ),
-                ButtonSegment(
-                  value: _SessionsTab.reservations,
-                  label: Text('Reservas'),
-                  icon: Icon(Icons.event_available_outlined),
-                ),
-                ButtonSegment(
-                  value: _SessionsTab.waitlist,
-                  label: Text('Espera'),
-                  icon: Icon(Icons.hourglass_top),
-                ),
-              ],
-              selected: {_tab},
-              onSelectionChanged: (selection) =>
-                  setState(() => _tab = selection.first),
-            ),
+          GymBroTabs(
+            tabs: const [
+              GymBroTab(label: 'Clases', icon: Icons.calendar_month_outlined),
+              GymBroTab(label: 'Reservas', icon: Icons.event_available_outlined),
+              GymBroTab(label: 'Espera', icon: Icons.hourglass_top),
+            ],
+            selectedIndex: _tab.index,
+            onChanged: (i) => setState(() => _tab = _SessionsTab.values[i]),
           ),
           Expanded(child: _buildBody()),
         ],

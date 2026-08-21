@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/network/api_client.dart';
+import '../../core/widgets/gym_bro_tabs.dart';
 import '../account/account_repository.dart';
 import 'refund_repository.dart';
 import 'store_repository.dart';
@@ -192,24 +193,13 @@ class _StoreScreenState extends State<StoreScreen> {
       appBar: AppBar(title: const Text('Tienda')),
       body: Column(
         children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(20, 8, 20, 4),
-            child: SegmentedButton<_StoreTab>(
-              segments: const [
-                ButtonSegment(
-                  value: _StoreTab.packs,
-                  label: Text('Packs'),
-                  icon: Icon(Icons.inventory_2_outlined),
-                ),
-                ButtonSegment(
-                  value: _StoreTab.payments,
-                  label: Text('Pagos'),
-                  icon: Icon(Icons.receipt_long_outlined),
-                ),
-              ],
-              selected: {_tab},
-              onSelectionChanged: (s) => setState(() => _tab = s.first),
-            ),
+          GymBroTabs(
+            tabs: const [
+              GymBroTab(label: 'Packs', icon: Icons.inventory_2_outlined),
+              GymBroTab(label: 'Pagos', icon: Icons.receipt_long_outlined),
+            ],
+            selectedIndex: _tab.index,
+            onChanged: (i) => setState(() => _tab = _StoreTab.values[i]),
           ),
           if (!_mpConnected)
             Container(
