@@ -28,6 +28,7 @@ import {
   UpdatePackDto,
 } from './dto/pack.dto';
 import { PackComponentDetail, PackDetail, PackKind } from './packs.types';
+import { MemberPackDetail } from '../member-catalog/member-catalog.types';
 
 /** Whitelist de orden para {@link PacksService.list}. */
 const PACK_ORDER_FIELDS = ['createdAt', 'name', 'price'] as const;
@@ -101,6 +102,42 @@ export class PacksService {
   async findOne(tenantId: string, packId: string): Promise<PackDetail> {
     const pack = await this.findInTenant(tenantId, packId);
     return this.toDetail(pack);
+  }
+
+  /**
+   * Lista packs activos y publicables para el afiliado (mobile / tienda).
+   *
+   * @remarks Solo packs `active` con precio ≥ 1 y al menos un componente.
+   * Expone campos públicos (sin refs Kuatia internas).
+   */
+  async listForMember(tenantId: string): Promise<MemberPackDetail[]> {
+    await this.assertTenantExists(tenantId);
+    const packs = await this.prisma.pack.findMany({
+      where: { tenantId, active: true },
+      include: this.packInclude(),
+      orderBy: { createdAt: 'desc' },
+    });
+    return packs
+      .filter((p) => p.price >= 1 && p.components.length > 0)
+      .map((p) => this.toMemberDetail(p));
+  }
+
+  private toMemberDetail(pack: PackWithComponents): MemberPackDetail {
+    return {
+      id: pack.id,
+      name: pack.name,
+      description: pack.description,
+      price: pack.price,
+      billingPeriod: pack.billingPeriod,
+      creditsExpireAt: pack.creditsExpireAt,
+      kind: this.inferKind(pack.components),
+      components: pack.components.map((c) => ({
+        serviceId: c.serviceId,
+        serviceName: c.service.name,
+        serviceType: c.service.type,
+        creditAmount: c.creditAmount,
+      })),
+    };
   }
 
   /**

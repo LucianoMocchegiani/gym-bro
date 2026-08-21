@@ -4,7 +4,7 @@ import 'package:provider/provider.dart';
 import '../../core/network/api_client.dart';
 import '../account/account_repository.dart';
 import '../auth/auth_controller.dart';
-import '../sessions/sessions_placeholder_screen.dart';
+import '../sessions/sessions_screen.dart';
 import '../store/store_placeholder_screen.dart';
 
 /// Hub Inicio: saludo, estado breve y atajos (Sesiones / Tienda).
@@ -108,8 +108,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             icon: Icons.calendar_today_outlined,
                             label: 'Sesiones',
                             subtitle: 'Reservas',
-                            onTap: () =>
-                                _open(const SessionsPlaceholderScreen()),
+                            onTap: () => _open(const SessionsScreen()),
                           ),
                         ),
                         const SizedBox(width: 12),

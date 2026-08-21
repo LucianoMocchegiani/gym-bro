@@ -22,6 +22,8 @@ import {
   UpdateSessionDto,
 } from './dto/session.dto';
 import { SessionDetail } from './sessions.types';
+import { MemberListSessionsQueryDto } from '../member-catalog/dto/member-catalog.dto';
+import { MemberSessionDetail } from '../member-catalog/member-catalog.types';
 
 /** Whitelist de orden para {@link SessionsService.list}. */
 const SESSION_ORDER_FIELDS = ['startsAt', 'createdAt'] as const;
@@ -102,6 +104,85 @@ export class SessionsService {
   async findOne(tenantId: string, sessionId: string): Promise<SessionDetail> {
     const session = await this.findInTenant(tenantId, sessionId);
     return this.toDetail(session);
+  }
+
+  /**
+   * Lista sesiones PUBLISHED de servicios activos para el afiliado (mobile).
+   *
+   * @remarks Default: próximas (`from = ahora`) ordenadas por `startsAt` asc.
+   * Expone solo campos públicos (incluye `dropInPrice` para drop-in).
+   */
+  async listForMember(
+    tenantId: string,
+    query: MemberListSessionsQueryDto = {},
+  ): Promise<ListResult<MemberSessionDetail>> {
+    await this.assertTenantExists(tenantId);
+    const from = query.from ? this.parseDate(query.from, 'from') : new Date();
+    const to = query.to ? this.parseDate(query.to, 'to') : undefined;
+    if (to && to <= from) {
+      throw new BadRequestException('to must be after from');
+    }
+
+    const n = normalizeListQuery(query);
+    const where: Prisma.SessionWhereInput = {
+      tenantId,
+      status: SessionStatus.PUBLISHED,
+      service: { active: true },
+      startsAt: {
+        gte: from,
+        ...(to ? { lte: to } : {}),
+      },
+    };
+    const [sessions, total] = await this.prisma.$transaction([
+      this.prisma.session.findMany({
+        where,
+        include: {
+          service: {
+            select: { id: true, name: true, active: true, dropInPrice: true },
+          },
+          branch: { select: { id: true, name: true } },
+          instructor: { select: { id: true, name: true } },
+        },
+        orderBy: { startsAt: 'asc' },
+        skip: n.skip,
+        take: n.take,
+      }),
+      this.prisma.session.count({ where }),
+    ]);
+    return toListResult(
+      sessions.map((s) => this.toMemberDetail(s)),
+      total,
+      n.page,
+      n.pageSize,
+    );
+  }
+
+  private toMemberDetail(
+    session: Session & {
+      service: {
+        id: string;
+        name: string;
+        active: boolean;
+        dropInPrice: number | null;
+      };
+      branch: { id: string; name: string };
+      instructor: { id: string; name: string | null } | null;
+    },
+  ): MemberSessionDetail {
+    return {
+      id: session.id,
+      serviceId: session.serviceId,
+      serviceName: session.service.name,
+      branchName: session.branch.name,
+      instructorName: session.instructor?.name ?? null,
+      startsAt: session.startsAt,
+      endsAt: session.endsAt,
+      capacity: session.capacity,
+      bookedCount: session.bookedCount,
+      slotsLeft: Math.max(0, session.capacity - session.bookedCount),
+      hasSlots: session.bookedCount < session.capacity,
+      dropInPrice: session.service.dropInPrice,
+    };
   }
 
   /**

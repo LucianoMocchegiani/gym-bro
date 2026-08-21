@@ -53,6 +53,16 @@ class ApiClient {
     return _request<T>('POST', path, body: body, parse: parse, auth: auth);
   }
 
+  /// PATCH JSON.
+  Future<T> patchJson<T>(
+    String path, {
+    Object? body,
+    T Function(Object? json)? parse,
+    bool auth = true,
+  }) async {
+    return _request<T>('PATCH', path, body: body, parse: parse, auth: auth);
+  }
+
   Future<T> _request<T>(
     String method,
     String path, {
@@ -77,6 +87,12 @@ class ApiClient {
           res = await _http.get(uri, headers: headers);
         case 'POST':
           res = await _http.post(
+            uri,
+            headers: headers,
+            body: body == null ? null : jsonEncode(body),
+          );
+        case 'PATCH':
+          res = await _http.patch(
             uri,
             headers: headers,
             body: body == null ? null : jsonEncode(body),
