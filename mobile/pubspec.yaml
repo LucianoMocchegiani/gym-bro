@@ -17,6 +17,7 @@ dependencies:
   provider: ^6.1.5
   mobile_scanner: ^6.0.11
   path_provider: ^2.1.5
+  url_launcher: ^6.3.1
   # Clon local en la raíz del monorepo (ver docs/15-kuatia-deuda-rename.md)
   identity_core_dart:
     path: ../identity_core_dart

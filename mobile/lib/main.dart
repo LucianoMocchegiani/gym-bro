@@ -13,6 +13,8 @@ import 'features/credentials/credential_offers_repository.dart';
 import 'features/credentials/member_wallet_service.dart';
 import 'features/sessions/sessions_repository.dart';
 import 'features/shell/member_shell.dart';
+import 'features/store/store_repository.dart';
+import 'features/store/refund_repository.dart';
 
 /// Punto de entrada de la app afiliado GymBro.
 void main() {
@@ -38,6 +40,8 @@ class _GymBroMemberAppState extends State<GymBroMemberApp> {
   late final AccountRepository _accountRepo;
   late final CredentialOffersRepository _offersRepo;
   late final SessionsRepository _sessionsRepo;
+  late final StoreRepository _storeRepo;
+  late final RefundRepository _refundRepo;
   late final MemberWalletService _wallet;
 
   @override
@@ -50,6 +54,8 @@ class _GymBroMemberAppState extends State<GymBroMemberApp> {
     _accountRepo = AccountRepository(_api);
     _offersRepo = CredentialOffersRepository(_api);
     _sessionsRepo = SessionsRepository(_api);
+    _storeRepo = StoreRepository(_api);
+    _refundRepo = RefundRepository(_api);
     _wallet = MemberWalletService();
     _auth = AuthController(auth: _authRepo, api: _api, wallet: _wallet);
     _bootstrap();
@@ -68,6 +74,8 @@ class _GymBroMemberAppState extends State<GymBroMemberApp> {
         Provider.value(value: _accountRepo),
         Provider.value(value: _offersRepo),
         Provider.value(value: _sessionsRepo),
+        Provider.value(value: _storeRepo),
+        Provider.value(value: _refundRepo),
         ChangeNotifierProvider.value(value: _wallet),
       ],
       child: Consumer2<ThemeController, AuthController>(

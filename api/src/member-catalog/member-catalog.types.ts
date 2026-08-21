@@ -38,3 +38,10 @@ export type MemberPackDetail = {
   kind: 'ACCESS' | 'CREDITS' | 'MIXED';
   components: MemberPackComponentDetail[];
 };
+
+/**
+ * Estado de Mercado Pago del tenant (solo campo público para el afiliado).
+ */
+export type MpStatus = {
+  connected: boolean;
+};

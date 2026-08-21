@@ -1,5 +1,39 @@
 import '../../core/network/api_client.dart';
 
+/// Pago reciente del afiliado.
+class AccountRecentPayment {
+  /// Crea el modelo.
+  AccountRecentPayment({
+    required this.id,
+    required this.amount,
+    required this.status,
+    required this.method,
+    required this.createdAt,
+    this.packId,
+  });
+
+  final String id;
+  final int amount;
+  final String status;
+  final String method;
+  final DateTime createdAt;
+  final String? packId;
+
+  factory AccountRecentPayment.fromJson(Map<String, dynamic> json) {
+    return AccountRecentPayment(
+      id: json['id'] as String,
+      amount: (json['amount'] as num?)?.toInt() ?? 0,
+      status: json['status'] as String? ?? '',
+      method: json['method'] as String? ?? '',
+      packId: json['packId'] as String?,
+      createdAt: DateTime.parse(json['createdAt'] as String),
+    );
+  }
+
+  /// ¿Se puede solicitar devolución?
+  bool get canRefund => status == 'APPROVED';
+}
+
 /// Estado de cuenta del afiliado (CU-AFI-005).
 class MemberAccount {
   /// Crea el modelo.
@@ -8,12 +42,14 @@ class MemberAccount {
     required this.debtAmount,
     required this.contracts,
     required this.reservations,
+    required this.recentPayments,
   });
 
   final String debtStatus;
   final num debtAmount;
   final List<AccountContract> contracts;
   final List<AccountReservation> reservations;
+  final List<AccountRecentPayment> recentPayments;
 
   /// Contratos vigentes hoy (la API con `coverage=current` ya filtra en DB).
   List<AccountContract> get activeContracts => contracts;
@@ -28,11 +64,18 @@ class MemberAccount {
         .whereType<Map>()
         .map((e) => AccountReservation.fromJson(Map<String, dynamic>.from(e)))
         .toList();
+    final recentPayments = (json['recentPayments'] as List<dynamic>? ?? [])
+        .whereType<Map>()
+        .map(
+          (e) => AccountRecentPayment.fromJson(Map<String, dynamic>.from(e)),
+        )
+        .toList();
     return MemberAccount(
       debtStatus: debt['status'] as String? ?? 'AL_DIA',
       debtAmount: debt['amount'] as num? ?? 0,
       contracts: contracts,
       reservations: reservations,
+      recentPayments: recentPayments,
     );
   }
 }

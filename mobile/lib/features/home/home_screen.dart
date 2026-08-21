@@ -5,7 +5,7 @@ import '../../core/network/api_client.dart';
 import '../account/account_repository.dart';
 import '../auth/auth_controller.dart';
 import '../sessions/sessions_screen.dart';
-import '../store/store_placeholder_screen.dart';
+import '../store/store_screen.dart';
 
 /// Hub Inicio: saludo, estado breve y atajos (Sesiones / Tienda).
 class HomeScreen extends StatefulWidget {
@@ -117,8 +117,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             icon: Icons.storefront_outlined,
                             label: 'Tienda',
                             subtitle: 'Packs',
-                            onTap: () =>
-                                _open(const StorePlaceholderScreen()),
+                            onTap: () => _open(const StoreScreen()),
                           ),
                         ),
                       ],
