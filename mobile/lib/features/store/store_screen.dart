@@ -5,6 +5,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/network/api_client.dart';
 import '../../core/widgets/gym_bro_tabs.dart';
+import '../../core/widgets/shared_widgets.dart';
 import '../account/account_repository.dart';
 import 'refund_repository.dart';
 import 'store_repository.dart';
@@ -239,7 +240,7 @@ class _StoreScreenState extends State<StoreScreen> {
 
   Widget _buildBody() {
     if (_error != null) {
-      return _MsgPane(
+      return GymBroMessagePane(
         icon: Icons.error_outline,
         message: _error!,
         actionLabel: 'Reintentar',
@@ -263,7 +264,7 @@ class _StoreScreenState extends State<StoreScreen> {
     if (packs.isEmpty) {
       return ListView(
         children: [
-          const _MsgPane(
+          const GymBroMessagePane(
             icon: Icons.storefront_outlined,
             message: 'No hay packs disponibles por ahora.',
           ),
@@ -293,7 +294,7 @@ class _StoreScreenState extends State<StoreScreen> {
     if (payments.isEmpty) {
       return ListView(
         children: [
-          const _MsgPane(
+          const GymBroMessagePane(
             icon: Icons.receipt_long,
             message: 'Todavía no tenés pagos registrados.',
           ),
@@ -352,7 +353,7 @@ class _PackCard extends StatelessWidget {
                   style: Theme.of(context).textTheme.titleLarge,
                 ),
               ),
-              _Badge(label: pack.kind, color: scheme.secondary),
+              GymBroBadge(label: pack.kind, color: scheme.secondary),
             ],
           ),
           if (pack.description != null && pack.description!.isNotEmpty) ...[
@@ -468,12 +469,12 @@ class _PaymentCard extends StatelessWidget {
                   style: Theme.of(context).textTheme.titleLarge,
                 ),
               ),
-              _Badge(label: payment.status, color: statusColor),
+              GymBroBadge(label: payment.status, color: statusColor),
             ],
           ),
           const SizedBox(height: 8),
-          _InfoRow(icon: Icons.schedule, text: _fmtDate(payment.createdAt)),
-          _InfoRow(
+          GymBroInfoLine(expanded: false,icon: Icons.schedule, text: formatDateTimeShort(payment.createdAt)),
+          GymBroInfoLine(expanded: false,
             icon: Icons.payment_outlined,
             text: payment.method,
           ),
@@ -499,107 +500,3 @@ class _PaymentCard extends StatelessWidget {
   }
 }
 
-class _Badge extends StatelessWidget {
-  const _Badge({required this.label, required this.color});
-
-  final String label;
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(12),
-        color: color.withValues(alpha: 0.12),
-      ),
-      child: Text(
-        label,
-        style: Theme.of(context).textTheme.labelSmall?.copyWith(
-              color: color,
-              fontWeight: FontWeight.w600,
-            ),
-      ),
-    );
-  }
-}
-
-class _InfoRow extends StatelessWidget {
-  const _InfoRow({required this.icon, required this.text});
-
-  final IconData icon;
-  final String text;
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 4),
-      child: Row(
-        children: [
-          Icon(icon, size: 16, color: scheme.onSurface.withValues(alpha: 0.6)),
-          const SizedBox(width: 8),
-          Text(
-            text,
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: scheme.onSurface.withValues(alpha: 0.8),
-                ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _MsgPane extends StatelessWidget {
-  const _MsgPane({
-    required this.icon,
-    required this.message,
-    this.actionLabel,
-    this.onAction,
-  });
-
-  final IconData icon;
-  final String message;
-  final String? actionLabel;
-  final VoidCallback? onAction;
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    return ListView(
-      children: [
-        Padding(
-          padding: const EdgeInsets.all(32),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(icon, size: 56, color: scheme.primary),
-              const SizedBox(height: 12),
-              Text(
-                message,
-                textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.bodyMedium,
-              ),
-              if (actionLabel != null) ...[
-                const SizedBox(height: 12),
-                TextButton(onPressed: onAction, child: Text(actionLabel!)),
-              ],
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-String _fmtDate(DateTime dt) {
-  const months = [
-    'ene','feb','mar','abr','may','jun',
-    'jul','ago','sep','oct','nov','dic',
-  ];
-  final local = dt.toLocal();
-  return '${local.day} ${months[local.month - 1]} · '
-      '${local.hour.toString().padLeft(2, '0')}:'
-      '${local.minute.toString().padLeft(2, '0')}';
-}

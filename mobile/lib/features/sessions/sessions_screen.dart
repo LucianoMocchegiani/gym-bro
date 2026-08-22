@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 
 import '../../core/network/api_client.dart';
 import '../../core/widgets/gym_bro_tabs.dart';
+import '../../core/widgets/shared_widgets.dart';
 import 'sessions_repository.dart';
 
 /// Slice sesiones + reservas + waitlist del afiliado (E9).
@@ -258,7 +259,7 @@ class _SessionsScreenState extends State<SessionsScreen> {
 
   Widget _buildBody() {
     if (_error != null) {
-      return _MessagePane(
+      return GymBroMessagePane(
         icon: Icons.error_outline,
         message: _error!,
         actionLabel: 'Reintentar',
@@ -272,7 +273,7 @@ class _SessionsScreenState extends State<SessionsScreen> {
     if (sessions.isEmpty &&
         (_reservations?.isEmpty ?? true) &&
         (_waitlist?.isEmpty ?? true)) {
-      return const _MessagePane(
+      return const GymBroMessagePane(
         icon: Icons.calendar_month_outlined,
         message: 'Todavía no hay sesiones publicadas.',
       );
@@ -291,7 +292,7 @@ class _SessionsScreenState extends State<SessionsScreen> {
     if (sessions.isEmpty) {
       return ListView(
         children: const [
-          _MessagePane(
+          GymBroMessagePane(
             icon: Icons.event_note,
             message: 'No hay clases próximas por ahora.',
           ),
@@ -347,7 +348,7 @@ class _SessionsScreenState extends State<SessionsScreen> {
     if (confirmed.isEmpty) {
       return ListView(
         children: [
-          const _MessagePane(
+          const GymBroMessagePane(
             icon: Icons.event_available,
             message: 'Todavía no tenés reservas confirmadas.',
           ),
@@ -376,7 +377,7 @@ class _SessionsScreenState extends State<SessionsScreen> {
     if (waiting.isEmpty) {
       return ListView(
         children: [
-          const _MessagePane(
+          const GymBroMessagePane(
             icon: Icons.hourglass_top,
             message: 'No estás en ninguna lista de espera.',
           ),
@@ -462,21 +463,21 @@ class _SessionCard extends StatelessWidget {
                   style: Theme.of(context).textTheme.titleLarge,
                 ),
               ),
-              _Badge(label: statusLabel, color: statusColor),
+              GymBroBadge(label: statusLabel, color: statusColor),
             ],
           ),
           const SizedBox(height: 8),
-          _InfoLine(icon: Icons.schedule, text: _formatDateTime(session.startsAt)),
+          GymBroInfoLine(icon: Icons.schedule, text: formatDateTimeShort(session.startsAt)),
           if (session.branchName != null)
-            _InfoLine(icon: Icons.place_outlined, text: session.branchName!),
+            GymBroInfoLine(icon: Icons.place_outlined, text: session.branchName!),
           if (session.instructorName != null)
-            _InfoLine(
+            GymBroInfoLine(
               icon: Icons.person_outline,
               text: 'Con ${session.instructorName}',
             ),
           if (session.dropInPrice != null) ...[
             const SizedBox(height: 4),
-            _InfoLine(
+            GymBroInfoLine(
               icon: Icons.payments_outlined,
               text: 'Drop-in \$${session.dropInPrice}',
             ),
@@ -586,14 +587,14 @@ class _ReservationCard extends StatelessWidget {
                   style: Theme.of(context).textTheme.titleLarge,
                 ),
               ),
-              _Badge(label: 'Reservada', color: scheme.primary),
+              GymBroBadge(label: 'Reservada', color: scheme.primary),
             ],
           ),
           const SizedBox(height: 8),
-          _InfoLine(
+          GymBroInfoLine(
             icon: Icons.schedule,
             text:
-                '${_formatDateTime(reservation.sessionStartsAt)} · ${reservation.coverage}',
+                '${formatDateTimeShort(reservation.sessionStartsAt)} · ${reservation.coverage}',
           ),
           const SizedBox(height: 14),
           SizedBox(
@@ -641,15 +642,15 @@ class _WaitlistCard extends StatelessWidget {
                   style: Theme.of(context).textTheme.titleLarge,
                 ),
               ),
-              _Badge(
+              GymBroBadge(
                 label: entry.position != null ? '#${entry.position}' : 'En espera',
                 color: scheme.secondary,
               ),
             ],
           ),
           const SizedBox(height: 8),
-          _InfoLine(icon: Icons.schedule, text: _formatDateTime(entry.sessionStartsAt)),
-          _InfoLine(
+          GymBroInfoLine(icon: Icons.schedule, text: formatDateTimeShort(entry.sessionStartsAt)),
+          GymBroInfoLine(
             icon: Icons.format_list_numbered,
             text: entry.position != null
                 ? 'Puesto ${entry.position} en la fila'
@@ -669,121 +670,3 @@ class _WaitlistCard extends StatelessWidget {
   }
 }
 
-class _Badge extends StatelessWidget {
-  const _Badge({required this.label, required this.color});
-
-  final String label;
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(12),
-        color: color.withValues(alpha: 0.12),
-      ),
-      child: Text(
-        label,
-        style: Theme.of(context).textTheme.labelSmall?.copyWith(
-              color: color,
-              fontWeight: FontWeight.w600,
-            ),
-      ),
-    );
-  }
-}
-
-class _InfoLine extends StatelessWidget {
-  const _InfoLine({required this.icon, required this.text});
-
-  final IconData icon;
-  final String text;
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 6),
-      child: Row(
-        children: [
-          Icon(icon, size: 16, color: scheme.onSurface.withValues(alpha: 0.6)),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              text,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: scheme.onSurface.withValues(alpha: 0.8),
-                  ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _MessagePane extends StatelessWidget {
-  const _MessagePane({
-    required this.icon,
-    required this.message,
-    this.actionLabel,
-    this.onAction,
-  });
-
-  final IconData icon;
-  final String message;
-  final String? actionLabel;
-  final VoidCallback? onAction;
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    return ListView(
-      children: [
-        Padding(
-          padding: const EdgeInsets.all(32),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(icon, size: 56, color: scheme.primary),
-              const SizedBox(height: 12),
-              Text(
-                message,
-                textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.bodyMedium,
-              ),
-              if (actionLabel != null) ...[
-                const SizedBox(height: 12),
-                TextButton(onPressed: onAction, child: Text(actionLabel!)),
-              ],
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-String _formatDateTime(DateTime dt) {
-  const months = [
-    'ene',
-    'feb',
-    'mar',
-    'abr',
-    'may',
-    'jun',
-    'jul',
-    'ago',
-    'sep',
-    'oct',
-    'nov',
-    'dic',
-  ];
-  final local = dt.toLocal();
-  final day = local.day;
-  final month = months[local.month - 1];
-  return '$day $month · ${_two(local.hour)}:${_two(local.minute)}';
-}
-
-String _two(int n) => n.toString().padLeft(2, '0');

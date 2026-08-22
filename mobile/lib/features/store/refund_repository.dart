@@ -1,5 +1,27 @@
 import '../../core/network/api_client.dart';
 
+/// Acceso a solicitudes de devolución del afiliado.
+class RefundRepository {
+  /// Crea el repositorio.
+  RefundRepository(this._api);
+
+  final ApiClient _api;
+
+  /// Solicita devolución de un pago.
+  Future<RefundRequest> requestRefund(String paymentId, {String? reason}) {
+    return _api.postJson<RefundRequest>(
+      '/api/me/payments/$paymentId/refund-requests',
+      body: {if (reason != null && reason.isNotEmpty) 'reason': reason},
+      parse: (json) {
+        if (json is! Map) {
+          throw ApiException('Respuesta inválida al solicitar devolución');
+        }
+        return RefundRequest.fromJson(Map<String, dynamic>.from(json));
+      },
+    );
+  }
+}
+
 /// Solicitud de devolución del afiliado (`/me/refund-requests`).
 class RefundRequest {
   /// Crea el modelo.
@@ -29,43 +51,6 @@ class RefundRequest {
       createdAt: json['createdAt'] != null
           ? DateTime.tryParse(json['createdAt'] as String)
           : null,
-    );
-  }
-}
-
-/// Acceso a solicitudes de devolución del afiliado.
-class RefundRepository {
-  /// Crea el repositorio.
-  RefundRepository(this._api);
-
-  final ApiClient _api;
-
-  /// Solicita devolución de un pago.
-  Future<RefundRequest> requestRefund(String paymentId, {String? reason}) {
-    return _api.postJson<RefundRequest>(
-      '/api/me/payments/$paymentId/refund-requests',
-      body: {if (reason != null && reason.isNotEmpty) 'reason': reason},
-      parse: (json) {
-        if (json is! Map) {
-          throw ApiException('Respuesta inválida al solicitar devolución');
-        }
-        return RefundRequest.fromJson(Map<String, dynamic>.from(json));
-      },
-    );
-  }
-
-  /// Lista mis solicitudes de devolución.
-  Future<List<RefundRequest>> listMyRequests() {
-    return _api.getJson<List<RefundRequest>>(
-      '/api/me/refund-requests?pageSize=100',
-      parse: (json) {
-        final items = json is Map ? json['items'] : null;
-        if (items is! List) return <RefundRequest>[];
-        return items
-            .whereType<Map>()
-            .map((e) => RefundRequest.fromJson(Map<String, dynamic>.from(e)))
-            .toList();
-      },
     );
   }
 }
