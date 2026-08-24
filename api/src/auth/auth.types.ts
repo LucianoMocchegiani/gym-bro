@@ -9,6 +9,8 @@ export type JwtAccessPayload = {
   email: string;
   profileType: 'SUPER' | 'STAFF' | 'MEMBER';
   tenantId?: string;
+  /** ID del Super Admin que está impersonando. */
+  impersonatedBy?: string;
 };
 
 /**
@@ -19,6 +21,8 @@ export type AuthUser = {
   email: string;
   profileType: 'SUPER' | 'STAFF' | 'MEMBER';
   tenantId?: string;
+  /** ID del Super Admin que está impersonando. */
+  impersonatedBy?: string;
 };
 
 /**
