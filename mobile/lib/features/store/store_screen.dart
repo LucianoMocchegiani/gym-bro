@@ -19,12 +19,13 @@ class StoreScreen extends StatefulWidget {
   State<StoreScreen> createState() => _StoreScreenState();
 }
 
-enum _StoreTab { packs, payments }
+enum _StoreTab { packs, myPacks, payments }
 
 class _StoreScreenState extends State<StoreScreen> {
   _StoreTab _tab = _StoreTab.packs;
   List<MemberPack>? _packs;
   List<AccountRecentPayment>? _payments;
+  List<AccountContract>? _contracts;
   bool _mpConnected = false;
   String? _error;
   bool _busy = false;
@@ -47,12 +48,14 @@ class _StoreScreenState extends State<StoreScreen> {
         _store.listPacks(),
         _account.fetchMine(),
         _store.getMpConnected(),
+        _account.fetchMineAll(),
       ]);
       if (!mounted) return;
       setState(() {
         _packs = results[0] as List<MemberPack>;
         _payments = (results[1] as MemberAccount).recentPayments;
         _mpConnected = results[2] as bool;
+        _contracts = results[3] as List<AccountContract>;
       });
     } catch (e) {
       if (!mounted) return;
@@ -197,6 +200,7 @@ class _StoreScreenState extends State<StoreScreen> {
           GymBroTabs(
             tabs: const [
               GymBroTab(label: 'Packs', icon: Icons.inventory_2_outlined),
+              GymBroTab(label: 'Mis packs', icon: Icons.card_membership_outlined),
               GymBroTab(label: 'Pagos', icon: Icons.receipt_long_outlined),
             ],
             selectedIndex: _tab.index,
@@ -255,6 +259,7 @@ class _StoreScreenState extends State<StoreScreen> {
       onRefresh: _load,
       child: switch (_tab) {
         _StoreTab.packs => _buildPacks(packs),
+        _StoreTab.myPacks => _buildMyPacks(),
         _StoreTab.payments => _buildPayments(),
       },
     );
@@ -313,6 +318,31 @@ class _StoreScreenState extends State<StoreScreen> {
             busy: _busy && _busyId == p.id,
             onRefund: p.canRefund ? () => _requestRefund(p) : null,
           ),
+        );
+      },
+    );
+  }
+
+  Widget _buildMyPacks() {
+    final contracts = _contracts ?? const <AccountContract>[];
+    if (contracts.isEmpty) {
+      return ListView(
+        children: [
+          const GymBroMessagePane(
+            icon: Icons.card_membership_outlined,
+            message: 'Todavía no tenés packs contratados.',
+          ),
+        ],
+      );
+    }
+    return ListView.builder(
+      padding: const EdgeInsets.fromLTRB(20, 8, 20, 28),
+      itemCount: contracts.length,
+      itemBuilder: (context, i) {
+        final c = contracts[i];
+        return Padding(
+          padding: EdgeInsets.only(top: i == 0 ? 0 : 12),
+          child: _ContractCard(contract: c),
         );
       },
     );
@@ -497,6 +527,101 @@ class _PaymentCard extends StatelessWidget {
         ],
       ),
     );
+  }
+}
+
+class _ContractCard extends StatelessWidget {
+  const _ContractCard({required this.contract});
+
+  final AccountContract contract;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final isActive = contract.status == 'ACTIVE';
+    final statusColor = isActive ? scheme.primary : scheme.onSurface.withValues(alpha: 0.5);
+    final statusLabel = isActive ? 'Activo' : contract.status;
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: scheme.outline.withValues(alpha: 0.5)),
+        color: scheme.surface,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  contract.packName,
+                  style: Theme.of(context).textTheme.titleLarge,
+                ),
+              ),
+              GymBroBadge(label: statusLabel, color: statusColor),
+            ],
+          ),
+          if (contract.endsAt != null) ...[
+            const SizedBox(height: 8),
+            GymBroInfoLine(
+              icon: Icons.event_outlined,
+              text: 'Vence: ${_formatDate(contract.endsAt!)}',
+            ),
+          ],
+          if (contract.creditBalances.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            ...contract.creditBalances.map(
+              (b) => Padding(
+                padding: const EdgeInsets.only(bottom: 4),
+                child: Row(
+                  children: [
+                    Icon(
+                      b.remaining > 0
+                          ? Icons.check_circle_outline
+                          : Icons.cancel_outlined,
+                      size: 16,
+                      color: b.remaining > 0 ? scheme.primary : scheme.error,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        b.serviceName,
+                        style: Theme.of(context).textTheme.bodyMedium,
+                      ),
+                    ),
+                    Text(
+                      '${b.remaining}/${b.initialAmount}',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: b.remaining > 0 ? scheme.primary : scheme.error,
+                            fontWeight: FontWeight.w600,
+                          ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+          if (contract.hasAccessLibre) ...[
+            const SizedBox(height: 4),
+            GymBroInfoLine(
+              icon: Icons.fitness_center_outlined,
+              text: 'Acceso libre',
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  String _formatDate(DateTime dt) {
+    const months = [
+      'ene','feb','mar','abr','may','jun',
+      'jul','ago','sep','oct','nov','dic',
+    ];
+    final local = dt.toLocal();
+    return '${local.day} ${months[local.month - 1]} ${local.year}';
   }
 }
 

@@ -172,4 +172,19 @@ class AccountRepository {
       parse: (json) => MemberAccount.fromJson(json! as Map<String, dynamic>),
     );
   }
+
+  /// Trae historial completo de contratos (vigentes + vencidos).
+  Future<List<AccountContract>> fetchMineAll() {
+    return _api.getJson<List<AccountContract>>(
+      '/api/me/account?coverage=all',
+      parse: (json) {
+        final data = json! as Map<String, dynamic>;
+        final contracts = (data['contracts'] as List<dynamic>? ?? [])
+            .whereType<Map>()
+            .map((e) => AccountContract.fromJson(Map<String, dynamic>.from(e)))
+            .toList();
+        return contracts;
+      },
+    );
+  }
 }

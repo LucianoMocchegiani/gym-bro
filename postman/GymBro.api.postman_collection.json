@@ -1728,7 +1728,18 @@
 
                                                                  ],
                                                       "url":  "{{baseUrl}}/api/me/account?coverage=current",
-                                                      "description":  "CU-AFI-005. Default coverage=current: solo packs ACTIVE vigentes hoy (filtro DB). coverage=all = historial completo."
+                                                      "description":  "CU-AFI-005. Default coverage=current: solo packs ACTIVE vigentes hoy (filtro DB)."
+                                                  }
+                                  },
+                                  {
+                                      "name":  "Member account (history)",
+                                      "request":  {
+                                                      "method":  "GET",
+                                                      "header":  [
+
+                                                                 ],
+                                                      "url":  "{{baseUrl}}/api/me/account?coverage=all",
+                                                      "description":  "CU-AFI-005. coverage=all: historial completo de contratos (ACTIVE + FINALIZED). Usado por la pestaña 'Mis packs' en mobile."
                                                   }
                                   },
                                   {
