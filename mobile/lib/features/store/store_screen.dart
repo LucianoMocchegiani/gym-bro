@@ -66,6 +66,10 @@ class _StoreScreenState extends State<StoreScreen> {
   }
 
   Future<void> _buy(MemberPack pack) async {
+    // Mostrar resumen antes de abrir MP
+    final confirmed = await _showConfirmBuyDialog(pack);
+    if (confirmed != true || !mounted) return;
+
     setState(() {
       _busy = true;
       _busyId = pack.id;
@@ -78,7 +82,7 @@ class _StoreScreenState extends State<StoreScreen> {
         _snack('El pago no está disponible en este momento');
         return;
       }
-      await _showCheckoutDialog(url, pack.name);
+      await _showCheckoutLinkDialog(url, pack.name);
     } on ApiException catch (e) {
       if (!mounted) return;
       _snack(e.message);
@@ -90,7 +94,85 @@ class _StoreScreenState extends State<StoreScreen> {
     }
   }
 
-  Future<void> _showCheckoutDialog(String url, String packName) async {
+  Future<bool?> _showConfirmBuyDialog(MemberPack pack) {
+    final scheme = Theme.of(context).colorScheme;
+    return showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Comprar ${pack.name}'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              '\$${pack.price} · ${pack.billingLabel}',
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    color: scheme.primary,
+                    fontWeight: FontWeight.w600,
+                  ),
+            ),
+            const SizedBox(height: 12),
+            ...pack.components.map(
+              (c) => Padding(
+                padding: const EdgeInsets.only(bottom: 4),
+                child: Row(
+                  children: [
+                    Icon(
+                      c.serviceType == 'ACCESO_LIBRE'
+                          ? Icons.fitness_center_outlined
+                          : Icons.event_available_outlined,
+                      size: 16,
+                      color: scheme.onSurface.withValues(alpha: 0.6),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        c.serviceName,
+                        style: Theme.of(context).textTheme.bodyMedium,
+                      ),
+                    ),
+                    if (c.creditAmount != null)
+                      Text(
+                        '${c.creditAmount} créditos',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: scheme.primary,
+                            ),
+                      ),
+                    if (c.serviceType == 'ACCESO_LIBRE')
+                      Text(
+                        'Acceso libre',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: scheme.primary,
+                            ),
+                      ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'Se abrirá Mercado Pago para completar el pago.',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: scheme.onSurface.withValues(alpha: 0.7),
+                  ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Pagar'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _showCheckoutLinkDialog(String url, String packName) async {
     await showDialog<void>(
       context: context,
       builder: (context) => AlertDialog(
