@@ -134,7 +134,6 @@ function RolesInner() {
         header={
           <>
             <th>Nombre</th>
-            <th>Slug</th>
             <th>Permisos</th>
             <th>Tipo</th>
             <th />
@@ -144,9 +143,6 @@ function RolesInner() {
         {rows.map((r) => (
           <tr key={r.id}>
             <td>{r.name}</td>
-            <td>
-              <code>{r.slug}</code>
-            </td>
             <td>{r.permissionCodes.length}</td>
             <td>
               <StatusPill tone={r.isSystem ? 'warn' : 'ok'}>

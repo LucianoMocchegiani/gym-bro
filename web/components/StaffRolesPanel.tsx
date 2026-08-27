@@ -131,7 +131,6 @@ export function StaffRolesPanel({
               onChange={() => toggleRole(r.id)}
             />
             {r.name}
-            <span className="muted small"> ({r.slug})</span>
           </label>
         ))}
       </fieldset>

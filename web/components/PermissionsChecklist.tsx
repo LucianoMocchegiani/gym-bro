@@ -40,8 +40,7 @@ export function PermissionsChecklist({
               onChange={() => toggle(p.code)}
             />
             <span>
-              <code>{p.code}</code>
-              <span className="muted small"> — {p.description}</span>
+              {p.description}
               {p.dangerous ? (
                 <span className="status-pill suspended"> peligroso</span>
               ) : null}

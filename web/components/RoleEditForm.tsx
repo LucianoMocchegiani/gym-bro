@@ -109,8 +109,7 @@ export function RoleEditForm({
   return (
     <form className="admin-form" onSubmit={(e) => void onSubmit(e)}>
       <p className="muted small">
-        Slug: <code>{role.slug}</code>
-        {role.isSystem ? ' · sistema' : ' · custom'}
+        {role.isSystem ? 'Rol del sistema' : 'Rol personalizado'}
         {locked ? ' · no editable' : ''}
       </p>
       <label>
