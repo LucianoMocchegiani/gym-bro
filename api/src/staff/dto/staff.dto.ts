@@ -26,6 +26,10 @@ export class CreateStaffDto {
   @MaxLength(120)
   name?: string;
 
+  @IsOptional()
+  @IsString()
+  imageUrl?: string;
+
   /** Roles iniciales (mismo tenant). Puede ir vacío y asignarse después. */
   @IsOptional()
   @IsArray()

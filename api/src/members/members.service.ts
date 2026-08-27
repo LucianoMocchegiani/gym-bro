@@ -257,6 +257,7 @@ export class MembersService {
           name: dto.name.trim(),
           phone,
           document,
+          imageUrl: dto.imageUrl ?? null,
           branchId,
           status: MemberStatus.ACTIVE,
         },
@@ -292,10 +293,11 @@ export class MembersService {
       dto.name === undefined &&
       dto.phone === undefined &&
       dto.document === undefined &&
+      dto.imageUrl === undefined &&
       dto.branchId === undefined
     ) {
       throw new BadRequestException(
-        'Provide email, name, phone, document and/or branchId',
+        'Provide email, name, phone, document, imageUrl and/or branchId',
       );
     }
 
@@ -313,6 +315,9 @@ export class MembersService {
     }
     if (dto.document !== undefined) {
       data.document = this.normalizeOptional(dto.document);
+    }
+    if (dto.imageUrl !== undefined) {
+      data.imageUrl = dto.imageUrl ?? null;
     }
     if (dto.branchId !== undefined) {
       if (dto.branchId === null) {

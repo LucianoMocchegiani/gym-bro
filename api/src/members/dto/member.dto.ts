@@ -39,6 +39,10 @@ export class CreateMemberDto {
   document?: string;
 
   @IsOptional()
+  @IsString()
+  imageUrl?: string;
+
+  @IsOptional()
   @IsUUID('4')
   branchId?: string;
 }
@@ -68,6 +72,11 @@ export class UpdateMemberDto {
   @IsString()
   @MaxLength(40)
   document?: string | null;
+
+  @IsOptional()
+  @ValidateIf((_, value) => value !== null)
+  @IsString()
+  imageUrl?: string | null;
 
   @IsOptional()
   @ValidateIf((_, value) => value !== null)

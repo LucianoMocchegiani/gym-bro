@@ -6,6 +6,7 @@ import { listRoles } from '@/lib/api/roles';
 import type { RoleDetail } from '@/lib/api/roles';
 import { createStaff } from '@/lib/api/staff';
 import type { StaffUserDetail } from '@/lib/api/staff';
+import { ImageUpload, uploadImageToApi } from '@/components/ImageUpload';
 
 /**
  * Formulario de alta de staff (CU-ROL-004), usable en modal.
@@ -21,9 +22,12 @@ export function StaffCreateForm({
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const [imageFile, setImageFile] = useState<File | null>(null);
   const [roleIds, setRoleIds] = useState<string[]>([]);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [imageWarning, setImageWarning] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
@@ -31,15 +35,11 @@ export function StaffCreateForm({
     void (async () => {
       try {
         const data = await listRoles({ pageSize: 100 });
-        if (cancelled) {
-          return;
-        }
+        if (cancelled) return;
         setRoles(data.items);
         setLoadError(null);
       } catch (err) {
-        if (cancelled) {
-          return;
-        }
+        if (cancelled) return;
         setLoadError(
           err instanceof ApiClientError
             ? err.message
@@ -47,9 +47,7 @@ export function StaffCreateForm({
         );
       }
     })();
-    return () => {
-      cancelled = true;
-    };
+    return () => { cancelled = true; };
   }, []);
 
   function toggleRole(id: string) {
@@ -62,11 +60,26 @@ export function StaffCreateForm({
     e.preventDefault();
     setBusy(true);
     setError(null);
+    setImageWarning(null);
     try {
+      let finalImageUrl = imageUrl;
+      if (imageFile) {
+        try {
+          finalImageUrl = await uploadImageToApi(imageFile, 'staff');
+        } catch (imgErr) {
+          finalImageUrl = null;
+          setImageWarning(
+            imgErr instanceof Error
+              ? `Imagen no subida: ${imgErr.message}`
+              : 'Imagen no subida',
+          );
+        }
+      }
       const created = await createStaff({
         email: email.trim(),
         password,
         name: name.trim() || undefined,
+        imageUrl: finalImageUrl ?? undefined,
         roleIds: roleIds.length > 0 ? roleIds : undefined,
       });
       onSuccess(created);
@@ -108,6 +121,12 @@ export function StaffCreateForm({
           minLength={8}
         />
       </label>
+      <ImageUpload
+        value={imageUrl}
+        onFileSelect={setImageFile}
+        onClear={() => { setImageUrl(null); setImageFile(null); }}
+        label="Foto de perfil"
+      />
 
       <fieldset className="perm-checklist" disabled={busy || !!loadError}>
         <legend>Roles iniciales</legend>
@@ -119,11 +138,11 @@ export function StaffCreateForm({
               onChange={() => toggleRole(r.id)}
             />
             {r.name}
-            <span className="muted small"> ({r.slug})</span>
           </label>
         ))}
       </fieldset>
 
+      {imageWarning ? <p className="warn">{imageWarning}</p> : null}
       {error ? <p className="error">{error}</p> : null}
 
       <div className="admin-modal-actions">

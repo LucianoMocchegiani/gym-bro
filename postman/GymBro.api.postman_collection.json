@@ -1168,7 +1168,7 @@
                                                                  ],
                                                       "body":  {
                                                                    "mode":  "raw",
-                                                                   "raw":  "{\n  \"email\": \"nuevo.staff-{{$timestamp}}@demo.gym\",\n  \"password\": \"{{demoPassword}}\",\n  \"name\": \"Staff nuevo\",\n  \"roleIds\": [\"{{createdRoleId}}\"]\n}"
+                                                                   "raw":  "{\n  \"email\": \"nuevo.staff-{{$timestamp}}@demo.gym\",\n  \"password\": \"{{demoPassword}}\",\n  \"name\": \"Staff nuevo\",\n  \"imageUrl\": \"https://pub-xxx.r2.dev/staff/example.jpg\",\n  \"roleIds\": [\"{{createdRoleId}}\"]\n}"
                                                                },
                                                       "url":  "{{baseUrl}}/api/staff",
                                                       "description":  "roleIds opcional; usÃ¡ createdRoleId de Roles o dejÃ¡ []."
@@ -1301,7 +1301,7 @@
                                                                  ],
                                                       "body":  {
                                                                    "mode":  "raw",
-                                                                   "raw":  "{\n  \"email\": \"super.staff-{{$timestamp}}@demo.gym\",\n  \"password\": \"{{demoPassword}}\",\n  \"name\": \"Staff Super\",\n  \"roleIds\": []\n}"
+                                                                   "raw":  "{\n  \"email\": \"super.staff-{{$timestamp}}@demo.gym\",\n  \"password\": \"{{demoPassword}}\",\n  \"name\": \"Staff Super\",\n  \"imageUrl\": \"https://pub-xxx.r2.dev/staff/example.jpg\",\n  \"roleIds\": []\n}"
                                                                },
                                                       "url":  "{{baseUrl}}/api/tenants/{{createdTenantId}}/staff"
                                                   }
@@ -1699,7 +1699,7 @@
                                                                  ],
                                                       "body":  {
                                                                    "mode":  "raw",
-                                                                   "raw":  "{\n  \"email\": \"nuevo@demo.gym\",\n  \"password\": \"ChangeMe123!\",\n  \"name\": \"Nuevo Socio\",\n  \"phone\": \"+5491100000000\",\n  \"document\": \"30111222\"\n}"
+                                                                   "raw":  "{\n  \"email\": \"nuevo@demo.gym\",\n  \"password\": \"ChangeMe123!\",\n  \"name\": \"Nuevo Socio\",\n  \"phone\": \"+5491100000000\",\n  \"document\": \"30111222\",\n  \"imageUrl\": \"https://pub-xxx.r2.dev/members/example.jpg\"\n}"
                                                                },
                                                       "url":  "{{baseUrl}}/api/members"
                                                   }
@@ -1728,7 +1728,7 @@
                                                                  ],
                                                       "body":  {
                                                                    "mode":  "raw",
-                                                                   "raw":  "{\n  \"phone\": \"+5491199999999\"\n}"
+                                                                   "raw":  "{\n  \"phone\": \"+5491199999999\",\n  \"imageUrl\": \"https://pub-xxx.r2.dev/members/example.jpg\"\n}"
                                                                },
                                                       "url":  "{{baseUrl}}/api/members/{{createdMemberId}}"
                                                   }

@@ -125,6 +125,7 @@ export class StaffService {
             email,
             passwordHash,
             name: dto.name?.trim() || null,
+            imageUrl: dto.imageUrl ?? null,
             active: true,
           },
         });

@@ -4,6 +4,7 @@ import { FormEvent, useState } from 'react';
 import { ApiClientError } from '@/lib/api/client';
 import { createMember } from '@/lib/api/members';
 import type { MemberDetail } from '@/lib/api/members';
+import { ImageUpload, uploadImageToApi } from '@/components/ImageUpload';
 
 /**
  * Formulario de alta de afiliado (CU-AFI-001), usable en modal.
@@ -20,20 +21,38 @@ export function MemberCreateForm({
   const [password, setPassword] = useState('');
   const [phone, setPhone] = useState('');
   const [document, setDocument] = useState('');
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const [imageFile, setImageFile] = useState<File | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [imageWarning, setImageWarning] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
     setBusy(true);
     setError(null);
+    setImageWarning(null);
     try {
+      let finalImageUrl = imageUrl;
+      if (imageFile) {
+        try {
+          finalImageUrl = await uploadImageToApi(imageFile, 'members');
+        } catch (imgErr) {
+          finalImageUrl = null;
+          setImageWarning(
+            imgErr instanceof Error
+              ? `Imagen no subida: ${imgErr.message}`
+              : 'Imagen no subida',
+          );
+        }
+      }
       const created = await createMember({
         name: name.trim(),
         email: email.trim(),
         password,
         phone: phone.trim() || undefined,
         document: document.trim() || undefined,
+        imageUrl: finalImageUrl ?? undefined,
       });
       onSuccess(created);
     } catch (err) {
@@ -88,7 +107,14 @@ export function MemberCreateForm({
           onChange={(e) => setDocument(e.target.value)}
         />
       </label>
+      <ImageUpload
+        value={imageUrl}
+        onFileSelect={setImageFile}
+        onClear={() => { setImageUrl(null); setImageFile(null); }}
+        label="Foto de perfil"
+      />
 
+      {imageWarning ? <p className="warn">{imageWarning}</p> : null}
       {error ? <p className="error">{error}</p> : null}
 
       <div className="admin-modal-actions">

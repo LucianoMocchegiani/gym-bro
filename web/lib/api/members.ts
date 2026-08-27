@@ -16,6 +16,7 @@ export type MemberDetail = {
   name: string | null;
   phone: string | null;
   document: string | null;
+  imageUrl: string | null;
   branchId: string | null;
   status: MemberStatus;
   createdAt: string;
@@ -31,6 +32,7 @@ export type CreateMemberInput = {
   name: string;
   phone?: string;
   document?: string;
+  imageUrl?: string;
 };
 
 export type UpdateMemberInput = {
@@ -38,6 +40,7 @@ export type UpdateMemberInput = {
   name?: string;
   phone?: string | null;
   document?: string | null;
+  imageUrl?: string | null;
 };
 
 export type MemberAccountDetail = {
