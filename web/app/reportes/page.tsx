@@ -6,12 +6,12 @@ import { useSearchParams } from 'next/navigation';
 import { AdminShell } from '@/components/AdminShell';
 import { DataTable, ListToolbar } from '@/components/AdminList';
 import { Panel } from '@/components/AdminUi';
+import { MemberPicker } from '@/components/MemberPicker';
 import { RequireStaff } from '@/components/RequireStaff';
 import { SkeletonCards } from '@/components/Skeleton';
+import { StatusPill } from '@/components/StatusPill';
 import { memberFichaHref } from '@/lib/member-link';
 import { ApiClientError } from '@/lib/api/client';
-import { listMembers } from '@/lib/api/members';
-import type { MemberDetail } from '@/lib/api/members';
 import { getReportsSummary } from '@/lib/api/reports';
 import type { ReportsSummary } from '@/lib/api/reports';
 import { formatMoney } from '@/lib/cash-labels';
@@ -29,13 +29,16 @@ function formatWhen(iso: string): string {
   }).format(new Date(iso));
 }
 
-function memberLabel(
-  name: string | null | undefined,
-  email: string | null | undefined,
-): string {
-  if (name?.trim()) return name;
-  if (email?.trim()) return email;
-  return '—';
+function formatConcept(p: { kind: string; packName: string | null }): string {
+  if (p.kind === 'DROP_IN') return 'Drop-in';
+  return p.packName ?? 'Pack';
+}
+
+function methodLabel(m: string): string {
+  if (m === 'CASH') return 'Efectivo';
+  if (m === 'MP') return 'Mercado Pago';
+  if (m === 'STUB') return 'Stub';
+  return m;
 }
 
 export default function ReportesPage() {
@@ -54,9 +57,6 @@ function ReportesInner() {
   const [from, setFrom] = useState(monthStart(today));
   const [to, setTo] = useState(today);
   const [memberId, setMemberId] = useState(initialMemberId);
-  const [memberQuery, setMemberQuery] = useState('');
-  const [memberOptions, setMemberOptions] = useState<MemberDetail[]>([]);
-  const [memberSearchBusy, setMemberSearchBusy] = useState(false);
 
   const [appliedFrom, setAppliedFrom] = useState(monthStart(today));
   const [appliedTo, setAppliedTo] = useState(today);
@@ -96,32 +96,6 @@ function ReportesInner() {
     return () => { cancelled = true; };
   }, [appliedFrom, appliedTo, appliedMemberId]);
 
-  useEffect(() => {
-    if (!memberQuery.trim()) {
-      setMemberOptions([]);
-      return;
-    }
-    let cancelled = false;
-    setMemberSearchBusy(true);
-    const timer = setTimeout(async () => {
-      try {
-        const result = await listMembers({
-          q: memberQuery.trim(),
-          pageSize: 8,
-        });
-        if (!cancelled) setMemberOptions(result.items);
-      } catch {
-        if (!cancelled) setMemberOptions([]);
-      } finally {
-        if (!cancelled) setMemberSearchBusy(false);
-      }
-    }, 300);
-    return () => {
-      cancelled = true;
-      clearTimeout(timer);
-    };
-  }, [memberQuery]);
-
   function onApply(e: FormEvent) {
     e.preventDefault();
     setAppliedFrom(from);
@@ -131,16 +105,11 @@ function ReportesInner() {
 
   function clearMemberFilter() {
     setMemberId('');
-    setMemberQuery('');
-    setMemberOptions([]);
     setAppliedMemberId('');
   }
 
   const payments = data?.income.payments ?? [];
   const paymentCount = data?.income.paymentCount ?? 0;
-  const selectedMember = memberId
-    ? memberOptions.find((m) => m.id === memberId)
-    : null;
 
   return (
     <AdminShell
@@ -185,8 +154,8 @@ function ReportesInner() {
         </div>
       ) : null}
 
-      <ListToolbar hint="Ingresos del rango. Afiliados y packs son estado actual. Historial de accesos en Puerta.">
-        <form className="toolbar-field search-form" onSubmit={onApply}>
+      <ListToolbar hint="Ingresos del rango. Afiliados y packs son estado actual.">
+        <form className="toolbar-field" onSubmit={onApply}>
           <label>
             Desde
             <input
@@ -205,42 +174,12 @@ function ReportesInner() {
               required
             />
           </label>
-          <div className="toolbar-field" style={{ position: 'relative' }}>
-            <label>
-              Afiliado
-              <input
-                value={memberQuery}
-                onChange={(e) => {
-                  setMemberQuery(e.target.value);
-                  if (!e.target.value) clearMemberFilter();
-                }}
-                placeholder="Buscar por nombre o email…"
-                autoComplete="off"
-              />
-            </label>
-            {memberOptions.length > 0 && memberQuery ? (
-              <ul className="autocomplete-list">
-                {memberOptions.map((m) => (
-                  <li key={m.id}>
-                    <button
-                      type="button"
-                      className={m.id === memberId ? 'active' : ''}
-                      onClick={() => {
-                        setMemberId(m.id);
-                        setMemberQuery(memberLabel(m.name, m.email));
-                        setMemberOptions([]);
-                      }}
-                    >
-                      {memberLabel(m.name, m.email)}
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            ) : null}
-            {memberSearchBusy ? (
-              <span className="muted small">Buscando…</span>
-            ) : null}
-          </div>
+          <MemberPicker
+            value={memberId}
+            onChange={setMemberId}
+            label="Afiliado"
+            placeholder="Todos"
+          />
           {appliedMemberId ? (
             <button
               type="button"
@@ -255,12 +194,6 @@ function ReportesInner() {
           </button>
         </form>
       </ListToolbar>
-
-      {selectedMember ? (
-        <p className="muted small">
-          Filtrando por: <strong>{memberLabel(selectedMember.name, selectedMember.email)}</strong>
-        </p>
-      ) : null}
 
       <DataTable
         title="Ingresos (detalle)"
@@ -278,10 +211,11 @@ function ReportesInner() {
         paginate={false}
         header={
           <>
-            <th>Fecha</th>
+            <th>Fecha y hora</th>
             <th>Afiliado</th>
             <th>Concepto</th>
             <th>Medio</th>
+            <th>Tipo</th>
             <th>Monto</th>
           </>
         }
@@ -297,16 +231,19 @@ function ReportesInner() {
                     p.memberName ?? p.memberEmail ?? '',
                   )}
                 >
-                  {memberLabel(p.memberName, p.memberEmail)}
+                  {p.memberName?.trim() || p.memberEmail}
                 </Link>
               ) : (
-                memberLabel(p.memberName, p.memberEmail)
+                p.memberName?.trim() || p.memberEmail || '—'
               )}
             </td>
+            <td>{formatConcept(p)}</td>
+            <td>{methodLabel(p.method)}</td>
             <td>
-              {p.kind === 'DROP_IN' ? 'Drop-in' : (p.packName ?? 'Pack')}
+              <StatusPill tone={p.kind === 'PACK' ? 'ok' : 'warn'}>
+                {p.kind === 'PACK' ? 'Pack' : 'Drop-in'}
+              </StatusPill>
             </td>
-            <td>{p.method}</td>
             <td>{formatMoney(p.amount)}</td>
           </tr>
         ))}
