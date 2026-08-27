@@ -1701,6 +1701,20 @@ button.danger {
   text-align: center;
 }
 
+.cal-jump-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.cal-jump-btn {
+  position: relative;
+  font-size: 0.8rem;
+  white-space: nowrap;
+}
+
 .cal-week {
   display: grid;
   grid-template-columns: 52px repeat(7, minmax(0, 1fr));

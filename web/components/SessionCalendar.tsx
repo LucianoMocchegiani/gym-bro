@@ -299,6 +299,31 @@ export function SessionCalendar({
         >
           Hoy
         </button>
+        <button
+          type="button"
+          className="btn ghost cal-jump-btn"
+          onClick={() => {
+            const input = document.getElementById('cal-jump-input') as HTMLInputElement | null;
+            input?.showPicker();
+          }}
+        >
+          {weekStart.toLocaleDateString('es-AR', { day: 'numeric', month: 'short' })}
+          {' — '}
+          {new Date(weekStart.getTime() + 6 * 86400000).toLocaleDateString('es-AR', { day: 'numeric', month: 'short' })}
+          <input
+            id="cal-jump-input"
+            type="date"
+            className="cal-jump-input"
+            value={weekStart.toISOString().slice(0, 10)}
+            onChange={(e) => {
+              const d = new Date(e.target.value + 'T00:00:00');
+              if (!Number.isNaN(d.getTime())) {
+                setMenu(null);
+                onWeekChange(startOfWeek(d));
+              }
+            }}
+          />
+        </button>
         <span className="cal-title">{weekLabel}</span>
         <button type="button" className="btn ghost" onClick={() => shiftWeek(1)}>
           ›
