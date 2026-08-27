@@ -1567,6 +1567,46 @@
                                                               }
                                                   }
                                   }
+                               ]
+                 },
+                 {
+                     "name":  "Upload",
+                     "description":  "Upload de imágenes (POST /upload). Requiere auth staff. Acepta multipart/form-data con campo 'file' y 'folder' (services|packs|members|staff|tenants).",
+                     "item":  [
+                                  {
+                                      "name":  "Upload image (services)",
+                                      "request":  {
+                                                     "auth":  {
+                                                                  "type":  "bearer",
+                                                                  "bearer":  [
+                                                                                 {
+                                                                                     "key":  "token",
+                                                                                     "value":  "{{accessToken}}",
+                                                                                     "type":  "string"
+                                                                                 }
+                                                                             ]
+                                                              },
+                                                     "method":  "POST",
+                                                     "header":  [],
+                                                     "body":  {
+                                                                  "mode":  "formdata",
+                                                                  "formdata":  [
+                                                                                   {
+                                                                                       "key":  "file",
+                                                                                       "type":  "file",
+                                                                                       "src":  ""
+                                                                                   },
+                                                                                   {
+                                                                                       "key":  "folder",
+                                                                                       "value":  "services",
+                                                                                       "type":  "text"
+                                                                                   }
+                                                                               ]
+                                                              },
+                                                     "url":  "{{baseUrl}}/api/upload",
+                                                     "description":  "Sube una imagen al bucket R2. Cambiar 'folder' según corresponda."
+                                                 }
+                                  }
                               ]
                  },
                  {
