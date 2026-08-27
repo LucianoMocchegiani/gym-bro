@@ -1000,6 +1000,23 @@ button.row-icon-btn:disabled {
   min-width: 0;
 }
 
+/* Date / datetime inputs: ancho contenido + icono verde */
+input[type="date"],
+input[type="datetime-local"] {
+  width: 13rem;
+  color-scheme: light;
+}
+
+input[type="datetime-local"] {
+  width: 16rem;
+}
+
+input[type="date"]::-webkit-calendar-picker-indicator,
+input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+  filter: invert(30%) sepia(90%) saturate(500%) hue-rotate(85deg);
+  cursor: pointer;
+}
+
 .toolbar-field.search-form {
   display: flex;
   flex-wrap: wrap;
@@ -1657,6 +1674,11 @@ button.danger {
   }
 
   .toolbar-field.search-form > button {
+    width: 100%;
+  }
+
+  input[type="date"],
+  input[type="datetime-local"] {
     width: 100%;
   }
 }
