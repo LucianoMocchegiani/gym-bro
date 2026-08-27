@@ -37,7 +37,7 @@ type CatalogTab = 'SERVICIOS' | 'PACKS';
 
 /**
  * Caja: carrito de cobros (packs + drop-in) en efectivo o con links de MP
- * (CU-PAG / RN-PAG-009). Arqueo y movimientos viven en /arqueo.
+ * (CU-PAG / RN-PAG-009). Cierre y movimientos viven en /arqueo.
  */
 export default function CajaPage() {
   return (
@@ -291,7 +291,7 @@ function CajaInner() {
       title="Caja"
       subtitle="Cobros con carrito: packs y drop-in en efectivo o Mercado Pago."
     >
-      <ListToolbar hint="Movimientos y arqueo del día se ven en Arqueo. MP no suma al arqueo de efectivo.">
+      <ListToolbar hint="Movimientos y cierre del día se ven en Cierres y Movimientos. MP no suma al cierre de efectivo.">
         <MemberPicker
           label="Afiliado"
           value={memberId}
@@ -486,7 +486,7 @@ function CajaInner() {
                   checked={cobroMedio === 'CASH'}
                   onChange={() => setCobroMedio('CASH')}
                 />
-                Efectivo (suma a Arqueo)
+                Efectivo (suma al cierre)
               </label>
               <label>
                 <input

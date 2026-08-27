@@ -21,7 +21,7 @@ import type { ReceiptDetail } from '@/lib/api/receipts';
 import { formatCashConcept, formatMoney } from '@/lib/cash-labels';
 
 /**
- * Arqueo del día: stats CASH + cierre + movimientos del día con comprobantes.
+ * Cierre del día: stats CASH + cierre + movimientos del día con comprobantes.
  * Los cobros se hacen en /caja (RN-PAG-009).
  */
 export default function ArqueoPage() {
@@ -68,7 +68,7 @@ function ArqueoInner() {
         setLoadError(
           err instanceof ApiClientError
             ? err.message
-            : 'No se pudo cargar el arqueo del día',
+            : 'No se pudo cargar el cierre del día',
         );
       } finally {
         if (!cancelled) {
@@ -124,7 +124,7 @@ function ArqueoInner() {
       setReconcileError(
         err instanceof ApiClientError
           ? err.message
-          : 'No se pudo cerrar el arqueo',
+          : 'No se pudo cerrar el cierre',
       );
     } finally {
       setReconcileBusy(false);
@@ -133,10 +133,10 @@ function ArqueoInner() {
 
   return (
     <AdminShell
-      title="Arqueo"
+      title="Cierres y Movimientos"
       subtitle="Cierre y movimientos CASH del día. Los cobros se hacen en Caja."
     >
-      <ListToolbar hint="Movimientos CASH del día. MP no suma al arqueo de efectivo.">
+      <ListToolbar hint="Movimientos CASH del día. MP no suma al cierre de efectivo.">
         <label className="toolbar-field">
           Día (timezone BA)
           <input
@@ -185,10 +185,10 @@ function ArqueoInner() {
             </div>
           </div>
 
-          <Panel title="Arqueo" description="Un cierre por día de negocio.">
+          <Panel title="Cierre del día" description="Un cierre por día de negocio.">
             {day.reconciliation ? (
               <div className="admin-stack">
-                <p className="ok-msg">Arqueo cerrado</p>
+                <p className="ok-msg">Cierre registrado</p>
                 <ul className="plain-list">
                   <li>
                     Esperado: {formatMoney(day.reconciliation.expectedAmount)}
@@ -245,7 +245,7 @@ function ArqueoInner() {
                   className="primary"
                   disabled={reconcileBusy}
                 >
-                  {reconcileBusy ? 'Cerrando…' : 'Cerrar arqueo'}
+                  {reconcileBusy ? 'Cerrando…' : 'Cerrar cierre'}
                 </button>
               </form>
             )}
@@ -311,11 +311,11 @@ function ArqueoInner() {
 
       <ConfirmDialog
         open={reconcileConfirm}
-        title="Cerrar arqueo"
-        description={`¿Confirmar arqueo con ${formatMoney(
+        title="Cerrar cierre del día"
+        description={`¿Confirmar cierre con ${formatMoney(
           Number(declaredAmount) || 0,
         )}? Solo se puede una vez por día.`}
-        confirmLabel="Cerrar arqueo"
+        confirmLabel="Cerrar cierre"
         busy={reconcileBusy}
         onConfirm={() => {
           setReconcileConfirm(false);

@@ -1,6 +1,6 @@
 'use client';
 
-import { Panel } from '@/components/AdminUi';
+import { AdminModal } from '@/components/AdminModal';
 import type { ReceiptDetail } from '@/lib/api/receipts';
 import { formatMoney } from '@/lib/cash-labels';
 
@@ -30,12 +30,12 @@ function formatConcept(concept: ReceiptDetail['concept']): string {
 
 type ReceiptPanelProps = {
   receipt: ReceiptDetail;
-  onClose?: () => void;
+  onClose: () => void;
   title?: string;
 };
 
 /**
- * Vista de comprobante interno (RN-PAG-009).
+ * Modal de comprobante interno (RN-PAG-009).
  */
 export function ReceiptPanel({
   receipt,
@@ -43,11 +43,7 @@ export function ReceiptPanel({
   title = 'Comprobante',
 }: ReceiptPanelProps) {
   return (
-    <Panel
-      title={title}
-      description={receipt.code}
-      className="form-panel receipt-panel"
-    >
+    <AdminModal open onClose={onClose} title={title} description={receipt.code}>
       <dl className="detail-dl">
         <div>
           <dt>Código</dt>
@@ -83,11 +79,6 @@ export function ReceiptPanel({
           </dd>
         </div>
       </dl>
-      {onClose ? (
-        <button type="button" className="btn ghost" onClick={onClose}>
-          Cerrar
-        </button>
-      ) : null}
-    </Panel>
+    </AdminModal>
   );
 }
