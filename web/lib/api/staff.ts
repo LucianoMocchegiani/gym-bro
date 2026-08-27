@@ -126,3 +126,17 @@ export function deleteStaff(staffId: string): Promise<{ deleted: true }> {
     method: 'DELETE',
   });
 }
+
+/**
+ * Lista staff de un tenant (Super Admin).
+ */
+export function listStaffByTenant(
+  tenantId: string,
+  input?: ListParams,
+): Promise<ListResult<StaffUserDetail>> {
+  const qs = toSearchParams(input);
+  return apiRequest<ListResult<StaffUserDetail>>(
+    `/tenants/${tenantId}/staff${qs ? `?${qs}` : ''}`,
+    { auth: 'super' },
+  );
+}

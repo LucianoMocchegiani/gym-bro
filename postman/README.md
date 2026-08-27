@@ -42,7 +42,7 @@ La carpeta **Auth Runner** (flow automatizado) ya fue retirada de la colección;
 
 ## Manual
 
-Carpeta **Auth (manual)**: Login Super/Staff/Member → Me → Refresh → Logout.
+Carpeta **Auth (manual)**: Login Super/Staff/Member → Me → Refresh → Logout. **Super Impersonate Staff**: `POST /auth/super/impersonate` con `{ tenantId, staffUserId }` (token temporal 4h; reg audit).
 
 Carpeta **Roles** / **Staff roles**: Staff necesita permisos (`roles.write` para list/get/create/patch; `staff.read` list/detail; `staff.write` alta + asignar roles). Incluye `GET|POST /staff` y equivalentes Super. El Admin seed los tiene; un rol sin esos códigos → 403.
 

@@ -87,3 +87,17 @@ export function changePassword(
     auth,
   });
 }
+
+/**
+ * Super Admin impersona a un staff member (token temporal 4h).
+ */
+export function impersonateStaff(
+  tenantId: string,
+  staffUserId: string,
+): Promise<StaffLoginResponse> {
+  return apiRequest<StaffLoginResponse>('/auth/super/impersonate', {
+    method: 'POST',
+    body: { tenantId, staffUserId },
+    auth: 'super',
+  });
+}

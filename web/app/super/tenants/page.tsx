@@ -18,6 +18,7 @@ import {
 } from '@/components/RowActions';
 import { TenantCreateForm } from '@/components/TenantCreateForm';
 import { TenantEditPanel } from '@/components/TenantEditPanel';
+import { TenantStaffPanel } from '@/components/TenantStaffPanel';
 import { ApiClientError } from '@/lib/api/client';
 import { listTenants } from '@/lib/api/tenants';
 import type { TenantDetail } from '@/lib/api/tenants';
@@ -53,6 +54,7 @@ function TenantsInner() {
     searchParams.get('nuevo') === '1',
   );
   const editarId = searchParams.get('editar')?.trim() || null;
+  const staffTenantId = searchParams.get('staff')?.trim() || null;
   const [flashOk, setFlashOk] = useState<string | null>(null);
 
   const load = useCallback(async () => {
@@ -99,6 +101,13 @@ function TenantsInner() {
   function openEdit(id: string) {
     setFlashOk(null);
     router.replace(`/super/tenants?editar=${encodeURIComponent(id)}`, {
+      scroll: false,
+    });
+  }
+
+  function openStaff(id: string) {
+    setFlashOk(null);
+    router.replace(`/super/tenants?staff=${encodeURIComponent(id)}`, {
       scroll: false,
     });
   }
@@ -156,6 +165,12 @@ function TenantsInner() {
             <td>
               <RowActions>
                 <RowIconButton
+                  label="Staff"
+                  onClick={() => openStaff(t.id)}
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                </RowIconButton>
+                <RowIconButton
                   label="Editar"
                   onClick={() => openEdit(t.id)}
                 >
@@ -208,6 +223,24 @@ function TenantsInner() {
               closeModal();
               void load();
             }}
+          />
+        ) : null}
+      </AdminModal>
+
+      <AdminModal
+        open={Boolean(staffTenantId)}
+        onClose={closeModal}
+        title="Staff del tenant"
+        description="Impersonar un staff member para soporte."
+      >
+        {staffTenantId ? (
+          <TenantStaffPanel
+            key={staffTenantId}
+            tenantId={staffTenantId}
+            tenantName={
+              rows.find((r) => r.id === staffTenantId)?.name ?? ''
+            }
+            onClose={closeModal}
           />
         ) : null}
       </AdminModal>

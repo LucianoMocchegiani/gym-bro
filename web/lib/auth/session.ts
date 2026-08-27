@@ -20,6 +20,8 @@ export type StaffSession = {
    * `null`/ausente = aún no cargados (nav muestra todo hasta hidratar).
    */
   permissionCodes?: string[] | null;
+  /** true cuando la sesión fue creada por impersonación de Super Admin. */
+  impersonating?: boolean;
 };
 
 /** Snapshot cacheado: misma referencia si el JSON no cambió (useSyncExternalStore). */
@@ -106,10 +108,12 @@ function persist(session: StaffSession | null): void {
  * Persiste tokens y datos de usuario tras login Staff.
  *
  * @param tenantSlug Slug usado en el login (Host / form); se guarda para la marca UI.
+ * @param impersonating Si es true, la sesión fue creada por impersonación de Super Admin.
  */
 export function writeStaffSession(
   login: StaffLoginResponse,
   tenantSlug?: string | null,
+  impersonating = false,
 ): StaffSession {
   const tenantId = login.user.tenantId;
   if (!tenantId || login.profileType !== 'STAFF') {
@@ -124,6 +128,7 @@ export function writeStaffSession(
     email: login.user.email,
     name: login.user.name,
     permissionCodes: null,
+    impersonating,
   };
   persist(session);
   return session;

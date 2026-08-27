@@ -244,6 +244,49 @@
                                                   }
                                   },
                                   {
+                                      "name":  "Super Impersonate Staff",
+                                      "event":  [
+                                                    {
+                                                        "listen":  "test",
+                                                        "script":  {
+                                                                       "type":  "text/javascript",
+                                                                       "exec":  [
+                                                                                    "pm.test(\u007bstatus 200\u007d, () =\u003e pm.response.to.have.status(200));",
+                                                                                    "const body = pm.response.json();",
+                                                                                    "pm.test(\u007bprofileType STAFF\u007d, () =\u003e pm.expect(body.profileType).to.eql(\u0027STAFF\u0027));",
+                                                                                    "pm.environment.set(\u0027impersonateAccessToken\u0027, body.accessToken);",
+                                                                                    "pm.environment.set(\u0027impersonateRefreshToken\u0027, body.refreshToken);"
+                                                                                ]
+                                                                   }
+                                                    }
+                                                ],
+                                      "request":  {
+                                                      "auth":  {
+                                                                   "type":  "bearer",
+                                                                   "bearer":  [
+                                                                                  {
+                                                                                      "key":  "token",
+                                                                                      "value":  "{{accessToken}}",
+                                                                                      "type":  "string"
+                                                                                  }
+                                                                              ]
+                                                               },
+                                                      "method":  "POST",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Content-Type",
+                                                                         "value":  "application/json"
+                                                                     }
+                                                                 ],
+                                                      "body":  {
+                                                                   "mode":  "raw",
+                                                                   "raw":  "{\n  \"tenantId\": \"{{tenantId}}\",\n  \"staffUserId\": \"{{staffUserId}}\"\n}"
+                                                               },
+                                                      "url":  "{{baseUrl}}/api/auth/super/impersonate",
+                                                      "description":  "Super Admin impersona a un staff member (token temporal 4h). Requiere auth de Super."
+                                                  }
+                                  },
+                                  {
                                       "name":  "Login Staff",
                                       "event":  [
                                                     {
