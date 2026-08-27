@@ -45,3 +45,22 @@ export class SetStaffRolesDto {
   @IsUUID('4', { each: true })
   roleIds!: string[];
 }
+
+/**
+ * Edición de ficha de staff (name, email, imageUrl).
+ */
+export class UpdateStaffDto {
+  @IsOptional()
+  @IsString()
+  @MinLength(2)
+  @MaxLength(120)
+  name?: string;
+
+  @IsOptional()
+  @IsEmail()
+  email?: string;
+
+  @IsOptional()
+  @IsString()
+  imageUrl?: string | null;
+}

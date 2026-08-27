@@ -44,6 +44,7 @@ export const AUDIT_ACTIONS = {
   roleCreate: 'role.create',
   roleUpdate: 'role.update',
   staffCreate: 'staff.create',
+  staffUpdate: 'staff.update',
   staffRolesSet: 'staff.roles.set',
   memberCreate: 'member.create',
   memberUpdate: 'member.update',

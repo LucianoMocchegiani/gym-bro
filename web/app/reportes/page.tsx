@@ -2,6 +2,7 @@
 
 import { FormEvent, useEffect, useState } from 'react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import { AdminShell } from '@/components/AdminShell';
 import { DataTable, ListToolbar } from '@/components/AdminList';
 import { Panel } from '@/components/AdminUi';
@@ -9,14 +10,13 @@ import { RequireStaff } from '@/components/RequireStaff';
 import { SkeletonCards } from '@/components/Skeleton';
 import { memberFichaHref } from '@/lib/member-link';
 import { ApiClientError } from '@/lib/api/client';
+import { listMembers } from '@/lib/api/members';
+import type { MemberDetail } from '@/lib/api/members';
 import { getReportsSummary } from '@/lib/api/reports';
 import type { ReportsSummary } from '@/lib/api/reports';
 import { formatMoney } from '@/lib/cash-labels';
 import { todayBusinessDate } from '@/lib/api/cash-register';
 
-/**
- * Primer día del mes de un YMD.
- */
 function monthStart(ymd: string): string {
   return `${ymd.slice(0, 7)}-01`;
 }
@@ -33,18 +33,11 @@ function memberLabel(
   name: string | null | undefined,
   email: string | null | undefined,
 ): string {
-  if (name?.trim()) {
-    return name;
-  }
-  if (email?.trim()) {
-    return email;
-  }
+  if (name?.trim()) return name;
+  if (email?.trim()) return email;
   return '—';
 }
 
-/**
- * Reportes de ingresos del gym (E11). Historial de puerta → `/puerta`.
- */
 export default function ReportesPage() {
   return (
     <RequireStaff>
@@ -54,11 +47,21 @@ export default function ReportesPage() {
 }
 
 function ReportesInner() {
+  const searchParams = useSearchParams();
+  const initialMemberId = searchParams.get('memberId') ?? '';
+
   const today = todayBusinessDate();
   const [from, setFrom] = useState(monthStart(today));
   const [to, setTo] = useState(today);
+  const [memberId, setMemberId] = useState(initialMemberId);
+  const [memberQuery, setMemberQuery] = useState('');
+  const [memberOptions, setMemberOptions] = useState<MemberDetail[]>([]);
+  const [memberSearchBusy, setMemberSearchBusy] = useState(false);
+
   const [appliedFrom, setAppliedFrom] = useState(monthStart(today));
   const [appliedTo, setAppliedTo] = useState(today);
+  const [appliedMemberId, setAppliedMemberId] = useState(initialMemberId);
+
   const [data, setData] = useState<ReportsSummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -71,6 +74,7 @@ function ReportesInner() {
         const summary = await getReportsSummary({
           from: appliedFrom,
           to: appliedTo,
+          memberId: appliedMemberId || undefined,
         });
         if (!cancelled) {
           setData(summary);
@@ -86,24 +90,57 @@ function ReportesInner() {
           );
         }
       } finally {
-        if (!cancelled) {
-          setLoading(false);
-        }
+        if (!cancelled) setLoading(false);
       }
     })();
+    return () => { cancelled = true; };
+  }, [appliedFrom, appliedTo, appliedMemberId]);
+
+  useEffect(() => {
+    if (!memberQuery.trim()) {
+      setMemberOptions([]);
+      return;
+    }
+    let cancelled = false;
+    setMemberSearchBusy(true);
+    const timer = setTimeout(async () => {
+      try {
+        const result = await listMembers({
+          q: memberQuery.trim(),
+          pageSize: 8,
+        });
+        if (!cancelled) setMemberOptions(result.items);
+      } catch {
+        if (!cancelled) setMemberOptions([]);
+      } finally {
+        if (!cancelled) setMemberSearchBusy(false);
+      }
+    }, 300);
     return () => {
       cancelled = true;
+      clearTimeout(timer);
     };
-  }, [appliedFrom, appliedTo]);
+  }, [memberQuery]);
 
   function onApply(e: FormEvent) {
     e.preventDefault();
     setAppliedFrom(from);
     setAppliedTo(to);
+    setAppliedMemberId(memberId);
+  }
+
+  function clearMemberFilter() {
+    setMemberId('');
+    setMemberQuery('');
+    setMemberOptions([]);
+    setAppliedMemberId('');
   }
 
   const payments = data?.income.payments ?? [];
   const paymentCount = data?.income.paymentCount ?? 0;
+  const selectedMember = memberId
+    ? memberOptions.find((m) => m.id === memberId)
+    : null;
 
   return (
     <AdminShell
@@ -168,11 +205,62 @@ function ReportesInner() {
               required
             />
           </label>
+          <div className="toolbar-field" style={{ position: 'relative' }}>
+            <label>
+              Afiliado
+              <input
+                value={memberQuery}
+                onChange={(e) => {
+                  setMemberQuery(e.target.value);
+                  if (!e.target.value) clearMemberFilter();
+                }}
+                placeholder="Buscar por nombre o email…"
+                autoComplete="off"
+              />
+            </label>
+            {memberOptions.length > 0 && memberQuery ? (
+              <ul className="autocomplete-list">
+                {memberOptions.map((m) => (
+                  <li key={m.id}>
+                    <button
+                      type="button"
+                      className={m.id === memberId ? 'active' : ''}
+                      onClick={() => {
+                        setMemberId(m.id);
+                        setMemberQuery(memberLabel(m.name, m.email));
+                        setMemberOptions([]);
+                      }}
+                    >
+                      {memberLabel(m.name, m.email)}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            ) : null}
+            {memberSearchBusy ? (
+              <span className="muted small">Buscando…</span>
+            ) : null}
+          </div>
+          {appliedMemberId ? (
+            <button
+              type="button"
+              className="btn ghost"
+              onClick={clearMemberFilter}
+            >
+              Limpiar filtro
+            </button>
+          ) : null}
           <button type="submit" className="btn ghost" disabled={loading}>
             Aplicar
           </button>
         </form>
       </ListToolbar>
+
+      {selectedMember ? (
+        <p className="muted small">
+          Filtrando por: <strong>{memberLabel(selectedMember.name, selectedMember.email)}</strong>
+        </p>
+      ) : null}
 
       <DataTable
         title="Ingresos (detalle)"

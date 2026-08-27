@@ -52,6 +52,7 @@ export type ReportsSummary = {
 export function getReportsSummary(input?: {
   from?: string;
   to?: string;
+  memberId?: string;
 }): Promise<ReportsSummary> {
   const params = new URLSearchParams();
   if (input?.from) {
@@ -59,6 +60,9 @@ export function getReportsSummary(input?: {
   }
   if (input?.to) {
     params.set('to', input.to);
+  }
+  if (input?.memberId) {
+    params.set('memberId', input.memberId);
   }
   const q = params.toString();
   return apiRequest<ReportsSummary>(

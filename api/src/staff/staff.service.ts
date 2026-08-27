@@ -16,7 +16,7 @@ import {
   toListResult,
 } from '../common/list';
 import { PrismaService } from '../prisma/prisma.service';
-import { CreateStaffDto, SetStaffRolesDto } from './dto/staff.dto';
+import { CreateStaffDto, SetStaffRolesDto, UpdateStaffDto } from './dto/staff.dto';
 import { StaffUserDetail } from './staff.types';
 
 /** Whitelist de orden para {@link StaffService.list}. */
@@ -203,6 +203,64 @@ export class StaffService {
       entityId: staffUserId,
       before: { roleIds: before.roles.map((r) => r.id) },
       after: { roleIds: after.roles.map((r) => r.id) },
+    });
+    return after;
+  }
+
+  /**
+   * Edita ficha del staff (name, email, imageUrl).
+   */
+  async update(
+    tenantId: string,
+    staffUserId: string,
+    dto: UpdateStaffDto,
+    actor: AuditActor,
+  ): Promise<StaffUserDetail> {
+    if (dto.name === undefined && dto.email === undefined && dto.imageUrl === undefined) {
+      throw new BadRequestException('Provide name, email and/or imageUrl');
+    }
+
+    const staff = await this.prisma.staffUser.findFirst({
+      where: { id: staffUserId, tenantId },
+    });
+    if (!staff) {
+      throw new NotFoundException(
+        `Staff ${staffUserId} not found in tenant ${tenantId}`,
+      );
+    }
+
+    const before = await this.findOne(tenantId, staffUserId);
+    const data: Prisma.StaffUserUpdateInput = {};
+
+    if (dto.name !== undefined) {
+      data.name = dto.name?.trim() || null;
+    }
+    if (dto.email !== undefined) {
+      data.email = dto.email.trim().toLowerCase();
+    }
+    if (dto.imageUrl !== undefined) {
+      data.imageUrl = dto.imageUrl ?? null;
+    }
+
+    try {
+      await this.prisma.staffUser.update({
+        where: { id: staffUserId },
+        data,
+      });
+    } catch (error: unknown) {
+      this.rethrowUniqueConflict(error);
+      throw error;
+    }
+
+    const after = await this.findOne(tenantId, staffUserId);
+    await this.audit.record({
+      tenantId,
+      actor,
+      action: AUDIT_ACTIONS.staffUpdate,
+      entityType: 'staff_user',
+      entityId: staffUserId,
+      before: { name: before.name, email: before.email, imageUrl: before.imageUrl },
+      after: { name: after.name, email: after.email, imageUrl: after.imageUrl },
     });
     return after;
   }

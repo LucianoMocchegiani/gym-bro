@@ -15,9 +15,11 @@ import { RequireStaff } from '@/components/RequireStaff';
 import { PageSkeleton } from '@/components/Skeleton';
 import { StaffCreateForm } from '@/components/StaffCreateForm';
 import { StaffCredentialPanel } from '@/components/StaffCredentialPanel';
+import { StaffFichaPanel } from '@/components/StaffFichaPanel';
 import { StaffRolesPanel } from '@/components/StaffRolesPanel';
 import {
   IconCredential,
+  IconEdit,
   IconRoles,
   RowActions,
   RowIconButton,
@@ -30,11 +32,6 @@ import { deleteStaff } from '@/lib/api/staff';
 
 const PAGE_SIZE = 20;
 
-/**
- * Listado de staff: alta + Roles / Credencial en modal (CU-ROL-004).
- *
- * @remarks `+ Nuevo` → `?nuevo=1`; deep links `?roles=` / `?credencial=`.
- */
 export default function StaffPage() {
   return (
     <RequireStaff>
@@ -48,10 +45,11 @@ export default function StaffPage() {
 function StaffInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const fichaId = searchParams.get('ficha')?.trim() || null;
   const rolesId = searchParams.get('roles')?.trim() || null;
   const credencialId = searchParams.get('credencial')?.trim() || null;
   const createOpen =
-    searchParams.get('nuevo') === '1' && !rolesId && !credencialId;
+    searchParams.get('nuevo') === '1' && !fichaId && !rolesId && !credencialId;
 
   const [rows, setRows] = useState<StaffUserDetail[]>([]);
   const [total, setTotal] = useState(0);
@@ -93,9 +91,7 @@ function StaffInner() {
       if (cancelled) return;
       await load();
     })();
-    return () => {
-      cancelled = true;
-    };
+    return () => { cancelled = true; };
   }, [load]);
 
   function closeModals() {
@@ -107,18 +103,19 @@ function StaffInner() {
     router.replace('/staff?nuevo=1', { scroll: false });
   }
 
+  function openFicha(id: string) {
+    setFlashOk(null);
+    router.replace(`/staff?ficha=${encodeURIComponent(id)}`, { scroll: false });
+  }
+
   function openRoles(id: string) {
     setFlashOk(null);
-    router.replace(`/staff?roles=${encodeURIComponent(id)}`, {
-      scroll: false,
-    });
+    router.replace(`/staff?roles=${encodeURIComponent(id)}`, { scroll: false });
   }
 
   function openCredencial(id: string) {
     setFlashOk(null);
-    router.replace(`/staff?credencial=${encodeURIComponent(id)}`, {
-      scroll: false,
-    });
+    router.replace(`/staff?credencial=${encodeURIComponent(id)}`, { scroll: false });
   }
 
   return (
@@ -181,6 +178,12 @@ function StaffInner() {
             <td>
               <RowActions>
                 <RowIconButton
+                  label="Editar staff"
+                  onClick={() => openFicha(s.id)}
+                >
+                  <IconEdit />
+                </RowIconButton>
+                <RowIconButton
                   label="Roles asignados"
                   onClick={() => openRoles(s.id)}
                 >
@@ -227,6 +230,26 @@ function StaffInner() {
             }
           }}
         />
+      </AdminModal>
+
+      <AdminModal
+        open={Boolean(fichaId)}
+        onClose={closeModals}
+        title="Editar staff"
+        description="Nombre, email y foto de perfil."
+        size="comfortable"
+      >
+        {fichaId ? (
+          <StaffFichaPanel
+            key={fichaId}
+            staffId={fichaId}
+            onCancel={closeModals}
+            onSaved={(s) => {
+              setFlashOk(`Staff actualizado: ${s.email}`);
+              void load();
+            }}
+          />
+        ) : null}
       </AdminModal>
 
       <AdminModal

@@ -7,6 +7,7 @@ import {
   HttpStatus,
   Param,
   ParseUUIDPipe,
+  Patch,
   Post,
   Put,
   Query,
@@ -18,7 +19,7 @@ import { ListQueryDto, ListResult } from '../common/list';
 import { RequirePermission } from '../roles/decorators/require-permission.decorator';
 import { RequireTenantAuth } from '../tenant/decorators/require-tenant-auth.decorator';
 import { CurrentTenant } from '../tenant/decorators/current-tenant.decorator';
-import { CreateStaffDto, SetStaffRolesDto } from './dto/staff.dto';
+import { CreateStaffDto, SetStaffRolesDto, UpdateStaffDto } from './dto/staff.dto';
 import { StaffService } from './staff.service';
 import { StaffUserDetail } from './staff.types';
 
@@ -59,6 +60,20 @@ export class StaffController {
     @Param('staffId', ParseUUIDPipe) staffId: string,
   ): Promise<StaffUserDetail> {
     return this.staffService.findOne(tenantId, staffId);
+  }
+
+  /**
+   * Edita ficha del staff (name, email, imageUrl).
+   */
+  @Patch(':staffId')
+  @RequirePermission('staff.write')
+  update(
+    @CurrentTenant() tenantId: string,
+    @CurrentUser() user: AuthUser,
+    @Param('staffId', ParseUUIDPipe) staffId: string,
+    @Body() dto: UpdateStaffDto,
+  ): Promise<StaffUserDetail> {
+    return this.staffService.update(tenantId, staffId, dto, toAuditActor(user));
   }
 
   /**

@@ -33,6 +33,12 @@ export type CreateStaffInput = {
   roleIds?: string[];
 };
 
+export type UpdateStaffInput = {
+  name?: string;
+  email?: string;
+  imageUrl?: string | null;
+};
+
 export type StaffCredentialOfferStatus = 'PENDING' | 'FAILED' | 'ACCEPTED';
 
 export type StaffCredentialOfferItem = {
@@ -86,6 +92,19 @@ export function setStaffRoles(
   return apiRequest<StaffUserDetail>(`/staff/${staffId}/roles`, {
     method: 'PUT',
     body: { roleIds },
+  });
+}
+
+/**
+ * Edita ficha del staff (name, email, imageUrl).
+ */
+export function updateStaff(
+  staffId: string,
+  input: UpdateStaffInput,
+): Promise<StaffUserDetail> {
+  return apiRequest<StaffUserDetail>(`/staff/${staffId}`, {
+    method: 'PATCH',
+    body: input,
   });
 }
 
