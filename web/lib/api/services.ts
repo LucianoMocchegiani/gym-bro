@@ -14,6 +14,7 @@ export type ServiceDetail = {
   type: ServiceType;
   name: string;
   description: string | null;
+  imageUrl: string | null;
   dropInPrice: number | null;
   active: boolean;
   branchId: string | null;
@@ -25,6 +26,7 @@ export type CreateServiceInput = {
   type: ServiceType;
   name: string;
   description?: string;
+  imageUrl?: string;
   active?: boolean;
   dropInPrice?: number | null;
 };
@@ -32,6 +34,7 @@ export type CreateServiceInput = {
 export type UpdateServiceInput = {
   name?: string;
   description?: string | null;
+  imageUrl?: string | null;
   active?: boolean;
   dropInPrice?: number | null;
 };

@@ -973,6 +973,120 @@ button.row-icon-btn:disabled {
   gap: 0.9rem;
 }
 
+/* ImageUpload component */
+.image-upload {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.image-upload-preview {
+  position: relative;
+  width: 140px;
+  height: 140px;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  cursor: pointer;
+}
+
+.image-upload-preview:hover .image-upload-overlay {
+  opacity: 1;
+}
+
+.image-upload-thumb {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.image-upload-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.image-upload-empty {
+  width: 140px;
+  height: 140px;
+  border-radius: 10px;
+  border: 2px dashed var(--line-strong);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: var(--muted);
+  transition: border-color 0.15s ease, color 0.15s ease;
+}
+
+.image-upload-empty svg {
+  stroke: var(--muted);
+  stroke-width: 2;
+  fill: none;
+}
+
+.image-upload-empty:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.image-upload-empty:hover svg {
+  stroke: var(--accent);
+}
+
+.image-upload-icon-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 10px;
+  border: none;
+  background: rgba(255, 255, 255, 0.2);
+  color: #fff;
+  cursor: pointer;
+  transition: background 0.15s ease;
+  padding: 0;
+  line-height: 0;
+}
+
+.image-upload-icon-btn svg {
+  display: block;
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
+  stroke: #fff;
+  stroke-width: 2;
+  fill: none;
+}
+
+.image-upload-icon-btn:hover {
+  background: rgba(255, 255, 255, 0.35);
+}
+
+.image-upload-icon-btn.danger {
+  background: rgba(239, 68, 68, 0.3);
+}
+
+.image-upload-icon-btn.danger svg {
+  stroke: #fca5a5;
+}
+
+.image-upload-icon-btn.danger:hover {
+  background: rgba(239, 68, 68, 0.7);
+}
+
+.image-upload-icon-btn.danger:hover svg {
+  stroke: #fff;
+}
+
 .door-dashboard .admin-panel {
   min-width: 0;
 }

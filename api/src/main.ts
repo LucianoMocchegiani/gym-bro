@@ -1,5 +1,6 @@
 import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
+import { NestExpressApplication } from '@nestjs/platform-express';
 import { AppModule } from './app.module';
 import { PrismaExceptionFilter } from './prisma/prisma-exception.filter';
 
@@ -48,7 +49,7 @@ function isAppDomainOrigin(origin: string): boolean {
  * Pruebas manuales: colección Postman en `postman/`.
  */
 async function bootstrap(): Promise<void> {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create<NestExpressApplication>(AppModule);
   app.setGlobalPrefix('api');
   const corsOrigin = process.env.CORS_ORIGIN?.split(',')
     .map((o) => o.trim())

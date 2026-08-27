@@ -83,4 +83,5 @@ export const AUDIT_ACTIONS = {
   accessCredentialIssue: 'access.credential.issue',
   accessCredentialRevoke: 'access.credential.revoke',
   accessManualPass: 'access.manual_pass',
+  superImpersonate: 'super.impersonate',
 } as const;

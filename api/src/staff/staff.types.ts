@@ -16,6 +16,7 @@ export type StaffUserDetail = {
   tenantId: string;
   email: string;
   name: string | null;
+  imageUrl: string | null;
   active: boolean;
   roles: StaffRoleSummary[];
   createdAt: Date;

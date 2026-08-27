@@ -4,6 +4,7 @@ import { FormEvent, useState } from 'react';
 import { ApiClientError } from '@/lib/api/client';
 import { createService } from '@/lib/api/services';
 import type { ServiceDetail, ServiceType } from '@/lib/api/services';
+import { ImageUpload, uploadImageToApi } from '@/components/ImageUpload';
 
 /**
  * Formulario de alta de servicio (CU-SER-001), usable en página o modal.
@@ -18,19 +19,37 @@ export function ServiceCreateForm({
   const [type, setType] = useState<ServiceType>('ACCESO_LIBRE');
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const [imageFile, setImageFile] = useState<File | null>(null);
   const [dropInPrice, setDropInPrice] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [imageWarning, setImageWarning] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
     setBusy(true);
     setError(null);
+    setImageWarning(null);
     try {
+      let finalImageUrl = imageUrl;
+      if (imageFile) {
+        try {
+          finalImageUrl = await uploadImageToApi(imageFile, 'services');
+        } catch (imgErr) {
+          finalImageUrl = null;
+          setImageWarning(
+            imgErr instanceof Error
+              ? `Imagen no subida: ${imgErr.message}`
+              : 'Imagen no subida',
+          );
+        }
+      }
       const created = await createService({
         type,
         name: name.trim(),
         description: description.trim() || undefined,
+        imageUrl: finalImageUrl ?? undefined,
         dropInPrice:
           type === 'POR_SESIONES' && dropInPrice.trim()
             ? Number(dropInPrice)
@@ -77,6 +96,12 @@ export function ServiceCreateForm({
           rows={3}
         />
       </label>
+      <ImageUpload
+        value={imageUrl}
+        onFileSelect={setImageFile}
+        onClear={() => { setImageUrl(null); setImageFile(null); }}
+        label="Imagen del servicio"
+      />
       {type === 'POR_SESIONES' ? (
         <label>
           Precio drop-in (ARS)
@@ -91,6 +116,7 @@ export function ServiceCreateForm({
         </label>
       ) : null}
 
+      {imageWarning ? <p className="warn">{imageWarning}</p> : null}
       {error ? <p className="error">{error}</p> : null}
 
       <div className="admin-modal-actions">

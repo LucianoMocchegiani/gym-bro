@@ -52,6 +52,12 @@ export class CreatePackDto {
   @MaxLength(2000)
   description?: string;
 
+  @IsOptional()
+  @ValidateIf((_, value) => value !== null)
+  @IsString()
+  @MaxLength(500)
+  imageUrl?: string | null;
+
   @IsInt()
   @Min(0)
   price!: number;
@@ -89,6 +95,12 @@ export class UpdatePackDto {
   @IsString()
   @MaxLength(2000)
   description?: string | null;
+
+  @IsOptional()
+  @ValidateIf((_, value) => value !== null)
+  @IsString()
+  @MaxLength(500)
+  imageUrl?: string | null;
 
   @IsOptional()
   @IsInt()

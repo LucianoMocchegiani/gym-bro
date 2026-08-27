@@ -10,6 +10,7 @@ export type MemberDetail = {
   name: string | null;
   phone: string | null;
   document: string | null;
+  imageUrl: string | null;
   branchId: string | null;
   status: 'ACTIVE' | 'SUSPENDED' | 'INACTIVE';
   createdAt: Date;

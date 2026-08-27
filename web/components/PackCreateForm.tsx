@@ -6,6 +6,7 @@ import {
   buildPackComponents,
   type PackComponentDraft,
 } from '@/components/PackComponentsEditor';
+import { ImageUpload, uploadImageToApi } from '@/components/ImageUpload';
 import { ApiClientError } from '@/lib/api/client';
 import { createPack } from '@/lib/api/packs';
 import type { PackDetail } from '@/lib/api/packs';
@@ -25,6 +26,8 @@ export function PackCreateForm({
   const [services, setServices] = useState<ServiceDetail[]>([]);
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const [imageFile, setImageFile] = useState<File | null>(null);
   const [price, setPrice] = useState('');
   const [billingPeriod, setBillingPeriod] = useState<'MONTHLY' | 'ONE_TIME'>(
     'MONTHLY',
@@ -35,6 +38,7 @@ export function PackCreateForm({
   ]);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [imageWarning, setImageWarning] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
@@ -42,15 +46,11 @@ export function PackCreateForm({
     void (async () => {
       try {
         const data = await listServices({ active: true, pageSize: 100 });
-        if (cancelled) {
-          return;
-        }
+        if (cancelled) return;
         setServices(data.items);
         setLoadError(null);
       } catch (err) {
-        if (cancelled) {
-          return;
-        }
+        if (cancelled) return;
         setLoadError(
           err instanceof ApiClientError
             ? err.message
@@ -58,9 +58,7 @@ export function PackCreateForm({
         );
       }
     })();
-    return () => {
-      cancelled = true;
-    };
+    return () => { cancelled = true; };
   }, []);
 
   async function onSubmit(e: FormEvent) {
@@ -82,10 +80,25 @@ export function PackCreateForm({
     }
     setBusy(true);
     setError(null);
+    setImageWarning(null);
     try {
+      let finalImageUrl = imageUrl;
+      if (imageFile) {
+        try {
+          finalImageUrl = await uploadImageToApi(imageFile, 'packs');
+        } catch (imgErr) {
+          finalImageUrl = null;
+          setImageWarning(
+            imgErr instanceof Error
+              ? `Imagen no subida: ${imgErr.message}`
+              : 'Imagen no subida',
+          );
+        }
+      }
       const created = await createPack({
         name: name.trim(),
         description: description.trim() || undefined,
+        imageUrl: finalImageUrl ?? undefined,
         price: Number(price),
         billingPeriod,
         creditsExpireAt:
@@ -129,6 +142,12 @@ export function PackCreateForm({
           rows={2}
         />
       </label>
+      <ImageUpload
+        value={imageUrl}
+        onFileSelect={setImageFile}
+        onClear={() => { setImageUrl(null); setImageFile(null); }}
+        label="Imagen del pack"
+      />
       <label>
         Precio (ARS)
         <input
@@ -181,6 +200,7 @@ export function PackCreateForm({
         hint="Acceso libre: sin créditos. Por sesiones: indicar cantidad."
       />
 
+      {imageWarning ? <p className="warn">{imageWarning}</p> : null}
       {error ? <p className="error">{error}</p> : null}
 
       <div className="form-actions">

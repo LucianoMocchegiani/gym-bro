@@ -24,6 +24,8 @@ import { TenantModule } from './tenant/tenant.module';
 import { TenantSettingsModule } from './tenant-settings/tenant-settings.module';
 import { TenantsModule } from './tenants/tenants.module';
 import { WaitlistModule } from './waitlist/waitlist.module';
+import { FileStorageModule } from './file-storage/file-storage.module';
+import { UploadModule } from './upload/upload.module';
 
 /**
  * Módulo raíz del monolito modular GymBro.
@@ -57,6 +59,8 @@ import { WaitlistModule } from './waitlist/waitlist.module';
     TenantsModule,
     AuditModule,
     HealthModule,
+    FileStorageModule,
+    UploadModule,
   ],
 })
 export class AppModule {}

@@ -7,6 +7,7 @@ import {
   type PackComponentDraft,
 } from '@/components/PackComponentsEditor';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
+import { ImageUpload, uploadImageToApi } from '@/components/ImageUpload';
 import { SkeletonForm } from '@/components/Skeleton';
 import { ApiClientError } from '@/lib/api/client';
 import { getPack, updatePack } from '@/lib/api/packs';
@@ -62,6 +63,8 @@ export function PackEditPanel({
   const [services, setServices] = useState<ServiceDetail[]>([]);
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const [imageFile, setImageFile] = useState<File | null>(null);
   const [price, setPrice] = useState('');
   const [billingPeriod, setBillingPeriod] = useState<'MONTHLY' | 'ONE_TIME'>(
     'MONTHLY',
@@ -71,6 +74,7 @@ export function PackEditPanel({
   const [components, setComponents] = useState<PackComponentDraft[]>([]);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [imageWarning, setImageWarning] = useState<string | null>(null);
   const [saveOk, setSaveOk] = useState(false);
   const [busy, setBusy] = useState(false);
   const [initialJson, setInitialJson] = useState('');
@@ -110,6 +114,7 @@ export function PackEditPanel({
     setPack(p);
     setName(p.name);
     setDescription(p.description ?? '');
+    setImageUrl(p.imageUrl ?? null);
     setPrice(String(p.price));
     setBillingPeriod(p.billingPeriod);
     setCreditsExpireAt(toDateInput(p.creditsExpireAt));
@@ -155,6 +160,7 @@ export function PackEditPanel({
       JSON.stringify({
         name,
         description,
+        imageUrl: imageUrl ?? '',
         price,
         billingPeriod,
         creditsExpireAt,
@@ -173,11 +179,26 @@ export function PackEditPanel({
     const comps = buildPackComponents(components, services);
     setBusy(true);
     setSaveError(null);
+    setImageWarning(null);
     setSaveOk(false);
     try {
+      let finalImageUrl = imageUrl;
+      if (imageFile) {
+        try {
+          finalImageUrl = await uploadImageToApi(imageFile, 'packs');
+        } catch (imgErr) {
+          finalImageUrl = null;
+          setImageWarning(
+            imgErr instanceof Error
+              ? `Imagen no subida: ${imgErr.message}`
+              : 'Imagen no subida',
+          );
+        }
+      }
       const updated = await updatePack(packId, {
         name: name.trim(),
         description: description.trim() || null,
+        imageUrl: finalImageUrl ?? null,
         price: Number(price),
         billingPeriod,
         creditsExpireAt:
@@ -233,6 +254,12 @@ export function PackEditPanel({
             rows={2}
           />
         </label>
+        <ImageUpload
+          value={imageUrl}
+          onFileSelect={setImageFile}
+          onClear={() => { setImageUrl(null); setImageFile(null); }}
+          label="Imagen del pack"
+        />
         <label>
           Precio (ARS)
           <input
@@ -293,6 +320,7 @@ export function PackEditPanel({
           hint="Al guardar se reemplaza el set completo."
         />
 
+        {imageWarning ? <p className="warn">{imageWarning}</p> : null}
         {saveError ? <p className="error">{saveError}</p> : null}
         {saveOk ? <p className="ok-msg">Guardado.</p> : null}
 

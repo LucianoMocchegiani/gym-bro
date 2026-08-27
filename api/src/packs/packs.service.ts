@@ -157,6 +157,7 @@ export class PacksService {
           tenantId,
           name: dto.name.trim(),
           description: this.normalizeOptional(dto.description),
+          imageUrl: dto.imageUrl ?? null,
           price: dto.price,
           billingPeriod: dto.billingPeriod,
           creditsExpireAt: this.parseExpireAt(dto.creditsExpireAt),
@@ -205,6 +206,7 @@ export class PacksService {
     if (
       dto.name === undefined &&
       dto.description === undefined &&
+      dto.imageUrl === undefined &&
       dto.price === undefined &&
       dto.billingPeriod === undefined &&
       dto.creditsExpireAt === undefined &&
@@ -212,7 +214,7 @@ export class PacksService {
       dto.components === undefined
     ) {
       throw new BadRequestException(
-        'Provide name, description, price, billingPeriod, creditsExpireAt, active and/or components',
+        'Provide name, description, imageUrl, price, billingPeriod, creditsExpireAt, active and/or components',
       );
     }
 
@@ -240,6 +242,9 @@ export class PacksService {
       }
       if (dto.description !== undefined) {
         data.description = this.normalizeOptional(dto.description);
+      }
+      if (dto.imageUrl !== undefined) {
+        data.imageUrl = dto.imageUrl ?? null;
       }
       if (dto.price !== undefined) {
         data.price = dto.price;
@@ -523,6 +528,7 @@ export class PacksService {
       tenantId: pack.tenantId,
       name: pack.name,
       description: pack.description,
+      imageUrl: pack.imageUrl ?? null,
       price: pack.price,
       billingPeriod: pack.billingPeriod,
       creditsExpireAt: pack.creditsExpireAt,

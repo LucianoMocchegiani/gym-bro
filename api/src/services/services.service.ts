@@ -104,6 +104,7 @@ export class ServicesService {
         type: dto.type,
         name: dto.name.trim(),
         description: this.normalizeOptional(dto.description),
+        imageUrl: dto.imageUrl ?? null,
         dropInPrice,
         branchId,
         active: dto.active ?? true,
@@ -134,12 +135,13 @@ export class ServicesService {
     if (
       dto.name === undefined &&
       dto.description === undefined &&
+      dto.imageUrl === undefined &&
       dto.branchId === undefined &&
       dto.active === undefined &&
       dto.dropInPrice === undefined
     ) {
       throw new BadRequestException(
-        'Provide name, description, branchId, dropInPrice and/or active',
+        'Provide name, description, imageUrl, branchId, dropInPrice and/or active',
       );
     }
 
@@ -151,6 +153,9 @@ export class ServicesService {
     }
     if (dto.description !== undefined) {
       data.description = this.normalizeOptional(dto.description);
+    }
+    if (dto.imageUrl !== undefined) {
+      data.imageUrl = dto.imageUrl ?? null;
     }
     if (dto.active !== undefined) {
       data.active = dto.active;
@@ -330,6 +335,7 @@ export class ServicesService {
       type: service.type,
       name: service.name,
       description: service.description,
+      imageUrl: service.imageUrl ?? null,
       dropInPrice: service.dropInPrice,
       active: service.active,
       branchId: service.branchId,

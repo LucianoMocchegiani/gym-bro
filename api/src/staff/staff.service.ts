@@ -371,6 +371,7 @@ export class StaffService {
       tenantId: staff.tenantId,
       email: staff.email,
       name: staff.name,
+      imageUrl: staff.imageUrl ?? null,
       active: staff.active,
       roles: staff.staffRoles.map((sr) => ({
         id: sr.role.id,

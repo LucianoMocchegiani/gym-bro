@@ -286,6 +286,7 @@ model StaffUser {
   email        String
   passwordHash String   @map("password_hash")
   name         String?
+  imageUrl     String?  @map("image_url")
   active       Boolean  @default(true)
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")
@@ -316,6 +317,7 @@ model Member {
   name         String?
   phone        String?
   document     String?
+  imageUrl     String?      @map("image_url")
   branchId     String?      @map("branch_id") @db.Uuid
   status       MemberStatus @default(ACTIVE)
   createdAt    DateTime     @default(now()) @map("created_at")
@@ -438,6 +440,7 @@ model Service {
   type        ServiceType
   name        String
   description String?
+  imageUrl    String?     @map("image_url")
   /// Precio drop-in en pesos enteros ARS. Solo aplica a `POR_SESIONES`.
   dropInPrice Int?        @map("drop_in_price")
   active      Boolean     @default(true)
@@ -467,6 +470,7 @@ model Pack {
   tenantId        String        @map("tenant_id") @db.Uuid
   name            String
   description     String?
+  imageUrl        String?       @map("image_url")
   price           Int
   billingPeriod   BillingPeriod @map("billing_period")
   creditsExpireAt DateTime?     @map("credits_expire_at")

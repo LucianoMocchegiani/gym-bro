@@ -2,8 +2,10 @@ import { Body, Controller, Get, Post, UseGuards } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { AuthTokens, type AuthUser } from './auth.types';
 import { CurrentUser } from './decorators/current-user.decorator';
+import { RequireSuperAuth } from './decorators/require-super-auth.decorator';
 import {
   ChangePasswordDto,
+  ImpersonateDto,
   LogoutDto,
   MemberLoginDto,
   RefreshTokenDto,
@@ -27,6 +29,20 @@ export class AuthController {
   @Post('super/login')
   loginSuper(@Body() dto: SuperLoginDto): Promise<AuthTokens> {
     return this.authService.loginSuper(dto);
+  }
+
+  /**
+   * Super Admin impersona a un staff member (token temporal 4h).
+   *
+   * @remarks Requiere permisos de Super. Registra en audit log.
+   */
+  @RequireSuperAuth()
+  @Post('super/impersonate')
+  impersonate(
+    @CurrentUser() user: AuthUser,
+    @Body() dto: ImpersonateDto,
+  ): Promise<AuthTokens> {
+    return this.authService.impersonate(user.userId, dto);
   }
 
   /**

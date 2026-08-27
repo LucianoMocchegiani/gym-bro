@@ -517,6 +517,7 @@ export class MembersService {
       name: member.name,
       phone: member.phone,
       document: member.document,
+      imageUrl: member.imageUrl ?? null,
       branchId: member.branchId,
       status: member.status,
       createdAt: member.createdAt,

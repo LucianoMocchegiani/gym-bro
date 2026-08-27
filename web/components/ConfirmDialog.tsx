@@ -1,6 +1,6 @@
 'use client';
 
-import { FormEvent, useState, type ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import { AdminModal } from '@/components/AdminModal';
 
 /**
@@ -102,16 +102,8 @@ function ConfirmForm({
     ? typed2.trim().toUpperCase() === confirmWord2.toUpperCase()
     : true;
 
-  function onSubmit(e: FormEvent) {
-    e.preventDefault();
-    if (!wordOk || !word2Ok || busy) {
-      return;
-    }
-    onConfirm();
-  }
-
   return (
-    <form className="admin-form" onSubmit={onSubmit}>
+    <div className="admin-form" role="form">
       {confirmWord ? (
         <label>
           Escribí <strong>{confirmWord}</strong> para confirmar
@@ -120,6 +112,12 @@ function ConfirmForm({
             onChange={(e) => setTyped(e.target.value)}
             autoComplete="off"
             placeholder={confirmWord}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && wordOk && word2Ok && !busy) {
+                e.preventDefault();
+                onConfirm();
+              }
+            }}
           />
         </label>
       ) : null}
@@ -131,6 +129,12 @@ function ConfirmForm({
             onChange={(e) => setTyped2(e.target.value)}
             autoComplete="off"
             placeholder={confirmWord2}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && wordOk && word2Ok && !busy) {
+                e.preventDefault();
+                onConfirm();
+              }
+            }}
           />
         </label>
       ) : null}
@@ -144,13 +148,14 @@ function ConfirmForm({
           {cancelLabel}
         </button>
         <button
-          type="submit"
+          type="button"
           className={tone === 'danger' ? 'btn danger' : 'btn'}
           disabled={!wordOk || !word2Ok || busy}
+          onClick={() => { if (wordOk && word2Ok && !busy) onConfirm(); }}
         >
           {busy ? 'Procesando…' : confirmLabel}
         </button>
       </div>
-    </form>
+    </div>
   );
 }

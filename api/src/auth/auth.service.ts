@@ -9,6 +9,7 @@ import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { AuthProfileType, MemberStatus, TenantStatus } from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
+import { AuditService } from '../audit/audit.service';
 import { PrismaService } from '../prisma/prisma.service';
 import {
   assertValidTenantSlug,
@@ -17,6 +18,7 @@ import {
 import { AuthTokens, JwtAccessPayload, type AuthUser } from './auth.types';
 import {
   ChangePasswordDto,
+  ImpersonateDto,
   MemberLoginDto,
   StaffLoginDto,
   SuperLoginDto,
@@ -28,6 +30,7 @@ type TokenOwner = {
   email: string;
   name: string | null;
   tenantId?: string;
+  impersonatedBy?: string;
 };
 
 /**
@@ -45,6 +48,7 @@ export class AuthService {
     private readonly prisma: PrismaService,
     private readonly jwt: JwtService,
     private readonly config: ConfigService,
+    private readonly audit: AuditService,
   ) {
     this.accessTtlSeconds = Number(
       this.config.get<string>('JWT_ACCESS_TTL_SECONDS') ?? 900,
@@ -73,6 +77,48 @@ export class AuthService {
       email: user.email,
       name: user.name,
     });
+  }
+
+  /**
+   * Super Admin impersona a un staff member (token temporal 4h).
+   *
+   * @remarks Emite un JWT con los datos del staff pero incluye `impersonatedBy`
+   * con el ID del Super Admin. Solo para soporte/debug.
+   */
+  async impersonate(
+    superUserId: string,
+    dto: ImpersonateDto,
+  ): Promise<AuthTokens> {
+    await this.assertTenantActive(dto.tenantId);
+    const staff = await this.prisma.staffUser.findUnique({
+      where: { id: dto.staffUserId },
+    });
+    if (!staff || staff.tenantId !== dto.tenantId || !staff.active) {
+      throw new BadRequestException(
+        'Staff user not found or inactive in this tenant',
+      );
+    }
+
+    const tokens = await this.issueTokens({
+      profileType: AuthProfileType.STAFF,
+      userId: staff.id,
+      email: staff.email,
+      name: staff.name,
+      tenantId: staff.tenantId,
+      impersonatedBy: superUserId,
+    });
+
+    // Audit: registrar impersonación
+    await this.audit.record({
+      tenantId: dto.tenantId,
+      actor: { profileType: 'SUPER', userId: superUserId },
+      action: 'super.impersonate',
+      entityType: 'staff_user',
+      entityId: staff.id,
+      after: { staffEmail: staff.email, staffName: staff.name },
+    });
+
+    return tokens;
   }
 
   /**
@@ -315,12 +361,16 @@ export class AuthService {
       email: owner.email,
       profileType: owner.profileType,
       tenantId: owner.tenantId,
+      impersonatedBy: owner.impersonatedBy,
     };
+
+    // Impersonation tokens expiran en 4 horas
+    const ttl = owner.impersonatedBy ? 4 * 60 * 60 : this.accessTtlSeconds;
 
     const accessSecret = this.config.getOrThrow<string>('JWT_ACCESS_SECRET');
     const accessToken = await this.jwt.signAsync(payload, {
       secret: accessSecret,
-      expiresIn: this.accessTtlSeconds,
+      expiresIn: ttl,
     });
 
     const refreshToken = randomBytes(48).toString('base64url');

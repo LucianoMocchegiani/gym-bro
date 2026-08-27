@@ -22,6 +22,7 @@ export type PackDetail = {
   tenantId: string;
   name: string;
   description: string | null;
+  imageUrl: string | null;
   price: number;
   billingPeriod: 'MONTHLY' | 'ONE_TIME';
   creditsExpireAt: Date | null;

@@ -41,6 +41,12 @@ export class CreateServiceDto {
   description?: string;
 
   @IsOptional()
+  @ValidateIf((_, value) => value !== null)
+  @IsString()
+  @MaxLength(500)
+  imageUrl?: string | null;
+
+  @IsOptional()
   @IsUUID('4')
   branchId?: string;
 
@@ -71,6 +77,12 @@ export class UpdateServiceDto {
   @IsString()
   @MaxLength(2000)
   description?: string | null;
+
+  @IsOptional()
+  @ValidateIf((_, value) => value !== null)
+  @IsString()
+  @MaxLength(500)
+  imageUrl?: string | null;
 
   @IsOptional()
   @ValidateIf((_, value) => value !== null)

@@ -94,3 +94,14 @@ export class ChangePasswordDto {
   @MinLength(8)
   newPassword!: string;
 }
+
+/**
+ * Super Admin impersona a un staff member.
+ */
+export class ImpersonateDto {
+  @IsUUID()
+  tenantId!: string;
+
+  @IsUUID()
+  staffUserId!: string;
+}

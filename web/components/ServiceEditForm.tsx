@@ -2,6 +2,7 @@
 
 import { FormEvent, useEffect, useState } from 'react';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
+import { ImageUpload, uploadImageToApi } from '@/components/ImageUpload';
 import { SkeletonForm } from '@/components/Skeleton';
 import { ApiClientError } from '@/lib/api/client';
 import { getService, updateService } from '@/lib/api/services';
@@ -23,10 +24,13 @@ export function ServiceEditForm({
   const [service, setService] = useState<ServiceDetail | null>(null);
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const [imageFile, setImageFile] = useState<File | null>(null);
   const [dropInPrice, setDropInPrice] = useState('');
   const [active, setActive] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [imageWarning, setImageWarning] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [confirmSave, setConfirmSave] = useState(false);
 
@@ -35,19 +39,16 @@ export function ServiceEditForm({
     void (async () => {
       try {
         const s = await getService(serviceId);
-        if (cancelled) {
-          return;
-        }
+        if (cancelled) return;
         setService(s);
         setName(s.name);
         setDescription(s.description ?? '');
+        setImageUrl(s.imageUrl ?? null);
         setDropInPrice(s.dropInPrice != null ? String(s.dropInPrice) : '');
         setActive(s.active);
         setLoadError(null);
       } catch (err) {
-        if (cancelled) {
-          return;
-        }
+        if (cancelled) return;
         setLoadError(
           err instanceof ApiClientError
             ? err.message
@@ -55,24 +56,20 @@ export function ServiceEditForm({
         );
       }
     })();
-    return () => {
-      cancelled = true;
-    };
+    return () => { cancelled = true; };
   }, [serviceId]);
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
-    if (!service) {
-      return;
-    }
+    if (!service) return;
     const dirty =
       name !== service.name ||
       description !== (service.description ?? '') ||
-      dropInPrice !==
-        (service.dropInPrice != null ? String(service.dropInPrice) : '') ||
+      imageUrl !== (service.imageUrl ?? null) ||
+      imageFile !== null ||
+      dropInPrice !== (service.dropInPrice != null ? String(service.dropInPrice) : '') ||
       active !== service.active;
     if (!dirty) {
-      // Sin cambios: no pegarle a la API; si es modal, cerrar.
       onCancel?.();
       return;
     }
@@ -80,21 +77,32 @@ export function ServiceEditForm({
   }
 
   async function doSave() {
-    if (!service) {
-      return;
-    }
+    if (!service) return;
     setBusy(true);
     setSaveError(null);
+    setImageWarning(null);
     try {
+      let finalImageUrl = imageUrl;
+      if (imageFile) {
+        try {
+          finalImageUrl = await uploadImageToApi(imageFile, 'services');
+        } catch (imgErr) {
+          finalImageUrl = null;
+          setImageWarning(
+            imgErr instanceof Error
+              ? `Imagen no subida: ${imgErr.message}`
+              : 'Imagen no subida',
+          );
+        }
+      }
       const updated = await updateService(serviceId, {
         name: name.trim(),
         description: description.trim() || null,
+        imageUrl: finalImageUrl ?? null,
         active,
         dropInPrice:
           service.type === 'POR_SESIONES'
-            ? dropInPrice.trim()
-              ? Number(dropInPrice)
-              : null
+            ? dropInPrice.trim() ? Number(dropInPrice) : null
             : undefined,
       });
       onSuccess(updated);
@@ -109,12 +117,8 @@ export function ServiceEditForm({
     }
   }
 
-  if (loadError) {
-    return <p className="error">{loadError}</p>;
-  }
-  if (!service) {
-    return <SkeletonForm fields={3} />;
-  }
+  if (loadError) return <p className="error">{loadError}</p>;
+  if (!service) return <SkeletonForm fields={3} />;
 
   return (
     <form className="admin-form" onSubmit={(e) => void onSubmit(e)}>
@@ -138,6 +142,12 @@ export function ServiceEditForm({
           rows={3}
         />
       </label>
+      <ImageUpload
+        value={imageUrl}
+        onFileSelect={setImageFile}
+        onClear={() => { setImageUrl(null); setImageFile(null); }}
+        label="Imagen del servicio"
+      />
       {service.type === 'POR_SESIONES' ? (
         <label>
           Precio drop-in (ARS)
@@ -160,16 +170,12 @@ export function ServiceEditForm({
         Activo
       </label>
 
+      {imageWarning ? <p className="warn">{imageWarning}</p> : null}
       {saveError ? <p className="error">{saveError}</p> : null}
 
       <div className="admin-modal-actions">
         {onCancel ? (
-          <button
-            type="button"
-            className="btn ghost"
-            onClick={onCancel}
-            disabled={busy}
-          >
+          <button type="button" className="btn ghost" onClick={onCancel} disabled={busy}>
             Cancelar
           </button>
         ) : null}
@@ -184,10 +190,7 @@ export function ServiceEditForm({
         description="¿Confirmás guardar los cambios del servicio?"
         confirmLabel="Guardar"
         busy={busy}
-        onConfirm={() => {
-          setConfirmSave(false);
-          void doSave();
-        }}
+        onConfirm={() => { setConfirmSave(false); void doSave(); }}
         onCancel={() => setConfirmSave(false)}
       />
     </form>

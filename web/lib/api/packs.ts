@@ -21,6 +21,7 @@ export type PackDetail = {
   tenantId: string;
   name: string;
   description: string | null;
+  imageUrl: string | null;
   price: number;
   billingPeriod: 'MONTHLY' | 'ONE_TIME';
   creditsExpireAt: string | null;
@@ -50,6 +51,7 @@ export type PackComponentInput = {
 export type CreatePackInput = {
   name: string;
   description?: string;
+  imageUrl?: string;
   price: number;
   billingPeriod: 'MONTHLY' | 'ONE_TIME';
   creditsExpireAt?: string;
@@ -60,6 +62,7 @@ export type CreatePackInput = {
 export type UpdatePackInput = {
   name?: string;
   description?: string | null;
+  imageUrl?: string | null;
   price?: number;
   billingPeriod?: 'MONTHLY' | 'ONE_TIME';
   creditsExpireAt?: string | null;
