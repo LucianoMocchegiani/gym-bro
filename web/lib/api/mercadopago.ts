@@ -118,10 +118,14 @@ export function startStaffMpCartCheckout(
 }
 
 /**
- * URL preferida para abrir un checkout MP (sandbox si existe).
+ * URL preferida para abrir un checkout MP.
+ *
+ * @remarks MP recomienda usar `init_point` (no `sandbox_init_point`)
+ * para Checkout Pro en test. El init_point redirige al checkout correcto
+ * según el entorno del token.
  */
 export function pickMpCartCheckoutUrl(
   result: MpCartCheckoutResult,
 ): string | null {
-  return result.sandboxCheckoutUrl ?? result.checkoutUrl;
+  return result.checkoutUrl ?? result.sandboxCheckoutUrl;
 }

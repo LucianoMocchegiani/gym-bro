@@ -7,12 +7,11 @@ import {
   Post,
   Query,
 } from '@nestjs/common';
-import { SimulateMpWebhookDto } from './dto/simulate-mp-webhook.dto';
 import { MpWebhookProcessResult } from './mp-checkout.types';
 import { MpWebhookService } from './mp-webhook.service';
 
 /**
- * Webhooks Mercado Pago (público) + simulate stub.
+ * Webhooks Mercado Pago (público).
  *
  * @remarks CU-PAG-001. Sin JWT. `tenantId` en query (notification_url de Preference).
  */
@@ -39,11 +38,5 @@ export class MpWebhookController {
       topic,
       id,
     });
-  }
-
-  @Post('simulate')
-  @HttpCode(HttpStatus.OK)
-  simulate(@Body() dto: SimulateMpWebhookDto): Promise<MpWebhookProcessResult> {
-    return this.webhooks.simulate(dto);
   }
 }

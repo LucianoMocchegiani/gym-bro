@@ -11,7 +11,6 @@ import { CartCheckout, PaymentMethod, PaymentStatus } from '@prisma/client';
 import { ContractsService } from '../contracts/contracts.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { ReservationsService } from '../reservations/reservations.service';
-import { SimulateMpWebhookDto } from './dto/simulate-mp-webhook.dto';
 import { MercadoPagoAccountService } from './mercadopago-account.service';
 import { MP_ACCOUNT_PORT, MpAccountPort } from './mp-account.port';
 import { MpWebhookProcessResult } from './mp-checkout.types';
@@ -37,7 +36,7 @@ export class MpWebhookService {
   ) {}
 
   /**
-   * Procesa notificación MP (payment topic).
+   * Procesa notificación MP (payment o merchant_order topic).
    */
   async handleNotification(
     tenantId: string,
@@ -50,6 +49,17 @@ export class MpWebhookService {
     },
     query: { topic?: string; id?: string },
   ): Promise<MpWebhookProcessResult> {
+    const type = payload.type ?? query.topic;
+    const dataId = payload.data?.id ?? query.id;
+
+    this.logger.log(
+      `MP webhook tenant=${tenantId} type=${type} action=${payload.action} dataId=${dataId}`,
+    );
+
+    if (type === 'merchant_order' && dataId) {
+      return this.handleMerchantOrder(tenantId, String(dataId));
+    }
+
     const mpPaymentId = this.extractMpPaymentId(payload, query);
     if (!mpPaymentId) {
       return {
@@ -93,57 +103,71 @@ export class MpWebhookService {
   }
 
   /**
-   * Simula aprobación/rechazo sin llamar a MP (solo stub).
+   * Procesa notificación de tipo merchant_order.
+   *
+   * @remarks MP envía `type=merchant_order` con `data.id` = merchant_order id.
+   * Consultamos la orden y procesamos cada pago aprobado.
    */
-  async simulate(dto: SimulateMpWebhookDto): Promise<MpWebhookProcessResult> {
-    if (!this.isCheckoutStub()) {
-      throw new BadRequestException(
-        'Webhook simulate is only available when MP_CHECKOUT_MODE=stub',
+  private async handleMerchantOrder(
+    tenantId: string,
+    merchantOrderId: string,
+  ): Promise<MpWebhookProcessResult> {
+    const accessToken = await this.accounts.getDecryptedAccessToken(tenantId);
+    let mo;
+    try {
+      mo = await this.mp.getMerchantOrder(accessToken, merchantOrderId);
+    } catch (err) {
+      this.logger.warn(
+        `MP merchant_order fetch failed tenant=${tenantId} moId=${merchantOrderId}: ${
+          err instanceof Error ? err.message : String(err)
+        }`,
       );
-    }
-    if (Boolean(dto.cartId) === Boolean(dto.paymentId)) {
-      throw new BadRequestException(
-        'Provide exactly one of paymentId or cartId',
-      );
-    }
-
-    if (dto.cartId) {
-      const cart = await this.prisma.cartCheckout.findUnique({
-        where: { id: dto.cartId },
-      });
-      if (!cart) {
-        throw new NotFoundException(`Cart ${dto.cartId} not found`);
-      }
-      const mpPaymentId =
-        cart.mpPaymentId ??
-        `stub-cart-pay-${cart.id.replace(/-/g, '').slice(0, 16)}`;
-      return this.applyRemoteStatusCart(
-        cart.tenantId,
-        cart.id,
-        mpPaymentId,
-        dto.status === 'APPROVED' ? 'approved' : 'rejected',
+      throw new ServiceUnavailableException(
+        'Could not fetch Mercado Pago merchant_order',
       );
     }
 
-    const payment = await this.prisma.payment.findUnique({
-      where: { id: dto.paymentId as string },
-    });
-    if (!payment) {
-      throw new NotFoundException(`Payment ${dto.paymentId} not found`);
-    }
-    if (payment.method !== PaymentMethod.MP) {
-      throw new BadRequestException('Payment is not an MP checkout');
+    if (!mo.payments.length) {
+      return {
+        handled: false,
+        paymentId: null,
+        cartId: null,
+        status: mo.status,
+        contractId: null,
+        reservationId: null,
+      };
     }
 
-    const mpPaymentId =
-      payment.mpPaymentId ??
-      `stub-pay-${payment.id.replace(/-/g, '').slice(0, 16)}`;
+    const approved = mo.payments.find((p) => p.status === 'approved');
+    if (!approved) {
+      const first = mo.payments[0];
+      return {
+        handled: false,
+        paymentId: null,
+        cartId: null,
+        status: first?.status ?? mo.status,
+        contractId: null,
+        reservationId: null,
+      };
+    }
+
+    const refId = mo.externalReference;
+    if (!refId) {
+      return {
+        handled: false,
+        paymentId: null,
+        cartId: null,
+        status: approved.status,
+        contractId: null,
+        reservationId: null,
+      };
+    }
 
     return this.applyRemoteStatus(
-      payment.tenantId,
-      payment.id,
-      mpPaymentId,
-      dto.status === 'APPROVED' ? 'approved' : 'rejected',
+      tenantId,
+      refId,
+      approved.id,
+      approved.status,
     );
   }
 
@@ -526,13 +550,5 @@ export class MpWebhookService {
       return query.id;
     }
     return null;
-  }
-
-  private isCheckoutStub(): boolean {
-    const mode =
-      this.config.get<string>('MP_CHECKOUT_MODE')?.trim() ??
-      this.config.get<string>('MP_ACCOUNT_VALIDATE_MODE')?.trim() ??
-      'live';
-    return mode === 'stub';
   }
 }

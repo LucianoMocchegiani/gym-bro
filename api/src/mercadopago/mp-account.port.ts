@@ -28,6 +28,20 @@ export type MpRemotePayment = {
 };
 
 /**
+ * Orden comercial consultada en MP.
+ */
+export type MpRemoteMerchantOrder = {
+  id: string;
+  status: string;
+  externalReference: string | null;
+  payments: Array<{
+    id: string;
+    status: string;
+    transactionAmount: number | null;
+  }>;
+};
+
+/**
  * Ítem de una Preference Checkout Pro.
  */
 export type MpPreferenceItem = {
@@ -77,6 +91,14 @@ export abstract class MpAccountPort {
     accessToken: string,
     mpPaymentId: string,
   ): Promise<MpRemotePayment>;
+
+  /**
+   * Obtiene una orden comercial remota por id (para webhook type=merchant_order).
+   */
+  abstract getMerchantOrder(
+    accessToken: string,
+    merchantOrderId: string,
+  ): Promise<MpRemoteMerchantOrder>;
 
   /**
    * Solicita reembolso total de un pago MP.

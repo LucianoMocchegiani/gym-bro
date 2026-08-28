@@ -1,4 +1,4 @@
-# Postman — GymBro API
+﻿# Postman — GymBro API
 
 ## Importar (importante)
 

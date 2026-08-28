@@ -1,11 +1,10 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
-import { randomBytes } from 'node:crypto';
 import {
   CreateMpPreferenceInput,
   MpAccountPort,
   MpAccountValidation,
   MpPreferenceResult,
+  MpRemoteMerchantOrder,
   MpRemotePayment,
 } from './mp-account.port';
 
@@ -15,29 +14,15 @@ const MP_PAYMENTS = 'https://api.mercadopago.com/v1/payments';
 
 /**
  * Adapter HTTP Mercado Pago (cuenta + Preference + pago).
- *
- * @remarks `MP_ACCOUNT_VALIDATE_MODE=stub` y/o `MP_CHECKOUT_MODE=stub`
- * evitan llamadas reales (solo local / Postman).
  */
 @Injectable()
 export class HttpMpAccountAdapter extends MpAccountPort {
   private readonly logger = new Logger(HttpMpAccountAdapter.name);
 
-  constructor(private readonly config: ConfigService) {
-    super();
-  }
-
   /**
    * @inheritdoc
    */
   async validateAccessToken(accessToken: string): Promise<MpAccountValidation> {
-    if (this.isValidateStub()) {
-      return {
-        userId: 'stub-mp-user',
-        nickname: 'stub',
-      };
-    }
-
     const response = await fetch(MP_USERS_ME, {
       method: 'GET',
       headers: {
@@ -76,15 +61,6 @@ export class HttpMpAccountAdapter extends MpAccountPort {
   async createPreference(
     input: CreateMpPreferenceInput,
   ): Promise<MpPreferenceResult> {
-    if (this.isCheckoutStub()) {
-      const preferenceId = `stub-pref-${randomBytes(8).toString('hex')}`;
-      return {
-        preferenceId,
-        initPoint: `https://stub.mercadopago.local/checkout/${preferenceId}`,
-        sandboxInitPoint: `https://stub.mercadopago.local/sandbox/${preferenceId}`,
-      };
-    }
-
     const response = await fetch(MP_PREFERENCES, {
       method: 'POST',
       headers: {
@@ -141,12 +117,6 @@ export class HttpMpAccountAdapter extends MpAccountPort {
     accessToken: string,
     mpPaymentId: string,
   ): Promise<MpRemotePayment> {
-    if (this.isCheckoutStub()) {
-      throw new Error(
-        'getPayment is not available in stub checkout mode; use /webhooks/mercadopago/simulate',
-      );
-    }
-
     const response = await fetch(
       `${MP_PAYMENTS}/${encodeURIComponent(mpPaymentId)}`,
       {
@@ -194,15 +164,65 @@ export class HttpMpAccountAdapter extends MpAccountPort {
   /**
    * @inheritdoc
    */
+  async getMerchantOrder(
+    accessToken: string,
+    merchantOrderId: string,
+  ): Promise<MpRemoteMerchantOrder> {
+    const response = await fetch(
+      `https://api.mercadopago.com/merchant_orders/${encodeURIComponent(merchantOrderId)}`,
+      {
+        method: 'GET',
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          Accept: 'application/json',
+        },
+      },
+    );
+
+    if (!response.ok) {
+      const body = await response.text().catch(() => '');
+      this.logger.warn(
+        `MP merchant_order ${merchantOrderId} failed status=${response.status} body=${body.slice(0, 200)}`,
+      );
+      throw new Error(
+        `Mercado Pago merchant_order fetch failed (HTTP ${response.status})`,
+      );
+    }
+
+    const data = (await response.json()) as {
+      id?: number | string;
+      status?: string;
+      external_reference?: string;
+      payments?: Array<{
+        id?: number | string;
+        status?: string;
+        transaction_amount?: number;
+      }>;
+    };
+
+    return {
+      id: String(data.id ?? merchantOrderId),
+      status: data.status ?? 'unknown',
+      externalReference: data.external_reference ?? null,
+      payments: (data.payments ?? []).map((p) => ({
+        id: String(p.id ?? ''),
+        status: p.status ?? 'unknown',
+        transactionAmount:
+          typeof p.transaction_amount === 'number'
+            ? p.transaction_amount
+            : null,
+      })),
+    };
+  }
+
+  /**
+   * @inheritdoc
+   */
   async refundPayment(
     accessToken: string,
     mpPaymentId: string,
     amount: number,
   ): Promise<{ ok: boolean; manualPending: boolean }> {
-    if (this.isCheckoutStub()) {
-      return { ok: true, manualPending: false };
-    }
-
     const response = await fetch(
       `${MP_PAYMENTS}/${encodeURIComponent(mpPaymentId)}/refunds`,
       {
@@ -226,19 +246,5 @@ export class HttpMpAccountAdapter extends MpAccountPort {
     }
 
     return { ok: true, manualPending: false };
-  }
-
-  private isValidateStub(): boolean {
-    const mode =
-      this.config.get<string>('MP_ACCOUNT_VALIDATE_MODE')?.trim() ?? 'live';
-    return mode === 'stub';
-  }
-
-  private isCheckoutStub(): boolean {
-    const mode =
-      this.config.get<string>('MP_CHECKOUT_MODE')?.trim() ??
-      this.config.get<string>('MP_ACCOUNT_VALIDATE_MODE')?.trim() ??
-      'live';
-    return mode === 'stub';
   }
 }
