@@ -2,26 +2,35 @@
 
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
+import { DataTable } from '@/components/AdminList';
 import { Panel } from '@/components/AdminUi';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
-import { SkeletonPanel } from '@/components/Skeleton';
+import { StatusPill } from '@/components/StatusPill';
+import { SkeletonCards } from '@/components/Skeleton';
 import { ApiClientError } from '@/lib/api/client';
 import { cancelContract } from '@/lib/api/contracts';
 import type { ContractDetail } from '@/lib/api/contracts';
 import { getMemberAccount } from '@/lib/api/members';
 import type { MemberAccountDetail } from '@/lib/api/members';
 
+function format_date(iso: string): string {
+  return new Date(iso).toLocaleDateString('es-AR');
+}
+
+function format_datetime(iso: string): string {
+  return new Date(iso).toLocaleString('es-AR');
+}
+
 /**
  * Estado de cuenta del afiliado (CU-AFI-004): contrato activo, reservas, créditos.
  */
 export function MemberAccountPanel({
   memberId,
-  embedded = false,
 }: {
   memberId: string;
-  embedded?: boolean;
 }) {
   const [account, setAccount] = useState<MemberAccountDetail | null>(null);
+  const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
 
   const [cancelTarget, setCancelTarget] = useState<ContractDetail | null>(null);
@@ -33,6 +42,7 @@ export function MemberAccountPanel({
   useEffect(() => {
     let cancelled = false;
     void (async () => {
+      setLoading(true);
       try {
         const acc = await getMemberAccount(memberId);
         if (cancelled) return;
@@ -45,6 +55,8 @@ export function MemberAccountPanel({
             ? err.message
             : 'No se pudo cargar el estado de cuenta',
         );
+      } finally {
+        if (!cancelled) setLoading(false);
       }
     })();
     return () => { cancelled = true; };
@@ -87,84 +99,126 @@ export function MemberAccountPanel({
   }
 
   if (loadError) return <p className="error">{loadError}</p>;
-  if (!account) return <SkeletonPanel lines={5} />;
 
-  const activeContracts = account.contracts.filter((c) => c.status === 'ACTIVE');
-  const reservations = account.reservations;
+  const activeContracts = account?.contracts.filter((c) => c.status === 'ACTIVE') ?? [];
+  const reservations = account?.reservations ?? [];
 
-  const body = (
-    <>
-      <div className="stat-row">
-        <div>
-          <p className="muted small">Contratos activos</p>
-          <p className="stat-value">{account.summary.activeContracts}</p>
-        </div>
-        <div>
-          <p className="muted small">Acceso libre</p>
-          <p className="stat-value">
-            {account.summary.hasAccessLibre ? 'Sí' : 'No'}
-          </p>
-        </div>
-        <div>
-          <p className="muted small">Sesiones disponibles</p>
-          <p className="stat-value">{account.summary.totalCreditsRemaining}</p>
-        </div>
-        <div>
-          <p className="muted small">Deuda</p>
-          <p className="stat-value">
-            {account.debt.status === 'AL_DIA'
-              ? 'Al día'
-              : `$${account.debt.amount}`}
-          </p>
-        </div>
-      </div>
+  return (
+    <div className="admin-stack">
+      {loading ? (
+        <SkeletonCards count={4} />
+      ) : account ? (
+        <Panel>
+          <div className="stat-row">
+            <div>
+              <p className="muted small">Contratos activos</p>
+              <p className="stat-value">{account.summary.activeContracts}</p>
+            </div>
+            <div>
+              <p className="muted small">Acceso libre</p>
+              <p className="stat-value">
+                {account.summary.hasAccessLibre ? 'Sí' : 'No'}
+              </p>
+            </div>
+            <div>
+              <p className="muted small">Sesiones disponibles</p>
+              <p className="stat-value">{account.summary.totalCreditsRemaining}</p>
+            </div>
+            <div>
+              <p className="muted small">Deuda</p>
+              <p className="stat-value">
+                {account.debt.status === 'AL_DIA'
+                  ? 'Al día'
+                  : `$${account.debt.amount}`}
+              </p>
+            </div>
+          </div>
+        </Panel>
+      ) : null}
 
-      <h3>Contrato activo</h3>
-      {activeContracts.length === 0 ? (
-        <p className="muted">Sin contrato activo.</p>
-      ) : (
-        <ul className="plain-list">
-          {activeContracts.map((c) => (
-            <li key={c.id}>
-              <strong>{c.packName}</strong>
-              {c.hasAccessLibre ? ' · acceso libre' : ''}
+      <DataTable
+        title="Contratos activos"
+        description={`${activeContracts.length} activo${activeContracts.length === 1 ? '' : 's'}`}
+        loading={loading}
+        error={loadError}
+        isEmpty={activeContracts.length === 0}
+        emptyText="Sin contrato activo."
+        paginate={false}
+        header={
+          <>
+            <th>Pack</th>
+            <th>Fechas</th>
+            <th>Sesiones</th>
+            <th>Acceso</th>
+            <th />
+          </>
+        }
+      >
+        {activeContracts.map((c) => (
+          <tr key={c.id}>
+            <td><strong>{c.packName}</strong></td>
+            <td className="muted small">
+              {format_date(c.startsAt)}
+              {c.endsAt
+                ? ` → ${format_date(c.endsAt)}`
+                : ' → sin fin'}
+            </td>
+            <td>
               {c.creditBalances?.length
-                ? ` · sesiones: ${c.creditBalances
-                    .map(
-                      (b) =>
-                        `${b.serviceName ?? b.serviceId}: ${b.remaining}`,
-                    )
-                    .join(', ')}`
-                : ''}
-              {' · '}
+                ? c.creditBalances
+                    .map((b) => `${b.serviceName ?? b.serviceId}: ${b.remaining}`)
+                    .join(', ')
+                : '—'}
+            </td>
+            <td>
+              <StatusPill tone={c.hasAccessLibre ? 'ok' : 'muted'}>
+                {c.hasAccessLibre ? 'Libre' : 'Créditos'}
+              </StatusPill>
+            </td>
+            <td className="row-actions">
               <button
                 type="button"
-                className="linkish"
+                className="btn ghost"
                 onClick={() => openCancel(c)}
               >
                 Cancelar
               </button>
-            </li>
-          ))}
-        </ul>
-      )}
+            </td>
+          </tr>
+        ))}
+      </DataTable>
 
       {cancelOk ? <p className="ok-msg">{cancelOk}</p> : null}
       {cancelError ? <p className="error">{cancelError}</p> : null}
 
-      <h3>Próximas reservas</h3>
-      {reservations.length === 0 ? (
-        <p className="muted">Sin reservas próximas.</p>
-      ) : (
-        <ul className="plain-list">
-          {reservations.map((r) => (
-            <li key={r.id}>
-              {r.serviceName} — {new Date(r.startsAt).toLocaleString('es-AR')} (
-              {r.coverage})
-            </li>
-          ))}
-        </ul>
-      )}
+      <DataTable
+        title="Próximas reservas"
+        description={`${reservations.length} reserva${reservations.length === 1 ? '' : 's'}`}
+        loading={loading}
+        error={loadError}
+        isEmpty={reservations.length === 0}
+        emptyText="Sin reservas próximas."
+        paginate={false}
+        header={
+          <>
+            <th>Servicio</th>
+            <th>Fecha y hora</th>
+            <th>Cobertura</th>
+          </>
+        }
+      >
+        {reservations.map((r) => (
+          <tr key={r.id}>
+            <td>{r.serviceName}</td>
+            <td className="muted small">{format_datetime(r.startsAt)}</td>
+            <td>
+              <StatusPill tone={r.coverage === 'CREDIT' ? 'ok' : 'warn'}>
+                {r.coverage === 'CREDIT' ? 'Crédito' : 'Drop-in'}
+              </StatusPill>
+            </td>
+          </tr>
+        ))}
+      </DataTable>
 
       <div className="form-actions">
         <Link
@@ -197,20 +251,6 @@ export function MemberAccountPanel({
           />
         </label>
       </ConfirmDialog>
-    </>
-  );
-
-  if (embedded) {
-    return <div className="account-panel admin-stack">{body}</div>;
-  }
-
-  return (
-    <Panel
-      title="Estado de cuenta"
-      description="Contrato activo, sesiones disponibles y reservas."
-      className="account-panel"
-    >
-      {body}
-    </Panel>
+    </div>
   );
 }
