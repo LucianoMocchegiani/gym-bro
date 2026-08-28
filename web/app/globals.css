@@ -973,6 +973,17 @@ button.row-icon-btn:disabled {
   gap: 0.9rem;
 }
 
+.confirm-dialog-field {
+  display: grid;
+  gap: 0.4rem;
+  margin-top: 0.5rem;
+}
+
+.confirm-dialog-field textarea {
+  resize: vertical;
+  min-height: 60px;
+}
+
 /* ImageUpload component */
 .image-upload {
   display: flex;

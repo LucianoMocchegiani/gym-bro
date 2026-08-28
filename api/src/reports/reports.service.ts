@@ -24,11 +24,13 @@ export class ReportsService {
    * @param tenantId Tenant del JWT staff.
    * @param fromYmd Inicio inclusive (YYYY-MM-DD BA); default 1º del mes.
    * @param toYmd Fin inclusive (YYYY-MM-DD BA); default hoy BA.
+   * @param memberId Filtrar por afiliado específico (opcional).
    */
   async getSummary(
     tenantId: string,
     fromYmd?: string,
     toYmd?: string,
+    memberId?: string,
   ): Promise<ReportsSummary> {
     const today = this.businessYmd(new Date());
     const from = fromYmd ?? `${today.slice(0, 7)}-01`;
@@ -83,6 +85,7 @@ export class ReportsService {
           tenantId,
           status: PaymentStatus.APPROVED,
           createdAt: { gte: rangeStart, lt: rangeEndExclusive },
+          ...(memberId ? { memberId } : {}),
         },
         select: { amount: true, method: true },
       }),
@@ -91,6 +94,7 @@ export class ReportsService {
           tenantId,
           status: PaymentStatus.APPROVED,
           createdAt: { gte: rangeStart, lt: rangeEndExclusive },
+          ...(memberId ? { memberId } : {}),
         },
         orderBy: { createdAt: 'desc' },
         take: DETAIL_LIMIT,

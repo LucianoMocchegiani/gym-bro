@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { FormEvent, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Panel } from '@/components/AdminUi';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { SkeletonPanel } from '@/components/Skeleton';
@@ -13,9 +13,6 @@ import type { MemberAccountDetail } from '@/lib/api/members';
 
 /**
  * Estado de cuenta del afiliado (CU-AFI-004): contrato activo, reservas, créditos.
- *
- * @remarks Pagos, comprobantes y credenciales se movieron a reportes y
- * un panel separado de credenciales respectivamente.
  */
 export function MemberAccountPanel({
   memberId,
@@ -29,7 +26,6 @@ export function MemberAccountPanel({
 
   const [cancelTarget, setCancelTarget] = useState<ContractDetail | null>(null);
   const [cancelReason, setCancelReason] = useState('');
-  const [cancelConfirmOpen, setCancelConfirmOpen] = useState(false);
   const [cancelBusy, setCancelBusy] = useState(false);
   const [cancelError, setCancelError] = useState<string | null>(null);
   const [cancelOk, setCancelOk] = useState<string | null>(null);
@@ -57,7 +53,6 @@ export function MemberAccountPanel({
   function openCancel(contract: ContractDetail) {
     setCancelTarget(contract);
     setCancelReason('');
-    setCancelConfirmOpen(false);
     setCancelError(null);
     setCancelOk(null);
   }
@@ -65,14 +60,7 @@ export function MemberAccountPanel({
   function closeCancel() {
     setCancelTarget(null);
     setCancelReason('');
-    setCancelConfirmOpen(false);
     setCancelError(null);
-  }
-
-  async function onCancelContract(e: FormEvent) {
-    e.preventDefault();
-    if (!cancelTarget) return;
-    setCancelConfirmOpen(true);
   }
 
   async function doCancelContract() {
@@ -162,47 +150,7 @@ export function MemberAccountPanel({
       )}
 
       {cancelOk ? <p className="ok-msg">{cancelOk}</p> : null}
-
-      {cancelTarget ? (
-        <form
-          className="admin-form"
-          onSubmit={(e) => void onCancelContract(e)}
-        >
-          <h3>Cancelar «{cancelTarget.packName}»</h3>
-          <p className="muted small">
-            Corta acceso libre y sesiones. <strong>No</strong> reembolsa el pago
-            (para eso usá Devolver). El motivo opcional queda en auditoría.
-          </p>
-          <label>
-            Motivo (opcional)
-            <textarea
-              value={cancelReason}
-              onChange={(e) => setCancelReason(e.target.value)}
-              rows={2}
-              maxLength={500}
-              placeholder="Ej. incumplimiento de normas"
-            />
-          </label>
-          {cancelError ? <p className="error">{cancelError}</p> : null}
-          <div className="form-actions">
-            <button
-              type="submit"
-              className="btn danger"
-              disabled={cancelBusy}
-            >
-              {cancelBusy ? 'Cancelando…' : 'Cancelar contrato'}
-            </button>
-            <button
-              type="button"
-              className="btn ghost"
-              onClick={closeCancel}
-              disabled={cancelBusy}
-            >
-              Cerrar
-            </button>
-          </div>
-        </form>
-      ) : null}
+      {cancelError ? <p className="error">{cancelError}</p> : null}
 
       <h3>Próximas reservas</h3>
       {reservations.length === 0 ? (
@@ -223,24 +171,32 @@ export function MemberAccountPanel({
           href={`/reportes?memberId=${encodeURIComponent(memberId)}`}
           className="btn ghost"
         >
-          Ver en reportes
+          Ver reportes de este afiliado
         </Link>
       </div>
 
       <ConfirmDialog
-        open={cancelConfirmOpen}
+        open={Boolean(cancelTarget)}
         title={`Cancelar «${cancelTarget?.packName ?? ''}»`}
         description="Corta acceso libre y sesiones. No reembolsa el pago (para eso usá Devolver). El motivo queda en auditoría."
         confirmLabel="Confirmar cancelación"
         tone="danger"
         confirmWord="CANCELAR"
         busy={cancelBusy}
-        onConfirm={() => {
-          setCancelConfirmOpen(false);
-          void doCancelContract();
-        }}
-        onCancel={() => setCancelConfirmOpen(false)}
-      />
+        onConfirm={() => { setCancelTarget(null); void doCancelContract(); }}
+        onCancel={closeCancel}
+      >
+        <label className="confirm-dialog-field">
+          Motivo (opcional)
+          <textarea
+            value={cancelReason}
+            onChange={(e) => setCancelReason(e.target.value)}
+            rows={2}
+            maxLength={500}
+            placeholder="Ej. incumplimiento de normas"
+          />
+        </label>
+      </ConfirmDialog>
     </>
   );
 

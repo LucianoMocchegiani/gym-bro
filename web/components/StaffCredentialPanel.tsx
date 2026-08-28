@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
+import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { SkeletonForm } from '@/components/Skeleton';
 import { ApiClientError } from '@/lib/api/client';
 import {
@@ -23,7 +24,7 @@ export function StaffCredentialPanel({ staffId }: { staffId: string }) {
   const [offerError, setOfferError] = useState<string | null>(null);
   const [offerOk, setOfferOk] = useState<string | null>(null);
   const [offerBusy, setOfferBusy] = useState(false);
-  const [copied, setCopied] = useState(false);
+  const [confirmIssue, setConfirmIssue] = useState(false);
 
   const loadOffer = useCallback(async () => {
     try {
@@ -48,15 +49,11 @@ export function StaffCredentialPanel({ staffId }: { staffId: string }) {
     void (async () => {
       try {
         const s = await getStaff(staffId);
-        if (cancelled) {
-          return;
-        }
+        if (cancelled) return;
         setStaff(s);
         setLoadError(null);
       } catch (err) {
-        if (cancelled) {
-          return;
-        }
+        if (cancelled) return;
         setLoadError(
           err instanceof ApiClientError
             ? err.message
@@ -64,9 +61,7 @@ export function StaffCredentialPanel({ staffId }: { staffId: string }) {
         );
       }
     })();
-    return () => {
-      cancelled = true;
-    };
+    return () => { cancelled = true; };
   }, [staffId]);
 
   useEffect(() => {
@@ -75,9 +70,7 @@ export function StaffCredentialPanel({ staffId }: { staffId: string }) {
       if (cancelled) return;
       await loadOffer();
     })();
-    return () => {
-      cancelled = true;
-    };
+    return () => { cancelled = true; };
   }, [loadOffer]);
 
   async function onIssueOffer() {
@@ -92,7 +85,7 @@ export function StaffCredentialPanel({ staffId }: { staffId: string }) {
           issued.lastError ?? 'Kuatia no emitió el offer (soft-fail)',
         );
       } else {
-        setOfferOk('Offer listo. Copiá el URI para la wallet del staff.');
+        setOfferOk('Credencial emitida.');
       }
     } catch (err) {
       setOfferError(
@@ -105,25 +98,8 @@ export function StaffCredentialPanel({ staffId }: { staffId: string }) {
     }
   }
 
-  async function copyOfferUri() {
-    if (!offer?.offerUri) {
-      return;
-    }
-    try {
-      await navigator.clipboard.writeText(offer.offerUri);
-      setCopied(true);
-      window.setTimeout(() => setCopied(false), 2000);
-    } catch {
-      setOfferError('No se pudo copiar el URI');
-    }
-  }
-
-  if (loadError) {
-    return <p className="error">{loadError}</p>;
-  }
-  if (!staff) {
-    return <SkeletonForm fields={3} />;
-  }
+  if (loadError) return <p className="error">{loadError}</p>;
+  if (!staff) return <SkeletonForm fields={2} />;
 
   return (
     <div className="admin-stack">
@@ -132,8 +108,7 @@ export function StaffCredentialPanel({ staffId }: { staffId: string }) {
         {!staff.active ? ' · inactivo' : ''}
       </p>
       <p className="muted small">
-        VC de vínculo staff → misma puerta OID4VP. Roles se leen en DB al
-        verificar. Sin fichaje aún.
+        VC de vínculo staff → puerta OID4VP. Roles se leen en DB al verificar.
       </p>
 
       {offer ? (
@@ -151,22 +126,6 @@ export function StaffCredentialPanel({ staffId }: { staffId: string }) {
         <p className="muted">Sin offer todavía.</p>
       )}
 
-      {offer?.offerUri ? (
-        <div className="admin-stack">
-          <label>
-            Offer URI
-            <input readOnly value={offer.offerUri} />
-          </label>
-          <button
-            type="button"
-            className="btn ghost"
-            onClick={() => void copyOfferUri()}
-          >
-            {copied ? 'Copiado' : 'Copiar URI'}
-          </button>
-        </div>
-      ) : null}
-
       {offerError ? <p className="error">{offerError}</p> : null}
       {offerOk ? <p className="ok-msg">{offerOk}</p> : null}
 
@@ -174,7 +133,7 @@ export function StaffCredentialPanel({ staffId }: { staffId: string }) {
         type="button"
         className="primary"
         disabled={offerBusy || !staff.active}
-        onClick={() => void onIssueOffer()}
+        onClick={() => setConfirmIssue(true)}
       >
         {offerBusy
           ? 'Emitiendo…'
@@ -182,6 +141,16 @@ export function StaffCredentialPanel({ staffId }: { staffId: string }) {
             ? 'Re-emitir credencial'
             : 'Emitir credencial'}
       </button>
+
+      <ConfirmDialog
+        open={confirmIssue}
+        title={offer ? 'Re-emitir credencial' : 'Emitir credencial'}
+        description="Se generará un nuevo offer OID4VCI para la wallet del staff."
+        confirmLabel={offer ? 'Re-emitir' : 'Emitir'}
+        busy={offerBusy}
+        onConfirm={() => { setConfirmIssue(false); void onIssueOffer(); }}
+        onCancel={() => setConfirmIssue(false)}
+      />
     </div>
   );
 }

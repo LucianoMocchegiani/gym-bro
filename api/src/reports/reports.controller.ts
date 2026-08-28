@@ -22,6 +22,6 @@ export class ReportsController {
     @CurrentTenant() tenantId: string,
     @Query() query: ReportsSummaryQueryDto,
   ): Promise<ReportsSummary> {
-    return this.reports.getSummary(tenantId, query.from, query.to);
+    return this.reports.getSummary(tenantId, query.from, query.to, query.memberId);
   }
 }

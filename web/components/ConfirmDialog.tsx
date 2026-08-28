@@ -27,6 +27,7 @@ export function ConfirmDialog({
   busy = false,
   onConfirm,
   onCancel,
+  children,
 }: {
   open: boolean;
   title: string;
@@ -42,6 +43,7 @@ export function ConfirmDialog({
   busy?: boolean;
   onConfirm: () => void;
   onCancel: () => void;
+  children?: ReactNode;
 }) {
   function handleClose() {
     if (!busy) {
@@ -68,7 +70,9 @@ export function ConfirmDialog({
         busy={busy}
         onConfirm={onConfirm}
         onCancel={handleClose}
-      />
+      >
+        {children}
+      </ConfirmForm>
     </AdminModal>
   );
 }
@@ -82,6 +86,7 @@ function ConfirmForm({
   busy,
   onConfirm,
   onCancel,
+  children,
 }: {
   confirmLabel: string;
   cancelLabel: string;
@@ -91,6 +96,7 @@ function ConfirmForm({
   busy: boolean;
   onConfirm: () => void;
   onCancel: () => void;
+  children?: ReactNode;
 }) {
   const [typed, setTyped] = useState('');
   const [typed2, setTyped2] = useState('');
@@ -104,6 +110,7 @@ function ConfirmForm({
 
   return (
     <div className="admin-form" role="form">
+      {children}
       {confirmWord ? (
         <label>
           Escribí <strong>{confirmWord}</strong> para confirmar

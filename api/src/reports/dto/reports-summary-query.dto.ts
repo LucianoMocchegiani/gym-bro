@@ -17,4 +17,7 @@ export class ReportsSummaryQueryDto {
     message: 'to must be YYYY-MM-DD',
   })
   to?: string;
+
+  @IsOptional()
+  memberId?: string;
 }

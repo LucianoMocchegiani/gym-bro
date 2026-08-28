@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
+import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { SkeletonForm } from '@/components/Skeleton';
 import { ApiClientError } from '@/lib/api/client';
 import {
@@ -8,11 +9,12 @@ import {
   type CredentialOfferItem,
 } from '@/lib/api/credential-offers';
 import { getMember, type MemberDetail } from '@/lib/api/members';
+import { reissueCredentialOffer } from '@/lib/api/contracts';
 
 /**
  * Panel de credencial SSI del afiliado para molinete (OID4VCI).
  *
- * @remarks Solo lectura + reemisión. La emisión inicial ocurre al contratar pack.
+ * @remarks Reemisión desde el contrato activo.
  */
 export function MemberCredentialPanel({
   memberId,
@@ -24,7 +26,8 @@ export function MemberCredentialPanel({
   const [loadError, setLoadError] = useState<string | null>(null);
   const [offerError, setOfferError] = useState<string | null>(null);
   const [offerOk, setOfferOk] = useState<string | null>(null);
-  const [copied, setCopied] = useState(false);
+  const [offerBusy, setOfferBusy] = useState(false);
+  const [confirmReissue, setConfirmReissue] = useState(false);
 
   const loadOffer = useCallback(async () => {
     try {
@@ -73,14 +76,27 @@ export function MemberCredentialPanel({
     return () => { cancelled = true; };
   }, [loadOffer]);
 
-  async function copyOfferUri() {
-    if (!offer?.offerUri) return;
+  async function onReissue() {
+    if (!offer) return;
+    setOfferBusy(true);
+    setOfferError(null);
+    setOfferOk(null);
     try {
-      await navigator.clipboard.writeText(offer.offerUri);
-      setCopied(true);
-      window.setTimeout(() => setCopied(false), 2000);
-    } catch {
-      setOfferError('No se pudo copiar el URI');
+      const idempotencyKey = `reissue-${memberId}-${Date.now()}`;
+      await reissueCredentialOffer(memberId, {
+        packId: offer.packId,
+        idempotencyKey,
+      });
+      await loadOffer();
+      setOfferOk('Credencial re-emitida.');
+    } catch (err) {
+      setOfferError(
+        err instanceof ApiClientError
+          ? err.message
+          : 'No se pudo re-emitir la credencial',
+      );
+    } finally {
+      setOfferBusy(false);
     }
   }
 
@@ -118,24 +134,31 @@ export function MemberCredentialPanel({
         <p className="muted">Sin offer todavía.</p>
       )}
 
-      {offer?.offerUri ? (
-        <div className="admin-stack">
-          <label>
-            Offer URI
-            <input readOnly value={offer.offerUri} />
-          </label>
-          <button
-            type="button"
-            className="btn ghost"
-            onClick={() => void copyOfferUri()}
-          >
-            {copied ? 'Copiado' : 'Copiar URI'}
-          </button>
-        </div>
-      ) : null}
-
       {offerError ? <p className="error">{offerError}</p> : null}
       {offerOk ? <p className="ok-msg">{offerOk}</p> : null}
+
+      <button
+        type="button"
+        className="primary"
+        disabled={offerBusy || !active || !offer}
+        onClick={() => setConfirmReissue(true)}
+      >
+        {offerBusy
+          ? 'Re-emitiendo…'
+          : offer
+            ? 'Re-emitir credencial'
+            : 'Emitir credencial'}
+      </button>
+
+      <ConfirmDialog
+        open={confirmReissue}
+        title="Re-emitir credencial"
+        description="Se generará un nuevo offer OID4VCI para la wallet del afiliado."
+        confirmLabel="Re-emitir"
+        busy={offerBusy}
+        onConfirm={() => { setConfirmReissue(false); void onReissue(); }}
+        onCancel={() => setConfirmReissue(false)}
+      />
     </div>
   );
 }
