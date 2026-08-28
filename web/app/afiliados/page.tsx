@@ -14,11 +14,13 @@ import { AdminShell } from '@/components/AdminShell';
 import { DeleteRowButton } from '@/components/DeleteRowButton';
 import { MemberAccountPanel } from '@/components/MemberAccountPanel';
 import { MemberCreateForm } from '@/components/MemberCreateForm';
+import { MemberCredentialPanel } from '@/components/MemberCredentialPanel';
 import { MemberFichaPanel } from '@/components/MemberFichaPanel';
 import { RequireStaff } from '@/components/RequireStaff';
 import { PageSkeleton } from '@/components/Skeleton';
 import {
   IconAccount,
+  IconCredential,
   IconEdit,
   RowActions,
   RowIconButton,
@@ -31,9 +33,13 @@ import { formatMemberStatus } from '@/lib/member-labels';
 
 const PAGE_SIZE = 20;
 
-/**
- * Listado de afiliados: alta + Ficha / Cuenta en modal (CU-AFI).
- */
+const STATUS_OPTIONS: { value: MemberStatus | ''; label: string }[] = [
+  { value: '', label: 'Todos' },
+  { value: 'ACTIVE', label: 'Activo' },
+  { value: 'SUSPENDED', label: 'Suspendido' },
+  { value: 'INACTIVE', label: 'Inactivo' },
+];
+
 export default function AfiliadosPage() {
   return (
     <RequireStaff>
@@ -49,18 +55,16 @@ function AfiliadosInner() {
   const searchParams = useSearchParams();
   const fichaId = searchParams.get('ficha')?.trim() || null;
   const cuentaId = searchParams.get('cuenta')?.trim() || null;
+  const credencialId = searchParams.get('credencial')?.trim() || null;
   const createOpen =
-    searchParams.get('nuevo') === '1' && !fichaId && !cuentaId;
-
-  const appliedQuery = searchParams.get('q')?.trim() || '';
+    searchParams.get('nuevo') === '1' && !fichaId && !cuentaId && !credencialId;
 
   const [rows, setRows] = useState<MemberDetail[]>([]);
   const [total, setTotal] = useState(0);
   const [hasMore, setHasMore] = useState(false);
-  const [statusFilter, setStatusFilter] = useState<MemberStatus | 'ALL'>(
-    'ALL',
-  );
-  const [query, setQuery] = useState(appliedQuery);
+  const [query, setQuery] = useState('');
+  const [appliedQuery, setAppliedQuery] = useState('');
+  const [status, setStatus] = useState<MemberStatus | ''>('');
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -71,8 +75,8 @@ function AfiliadosInner() {
     setLoading(true);
     try {
       const data = await listMembers({
-        status: statusFilter === 'ALL' ? undefined : statusFilter,
         q: appliedQuery || undefined,
+        status: (status as MemberStatus) || undefined,
         page,
         pageSize: PAGE_SIZE,
       });
@@ -84,12 +88,12 @@ function AfiliadosInner() {
       setError(
         err instanceof ApiClientError
           ? err.message
-          : 'No se pudieron cargar afiliados',
+          : 'No se pudieron cargar los afiliados',
       );
     } finally {
       setLoading(false);
     }
-  }, [statusFilter, appliedQuery, page]);
+  }, [appliedQuery, status, page]);
 
   useEffect(() => {
     let cancelled = false;
@@ -102,21 +106,8 @@ function AfiliadosInner() {
     };
   }, [load]);
 
-  const [prevAppliedQuery, setPrevAppliedQuery] = useState(appliedQuery);
-  if (appliedQuery !== prevAppliedQuery) {
-    // ?q= puede llegar de Sesiones (Roster/Waitlist): sincroniza input y página.
-    setPrevAppliedQuery(appliedQuery);
-    setQuery(appliedQuery);
-    setPage(1);
-  }
-
   function closeModals() {
-    router.replace(
-      appliedQuery
-        ? `/afiliados?q=${encodeURIComponent(appliedQuery)}`
-        : '/afiliados',
-      { scroll: false },
-    );
+    router.replace('/afiliados', { scroll: false });
   }
 
   function openCreate() {
@@ -126,18 +117,23 @@ function AfiliadosInner() {
 
   function openFicha(id: string) {
     setFlashOk(null);
-    router.replace(
-      `/afiliados?${appliedQuery ? `q=${encodeURIComponent(appliedQuery)}&` : ''}ficha=${encodeURIComponent(id)}`,
-      { scroll: false },
-    );
+    router.replace(`/afiliados?ficha=${encodeURIComponent(id)}`, {
+      scroll: false,
+    });
   }
 
   function openCuenta(id: string) {
     setFlashOk(null);
-    router.replace(
-      `/afiliados?${appliedQuery ? `q=${encodeURIComponent(appliedQuery)}&` : ''}cuenta=${encodeURIComponent(id)}`,
-      { scroll: false },
-    );
+    router.replace(`/afiliados?cuenta=${encodeURIComponent(id)}`, {
+      scroll: false,
+    });
+  }
+
+  function openCredencial(id: string) {
+    setFlashOk(null);
+    router.replace(`/afiliados?credencial=${encodeURIComponent(id)}`, {
+      scroll: false,
+    });
   }
 
   return (
@@ -154,26 +150,24 @@ function AfiliadosInner() {
           value={query}
           onChange={setQuery}
           onSubmit={() => {
-            const q = query.trim();
-            router.replace(
-              q ? `/afiliados?q=${encodeURIComponent(q)}` : '/afiliados',
-              { scroll: false },
-            );
+            setPage(1);
+            setAppliedQuery(query.trim());
           }}
-          placeholder="Nombre, email, documento…"
+          placeholder="Nombre, email o doc"
         />
         <ListFilterField
           label="Estado"
-          value={statusFilter}
+          value={status}
           onChange={(v) => {
+            setStatus(v as MemberStatus | '');
             setPage(1);
-            setStatusFilter(v as MemberStatus | 'ALL');
           }}
         >
-          <option value="ALL">Todos</option>
-          <option value="ACTIVE">Activos</option>
-          <option value="SUSPENDED">Suspendidos</option>
-          <option value="INACTIVE">Inactivos</option>
+          {STATUS_OPTIONS.map((o) => (
+            <option key={o.value} value={o.value}>
+              {o.label}
+            </option>
+          ))}
         </ListFilterField>
       </ListToolbar>
 
@@ -222,6 +216,12 @@ function AfiliadosInner() {
                   onClick={() => openCuenta(m.id)}
                 >
                   <IconAccount />
+                </RowIconButton>
+                <RowIconButton
+                  label="Credencial de acceso"
+                  onClick={() => openCredencial(m.id)}
+                >
+                  <IconCredential />
                 </RowIconButton>
                 <DeleteRowButton
                   dialogTitle={`Eliminar afiliado?`}
@@ -276,7 +276,9 @@ function AfiliadosInner() {
             memberId={fichaId}
             onCancel={closeModals}
             onSaved={(m) => {
-              setFlashOk(`Ficha actualizada: ${m.name?.trim() || m.email}`);
+              setFlashOk(
+                `Ficha actualizada: ${m.name?.trim() || m.email}`,
+              );
               void load();
             }}
           />
@@ -287,11 +289,23 @@ function AfiliadosInner() {
         open={Boolean(cuentaId)}
         onClose={closeModals}
         title="Estado de cuenta"
-        description="Contratos, créditos, reservas, pagos y comprobantes."
-        size="comfortable"
+        description="Contrato activo y reservas."
+        size="wide"
       >
         {cuentaId ? (
-          <MemberAccountPanel key={cuentaId} memberId={cuentaId} embedded />
+          <MemberAccountPanel key={cuentaId} memberId={cuentaId} />
+        ) : null}
+      </AdminModal>
+
+      <AdminModal
+        open={Boolean(credencialId)}
+        onClose={closeModals}
+        title="Credencial de acceso"
+        description="Offer OID4VCI para molinete."
+        size="comfortable"
+      >
+        {credencialId ? (
+          <MemberCredentialPanel key={credencialId} memberId={credencialId} />
         ) : null}
       </AdminModal>
     </AdminShell>
