@@ -199,30 +199,6 @@ export function SessionRosterPanel({
 
   return (
     <div className="admin-stack">
-      {!cancelled ? (
-        <Panel title="Reservar con crédito" className="form-panel">
-          <form className="admin-form" onSubmit={(e) => void onBook(e)}>
-            <p className="muted small">
-              Consume 1 crédito del pack del afiliado. Drop-in CASH → Caja.
-            </p>
-            <MemberPicker
-              label="Afiliado"
-              value={memberId}
-              onChange={setMemberId}
-            />
-            {bookError ? <p className="error">{bookError}</p> : null}
-            {bookOk ? <p className="ok-msg">{bookOk}</p> : null}
-            <button
-              type="submit"
-              className="primary"
-              disabled={bookBusy || !memberId}
-            >
-              {bookBusy ? 'Reservando…' : 'Agregar al roster'}
-            </button>
-          </form>
-        </Panel>
-      ) : null}
-
       <ListToolbar
         hint={`Staff a cargo: ${session.instructorName ?? 'Sin asignar'}`}
       >
@@ -300,6 +276,30 @@ export function SessionRosterPanel({
         onConfirm={() => void doCancelReservation()}
         onCancel={() => setCancelTarget(null)}
       />
+
+      {!cancelled ? (
+        <Panel title="Reservar con crédito" className="form-panel">
+          <form className="admin-form" onSubmit={(e) => void onBook(e)}>
+            <p className="muted small">
+              Consume 1 crédito del pack del afiliado. Drop-in CASH → Caja.
+            </p>
+            <MemberPicker
+              label="Afiliado"
+              value={memberId}
+              onChange={setMemberId}
+            />
+            {bookError ? <p className="error">{bookError}</p> : null}
+            {bookOk ? <p className="ok-msg">{bookOk}</p> : null}
+            <button
+              type="submit"
+              className="primary"
+              disabled={bookBusy || !memberId}
+            >
+              {bookBusy ? 'Reservando…' : 'Agregar al roster'}
+            </button>
+          </form>
+        </Panel>
+      ) : null}
     </div>
   );
 }

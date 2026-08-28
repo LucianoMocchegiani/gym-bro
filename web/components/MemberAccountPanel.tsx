@@ -108,32 +108,30 @@ export function MemberAccountPanel({
       {loading ? (
         <SkeletonCards count={4} />
       ) : account ? (
-        <Panel>
-          <div className="stat-row">
-            <div>
-              <p className="muted small">Contratos activos</p>
-              <p className="stat-value">{account.summary.activeContracts}</p>
-            </div>
-            <div>
-              <p className="muted small">Acceso libre</p>
-              <p className="stat-value">
-                {account.summary.hasAccessLibre ? 'Sí' : 'No'}
-              </p>
-            </div>
-            <div>
-              <p className="muted small">Sesiones disponibles</p>
-              <p className="stat-value">{account.summary.totalCreditsRemaining}</p>
-            </div>
-            <div>
-              <p className="muted small">Deuda</p>
-              <p className="stat-value">
-                {account.debt.status === 'AL_DIA'
-                  ? 'Al día'
-                  : `$${account.debt.amount}`}
-              </p>
-            </div>
-          </div>
-        </Panel>
+        <div className="stat-row">
+          <Panel className="stat-card">
+            <p className="muted small">Contratos activos</p>
+            <p className="stat-value">{account.summary.activeContracts}</p>
+          </Panel>
+          <Panel className="stat-card">
+            <p className="muted small">Acceso libre</p>
+            <p className="stat-value">
+              {account.summary.hasAccessLibre ? 'Sí' : 'No'}
+            </p>
+          </Panel>
+          <Panel className="stat-card">
+            <p className="muted small">Sesiones disponibles</p>
+            <p className="stat-value">{account.summary.totalCreditsRemaining}</p>
+          </Panel>
+          <Panel className="stat-card">
+            <p className="muted small">Deuda</p>
+            <p className="stat-value">
+              {account.debt.status === 'AL_DIA'
+                ? 'Al día'
+                : `$${account.debt.amount}`}
+            </p>
+          </Panel>
+        </div>
       ) : null}
 
       <DataTable
