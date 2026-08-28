@@ -7,13 +7,17 @@ import { AdminShell } from '@/components/AdminShell';
 import { DataTable, ListToolbar } from '@/components/AdminList';
 import { Panel } from '@/components/AdminUi';
 import { MemberPicker } from '@/components/MemberPicker';
+import { ReceiptPanel } from '@/components/ReceiptPanel';
 import { RequireStaff } from '@/components/RequireStaff';
 import { SkeletonCards } from '@/components/Skeleton';
 import { StatusPill } from '@/components/StatusPill';
+import { IconReceipt, RowIconButton } from '@/components/RowActions';
 import { memberFichaHref } from '@/lib/member-link';
 import { ApiClientError } from '@/lib/api/client';
 import { getReportsSummary } from '@/lib/api/reports';
 import type { ReportsSummary } from '@/lib/api/reports';
+import { getReceiptByPayment } from '@/lib/api/receipts';
+import type { ReceiptDetail } from '@/lib/api/receipts';
 import { formatMoney } from '@/lib/cash-labels';
 import { todayBusinessDate } from '@/lib/api/cash-register';
 
@@ -66,6 +70,9 @@ function ReportesInner() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const [receipt, setReceipt] = useState<ReceiptDetail | null>(null);
+  const [receiptBusyId, setReceiptBusyId] = useState<string | null>(null);
+
   useEffect(() => {
     let cancelled = false;
     void (async () => {
@@ -95,6 +102,18 @@ function ReportesInner() {
     })();
     return () => { cancelled = true; };
   }, [appliedFrom, appliedTo, appliedMemberId]);
+
+  async function openReceiptForPayment(paymentId: string) {
+    setReceiptBusyId(paymentId);
+    try {
+      const r = await getReceiptByPayment(paymentId);
+      setReceipt(r);
+    } catch {
+      setReceipt(null);
+    } finally {
+      setReceiptBusyId(null);
+    }
+  }
 
   function onApply(e: FormEvent) {
     e.preventDefault();
@@ -217,6 +236,7 @@ function ReportesInner() {
             <th>Medio</th>
             <th>Tipo</th>
             <th>Monto</th>
+            <th />
           </>
         }
       >
@@ -245,9 +265,22 @@ function ReportesInner() {
               </StatusPill>
             </td>
             <td>{formatMoney(p.amount)}</td>
+            <td className="row-actions">
+              <RowIconButton
+                label="Ver comprobante"
+                disabled={receiptBusyId === p.id}
+                onClick={() => void openReceiptForPayment(p.id)}
+              >
+                <IconReceipt />
+              </RowIconButton>
+            </td>
           </tr>
         ))}
       </DataTable>
+
+      {receipt ? (
+        <ReceiptPanel receipt={receipt} onClose={() => setReceipt(null)} />
+      ) : null}
     </AdminShell>
   );
 }

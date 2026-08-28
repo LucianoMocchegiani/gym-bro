@@ -135,6 +135,18 @@ export function IconWaitlist() {
   );
 }
 
+/** Icono comprobante / recibo. */
+export function IconReceipt() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
+      <path
+        fill="currentColor"
+        d="M19.5 3.5 18 2l-1.5 1.5L15 2l-1.5 1.5L12 2l-1.5 1.5L9 2 7.5 3.5 6 2v14H3v3c0 1.66 3.34 3 7.5 3s7.5-1.34 7.5-3V2l-1.5 1.5zM19 19c0 .55-2.24 1-5 1s-5-.45-5-1v-1.5c0 1.38 2.24 2.5 5 2.5s5-1.12 5-2.5V19zM17 7H7V5h10v2zm-3.5 4H7V9h6.5v2zm3.5 4H7v-2h10v2z"
+      />
+    </svg>
+  );
+}
+
 /** Icono basura — eliminar (destructivo). */
 export function IconTrash() {
   return (

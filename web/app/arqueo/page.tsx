@@ -10,6 +10,11 @@ import { RequireStaff } from '@/components/RequireStaff';
 import { SkeletonCards, SkeletonPanel } from '@/components/Skeleton';
 import { StatusPill } from '@/components/StatusPill';
 import {
+  IconReceipt,
+  RowActions,
+  RowIconButton,
+} from '@/components/RowActions';
+import {
   getCashDay,
   reconcileCashDay,
   todayBusinessDate,
@@ -295,14 +300,13 @@ function ArqueoInner() {
             <td className="row-actions">
               {m.kind === 'INCOME' &&
               (m.concept === 'PACK_CONTRACT' || m.concept === 'DROP_IN') ? (
-                <button
-                  type="button"
-                  className="btn ghost"
+                <RowIconButton
+                  label="Ver comprobante"
                   disabled={receiptBusyId === m.paymentId}
                   onClick={() => void openReceiptForPayment(m.paymentId)}
                 >
-                  {receiptBusyId === m.paymentId ? '…' : 'Comprobante'}
-                </button>
+                  <IconReceipt />
+                </RowIconButton>
               ) : null}
             </td>
           </tr>
