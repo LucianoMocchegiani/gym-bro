@@ -174,7 +174,7 @@ function ReportesInner() {
       ) : null}
 
       <ListToolbar hint="Ingresos del rango. Afiliados y packs son estado actual.">
-        <form className="toolbar-field" onSubmit={onApply}>
+        <form className="toolbar-field search-form" onSubmit={onApply}>
           <label>
             Desde
             <input
