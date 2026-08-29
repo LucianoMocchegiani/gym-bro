@@ -15,6 +15,7 @@ import {
 import { randomBytes } from 'node:crypto';
 import { PrismaService } from '../prisma/prisma.service';
 import { MercadoPagoAccountService } from './mercadopago-account.service';
+import { SessionValidationService } from '../sessions/session-validation.service';
 import { CreateMpCartCheckoutDto, MpCartItemDto } from './dto/create-mp-cart-checkout.dto';
 import { TransactionService } from './transaction.service';
 import {
@@ -38,6 +39,7 @@ export class OnlinePaymentService {
     private readonly transactionService: TransactionService,
     private readonly config: ConfigService,
     @Inject(MP_ACCOUNT_PORT) private readonly mp: MpAccountPort,
+    private readonly sessionValidation: SessionValidationService,
   ) {}
 
   /**
@@ -81,7 +83,7 @@ export class OnlinePaymentService {
       return this.toCartResult(existing, existing.transactionItems);
     }
 
-    const lines = await this.resolveCartLines(tenantId, dto.items);
+    const lines = await this.resolveCartLines(tenantId, memberId, dto.items);
     const total = lines.reduce(
       (sum, line) => sum + line.amount * line.quantity,
       0,
@@ -192,6 +194,7 @@ export class OnlinePaymentService {
 
   private async resolveCartLines(
     tenantId: string,
+    memberId: string,
     items: CreateMpCartCheckoutDto['items'],
   ): Promise<MpCartLine[]> {
     const lines: MpCartLine[] = [];
@@ -225,43 +228,17 @@ export class OnlinePaymentService {
         continue;
       }
 
-      const session = await this.prisma.session.findFirst({
-        where: { id: item.id, tenantId },
-        select: {
-          id: true,
-          status: true,
-          startsAt: true,
-          endsAt: true,
-          capacity: true,
-          bookedCount: true,
-          service: {
-            select: {
-              name: true,
-              active: true,
-              dropInPrice: true,
-            },
-          },
-        },
-      });
-
-      if (!session) {
-        throw new NotFoundException(`Session ${item.id} not found in tenant`);
-      }
-      if (session.status !== 'PUBLISHED') {
-        throw new BadRequestException('Session is not published');
-      }
-      if (!session.service.active) {
-        throw new BadRequestException('Service is inactive');
-      }
-      if (!session.service.dropInPrice) {
-        throw new BadRequestException('Service has no drop-in price');
-      }
+      const session = await this.sessionValidation.validateSessionForDropIn(
+        tenantId,
+        memberId,
+        item.id,
+      );
       lines.push({
         kind: 'DROP_IN',
         refId: session.id,
         title: `Drop-in: ${session.service.name}`,
         quantity,
-        amount: session.service.dropInPrice,
+        amount: session.service.dropInPrice!,
         transactionItemIds: [],
       });
     }

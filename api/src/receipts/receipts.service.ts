@@ -68,6 +68,45 @@ export class ReceiptsService {
   }
 
   /**
+   * Emite comprobante de devolución para un payment refunded.
+   * idempotente por transactionItemId.
+   */
+  async issueForRefund(
+    tx: Tx,
+    input: {
+      tenantId: string;
+      transactionItemId: string;
+      memberId: string;
+      amount: number;
+      method: PaymentMethod;
+      concept: ReceiptConcept;
+      description?: string | null;
+    },
+  ): Promise<void> {
+    const existing = await tx.receipt.findUnique({
+      where: { transactionItemId: input.transactionItemId },
+      select: { id: true },
+    });
+    if (existing) {
+      return;
+    }
+
+    const number = await this.nextNumber(tx, input.tenantId);
+    await tx.receipt.create({
+      data: {
+        tenantId: input.tenantId,
+        transactionItemId: input.transactionItemId,
+        memberId: input.memberId,
+        number,
+        amount: input.amount,
+        method: input.method,
+        concept: input.concept,
+        description: input.description?.trim() || null,
+      },
+    });
+  }
+
+  /**
    * Lista comprobantes de un afiliado (paginado; más recientes primero).
    */
   async listByMember(

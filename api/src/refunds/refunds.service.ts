@@ -11,6 +11,7 @@ import {
   PaymentMethod,
   PaymentStatus,
   Prisma,
+  ReceiptConcept,
   RefundRequestStatus,
   ReservationStatus,
   ServiceType,
@@ -18,6 +19,7 @@ import {
 import { AUDIT_ACTIONS, AuditActor } from '../audit/audit.types';
 import { AuditService } from '../audit/audit.service';
 import { PaymentRegisterService } from '../payment-register/register.service';
+import { ReceiptsService } from '../receipts/receipts.service';
 import { ListResult, normalizeListQuery, toListResult } from '../common/list';
 import { MercadoPagoAccountService } from '../payment/mercadopago-account.service';
 import { MP_ACCOUNT_PORT, MpAccountPort } from '../payment/mp-account.port';
@@ -44,6 +46,7 @@ export class RefundsService {
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
     private readonly cashRegister: PaymentRegisterService,
+    private readonly receipts: ReceiptsService,
     private readonly accounts: MercadoPagoAccountService,
     private readonly waitlist: WaitlistService,
     @Inject(MP_ACCOUNT_PORT) private readonly mp: MpAccountPort,
@@ -329,6 +332,19 @@ export class RefundsService {
         concept: CashMovementConcept.REFUND,
         recordedByStaffId: staffId,
         at: refundedAt,
+      });
+
+      const receiptConcept = pay.packId
+        ? ReceiptConcept.PACK_CONTRACT
+        : ReceiptConcept.DROP_IN;
+      await this.receipts.issueForRefund(tx, {
+        tenantId,
+        transactionItemId: pay.id,
+        memberId: pay.memberId,
+        amount: pay.amount,
+        method: pay.method,
+        concept: receiptConcept,
+        description: `Devolución: ${pay.packId ? 'Pack' : 'Drop-in'}`,
       });
 
       if (refundRequestId) {

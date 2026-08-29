@@ -5,6 +5,7 @@
 import { apiRequest, newIdempotencyKey } from '@/lib/api/client';
 import { toSearchParams } from '@/lib/api/list';
 import type { ListParams, ListResult } from '@/lib/api/list';
+import type { ReceiptDetail } from '@/lib/api/receipts';
 
 export type ReservationStatus = 'CONFIRMED' | 'CANCELLED';
 export type ReservationCoverage = 'CREDIT' | 'DROP_IN';
@@ -79,21 +80,39 @@ export function cancelReservation(
   );
 }
 
+export type CashCartItem = {
+  kind: 'DROP_IN' | 'PACK';
+  id: string;
+  quantity?: number;
+};
+
+export type CashCartResult = {
+  transactionId: string;
+  amount: number;
+  status: string;
+  transactionItems: Array<{
+    id: string;
+    sessionId: string | null;
+    packId: string | null;
+    amount: number;
+  }>;
+  receipt: ReceiptDetail | null;
+};
+
 /**
- * Reserva drop-in con pago CASH (entra a caja).
+ * Checkout CASH de carrito (múltiples drop-ins en una sola transacción).
+ * Por ahora solo DROP_IN (packs en otra PR).
  */
-export function createCashDropIn(
+export function startCashCart(
   memberId: string,
-  sessionId: string,
-  idempotencyKey: string = newIdempotencyKey('cash-dropin'),
-): Promise<ReservationDetail> {
-  return apiRequest<ReservationDetail>(`/members/${memberId}/reservations`, {
-    method: 'POST',
-    body: {
-      sessionId,
-      coverage: 'DROP_IN',
-      method: 'CASH',
-      idempotencyKey,
+  items: CashCartItem[],
+  idempotencyKey: string = newIdempotencyKey('cash-cart'),
+): Promise<CashCartResult> {
+  return apiRequest<CashCartResult>(
+    `/members/${memberId}/transaction-items/cash/cart`,
+    {
+      method: 'POST',
+      body: { items, idempotencyKey },
     },
-  });
+  );
 }

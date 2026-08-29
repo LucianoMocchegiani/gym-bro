@@ -9,14 +9,13 @@ import { ReceiptPanel } from '@/components/ReceiptPanel';
 import { RequireStaff } from '@/components/RequireStaff';
 import { SkeletonPanel } from '@/components/Skeleton';
 import { ApiClientError, newIdempotencyKey } from '@/lib/api/client';
-import { createCashContract } from '@/lib/api/contracts';
 import {
   pickMpCartCheckoutUrl,
   startStaffMpCartCheckout,
 } from '@/lib/api/mercadopago';
 import { listActivePacks } from '@/lib/api/packs';
 import type { PackSummary } from '@/lib/api/packs';
-import { createCashDropIn } from '@/lib/api/reservations';
+import { startCashCart } from '@/lib/api/reservations';
 import { getReceiptByTransactionItem } from '@/lib/api/receipts';
 import type { ReceiptDetail } from '@/lib/api/receipts';
 import { listSessions } from '@/lib/api/sessions';
@@ -243,35 +242,21 @@ function CajaInner() {
         return;
       }
 
-      const transactionItemIds: string[] = [];
-      const labels: string[] = [];
-      for (const item of cart) {
-        if (item.kind === 'PACK') {
-          const contract = await createCashContract(
-            memberId,
-            item.refId,
-            newIdempotencyKey('cash-pack'),
-          );
-          transactionItemIds.push(contract.transactionItem.id);
-        } else {
-          const reservation = await createCashDropIn(
-            memberId,
-            item.refId,
-            newIdempotencyKey('cash-dropin'),
-          );
-          if (reservation.transactionItemId) {
-            transactionItemIds.push(reservation.transactionItemId);
-          }
-        }
-        labels.push(item.label);
-      }
+      const result = await startCashCart(
+        memberId,
+        cart.map((item) => ({
+          kind: item.kind,
+          id: item.refId,
+        })),
+        newIdempotencyKey('cash-cart'),
+      );
+      const labels = cart.map((item) => item.label);
       setCart([]);
       setCobroOk(
         `${labels.length} cobro${labels.length === 1 ? '' : 's'} en efectivo: ${labels.join(' · ')}`,
       );
-      const last = transactionItemIds[transactionItemIds.length - 1];
-      if (last) {
-        await openReceiptForTransactionItem(last);
+      if (result.receipt) {
+        setReceipt(result.receipt);
       }
     } catch (err) {
       setCobroError(

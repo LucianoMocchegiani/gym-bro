@@ -29,6 +29,7 @@ import {
 } from '../common/list';
 import { PrismaService } from '../prisma/prisma.service';
 import { CashPaymentService } from '../payment/cash-payment.service';
+import { SessionValidationService } from '../sessions/session-validation.service';
 import { TenantSettingsService } from '../tenant-settings/tenant-settings.service';
 import { WaitlistService } from '../waitlist/waitlist.service';
 import {
@@ -74,6 +75,7 @@ export class ReservationsService {
     private readonly tenantSettings: TenantSettingsService,
     private readonly waitlist: WaitlistService,
     private readonly cashPayment: CashPaymentService,
+    private readonly sessionValidation: SessionValidationService,
   ) {}
 
   /**
@@ -354,6 +356,21 @@ export class ReservationsService {
   }
 
   /**
+   * Valida que un miembro pueda hacer drop-in en una sesión.
+   *
+   * @throws NotFoundException Sesión no existe
+   * @throws BadRequestException Sesión no publicada / sin lugar / servicio inactivo / precio drop-in no configurado / fuera de ventana de booking
+   * @throws ConflictException Ya tiene reserva confirmada para esa sesión
+   */
+  async validateSessionForDropIn(
+    tenantId: string,
+    memberId: string,
+    sessionId: string,
+  ) {
+    return this.sessionValidation.validateSessionForDropIn(tenantId, memberId, sessionId);
+  }
+
+  /**
    * Reserva drop-in con pago stub/caja ya aprobado (CU-RES-002 / RN-PAG-004).
    *
    * @remarks Precio desde `service.dropInPrice`. Idempotente por `idempotencyKey`.
@@ -366,65 +383,11 @@ export class ReservationsService {
   ): Promise<ReservationDetail> {
     await this.assertMemberInTenant(tenantId, memberId, true);
 
-    const session = await this.prisma.session.findFirst({
-      where: { id: dto.sessionId, tenantId },
-      select: {
-        id: true,
-        serviceId: true,
-        status: true,
-        startsAt: true,
-        endsAt: true,
-        capacity: true,
-        bookedCount: true,
-        service: {
-          select: {
-            id: true,
-            name: true,
-            active: true,
-            dropInPrice: true,
-            type: true,
-          },
-        },
-      },
-    });
-    if (!session) {
-      throw new NotFoundException(
-        `Session ${dto.sessionId} not found in tenant`,
-      );
-    }
-    if (session.status !== SessionStatus.PUBLISHED) {
-      throw new BadRequestException('Session is not published');
-    }
-    await this.tenantSettings.assertSessionOpenForBooking(tenantId, session);
-    if (session.bookedCount >= session.capacity) {
-      throw new BadRequestException('Session is full');
-    }
-    if (!session.service.active) {
-      throw new BadRequestException('Service is inactive');
-    }
-    if (
-      session.service.dropInPrice === null ||
-      session.service.dropInPrice < 1
-    ) {
-      throw new BadRequestException(
-        'Drop-in is not enabled for this service (set dropInPrice)',
-      );
-    }
-
-    const existing = await this.prisma.reservation.findFirst({
-      where: {
-        tenantId,
-        memberId,
-        sessionId: session.id,
-        status: ReservationStatus.CONFIRMED,
-      },
-      select: { id: true },
-    });
-    if (existing) {
-      throw new ConflictException(
-        'Member already has a confirmed reservation for this session',
-      );
-    }
+    const session = await this.validateSessionForDropIn(
+      tenantId,
+      memberId,
+      dto.sessionId,
+    );
 
     const idempotencyKey =
       dto.idempotencyKey?.trim() || `stub-${randomBytes(16).toString('hex')}`;
@@ -432,6 +395,11 @@ export class ReservationsService {
     if (method === PaymentMethod.MP) {
       throw new BadRequestException(
         'Use POST /me/payments/mp/drop-in-checkout (or Staff /members/:id/...) for Mercado Pago drop-in',
+      );
+    }
+    if (method === PaymentMethod.CASH) {
+      throw new BadRequestException(
+        'Use POST /members/:id/transaction-items/cash/cart for CASH drop-ins',
       );
     }
 

@@ -1,7 +1,9 @@
 import {
   BadRequestException,
+  Inject,
   Injectable,
   NotFoundException,
+  forwardRef,
 } from '@nestjs/common';
 import {
   AccessAttemptResult,
@@ -88,6 +90,7 @@ export class ContractsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
+    @Inject(forwardRef(() => CashPaymentService))
     private readonly cashPayment: CashPaymentService,
     private readonly kuatiaOffers: KuatiaOfferService,
   ) {}
@@ -261,6 +264,11 @@ export class ContractsService {
     if (method === PaymentMethod.MP) {
       throw new BadRequestException(
         'Use POST /me/payments/mp/checkout for Mercado Pago pack purchases',
+      );
+    }
+    if (method === PaymentMethod.CASH) {
+      throw new BadRequestException(
+        'Use POST /members/:id/transaction-items/cash/cart for CASH pack purchases',
       );
     }
 
@@ -461,6 +469,92 @@ export class ContractsService {
       }
       throw error;
     }
+  }
+
+  /**
+   * Crea un contrato desde un TransactionItem ya APPROVED (CASH cart).
+   *
+   * @remarks No verifica método de pago — asume que el caller ya validó que
+   * es APPROVED. Usado por CashPaymentService.startCashCart.
+   */
+  async createFromTransactionItem(
+    tenantId: string,
+    transactionItemId: string,
+    actor: AuditActor,
+  ): Promise<ContractDetail> {
+    const transactionItem = await this.prisma.transactionItem.findFirst({
+      where: { id: transactionItemId, tenantId },
+      include: {
+        pack: {
+          include: {
+            components: { include: { service: true } },
+          },
+        },
+        contract: { include: this.contractInclude() },
+      },
+    });
+
+    if (!transactionItem) {
+      throw new NotFoundException(
+        `TransactionItem ${transactionItemId} not found in tenant`,
+      );
+    }
+
+    if (transactionItem.contract) {
+      return this.toDetail(transactionItem.contract);
+    }
+
+    if (transactionItem.status !== PaymentStatus.APPROVED) {
+      throw new BadRequestException(
+        `TransactionItem must be APPROVED (current: ${transactionItem.status})`,
+      );
+    }
+
+    if (!transactionItem.packId || !transactionItem.pack) {
+      throw new BadRequestException(
+        'TransactionItem is not a pack payment',
+      );
+    }
+
+    if (transactionItem.sessionId) {
+      throw new BadRequestException(
+        'TransactionItem looks like a drop-in, not pack',
+      );
+    }
+
+    const pack = transactionItem.pack;
+    if (pack.components.length === 0) {
+      throw new BadRequestException('Pack has no components');
+    }
+
+    const plan = await this.resolveContractPlan(
+      tenantId,
+      transactionItem.memberId,
+      pack,
+    );
+
+    const contract = await this.prisma.$transaction(async (tx) => {
+      return this.createContractInTx(tx, {
+        tenantId,
+        memberId: transactionItem.memberId,
+        packId: pack.id,
+        transactionItemId: transactionItem.id,
+        plan,
+      });
+    });
+
+    const detail = this.toDetail(contract);
+    await this.audit.record({
+      tenantId,
+      actor,
+      action: AUDIT_ACTIONS.contractCreate,
+      entityType: 'contract',
+      entityId: contract.id,
+      before: null,
+      after: this.auditSnapshot(detail),
+    });
+    await this.kuatiaOffers.ensureOfferForContract(tenantId, contract.id);
+    return detail;
   }
 
   private async loadActivePackForContract(

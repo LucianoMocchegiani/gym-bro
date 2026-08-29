@@ -1,8 +1,9 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { AuditModule } from '../audit/audit.module';
 import { AuthModule } from '../auth/auth.module';
 import { PaymentRegisterModule } from '../payment-register/payment-register.module';
 import { PaymentModule } from '../payment/payment.module';
+import { ReceiptsModule } from '../receipts/receipts.module';
 import { RolesModule } from '../roles/roles.module';
 import { WaitlistModule } from '../waitlist/waitlist.module';
 import { RefundsController } from './refunds.controller';
@@ -18,7 +19,8 @@ import { SuperRefundsController } from './super-refunds.controller';
     RolesModule,
     AuditModule,
     PaymentRegisterModule,
-    PaymentModule,
+    forwardRef(() => PaymentModule),
+    ReceiptsModule,
     WaitlistModule,
   ],
   controllers: [RefundsController, SuperRefundsController],

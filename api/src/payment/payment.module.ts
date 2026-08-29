@@ -7,6 +7,7 @@ import { AuditModule } from '../audit/audit.module';
 import { PaymentRegisterModule } from '../payment-register/payment-register.module';
 import { ReceiptsModule } from '../receipts/receipts.module';
 import { RolesModule } from '../roles/roles.module';
+import { SessionsModule } from '../sessions/sessions.module';
 import { ContractsModule } from '../contracts/contracts.module';
 import { ReservationsModule } from '../reservations/reservations.module';
 import { MercadoPagoAccountService } from './mercadopago-account.service';
@@ -21,10 +22,11 @@ import { SuperMercadoPagoAccountController } from './super-mercadopago-account.c
   imports: [
     AuditModule,
     PaymentRegisterModule,
-    ReceiptsModule,
-    RolesModule,
+    forwardRef(() => ReceiptsModule),
     forwardRef(() => ContractsModule),
     forwardRef(() => ReservationsModule),
+    SessionsModule,
+    RolesModule,
   ],
   controllers: [
     PaymentController,

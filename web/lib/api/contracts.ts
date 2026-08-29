@@ -32,24 +32,6 @@ export type ContractDetail = {
 };
 
 /**
- * Contrata pack con pago CASH (entra a caja).
- */
-export function createCashContract(
-  memberId: string,
-  packId: string,
-  idempotencyKey: string = newIdempotencyKey('cash-pack'),
-): Promise<ContractDetail> {
-  return apiRequest<ContractDetail>(`/members/${memberId}/contracts`, {
-    method: 'POST',
-    body: {
-      packId,
-      method: 'CASH',
-      idempotencyKey,
-    },
-  });
-}
-
-/**
  * Re-emite credential offer OID4VCI re-POSTeando el contrato con la misma key.
  *
  * @remarks `members.write`. No crea otro pago/contrato; fuerza Kuatia (`force`).
