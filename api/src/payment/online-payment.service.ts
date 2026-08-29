@@ -307,7 +307,7 @@ export class OnlinePaymentService {
     const publicBase =
       this.config.get<string>('PUBLIC_API_BASE_URL')?.replace(/\/$/, '') ||
       'http://localhost:3001';
-    return `${publicBase}/api/webhooks/mercadopago?tenantId=${tenantId}`;
+    return `${publicBase}/api/webhooks/payment?tenantId=${tenantId}`;
   }
 
   private async requireActiveMember(
