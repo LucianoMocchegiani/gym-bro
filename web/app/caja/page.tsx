@@ -17,7 +17,7 @@ import {
 import { listActivePacks } from '@/lib/api/packs';
 import type { PackSummary } from '@/lib/api/packs';
 import { createCashDropIn } from '@/lib/api/reservations';
-import { getReceiptByPayment } from '@/lib/api/receipts';
+import { getReceiptByTransactionItem } from '@/lib/api/receipts';
 import type { ReceiptDetail } from '@/lib/api/receipts';
 import { listSessions } from '@/lib/api/sessions';
 import type { SessionSummary } from '@/lib/api/sessions';
@@ -177,10 +177,10 @@ function CajaInner() {
     setCart((prev) => prev.filter((item) => item.key !== key));
   }
 
-  async function openReceiptForPayment(paymentId: string) {
+  async function openReceiptForTransactionItem(transactionItemId: string) {
     setReceiptError(null);
     try {
-      const r = await getReceiptByPayment(paymentId);
+      const r = await getReceiptByTransactionItem(transactionItemId);
       setReceipt(r);
     } catch (err) {
       setReceipt(null);
@@ -243,7 +243,7 @@ function CajaInner() {
         return;
       }
 
-      const paymentIds: string[] = [];
+      const transactionItemIds: string[] = [];
       const labels: string[] = [];
       for (const item of cart) {
         if (item.kind === 'PACK') {
@@ -252,15 +252,15 @@ function CajaInner() {
             item.refId,
             newIdempotencyKey('cash-pack'),
           );
-          paymentIds.push(contract.payment.id);
+          transactionItemIds.push(contract.transactionItem.id);
         } else {
           const reservation = await createCashDropIn(
             memberId,
             item.refId,
             newIdempotencyKey('cash-dropin'),
           );
-          if (reservation.paymentId) {
-            paymentIds.push(reservation.paymentId);
+          if (reservation.transactionItemId) {
+            transactionItemIds.push(reservation.transactionItemId);
           }
         }
         labels.push(item.label);
@@ -269,9 +269,9 @@ function CajaInner() {
       setCobroOk(
         `${labels.length} cobro${labels.length === 1 ? '' : 's'} en efectivo: ${labels.join(' · ')}`,
       );
-      const last = paymentIds[paymentIds.length - 1];
+      const last = transactionItemIds[transactionItemIds.length - 1];
       if (last) {
-        await openReceiptForPayment(last);
+        await openReceiptForTransactionItem(last);
       }
     } catch (err) {
       setCobroError(

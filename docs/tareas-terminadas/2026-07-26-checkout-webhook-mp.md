@@ -11,8 +11,8 @@ El afiliado inicia checkout de pack (`Payment` PENDING + Preference). El webhook
 
 ## Cambios principales
 
-- `PaymentMethod.MP` + ids/URLs Preference en `payments`
-- `POST /me/payments/mp/checkout` (Member)
+- `PaymentMethod.MP` + ids/URLs Preference en `transaction_items`
+- `POST /me/transaction-items/mp/checkout` (Member)
 - `POST /webhooks/mercadopago` + `/simulate` (stub)
 - `ContractsService.confirmFromApprovedPayment`
 

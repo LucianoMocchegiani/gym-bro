@@ -2,7 +2,7 @@
 
 **Fecha:** 2026-07-26  
 **Roadmap:** E5 — Cobro en caja / Caja del día  
-**Commit:** `27963e9` — feat(api): record cash register movements for CASH payments  
+**Commit:** `27963e9` — feat(api): record cash register movements for CASH transaction_items  
 **Remote:** https://github.com/LucianoMocchegiani/gym-bro/commit/27963e9
 
 ## Resumen

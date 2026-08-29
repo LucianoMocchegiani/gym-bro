@@ -11,8 +11,8 @@ Checkout Mercado Pago para drop-in (Member y Staff) y pack también desde Staff.
 
 ## Cambios principales
 
-- `payments.session_id` + migración
-- `POST .../drop-in-checkout` (Member/Staff) y Staff `POST .../payments/mp/checkout` (pack)
+- `transaction_items.session_id` + migración
+- `POST .../drop-in-checkout` (Member/Staff) y Staff `POST .../transaction-items/mp/checkout` (pack)
 - Webhook: pack → contrato; drop-in → reserva
 - Docs, roadmap y Postman
 

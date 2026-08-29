@@ -1,55 +1,53 @@
 /**
- * Devoluciones API (módulo `refunds`) — CU-PAG-004/005/007.
+ * Refunds API (CU-PAG-004 / CU-PAG-005 / RN-PAG-012).
  */
 
 import { apiRequest } from '@/lib/api/client';
-import { toSearchParams } from '@/lib/api/list';
-import type { ListParams, ListResult } from '@/lib/api/list';
+import type { ListResult } from '@/lib/api/list';
 
-export type RefundRequestStatus = 'PENDING' | 'REJECTED' | 'EXECUTED';
+export type RefundMotiveCode = 'solicitud' | 'doble_cobro' | 'otro';
 
-export type RefundMotiveCode = 'doble_cobro' | 'solicitud' | 'otro';
+export type RefundRequestStatus = 'PENDING' | 'EXECUTED' | 'REJECTED';
 
 export type RefundRequestDetail = {
   id: string;
-  tenantId: string;
-  paymentId: string;
+  transactionItemId: string;
   memberId: string;
   status: RefundRequestStatus;
   reason: string | null;
-  rejectionReason: string | null;
-  resolvedByStaffId: string | null;
-  resolvedAt: string | null;
   createdAt: string;
-  updatedAt: string;
+  resolvedAt: string | null;
+  resolvedByStaffId: string | null;
 };
 
 export type RefundExecutionDetail = {
-  paymentId: string;
-  status: 'REFUNDED';
-  method: 'STUB' | 'CASH' | 'MP';
-  amount: number;
-  reason: string;
-  motiveCode: string | null;
-  mpRefundManualPending: boolean;
-  contractId: string | null;
-  reservationId: string | null;
-  refundRequestId: string | null;
+  id: string;
+  transactionItemId: string;
+  status: string;
   refundedAt: string;
-};
-
-export type ListRefundRequestsInput = {
-  status?: RefundRequestStatus;
-} & ListParams;
-
-export type ExecuteRefundInput = {
-  reason: string;
-  motiveCode?: RefundMotiveCode;
+  refundReason: string | null;
   refundRequestId?: string;
 };
 
+export type ListRefundRequestsInput = {
+  status?: 'PENDING' | 'EXECUTED' | 'REJECTED';
+  memberId?: string;
+  page?: number;
+  pageSize?: number;
+};
+
+function toSearchParams(input?: ListRefundRequestsInput): URLSearchParams {
+  const params = new URLSearchParams();
+  if (!input) return params;
+  if (input.status) params.set('status', input.status);
+  if (input.memberId) params.set('memberId', input.memberId);
+  if (input.page) params.set('page', String(input.page));
+  if (input.pageSize) params.set('pageSize', String(input.pageSize));
+  return params;
+}
+
 /**
- * Lista solicitudes de devolución del gym (`payments.refund`).
+ * Lista solicitudes de devolución del gym (`transaction_items.refund`).
  */
 export function listRefundRequests(
   input?: ListRefundRequestsInput,
@@ -61,16 +59,16 @@ export function listRefundRequests(
 }
 
 /**
- * Ejecuta devolución total de un pago (`payments.refund`).
+ * Ejecuta devolución total de un transactionItem (`transaction_items.refund`).
  *
  * @remarks RN-PAG-011: staff con flag puede devolver siempre.
- * Si hay solicitud PENDING del pago, la API la marca EXECUTED.
+ * Si hay solicitud PENDING del transactionItem, la API la marca EXECUTED.
  */
 export function executeRefund(
-  paymentId: string,
-  input: ExecuteRefundInput,
+  transactionItemId: string,
+  input: { motiveCode?: string; note?: string },
 ): Promise<RefundExecutionDetail> {
-  return apiRequest<RefundExecutionDetail>(`/payments/${paymentId}/refunds`, {
+  return apiRequest<RefundExecutionDetail>(`/transaction-items/${transactionItemId}/refunds`, {
     method: 'POST',
     body: input,
   });

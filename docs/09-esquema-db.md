@@ -55,7 +55,7 @@ erDiagram
   tenants ||--o{ cash_movements : records
   tenants ||--o{ cash_reconciliations : reconciles
   tenants ||--o{ receipts : issues
-  tenants ||--o{ payments : charges
+  tenants ||--o{ transaction_items : charges
   tenants ||--o{ contracts : sells
   tenants ||--o{ refund_requests : has
   members ||--o{ refund_requests : requests
@@ -354,14 +354,14 @@ Catálogo **global** de permisos de producto (códigos fijos). Fuente en código
 | Columna | Tipo | Notas |
 |---------|------|--------|
 | `id` | uuid PK | |
-| `code` | text UK | ej. `members.write`, `payments.refund` |
+| `code` | text UK | ej. `members.write`, `transaction_items.refund` |
 | `description` | text | |
 | `dangerous` | boolean | RN-ROL-007 |
 | `created_at` / `updated_at` | timestamptz | |
 
 Se hace upsert al crear un tenant (`RolesSeedService.ensurePermissionCatalog`).
 
-**Flags peligrosos (RN-ROL-007):** el campo `dangerous` marca el permiso. La API exige el código con `@RequirePermission`. Tener el permiso en algún rol = flag otorgado. Cableado en roles/staff y en acciones de negocio (`payments.refund`, `access.manual_pass`, `mp.connect`, etc.).
+**Flags peligrosos (RN-ROL-007):** el campo `dangerous` marca el permiso. La API exige el código con `@RequirePermission`. Tener el permiso en algún rol = flag otorgado. Cableado en roles/staff y en acciones de negocio (`transaction_items.refund`, `access.manual_pass`, `mp.connect`, etc.).
 
 ---
 
@@ -553,7 +553,7 @@ API Staff: `GET|POST|PATCH /api/packs`. Super: `/api/tenants/:tenantId/packs`.
 
 ---
 
-### 4.15 `payments`
+### 4.15 `transaction_items`
 
 Pago de negocio (RN-PAG-003..005). En MVP staff crea stub/caja ya `APPROVED` junto a la contratación o drop-in.
 
@@ -579,7 +579,7 @@ Movimiento de caja del día (CU-PAG-002 / RN-PAG-007).
 | `id` | uuid PK | |
 | `tenant_id` | uuid FK | CASCADE |
 | `business_date` | date | día BA (`America/Argentina/Buenos_Aires`) |
-| `payment_id` | uuid FK UK | 1:1 con payment CASH |
+| `transaction_item_id` | uuid FK UK | 1:1 con transaction_item CASH |
 | `member_id` | uuid FK | CASCADE |
 | `recorded_by_staff_id` | uuid FK nullable | SET NULL |
 | `amount` | int | ingreso ≥ 1 |
@@ -609,13 +609,13 @@ Arqueo de caja del día (CU-PAG-003 / RN-PAG-007).
 
 ### 4.15d `receipts` / `receipt_sequences`
 
-Comprobante interno (RN-PAG-009). 1:1 con `payments` APPROVED.
+Comprobante interno (RN-PAG-009). 1:1 con `transaction_items` APPROVED.
 
 | Columna (`receipts`) | Tipo | Notas |
 |---------|------|--------|
 | `id` | uuid PK | |
 | `tenant_id` / `member_id` | uuid FK | CASCADE |
-| `payment_id` | uuid FK UK | RESTRICT |
+| `transaction_item_id` | uuid FK UK | RESTRICT |
 | `number` | int | secuencial por tenant |
 | `amount` / `method` | int / enum | snapshot del pago |
 | `concept` | `ReceiptConcept` | `PACK_CONTRACT` \| `DROP_IN` |
@@ -624,7 +624,7 @@ Comprobante interno (RN-PAG-009). 1:1 con `payments` APPROVED.
 
 `receipt_sequences`: PK `tenant_id`, `next_number`. Código API: `GB-` + number pad 6.
 
-API: Member `GET /api/me/receipts`; Staff `GET /api/payments/:paymentId/receipt`, `GET /api/members/:id/receipts` (`members.read`).
+API: Member `GET /api/me/receipts`; Staff `GET /api/transaction-items/:transactionItemId/receipt`, `GET /api/members/:id/receipts` (`members.read`).
 
 ### 4.15e `mercadopago_accounts`
 
@@ -641,7 +641,7 @@ Cuenta Mercado Pago del gym (CU-PAG-006 / RN-PAG-001). 1:1 con tenant.
 
 API Staff: `GET|PUT|DELETE /api/mercadopago/account`, `POST .../test` (`mp.connect`). Super: `/api/tenants/:tenantId/mercadopago/account`. Env: `MP_CREDENTIALS_SECRET`, `MP_ACCOUNT_VALIDATE_MODE=live|stub`.
 
-### 4.15f `payments` (campos MP)
+### 4.15f `transaction_items` (campos MP)
 
 Extensión checkout/webhook (CU-PAG-001 / drop-in):
 
@@ -653,43 +653,43 @@ Extensión checkout/webhook (CU-PAG-001 / drop-in):
 | `mp_payment_id` | text nullable UK | dedup webhook |
 | `mp_init_point` / `mp_sandbox_init_point` | text nullable | URLs checkout |
 
-API: pack `POST /me|members/:id/payments/mp/checkout`; drop-in `.../drop-in-checkout`. Webhook: `POST /api/webhooks/mercadopago?tenantId=` (+ `/simulate` stub). Al `APPROVED`: pack → contrato; drop-in → reserva `DROP_IN` + recibo. `payments.cart_id` nullable FK → `cart_checkouts` (columna agregada en la migración carrito).
+API: pack `POST /me|members/:id/transaction-items/mp/checkout`; drop-in `.../drop-in-checkout`. Webhook: `POST /api/webhooks/mercadopago?tenantId=` (+ `/simulate` stub). Al `APPROVED`: pack → contrato; drop-in → reserva `DROP_IN` + recibo. `transaction_items.transaction_id` nullable FK → `transactions` (columna agregada en la migración carrito).
 
-### 4.15g `cart_checkouts` + `payments.cart_id`
+### 4.15g `transactions` + `transaction_items.transaction_id`
 
-Carrito de Caja con Mercado Pago (CU-PAG-001 / modelo MercadoLibre): 1 preference con `items[]` → **1 link con el total** → 1 pago. Al webhook APPROVED se confirma un contrato/reserva por cada payment del carrito.
+Carrito de Caja con Mercado Pago (CU-PAG-001 / modelo MercadoLibre): 1 preference con `items[]` → **1 link con el total** → 1 pago. Al webhook APPROVED se confirma un contrato/reserva por cada transaction_item del carrito.
 
 | Columna | Tipo | Notas |
 |---------|------|--------|
 | `id` | uuid PK | usado como `externalReference` de la Preference |
 | `tenant_id` / `member_id` | uuid FK | CASCADE |
-| `amount` | int | suma de los payments (total) |
+| `amount` | int | suma de los transaction_items (total) |
 | `status` | `PaymentStatus` | `PENDING` \| `APPROVED` \| `REJECTED` |
-| `idempotency_key` | text | unique `(tenant_id, idempotency_key)`; sub-keys `:idx` en payments |
+| `idempotency_key` | text | unique `(tenant_id, idempotency_key)`; sub-keys `:idx` en transaction_items |
 | `mp_preference_id` / `mp_init_point` / `mp_sandbox_init_point` | text nullable | Preference + URLs checkout |
-| `mp_payment_id` | text nullable | **solo aquí** (no en los payments del carrito; `payments.mp_payment_id` es UK) |
+| `mp_payment_id` | text nullable | **solo aquí** (no en los transaction_items del carrito; `transaction_items.mp_payment_id` es UK) |
 | `created_at` / `updated_at` | timestamptz | |
 
-Payments del carrito: `cart_id` FK nullable; `idempotency_key = "<cartKey>:<idx>"`. Refund de carrito MP **no soportado** (limitación conocida).
+Transaction_items del carrito: `transaction_id` FK nullable; `idempotency_key = "<cartKey>:<idx>"`. Refund de carrito MP **no soportado** (limitación conocida).
 
-API Staff: `POST /api/members/:memberId/payments/mp/cart` (`members.write`; body `{ items: [{ kind: PACK|DROP_IN, id, quantity? }], idempotencyKey? }`). Simulate: `POST /api/webhooks/mercadopago/simulate` con `cartId` (exactamente uno entre `paymentId`/`cartId`).
+API Staff: `POST /api/members/:memberId/transaction-items/mp/cart` (`members.write`; body `{ items: [{ kind: PACK|DROP_IN, id, quantity? }], idempotencyKey? }`). Simulate: `POST /api/webhooks/mercadopago/simulate` con `transactionId` (exactamente uno entre `transactionItemId`/`transactionId`).
 
-### 4.15h `refund_requests` + refund en `payments`
+### 4.15h `refund_requests` + refund en `transaction_items`
 
 Devoluciones (CU-PAG-004/005/007 / RN-PAG-011/012).
 
 | Columna (`refund_requests`) | Tipo | Notas |
 |---------|------|--------|
 | `id` | uuid PK | |
-| `tenant_id` / `payment_id` / `member_id` | uuid FK | |
+| `tenant_id` / `transaction_item_id` / `member_id` | uuid FK | |
 | `status` | `RefundRequestStatus` | `PENDING` \| `REJECTED` \| `EXECUTED` |
 | `reason` / `rejection_reason` | text nullable | |
 | `resolved_by_staff_id` / `resolved_at` | uuid / timestamptz nullable | |
 | `created_at` / `updated_at` | timestamptz | |
 
-Pagos: `refunded_at`, `refund_reason`, `mp_refund_manual_pending`. Caja: `OUTCOME` + concepto `REFUND`; unique `(payment_id, kind)`.
+Transaction_items: `refunded_at`, `refund_reason`, `mp_refund_manual_pending`. Caja: `OUTCOME` + concepto `REFUND`; unique `(transaction_item_id, kind)`.
 
-API: Member `POST /me/payments/:id/refund-requests`, `GET /me/refund-requests`. Staff `GET /refund-requests`, `POST /payments/:id/refunds` (`payments.refund`).
+API: Member `POST /me/transaction-items/:id/refund-requests`, `GET /me/refund-requests`. Staff `GET /refund-requests`, `POST /transaction-items/:id/refunds` (`transaction_items.refund`).
 
 ### 4.15i `access_credentials`
 
@@ -740,7 +740,7 @@ Contratación tras pago aprobado (CU-CON-001).
 |---------|------|--------|
 | `id` | uuid PK | |
 | `tenant_id` / `member_id` / `pack_id` | uuid FK | |
-| `payment_id` | uuid FK UK | 1:1 con payment |
+| `transaction_item_id` | uuid FK UK | 1:1 con transaction_item |
 | `status` | `ContractStatus` | |
 | `starts_at` / `ends_at` | timestamptz | MONTHLY → +1 mes; renovación: día siguiente a `endsAt` (o día de pago si hueco sin ingresos); ONE_TIME → `creditsExpireAt` futuro o +1 mes |
 | `has_access_libre` | boolean | |
@@ -834,7 +834,7 @@ Reserva con crédito o drop-in (CU-RES-001 / RN-RES-001).
 | `id` | uuid PK | |
 | `tenant_id` / `member_id` / `session_id` | uuid FK | |
 | `contract_id` / `credit_balance_id` | uuid FK nullable | requeridos si `CREDIT` |
-| `payment_id` | uuid FK → `payments` nullable unique | requerido si `DROP_IN` |
+| `transaction_item_id` | uuid FK → `transaction_items` nullable unique | requerido si `DROP_IN` |
 | `status` | `ReservationStatus` | create → `CONFIRMED` |
 | `coverage` | `ReservationCoverage` | `CREDIT` \| `DROP_IN` |
 | `checked_in_at` | timestamptz nullable | presente al verify/pase (RN-RES-007) |
@@ -891,33 +891,33 @@ API: Member `POST|GET /api/me/waitlist`, `PATCH /api/me/waitlist/:id/status`; St
 | `20260721200000_members_ficha_status` | `MemberStatus` + ficha (`phone`, `document`, `branch_id`) en `members` |
 | `20260722140000_services` | enum `ServiceType` + tabla `services` |
 | `20260722180000_packs` | enum `BillingPeriod` + `packs` + `pack_components` |
-| `20260722210000_contracts_payments` | `payments`, `contracts`, `contract_credit_balances` |
+| `20260722210000_contracts_payments` | `transaction_items`, `contracts`, `contract_credit_balances` |
 | `20260725150000_sessions` | enum `SessionStatus` + tabla `sessions` |
 | `20260725180000_reservations_credit` | enums reserva + tabla `reservations` |
 | `20260726140000_session_recurrence_rules` | enum `Weekday`, reglas semanales + vínculo desde `sessions` |
 | `20260726180000_tenant_settings_cancel_reservation` | `tenant_settings` + backfill horas cancelación |
 | `20260726190000_waitlist_entries` | enums waitlist + `waitlist_entries` + `waitlist_mode` en settings |
 | `20260726200000_allow_late_session_entry` | `allow_late_session_entry` en `tenant_settings` |
-| `20260726210000_reservation_drop_in` | `DROP_IN` + `drop_in_price` + `reservations.payment_id` nullable FKs crédito |
+| `20260726210000_reservation_drop_in` | `DROP_IN` + `drop_in_price` + `reservations.transaction_item_id` nullable FKs crédito |
 | `20260726220000_cash_movements` | enums caja + tabla `cash_movements` |
 | `20260726230000_cash_reconciliations` | tabla `cash_reconciliations` (arqueo 1/día) |
 | `20260726240000_receipts` | `ReceiptConcept` + `receipt_sequences` + `receipts` |
 | `20260726250000_mercadopago_accounts` | tabla `mercadopago_accounts` (cuenta MP por tenant) |
-| `20260726260000_payment_mp_checkout` | `PaymentMethod.MP` + ids/URLs Preference en `payments` |
-| `20260726270000_refunds` | `refund_requests` + OUTCOME/REFUND caja + campos refund en payments |
+| `20260726260000_payment_mp_checkout` | `PaymentMethod.MP` + ids/URLs Preference en `transaction_items` |
+| `20260726270000_refunds` | `refund_requests` + OUTCOME/REFUND caja + campos refund en transaction_items |
 | `20260727120000_access_credentials` | enum `AccessCredentialStatus` + tabla `access_credentials` |
 | `20260727180000_access_verify` | `access_attempts` + settings deuda/multi + `checked_in_at` |
 | `20260727230000_access_manual_pass` | `motive_code` + `note` en `access_attempts` |
-| `20260728120000_payment_drop_in_session` | `payments.session_id` para checkout drop-in MP |
+| `20260728120000_payment_drop_in_session` | `transaction_items.session_id` para checkout drop-in MP |
 | `20260730180000_tenant_slug` | `tenants.slug` UNIQUE (subdominio) |
 | `20260802180000_tenant_quark_provision` | `tenants.quark_*` + enum `QuarkProvisionStatus` (histórico) |
 | `20260802190000_pack_quark_configuration` | `packs.quark_*` (histórico; renombrado abajo) |
 | `20260803010000_credential_offers` | enum `CredentialOfferStatus` + tabla `credential_offers` |
-| `20260803020000_credential_offers_slim` | quita `claims` / `configuration_id` / `vct` / `payment_id` / `issuance_session_id` |
+| `20260803020000_credential_offers_slim` | quita `claims` / `configuration_id` / `vct` / `transaction_item_id` / `issuance_session_id` |
 | `20260803030000_credential_offer_accepted` | enum `ACCEPTED` |
 | `20260813180000_kuatia_shared_env_drop_tenant_bind` | drop `tenants.quark_*` + enum; rename `packs.quark_*` → `kuatia_*` |
 | `20260814180000_staff_credential_offers` | `staff_credential_offers` + `access_attempts.subject_staff_id` |
-| `20260820090000_cart_checkout` | tabla `cart_checkouts` (carrito Caja MP) + `payments.cart_id` FK |
+| `20260820090000_cart_checkout` | tabla `transactions` (carrito Caja MP) + `transaction_items.transaction_id` FK |
 
 Comandos y checklist “desde cero”: [13-setup-db-desde-cero.md](./13-setup-db-desde-cero.md).
 

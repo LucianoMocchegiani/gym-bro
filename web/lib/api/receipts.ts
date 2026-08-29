@@ -12,7 +12,7 @@ export type ReceiptConcept = 'PACK_CONTRACT' | 'DROP_IN';
 export type ReceiptDetail = {
   id: string;
   tenantId: string;
-  paymentId: string;
+  transactionItemId: string;
   memberId: string;
   number: number;
   /** Código legible, ej. `GB-000001`. */
@@ -25,12 +25,12 @@ export type ReceiptDetail = {
 };
 
 /**
- * Comprobante de un pago APPROVED (`members.read`).
+ * Comprobante de un transactionItem APPROVED (`members.read`).
  */
-export function getReceiptByPayment(
-  paymentId: string,
+export function getReceiptByTransactionItem(
+  transactionItemId: string,
 ): Promise<ReceiptDetail> {
-  return apiRequest<ReceiptDetail>(`/payments/${paymentId}/receipt`);
+  return apiRequest<ReceiptDetail>(`/transaction-items/${transactionItemId}/receipt`);
 }
 
 /**

@@ -114,17 +114,17 @@ class WaitlistEntry {
   }
 }
 
-/// Resultado de checkout drop-in MP (`POST /me/payments/mp/drop-in-checkout`).
+/// Resultado de checkout drop-in MP (`POST /me/transaction-items/mp/drop-in-checkout`).
 class DropInCheckout {
   /// Crea el modelo.
   DropInCheckout({
-    required this.paymentId,
+    required this.transactionItemId,
     required this.status,
     required this.amount,
     required this.checkoutUrl,
   });
 
-  final String paymentId;
+  final String transactionItemId;
   final String status;
   final int amount;
 
@@ -138,7 +138,7 @@ class DropInCheckout {
         ? url
         : (sandbox != null && sandbox.isNotEmpty ? sandbox : null);
     return DropInCheckout(
-      paymentId: json['paymentId'] as String,
+      transactionItemId: json['transactionItemId'] as String,
       status: json['status'] as String? ?? '',
       amount: (json['amount'] as num?)?.toInt() ?? 0,
       checkoutUrl: resolved,
@@ -281,7 +281,7 @@ class SessionsRepository {
   /// Inicia checkout MP para drop-in (pago único de la sesión).
   Future<DropInCheckout> startDropIn(String sessionId) {
     return _api.postJson<DropInCheckout>(
-      '/api/me/payments/mp/drop-in-checkout',
+      '/api/me/transaction-items/mp/drop-in-checkout',
       body: {'sessionId': sessionId},
       parse: (json) {
         if (json is! Map) {

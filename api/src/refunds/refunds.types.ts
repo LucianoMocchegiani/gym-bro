@@ -4,7 +4,7 @@
 export type RefundRequestDetail = {
   id: string;
   tenantId: string;
-  paymentId: string;
+  transactionItemId: string;
   memberId: string;
   status: 'PENDING' | 'REJECTED' | 'EXECUTED';
   reason: string | null;
@@ -19,7 +19,7 @@ export type RefundRequestDetail = {
  * Resultado de ejecutar un reembolso.
  */
 export type RefundExecutionDetail = {
-  paymentId: string;
+  transactionItemId: string;
   status: 'REFUNDED';
   method: 'STUB' | 'CASH' | 'MP';
   amount: number;

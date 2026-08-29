@@ -15,9 +15,9 @@ export type ReservationDetail = {
   serviceName: string;
   contractId: string | null;
   creditBalanceId: string | null;
-  paymentId: string | null;
-  paymentAmount: number | null;
-  paymentMethod: 'STUB' | 'CASH' | 'MP' | null;
+  transactionItemId: string | null;
+  transactionItemAmount: number | null;
+  transactionItemMethod: 'STUB' | 'CASH' | 'MP' | null;
   status: 'CONFIRMED' | 'CANCELLED';
   coverage: 'CREDIT' | 'DROP_IN';
   createdAt: Date;

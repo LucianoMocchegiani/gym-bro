@@ -19,7 +19,6 @@ import {
 import { randomBytes } from 'node:crypto';
 import { AUDIT_ACTIONS, AuditActor } from '../audit/audit.types';
 import { AuditService } from '../audit/audit.service';
-import { CashRegisterService } from '../cash-register/cash-register.service';
 import {
   ListQueryDto,
   ListResult,
@@ -29,7 +28,7 @@ import {
 } from '../common/list';
 import { PrismaService } from '../prisma/prisma.service';
 import { KuatiaOfferService } from '../kuatia/kuatia-offer.service';
-import { ReceiptsService } from '../receipts/receipts.service';
+import { CashPaymentService } from '../payment/cash-payment.service';
 import { CreateContractDto, UpdateContractStatusDto } from './dto/contract.dto';
 import { ContractDetail } from './contracts.types';
 
@@ -38,7 +37,7 @@ const CONTRACT_ORDER_FIELDS = ['createdAt', 'startsAt'] as const;
 
 type ContractWithRelations = Contract & {
   pack: { id: string; name: string };
-  payment: {
+  transactionItem: {
     id: string;
     amount: number;
     status: PaymentStatus;
@@ -89,8 +88,7 @@ export class ContractsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
-    private readonly cashRegister: CashRegisterService,
-    private readonly receipts: ReceiptsService,
+    private readonly cashPayment: CashPaymentService,
     private readonly kuatiaOffers: KuatiaOfferService,
   ) {}
 
@@ -233,7 +231,7 @@ export class ContractsService {
         startsAt: detail.startsAt.toISOString(),
         endsAt: detail.endsAt?.toISOString() ?? null,
         hasAccessLibre: detail.hasAccessLibre,
-        paymentId: detail.payment.id,
+        transactionItemId: detail.transactionItem.id,
         creditBalances: detail.creditBalances.map((b) => ({
           serviceId: b.serviceId,
           remaining: b.remaining,
@@ -266,7 +264,7 @@ export class ContractsService {
       );
     }
 
-    const existingPayment = await this.prisma.payment.findUnique({
+    const existingTransactionItem = await this.prisma.transactionItem.findUnique({
       where: {
         tenantId_idempotencyKey: { tenantId, idempotencyKey },
       },
@@ -274,16 +272,16 @@ export class ContractsService {
         contract: { include: this.contractInclude() },
       },
     });
-    if (existingPayment?.contract) {
+    if (existingTransactionItem?.contract) {
       // Misma key = idempotencia de pago/contrato + force re-oferta Quark.
       await this.kuatiaOffers.ensureOfferForContract(
         tenantId,
-        existingPayment.contract.id,
+        existingTransactionItem.contract.id,
         { force: true },
       );
-      return this.toDetail(existingPayment.contract);
+      return this.toDetail(existingTransactionItem.contract);
     }
-    if (existingPayment && !existingPayment.contract) {
+    if (existingTransactionItem && !existingTransactionItem.contract) {
       throw new BadRequestException(
         'Idempotency key already used without a contract',
       );
@@ -296,44 +294,27 @@ export class ContractsService {
 
     try {
       const contract = await this.prisma.$transaction(async (tx) => {
-        const payment = await tx.payment.create({
-          data: {
-            tenantId,
-            memberId,
+        const { transaction } = await this.cashPayment.processPayment(tx, {
+          tenantId,
+          memberId,
+          items: [{
             packId: pack.id,
             amount: pack.price,
-            status: PaymentStatus.APPROVED,
-            method,
             idempotencyKey,
-          },
-        });
-
-        await this.cashRegister.recordIncomeIfCash(tx, {
-          tenantId,
-          paymentId: payment.id,
-          memberId,
-          amount: payment.amount,
-          method: payment.method,
-          concept: CashMovementConcept.PACK_CONTRACT,
-          recordedByStaffId:
-            actor.profileType === 'STAFF' ? actor.userId : null,
-        });
-
-        await this.receipts.issueForApprovedPayment(tx, {
-          tenantId,
-          paymentId: payment.id,
-          memberId,
-          amount: payment.amount,
-          method: payment.method,
-          concept: ReceiptConcept.PACK_CONTRACT,
+          }],
+          idempotencyKey,
+          method,
+          cashConcept: CashMovementConcept.PACK_CONTRACT,
+          receiptConcept: ReceiptConcept.PACK_CONTRACT,
           description: pack.name,
+          recordedByStaffId: actor.profileType === 'STAFF' ? actor.userId : null,
         });
 
         return this.createContractInTx(tx, {
           tenantId,
           memberId,
           packId: pack.id,
-          paymentId: payment.id,
+          transactionItemId: transaction.transactionItems[0].id,
           plan,
         });
       });
@@ -355,7 +336,7 @@ export class ContractsService {
         error instanceof Prisma.PrismaClientKnownRequestError &&
         error.code === 'P2002'
       ) {
-        const again = await this.prisma.payment.findUnique({
+        const again = await this.prisma.transactionItem.findUnique({
           where: {
             tenantId_idempotencyKey: { tenantId, idempotencyKey },
           },
@@ -382,11 +363,11 @@ export class ContractsService {
    */
   async confirmFromApprovedPayment(
     tenantId: string,
-    paymentId: string,
+    transactionItemId: string,
     actor: AuditActor,
   ): Promise<ContractDetail> {
-    const payment = await this.prisma.payment.findFirst({
-      where: { id: paymentId, tenantId },
+    const transactionItem = await this.prisma.transactionItem.findFirst({
+      where: { id: transactionItemId, tenantId },
       include: {
         contract: { include: this.contractInclude() },
         pack: {
@@ -396,63 +377,53 @@ export class ContractsService {
         },
       },
     });
-    if (!payment) {
-      throw new NotFoundException(`Payment ${paymentId} not found in tenant`);
+    if (!transactionItem) {
+      throw new NotFoundException(`TransactionItem ${transactionItemId} not found in tenant`);
     }
-    if (payment.contract) {
+    if (transactionItem.contract) {
       await this.kuatiaOffers.ensureOfferForContract(
         tenantId,
-        payment.contract.id,
+        transactionItem.contract.id,
         { force: true },
       );
-      return this.toDetail(payment.contract);
+      return this.toDetail(transactionItem.contract);
     }
-    if (payment.status !== PaymentStatus.APPROVED) {
+    if (transactionItem.status !== PaymentStatus.APPROVED) {
       throw new BadRequestException(
-        `Payment must be APPROVED to confirm contract (current: ${payment.status})`,
+        `TransactionItem must be APPROVED to confirm contract (current: ${transactionItem.status})`,
       );
     }
-    if (payment.method !== PaymentMethod.MP) {
+    if (transactionItem.method !== PaymentMethod.MP) {
       throw new BadRequestException(
         'confirmFromApprovedPayment is only for MP payments',
       );
     }
-    if (!payment.packId || !payment.pack) {
+    if (!transactionItem.packId || !transactionItem.pack) {
       throw new BadRequestException('MP pack payment is missing packId');
     }
-    if (payment.sessionId) {
+    if (transactionItem.sessionId) {
       throw new BadRequestException(
-        'Payment looks like a drop-in checkout, not pack',
+        'TransactionItem looks like a drop-in checkout, not pack',
       );
     }
 
-    const pack = payment.pack;
+    const pack = transactionItem.pack;
     if (pack.components.length === 0) {
       throw new BadRequestException('Pack has no components');
     }
     const plan = await this.resolveContractPlan(
       tenantId,
-      payment.memberId,
+      transactionItem.memberId,
       pack,
     );
 
     try {
       const contract = await this.prisma.$transaction(async (tx) => {
-        await this.receipts.issueForApprovedPayment(tx, {
-          tenantId,
-          paymentId: payment.id,
-          memberId: payment.memberId,
-          amount: payment.amount,
-          method: payment.method,
-          concept: ReceiptConcept.PACK_CONTRACT,
-          description: pack.name,
-        });
-
         return this.createContractInTx(tx, {
           tenantId,
-          memberId: payment.memberId,
+          memberId: transactionItem.memberId,
           packId: pack.id,
-          paymentId: payment.id,
+          transactionItemId: transactionItem.id,
           plan,
         });
       });
@@ -474,8 +445,8 @@ export class ContractsService {
         error instanceof Prisma.PrismaClientKnownRequestError &&
         error.code === 'P2002'
       ) {
-        const again = await this.prisma.payment.findFirst({
-          where: { id: paymentId, tenantId },
+        const again = await this.prisma.transactionItem.findFirst({
+          where: { id: transactionItemId, tenantId },
           include: {
             contract: { include: this.contractInclude() },
           },
@@ -703,7 +674,7 @@ export class ContractsService {
       tenantId: string;
       memberId: string;
       packId: string;
-      paymentId: string;
+      transactionItemId: string;
       plan: ContractPlan;
     },
   ) {
@@ -712,7 +683,7 @@ export class ContractsService {
         tenantId: input.tenantId,
         memberId: input.memberId,
         packId: input.packId,
-        paymentId: input.paymentId,
+        transactionItemId: input.transactionItemId,
         status: ContractStatus.ACTIVE,
         startsAt: input.plan.startsAt,
         endsAt: input.plan.endsAt,
@@ -792,7 +763,7 @@ export class ContractsService {
   private contractInclude() {
     return {
       pack: { select: { id: true, name: true } },
-      payment: {
+      transactionItem: {
         select: {
           id: true,
           amount: true,
@@ -852,12 +823,12 @@ export class ContractsService {
       startsAt: contract.startsAt,
       endsAt: contract.endsAt,
       hasAccessLibre: contract.hasAccessLibre,
-      payment: {
-        id: contract.payment.id,
-        amount: contract.payment.amount,
-        status: contract.payment.status,
-        method: contract.payment.method,
-        idempotencyKey: contract.payment.idempotencyKey,
+      transactionItem: {
+        id: contract.transactionItem.id,
+        amount: contract.transactionItem.amount,
+        status: contract.transactionItem.status,
+        method: contract.transactionItem.method,
+        idempotencyKey: contract.transactionItem.idempotencyKey,
       },
       creditBalances: contract.balances.map((b) => ({
         id: b.id,
@@ -880,7 +851,7 @@ export class ContractsService {
       startsAt: detail.startsAt.toISOString(),
       endsAt: detail.endsAt?.toISOString() ?? null,
       hasAccessLibre: detail.hasAccessLibre,
-      paymentId: detail.payment.id,
+      transactionItemId: detail.transactionItem.id,
       creditBalances: detail.creditBalances.map((b) => ({
         serviceId: b.serviceId,
         remaining: b.remaining,

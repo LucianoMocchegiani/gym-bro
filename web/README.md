@@ -19,7 +19,7 @@ Con tunnel: `{slug}.{NEXT_PUBLIC_APP_DOMAIN}` (ej. `https://demo.pruebasaproducc
 | `/roles` / `/staff` | Roles y staff |
 | `/config` | Settings + Mercado Pago |
 | `/caja` | Caja del día |
-| `/devoluciones` | Cola de solicitudes + ejecutar reembolso (`payments.refund`) |
+| `/devoluciones` | Cola de solicitudes + ejecutar reembolso (`transaction_items.refund`) |
 | `/reportes` | Ingresos del período (detalle nominado) + snapshot packs/activos |
 | `/puerta` | Tabs: Verificar (OID4VP) · Pase manual · Historial; `/puerta/pase-manual` → `?tab=pase` |
 

@@ -1,21 +1,29 @@
 /**
  * Reportes mínimos (E11) — ingresos $ + snapshot comercial.
+ *
+ * Transacciones agrupadas: MP por cart_checkout, efectivo por payment individual.
  */
 
 import { apiRequest } from '@/lib/api/client';
 
-export type ReportPaymentRow = {
+export type ReportTransactionItem = {
   id: string;
   amount: number;
-  method: 'STUB' | 'CASH' | 'MP';
+  kind: 'PACK' | 'DROP_IN';
+  packName: string | null;
+};
+
+export type ReportTransactionRow = {
+  id: string;
+  amount: number;
+  method: 'CASH' | 'MP';
   status: 'APPROVED';
   createdAt: string;
   memberId: string;
   memberName: string | null;
   memberEmail: string;
-  packId: string | null;
-  packName: string | null;
-  kind: 'PACK' | 'DROP_IN';
+  mpPaymentId: string | null;
+  items: ReportTransactionItem[];
 };
 
 export type ReportsSummary = {
@@ -39,10 +47,9 @@ export type ReportsSummary = {
     byMethod: {
       CASH: number;
       MP: number;
-      STUB: number;
     };
-    payments: ReportPaymentRow[];
-    paymentCount: number;
+    transactions: ReportTransactionRow[];
+    transactionCount: number;
   };
 };
 

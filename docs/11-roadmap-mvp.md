@@ -109,7 +109,7 @@
 - [x] Conectar cuenta MP del gym
   - `mercadopago_accounts` 1:1; access_token cifrado; PUT/GET/DELETE + test (`mp.connect`); sin checkout
 - [x] Checkout MP (pack / mensualidad / drop-in)
-  - Member/Staff pack: `POST /me|members/:id/payments/mp/checkout`
+  - Member/Staff pack: `POST /me|members/:id/transaction-items/mp/checkout`
   - Member/Staff drop-in: `POST .../drop-in-checkout` → reserva al APPROVED; STUB/CASH drop-in sigue inmediato
 - [x] Webhook MP idempotente
   - `POST /webhooks/mercadopago?tenantId=`; simulate stub; dedup `mp_payment_id`; pack→contrato / drop-in→reserva
@@ -127,9 +127,9 @@
 - [x] Arqueo
   - `POST /cash-register/day/reconcile`; 1 por día; no bloquea cobros
 - [x] Solicitud devolución (afiliado)
-  - `POST /me/payments/:id/refund-requests`; política fija RN-PAG-012; rechazo con motivo
+  - `POST /me/transaction-items/:id/refund-requests`; política fija RN-PAG-012; rechazo con motivo
 - [x] Ejecutar devolución (staff + flag)
-  - `POST /payments/:id/refunds` (`payments.refund`); total; CASH egreso; MP refund/manual_pending
+  - `POST /transaction-items/:id/refunds` (`transaction_items.refund`); total; CASH egreso; MP refund/manual_pending
 - [x] Reembolso por doble cobro
   - mismo execute con `motiveCode=doble_cobro`
 
@@ -216,10 +216,10 @@ Detalle: [14-auditoria-roadmap-vs-codigo-2026-08-13.md](./14-auditoria-roadmap-v
 
 - [ ] Comprar pack / pagar (Tienda)
   - Reemplazar `StorePlaceholderScreen`
-  - Listar packs → `POST /me/payments/mp/checkout` → abrir Preference (`url_launcher`)
+  - Listar packs → `POST /me/transaction-items/mp/checkout` → abrir Preference (`url_launcher`)
   - Parsear `recentPayments` del account (hoy la API los manda; Flutter no)
 - [ ] Solicitar devolución
-  - `POST /me/payments/:id/refund-requests` + listado solicitudes
+  - `POST /me/transaction-items/:id/refund-requests` + listado solicitudes
   - UI desde pagos recientes / cuenta
 
 ### Pendiente — depende de otras épicas
@@ -266,7 +266,7 @@ Detalle: [14-auditoria…](./14-auditoria-roadmap-vs-codigo-2026-08-13.md).
 ### Pendiente — thin gaps (API ya existe)
 
 - [x] Devoluciones staff
-  - `/devoluciones`: listar `GET /refund-requests` + ejecutar `POST /payments/:id/refunds`
+  - `/devoluciones`: listar `GET /refund-requests` + ejecutar `POST /transaction-items/:id/refunds`
   - Motivos `solicitud` / `doble_cobro` / `otro`; confirmación tipada; atajo desde pagos APPROVED en ficha afiliado
 - [x] Cancelar contrato desde ficha afiliado
   - `PATCH /contracts/:id/status` → `CANCELLED` (RN-SER-009); motivo opcional → auditoría
@@ -285,7 +285,7 @@ Detalle: [14-auditoria…](./14-auditoria-roadmap-vs-codigo-2026-08-13.md).
   - Fecha opcional en nuevo/editar; bloque solo lectura Kuatia en `/packs/[id]`
 - [x] Comprobantes (receipts)
   - Caja: link en movimientos + panel tras cobro; ficha afiliado: listado + por pago
-  - `GET /payments/:id/receipt`, `GET /members/:id/receipts` (`members.read`)
+  - `GET /transaction-items/:id/receipt`, `GET /members/:id/receipts` (`members.read`)
 - [x] Auditoría UI
   - `/auditoria`: `GET /audit-events` (`audit.read`); búsqueda `q` + detalle before/after
 - [x] Nav / páginas gated por permiso (hoy se muestran todos los links)

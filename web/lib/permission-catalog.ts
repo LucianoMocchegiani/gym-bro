@@ -62,7 +62,7 @@ export const PERMISSION_OPTIONS: readonly PermissionOption[] = [
     dangerous: false,
   },
   {
-    code: 'payments.refund',
+    code: 'transaction_items.refund',
     description: 'Devoluciones y reembolsos',
     dangerous: true,
   },

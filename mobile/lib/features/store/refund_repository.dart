@@ -8,9 +8,9 @@ class RefundRepository {
   final ApiClient _api;
 
   /// Solicita devolución de un pago.
-  Future<RefundRequest> requestRefund(String paymentId, {String? reason}) {
+  Future<RefundRequest> requestRefund(String transactionItemId, {String? reason}) {
     return _api.postJson<RefundRequest>(
-      '/api/me/payments/$paymentId/refund-requests',
+      '/api/me/transaction-items/$transactionItemId/refund-requests',
       body: {if (reason != null && reason.isNotEmpty) 'reason': reason},
       parse: (json) {
         if (json is! Map) {
@@ -27,7 +27,7 @@ class RefundRequest {
   /// Crea el modelo.
   RefundRequest({
     required this.id,
-    required this.paymentId,
+    required this.transactionItemId,
     required this.status,
     this.reason,
     this.rejectionReason,
@@ -35,7 +35,7 @@ class RefundRequest {
   });
 
   final String id;
-  final String paymentId;
+  final String transactionItemId;
   final String status;
   final String? reason;
   final String? rejectionReason;
@@ -44,7 +44,7 @@ class RefundRequest {
   factory RefundRequest.fromJson(Map<String, dynamic> json) {
     return RefundRequest(
       id: json['id'] as String,
-      paymentId: json['paymentId'] as String,
+      transactionItemId: json['transactionItemId'] as String,
       status: json['status'] as String? ?? '',
       reason: json['reason'] as String?,
       rejectionReason: json['rejectionReason'] as String?,

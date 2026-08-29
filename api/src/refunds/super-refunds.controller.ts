@@ -34,14 +34,14 @@ export class SuperRefundsController {
     return this.refunds.listForTenant(tenantId, query);
   }
 
-  @Post('payments/:paymentId/refunds')
+  @Post('transaction-items/:transactionItemId/refunds')
   @HttpCode(HttpStatus.CREATED)
   execute(
     @Param('tenantId', ParseUUIDPipe) tenantId: string,
-    @Param('paymentId', ParseUUIDPipe) paymentId: string,
+    @Param('transactionItemId', ParseUUIDPipe) transactionItemId: string,
     @CurrentUser() user: AuthUser,
     @Body() dto: ExecuteRefundDto,
   ): Promise<RefundExecutionDetail> {
-    return this.refunds.execute(tenantId, paymentId, dto, toAuditActor(user));
+    return this.refunds.execute(tenantId, transactionItemId, dto, toAuditActor(user));
   }
 }

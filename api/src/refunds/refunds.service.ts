@@ -6,6 +6,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import {
+  CashMovementConcept,
   ContractStatus,
   PaymentMethod,
   PaymentStatus,
@@ -16,10 +17,10 @@ import {
 } from '@prisma/client';
 import { AUDIT_ACTIONS, AuditActor } from '../audit/audit.types';
 import { AuditService } from '../audit/audit.service';
-import { CashRegisterService } from '../cash-register/cash-register.service';
+import { PaymentRegisterService } from '../payment-register/register.service';
 import { ListResult, normalizeListQuery, toListResult } from '../common/list';
-import { MercadoPagoAccountService } from '../mercadopago/mercadopago-account.service';
-import { MP_ACCOUNT_PORT, MpAccountPort } from '../mercadopago/mp-account.port';
+import { MercadoPagoAccountService } from '../payment/mercadopago-account.service';
+import { MP_ACCOUNT_PORT, MpAccountPort } from '../payment/mp-account.port';
 import { PrismaService } from '../prisma/prisma.service';
 import { WaitlistService } from '../waitlist/waitlist.service';
 import {
@@ -34,7 +35,7 @@ const LIBRE_REFUND_HOURS = 24;
 /**
  * Solicitudes y ejecución de devoluciones (CU-PAG-004/005/007).
  *
- * @remarks Política fija RN-PAG-012. Staff con `payments.refund` puede
+ * @remarks Política fija RN-PAG-012. Staff con `transaction_items.refund` puede
  * devolver siempre (RN-PAG-011). Sin comprobante de devolución ni N1 E9.
  */
 @Injectable()
@@ -42,7 +43,7 @@ export class RefundsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
-    private readonly cashRegister: CashRegisterService,
+    private readonly cashRegister: PaymentRegisterService,
     private readonly accounts: MercadoPagoAccountService,
     private readonly waitlist: WaitlistService,
     @Inject(MP_ACCOUNT_PORT) private readonly mp: MpAccountPort,
@@ -54,29 +55,29 @@ export class RefundsService {
   async requestByMember(
     tenantId: string,
     memberId: string,
-    paymentId: string,
+    transactionItemId: string,
     dto: CreateRefundRequestDto,
     actor: AuditActor,
   ): Promise<RefundRequestDetail> {
-    const payment = await this.loadPaymentForRefund(tenantId, paymentId);
-    if (payment.memberId !== memberId) {
-      throw new ForbiddenException('Payment does not belong to this member');
+    const transactionItem = await this.loadPaymentForRefund(tenantId, transactionItemId);
+    if (transactionItem.memberId !== memberId) {
+      throw new ForbiddenException('TransactionItem does not belong to this member');
     }
-    if (payment.status === PaymentStatus.REFUNDED) {
-      throw new BadRequestException('Payment is already refunded');
+    if (transactionItem.status === PaymentStatus.REFUNDED) {
+      throw new BadRequestException('TransactionItem is already refunded');
     }
-    if (payment.status !== PaymentStatus.APPROVED) {
+    if (transactionItem.status !== PaymentStatus.APPROVED) {
       throw new BadRequestException('Only APPROVED payments can be refunded');
     }
 
-    const policy = this.evaluateMemberPolicy(payment);
+    const policy = this.evaluateMemberPolicy(transactionItem);
     const reason = dto.reason?.trim() || null;
 
     if (!policy.allowed) {
       const row = await this.prisma.refundRequest.create({
         data: {
           tenantId,
-          paymentId,
+          transactionItemId,
           memberId,
           status: RefundRequestStatus.REJECTED,
           reason,
@@ -91,7 +92,7 @@ export class RefundsService {
         entityType: 'refund_request',
         entityId: row.id,
         after: {
-          paymentId,
+          transactionItemId,
           status: row.status,
           rejectionReason: policy.reason,
         },
@@ -104,7 +105,7 @@ export class RefundsService {
     const pending = await this.prisma.refundRequest.findFirst({
       where: {
         tenantId,
-        paymentId,
+        transactionItemId,
         status: RefundRequestStatus.PENDING,
       },
     });
@@ -115,7 +116,7 @@ export class RefundsService {
     const row = await this.prisma.refundRequest.create({
       data: {
         tenantId,
-        paymentId,
+        transactionItemId,
         memberId,
         status: RefundRequestStatus.PENDING,
         reason,
@@ -128,7 +129,7 @@ export class RefundsService {
       action: AUDIT_ACTIONS.refundRequestCreate,
       entityType: 'refund_request',
       entityId: row.id,
-      after: { paymentId, status: row.status, reason },
+      after: { transactionItemId, status: row.status, reason },
     });
 
     return this.toRequestDetail(row);
@@ -201,7 +202,7 @@ export class RefundsService {
    */
   async execute(
     tenantId: string,
-    paymentId: string,
+    transactionItemId: string,
     dto: ExecuteRefundDto,
     actor: AuditActor,
   ): Promise<RefundExecutionDetail> {
@@ -209,12 +210,12 @@ export class RefundsService {
       throw new ForbiddenException('Staff or Super required to execute refund');
     }
 
-    const payment = await this.loadPaymentForRefund(tenantId, paymentId);
+    const transactionItem = await this.loadPaymentForRefund(tenantId, transactionItemId);
 
-    if (payment.status === PaymentStatus.REFUNDED) {
-      return this.toExecutionDetail(payment, dto, null);
+    if (transactionItem.status === PaymentStatus.REFUNDED) {
+      return this.toExecutionDetail(transactionItem, dto, null);
     }
-    if (payment.status !== PaymentStatus.APPROVED) {
+    if (transactionItem.status !== PaymentStatus.APPROVED) {
       throw new BadRequestException('Only APPROVED payments can be refunded');
     }
 
@@ -224,19 +225,19 @@ export class RefundsService {
 
     if (refundRequestId) {
       const req = await this.prisma.refundRequest.findFirst({
-        where: { id: refundRequestId, tenantId, paymentId },
+        where: { id: refundRequestId, tenantId, transactionItemId },
       });
       if (!req) {
         throw new NotFoundException('Refund request not found for payment');
       }
       if (req.status === RefundRequestStatus.EXECUTED) {
-        return this.toExecutionDetail(payment, dto, req.id);
+        return this.toExecutionDetail(transactionItem, dto, req.id);
       }
     } else {
       const pending = await this.prisma.refundRequest.findFirst({
         where: {
           tenantId,
-          paymentId,
+          transactionItemId,
           status: RefundRequestStatus.PENDING,
         },
       });
@@ -244,8 +245,8 @@ export class RefundsService {
     }
 
     let mpRefundManualPending = false;
-    if (payment.method === PaymentMethod.MP) {
-      if (!payment.mpPaymentId) {
+    if (transactionItem.method === PaymentMethod.MP) {
+      if (!transactionItem.mpPaymentId) {
         mpRefundManualPending = true;
       } else {
         try {
@@ -253,8 +254,8 @@ export class RefundsService {
             await this.accounts.getDecryptedAccessToken(tenantId);
           const result = await this.mp.refundPayment(
             accessToken,
-            payment.mpPaymentId,
-            payment.amount,
+            transactionItem.mpPaymentId,
+            transactionItem.amount,
           );
           mpRefundManualPending = result.manualPending;
         } catch {
@@ -268,8 +269,8 @@ export class RefundsService {
     let sessionIdForWaitlist: string | null = null;
 
     const updated = await this.prisma.$transaction(async (tx) => {
-      const pay = await tx.payment.update({
-        where: { id: payment.id },
+      const pay = await tx.transactionItem.update({
+        where: { id: transactionItem.id },
         data: {
           status: PaymentStatus.REFUNDED,
           refundedAt,
@@ -320,12 +321,12 @@ export class RefundsService {
         }
       }
 
-      await this.cashRegister.recordOutcomeIfCash(tx, {
+      await this.cashRegister.recordOutcome(tx, {
         tenantId,
-        paymentId: pay.id,
+        transactionItemId: pay.id,
         memberId: pay.memberId,
         amount: pay.amount,
-        method: pay.method,
+        concept: CashMovementConcept.REFUND,
         recordedByStaffId: staffId,
         at: refundedAt,
       });
@@ -385,7 +386,7 @@ export class RefundsService {
   /**
    * Evalúa política afiliado RN-PAG-012 (defaults fijos).
    */
-  private evaluateMemberPolicy(payment: {
+  private evaluateMemberPolicy(transactionItem: {
     id: string;
     createdAt: Date;
     packId: string | null;
@@ -399,10 +400,10 @@ export class RefundsService {
     reservation: { id: string; status: ReservationStatus } | null;
   }): { allowed: boolean; reason: string | null } {
     const withinLibreWindow =
-      Date.now() - payment.createdAt.getTime() <=
+      Date.now() - transactionItem.createdAt.getTime() <=
       LIBRE_REFUND_HOURS * 60 * 60 * 1000;
 
-    if (payment.reservation) {
+    if (transactionItem.reservation) {
       if (!withinLibreWindow) {
         return {
           allowed: false,
@@ -412,19 +413,19 @@ export class RefundsService {
       return { allowed: true, reason: null };
     }
 
-    if (!payment.contract || !payment.packId) {
+    if (!transactionItem.contract || !transactionItem.packId) {
       return {
         allowed: false,
-        reason: 'Payment has no contract or reservation to refund',
+        reason: 'TransactionItem has no contract or reservation to refund',
       };
     }
 
     const types = new Set(
-      payment.contract.pack.components.map((c) => c.service.type),
+      transactionItem.contract.pack.components.map((c) => c.service.type),
     );
     const hasLibre = types.has(ServiceType.ACCESO_LIBRE);
     const hasSessions = types.has(ServiceType.POR_SESIONES);
-    const creditsUntouched = payment.contract.balances.every(
+    const creditsUntouched = transactionItem.contract.balances.every(
       (b) => b.remaining === b.initialAmount,
     );
 
@@ -464,9 +465,9 @@ export class RefundsService {
     return { allowed: true, reason: null };
   }
 
-  private async loadPaymentForRefund(tenantId: string, paymentId: string) {
-    const payment = await this.prisma.payment.findFirst({
-      where: { id: paymentId, tenantId },
+  private async loadPaymentForRefund(tenantId: string, transactionItemId: string) {
+    const transactionItem = await this.prisma.transactionItem.findFirst({
+      where: { id: transactionItemId, tenantId },
       include: {
         contract: {
           include: {
@@ -481,16 +482,16 @@ export class RefundsService {
         reservation: true,
       },
     });
-    if (!payment) {
-      throw new NotFoundException(`Payment ${paymentId} not found in tenant`);
+    if (!transactionItem) {
+      throw new NotFoundException(`TransactionItem ${transactionItemId} not found in tenant`);
     }
-    return payment;
+    return transactionItem;
   }
 
   private toRequestDetail(row: {
     id: string;
     tenantId: string;
-    paymentId: string;
+    transactionItemId: string;
     memberId: string;
     status: RefundRequestStatus;
     reason: string | null;
@@ -503,7 +504,7 @@ export class RefundsService {
     return {
       id: row.id,
       tenantId: row.tenantId,
-      paymentId: row.paymentId,
+      transactionItemId: row.transactionItemId,
       memberId: row.memberId,
       status: row.status,
       reason: row.reason,
@@ -516,7 +517,7 @@ export class RefundsService {
   }
 
   private toExecutionDetail(
-    payment: {
+    transactionItem: {
       id: string;
       method: PaymentMethod;
       amount: number;
@@ -530,17 +531,17 @@ export class RefundsService {
     refundRequestId: string | null,
   ): RefundExecutionDetail {
     return {
-      paymentId: payment.id,
+      transactionItemId: transactionItem.id,
       status: 'REFUNDED',
-      method: payment.method,
-      amount: payment.amount,
-      reason: payment.refundReason ?? dto.reason,
+      method: transactionItem.method,
+      amount: transactionItem.amount,
+      reason: transactionItem.refundReason ?? dto.reason,
       motiveCode: dto.motiveCode ?? null,
-      mpRefundManualPending: payment.mpRefundManualPending,
-      contractId: payment.contract?.id ?? null,
-      reservationId: payment.reservation?.id ?? null,
+      mpRefundManualPending: transactionItem.mpRefundManualPending,
+      contractId: transactionItem.contract?.id ?? null,
+      reservationId: transactionItem.reservation?.id ?? null,
       refundRequestId,
-      refundedAt: (payment.refundedAt ?? new Date()).toISOString(),
+      refundedAt: (transactionItem.refundedAt ?? new Date()).toISOString(),
     };
   }
 }

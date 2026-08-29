@@ -20,7 +20,7 @@ export type ContractDetail = {
   startsAt: string;
   endsAt: string | null;
   hasAccessLibre: boolean;
-  payment: {
+  transactionItem: {
     id: string;
     amount: number;
     status: string;

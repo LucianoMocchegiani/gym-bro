@@ -27,5 +27,5 @@ En `/caja` el staff elige medio Efectivo o Mercado Pago para pack y drop-in. Con
 
 ## Referencias
 
-- CU-PAG-001 · `POST /members/:id/payments/mp/checkout` · drop-in
+- CU-PAG-001 · `POST /members/:id/transaction-items/mp/checkout` · drop-in
 - Commit: `8371b03` / https://github.com/LucianoMocchegiani/gym-bro/commit/8371b03

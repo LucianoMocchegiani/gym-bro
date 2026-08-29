@@ -61,12 +61,12 @@ export class ReceiptsController {
     return this.receipts.listByMember(tenantId, memberId, query);
   }
 
-  @Get('payments/:paymentId/receipt')
+  @Get('transaction-items/:transactionItemId/receipt')
   @RequirePermission('members.read')
-  findByPayment(
+  findByTransactionItem(
     @CurrentTenant() tenantId: string,
-    @Param('paymentId', ParseUUIDPipe) paymentId: string,
+    @Param('transactionItemId', ParseUUIDPipe) transactionItemId: string,
   ): Promise<ReceiptDetail> {
-    return this.receipts.findByPayment(tenantId, paymentId);
+    return this.receipts.findByTransactionItem(tenantId, transactionItemId);
   }
 }

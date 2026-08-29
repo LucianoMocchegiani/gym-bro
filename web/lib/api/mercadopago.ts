@@ -82,12 +82,12 @@ export type MpCartLine = {
   refId: string;
   quantity: number;
   amount: number;
-  paymentIds: string[];
+  transactionItemIds: string[];
 };
 
 /** Respuesta de checkout de carrito MP (1 preference → 1 pago). */
 export type MpCartCheckoutResult = {
-  cartId: string;
+  transactionId: string;
   memberId: string;
   status: MpCheckoutStatus;
   amount: number;
@@ -109,7 +109,7 @@ export function startStaffMpCartCheckout(
   input: { items: MpCartItemInput[]; idempotencyKey?: string },
 ): Promise<MpCartCheckoutResult> {
   return apiRequest<MpCartCheckoutResult>(
-    `/members/${memberId}/payments/mp/cart`,
+    `/members/${memberId}/transaction-items/mp/cart`,
     {
       method: 'POST',
       body: input,

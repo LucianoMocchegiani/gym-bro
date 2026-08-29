@@ -71,17 +71,17 @@ class MemberPackComponent {
   }
 }
 
-/// Resultado de checkout MP para un pack (`POST /me/payments/mp/checkout`).
+/// Resultado de checkout MP para un pack (`POST /me/transaction-items/mp/checkout`).
 class PackCheckoutResult {
   /// Crea el modelo.
   PackCheckoutResult({
-    required this.paymentId,
+    required this.transactionItemId,
     required this.status,
     required this.amount,
     required this.checkoutUrl,
   });
 
-  final String paymentId;
+  final String transactionItemId;
   final String status;
   final int amount;
   final String? checkoutUrl;
@@ -93,7 +93,7 @@ class PackCheckoutResult {
         ? url
         : (sandbox != null && sandbox.isNotEmpty ? sandbox : null);
     return PackCheckoutResult(
-      paymentId: json['paymentId'] as String,
+      transactionItemId: json['transactionItemId'] as String,
       status: json['status'] as String? ?? '',
       amount: (json['amount'] as num?)?.toInt() ?? 0,
       checkoutUrl: resolved,
@@ -136,7 +136,7 @@ class StoreRepository {
   /// Inicia checkout MP para comprar un pack.
   Future<PackCheckoutResult> startPackCheckout(String packId) {
     return _api.postJson<PackCheckoutResult>(
-      '/api/me/payments/mp/checkout',
+      '/api/me/transaction-items/mp/checkout',
       body: {'packId': packId},
       parse: (json) {
         if (json is! Map) {

@@ -7,17 +7,17 @@
 
 ## Resumen
 
-En `/caja` el staff agrega packs y servicios (drop-in) al carrito y cobra por Mercado Pago con el **modelo MercadoLibre**: se crea **una Preference con `items[]` → un solo link con el total → un solo pago**. Al webhook APPROVED se confirma un contrato/reserva por cada payment del carrito. El checkout single-item de pack/drop-in se mantiene intacto para el flujo member/mobile.
+En `/caja` el staff agrega packs y servicios (drop-in) al carrito y cobra por Mercado Pago con el **modelo MercadoLibre**: se crea **una Preference con `items[]` → un solo link con el total → un solo pago**. Al webhook APPROVED se confirma un contrato/reserva por cada transaction_item del carrito. El checkout single-item de pack/drop-in se mantiene intacto para el flujo member/mobile.
 
 ## Cambios principales
 
-- **API**: modelo `CartCheckout` + `payments.cartId`; migración `20260820090000_cart_checkout`. `POST /members/:memberId/payments/mp/cart` (`members.write`) con `items[]` y reuso por idempotencia. Webhook reescrito: `applyRemoteStatus` cae a carrito si el refId no es payment; `applyRemoteStatusCart` marca cart + payments y `ensureCartRights` confirma contratos/reservas. `simulate` acepta `cartId`.
+- **API**: modelo `Transaction` + `transaction_items.transaction_id`; migración `20260820090000_cart_checkout`. `POST /members/:memberId/transaction-items/mp/cart` (`members.write`) con `items[]` y reuso por idempotencia. Webhook reescrito: `applyRemoteStatus` cae a carrito si el refId no es transaction_item; `applyRemoteStatusCart` marca cart + transaction_items y `ensureCartRights` confirma contratos/reservas. `simulate` acepta `transactionId`.
 - **Web**: `caja/page.tsx` con flujo single-link (1 ventana, 1 URL copiable, vacía carrito); "+" deshabilitado en servicios sin `dropInPrice` con tooltip explicativo. `MemberPicker` nuevo con búsqueda, quita el foco al seleccionar y marca ✓.
 - **Postman**: request staff de carrito + simulate con `cartId`; variable `mpCartId`.
 
 ## Decisiones
 
-- `mp_payment_id` se guarda **solo en `cart_checkouts`** (los payments del carrito no lo replican) porque `payments.mp_payment_id` es UNIQUE y un carrito comparte un único pago MP.
+- `mp_payment_id` se guarda **solo en `transactions`** (los transaction_items del carrito no lo replican) porque `transaction_items.mp_payment_id` es UNIQUE y un carrito comparte un único pago MP.
 - **Refund de carrito MP no soportado** (limitación conocida, a resolver en iteración de devoluciones).
 - Los endpoints single-item del backend se conservan para member/mobile; solo el adapter de Preference pasó a armar `items: [...]`.
 
@@ -28,5 +28,5 @@ En `/caja` el staff agrega packs y servicios (drop-in) al carrito y cobra por Me
 
 ## Referencias
 
-- CU-PAG-001; `docs/05-casos-de-uso/pagos-caja.md`; `docs/09-esquema-db.md` (4.15g `cart_checkouts`).
+- CU-PAG-001; `docs/05-casos-de-uso/pagos-caja.md`; `docs/09-esquema-db.md` (4.15g `transactions`).
 - Postman GymBro API — carpeta Mercado Pago.

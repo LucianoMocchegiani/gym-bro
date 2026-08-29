@@ -24,7 +24,7 @@ Baja/baja/eliminación segura de packs, servicios, sesiones, afiliados, roles, s
   - Packs: `PACK_HAS_CONTRACTS` (409) con `?confirm=deactivate` → baja automática + audit `packDeactivate`/`packDelete`.
   - Servicios: `SERVICE_IN_USE` (409) por packComponents/sessions/recurrenceRules/creditBalances.
   - Sesiones: `SESSION_HAS_RESERVATIONS` (409).
-  - Afiliados: `MEMBER_HAS_HISTORY` (409) por payments/contracts/reservations/waitlist/refunds/receipts/access/credentialOffers/cashMovements/accessAttempts; ruta `members/:memberId` con `members.deactivate`.
+  - Afiliados: `MEMBER_HAS_HISTORY` (409) por transaction_items/contracts/reservations/waitlist/refunds/receipts/access/credentialOffers/cashMovements/accessAttempts; ruta `members/:memberId` con `members.deactivate`.
   - Roles: 403 `ROLE_IS_SYSTEM`; custom se borran aunque estén asignados.
   - Staff: `STAFF_HAS_ACTIVITY` (409).
   - Tenants: `DeleteTenantDto` (`confirmWord`, `slug`); delete físico en cascada + audit `tenantDelete`.

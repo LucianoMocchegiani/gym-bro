@@ -219,7 +219,7 @@ Checkout/webhook implementados (stub local + modo live). Pendiente en roadmap: v
 ### 7.2 Flujo MP
 
 ```text
-Member POST /me/payments/mp/checkout (pack + idempotencyKey)
+Member POST /me/transaction-items/mp/checkout (pack + idempotencyKey)
   → Payment(PENDING, method=MP) + Preference (cuenta del gym)
   → Webhook POST /webhooks/mercadopago?tenantId=… (o /simulate en stub)
   → aprueba → ContractsService.confirmFromApprovedPayment + recibo
@@ -236,9 +236,9 @@ Env: `MP_CHECKOUT_MODE=stub|live`, `PUBLIC_API_BASE_URL` (notification_url).
 ### 7.4 Devoluciones
 
 ```text
-Member POST /me/payments/:id/refund-requests → política RN-PAG-012
+Member POST /me/transaction-items/:id/refund-requests → política RN-PAG-012
   → PENDING | rechazo (motivo)
-Staff POST /payments/:id/refunds (payments.refund)
+Staff POST /transaction-items/:id/refunds (transaction_items.refund)
   → Payment REFUNDED + revierte contrato/reserva
   → CASH: OUTCOME REFUND | MP: refund API o manual_pending | STUB: solo estado
   → motiveCode=doble_cobro (CU-PAG-007)
@@ -299,7 +299,7 @@ Prefijo sugerido: `/api/v1`.
 | Afiliados | CRUD `/tenants/:tid/members` |
 | Catálogo | `/services`, `/packs`, `/sessions`, `/recurrence-rules` |
 | Reservas | `/sessions/:id/reservations`, waitlist |
-| Billing | `/payments/mp/checkout`, `/payments/cash`, webhooks `/webhooks/mercadopago` |
+| Billing | `/transaction-items/mp/checkout`, `/transaction-items/cash`, webhooks `/webhooks/mercadopago` |
 | Access | `/access/oid4vp/request`, `/access/oid4vp/session/:id`, `/access-attempts`, manual-pass |
 | Rutinas | `/exercises`, `/routine-templates`, `/assigned-routines` |
 | Notif | `/notifications`, `/notification-templates`, preferences |
@@ -309,9 +309,9 @@ Prefijo sugerido: `/api/v1`.
 | Waitlist | Member `/me/waitlist`; Staff `/members/:id/waitlist`, `/sessions/:id/waitlist` (`reservations.write`; query `status` / `allStatuses`); promoción AUTO al liberar cupo |
 | Settings | Staff `GET|PATCH /tenant-settings` (`tenant.settings.*`; horas cancelación, `waitlistMode`, `allowLateSessionEntry`); Super `/tenants/:tid/settings` |
 | Caja | Staff `GET /cash-register/day`, `POST /cash-register/day/reconcile` (`cashier.operate`); Super `/tenants/:tid/cash-register/...` |
-| Mercado Pago | Staff `GET|PUT|DELETE /mercadopago/account`, `POST .../test` (`mp.connect`); Member `POST /me/payments/mp/checkout`; webhook `POST /webhooks/mercadopago`; Super `/tenants/:tid/mercadopago/account` |
-| Devoluciones | Member `POST /me/payments/:id/refund-requests`, `GET /me/refund-requests`; Staff `GET /refund-requests`, `POST /payments/:id/refunds` (`payments.refund`) |
-| Comprobantes | Member `/me/receipts`; Staff `GET /payments/:id/receipt`, `GET /members/:id/receipts` (`members.read`) |
+| Mercado Pago | Staff `GET|PUT|DELETE /mercadopago/account`, `POST .../test` (`mp.connect`); Member `POST /me/transaction-items/mp/checkout`; webhook `POST /webhooks/mercadopago`; Super `/tenants/:tid/mercadopago/account` |
+| Devoluciones | Member `POST /me/transaction-items/:id/refund-requests`, `GET /me/refund-requests`; Staff `GET /refund-requests`, `POST /transaction-items/:id/refunds` (`transaction_items.refund`) |
+| Comprobantes | Member `/me/receipts`; Staff `GET /transaction-items/:id/receipt`, `GET /members/:id/receipts` (`members.read`) |
 | Catálogo | Super/Staff CRUD services + packs (`catalog.write`; kind inferido; `creditsExpireAt`) |
 | Contrataciones | Staff `POST /members/:id/contracts` (pago stub APPROVED); `PATCH /contracts/:id/status` → `CANCELLED` (pierde derechos, RN-SER-009); Member `GET /me/contracts` |
 | Roles | Super/Staff list-get-create-patch roles; `PUT .../staff/:id/roles`; Staff `GET /me/permissions` (UI nav) |

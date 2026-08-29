@@ -7,11 +7,11 @@
 
 ## Resumen
 
-El afiliado puede solicitar devolución según política fija RN-PAG-012. Staff con `payments.refund` ejecuta reembolso total siempre (RN-PAG-011): revierte contrato/reserva, egreso CASH, refund MP o `manual_pending`. Doble cobro = mismo endpoint con `motiveCode=doble_cobro`.
+El afiliado puede solicitar devolución según política fija RN-PAG-012. Staff con `transaction_items.refund` ejecuta reembolso total siempre (RN-PAG-011): revierte contrato/reserva, egreso CASH, refund MP o `manual_pending`. Doble cobro = mismo endpoint con `motiveCode=doble_cobro`.
 
 ## Cambios principales
 
-- Tabla `refund_requests` + campos refund en `payments`
+- Tabla `refund_requests` + campos refund en `transaction_items`
 - Caja `OUTCOME`/`REFUND`; totales income/outcome/net
 - APIs Member/Staff (+ mirror Super)
 

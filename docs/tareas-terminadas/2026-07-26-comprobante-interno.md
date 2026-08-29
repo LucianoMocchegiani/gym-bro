@@ -2,7 +2,7 @@
 
 **Fecha:** 2026-07-26
 **Roadmap:** E5 — Comprobante interno (RN-PAG-009)
-**Commit:** `4604121` — feat(api): emit internal receipts for CASH and STUB payments
+**Commit:** `4604121` — feat(api): emit internal receipts for CASH and STUB transaction_items
 **Remote:** https://github.com/LucianoMocchegiani/gym-bro/commit/4604121
 
 ## Resumen

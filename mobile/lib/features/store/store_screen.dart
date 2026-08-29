@@ -24,7 +24,7 @@ enum _StoreTab { packs, myPacks, payments }
 class _StoreScreenState extends State<StoreScreen> {
   _StoreTab _tab = _StoreTab.packs;
   List<MemberPack>? _packs;
-  List<AccountRecentPayment>? _payments;
+  List<AccountRecentTransactionItem>? _transactionItems;
   List<AccountContract>? _contracts;
   bool _mpConnected = false;
   String? _error;
@@ -53,7 +53,7 @@ class _StoreScreenState extends State<StoreScreen> {
       if (!mounted) return;
       setState(() {
         _packs = results[0] as List<MemberPack>;
-        _payments = (results[1] as MemberAccount).recentPayments;
+        _transactionItems = (results[1] as MemberAccount).recentTransactionItems;
         _mpConnected = results[2] as bool;
         _contracts = results[3] as List<AccountContract>;
       });
@@ -219,7 +219,7 @@ class _StoreScreenState extends State<StoreScreen> {
     );
   }
 
-  Future<void> _requestRefund(AccountRecentPayment payment) async {
+  Future<void> _requestRefund(AccountRecentTransactionItem transactionItem) async {
     final reasonController = TextEditingController();
     final ok = await showDialog<bool>(
       context: context,
@@ -247,10 +247,10 @@ class _StoreScreenState extends State<StoreScreen> {
     );
     if (ok != true || !mounted) return;
 
-    setState(() { _busy = true; _busyId = payment.id; });
+    setState(() { _busy = true; _busyId = transactionItem.id; });
     try {
       await _refund.requestRefund(
-        payment.id,
+        transactionItem.id,
         reason: reasonController.text.trim(),
       );
       if (!mounted) return;
@@ -377,8 +377,8 @@ class _StoreScreenState extends State<StoreScreen> {
   }
 
   Widget _buildPayments() {
-    final payments = _payments ?? const <AccountRecentPayment>[];
-    if (payments.isEmpty) {
+    final transactionItems = _transactionItems ?? const <AccountRecentTransactionItem>[];
+    if (transactionItems.isEmpty) {
       return ListView(
         children: [
           const GymBroMessagePane(
@@ -390,13 +390,13 @@ class _StoreScreenState extends State<StoreScreen> {
     }
     return ListView.builder(
       padding: const EdgeInsets.fromLTRB(20, 8, 20, 28),
-      itemCount: payments.length,
+      itemCount: transactionItems.length,
       itemBuilder: (context, i) {
-        final p = payments[i];
+        final p = transactionItems[i];
         return Padding(
           padding: EdgeInsets.only(top: i == 0 ? 0 : 12),
-          child: _PaymentCard(
-            payment: p,
+          child: _TransactionItemCard(
+            transactionItem: p,
             busy: _busy && _busyId == p.id,
             onRefund: p.canRefund ? () => _requestRefund(p) : null,
           ),
@@ -543,21 +543,21 @@ class _PackCard extends StatelessWidget {
   }
 }
 
-class _PaymentCard extends StatelessWidget {
-  const _PaymentCard({
-    required this.payment,
+class _TransactionItemCard extends StatelessWidget {
+  const _TransactionItemCard({
+    required this.transactionItem,
     required this.busy,
     required this.onRefund,
   });
 
-  final AccountRecentPayment payment;
+  final AccountRecentTransactionItem transactionItem;
   final bool busy;
   final VoidCallback? onRefund;
 
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    final statusColor = switch (payment.status) {
+    final statusColor = switch (transactionItem.status) {
       'APPROVED' => scheme.primary,
       'REFUNDED' => scheme.error,
       'REJECTED' => scheme.error,
@@ -577,18 +577,18 @@ class _PaymentCard extends StatelessWidget {
             children: [
               Expanded(
                 child: Text(
-                  '\$${payment.amount}',
+                  '\$${transactionItem.amount}',
                   style: Theme.of(context).textTheme.titleLarge,
                 ),
               ),
-              GymBroBadge(label: payment.status, color: statusColor),
+              GymBroBadge(label: transactionItem.status, color: statusColor),
             ],
           ),
           const SizedBox(height: 8),
-          GymBroInfoLine(expanded: false,icon: Icons.schedule, text: formatDateTimeShort(payment.createdAt)),
+          GymBroInfoLine(expanded: false,icon: Icons.schedule, text: formatDateTimeShort(transactionItem.createdAt)),
           GymBroInfoLine(expanded: false,
             icon: Icons.payment_outlined,
-            text: payment.method,
+            text: transactionItem.method,
           ),
           if (onRefund != null) ...[
             const SizedBox(height: 12),

@@ -7,11 +7,11 @@
 
 ## Resumen
 
-Staff con `payments.refund` puede listar solicitudes y ejecutar devoluciones desde Admin: cola `/devoluciones` (PENDING/EXECUTED/REJECTED) y devolución directa por `paymentId` (doble cobro). Atajo desde pagos APPROVED en ficha afiliado.
+Staff con `transaction_items.refund` puede listar solicitudes y ejecutar devoluciones desde Admin: cola `/devoluciones` (PENDING/EXECUTED/REJECTED) y devolución directa por `transactionItemId` (doble cobro). Atajo desde pagos APPROVED en ficha afiliado.
 
 ## Cambios principales
 
-- Cliente `web/lib/api/refunds.ts` (`GET /refund-requests`, `POST /payments/:id/refunds`)
+- Cliente `web/lib/api/refunds.ts` (`GET /refund-requests`, `POST /transaction-items/:id/refunds`)
 - Página `/devoluciones` + nav Operación + atajo Inicio
 - Link **Devolver** en pagos recientes de `/afiliados/[id]`
 - Roadmap E10 + README web

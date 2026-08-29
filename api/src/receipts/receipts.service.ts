@@ -30,13 +30,13 @@ export class ReceiptsService {
   constructor(private readonly prisma: PrismaService) {}
 
   /**
-   * Emite comprobante para un pago APPROVED (idempotente por paymentId).
+   * Emite comprobante para un pago APPROVED (idempotente por transactionItemId).
    */
   async issueForApprovedPayment(
     tx: Tx,
     input: {
       tenantId: string;
-      paymentId: string;
+      transactionItemId: string;
       memberId: string;
       amount: number;
       method: PaymentMethod;
@@ -45,7 +45,7 @@ export class ReceiptsService {
     },
   ): Promise<void> {
     const existing = await tx.receipt.findUnique({
-      where: { paymentId: input.paymentId },
+      where: { transactionItemId: input.transactionItemId },
       select: { id: true },
     });
     if (existing) {
@@ -56,7 +56,7 @@ export class ReceiptsService {
     await tx.receipt.create({
       data: {
         tenantId: input.tenantId,
-        paymentId: input.paymentId,
+        transactionItemId: input.transactionItemId,
         memberId: input.memberId,
         number,
         amount: input.amount,
@@ -116,30 +116,30 @@ export class ReceiptsService {
   }
 
   /**
-   * Comprobante asociado a un pago del tenant.
+   * Comprobante asociado a un transactionItem del tenant.
    */
-  async findByPayment(
+  async findByTransactionItem(
     tenantId: string,
-    paymentId: string,
+    transactionItemId: string,
   ): Promise<ReceiptDetail> {
-    const payment = await this.prisma.payment.findFirst({
-      where: { id: paymentId, tenantId },
+    const transactionItem = await this.prisma.transactionItem.findFirst({
+      where: { id: transactionItemId, tenantId },
       select: { id: true, status: true },
     });
-    if (!payment) {
-      throw new NotFoundException(`Payment ${paymentId} not found in tenant`);
+    if (!transactionItem) {
+      throw new NotFoundException(`TransactionItem ${transactionItemId} not found in tenant`);
     }
-    if (payment.status !== PaymentStatus.APPROVED) {
+    if (transactionItem.status !== PaymentStatus.APPROVED) {
       throw new ForbiddenException(
         'Receipt is only available for APPROVED payments',
       );
     }
     const receipt = await this.prisma.receipt.findUnique({
-      where: { paymentId },
+      where: { transactionItemId },
     });
     if (!receipt) {
       throw new NotFoundException(
-        `Receipt for payment ${paymentId} not found (legacy payment without receipt)`,
+        `Receipt for transactionItem ${transactionItemId} not found (legacy payment without receipt)`,
       );
     }
     return this.toDetail(receipt);
@@ -176,7 +176,7 @@ export class ReceiptsService {
   private toDetail(row: {
     id: string;
     tenantId: string;
-    paymentId: string;
+    transactionItemId: string;
     memberId: string;
     number: number;
     amount: number;
@@ -188,7 +188,7 @@ export class ReceiptsService {
     return {
       id: row.id,
       tenantId: row.tenantId,
-      paymentId: row.paymentId,
+      transactionItemId: row.transactionItemId,
       memberId: row.memberId,
       number: row.number,
       code: this.formatCode(row.number),

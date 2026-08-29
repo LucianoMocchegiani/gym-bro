@@ -6,26 +6,24 @@ import {
   PaymentStatus,
 } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
-import { ReportPaymentRow, ReportsSummary } from './reports.types';
+import {
+  ReportTransactionItem,
+  ReportTransactionRow,
+  ReportsSummary,
+} from './reports.types';
 
 const REPORTS_TIMEZONE = 'America/Argentina/Buenos_Aires' as const;
 const DETAIL_LIMIT = 200;
 
 /**
  * Reportes de dinero + snapshot comercial (E11).
+ *
+ * Transacciones agrupadas: MP por cart_checkout, efectivo por payment individual.
  */
 @Injectable()
 export class ReportsService {
   constructor(private readonly prisma: PrismaService) {}
 
-  /**
-   * Resumen de reportes para el tenant.
-   *
-   * @param tenantId Tenant del JWT staff.
-   * @param fromYmd Inicio inclusive (YYYY-MM-DD BA); default 1º del mes.
-   * @param toYmd Fin inclusive (YYYY-MM-DD BA); default hoy BA.
-   * @param memberId Filtrar por afiliado específico (opcional).
-   */
   async getSummary(
     tenantId: string,
     fromYmd?: string,
@@ -80,7 +78,7 @@ export class ReportsService {
       this.prisma.contract.count({
         where: { tenantId, status: ContractStatus.REFUNDED },
       }),
-      this.prisma.payment.findMany({
+      this.prisma.transactionItem.findMany({
         where: {
           tenantId,
           status: PaymentStatus.APPROVED,
@@ -89,7 +87,7 @@ export class ReportsService {
         },
         select: { amount: true, method: true },
       }),
-      this.prisma.payment.findMany({
+      this.prisma.transactionItem.findMany({
         where: {
           tenantId,
           status: PaymentStatus.APPROVED,
@@ -101,15 +99,12 @@ export class ReportsService {
         include: {
           member: { select: { name: true, email: true } },
           pack: { select: { name: true } },
+          transaction: { select: { id: true, mpPaymentId: true } },
         },
       }),
     ]);
 
-    const byMethod = {
-      CASH: 0,
-      MP: 0,
-      STUB: 0,
-    };
+    const byMethod = { CASH: 0, MP: 0 };
     let totalApproved = 0;
     for (const p of paymentsApproved) {
       totalApproved += p.amount;
@@ -117,24 +112,10 @@ export class ReportsService {
         byMethod.CASH += p.amount;
       } else if (p.method === PaymentMethod.MP) {
         byMethod.MP += p.amount;
-      } else {
-        byMethod.STUB += p.amount;
       }
     }
 
-    const payments: ReportPaymentRow[] = paymentRows.map((row) => ({
-      id: row.id,
-      amount: row.amount,
-      method: row.method,
-      status: 'APPROVED',
-      createdAt: row.createdAt,
-      memberId: row.memberId,
-      memberName: row.member.name,
-      memberEmail: row.member.email,
-      packId: row.packId,
-      packName: row.pack?.name ?? null,
-      kind: row.sessionId ? 'DROP_IN' : 'PACK',
-    }));
+    const transactions = this.buildTransactions(paymentRows);
 
     return {
       from,
@@ -155,10 +136,84 @@ export class ReportsService {
       income: {
         totalApproved,
         byMethod,
-        payments,
-        paymentCount: paymentsApproved.length,
+        transactions,
+        transactionCount: transactions.length,
       },
     };
+  }
+
+  /**
+   * Agrupa payments en transacciones.
+   * - Sin transaction_id → efectivo, cada transactionItem es 1 transacción.
+   * - Con transaction_id → MP, todos los transactionItems del mismo transaction se agrupan.
+   */
+  private buildTransactions(
+    rows: Array<{
+      id: string;
+      amount: number;
+      method: PaymentMethod;
+      status: PaymentStatus;
+      createdAt: Date;
+      memberId: string;
+      member: { name: string | null; email: string };
+      pack: { name: string } | null;
+      sessionId: string | null;
+      transactionId: string | null;
+      transaction: { id: string; mpPaymentId: string | null } | null;
+    }>,
+  ): ReportTransactionRow[] {
+    const byTransaction = new Map<string, ReportTransactionRow>();
+    const standalone: ReportTransactionRow[] = [];
+
+    for (const row of rows) {
+      const item: ReportTransactionItem = {
+        id: row.id,
+        amount: row.amount,
+        kind: row.sessionId ? 'DROP_IN' : 'PACK',
+        packName: row.pack?.name ?? null,
+      };
+
+      if (row.transactionId && row.transaction) {
+        const existing = byTransaction.get(row.transactionId);
+        if (existing) {
+          existing.items.push(item);
+        } else {
+          byTransaction.set(row.transactionId, {
+            id: row.transactionId,
+            amount: 0,
+            method: 'MP',
+            status: 'APPROVED',
+            createdAt: row.createdAt,
+            memberId: row.memberId,
+            memberName: row.member.name,
+            memberEmail: row.member.email,
+            mpPaymentId: row.transaction.mpPaymentId ?? null,
+            items: [item],
+          });
+        }
+      } else {
+        standalone.push({
+          id: row.id,
+          amount: row.amount,
+          method: 'CASH',
+          status: 'APPROVED',
+          createdAt: row.createdAt,
+          memberId: row.memberId,
+          memberName: row.member.name,
+          memberEmail: row.member.email,
+          mpPaymentId: null,
+          items: [item],
+        });
+      }
+    }
+
+    for (const tx of byTransaction.values()) {
+      tx.amount = tx.items.reduce((sum, i) => sum + i.amount, 0);
+    }
+
+    const all = [...byTransaction.values(), ...standalone];
+    all.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+    return all;
   }
 
   private assertValidRange(from: string, to: string): void {
@@ -169,9 +224,6 @@ export class ReportsService {
     }
   }
 
-  /**
-   * YYYY-MM-DD en timezone BA.
-   */
   businessYmd(at: Date): string {
     return new Intl.DateTimeFormat('en-CA', {
       timeZone: REPORTS_TIMEZONE,
@@ -181,9 +233,6 @@ export class ReportsService {
     }).format(at);
   }
 
-  /**
-   * Medianoche BA del YMD como instante UTC (offset fijo -03).
-   */
   private dayStartUtc(ymd: string): Date {
     this.parseYmd(ymd);
     return new Date(`${ymd}T03:00:00.000Z`);

@@ -1,7 +1,7 @@
 services:
   postgres:
     image: postgres:16-alpine
-    container_name: gymbro-postgres
+    container_name: postgres
     restart: unless-stopped
     environment:
       POSTGRES_USER: gymbro
@@ -20,7 +20,7 @@ services:
 
   redis:
     image: redis:7-alpine
-    container_name: gymbro-redis
+    container_name: redis
     restart: unless-stopped
     ports:
       - "6379:6379"
@@ -34,7 +34,7 @@ services:
 
   pgadmin:
     image: dpage/pgadmin4:8
-    container_name: gymbro-pgadmin
+    container_name: pgadmin
     restart: unless-stopped
     environment:
       PGADMIN_DEFAULT_EMAIL: admin@example.com
@@ -53,7 +53,7 @@ services:
     build:
       context: ./api
       dockerfile: Dockerfile.dev
-    container_name: gymbro-api
+    container_name: api
     restart: unless-stopped
     env_file:
       - ./api/.env
@@ -75,7 +75,7 @@ services:
     build:
       context: ./web
       dockerfile: Dockerfile.dev
-    container_name: gymbro-web
+    container_name: web
     restart: unless-stopped
     env_file:
       - ./web/.env

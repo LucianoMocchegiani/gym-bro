@@ -13,7 +13,7 @@ export type ContractCreditBalanceDetail = {
 /**
  * Pago asociado a la contratación (stub/caja).
  */
-export type ContractPaymentDetail = {
+export type ContractTransactionItemDetail = {
   id: string;
   amount: number;
   status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'REFUNDED';
@@ -34,7 +34,7 @@ export type ContractDetail = {
   startsAt: Date;
   endsAt: Date | null;
   hasAccessLibre: boolean;
-  payment: ContractPaymentDetail;
+  transactionItem: ContractTransactionItemDetail;
   creditBalances: ContractCreditBalanceDetail[];
   createdAt: Date;
   updatedAt: Date;

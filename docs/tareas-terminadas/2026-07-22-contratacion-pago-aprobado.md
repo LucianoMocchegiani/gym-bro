@@ -11,7 +11,7 @@ Staff crea en una TX un Payment APPROVED (STUB/CASH) + Contract ACTIVE con saldo
 
 ## Cambios principales
 
-- Migración `20260722210000_contracts_payments` (`payments`, `contracts`, `contract_credit_balances`)
+- Migración `20260722210000_contracts_payments` (`transaction_items`, `contracts`, `contract_credit_balances`)
 - Módulo `contracts/` Staff + Super + `/me/contracts`
 - Audit `contract.create` + Postman carpeta Contracts
 

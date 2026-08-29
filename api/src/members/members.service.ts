@@ -163,7 +163,7 @@ export class MembersService {
       0,
     );
 
-    const payments = await this.prisma.payment.findMany({
+    const transactionItems = await this.prisma.transactionItem.findMany({
       where: { tenantId, memberId },
       orderBy: { createdAt: 'desc' },
       take: RECENT_PAYMENTS_LIMIT,
@@ -208,7 +208,7 @@ export class MembersService {
       },
       debt: { amount: 0, status: 'AL_DIA' },
       contracts,
-      recentPayments: payments.map((p) => ({
+      recentTransactionItems: transactionItems.map((p) => ({
         id: p.id,
         amount: p.amount,
         status: p.status,
@@ -402,7 +402,7 @@ export class MembersService {
       select: {
         _count: {
           select: {
-            payments: true,
+            transactionItems: true,
             contracts: true,
             reservations: true,
             waitlistEntries: true,
@@ -417,7 +417,7 @@ export class MembersService {
       },
     });
     const c = counts?._count ?? {
-      payments: 0,
+      transactionItems: 0,
       contracts: 0,
       reservations: 0,
       waitlistEntries: 0,
@@ -432,7 +432,7 @@ export class MembersService {
 
     if (hasHistory) {
       const reasons: string[] = [];
-      if (c.payments > 0) reasons.push(`${c.payments} pago(s)`);
+      if (c.transactionItems > 0) reasons.push(`${c.transactionItems} pago(s)`);
       if (c.contracts > 0) reasons.push(`${c.contracts} contratación(es)`);
       if (c.reservations > 0) reasons.push(`${c.reservations} reserva(s)`);
       if (c.waitlistEntries > 0) reasons.push(`${c.waitlistEntries} waitlist`);

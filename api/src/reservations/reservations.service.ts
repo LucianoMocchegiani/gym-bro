@@ -21,7 +21,6 @@ import {
 import { randomBytes } from 'node:crypto';
 import { AUDIT_ACTIONS, AuditActor } from '../audit/audit.types';
 import { AuditService } from '../audit/audit.service';
-import { CashRegisterService } from '../cash-register/cash-register.service';
 import {
   ListResult,
   normalizeListQuery,
@@ -29,7 +28,7 @@ import {
   toListResult,
 } from '../common/list';
 import { PrismaService } from '../prisma/prisma.service';
-import { ReceiptsService } from '../receipts/receipts.service';
+import { CashPaymentService } from '../payment/cash-payment.service';
 import { TenantSettingsService } from '../tenant-settings/tenant-settings.service';
 import { WaitlistService } from '../waitlist/waitlist.service';
 import {
@@ -51,7 +50,7 @@ type ReservationWithRelations = Reservation & {
     serviceId: string;
     service: { id: string; name: string };
   };
-  payment: {
+  transactionItem: {
     id: string;
     amount: number;
     method: PaymentMethod;
@@ -74,8 +73,7 @@ export class ReservationsService {
     private readonly audit: AuditService,
     private readonly tenantSettings: TenantSettingsService,
     private readonly waitlist: WaitlistService,
-    private readonly cashRegister: CashRegisterService,
-    private readonly receipts: ReceiptsService,
+    private readonly cashPayment: CashPaymentService,
   ) {}
 
   /**
@@ -437,7 +435,7 @@ export class ReservationsService {
       );
     }
 
-    const existingPayment = await this.prisma.payment.findUnique({
+    const existingTransactionItem = await this.prisma.transactionItem.findUnique({
       where: {
         tenantId_idempotencyKey: { tenantId, idempotencyKey },
       },
@@ -445,10 +443,10 @@ export class ReservationsService {
         reservation: { include: this.reservationInclude() },
       },
     });
-    if (existingPayment?.reservation) {
-      return this.toDetail(existingPayment.reservation);
+    if (existingTransactionItem?.reservation) {
+      return this.toDetail(existingTransactionItem.reservation);
     }
-    if (existingPayment && !existingPayment.reservation) {
+    if (existingTransactionItem && !existingTransactionItem.reservation) {
       throw new BadRequestException(
         'Idempotency key already used without a reservation',
       );
@@ -490,37 +488,20 @@ export class ReservationsService {
           );
         }
 
-        const payment = await tx.payment.create({
-          data: {
-            tenantId,
-            memberId,
-            packId: null,
+        const { transaction } = await this.cashPayment.processPayment(tx, {
+          tenantId,
+          memberId,
+          items: [{
+            sessionId: session.id,
             amount: session.service.dropInPrice!,
-            status: PaymentStatus.APPROVED,
-            method,
             idempotencyKey,
-          },
-        });
-
-        await this.cashRegister.recordIncomeIfCash(tx, {
-          tenantId,
-          paymentId: payment.id,
-          memberId,
-          amount: payment.amount,
-          method: payment.method,
-          concept: CashMovementConcept.DROP_IN,
-          recordedByStaffId:
-            actor.profileType === 'STAFF' ? actor.userId : null,
-        });
-
-        await this.receipts.issueForApprovedPayment(tx, {
-          tenantId,
-          paymentId: payment.id,
-          memberId,
-          amount: payment.amount,
-          method: payment.method,
-          concept: ReceiptConcept.DROP_IN,
+          }],
+          idempotencyKey,
+          method,
+          cashConcept: CashMovementConcept.DROP_IN,
+          receiptConcept: ReceiptConcept.DROP_IN,
           description: session.service.name,
+          recordedByStaffId: actor.profileType === 'STAFF' ? actor.userId : null,
         });
 
         return tx.reservation.create({
@@ -528,7 +509,7 @@ export class ReservationsService {
             tenantId,
             memberId,
             sessionId: session.id,
-            paymentId: payment.id,
+            transactionItemId: transaction.transactionItems[0].id,
             status: ReservationStatus.CONFIRMED,
             coverage: ReservationCoverage.DROP_IN,
           },
@@ -552,7 +533,7 @@ export class ReservationsService {
         error instanceof Prisma.PrismaClientKnownRequestError &&
         error.code === 'P2002'
       ) {
-        const again = await this.prisma.payment.findUnique({
+        const again = await this.prisma.transactionItem.findUnique({
           where: {
             tenantId_idempotencyKey: { tenantId, idempotencyKey },
           },
@@ -579,42 +560,42 @@ export class ReservationsService {
    */
   async confirmDropInFromApprovedPayment(
     tenantId: string,
-    paymentId: string,
+    transactionItemId: string,
     actor: AuditActor,
   ): Promise<ReservationDetail> {
-    const payment = await this.prisma.payment.findFirst({
-      where: { id: paymentId, tenantId },
+    const transactionItem = await this.prisma.transactionItem.findFirst({
+      where: { id: transactionItemId, tenantId },
       include: {
         reservation: { include: this.reservationInclude() },
       },
     });
-    if (!payment) {
-      throw new NotFoundException(`Payment ${paymentId} not found in tenant`);
+    if (!transactionItem) {
+      throw new NotFoundException(`TransactionItem ${transactionItemId} not found in tenant`);
     }
-    if (payment.reservation) {
-      return this.toDetail(payment.reservation);
+    if (transactionItem.reservation) {
+      return this.toDetail(transactionItem.reservation);
     }
-    if (payment.status !== PaymentStatus.APPROVED) {
+    if (transactionItem.status !== PaymentStatus.APPROVED) {
       throw new BadRequestException(
-        `Payment must be APPROVED to confirm drop-in (current: ${payment.status})`,
+        `TransactionItem must be APPROVED to confirm drop-in (current: ${transactionItem.status})`,
       );
     }
-    if (payment.method !== PaymentMethod.MP) {
+    if (transactionItem.method !== PaymentMethod.MP) {
       throw new BadRequestException(
         'confirmDropInFromApprovedPayment is only for MP payments',
       );
     }
-    if (!payment.sessionId) {
+    if (!transactionItem.sessionId) {
       throw new BadRequestException('MP drop-in payment is missing sessionId');
     }
-    if (payment.packId) {
+    if (transactionItem.packId) {
       throw new BadRequestException(
-        'Payment looks like a pack checkout, not drop-in',
+        'TransactionItem looks like a pack checkout, not drop-in',
       );
     }
 
     const session = await this.prisma.session.findFirst({
-      where: { id: payment.sessionId, tenantId },
+      where: { id: transactionItem.sessionId, tenantId },
       select: {
         id: true,
         status: true,
@@ -627,7 +608,7 @@ export class ReservationsService {
     });
     if (!session) {
       throw new NotFoundException(
-        `Session ${payment.sessionId} not found in tenant`,
+        `Session ${transactionItem.sessionId} not found in tenant`,
       );
     }
     if (session.status !== SessionStatus.PUBLISHED) {
@@ -637,7 +618,7 @@ export class ReservationsService {
     const existingRes = await this.prisma.reservation.findFirst({
       where: {
         tenantId,
-        memberId: payment.memberId,
+        memberId: transactionItem.memberId,
         sessionId: session.id,
         status: ReservationStatus.CONFIRMED,
       },
@@ -689,22 +670,12 @@ export class ReservationsService {
           );
         }
 
-        await this.receipts.issueForApprovedPayment(tx, {
-          tenantId,
-          paymentId: payment.id,
-          memberId: payment.memberId,
-          amount: payment.amount,
-          method: payment.method,
-          concept: ReceiptConcept.DROP_IN,
-          description: session.service.name,
-        });
-
         return tx.reservation.create({
           data: {
             tenantId,
-            memberId: payment.memberId,
+            memberId: transactionItem.memberId,
             sessionId: session.id,
-            paymentId: payment.id,
+            transactionItemId: transactionItem.id,
             status: ReservationStatus.CONFIRMED,
             coverage: ReservationCoverage.DROP_IN,
           },
@@ -728,8 +699,8 @@ export class ReservationsService {
         error instanceof Prisma.PrismaClientKnownRequestError &&
         error.code === 'P2002'
       ) {
-        const again = await this.prisma.payment.findUnique({
-          where: { id: paymentId },
+        const again = await this.prisma.transactionItem.findUnique({
+          where: { id: transactionItemId },
           include: {
             reservation: { include: this.reservationInclude() },
           },
@@ -947,7 +918,7 @@ export class ReservationsService {
           service: { select: { id: true, name: true } },
         },
       },
-      payment: {
+      transactionItem: {
         select: {
           id: true,
           amount: true,
@@ -1005,9 +976,9 @@ export class ReservationsService {
       serviceName: row.session.service.name,
       contractId: row.contractId,
       creditBalanceId: row.creditBalanceId,
-      paymentId: row.paymentId,
-      paymentAmount: row.payment?.amount ?? null,
-      paymentMethod: row.payment?.method ?? null,
+      transactionItemId: row.transactionItemId,
+      transactionItemAmount: row.transactionItem?.amount ?? null,
+      transactionItemMethod: row.transactionItem?.method ?? null,
       status: row.status,
       coverage: row.coverage,
       createdAt: row.createdAt,
@@ -1021,8 +992,8 @@ export class ReservationsService {
       sessionId: detail.sessionId,
       contractId: detail.contractId,
       creditBalanceId: detail.creditBalanceId,
-      paymentId: detail.paymentId,
-      paymentAmount: detail.paymentAmount,
+      transactionItemId: detail.transactionItemId,
+      transactionItemAmount: detail.transactionItemAmount,
       status: detail.status,
       coverage: detail.coverage,
     };

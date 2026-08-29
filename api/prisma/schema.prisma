@@ -175,7 +175,7 @@ model Tenant {
   roles           Role[]
   services        Service[]
   packs           Pack[]
-  payments        Payment[]
+  transactionItems TransactionItem[]
   contracts       Contract[]
   sessions        Session[]
   recurrenceRules SessionRecurrenceRule[]
@@ -193,7 +193,7 @@ model Tenant {
   auditEvents     AuditEvent[]
   credentialOffers CredentialOffer[]
   staffCredentialOffers StaffCredentialOffer[]
-  cartCheckouts   CartCheckout[]
+  transactions    Transaction[]
 
   @@map("tenants")
 }
@@ -326,7 +326,7 @@ model Member {
   tenant        Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   branch        Branch?        @relation(fields: [branchId], references: [id], onDelete: SetNull)
   refreshTokens RefreshToken[]
-  payments      Payment[]
+  transactionItems TransactionItem[]
   contracts     Contract[]
   reservations  Reservation[]
   waitlistEntries WaitlistEntry[]
@@ -336,7 +336,7 @@ model Member {
   accessCredentials AccessCredential[]
   accessAttempts AccessAttempt[]
   credentialOffers CredentialOffer[]
-  cartCheckouts   CartCheckout[]
+  transactions  Transaction[]
 
   @@unique([tenantId, email])
   @@unique([tenantId, document])
@@ -487,7 +487,7 @@ model Pack {
 
   tenant     Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   components PackComponent[]
-  payments   Payment[]
+  transactionItems TransactionItem[]
   contracts  Contract[]
   credentialOffers CredentialOffer[]
 
@@ -564,11 +564,11 @@ model Session {
   service        Service                @relation(fields: [serviceId], references: [id], onDelete: Restrict)
   branch         Branch                 @relation(fields: [branchId], references: [id], onDelete: Restrict)
   instructor     StaffUser?             @relation("SessionInstructor", fields: [instructorId], references: [id], onDelete: SetNull)
-  recurrenceRule SessionRecurrenceRule? @relation(fields: [recurrenceRuleId], references: [id], onDelete: SetNull)
+  recurrenceRule SessionRecurrenceRule? @relation(fields: [recurrenceRuleId], references: [id], onDelete: Restrict)
   reservations   Reservation[]
   waitlistEntries WaitlistEntry[]
   accessAttempts AccessAttempt[]
-  dropInPayments Payment[]
+  dropInTransactionItems TransactionItem[]
 
   @@unique([recurrenceRuleId, startsAt])
   @@index([tenantId])
@@ -582,17 +582,19 @@ model Session {
 
 /// Pago de negocio (RN-PAG-003..005).
 ///
+/// Ítem individual dentro de una transacción (un pack o drop-in).
+///
 /// @remarks Staff stub/caja → APPROVED inmediato. MP → PENDING hasta webhook.
 /// Pack checkout: `packId`. Drop-in checkout: `sessionId` (reserva al APPROVED).
-model Payment {
+model TransactionItem {
   id               String        @id @default(uuid()) @db.Uuid
   tenantId         String        @map("tenant_id") @db.Uuid
   memberId         String        @map("member_id") @db.Uuid
   packId           String?       @map("pack_id") @db.Uuid
   /// Sesión objetivo del checkout drop-in MP (null en pack/caja stub).
   sessionId        String?       @map("session_id") @db.Uuid
-  /// Carrito MP al que pertenece este payment (1 preference con items[]).
-  cartId           String?       @map("cart_id") @db.Uuid
+  /// Transacción a la que pertenece este ítem (1 preference con items[]).
+  transactionId    String        @map("transaction_id") @db.Uuid
   amount           Int
   status           PaymentStatus
   method           PaymentMethod
@@ -615,7 +617,7 @@ model Payment {
   member   Member    @relation(fields: [memberId], references: [id], onDelete: Cascade)
   pack     Pack?         @relation(fields: [packId], references: [id], onDelete: SetNull)
   session  Session?      @relation(fields: [sessionId], references: [id], onDelete: SetNull)
-  cart     CartCheckout? @relation(fields: [cartId], references: [id], onDelete: SetNull)
+  transaction Transaction? @relation(fields: [transactionId], references: [id], onDelete: SetNull)
   contract Contract?
   reservation Reservation?
   cashMovements CashMovement[]
@@ -626,41 +628,43 @@ model Payment {
   @@index([tenantId])
   @@index([memberId])
   @@index([sessionId])
-  @@index([cartId])
+  @@index([transactionId])
   @@index([mpPreferenceId])
-  @@map("payments")
+  @@map("transaction_items")
 }
 
-/// Carrito de compra MP de Caja (CU-PAG-001). 1 preference con items[] → 1 pago.
+/// Transacción financiera (1 pago real del afiliado).
 ///
-/// @remarks Modelo MercadoLibre: el carrito agrega ítems, pero el checkout es
-/// un solo total y un solo pago. Al webhook APPROVED se confirma cada pack /
-/// reserva de sus payments.
-model CartCheckout {
+/// @remarks Para MP: carrito de Caja con 1 preference items[] → 1 pago MP.
+/// Al webhook APPROVED se confirma cada pack / reserva de sus ítems.
+/// Para efectivo: 1 transacción = 1 transaction_item.
+model Transaction {
   id                 String        @id @default(uuid()) @db.Uuid
   tenantId           String        @map("tenant_id") @db.Uuid
   memberId           String        @map("member_id") @db.Uuid
-  /// Total del carrito (suma de unit_price × quantity de los items).
+  /// Total de la transacción (suma de los ítems).
   amount             Int
   status             PaymentStatus
   idempotencyKey     String        @map("idempotency_key")
-  /// Preference Checkout Pro del gym.
+  /// Preference Checkout Pro del gym (solo MP).
   mpPreferenceId     String?       @map("mp_preference_id")
-  /// Id del pago en Mercado Pago (dedup webhook).
+  /// Id del pago en Mercado Pago (dedup webhook, solo MP).
   mpPaymentId        String?       @map("mp_payment_id")
   mpInitPoint        String?       @map("mp_init_point")
   mpSandboxInitPoint String?       @map("mp_sandbox_init_point")
+  /// Monto reembolsado (para tracking de devoluciones parciales).
+  refundedAmount     Int           @default(0) @map("refunded_amount")
   createdAt          DateTime      @default(now()) @map("created_at")
   updatedAt          DateTime      @updatedAt @map("updated_at")
 
   tenant   Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   member   Member    @relation(fields: [memberId], references: [id], onDelete: Cascade)
-  payments Payment[]
+  transactionItems TransactionItem[]
 
   @@unique([tenantId, idempotencyKey])
   @@index([tenantId])
   @@index([memberId])
-  @@map("cart_checkouts")
+  @@map("transactions")
 }
 
 /// Contratación de pack tras pago aprobado (CU-CON-001 / RN-PAG-004).
@@ -669,7 +673,7 @@ model Contract {
   tenantId       String         @map("tenant_id") @db.Uuid
   memberId       String         @map("member_id") @db.Uuid
   packId         String         @map("pack_id") @db.Uuid
-  paymentId      String         @unique @map("payment_id") @db.Uuid
+  transactionItemId String       @unique @map("transaction_item_id") @db.Uuid
   status         ContractStatus @default(ACTIVE)
   startsAt       DateTime       @map("starts_at")
   endsAt         DateTime?      @map("ends_at")
@@ -680,7 +684,7 @@ model Contract {
   tenant       Tenant                  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   member       Member                  @relation(fields: [memberId], references: [id], onDelete: Cascade)
   pack         Pack                    @relation(fields: [packId], references: [id], onDelete: Restrict)
-  payment      Payment                 @relation(fields: [paymentId], references: [id], onDelete: Restrict)
+  transactionItem TransactionItem       @relation(fields: [transactionItemId], references: [id], onDelete: Restrict)
   balances     ContractCreditBalance[]
   reservations Reservation[]
   credentialOffer CredentialOffer?
@@ -750,7 +754,7 @@ model Reservation {
   sessionId       String              @map("session_id") @db.Uuid
   contractId      String?             @map("contract_id") @db.Uuid
   creditBalanceId String?             @map("credit_balance_id") @db.Uuid
-  paymentId       String?             @unique @map("payment_id") @db.Uuid
+  transactionItemId String?           @unique @map("transaction_item_id") @db.Uuid
   status          ReservationStatus   @default(CONFIRMED)
   coverage        ReservationCoverage @default(CREDIT)
   /// Marca de presente al verificar ingreso asociado (RN-RES-007).
@@ -763,7 +767,7 @@ model Reservation {
   session       Session                @relation(fields: [sessionId], references: [id], onDelete: Restrict)
   contract      Contract?              @relation(fields: [contractId], references: [id], onDelete: Restrict)
   creditBalance ContractCreditBalance? @relation(fields: [creditBalanceId], references: [id], onDelete: Restrict)
-  payment       Payment?               @relation(fields: [paymentId], references: [id], onDelete: Restrict)
+  transactionItem TransactionItem?     @relation(fields: [transactionItemId], references: [id], onDelete: Restrict)
   accessAttempts AccessAttempt[]
 
   @@index([tenantId])
@@ -799,12 +803,12 @@ model WaitlistEntry {
 
 /// Movimiento de caja del día (CU-PAG-002 / RN-PAG-007 / CU-PAG-005).
 ///
-/// @remarks CASH: ingreso al cobrar; egreso al devolver. Unique `(payment_id, kind)`.
+/// @remarks CASH: ingreso al cobrar; egreso al devolver. Unique `(transaction_item_id, kind)`.
 model CashMovement {
   id                 String              @id @default(uuid()) @db.Uuid
   tenantId           String              @map("tenant_id") @db.Uuid
   businessDate       DateTime            @map("business_date") @db.Date
-  paymentId          String              @map("payment_id") @db.Uuid
+  transactionItemId  String              @map("transaction_item_id") @db.Uuid
   memberId           String              @map("member_id") @db.Uuid
   recordedByStaffId  String?             @map("recorded_by_staff_id") @db.Uuid
   amount             Int
@@ -813,11 +817,11 @@ model CashMovement {
   createdAt          DateTime            @default(now()) @map("created_at")
 
   tenant          Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  payment         Payment    @relation(fields: [paymentId], references: [id], onDelete: Restrict)
+  transactionItem TransactionItem @relation(fields: [transactionItemId], references: [id], onDelete: Restrict)
   member          Member     @relation(fields: [memberId], references: [id], onDelete: Cascade)
   recordedByStaff StaffUser? @relation("CashMovementRecorder", fields: [recordedByStaffId], references: [id], onDelete: SetNull)
 
-  @@unique([paymentId, kind])
+  @@unique([transactionItemId, kind])
   @@index([tenantId, businessDate])
   @@index([memberId])
   @@map("cash_movements")
@@ -911,7 +915,7 @@ model StaffCredentialOffer {
 model RefundRequest {
   id                   String              @id @default(uuid()) @db.Uuid
   tenantId             String              @map("tenant_id") @db.Uuid
-  paymentId            String              @map("payment_id") @db.Uuid
+  transactionItemId    String              @map("transaction_item_id") @db.Uuid
   memberId             String              @map("member_id") @db.Uuid
   status               RefundRequestStatus @default(PENDING)
   reason               String?
@@ -922,13 +926,13 @@ model RefundRequest {
   updatedAt            DateTime            @updatedAt @map("updated_at")
 
   tenant          Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  payment         Payment    @relation(fields: [paymentId], references: [id], onDelete: Restrict)
+  transactionItem TransactionItem @relation(fields: [transactionItemId], references: [id], onDelete: Restrict)
   member          Member     @relation(fields: [memberId], references: [id], onDelete: Cascade)
   resolvedByStaff StaffUser? @relation("RefundRequestResolver", fields: [resolvedByStaffId], references: [id], onDelete: SetNull)
 
   @@index([tenantId, status])
   @@index([memberId, createdAt])
-  @@index([paymentId])
+  @@index([transactionItemId])
   @@map("refund_requests")
 }
 
@@ -944,12 +948,12 @@ model ReceiptSequence {
 
 /// Comprobante interno de un pago aprobado (RN-PAG-009).
 ///
-/// @remarks 1:1 con Payment APPROVED. Número secuencial por tenant (`GB-000001`).
+/// @remarks 1:1 con TransactionItem APPROVED. Número secuencial por tenant (`GB-000001`).
 /// Email N1 diferido (E8). Sin backfill de pagos legacy.
 model Receipt {
   id          String           @id @default(uuid()) @db.Uuid
   tenantId    String           @map("tenant_id") @db.Uuid
-  paymentId   String           @unique @map("payment_id") @db.Uuid
+  transactionItemId String     @unique @map("transaction_item_id") @db.Uuid
   memberId    String           @map("member_id") @db.Uuid
   number      Int
   amount      Int
@@ -959,7 +963,7 @@ model Receipt {
   createdAt   DateTime         @default(now()) @map("created_at")
 
   tenant  Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  payment Payment @relation(fields: [paymentId], references: [id], onDelete: Restrict)
+  transactionItem TransactionItem @relation(fields: [transactionItemId], references: [id], onDelete: Restrict)
   member  Member  @relation(fields: [memberId], references: [id], onDelete: Cascade)
 
   @@unique([tenantId, number])

@@ -21,11 +21,11 @@ export class SuperReceiptsController {
     return this.receipts.listByMember(tenantId, memberId, query);
   }
 
-  @Get('payments/:paymentId/receipt')
-  findByPayment(
+  @Get('transaction-items/:transactionItemId/receipt')
+  findByTransactionItem(
     @Param('tenantId', ParseUUIDPipe) tenantId: string,
-    @Param('paymentId', ParseUUIDPipe) paymentId: string,
+    @Param('transactionItemId', ParseUUIDPipe) transactionItemId: string,
   ): Promise<ReceiptDetail> {
-    return this.receipts.findByPayment(tenantId, paymentId);
+    return this.receipts.findByTransactionItem(tenantId, transactionItemId);
   }
 }

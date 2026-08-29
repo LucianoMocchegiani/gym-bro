@@ -65,7 +65,7 @@ function formatWhen(iso: string): string {
 /**
  * Cola de solicitudes + devolución en modal (CU-PAG-005 / CU-PAG-007).
  *
- * @remarks Requiere permiso API `payments.refund`. `?paymentId=` abre el modal
+ * @remarks Requiere permiso API `transaction_items.refund`. `?transactionItemId=` abre el modal
  * de devolución directa (p. ej. desde ficha afiliado).
  */
 export default function DevolucionesPage() {
@@ -80,7 +80,7 @@ export default function DevolucionesPage() {
 
 function DevolucionesInner() {
   const searchParams = useSearchParams();
-  const prefillPaymentId = searchParams.get('paymentId')?.trim() ?? '';
+  const prefillTransactionItemId = searchParams.get('transactionItemId')?.trim() ?? '';
 
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('PENDING');
   const [items, setItems] = useState<RefundRequestDetail[]>([]);
@@ -92,14 +92,14 @@ function DevolucionesInner() {
   const [memberLabels, setMemberLabels] = useState<MemberLabelMap>({});
   const [flashOk, setFlashOk] = useState<string | null>(null);
 
-  const [modalOpen, setModalOpen] = useState(Boolean(prefillPaymentId));
+  const [modalOpen, setModalOpen] = useState(Boolean(prefillTransactionItemId));
   const [selected, setSelected] = useState<RefundRequestDetail | null>(null);
-  const [directPaymentId, setDirectPaymentId] = useState(prefillPaymentId);
+  const [directTransactionItemId, setDirectTransactionItemId] = useState(prefillTransactionItemId);
   const [reason, setReason] = useState(
-    prefillPaymentId ? 'Doble cobro' : '',
+    prefillTransactionItemId ? 'Doble cobro' : '',
   );
   const [motiveCode, setMotiveCode] = useState<RefundMotiveCode>(
-    prefillPaymentId ? 'doble_cobro' : 'solicitud',
+    prefillTransactionItemId ? 'doble_cobro' : 'solicitud',
   );
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -112,8 +112,6 @@ function DevolucionesInner() {
         status: statusFilter === 'ALL' ? undefined : statusFilter,
         page,
         pageSize: PAGE_SIZE,
-        order: 'desc',
-        orderBy: 'createdAt',
       });
       setItems(result.items);
       setTotal(result.total);
@@ -166,33 +164,33 @@ function DevolucionesInner() {
     };
   }, [load]);
 
-  const paymentIdToExecute = selected?.paymentId ?? directPaymentId.trim();
+  const transactionItemIdToExecute = selected?.transactionItemId ?? directTransactionItemId.trim();
   const canExecute =
     !selected || selected.status === 'PENDING';
 
   const canSubmit = useMemo(() => {
     return (
       canExecute &&
-      Boolean(paymentIdToExecute) &&
+      Boolean(transactionItemIdToExecute) &&
       reason.trim().length >= 3 &&
       !busy
     );
-  }, [canExecute, paymentIdToExecute, reason, busy]);
+  }, [canExecute, transactionItemIdToExecute, reason, busy]);
 
   function resetForm(opts?: {
-    paymentId?: string;
+    transactionItemId?: string;
     request?: RefundRequestDetail | null;
   }) {
     const request = opts?.request ?? null;
-    const paymentId = opts?.paymentId ?? '';
+    const transactionItemId = opts?.transactionItemId ?? '';
     setSelected(request);
-    setDirectPaymentId(paymentId);
+    setDirectTransactionItemId(transactionItemId);
     setConfirmOpen(false);
     setActionError(null);
     if (request?.status === 'PENDING') {
       setMotiveCode('solicitud');
       setReason(request.reason?.trim() || 'Solicitud del afiliado');
-    } else if (paymentId) {
+    } else if (transactionItemId) {
       setMotiveCode('doble_cobro');
       setReason('Doble cobro');
     } else {
@@ -223,30 +221,24 @@ function DevolucionesInner() {
 
   async function onExecute(e: FormEvent) {
     e.preventDefault();
-    if (!canSubmit || !paymentIdToExecute) {
+    if (!canSubmit || !transactionItemIdToExecute) {
       return;
     }
     setConfirmOpen(true);
   }
 
   async function doExecute() {
-    if (!paymentIdToExecute) {
+    if (!transactionItemIdToExecute) {
       return;
     }
     setBusy(true);
     setActionError(null);
     try {
-      const result = await executeRefund(paymentIdToExecute, {
-        reason: reason.trim(),
+      await executeRefund(transactionItemIdToExecute, {
         motiveCode,
-        ...(selected ? { refundRequestId: selected.id } : {}),
+        note: reason.trim(),
       });
-      const mpNote = result.mpRefundManualPending
-        ? ' (MP manual pendiente)'
-        : '';
-      setFlashOk(
-        `Devolución OK: ${formatMoney(result.amount)} · ${result.method}${mpNote}`,
-      );
+      setFlashOk('Devolución ejecutada correctamente.');
       setModalOpen(false);
       resetForm();
       await load();
@@ -268,7 +260,7 @@ function DevolucionesInner() {
     : 'Devolución directa';
 
   const modalDescription = selected
-    ? `Solicitud ${selected.id.slice(0, 8)}… · pago ${selected.paymentId.slice(0, 8)}…`
+    ? `Solicitud ${selected.id.slice(0, 8)}… · ítem ${selected.transactionItemId.slice(0, 8)}…`
     : 'Para doble cobro u otras devoluciones sin solicitud PENDING.';
 
   return (
@@ -280,7 +272,7 @@ function DevolucionesInner() {
         </button>
       }
     >
-      <ListToolbar hint="Requiere permiso payments.refund.">
+      <ListToolbar hint="Requiere permiso transaction_items.refund.">
         <ListFilterField
           label="Estado"
           value={statusFilter}
@@ -342,7 +334,7 @@ function DevolucionesInner() {
               </StatusPill>
             </td>
             <td className="muted small">
-              {row.reason ?? row.rejectionReason ?? '—'}
+              {row.reason ?? '—'}
             </td>
             <td>
               <RowActions>
@@ -382,9 +374,9 @@ function DevolucionesInner() {
                 {refundStatusLabel(selected.status)}
               </StatusPill>
             </p>
-            {selected.rejectionReason ? (
+            {selected.reason ? (
               <p className="muted">
-                Rechazo política: {selected.rejectionReason}
+                Rechazo política: {selected.reason}
               </p>
             ) : null}
             <p className="muted small">
@@ -407,9 +399,9 @@ function DevolucionesInner() {
               <label>
                 ID del pago
                 <input
-                  value={directPaymentId}
-                  onChange={(e) => setDirectPaymentId(e.target.value)}
-                  placeholder="uuid del payment"
+                  value={directTransactionItemId}
+                  onChange={(e) => setDirectTransactionItemId(e.target.value)}
+                  placeholder="uuid del transactionItem"
                   required
                   autoComplete="off"
                 />

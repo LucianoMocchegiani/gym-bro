@@ -28,7 +28,7 @@ export type MemberAccountDebt = {
 /**
  * Pago reciente en estado de cuenta.
  */
-export type MemberAccountPayment = {
+export type MemberAccountTransactionItem = {
   id: string;
   amount: number;
   status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'REFUNDED';
@@ -69,6 +69,6 @@ export type MemberAccountDetail = {
   summary: MemberAccountSummary;
   debt: MemberAccountDebt;
   contracts: ContractDetail[];
-  recentPayments: MemberAccountPayment[];
+  recentTransactionItems: MemberAccountTransactionItem[];
   reservations: MemberAccountReservation[];
 };

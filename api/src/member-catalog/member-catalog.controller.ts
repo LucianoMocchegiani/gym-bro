@@ -2,7 +2,7 @@ import { Controller, ForbiddenException, Get, Query } from '@nestjs/common';
 import type { AuthUser } from '../auth/auth.types';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { ListResult } from '../common/list';
-import { MercadoPagoAccountService } from '../mercadopago/mercadopago-account.service';
+import { MercadoPagoAccountService } from '../payment/mercadopago-account.service';
 import { PacksService } from '../packs/packs.service';
 import { SessionsService } from '../sessions/sessions.service';
 import { CurrentTenant } from '../tenant/decorators/current-tenant.decorator';

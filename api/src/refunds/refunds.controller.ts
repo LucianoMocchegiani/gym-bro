@@ -33,18 +33,18 @@ import { RefundExecutionDetail, RefundRequestDetail } from './refunds.types';
 export class RefundsController {
   constructor(private readonly refunds: RefundsService) {}
 
-  @Post('me/payments/:paymentId/refund-requests')
+  @Post('me/transaction-items/:transactionItemId/refund-requests')
   @HttpCode(HttpStatus.CREATED)
   requestMine(
     @CurrentTenant() tenantId: string,
     @CurrentUser() user: AuthUser,
-    @Param('paymentId', ParseUUIDPipe) paymentId: string,
+    @Param('transactionItemId', ParseUUIDPipe) transactionItemId: string,
     @Body() dto: CreateRefundRequestDto,
   ): Promise<RefundRequestDetail> {
     if (user.profileType !== 'MEMBER') {
       throw new ForbiddenException('Member profile required');
     }
-    return this.refunds.requestByMember(tenantId, user.userId, paymentId, dto, {
+    return this.refunds.requestByMember(tenantId, user.userId, transactionItemId, dto, {
       profileType: 'MEMBER',
       userId: user.userId,
     });
@@ -63,7 +63,7 @@ export class RefundsController {
   }
 
   @Get('refund-requests')
-  @RequirePermission('payments.refund')
+  @RequirePermission('transaction_items.refund')
   listTenant(
     @CurrentTenant() tenantId: string,
     @Query() query: ListRefundRequestsQueryDto,
@@ -71,15 +71,15 @@ export class RefundsController {
     return this.refunds.listForTenant(tenantId, query);
   }
 
-  @Post('payments/:paymentId/refunds')
+  @Post('transaction-items/:transactionItemId/refunds')
   @HttpCode(HttpStatus.CREATED)
-  @RequirePermission('payments.refund')
+  @RequirePermission('transaction_items.refund')
   execute(
     @CurrentTenant() tenantId: string,
     @CurrentUser() user: AuthUser,
-    @Param('paymentId', ParseUUIDPipe) paymentId: string,
+    @Param('transactionItemId', ParseUUIDPipe) transactionItemId: string,
     @Body() dto: ExecuteRefundDto,
   ): Promise<RefundExecutionDetail> {
-    return this.refunds.execute(tenantId, paymentId, dto, toAuditActor(user));
+    return this.refunds.execute(tenantId, transactionItemId, dto, toAuditActor(user));
   }
 }

@@ -70,7 +70,7 @@ const PERMISSIONS: { code: string; description: string; dangerous: boolean }[] =
       dangerous: false,
     },
     {
-      code: 'payments.refund',
+      code: 'transaction_items.refund',
       description: 'Devoluciones y reembolsos',
       dangerous: true,
     },
