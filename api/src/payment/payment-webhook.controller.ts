@@ -7,17 +7,17 @@ import {
   Post,
   Query,
 } from '@nestjs/common';
-import { MpWebhookProcessResult } from './mp-checkout.types';
-import { MpWebhookService } from './mp-webhook.service';
+import { WebhookPaymentService } from './webhook-payment.service';
+import { MpWebhookProcessResult } from './payment.types';
 
 /**
- * Webhooks Mercado Pago (público).
+ * Webhooks de pago (Mercado Pago).
  *
- * @remarks CU-PAG-001. Sin JWT. `tenantId` en query (notification_url de Preference).
+ * @remarks Sin JWT. `tenantId` en query (notification_url de Preference).
  */
-@Controller('webhooks/mercadopago')
-export class MpWebhookController {
-  constructor(private readonly webhooks: MpWebhookService) {}
+@Controller('webhooks/payment')
+export class PaymentWebhookController {
+  constructor(private readonly webhookPayment: WebhookPaymentService) {}
 
   @Post()
   @HttpCode(HttpStatus.OK)
@@ -34,7 +34,7 @@ export class MpWebhookController {
       id?: string | number;
     },
   ): Promise<MpWebhookProcessResult> {
-    return this.webhooks.handleNotification(tenantId, body ?? {}, {
+    return this.webhookPayment.handleNotification(tenantId, body ?? {}, {
       topic,
       id,
     });

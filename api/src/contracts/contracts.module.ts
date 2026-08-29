@@ -1,24 +1,26 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { AuditModule } from '../audit/audit.module';
 import { AuthModule } from '../auth/auth.module';
-import { CashRegisterModule } from '../cash-register/cash-register.module';
 import { KuatiaModule } from '../kuatia/kuatia.module';
-import { ReceiptsModule } from '../receipts/receipts.module';
 import { RolesModule } from '../roles/roles.module';
+import { PaymentModule } from '../payment/payment.module';
 import { ContractsController } from './contracts.controller';
 import { ContractsService } from './contracts.service';
 import { SuperContractsController } from './super-contracts.controller';
 
 /**
- * Contrataciones + pagos stub/caja (CU-CON-001) + offer Quark soft-fail.
+ * Contrataciones (CU-CON-001).
+ *
+ * @remarks
+ * El pago (CASH o STUB) se delega a CashPaymentService.
+ * MP se confirma vía webhook → WebhookPaymentService → ContractsService.confirmFromApprovedPayment.
  */
 @Module({
   imports: [
     AuthModule,
     RolesModule,
     AuditModule,
-    CashRegisterModule,
-    ReceiptsModule,
+    forwardRef(() => PaymentModule),
     KuatiaModule,
   ],
   controllers: [ContractsController, SuperContractsController],

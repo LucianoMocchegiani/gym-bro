@@ -15,11 +15,11 @@ import { IconReceipt, RowIconButton } from '@/components/RowActions';
 import { memberFichaHref } from '@/lib/member-link';
 import { ApiClientError } from '@/lib/api/client';
 import { getReportsSummary } from '@/lib/api/reports';
-import type { ReportsSummary } from '@/lib/api/reports';
-import { getReceiptByPayment } from '@/lib/api/receipts';
+import type { ReportsSummary, ReportTransactionRow } from '@/lib/api/reports';
+import { getReceiptByTransactionItem } from '@/lib/api/receipts';
 import type { ReceiptDetail } from '@/lib/api/receipts';
 import { formatMoney } from '@/lib/cash-labels';
-import { todayBusinessDate } from '@/lib/api/cash-register';
+import { todayBusinessDate } from '@/lib/api/payment-register';
 
 function monthStart(ymd: string): string {
   return `${ymd.slice(0, 7)}-01`;
@@ -33,16 +33,18 @@ function formatWhen(iso: string): string {
   }).format(new Date(iso));
 }
 
-function formatConcept(p: { kind: string; packName: string | null }): string {
-  if (p.kind === 'DROP_IN') return 'Drop-in';
-  return p.packName ?? 'Pack';
-}
-
 function methodLabel(m: string): string {
   if (m === 'CASH') return 'Efectivo';
-  if (m === 'MP') return 'Mercado Pago';
-  if (m === 'STUB') return 'Stub';
+  if (m === 'MP') return 'MP';
   return m;
+}
+
+function conceptLabel(tx: ReportTransactionRow): string {
+  if (tx.items.length === 1) {
+    const item = tx.items[0];
+    return item.kind === 'DROP_IN' ? 'Drop-in' : (item.packName ?? 'Pack');
+  }
+  return `${tx.items.length} ítems`;
 }
 
 export default function ReportesPage() {
@@ -72,6 +74,8 @@ function ReportesInner() {
 
   const [receipt, setReceipt] = useState<ReceiptDetail | null>(null);
   const [receiptBusyId, setReceiptBusyId] = useState<string | null>(null);
+
+  const [expandedId, setExpandedId] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -103,10 +107,10 @@ function ReportesInner() {
     return () => { cancelled = true; };
   }, [appliedFrom, appliedTo, appliedMemberId]);
 
-  async function openReceiptForPayment(paymentId: string) {
-    setReceiptBusyId(paymentId);
+  async function openReceiptForTransactionItem(transactionItemId: string) {
+    setReceiptBusyId(transactionItemId);
     try {
-      const r = await getReceiptByPayment(paymentId);
+      const r = await getReceiptByTransactionItem(transactionItemId);
       setReceipt(r);
     } catch {
       setReceipt(null);
@@ -127,8 +131,8 @@ function ReportesInner() {
     setAppliedMemberId('');
   }
 
-  const payments = data?.income.payments ?? [];
-  const paymentCount = data?.income.paymentCount ?? 0;
+  const transactions = data?.income.transactions ?? [];
+  const transactionCount = data?.income.transactionCount ?? 0;
 
   return (
     <AdminShell
@@ -166,8 +170,7 @@ function ReportesInner() {
             </p>
             <p className="muted small">
               Caja {formatMoney(data.income.byMethod.CASH)} · MP{' '}
-              {formatMoney(data.income.byMethod.MP)} · Stub{' '}
-              {formatMoney(data.income.byMethod.STUB)}
+              {formatMoney(data.income.byMethod.MP)}
             </p>
           </Panel>
         </div>
@@ -215,18 +218,18 @@ function ReportesInner() {
       </ListToolbar>
 
       <DataTable
-        title="Ingresos (detalle)"
+        title="Movimientos"
         description={
-          data && paymentCount > payments.length
-            ? `Mostrando ${payments.length} de ${paymentCount}`
+          data && transactionCount > transactions.length
+            ? `Mostrando ${transactions.length} de ${transactionCount}`
             : data
-              ? `${paymentCount} pagos aprobados`
+              ? `${transactionCount} transacciones`
               : undefined
         }
         loading={loading}
         error={error}
-        isEmpty={!loading && !error && payments.length === 0}
-        emptyText="Sin pagos en el período."
+        isEmpty={!loading && !error && transactions.length === 0}
+        emptyText="Sin movimientos en el período."
         paginate={false}
         header={
           <>
@@ -234,53 +237,126 @@ function ReportesInner() {
             <th>Afiliado</th>
             <th>Concepto</th>
             <th>Medio</th>
-            <th>Tipo</th>
             <th>Monto</th>
             <th />
           </>
         }
       >
-        {payments.map((p) => (
-          <tr key={p.id}>
-            <td>{formatWhen(p.createdAt)}</td>
-            <td>
-              {p.memberId ? (
-                <Link
-                  href={memberFichaHref(
-                    p.memberId,
-                    p.memberName ?? p.memberEmail ?? '',
-                  )}
-                >
-                  {p.memberName?.trim() || p.memberEmail}
-                </Link>
-              ) : (
-                p.memberName?.trim() || p.memberEmail || '—'
-              )}
-            </td>
-            <td>{formatConcept(p)}</td>
-            <td>{methodLabel(p.method)}</td>
-            <td>
-              <StatusPill tone={p.kind === 'PACK' ? 'ok' : 'warn'}>
-                {p.kind === 'PACK' ? 'Pack' : 'Drop-in'}
-              </StatusPill>
-            </td>
-            <td>{formatMoney(p.amount)}</td>
-            <td className="row-actions">
-              <RowIconButton
-                label="Ver comprobante"
-                disabled={receiptBusyId === p.id}
-                onClick={() => void openReceiptForPayment(p.id)}
-              >
-                <IconReceipt />
-              </RowIconButton>
-            </td>
-          </tr>
-        ))}
+        {transactions.map((tx) => {
+          const isExpanded = expandedId === tx.id;
+          return (
+            <TransactionRow
+              key={tx.id}
+              tx={tx}
+              isExpanded={isExpanded}
+              expandedId={expandedId}
+              setExpandedId={setExpandedId}
+              receiptBusyId={receiptBusyId}
+              openReceiptForTransactionItem={openReceiptForTransactionItem}
+            />
+          );
+        })}
       </DataTable>
 
       {receipt ? (
         <ReceiptPanel receipt={receipt} onClose={() => setReceipt(null)} />
       ) : null}
     </AdminShell>
+  );
+}
+
+function TransactionRow({
+  tx,
+  isExpanded,
+  expandedId,
+  setExpandedId,
+  receiptBusyId,
+  openReceiptForTransactionItem,
+}: {
+  tx: ReportTransactionRow;
+  isExpanded: boolean;
+  expandedId: string | null;
+  setExpandedId: (id: string | null) => void;
+  receiptBusyId: string | null;
+  openReceiptForTransactionItem: (id: string) => void;
+}) {
+  const hasMultiItems = tx.items.length > 1;
+  const showExpandable = hasMultiItems && tx.method === 'MP';
+
+  return (
+    <>
+      <tr
+        className={showExpandable ? 'clickable' : undefined}
+        onClick={showExpandable ? () => setExpandedId(isExpanded ? null : tx.id) : undefined}
+      >
+        <td>{formatWhen(tx.createdAt)}</td>
+        <td>
+          {tx.memberId ? (
+            <Link
+              href={memberFichaHref(
+                tx.memberId,
+                tx.memberName ?? tx.memberEmail ?? '',
+              )}
+            >
+              {tx.memberName?.trim() || tx.memberEmail}
+            </Link>
+          ) : (
+            tx.memberName?.trim() || tx.memberEmail || '—'
+          )}
+        </td>
+        <td>{conceptLabel(tx)}</td>
+        <td>
+          <StatusPill tone={tx.method === 'MP' ? 'ok' : 'warn'}>
+            {methodLabel(tx.method)}
+          </StatusPill>
+          {tx.mpPaymentId ? (
+            <span className="muted small" style={{ marginLeft: 6 }}>
+              #{tx.mpPaymentId}
+            </span>
+          ) : null}
+        </td>
+        <td>{formatMoney(tx.amount)}</td>
+        <td className="row-actions">
+          {!showExpandable && tx.items.length === 1 ? (
+            <RowIconButton
+              label="Ver comprobante"
+              disabled={receiptBusyId === tx.items[0].id}
+              onClick={() => void openReceiptForTransactionItem(tx.items[0].id)}
+            >
+              <IconReceipt />
+            </RowIconButton>
+          ) : null}
+          {showExpandable ? (
+            <span className="muted small">{isExpanded ? '▲' : '▼'}</span>
+          ) : null}
+        </td>
+      </tr>
+      {isExpanded && hasMultiItems
+        ? tx.items.map((item) => (
+            <tr key={item.id} className="sub-row">
+              <td />
+              <td />
+              <td>
+                {item.kind === 'DROP_IN' ? 'Drop-in' : (item.packName ?? 'Pack')}
+              </td>
+              <td>
+                <StatusPill tone={item.kind === 'PACK' ? 'ok' : 'warn'}>
+                  {item.kind === 'PACK' ? 'Pack' : 'Drop-in'}
+                </StatusPill>
+              </td>
+              <td>{formatMoney(item.amount)}</td>
+              <td className="row-actions">
+                <RowIconButton
+                  label="Ver comprobante"
+                  disabled={receiptBusyId === item.id}
+                  onClick={() => void openReceiptForTransactionItem(item.id)}
+                >
+                  <IconReceipt />
+                </RowIconButton>
+              </td>
+            </tr>
+          ))
+        : null}
+    </>
   );
 }

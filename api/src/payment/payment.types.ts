@@ -1,28 +1,10 @@
 /**
- * Estados de checkout MP (single o carrito).
+ * Estados de checkout MP.
  */
 export type MpCheckoutStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | 'REFUNDED';
 
 /**
- * Respuesta de checkout MP (pack o drop-in).
- */
-export type MpCheckoutResult = {
-  paymentId: string;
-  status: MpCheckoutStatus;
-  amount: number;
-  kind: 'PACK' | 'DROP_IN';
-  packId: string | null;
-  sessionId: string | null;
-  idempotencyKey: string;
-  mpPreferenceId: string | null;
-  checkoutUrl: string | null;
-  sandboxCheckoutUrl: string | null;
-  contractId: string | null;
-  reservationId: string | null;
-};
-
-/**
- * Línea de un carrito MP (agrupa los payments del mismo ítem).
+ * Línea de un carrito MP (agrupa los transactionItems del mismo ítem).
  */
 export type MpCartLine = {
   kind: 'PACK' | 'DROP_IN';
@@ -31,14 +13,14 @@ export type MpCartLine = {
   title?: string;
   quantity: number;
   amount: number;
-  paymentIds: string[];
+  transactionItemIds: string[];
 };
 
 /**
  * Respuesta de checkout de carrito MP (1 preference → 1 pago, modelo MercadoLibre).
  */
 export type MpCartCheckoutResult = {
-  cartId: string;
+  transactionId: string;
   memberId: string;
   status: MpCheckoutStatus;
   amount: number;
@@ -50,12 +32,12 @@ export type MpCartCheckoutResult = {
 };
 
 /**
- * Resultado procesado del webhook / simulate.
+ * Resultado procesado del webhook.
  */
 export type MpWebhookProcessResult = {
   handled: boolean;
-  paymentId: string | null;
-  cartId: string | null;
+  transactionItemId: string | null;
+  transactionId: string | null;
   status: string | null;
   contractId: string | null;
   reservationId: string | null;

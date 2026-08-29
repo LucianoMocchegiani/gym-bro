@@ -33,7 +33,7 @@ import type {
   AccessAttemptDetail,
   AccessVerifyResult,
 } from '@/lib/api/access';
-import { todayBusinessDate } from '@/lib/api/cash-register';
+import { todayBusinessDate } from '@/lib/api/payment-register';
 import { ApiClientError } from '@/lib/api/client';
 import { VenueQrSkeleton } from '@/components/VenueQrSkeleton';
 

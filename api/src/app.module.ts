@@ -3,12 +3,12 @@ import { ConfigModule } from '@nestjs/config';
 import { AccessModule } from './access/access.module';
 import { AuditModule } from './audit/audit.module';
 import { AuthModule } from './auth/auth.module';
-import { CashRegisterModule } from './cash-register/cash-register.module';
+import { PaymentRegisterModule } from './payment-register/payment-register.module';
 import { ContractsModule } from './contracts/contracts.module';
 import { HealthModule } from './health/health.module';
 import { MembersModule } from './members/members.module';
 import { MemberCatalogModule } from './member-catalog/member-catalog.module';
-import { MercadoPagoModule } from './mercadopago/mercadopago.module';
+import { PaymentModule } from './payment/payment.module';
 import { PacksModule } from './packs/packs.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { KuatiaModule } from './kuatia/kuatia.module';
@@ -50,9 +50,9 @@ import { UploadModule } from './upload/upload.module';
     SessionsModule,
     ReservationsModule,
     WaitlistModule,
-    CashRegisterModule,
+    PaymentRegisterModule,
     ReceiptsModule,
-    MercadoPagoModule,
+    PaymentModule,
     RefundsModule,
     ReportsModule,
     AccessModule,

@@ -17,35 +17,43 @@ import {
   CashDayDetail,
   CashMovementDetail,
   CashReconciliationDetail,
-} from './cash-register.types';
+} from './register.types';
 
 export const CASH_REGISTER_TIMEZONE = 'America/Argentina/Buenos_Aires' as const;
 
 type Tx = Prisma.TransactionClient;
 
 /**
- * Caja del día, movimientos CASH y arqueo (CU-PAG-002 / CU-PAG-003 / RN-PAG-007).
+ * Gestión de caja y arqueo.
  *
- * @remarks STUB no genera movimiento. Día operativo en timezone BA.
- * Un arqueo por día; no bloquea cobros posteriores.
+ * @description
+ * - Movimientos de caja (ingresos y egresos de cualquier método de pago)
+ * - Arqueo diario
+ * - Apertura y cierre de caja
+ *
+ * @remarks
+ * A diferencia del CashRegisterService original, este servicio NO filtra por método de pago.
+ * Registra movimientos de CUALQUIER método (CASH, MP, STUB) para permitir arqueo y
+ * reconciliación de todos los pagos, no solo efectivo.
  */
 @Injectable()
-export class CashRegisterService {
+export class PaymentRegisterService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
   ) {}
 
   /**
-   * Si el pago es CASH, registra ingreso de caja en la misma transacción.
+   * Registra un ingreso de caja (cualquier método de pago).
    *
-   * @remarks No-op para STUB u otros métodos. 1 movimiento por payment (unique).
+   * @param tx - Transacción Prisma (para atomicidad)
+   * @param input - Datos del movimiento
    */
-  async recordIncomeIfCash(
+  async recordIncome(
     tx: Tx,
     input: {
       tenantId: string;
-      paymentId: string;
+      transactionItemId: string;
       memberId: string;
       amount: number;
       method: PaymentMethod;
@@ -54,9 +62,6 @@ export class CashRegisterService {
       at?: Date;
     },
   ): Promise<void> {
-    if (input.method !== PaymentMethod.CASH) {
-      return;
-    }
     if (input.amount < 1) {
       throw new BadRequestException('Cash movement amount must be >= 1');
     }
@@ -65,7 +70,7 @@ export class CashRegisterService {
       data: {
         tenantId: input.tenantId,
         businessDate: this.businessDate(input.at ?? new Date()),
-        paymentId: input.paymentId,
+        transactionItemId: input.transactionItemId,
         memberId: input.memberId,
         recordedByStaffId: input.recordedByStaffId,
         amount: input.amount,
@@ -76,25 +81,23 @@ export class CashRegisterService {
   }
 
   /**
-   * Si el pago es CASH, registra egreso de caja por devolución.
+   * Registra un egreso de caja (devolución).
    *
-   * @remarks Unique `(paymentId, OUTCOME)`. No-op si no es CASH.
+   * @param tx - Transacción Prisma
+   * @param input - Datos del movimiento
    */
-  async recordOutcomeIfCash(
+  async recordOutcome(
     tx: Tx,
     input: {
       tenantId: string;
-      paymentId: string;
+      transactionItemId: string;
       memberId: string;
       amount: number;
-      method: PaymentMethod;
+      concept: CashMovementConcept;
       recordedByStaffId: string | null;
       at?: Date;
     },
   ): Promise<void> {
-    if (input.method !== PaymentMethod.CASH) {
-      return;
-    }
     if (input.amount < 1) {
       throw new BadRequestException('Cash movement amount must be >= 1');
     }
@@ -103,12 +106,12 @@ export class CashRegisterService {
       data: {
         tenantId: input.tenantId,
         businessDate: this.businessDate(input.at ?? new Date()),
-        paymentId: input.paymentId,
+        transactionItemId: input.transactionItemId,
         memberId: input.memberId,
         recordedByStaffId: input.recordedByStaffId,
         amount: input.amount,
         kind: CashMovementKind.OUTCOME,
-        concept: CashMovementConcept.REFUND,
+        concept: input.concept,
       },
     });
   }
@@ -306,7 +309,7 @@ export class CashRegisterService {
     id: string;
     tenantId: string;
     businessDate: Date;
-    paymentId: string;
+    transactionItemId: string;
     memberId: string;
     recordedByStaffId: string | null;
     amount: number;
@@ -320,7 +323,7 @@ export class CashRegisterService {
       id: row.id,
       tenantId: row.tenantId,
       businessDate: this.formatBusinessDate(row.businessDate),
-      paymentId: row.paymentId,
+      transactionItemId: row.transactionItemId,
       memberId: row.memberId,
       memberName: row.member.name,
       recordedByStaffId: row.recordedByStaffId,

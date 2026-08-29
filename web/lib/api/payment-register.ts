@@ -1,5 +1,5 @@
 /**
- * Cash register API (módulo `cash-register`).
+ * Payment register API (módulo `payment-register`).
  */
 
 import { apiRequest } from '@/lib/api/client';
@@ -8,7 +8,7 @@ export type CashMovementDetail = {
   id: string;
   tenantId: string;
   businessDate: string;
-  paymentId: string;
+  transactionItemId: string;
   memberId: string;
   memberName: string | null;
   recordedByStaffId: string | null;
@@ -60,7 +60,7 @@ export function todayBusinessDate(): string {
  */
 export function getCashDay(date?: string): Promise<CashDayDetail> {
   const q = date ? `?date=${encodeURIComponent(date)}` : '';
-  return apiRequest<CashDayDetail>(`/cash-register/day${q}`);
+  return apiRequest<CashDayDetail>(`/payment-register/day${q}`);
 }
 
 /**
@@ -71,7 +71,7 @@ export function reconcileCashDay(input: {
   declaredAmount: number;
   note?: string;
 }): Promise<CashDayDetail> {
-  return apiRequest<CashDayDetail>('/cash-register/day/reconcile', {
+  return apiRequest<CashDayDetail>('/payment-register/day/reconcile', {
     method: 'POST',
     body: input,
   });

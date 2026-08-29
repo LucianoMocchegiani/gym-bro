@@ -5,7 +5,7 @@ export type CashMovementDetail = {
   id: string;
   tenantId: string;
   businessDate: string;
-  paymentId: string;
+  transactionItemId: string;
   memberId: string;
   memberName: string | null;
   recordedByStaffId: string | null;

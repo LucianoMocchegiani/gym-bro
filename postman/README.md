@@ -58,13 +58,13 @@ Carpeta **Waitlist**: Member/Staff join cuando sesión llena; leave; promoción 
 
 Carpeta **Tenant settings**: `GET|PATCH /tenant-settings` (`tenant.settings.*`). `reservationCancellationHours`, `waitlistMode`, `allowLateSessionEntry`.
 
-Carpeta **Cash register**: `GET /cash-register/day` + `POST /cash-register/day/reconcile` (`cashier.operate`). Movimientos CASH; arqueo 1/día (declarado ≥ 0); día en timezone BA.
+Carpeta **Payment register**: `GET /payment-register/day` + `POST /payment-register/day/reconcile` (`cashier.operate`). Movimientos de caja (todos los métodos); arqueo 1/día; día en timezone BA.
 
-Carpeta **Mercado Pago**: cuenta `GET|PUT|DELETE /mercadopago/account` + test (`mp.connect`). Checkout pack: Member `POST /me/payments/mp/checkout` y Staff `POST /members/:id/payments/mp/checkout`. Drop-in MP: Member/Staff `.../drop-in-checkout` (reserva al APPROVED). Cart (Caja): Staff `POST /members/:id/payments/mp/cart` con `items[]` → 1 link con el total (modelo MercadoLibre). Webhook `POST /webhooks/mercadopago` y `/simulate` si `MP_CHECKOUT_MODE=stub` (`paymentId` → `contractId`/`reservationId`; `cartId` → carrito completo).
+Carpeta **Mercado Pago**: cuenta `GET|PUT|DELETE /mercadopago/account` + test (`mp.connect`). Checkout pack: Member `POST /me/transaction-items/mp/checkout` y Staff `POST /members/:id/transaction-items/mp/checkout`. Drop-in MP: Member/Staff `.../drop-in-checkout` (reserva al APPROVED). Cart (Caja): Staff `POST /members/:id/transaction-items/mp/cart` con `items[]` → 1 link con el total (modelo MercadoLibre). Webhook `POST /webhooks/mercadopago` y `/simulate` si `MP_CHECKOUT_MODE=stub` (`transactionItemId` → `contractId`/`reservationId`; `transactionId` → carrito completo).
 
-Carpeta **Refunds**: Member `POST /me/payments/:paymentId/refund-requests` + `GET /me/refund-requests`. Staff `GET /refund-requests` + `POST /payments/:paymentId/refunds` (`payments.refund`; `motiveCode=doble_cobro` opcional).
+Carpeta **Refunds**: Member `POST /me/transaction-items/:transactionItemId/refund-requests` + `GET /me/refund-requests`. Staff `GET /refund-requests` + `POST /transaction-items/:transactionItemId/refunds` (`transaction_items.refund`; `motiveCode=doble_cobro` opcional).
 
-Carpeta **Receipts**: Member `GET /me/receipts`. Staff `GET /payments/:paymentId/receipt` y `GET /members/:id/receipts` (`members.read`). Código `GB-000001`.
+Carpeta **Receipts**: Member `GET /me/receipts`. Staff `GET /transaction-items/:transactionItemId/receipt` y `GET /members/:id/receipts` (`members.read`). Código `GB-000001`.
 
 Carpeta **Member catalog**: Catálogo del afiliado (E9 mobile). Member `GET /me/sessions` (sesiones publicadas, default próximas), `GET /me/packs` (packs activos comprables), `GET /me/mp-status` (estado conexión MP: `{ connected: boolean }`).
 

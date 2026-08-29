@@ -1,8 +1,7 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { AuditModule } from '../audit/audit.module';
 import { AuthModule } from '../auth/auth.module';
-import { CashRegisterModule } from '../cash-register/cash-register.module';
-import { ReceiptsModule } from '../receipts/receipts.module';
+import { PaymentModule } from '../payment/payment.module';
 import { RolesModule } from '../roles/roles.module';
 import { TenantSettingsModule } from '../tenant-settings/tenant-settings.module';
 import { WaitlistModule } from '../waitlist/waitlist.module';
@@ -12,6 +11,10 @@ import { SuperReservationsController } from './super-reservations.controller';
 
 /**
  * Reservas con crédito, drop-in y cancelación (E4).
+ *
+ * @remarks
+ * El pago (CASH o STUB) se delega a CashPaymentService.
+ * MP se confirma vía webhook → WebhookPaymentService → ReservationsService.confirmDropInFromApprovedPayment.
  */
 @Module({
   imports: [
@@ -20,8 +23,7 @@ import { SuperReservationsController } from './super-reservations.controller';
     AuditModule,
     TenantSettingsModule,
     WaitlistModule,
-    CashRegisterModule,
-    ReceiptsModule,
+    forwardRef(() => PaymentModule),
   ],
   controllers: [ReservationsController, SuperReservationsController],
   providers: [ReservationsService],

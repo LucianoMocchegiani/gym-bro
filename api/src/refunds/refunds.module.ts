@@ -1,8 +1,8 @@
 import { Module } from '@nestjs/common';
 import { AuditModule } from '../audit/audit.module';
 import { AuthModule } from '../auth/auth.module';
-import { CashRegisterModule } from '../cash-register/cash-register.module';
-import { MercadoPagoModule } from '../mercadopago/mercadopago.module';
+import { PaymentRegisterModule } from '../payment-register/payment-register.module';
+import { PaymentModule } from '../payment/payment.module';
 import { RolesModule } from '../roles/roles.module';
 import { WaitlistModule } from '../waitlist/waitlist.module';
 import { RefundsController } from './refunds.controller';
@@ -17,8 +17,8 @@ import { SuperRefundsController } from './super-refunds.controller';
     AuthModule,
     RolesModule,
     AuditModule,
-    CashRegisterModule,
-    MercadoPagoModule,
+    PaymentRegisterModule,
+    PaymentModule,
     WaitlistModule,
   ],
   controllers: [RefundsController, SuperRefundsController],

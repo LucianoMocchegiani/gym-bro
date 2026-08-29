@@ -15,7 +15,7 @@ import { listAccessAttempts } from '@/lib/api/access';
 import {
   getCashDay,
   todayBusinessDate,
-} from '@/lib/api/cash-register';
+} from '@/lib/api/payment-register';
 import { ApiClientError } from '@/lib/api/client';
 import { listMembers } from '@/lib/api/members';
 import { getReportsSummary } from '@/lib/api/reports';

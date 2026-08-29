@@ -3681,8 +3681,8 @@
                               ]
                  },
                  {
-                     "name":  "Cash register",
-                     "description":  "CU-PAG-002/003. GET /cash-register/day + POST /cash-register/day/reconcile (cashier.operate). Movimientos CASH. Arqueo 1 por dÃ­a; no bloquea cobros. DÃ­a en America/Argentina/Buenos_Aires.",
+"name":  "Payment register",
+                      "description":  "CU-PAG-002/003. GET /payment-register/day + POST /payment-register/day/reconcile (cashier.operate). Movimientos de caja (todos los mÃ©todos). Arqueo 1 por dÃ­a; no bloquea cobros. DÃ­a en America/Argentina/Buenos_Aires.",
                      "item":  [
                                   {
                                       "name":  "Staff GET cash day (today)",
@@ -3707,7 +3707,7 @@
                                                       "header":  [
 
                                                                  ],
-                                                      "url":  "{{baseUrl}}/api/cash-register/day"
+                                                      "url":  "{{baseUrl}}/api/payment-register/day"
                                                   }
                                   },
                                   {
@@ -3718,13 +3718,13 @@
 
                                                                  ],
                                                       "url":  {
-                                                                  "raw":  "{{baseUrl}}/api/cash-register/day?date=2026-07-26",
+                                                                  "raw":  "{{baseUrl}}/api/payment-register/day?date=2026-07-26",
                                                                   "host":  [
                                                                                "{{baseUrl}}"
                                                                            ],
                                                                   "path":  [
                                                                                "api",
-                                                                               "cash-register",
+                                                                               "payment-register",
                                                                                "day"
                                                                            ],
                                                                   "query":  [
@@ -3766,7 +3766,7 @@
                                                                    "mode":  "raw",
                                                                    "raw":  "{\n  \"declaredAmount\": 7500,\n  \"note\": \"Faltante de prueba\"\n}"
                                                                },
-                                                      "url":  "{{baseUrl}}/api/cash-register/day/reconcile",
+                                                      "url":  "{{baseUrl}}/api/payment-register/day/reconcile",
                                                       "description":  "OmitÃ­ date para hoy (BA). Si ya arqueado â†’ 409. declaredAmount puede diferir del esperado."
                                                   }
                                   }
@@ -3797,7 +3797,7 @@
                                                       "header":  [
 
                                                                  ],
-                                                      "url":  "{{baseUrl}}/api/payments/{{createdPaymentId}}/receipt",
+                                                      "url":  "{{baseUrl}}/api/transaction-items/{{createdPaymentId}}/receipt",
                                                       "description":  "UsÃ¡ paymentId de un contract/drop-in nuevo (legacy sin receipt â†’ 404)."
                                                   }
                                   },
@@ -3895,7 +3895,7 @@
                  },
                  {
                      "name":  "Mercado Pago",
-                     "description":  "CU-PAG-006 + CU-PAG-001. Cuenta: GET|PUT|DELETE /mercadopago/account + test (mp.connect). Checkout pack: Member POST /me/payments/mp/checkout; Staff POST /members/:id/payments/mp/checkout. Drop-in MP: .../drop-in-checkout. Cart (Caja): Staff POST /members/:id/payments/mp/cart con items[] â†’ 1 link. Webhook real de MP.",
+                     "description":  "CU-PAG-006 + CU-PAG-001. Cuenta: GET|PUT|DELETE /mercadopago/account + test (mp.connect). Checkout pack: Member POST /me/transaction-items/mp/checkout; Staff POST /members/:id/transaction-items/mp/checkout. Drop-in MP: .../drop-in-checkout. Cart (Caja): Staff POST /members/:id/transaction-items/mp/cart con items[] â†’ 1 link. Webhook real de MP.",
                      "item":  [
                                   {
                                       "name":  "Staff GET MP account status",
@@ -4003,7 +4003,7 @@
                                                                    "mode":  "raw",
                                                                    "raw":  "{\n  \"packId\": \"{{createdPackId}}\",\n  \"idempotencyKey\": \"mp-pack-{{$timestamp}}\"\n}"
                                                                },
-                                                      "url":  "{{baseUrl}}/api/me/payments/mp/checkout",
+                                                      "url":  "{{baseUrl}}/api/me/transaction-items/mp/checkout",
                                                       "description":  "Requiere accessToken Member + cuenta MP conectada + createdPackId."
                                                   }
                                   },
@@ -4035,7 +4035,7 @@
                                                                    "mode":  "raw",
                                                                    "raw":  "{\n  \"packId\": \"{{createdPackId}}\",\n  \"idempotencyKey\": \"mp-staff-pack-{{$timestamp}}\"\n}"
                                                                },
-                                                      "url":  "{{baseUrl}}/api/members/{{createdMemberId}}/payments/mp/checkout",
+                                                      "url":  "{{baseUrl}}/api/members/{{createdMemberId}}/transaction-items/mp/checkout",
                                                       "description":  "members.write. Staff genera Preference para el afiliado."
                                                   }
                                   },
@@ -4067,7 +4067,7 @@
                                                                    "mode":  "raw",
                                                                    "raw":  "{\n  \"sessionId\": \"{{createdSessionId}}\",\n  \"idempotencyKey\": \"mp-dropin-{{$timestamp}}\"\n}"
                                                                },
-                                                      "url":  "{{baseUrl}}/api/me/payments/mp/drop-in-checkout",
+                                                      "url":  "{{baseUrl}}/api/me/transaction-items/mp/drop-in-checkout",
                                                       "description":  "Member. SesiÃ³n con dropInPrice. Reserva al webhook APPROVED."
                                                   }
                                   },
@@ -4085,7 +4085,7 @@
                                                                    "mode":  "raw",
                                                                    "raw":  "{\n  \"sessionId\": \"{{createdSessionId}}\",\n  \"idempotencyKey\": \"mp-staff-dropin-{{$timestamp}}\"\n}"
                                                                },
-                                                      "url":  "{{baseUrl}}/api/members/{{createdMemberId}}/payments/mp/drop-in-checkout",
+                                                      "url":  "{{baseUrl}}/api/members/{{createdMemberId}}/transaction-items/mp/drop-in-checkout",
                                                       "description":  "reservations.write."
                                                   }
                                   },
@@ -4122,7 +4122,7 @@
                                                                    "mode":  "raw",
                                                                    "raw":  "{\n  \"items\": [\n    { \"kind\": \"PACK\", \"id\": \"{{createdPackId}}\" },\n    { \"kind\": \"DROP_IN\", \"id\": \"{{createdSessionId}}\" }\n  ],\n  \"idempotencyKey\": \"mp-cart-{{$timestamp}}\"\n}"
                                                                },
-                                                      "url":  "{{baseUrl}}/api/members/{{createdMemberId}}/payments/mp/cart",
+                                                      "url":  "{{baseUrl}}/api/members/{{createdMemberId}}/transaction-items/mp/cart",
                                                       "description":  "members.write. Caja: 1 preference con items[] â†’ 1 link con el total (modelo MercadoLibre). Requiere pack activo y sesiÃ³n publicada con dropInPrice."
                                                   }
                                   },
@@ -4152,7 +4152,7 @@
                  },
                  {
                      "name":  "Refunds",
-                     "description":  "CU-PAG-004/005/007. Member POST /me/payments/:paymentId/refund-requests. Staff GET /refund-requests + POST /payments/:paymentId/refunds (payments.refund). UsÃ¡ paymentId de cobro reciente (CASH/STUB/MP APPROVED).",
+                     "description":  "CU-PAG-004/005/007. Member POST /me/transaction-items/:transactionItemId/refund-requests. Staff GET /refund-requests + POST /transaction-items/:transactionItemId/refunds (transaction_items.refund). UsÃ¡ transactionItemId de cobro reciente (CASH/STUB/MP APPROVED).",
                      "item":  [
                                   {
                                       "name":  "Member POST refund request",
@@ -4168,7 +4168,7 @@
                                                                    "mode":  "raw",
                                                                    "raw":  "{\n  \"reason\": \"No lo voy a usar\"\n}"
                                                                },
-                                                      "url":  "{{baseUrl}}/api/me/payments/{{createdPaymentId}}/refund-requests",
+                                                      "url":  "{{baseUrl}}/api/me/transaction-items/{{createdPaymentId}}/refund-requests",
                                                       "description":  "Requiere accessToken Member. createdPaymentId = pago APPROVED propio."
                                                   }
                                   },
@@ -4275,7 +4275,7 @@
                                                                    "mode":  "raw",
                                                                    "raw":  "{\n  \"reason\": \"DevoluciÃ³n staff\",\n  \"motiveCode\": \"solicitud\"\n}"
                                                                },
-                                                      "url":  "{{baseUrl}}/api/payments/{{createdPaymentId}}/refunds"
+"url":  "{{baseUrl}}/api/transaction-items/{{createdPaymentId}}/refunds"
                                                   }
                                   },
                                   {
@@ -4292,7 +4292,7 @@
                                                                    "mode":  "raw",
                                                                    "raw":  "{\n  \"reason\": \"Cobro duplicado\",\n  \"motiveCode\": \"doble_cobro\"\n}"
                                                                },
-                                                      "url":  "{{baseUrl}}/api/payments/{{createdPaymentId}}/refunds",
+                                                      "url":  "{{baseUrl}}/api/transaction-items/{{createdPaymentId}}/refunds",
                                                       "description":  "CU-PAG-007. Mismo endpoint con motiveCode."
                                                   }
                                   }

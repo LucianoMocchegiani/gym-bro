@@ -18,10 +18,10 @@ import {
   getCashDay,
   reconcileCashDay,
   todayBusinessDate,
-} from '@/lib/api/cash-register';
-import type { CashDayDetail } from '@/lib/api/cash-register';
+} from '@/lib/api/payment-register';
+import type { CashDayDetail } from '@/lib/api/payment-register';
 import { ApiClientError } from '@/lib/api/client';
-import { getReceiptByPayment } from '@/lib/api/receipts';
+import { getReceiptByTransactionItem } from '@/lib/api/receipts';
 import type { ReceiptDetail } from '@/lib/api/receipts';
 import { formatCashConcept, formatMoney } from '@/lib/cash-labels';
 
@@ -86,11 +86,11 @@ function ArqueoInner() {
     };
   }, [date]);
 
-  async function openReceiptForPayment(paymentId: string) {
-    setReceiptBusyId(paymentId);
+  async function openReceiptForTransactionItem(transactionItemId: string) {
+    setReceiptBusyId(transactionItemId);
     setReceiptError(null);
     try {
-      const r = await getReceiptByPayment(paymentId);
+      const r = await getReceiptByTransactionItem(transactionItemId);
       setReceipt(r);
     } catch (err) {
       setReceipt(null);
@@ -302,8 +302,8 @@ function ArqueoInner() {
               (m.concept === 'PACK_CONTRACT' || m.concept === 'DROP_IN') ? (
                 <RowIconButton
                   label="Ver comprobante"
-                  disabled={receiptBusyId === m.paymentId}
-                  onClick={() => void openReceiptForPayment(m.paymentId)}
+                  disabled={receiptBusyId === m.transactionItemId}
+                  onClick={() => void openReceiptForTransactionItem(m.transactionItemId)}
                 >
                   <IconReceipt />
                 </RowIconButton>
