@@ -12,7 +12,8 @@ export type ReceiptConcept = 'PACK_CONTRACT' | 'DROP_IN';
 export type ReceiptDetail = {
   id: string;
   tenantId: string;
-  transactionItemId: string;
+  transactionItemId: string | null;
+  transactionId: string | null;
   memberId: string;
   number: number;
   /** Código legible, ej. `GB-000001`. */
@@ -31,6 +32,15 @@ export function getReceiptByTransactionItem(
   transactionItemId: string,
 ): Promise<ReceiptDetail> {
   return apiRequest<ReceiptDetail>(`/transaction-items/${transactionItemId}/receipt`);
+}
+
+/**
+ * Comprobante de un cart CASH (singleReceipt) (`members.read`).
+ */
+export function getReceiptByTransaction(
+  transactionId: string,
+): Promise<ReceiptDetail> {
+  return apiRequest<ReceiptDetail>(`/transactions/${transactionId}/receipt`);
 }
 
 /**

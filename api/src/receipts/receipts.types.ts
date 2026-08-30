@@ -4,7 +4,8 @@
 export type ReceiptDetail = {
   id: string;
   tenantId: string;
-  transactionItemId: string;
+  transactionItemId: string | null;
+  transactionId: string | null;
   memberId: string;
   number: number;
   /** Código legible, ej. `GB-000001`. */

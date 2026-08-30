@@ -660,6 +660,7 @@ model Transaction {
   tenant   Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   member   Member    @relation(fields: [memberId], references: [id], onDelete: Cascade)
   transactionItems TransactionItem[]
+  receipt  Receipt?
 
   @@unique([tenantId, idempotencyKey])
   @@index([tenantId])
@@ -953,7 +954,8 @@ model ReceiptSequence {
 model Receipt {
   id          String           @id @default(uuid()) @db.Uuid
   tenantId    String           @map("tenant_id") @db.Uuid
-  transactionItemId String     @unique @map("transaction_item_id") @db.Uuid
+  transactionItemId String?     @unique @map("transaction_item_id") @db.Uuid
+  transactionId    String?     @unique @map("transaction_id") @db.Uuid
   memberId    String           @map("member_id") @db.Uuid
   number      Int
   amount      Int
@@ -963,11 +965,13 @@ model Receipt {
   createdAt   DateTime         @default(now()) @map("created_at")
 
   tenant  Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  transactionItem TransactionItem @relation(fields: [transactionItemId], references: [id], onDelete: Restrict)
+  transactionItem TransactionItem? @relation(fields: [transactionItemId], references: [id], onDelete: Restrict)
+  transaction    Transaction?   @relation(fields: [transactionId], references: [id], onDelete: Restrict)
   member  Member  @relation(fields: [memberId], references: [id], onDelete: Cascade)
 
   @@unique([tenantId, number])
   @@index([tenantId])
+  @@index([transactionId])
   @@index([memberId, createdAt])
   @@map("receipts")
 }

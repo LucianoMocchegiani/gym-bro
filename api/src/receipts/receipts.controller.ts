@@ -69,4 +69,13 @@ export class ReceiptsController {
   ): Promise<ReceiptDetail> {
     return this.receipts.findByTransactionItem(tenantId, transactionItemId);
   }
+
+  @Get('transactions/:transactionId/receipt')
+  @RequirePermission('members.read')
+  findByTransaction(
+    @CurrentTenant() tenantId: string,
+    @Param('transactionId', ParseUUIDPipe) transactionId: string,
+  ): Promise<ReceiptDetail> {
+    return this.receipts.findByTransactionId(tenantId, transactionId);
+  }
 }

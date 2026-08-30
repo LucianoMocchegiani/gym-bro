@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Injectable,
   NotFoundException,
   ForbiddenException,
@@ -30,13 +31,16 @@ export class ReceiptsService {
   constructor(private readonly prisma: PrismaService) {}
 
   /**
-   * Emite comprobante para un pago APPROVED (idempotente por transactionItemId).
-   */
+   * Emite comprobante para un pago APPROVED (idempotente por transactionItemId o transactionId).
+    *
+    * @remarks Para carts con `singleReceipt: true`, usar `transactionId` en lugar de `transactionItemId`.
+    */
   async issueForApprovedPayment(
     tx: Tx,
     input: {
       tenantId: string;
-      transactionItemId: string;
+      transactionItemId?: string;
+      transactionId?: string;
       memberId: string;
       amount: number;
       method: PaymentMethod;
@@ -44,19 +48,28 @@ export class ReceiptsService {
       description?: string | null;
     },
   ): Promise<void> {
-    const existing = await tx.receipt.findUnique({
-      where: { transactionItemId: input.transactionItemId },
-      select: { id: true },
-    });
-    if (existing) {
-      return;
+    if (input.transactionId) {
+      const existing = await tx.receipt.findUnique({
+        where: { transactionId: input.transactionId },
+        select: { id: true },
+      });
+      if (existing) return;
+    } else if (input.transactionItemId) {
+      const existing = await tx.receipt.findUnique({
+        where: { transactionItemId: input.transactionItemId },
+        select: { id: true },
+      });
+      if (existing) return;
+    } else {
+      throw new BadRequestException('Must provide either transactionItemId or transactionId');
     }
 
     const number = await this.nextNumber(tx, input.tenantId);
     await tx.receipt.create({
       data: {
         tenantId: input.tenantId,
-        transactionItemId: input.transactionItemId,
+        transactionItemId: input.transactionItemId ?? null,
+        transactionId: input.transactionId ?? null,
         memberId: input.memberId,
         number,
         amount: input.amount,
@@ -184,6 +197,36 @@ export class ReceiptsService {
     return this.toDetail(receipt);
   }
 
+  /**
+   * Comprobante de cart (singleReceipt) asociado a una transacción.
+   */
+  async findByTransactionId(
+    tenantId: string,
+    transactionId: string,
+  ): Promise<ReceiptDetail> {
+    const transaction = await this.prisma.transaction.findFirst({
+      where: { id: transactionId, tenantId },
+      select: { id: true, status: true },
+    });
+    if (!transaction) {
+      throw new NotFoundException(`Transaction ${transactionId} not found in tenant`);
+    }
+    if (transaction.status !== PaymentStatus.APPROVED) {
+      throw new ForbiddenException(
+        'Receipt is only available for APPROVED transactions',
+      );
+    }
+    const receipt = await this.prisma.receipt.findUnique({
+      where: { transactionId },
+    });
+    if (!receipt) {
+      throw new NotFoundException(
+        `Receipt for transaction ${transactionId} not found`,
+      );
+    }
+    return this.toDetail(receipt);
+  }
+
   private async nextNumber(tx: Tx, tenantId: string): Promise<number> {
     const rows = await tx.$queryRaw<{ n: number }[]>`
       INSERT INTO receipt_sequences (tenant_id, next_number)
@@ -215,7 +258,8 @@ export class ReceiptsService {
   private toDetail(row: {
     id: string;
     tenantId: string;
-    transactionItemId: string;
+    transactionItemId: string | null;
+    transactionId: string | null;
     memberId: string;
     number: number;
     amount: number;
@@ -228,6 +272,7 @@ export class ReceiptsService {
       id: row.id,
       tenantId: row.tenantId,
       transactionItemId: row.transactionItemId,
+      transactionId: row.transactionId,
       memberId: row.memberId,
       number: row.number,
       code: this.formatCode(row.number),

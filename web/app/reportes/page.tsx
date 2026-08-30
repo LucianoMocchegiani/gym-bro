@@ -16,7 +16,7 @@ import { memberFichaHref } from '@/lib/member-link';
 import { ApiClientError } from '@/lib/api/client';
 import { getReportsSummary } from '@/lib/api/reports';
 import type { ReportsSummary, ReportTransactionRow } from '@/lib/api/reports';
-import { getReceiptByTransactionItem } from '@/lib/api/receipts';
+import { getReceiptByTransactionItem, getReceiptByTransaction } from '@/lib/api/receipts';
 import type { ReceiptDetail } from '@/lib/api/receipts';
 import { formatMoney } from '@/lib/cash-labels';
 import { todayBusinessDate } from '@/lib/api/payment-register';
@@ -107,10 +107,20 @@ function ReportesInner() {
     return () => { cancelled = true; };
   }, [appliedFrom, appliedTo, appliedMemberId]);
 
-  async function openReceiptForTransactionItem(transactionItemId: string) {
-    setReceiptBusyId(transactionItemId);
+  async function openReceipt(
+    txId: string,
+    txMethod: 'CASH' | 'MP',
+    txItemCount: number,
+    txItemId: string,
+  ) {
+    setReceiptBusyId(txItemId);
     try {
-      const r = await getReceiptByTransactionItem(transactionItemId);
+      let r: ReceiptDetail;
+      if (txMethod === 'CASH' && txItemCount > 1) {
+        r = await getReceiptByTransaction(txId);
+      } else {
+        r = await getReceiptByTransactionItem(txItemId);
+      }
       setReceipt(r);
     } catch {
       setReceipt(null);
@@ -252,7 +262,7 @@ function ReportesInner() {
               expandedId={expandedId}
               setExpandedId={setExpandedId}
               receiptBusyId={receiptBusyId}
-              openReceiptForTransactionItem={openReceiptForTransactionItem}
+              openReceipt={openReceipt}
             />
           );
         })}
@@ -271,17 +281,18 @@ function TransactionRow({
   expandedId,
   setExpandedId,
   receiptBusyId,
-  openReceiptForTransactionItem,
+  openReceipt,
 }: {
   tx: ReportTransactionRow;
   isExpanded: boolean;
   expandedId: string | null;
   setExpandedId: (id: string | null) => void;
   receiptBusyId: string | null;
-  openReceiptForTransactionItem: (id: string) => void;
+  openReceipt: (txId: string, txMethod: 'CASH' | 'MP', txItemCount: number, txItemId: string) => void;
 }) {
   const hasMultiItems = tx.items.length > 1;
   const showExpandable = hasMultiItems && tx.method === 'MP';
+  const isCashMultiItem = tx.method === 'CASH' && hasMultiItems;
 
   return (
     <>
@@ -317,11 +328,20 @@ function TransactionRow({
         </td>
         <td>{formatMoney(tx.amount)}</td>
         <td className="row-actions">
-          {!showExpandable && tx.items.length === 1 ? (
+          {isCashMultiItem ? (
+            <RowIconButton
+              label="Ver comprobante"
+              disabled={!!receiptBusyId}
+              onClick={() => void openReceipt(tx.id, tx.method, tx.items.length, tx.items[0].id)}
+            >
+              <IconReceipt />
+            </RowIconButton>
+          ) : null}
+          {!showExpandable && !isCashMultiItem && tx.items.length === 1 ? (
             <RowIconButton
               label="Ver comprobante"
               disabled={receiptBusyId === tx.items[0].id}
-              onClick={() => void openReceiptForTransactionItem(tx.items[0].id)}
+              onClick={() => void openReceipt(tx.id, tx.method, tx.items.length, tx.items[0].id)}
             >
               <IconReceipt />
             </RowIconButton>
@@ -331,7 +351,7 @@ function TransactionRow({
           ) : null}
         </td>
       </tr>
-      {isExpanded && hasMultiItems
+      {isExpanded && hasMultiItems && tx.method === 'MP'
         ? tx.items.map((item) => (
             <tr key={item.id} className="sub-row">
               <td />
@@ -349,7 +369,7 @@ function TransactionRow({
                 <RowIconButton
                   label="Ver comprobante"
                   disabled={receiptBusyId === item.id}
-                  onClick={() => void openReceiptForTransactionItem(item.id)}
+                  onClick={() => void openReceipt(tx.id, tx.method, tx.items.length, item.id)}
                 >
                   <IconReceipt />
                 </RowIconButton>

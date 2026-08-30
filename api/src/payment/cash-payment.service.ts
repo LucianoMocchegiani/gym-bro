@@ -93,7 +93,7 @@ export class CashPaymentService {
         const total = confirmed.transactionItems.reduce((sum, item) => sum + item.amount, 0);
         await this.receiptsService.issueForApprovedPayment(tx, {
           tenantId,
-          transactionItemId: confirmed.transactionItems[0].id,
+          transactionId: confirmed.id,
           memberId,
           amount: total,
           method: PaymentMethod.CASH,
@@ -294,16 +294,23 @@ export class CashPaymentService {
       }
 
       let receipt = null;
-      const firstItem = transaction.transactionItems[0];
-      if (firstItem) {
-        try {
-          receipt = await this.receiptsService.findByTransactionItem(
+      try {
+        if (transaction.transactionItems.length > 1) {
+          receipt = await this.receiptsService.findByTransactionId(
             tenantId,
-            firstItem.id,
+            transaction.id,
           );
-        } catch {
-          // no receipt found - shouldn't happen for CASH
+        } else {
+          const firstItem = transaction.transactionItems[0];
+          if (firstItem) {
+            receipt = await this.receiptsService.findByTransactionItem(
+              tenantId,
+              firstItem.id,
+            );
+          }
         }
+      } catch {
+        // no receipt found - shouldn't happen for CASH
       }
 
       return { transaction, receipt };
