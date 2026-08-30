@@ -1,3 +1,5 @@
+import type { ReceiptDetail } from '../receipts/receipts.types';
+
 /**
  * Estados de checkout MP.
  */
@@ -41,4 +43,20 @@ export type MpWebhookProcessResult = {
   status: string | null;
   contractId: string | null;
   reservationId: string | null;
+};
+
+/**
+ * Respuesta de checkout CASH de carrito (APPROVED inmediato + comprobante).
+ */
+export type CashCartResult = {
+  transactionId: string;
+  amount: number;
+  status: string;
+  transactionItems: Array<{
+    id: string;
+    sessionId: string | null;
+    packId: string | null;
+    amount: number;
+  }>;
+  receipt: ReceiptDetail | null;
 };

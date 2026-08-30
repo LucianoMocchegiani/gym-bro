@@ -311,7 +311,7 @@ Prefijo sugerido: `/api/v1`.
 | Caja | Staff `GET /cash-register/day`, `POST /cash-register/day/reconcile` (`cashier.operate`); Super `/tenants/:tid/cash-register/...` |
 | Mercado Pago | Staff `GET|PUT|DELETE /mercadopago/account`, `POST .../test` (`mp.connect`); Member `POST /me/transaction-items/mp/checkout`; webhook `POST /webhooks/mercadopago`; Super `/tenants/:tid/mercadopago/account` |
 | Devoluciones | Member `POST /me/transaction-items/:id/refund-requests`, `GET /me/refund-requests`; Staff `GET /refund-requests`, `POST /transaction-items/:id/refunds` (`transaction_items.refund`) |
-| Comprobantes | Member `/me/receipts`; Staff `GET /transaction-items/:id/receipt`, `GET /members/:id/receipts` (`members.read`) |
+| Comprobantes | Member `/me/receipts`; Staff `GET /transactions/:id/receipt`, `GET /members/:id/receipts` (`members.read`) |
 | Catálogo | Super/Staff CRUD services + packs (`catalog.write`; kind inferido; `creditsExpireAt`) |
 | Contrataciones | Staff `POST /members/:id/contracts` (pago stub APPROVED); `PATCH /contracts/:id/status` → `CANCELLED` (pierde derechos, RN-SER-009); Member `GET /me/contracts` |
 | Roles | Super/Staff list-get-create-patch roles; `PUT .../staff/:id/roles`; Staff `GET /me/permissions` (UI nav) |

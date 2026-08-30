@@ -284,8 +284,8 @@ Detalle: [14-auditoria…](./14-auditoria-roadmap-vs-codigo-2026-08-13.md).
 - [x] Packs: `creditsExpireAt` + visibilidad sync Kuatia (`packs.kuatia_*`)
   - Fecha opcional en nuevo/editar; bloque solo lectura Kuatia en `/packs/[id]`
 - [x] Comprobantes (receipts)
-  - Caja: link en movimientos + panel tras cobro; ficha afiliado: listado + por pago
-  - `GET /transaction-items/:id/receipt`, `GET /members/:id/receipts` (`members.read`)
+  - Caja: panel tras cobro; polling del comprobante en cobro MP (sin redirect automático)
+  - `GET /transactions/:id/receipt`, `GET /members/:id/receipts` (`members.read`)
 - [x] Auditoría UI
   - `/auditoria`: `GET /audit-events` (`audit.read`); búsqueda `q` + detalle before/after
 - [x] Nav / páginas gated por permiso (hoy se muestran todos los links)

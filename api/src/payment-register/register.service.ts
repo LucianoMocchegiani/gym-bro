@@ -66,6 +66,19 @@ export class PaymentRegisterService {
       throw new BadRequestException('Cash movement amount must be >= 1');
     }
 
+    const existing = await tx.cashMovement.findUnique({
+      where: {
+        transactionItemId_kind: {
+          transactionItemId: input.transactionItemId,
+          kind: CashMovementKind.INCOME,
+        },
+      },
+      select: { id: true },
+    });
+    if (existing) {
+      return;
+    }
+
     await tx.cashMovement.create({
       data: {
         tenantId: input.tenantId,
@@ -130,6 +143,7 @@ export class PaymentRegisterService {
         include: {
           member: { select: { id: true, name: true } },
           recordedByStaff: { select: { id: true, name: true } },
+          transactionItem: { select: { id: true, transactionId: true } },
         },
         orderBy: { createdAt: 'asc' },
       }),
@@ -318,12 +332,14 @@ export class PaymentRegisterService {
     createdAt: Date;
     member: { id: string; name: string | null };
     recordedByStaff: { id: string; name: string | null } | null;
+    transactionItem: { id: string; transactionId: string };
   }): CashMovementDetail {
     return {
       id: row.id,
       tenantId: row.tenantId,
       businessDate: this.formatBusinessDate(row.businessDate),
       transactionItemId: row.transactionItemId,
+      transactionId: row.transactionItem.transactionId,
       memberId: row.memberId,
       memberName: row.member.name,
       recordedByStaffId: row.recordedByStaffId,

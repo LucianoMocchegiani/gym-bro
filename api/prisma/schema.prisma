@@ -245,6 +245,7 @@ model TenantSettings {
 /// Sucursal / sede física del tenant (S2: modelo multi-sede, MVP 1 visible).
 ///
 /// @remarks RN-TEN-003. Al crear un tenant se inserta una sede default (`isDefault`).
+/// Unique parcial SQL: a lo sumo una `is_default = true` por tenant.
 model Branch {
   id        String   @id @default(uuid()) @db.Uuid
   tenantId  String   @map("tenant_id") @db.Uuid
@@ -748,6 +749,7 @@ model CredentialOffer {
 ///
 /// @remarks Cobertura `CREDIT` (contrato + saldo) o `DROP_IN` (pago aprobado).
 /// Cancelación con ventana: CU-RES-003. Drop-in no reembolsa el pago en esta entrega.
+/// Unique parcial SQL: una `CONFIRMED` por (`session_id`, `member_id`).
 model Reservation {
   id              String              @id @default(uuid()) @db.Uuid
   tenantId        String              @map("tenant_id") @db.Uuid
@@ -949,7 +951,7 @@ model ReceiptSequence {
 
 /// Comprobante interno de un pago aprobado (RN-PAG-009).
 ///
-/// @remarks 1:1 con TransactionItem APPROVED. Número secuencial por tenant (`GB-000001`).
+/// @remarks 1:1 con Transaction (cart CASH/MP) o TransactionItem (legacy). Número secuencial por tenant (`GB-000001`).
 /// Email N1 diferido (E8). Sin backfill de pagos legacy.
 model Receipt {
   id          String           @id @default(uuid()) @db.Uuid

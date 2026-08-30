@@ -32,9 +32,10 @@ export class ReceiptsService {
 
   /**
    * Emite comprobante para un pago APPROVED (idempotente por transactionItemId o transactionId).
-    *
-    * @remarks Para carts con `singleReceipt: true`, usar `transactionId` en lugar de `transactionItemId`.
-    */
+   *
+   * @remarks Cobros actuales (CASH y MP) usan `transactionId` (1 comprobante por cart).
+   * `transactionItemId` queda para comprobantes legacy.
+   */
   async issueForApprovedPayment(
     tx: Tx,
     input: {
@@ -168,37 +169,10 @@ export class ReceiptsService {
   }
 
   /**
-   * Comprobante asociado a un transactionItem del tenant.
-   */
-  async findByTransactionItem(
-    tenantId: string,
-    transactionItemId: string,
-  ): Promise<ReceiptDetail> {
-    const transactionItem = await this.prisma.transactionItem.findFirst({
-      where: { id: transactionItemId, tenantId },
-      select: { id: true, status: true },
-    });
-    if (!transactionItem) {
-      throw new NotFoundException(`TransactionItem ${transactionItemId} not found in tenant`);
-    }
-    if (transactionItem.status !== PaymentStatus.APPROVED) {
-      throw new ForbiddenException(
-        'Receipt is only available for APPROVED payments',
-      );
-    }
-    const receipt = await this.prisma.receipt.findUnique({
-      where: { transactionItemId },
-    });
-    if (!receipt) {
-      throw new NotFoundException(
-        `Receipt for transactionItem ${transactionItemId} not found (legacy payment without receipt)`,
-      );
-    }
-    return this.toDetail(receipt);
-  }
-
-  /**
-   * Comprobante de cart (singleReceipt) asociado a una transacción.
+   * Comprobante asociado a una transacción APPROVED (1 por cart).
+   *
+   * @remarks Si no hay receipt con `transactionId` (cobros legacy 1:1 con el ítem),
+   * busca el único receipt de los transaction_items de esa transacción.
    */
   async findByTransactionId(
     tenantId: string,
@@ -219,12 +193,22 @@ export class ReceiptsService {
     const receipt = await this.prisma.receipt.findUnique({
       where: { transactionId },
     });
-    if (!receipt) {
-      throw new NotFoundException(
-        `Receipt for transaction ${transactionId} not found`,
-      );
+    if (receipt) {
+      return this.toDetail(receipt);
     }
-    return this.toDetail(receipt);
+    const itemReceipts = await this.prisma.receipt.findMany({
+      where: {
+        tenantId,
+        transactionItem: { transactionId },
+      },
+      take: 2,
+    });
+    if (itemReceipts.length === 1 && itemReceipts[0]) {
+      return this.toDetail(itemReceipts[0]);
+    }
+    throw new NotFoundException(
+      `Receipt for transaction ${transactionId} not found`,
+    );
   }
 
   private async nextNumber(tx: Tx, tenantId: string): Promise<number> {

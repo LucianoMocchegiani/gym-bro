@@ -573,6 +573,11 @@ CREATE UNIQUE INDEX "tenants_slug_key" ON "tenants"("slug");
 -- CreateIndex
 CREATE INDEX "branches_tenant_id_idx" ON "branches"("tenant_id");
 
+-- A lo sumo una sede default por tenant (S2 / RN-TEN-003).
+CREATE UNIQUE INDEX "branches_one_default_per_tenant"
+ON "branches" ("tenant_id")
+WHERE "is_default" = true;
+
 -- CreateIndex
 CREATE UNIQUE INDEX "super_users_email_key" ON "super_users"("email");
 
@@ -753,6 +758,11 @@ CREATE INDEX "reservations_contract_id_idx" ON "reservations"("contract_id");
 -- CreateIndex
 CREATE INDEX "reservations_credit_balance_id_idx" ON "reservations"("credit_balance_id");
 
+-- Un afiliado no puede tener dos reservas CONFIRMED en la misma sesión.
+CREATE UNIQUE INDEX "reservations_session_member_confirmed_uidx"
+ON "reservations"("session_id", "member_id")
+WHERE "status" = 'CONFIRMED';
+
 -- CreateIndex
 CREATE INDEX "waitlist_entries_tenant_id_idx" ON "waitlist_entries"("tenant_id");
 
@@ -761,6 +771,11 @@ CREATE INDEX "waitlist_entries_session_id_status_created_at_idx" ON "waitlist_en
 
 -- CreateIndex
 CREATE INDEX "waitlist_entries_member_id_idx" ON "waitlist_entries"("member_id");
+
+-- Un afiliado no puede estar dos veces WAITING en la misma sesión.
+CREATE UNIQUE INDEX "waitlist_session_member_waiting_uidx"
+ON "waitlist_entries"("session_id", "member_id")
+WHERE "status" = 'WAITING';
 
 -- CreateIndex
 CREATE INDEX "cash_movements_tenant_id_business_date_idx" ON "cash_movements"("tenant_id", "business_date");
@@ -779,6 +794,11 @@ CREATE INDEX "access_credentials_tenant_id_member_id_idx" ON "access_credentials
 
 -- CreateIndex
 CREATE INDEX "access_credentials_member_id_status_idx" ON "access_credentials"("member_id", "status");
+
+-- A lo sumo una credencial ACTIVE por afiliado.
+CREATE UNIQUE INDEX "access_credentials_member_active_uidx"
+ON "access_credentials"("member_id")
+WHERE "status" = 'ACTIVE';
 
 -- CreateIndex
 CREATE INDEX "access_attempts_tenant_id_created_at_idx" ON "access_attempts"("tenant_id", "created_at");

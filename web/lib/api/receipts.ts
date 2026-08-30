@@ -26,16 +26,7 @@ export type ReceiptDetail = {
 };
 
 /**
- * Comprobante de un transactionItem APPROVED (`members.read`).
- */
-export function getReceiptByTransactionItem(
-  transactionItemId: string,
-): Promise<ReceiptDetail> {
-  return apiRequest<ReceiptDetail>(`/transaction-items/${transactionItemId}/receipt`);
-}
-
-/**
- * Comprobante de un cart CASH (singleReceipt) (`members.read`).
+ * Comprobante de un cart (CASH o MP) (`members.read`).
  */
 export function getReceiptByTransaction(
   transactionId: string,

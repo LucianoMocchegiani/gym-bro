@@ -1,14 +1,16 @@
-import { BadRequestException, Inject, Injectable, forwardRef, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Inject, Injectable, Logger, forwardRef, NotFoundException } from '@nestjs/common';
 import { PaymentMethod, SessionStatus, ReservationStatus, ReservationCoverage } from '@prisma/client';
 import { TransactionService, TransactionItemInput } from './transaction.service';
 import { PaymentRegisterService } from '../payment-register/register.service';
 import { CashMovementConcept, ReceiptConcept } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { ReceiptsService } from '../receipts/receipts.service';
+import type { ReceiptDetail } from '../receipts/receipts.types';
 import { SessionValidationService } from '../sessions/session-validation.service';
 import { ContractsService } from '../contracts/contracts.service';
 import { AuditActor } from '../audit/audit.types';
 import { CreateCashCartDto } from './dto/create-cash-cart.dto';
+import { CashCartResult } from './payment.types';
 import { Prisma } from '@prisma/client';
 
 type Tx = Prisma.TransactionClient;
@@ -23,8 +25,6 @@ export interface ProcessPaymentParams {
   receiptConcept: ReceiptConcept;
   description: string;
   recordedByStaffId?: string | null;
-  /** Emite un solo receipt por el total del cart (para carritos multi-item). */
-  singleReceipt?: boolean;
 }
 
 /**
@@ -32,7 +32,7 @@ export interface ProcessPaymentParams {
  *
  * @description
  * - Crea Transaction + TransactionItems (APPROVED para CASH/STUB)
- * - Si CASH: registra movimiento en caja y emite comprobante
+ * - Si CASH: registra movimiento en caja y emite un comprobante por Transaction
  * - Si STUB: solo crea Transaction (sin movimiento de caja, para créditos manuales)
  *
  * @remarks
@@ -41,6 +41,8 @@ export interface ProcessPaymentParams {
  */
 @Injectable()
 export class CashPaymentService {
+  private readonly logger = new Logger(CashPaymentService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly transactionService: TransactionService,
@@ -62,7 +64,7 @@ export class CashPaymentService {
     tx: Tx,
     params: ProcessPaymentParams,
   ): Promise<{ transaction: Awaited<ReturnType<TransactionService['initiateTransaction']>> }> {
-    const { tenantId, memberId, items, idempotencyKey, method, cashConcept, receiptConcept, description, recordedByStaffId, singleReceipt } = params;
+    const { tenantId, memberId, items, idempotencyKey, method, cashConcept, receiptConcept, description, recordedByStaffId } = params;
 
     const transaction = await this.transactionService.initiateTransaction({
       tenantId,
@@ -89,30 +91,16 @@ export class CashPaymentService {
         });
       }
 
-      if (singleReceipt && confirmed.transactionItems.length > 1) {
-        const total = confirmed.transactionItems.reduce((sum, item) => sum + item.amount, 0);
-        await this.receiptsService.issueForApprovedPayment(tx, {
-          tenantId,
-          transactionId: confirmed.id,
-          memberId,
-          amount: total,
-          method: PaymentMethod.CASH,
-          concept: receiptConcept,
-          description,
-        });
-      } else {
-        for (const item of confirmed.transactionItems) {
-          await this.receiptsService.issueForApprovedPayment(tx, {
-            tenantId,
-            transactionItemId: item.id,
-            memberId,
-            amount: item.amount,
-            method: PaymentMethod.CASH,
-            concept: receiptConcept,
-            description,
-          });
-        }
-      }
+      const total = confirmed.transactionItems.reduce((sum, item) => sum + item.amount, 0);
+      await this.receiptsService.issueForApprovedPayment(tx, {
+        tenantId,
+        transactionId: confirmed.id,
+        memberId,
+        amount: total,
+        method: PaymentMethod.CASH,
+        concept: receiptConcept,
+        description,
+      });
     }
 
     return { transaction: confirmed };
@@ -127,13 +115,17 @@ export class CashPaymentService {
    * - Crea Transaction APPROVED con todos los items
    * - Un receipt por el total del cart
    * - Crea contratos para PACK y reservas para DROP_IN
+   *
+   * @returns Cart APPROVED con `receipt` leído **después** del commit (el
+   *   lookup no puede ir dentro de `$transaction`: `findByTransactionId` usa
+   *   otra conexión y no vería el comprobante aún no commiteado).
    */
   async startCashCart(
     tenantId: string,
     memberId: string,
     actor: AuditActor,
     dto: CreateCashCartDto,
-  ) {
+  ): Promise<CashCartResult> {
     const idempotencyKey =
       dto.idempotencyKey?.trim() || `cash-cart-${Date.now()}`;
 
@@ -257,7 +249,6 @@ export class CashPaymentService {
         receiptConcept: ReceiptConcept.DROP_IN,
         description: label,
         recordedByStaffId: actor.profileType === 'STAFF' ? actor.userId : null,
-        singleReceipt: true,
       });
 
       for (const s of sessions) {
@@ -293,29 +284,32 @@ export class CashPaymentService {
         }
       }
 
-      let receipt = null;
-      try {
-        if (transaction.transactionItems.length > 1) {
-          receipt = await this.receiptsService.findByTransactionId(
-            tenantId,
-            transaction.id,
-          );
-        } else {
-          const firstItem = transaction.transactionItems[0];
-          if (firstItem) {
-            receipt = await this.receiptsService.findByTransactionItem(
-              tenantId,
-              firstItem.id,
-            );
-          }
-        }
-      } catch {
-        // no receipt found - shouldn't happen for CASH
-      }
-
-      return { transaction, receipt };
+      return { transaction };
     });
 
-    return result;
+    let receipt: ReceiptDetail | null = null;
+    try {
+      receipt = await this.receiptsService.findByTransactionId(
+        tenantId,
+        result.transaction.id,
+      );
+    } catch {
+      this.logger.warn(
+        `CASH cart ${result.transaction.id} committed without receipt`,
+      );
+    }
+
+    return {
+      transactionId: result.transaction.id,
+      amount: result.transaction.amount,
+      status: result.transaction.status,
+      transactionItems: result.transaction.transactionItems.map((item) => ({
+        id: item.id,
+        sessionId: item.sessionId,
+        packId: item.packId,
+        amount: item.amount,
+      })),
+      receipt,
+    };
   }
 }

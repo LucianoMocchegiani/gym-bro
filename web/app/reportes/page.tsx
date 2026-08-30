@@ -16,7 +16,7 @@ import { memberFichaHref } from '@/lib/member-link';
 import { ApiClientError } from '@/lib/api/client';
 import { getReportsSummary } from '@/lib/api/reports';
 import type { ReportsSummary, ReportTransactionRow } from '@/lib/api/reports';
-import { getReceiptByTransactionItem, getReceiptByTransaction } from '@/lib/api/receipts';
+import { getReceiptByTransaction } from '@/lib/api/receipts';
 import type { ReceiptDetail } from '@/lib/api/receipts';
 import { formatMoney } from '@/lib/cash-labels';
 import { todayBusinessDate } from '@/lib/api/payment-register';
@@ -74,6 +74,7 @@ function ReportesInner() {
 
   const [receipt, setReceipt] = useState<ReceiptDetail | null>(null);
   const [receiptBusyId, setReceiptBusyId] = useState<string | null>(null);
+  const [receiptError, setReceiptError] = useState<string | null>(null);
 
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
@@ -107,23 +108,19 @@ function ReportesInner() {
     return () => { cancelled = true; };
   }, [appliedFrom, appliedTo, appliedMemberId]);
 
-  async function openReceipt(
-    txId: string,
-    txMethod: 'CASH' | 'MP',
-    txItemCount: number,
-    txItemId: string,
-  ) {
-    setReceiptBusyId(txItemId);
+  async function openReceipt(txId: string) {
+    setReceiptBusyId(txId);
+    setReceiptError(null);
     try {
-      let r: ReceiptDetail;
-      if (txMethod === 'CASH' && txItemCount > 1) {
-        r = await getReceiptByTransaction(txId);
-      } else {
-        r = await getReceiptByTransactionItem(txItemId);
-      }
+      const r = await getReceiptByTransaction(txId);
       setReceipt(r);
-    } catch {
+    } catch (err) {
       setReceipt(null);
+      setReceiptError(
+        err instanceof ApiClientError
+          ? err.message
+          : 'No se pudo cargar el comprobante',
+      );
     } finally {
       setReceiptBusyId(null);
     }
@@ -268,6 +265,8 @@ function ReportesInner() {
         })}
       </DataTable>
 
+      {receiptError ? <p className="error">{receiptError}</p> : null}
+
       {receipt ? (
         <ReceiptPanel receipt={receipt} onClose={() => setReceipt(null)} />
       ) : null}
@@ -288,11 +287,10 @@ function TransactionRow({
   expandedId: string | null;
   setExpandedId: (id: string | null) => void;
   receiptBusyId: string | null;
-  openReceipt: (txId: string, txMethod: 'CASH' | 'MP', txItemCount: number, txItemId: string) => void;
+  openReceipt: (txId: string) => void;
 }) {
   const hasMultiItems = tx.items.length > 1;
   const showExpandable = hasMultiItems && tx.method === 'MP';
-  const isCashMultiItem = tx.method === 'CASH' && hasMultiItems;
 
   return (
     <>
@@ -328,24 +326,13 @@ function TransactionRow({
         </td>
         <td>{formatMoney(tx.amount)}</td>
         <td className="row-actions">
-          {isCashMultiItem ? (
-            <RowIconButton
-              label="Ver comprobante"
-              disabled={!!receiptBusyId}
-              onClick={() => void openReceipt(tx.id, tx.method, tx.items.length, tx.items[0].id)}
-            >
-              <IconReceipt />
-            </RowIconButton>
-          ) : null}
-          {!showExpandable && !isCashMultiItem && tx.items.length === 1 ? (
-            <RowIconButton
-              label="Ver comprobante"
-              disabled={receiptBusyId === tx.items[0].id}
-              onClick={() => void openReceipt(tx.id, tx.method, tx.items.length, tx.items[0].id)}
-            >
-              <IconReceipt />
-            </RowIconButton>
-          ) : null}
+          <RowIconButton
+            label="Ver comprobante"
+            disabled={!!receiptBusyId}
+            onClick={(e) => { e.stopPropagation(); void openReceipt(tx.id); }}
+          >
+            <IconReceipt />
+          </RowIconButton>
           {showExpandable ? (
             <span className="muted small">{isExpanded ? '▲' : '▼'}</span>
           ) : null}
@@ -365,15 +352,7 @@ function TransactionRow({
                 </StatusPill>
               </td>
               <td>{formatMoney(item.amount)}</td>
-              <td className="row-actions">
-                <RowIconButton
-                  label="Ver comprobante"
-                  disabled={receiptBusyId === item.id}
-                  onClick={() => void openReceipt(tx.id, tx.method, tx.items.length, item.id)}
-                >
-                  <IconReceipt />
-                </RowIconButton>
-              </td>
+              <td />
             </tr>
           ))
         : null}

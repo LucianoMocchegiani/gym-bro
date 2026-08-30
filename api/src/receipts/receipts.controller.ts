@@ -61,15 +61,6 @@ export class ReceiptsController {
     return this.receipts.listByMember(tenantId, memberId, query);
   }
 
-  @Get('transaction-items/:transactionItemId/receipt')
-  @RequirePermission('members.read')
-  findByTransactionItem(
-    @CurrentTenant() tenantId: string,
-    @Param('transactionItemId', ParseUUIDPipe) transactionItemId: string,
-  ): Promise<ReceiptDetail> {
-    return this.receipts.findByTransactionItem(tenantId, transactionItemId);
-  }
-
   @Get('transactions/:transactionId/receipt')
   @RequirePermission('members.read')
   findByTransaction(

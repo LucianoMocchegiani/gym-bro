@@ -65,7 +65,9 @@ Leyenda resultado: `P` pass · `F` fail · `B` bloqueado · `-` no aplica
 | P3 | Cobro caja sin permiso | Denegado | RN-PAG-008 | |
 | P3b | Staff genera link MP pack en Caja | Preference + PENDING; derechos al APPROVED | CU-PAG-001 | |
 | P3c | Staff genera link MP drop-in en Caja | Preference + PENDING; reserva al APPROVED | CU-PAG-001 | |
-| P4 | Comprobante tras pago | Visible app + email E1 | RN-PAG-009 | |
+| P3d | Staff genera link MP de carrito en Caja | Sin redirect automático; al webhook APPROVED aparece “Ver comprobante” (1 receipt por cart) | CU-PAG-001 | |
+| P3e | Staff cobra carrito en efectivo en Caja | APPROVED inmediato; panel de comprobante + “Ver comprobante” (1 receipt por cart) | CU-PAG-002 | |
+| P4 | Comprobante tras pago | Visible app + email E1; en reportes el botón está en la fila padre | RN-PAG-009 | |
 | P5 | Devolución afiliado dentro de política | Solicitud OK | CU-PAG-004 | |
 | P6 | Devolución afiliado fuera de política | Rechazo; admin aún puede | RN-PAG-012/011 | |
 | P7 | Admin devolución pack mixto | Derechos caen todos | CU-PAG-005 | |

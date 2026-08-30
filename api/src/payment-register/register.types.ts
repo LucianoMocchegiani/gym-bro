@@ -6,6 +6,8 @@ export type CashMovementDetail = {
   tenantId: string;
   businessDate: string;
   transactionItemId: string;
+  /** Transaction (cart) a la que pertenece el ítem cobrado. */
+  transactionId: string;
   memberId: string;
   memberName: string | null;
   recordedByStaffId: string | null;

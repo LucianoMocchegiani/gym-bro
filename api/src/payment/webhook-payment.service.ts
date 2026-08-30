@@ -6,18 +6,35 @@ import {
   NotFoundException,
   ServiceUnavailableException,
 } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
-import { PaymentMethod, PaymentStatus, Transaction } from '@prisma/client';
+import {
+  CashMovementConcept,
+  PaymentMethod,
+  PaymentStatus,
+  Prisma,
+  ReceiptConcept,
+  Transaction,
+} from '@prisma/client';
 import { MercadoPagoAccountService } from './mercadopago-account.service';
 import { MP_ACCOUNT_PORT, MpAccountPort } from './mp-account.port';
 import { PrismaService } from '../prisma/prisma.service';
-import { TransactionService } from './transaction.service';
 import { PaymentRegisterService } from '../payment-register/register.service';
 import { ReceiptsService } from '../receipts/receipts.service';
 import { ContractsService } from '../contracts/contracts.service';
 import { ReservationsService } from '../reservations/reservations.service';
-import { CashMovementConcept, ReceiptConcept } from '@prisma/client';
 import { MpWebhookProcessResult } from './payment.types';
+
+type CartWithItems = Transaction & {
+  transactionItems: Array<{
+    id: string;
+    memberId: string;
+    status: PaymentStatus;
+    sessionId: string | null;
+    packId: string | null;
+    amount: number;
+    contract: { id: string } | null;
+    reservation: { id: string } | null;
+  }>;
+};
 
 /**
  * Procesa webhooks de pago (Mercado Pago).
@@ -36,12 +53,10 @@ export class WebhookPaymentService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly accounts: MercadoPagoAccountService,
-    private readonly transactionService: TransactionService,
     private readonly registerService: PaymentRegisterService,
     private readonly receiptsService: ReceiptsService,
     private readonly contractsService: ContractsService,
     private readonly reservationsService: ReservationsService,
-    private readonly config: ConfigService,
     @Inject(MP_ACCOUNT_PORT) private readonly mp: MpAccountPort,
   ) {}
 
@@ -258,7 +273,7 @@ export class WebhookPaymentService {
       };
     }
 
-    return this.prisma.$transaction(async (tx) => {
+    await this.prisma.$transaction(async (tx) => {
       await tx.transactionItem.update({
         where: { id: transactionItem.id },
         data: {
@@ -268,11 +283,12 @@ export class WebhookPaymentService {
       });
 
       if (mapped === PaymentStatus.APPROVED) {
-        await this.transactionService.confirmTransaction(transactionItem.transactionId!, {
-          userId: transactionItem.memberId,
-          profileType: 'MEMBER',
-        });
-
+        if (transactionItem.transactionId) {
+          await tx.transaction.update({
+            where: { id: transactionItem.transactionId },
+            data: { status: PaymentStatus.APPROVED, mpPaymentId },
+          });
+        }
         await this.registerService.recordIncome(tx, {
           tenantId,
           transactionItemId: transactionItem.id,
@@ -284,32 +300,35 @@ export class WebhookPaymentService {
             : CashMovementConcept.DROP_IN,
           recordedByStaffId: null,
         });
-
-        await this.receiptsService.issueForApprovedPayment(tx, {
-          tenantId,
-          transactionItemId: transactionItem.id,
-          memberId: transactionItem.memberId,
-          amount: transactionItem.amount,
-          method: PaymentMethod.MP,
-          concept: transactionItem.packId
-            ? ReceiptConcept.PACK_CONTRACT
-            : ReceiptConcept.DROP_IN,
-          description: transactionItem.packId ? 'Pack' : 'Drop-in',
-        });
+        if (transactionItem.transactionId) {
+          const confirmed = await tx.transaction.findFirstOrThrow({
+            where: { id: transactionItem.transactionId },
+            include: { transactionItems: true },
+          });
+          await this.issueMpTransactionReceipt(tx, tenantId, confirmed);
+        }
       }
+    }, { timeout: 15000 });
 
-      const refreshed = await tx.transactionItem.findFirstOrThrow({
-        where: { id: transactionItem.id, tenantId },
-        include: {
-          contract: { select: { id: true } },
-          reservation: { select: { id: true } },
-        },
-      });
-
-      return this.ensureRights(tenantId, refreshed);
+    const refreshed = await this.prisma.transactionItem.findFirstOrThrow({
+      where: { id: transactionItem.id, tenantId },
+      include: {
+        contract: { select: { id: true } },
+        reservation: { select: { id: true } },
+      },
     });
+
+    return this.ensureRights(tenantId, refreshed);
   }
 
+  /**
+   * Aplica el status remoto de MP a un cart (`externalReference` = transaction.id).
+   *
+   * @remarks El primer APPROVED persiste status + `mpPaymentId`, caja y
+   * comprobante en una `$transaction` (sin `confirmTransaction` anidado).
+   * Un webhook posterior sobre un cart ya APPROVED completa efectos faltantes
+   * (receipt/caja/`mpPaymentId`) de forma idempotente.
+   */
   private async applyRemoteStatusCart(
     tenantId: string,
     transactionId: string,
@@ -367,7 +386,9 @@ export class WebhookPaymentService {
       transaction.status === PaymentStatus.REFUNDED
     ) {
       if (transaction.status === PaymentStatus.APPROVED) {
-        return this.ensureCartRights(tenantId, transaction);
+        await this.persistApprovedCartEffects(tenantId, transaction, mpPaymentId);
+        const refreshed = await this.loadCart(tenantId, transaction.id);
+        return this.ensureCartRights(tenantId, refreshed);
       }
       return {
         handled: true,
@@ -379,69 +400,107 @@ export class WebhookPaymentService {
       };
     }
 
-    return this.prisma.$transaction(async (tx) => {
-      await tx.transaction.update({
-        where: { id: transaction.id },
-        data: { status: mapped, mpPaymentId },
-      });
-
-      if (mapped === PaymentStatus.APPROVED) {
-        await tx.transactionItem.updateMany({
-          where: { transactionId: transaction.id },
-          data: { status: PaymentStatus.APPROVED },
+    await this.prisma.$transaction(
+      async (tx) => {
+        await tx.transaction.update({
+          where: { id: transaction.id },
+          data: { status: mapped, mpPaymentId },
         });
 
-        await this.transactionService.confirmTransaction(transaction.id, {
-          userId: transaction.memberId,
-          profileType: 'MEMBER',
-        });
-
-        for (const item of transaction.transactionItems) {
-          await this.registerService.recordIncome(tx, {
-            tenantId,
-            transactionItemId: item.id,
-            memberId: item.memberId,
-            amount: item.amount,
-            method: PaymentMethod.MP,
-            concept: item.packId
-              ? CashMovementConcept.PACK_CONTRACT
-              : CashMovementConcept.DROP_IN,
-            recordedByStaffId: null,
+        if (mapped === PaymentStatus.APPROVED) {
+          await tx.transactionItem.updateMany({
+            where: { transactionId: transaction.id },
+            data: { status: PaymentStatus.APPROVED },
           });
-
-          await this.receiptsService.issueForApprovedPayment(tx, {
-            tenantId,
-            transactionItemId: item.id,
-            memberId: item.memberId,
-            amount: item.amount,
-            method: PaymentMethod.MP,
-            concept: item.packId
-              ? ReceiptConcept.PACK_CONTRACT
-              : ReceiptConcept.DROP_IN,
-            description: item.packId ? 'Pack' : 'Drop-in',
+          await this.writeApprovedCartEffects(tx, tenantId, transaction);
+        } else {
+          await tx.transactionItem.updateMany({
+            where: { transactionId: transaction.id },
+            data: { status: PaymentStatus.REJECTED },
           });
         }
-      } else {
-        await tx.transactionItem.updateMany({
-          where: { transactionId: transaction.id },
-          data: { status: PaymentStatus.REJECTED },
-        });
-      }
+      },
+      { timeout: 15000 },
+    );
 
-      const refreshed = await tx.transaction.findFirstOrThrow({
-        where: { id: transaction.id, tenantId },
-        include: {
-          transactionItems: {
-            include: {
-              contract: { select: { id: true } },
-              reservation: { select: { id: true } },
-            },
+    const refreshed = await this.loadCart(tenantId, transaction.id);
+    if (mapped === PaymentStatus.APPROVED) {
+      return this.ensureCartRights(tenantId, refreshed);
+    }
+    return {
+      handled: true,
+      transactionItemId: transaction.id,
+      transactionId: transaction.id,
+      status: mapped,
+      contractId: null,
+      reservationId: null,
+    };
+  }
+
+  private async loadCart(tenantId: string, transactionId: string): Promise<CartWithItems> {
+    return this.prisma.transaction.findFirstOrThrow({
+      where: { id: transactionId, tenantId },
+      include: {
+        transactionItems: {
+          include: {
+            contract: { select: { id: true } },
+            reservation: { select: { id: true } },
           },
         },
-      });
-
-      return this.ensureCartRights(tenantId, refreshed);
+      },
     });
+  }
+
+  /**
+   * Completa caja + comprobante + mpPaymentId de un cart ya APPROVED (reintento de webhook).
+   */
+  private async persistApprovedCartEffects(
+    tenantId: string,
+    transaction: CartWithItems,
+    mpPaymentId: string,
+  ): Promise<void> {
+    await this.prisma.$transaction(
+      async (tx) => {
+        if (!transaction.mpPaymentId) {
+          await tx.transaction.update({
+            where: { id: transaction.id },
+            data: { mpPaymentId },
+          });
+        }
+        await this.writeApprovedCartEffects(tx, tenantId, transaction);
+      },
+      { timeout: 15000 },
+    );
+  }
+
+  private async writeApprovedCartEffects(
+    tx: Prisma.TransactionClient,
+    tenantId: string,
+    transaction: {
+      id: string;
+      memberId: string;
+      transactionItems: Array<{
+        id: string;
+        memberId: string;
+        packId: string | null;
+        amount: number;
+      }>;
+    },
+  ): Promise<void> {
+    for (const item of transaction.transactionItems) {
+      await this.registerService.recordIncome(tx, {
+        tenantId,
+        transactionItemId: item.id,
+        memberId: item.memberId,
+        amount: item.amount,
+        method: PaymentMethod.MP,
+        concept: item.packId
+          ? CashMovementConcept.PACK_CONTRACT
+          : CashMovementConcept.DROP_IN,
+        recordedByStaffId: null,
+      });
+    }
+    await this.issueMpTransactionReceipt(tx, tenantId, transaction);
   }
 
   private async ensureCartRights(
@@ -582,6 +641,45 @@ export class WebhookPaymentService {
       contractId: null,
       reservationId: null,
     };
+  }
+
+  /**
+   * Un comprobante por Transaction (total del cart), no por ítem.
+   *
+   * @remarks Idempotente vía `issueForApprovedPayment`. Pack-only → PACK_CONTRACT;
+   * drop-in o mixto → DROP_IN (mismo criterio que el cart CASH).
+   */
+  private async issueMpTransactionReceipt(
+    tx: Prisma.TransactionClient,
+    tenantId: string,
+    confirmed: {
+      id: string;
+      memberId: string;
+      transactionItems: Array<{ packId: string | null; amount: number }>;
+    },
+  ): Promise<void> {
+    const total = confirmed.transactionItems.reduce(
+      (sum, item) => sum + item.amount,
+      0,
+    );
+    const packOnly =
+      confirmed.transactionItems.length > 0 &&
+      confirmed.transactionItems.every((item) => item.packId);
+    const firstItem = confirmed.transactionItems[0];
+    await this.receiptsService.issueForApprovedPayment(tx, {
+      tenantId,
+      transactionId: confirmed.id,
+      memberId: confirmed.memberId,
+      amount: total,
+      method: PaymentMethod.MP,
+      concept: packOnly ? ReceiptConcept.PACK_CONTRACT : ReceiptConcept.DROP_IN,
+      description:
+        confirmed.transactionItems.length <= 1
+          ? firstItem?.packId
+            ? 'Pack'
+            : 'Drop-in'
+          : `${confirmed.transactionItems.length} items`,
+    });
   }
 
   private mapMpStatus(status: string): PaymentStatus | null {

@@ -18,7 +18,7 @@ const DETAIL_LIMIT = 200;
 /**
  * Reportes de dinero + snapshot comercial (E11).
  *
- * Transacciones agrupadas: MP por cart_checkout, efectivo por payment individual.
+ * Transacciones agrupadas por `transaction_id` (CASH y MP).
  */
 @Injectable()
 export class ReportsService {
@@ -143,9 +143,8 @@ export class ReportsService {
   }
 
   /**
-   * Agrupa payments en transacciones.
-   * - Sin transaction_id → efectivo, cada transactionItem es 1 transacción.
-   * - Con transaction_id → MP, todos los transactionItems del mismo transaction se agrupan.
+   * Agrupa ítems APPROVED por `transaction_id` (CASH y MP).
+   * Sin transaction_id (legacy) cada ítem es una fila.
    */
   private buildTransactions(
     rows: Array<{
@@ -181,7 +180,7 @@ export class ReportsService {
           byTransaction.set(row.transactionId, {
             id: row.transactionId,
             amount: 0,
-            method: 'MP',
+            method: row.method === PaymentMethod.MP ? 'MP' : 'CASH',
             status: 'APPROVED',
             createdAt: row.createdAt,
             memberId: row.memberId,

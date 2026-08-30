@@ -64,7 +64,7 @@ Carpeta **Mercado Pago**: cuenta `GET|PUT|DELETE /mercadopago/account` + test (`
 
 Carpeta **Refunds**: Member `POST /me/transaction-items/:transactionItemId/refund-requests` + `GET /me/refund-requests`. Staff `GET /refund-requests` + `POST /transaction-items/:transactionItemId/refunds` (`transaction_items.refund`; `motiveCode=doble_cobro` opcional).
 
-Carpeta **Receipts**: Member `GET /me/receipts`. Staff `GET /transaction-items/:transactionItemId/receipt` y `GET /members/:id/receipts` (`members.read`). Código `GB-000001`.
+Carpeta **Receipts**: Member `GET /me/receipts`. Staff `GET /transactions/:transactionId/receipt` y `GET /members/:id/receipts` (`members.read`). Código `GB-000001`.
 
 Carpeta **Member catalog**: Catálogo del afiliado (E9 mobile). Member `GET /me/sessions` (sesiones publicadas, default próximas), `GET /me/packs` (packs activos comprables), `GET /me/mp-status` (estado conexión MP: `{ connected: boolean }`).
 

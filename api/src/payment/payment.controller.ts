@@ -17,7 +17,7 @@ import { OnlinePaymentService } from './online-payment.service';
 import { CashPaymentService } from './cash-payment.service';
 import { CreateMpCartCheckoutDto } from './dto/create-mp-cart-checkout.dto';
 import { CreateCashCartDto } from './dto/create-cash-cart.dto';
-import { MpCartCheckoutResult } from './payment.types';
+import { CashCartResult, MpCartCheckoutResult } from './payment.types';
 
 /**
  * Checkout de pagos (Caja): cart MP y cart CASH.
@@ -49,7 +49,7 @@ export class PaymentController {
     @Param('memberId', ParseUUIDPipe) memberId: string,
     @CurrentUser() user: AuthUser,
     @Body() dto: CreateCashCartDto,
-  ) {
+  ): Promise<CashCartResult> {
     return this.cashPayment.startCashCart(
       tenantId,
       memberId,

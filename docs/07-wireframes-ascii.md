@@ -197,7 +197,7 @@ Credenciales: expandir card → Eliminar (confirmación). Ajustes: Reiniciar wal
 | Concepto: [ Pack | Drop-in | ..] |
 | Monto:    [ auto / edit ]        |
 | Medio:    [ Efectivo | Mercado Pago ] |
-| (link MP: abrir / copiar)            |
+| (efectivo: comprobante al instante; MP: copiar / abrir; al aprobar: ver comprobante) |
 | Idempotency: (auto)              |
 | (Cancelar)  (Cobrar / Generar link MP) |
 +----------------------------------+

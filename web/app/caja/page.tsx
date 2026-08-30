@@ -6,6 +6,7 @@ import { AdminShell } from '@/components/AdminShell';
 import { Panel } from '@/components/AdminUi';
 import { MemberPicker } from '@/components/MemberPicker';
 import { ReceiptPanel } from '@/components/ReceiptPanel';
+import { IconReceipt } from '@/components/RowActions';
 import { RequireStaff } from '@/components/RequireStaff';
 import { SkeletonPanel } from '@/components/Skeleton';
 import { ApiClientError, newIdempotencyKey } from '@/lib/api/client';
@@ -16,7 +17,7 @@ import {
 import { listActivePacks } from '@/lib/api/packs';
 import type { PackSummary } from '@/lib/api/packs';
 import { startCashCart } from '@/lib/api/reservations';
-import { getReceiptByTransactionItem } from '@/lib/api/receipts';
+import { getReceiptByTransaction } from '@/lib/api/receipts';
 import type { ReceiptDetail } from '@/lib/api/receipts';
 import { listSessions } from '@/lib/api/sessions';
 import type { SessionSummary } from '@/lib/api/sessions';
@@ -37,6 +38,10 @@ type CatalogTab = 'SERVICIOS' | 'PACKS';
 /**
  * Caja: carrito de cobros (packs + drop-in) en efectivo o con links de MP
  * (CU-PAG / RN-PAG-009). Cierre y movimientos viven en /arqueo.
+ *
+ * @remarks MP no redirige al checkout: muestra el link y hace polling del
+ * comprobante hasta el webhook APPROVED. CASH muestra el comprobante al
+ * instante (el cobro ya queda APPROVED).
  */
 export default function CajaPage() {
   return (
@@ -63,7 +68,12 @@ function CajaInner() {
   const [cobroError, setCobroError] = useState<string | null>(null);
   const [cobroOk, setCobroOk] = useState<string | null>(null);
   const [mpCheckoutUrl, setMpCheckoutUrl] = useState<string | null>(null);
+  const [mpTransactionId, setMpTransactionId] = useState<string | null>(null);
+  const [mpApproved, setMpApproved] = useState(false);
   const [copyKey, setCopyKey] = useState<string | null>(null);
+  const [cashTransactionId, setCashTransactionId] = useState<string | null>(
+    null,
+  );
 
   const [receipt, setReceipt] = useState<ReceiptDetail | null>(null);
   const [receiptError, setReceiptError] = useState<string | null>(null);
@@ -118,6 +128,40 @@ function CajaInner() {
       cancelled = true;
     };
   }, []);
+
+  useEffect(() => {
+    if (!receipt) {
+      return;
+    }
+    document.getElementById('receipt-panel')?.scrollIntoView({ behavior: 'smooth' });
+  }, [receipt]);
+
+  useEffect(() => {
+    if (!mpTransactionId || mpApproved) {
+      return;
+    }
+    let cancelled = false;
+    const tick = async () => {
+      try {
+        const r = await getReceiptByTransaction(mpTransactionId);
+        if (cancelled) {
+          return;
+        }
+        setMpApproved(true);
+        setReceipt(r);
+      } catch {
+        // PENDING: el webhook aún no emitió el comprobante
+      }
+    };
+    void tick();
+    const interval = window.setInterval(() => {
+      void tick();
+    }, 3000);
+    return () => {
+      cancelled = true;
+      window.clearInterval(interval);
+    };
+  }, [mpTransactionId, mpApproved]);
 
   const servicePrice = useMemo(
     () => new Map(services.map((s) => [s.id, s.dropInPrice])),
@@ -176,21 +220,6 @@ function CajaInner() {
     setCart((prev) => prev.filter((item) => item.key !== key));
   }
 
-  async function openReceiptForTransactionItem(transactionItemId: string) {
-    setReceiptError(null);
-    try {
-      const r = await getReceiptByTransactionItem(transactionItemId);
-      setReceipt(r);
-    } catch (err) {
-      setReceipt(null);
-      setReceiptError(
-        err instanceof ApiClientError
-          ? err.message
-          : 'No se pudo cargar el comprobante',
-      );
-    }
-  }
-
   async function copyMpUrl(url: string) {
     try {
       await navigator.clipboard.writeText(url);
@@ -199,6 +228,23 @@ function CajaInner() {
     } catch {
       setCobroError('No se pudo copiar el link');
     }
+  }
+
+  function showReceipt(transactionId: string | null) {
+    if (!transactionId) {
+      return;
+    }
+    if (receipt) {
+      document.getElementById('receipt-panel')?.scrollIntoView({
+        behavior: 'smooth',
+      });
+      return;
+    }
+    void getReceiptByTransaction(transactionId)
+      .then(setReceipt)
+      .catch(() => {
+        setReceiptError('No se pudo cargar el comprobante');
+      });
   }
 
   async function onCobro(e: FormEvent) {
@@ -215,6 +261,9 @@ function CajaInner() {
     setCobroError(null);
     setCobroOk(null);
     setMpCheckoutUrl(null);
+    setMpTransactionId(null);
+    setMpApproved(false);
+    setCashTransactionId(null);
     setCopyKey(null);
     setReceiptError(null);
     setReceipt(null);
@@ -234,10 +283,10 @@ function CajaInner() {
           );
         }
         setMpCheckoutUrl(url);
+        setMpTransactionId(result.transactionId);
         setCobroOk(
           `Link MP generado por ${formatMoney(result.amount)}. Cada pack/reserva del carrito se activa al aprobarse el pago.`,
         );
-        window.open(url, '_blank', 'noopener,noreferrer');
         setCart([]);
         return;
       }
@@ -255,8 +304,15 @@ function CajaInner() {
       setCobroOk(
         `${labels.length} cobro${labels.length === 1 ? '' : 's'} en efectivo: ${labels.join(' · ')}`,
       );
+      setCashTransactionId(result.transactionId);
       if (result.receipt) {
         setReceipt(result.receipt);
+      } else {
+        try {
+          setReceipt(await getReceiptByTransaction(result.transactionId));
+        } catch {
+          setReceiptError('No se pudo cargar el comprobante');
+        }
       }
     } catch (err) {
       setCobroError(
@@ -289,11 +345,13 @@ function CajaInner() {
       {receiptError ? <p className="error">{receiptError}</p> : null}
 
       {receipt ? (
-        <ReceiptPanel
-          receipt={receipt}
-          title="Comprobante emitido"
-          onClose={() => setReceipt(null)}
-        />
+        <div id="receipt-panel">
+          <ReceiptPanel
+            receipt={receipt}
+            title="Comprobante emitido"
+            onClose={() => setReceipt(null)}
+          />
+        </div>
       ) : null}
 
       <div className="cash-layout">
@@ -495,6 +553,25 @@ function CajaInner() {
             {cobroError ? <p className="error">{cobroError}</p> : null}
             {cobroOk ? <p className="ok-msg">{cobroOk}</p> : null}
 
+            {cashTransactionId ? (
+              <div className="cart-line">
+                <div>
+                  <p className="cart-name">Cobro en efectivo</p>
+                  <p className="muted small">Comprobante listo</p>
+                </div>
+                <div className="row-actions">
+                  <button
+                    type="button"
+                    className="btn primary"
+                    onClick={() => showReceipt(cashTransactionId)}
+                  >
+                    <IconReceipt />
+                    Ver comprobante
+                  </button>
+                </div>
+              </div>
+            ) : null}
+
             {mpCheckoutUrl ? (
               <div className="cart-line">
                 <div>
@@ -502,6 +579,20 @@ function CajaInner() {
                   <p className="muted small mp-link-url">{mpCheckoutUrl}</p>
                 </div>
                 <div className="row-actions">
+                  {mpApproved ? (
+                    <button
+                      type="button"
+                      className="btn primary"
+                      onClick={() => showReceipt(mpTransactionId)}
+                    >
+                      <IconReceipt />
+                      Ver comprobante
+                    </button>
+                  ) : (
+                    <button type="button" className="btn ghost" disabled>
+                      Esperando aprobación…
+                    </button>
+                  )}
                   <button
                     type="button"
                     className="btn ghost"

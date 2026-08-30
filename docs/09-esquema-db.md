@@ -55,10 +55,23 @@ erDiagram
   tenants ||--o{ cash_movements : records
   tenants ||--o{ cash_reconciliations : reconciles
   tenants ||--o{ receipts : issues
+  tenants ||--o| receipt_sequences : numbers
+  tenants ||--o{ transactions : carts
+  members ||--o{ transactions : pays
+  transactions ||--o{ transaction_items : contains
+  transactions ||--o| receipts : issues
+  transaction_items ||--o| receipts : legacy
+  transaction_items ||--o{ cash_movements : records
   tenants ||--o{ transaction_items : charges
   tenants ||--o{ contracts : sells
+  transaction_items ||--o| contracts : funds
+  contracts ||--o{ contract_credit_balances : balances
   tenants ||--o{ refund_requests : has
   members ||--o{ refund_requests : requests
+  tenants ||--o{ credential_offers : issues
+  contracts ||--o| credential_offers : offers
+  tenants ||--o{ staff_credential_offers : issues
+  staff_users ||--o| staff_credential_offers : holds
   tenants ||--o{ access_credentials : issues
   members ||--o{ access_credentials : holds
   tenants ||--o{ access_attempts : logs
@@ -78,9 +91,29 @@ erDiagram
   tenants {
     uuid id PK
     text name
+    text slug UK
     enum status
     timestamptz created_at
     timestamptz updated_at
+  }
+
+  transactions {
+    uuid id PK
+    uuid tenant_id FK
+    uuid member_id FK
+    int amount
+    enum status
+    int refunded_amount
+    text mp_payment_id
+  }
+
+  receipts {
+    uuid id PK
+    uuid tenant_id FK
+    uuid transaction_id FK
+    uuid transaction_item_id FK
+    int number
+    int amount
   }
 
   tenant_settings {
@@ -173,6 +206,7 @@ erDiagram
     text email
     text password_hash
     text name
+    text image_url
     boolean active
     timestamptz created_at
     timestamptz updated_at
@@ -186,6 +220,7 @@ erDiagram
     text name
     text phone
     text document
+    text image_url
     uuid branch_id FK
     enum status
     timestamptz created_at
@@ -198,6 +233,7 @@ erDiagram
     enum type
     text name
     text description
+    text image_url
     int drop_in_price
     boolean active
     uuid branch_id FK
@@ -210,6 +246,7 @@ erDiagram
     uuid tenant_id FK
     text name
     text description
+    text image_url
     int price
     enum billing_period
     timestamptz credits_expire_at
@@ -341,7 +378,7 @@ Sucursal / sede (modelo Prisma `Branch`). Estrategia **S2** / RN-TEN-003: multi-
 | `is_default` | boolean | default false |
 | `created_at` / `updated_at` | timestamptz | |
 
-**Índice único parcial:** a lo sumo una fila con `is_default = true` por `tenant_id`.
+**Índice único parcial:** a lo sumo una fila con `is_default = true` por `tenant_id` (`branches_one_default_per_tenant`).
 
 Al `POST /api/tenants` se crea tenant + branch default + roles sistema en la misma transacción. No hay CRUD de sucursales en esta tarea. Tenants anteriores al migrate pueden no tener branch (`defaultBranch: null`).
 
@@ -428,6 +465,7 @@ Staff de un gym. Email único **por tenant**.
 | `email` | text | |
 | `password_hash` | text | |
 | `name` | text nullable | |
+| `image_url` | text nullable | foto de perfil (R2) |
 | `active` | boolean | |
 | `created_at` / `updated_at` | timestamptz | |
 
@@ -448,6 +486,7 @@ Afiliado (socio). Perfil separado del staff (RN-ROL-005). Email único **por ten
 | `name` | text nullable | |
 | `phone` | text nullable | |
 | `document` | text nullable | unique por tenant (NULL permitido repetido) |
+| `image_url` | text nullable | foto de ficha (R2) |
 | `branch_id` | uuid FK → `branches` nullable | ON DELETE SET NULL |
 | `status` | `MemberStatus` | default `ACTIVE` |
 | `created_at` / `updated_at` | timestamptz | |
@@ -507,6 +546,7 @@ Servicio del catálogo comercial (RN-SER-001 / CU-SER-001).
 | `type` | `ServiceType` | inmutable tras create |
 | `name` | text | |
 | `description` | text nullable | |
+| `image_url` | text nullable | imagen de catálogo (R2) |
 | `drop_in_price` | int nullable | ARS; solo `POR_SESIONES`; null = drop-in off (RN-SER-006) |
 | `active` | boolean | default true (baja lógica) |
 | `branch_id` | uuid FK → `branches` nullable | SET NULL |
@@ -526,6 +566,7 @@ Pack vendible (CU-SER-002). `price` = pesos enteros ARS. `kind` (`ACCESS`|`CREDI
 | `tenant_id` | uuid FK → `tenants` | CASCADE |
 | `name` | text | |
 | `description` | text nullable | |
+| `image_url` | text nullable | imagen de catálogo (R2) |
 | `price` | int | pesos enteros |
 | `billing_period` | `BillingPeriod` | MONTHLY / ONE_TIME |
 | `credits_expire_at` | timestamptz nullable | null = sin vencimiento de catálogo |
@@ -555,20 +596,27 @@ API Staff: `GET|POST|PATCH /api/packs`. Super: `/api/tenants/:tenantId/packs`.
 
 ### 4.15 `transaction_items`
 
-Pago de negocio (RN-PAG-003..005). En MVP staff crea stub/caja ya `APPROVED` junto a la contratación o drop-in.
+Ítem de un pago (RN-PAG-003..005). En Caja (CASH y MP) siempre pertenece a una `transactions` (cart). Staff stub/caja deja el ítem `APPROVED` de inmediato; MP queda `PENDING` hasta el webhook.
 
 | Columna | Tipo | Notas |
 |---------|------|--------|
 | `id` | uuid PK | |
 | `tenant_id` / `member_id` | uuid FK | CASCADE |
-| `pack_id` | uuid FK nullable | SET NULL |
+| `pack_id` | uuid FK nullable | SET NULL; checkout pack |
+| `session_id` | uuid FK nullable | SET NULL; checkout drop-in |
+| `transaction_id` | uuid FK **NOT NULL** | cart padre → `transactions` |
 | `amount` | int | pesos (copia del pack / drop-in) |
 | `status` | `PaymentStatus` | |
 | `method` | `PaymentMethod` | STUB / CASH / MP |
-| `idempotency_key` | text | unique por tenant |
+| `idempotency_key` | text | unique por tenant; en cart `"<cartKey>-<idx>"` |
+| `mp_preference_id` | text nullable | Preference Checkout Pro (ítem suelto legacy) |
+| `mp_payment_id` | text nullable UK | dedup webhook en ítems sueltos; en cart el id vive en `transactions` |
+| `mp_init_point` / `mp_sandbox_init_point` | text nullable | URLs checkout (legacy ítem) |
+| `refunded_at` / `refund_reason` | timestamptz / text nullable | CU-PAG-005 |
+| `mp_refund_manual_pending` | boolean | default false |
 | `created_at` / `updated_at` | timestamptz | |
 
-Si `method=CASH` → se crea 1 `cash_movements` (1:1).
+Si `method=CASH` → 1 `cash_movements` INCOME por ítem (`unique (transaction_item_id, kind)`).
 
 ### 4.15b `cash_movements`
 
@@ -579,13 +627,15 @@ Movimiento de caja del día (CU-PAG-002 / RN-PAG-007).
 | `id` | uuid PK | |
 | `tenant_id` | uuid FK | CASCADE |
 | `business_date` | date | día BA (`America/Argentina/Buenos_Aires`) |
-| `transaction_item_id` | uuid FK UK | 1:1 con transaction_item CASH |
+| `transaction_item_id` | uuid FK | RESTRICT; unique **junto con** `kind` |
 | `member_id` | uuid FK | CASCADE |
 | `recorded_by_staff_id` | uuid FK nullable | SET NULL |
 | `amount` | int | ingreso ≥ 1 |
 | `kind` | `CashMovementKind` | `INCOME` \| `OUTCOME` |
 | `concept` | `CashMovementConcept` | `PACK_CONTRACT` \| `DROP_IN` \| `REFUND` |
 | `created_at` | timestamptz | |
+
+**Unique:** `(transaction_item_id, kind)` (un INCOME y un OUTCOME por ítem). No hay columna `transaction_id` en el movimiento: el cart se resuelve vía el ítem.
 
 API: Staff `GET /api/cash-register/day?date=YYYY-MM-DD`, `POST /api/cash-register/day/reconcile` (`cashier.operate`); Super `/api/tenants/:tid/cash-register/...`.
 
@@ -609,22 +659,23 @@ Arqueo de caja del día (CU-PAG-003 / RN-PAG-007).
 
 ### 4.15d `receipts` / `receipt_sequences`
 
-Comprobante interno (RN-PAG-009). 1:1 con `transaction_items` APPROVED.
+Comprobante interno (RN-PAG-009). 1:1 con `transactions` (cart CASH/MP). `transaction_item_id` queda para receipts legacy.
 
 | Columna (`receipts`) | Tipo | Notas |
 |---------|------|--------|
 | `id` | uuid PK | |
 | `tenant_id` / `member_id` | uuid FK | CASCADE |
-| `transaction_item_id` | uuid FK UK | RESTRICT |
+| `transaction_id` | uuid FK UK nullable | RESTRICT; cart actual |
+| `transaction_item_id` | uuid FK UK nullable | RESTRICT; legacy |
 | `number` | int | secuencial por tenant |
 | `amount` / `method` | int / enum | snapshot del pago |
 | `concept` | `ReceiptConcept` | `PACK_CONTRACT` \| `DROP_IN` |
-| `description` | text nullable | pack o servicio |
+| `description` | text nullable | pack, servicio o “N items” |
 | `created_at` | timestamptz | |
 
 `receipt_sequences`: PK `tenant_id`, `next_number`. Código API: `GB-` + number pad 6.
 
-API: Member `GET /api/me/receipts`; Staff `GET /api/transaction-items/:transactionItemId/receipt`, `GET /api/members/:id/receipts` (`members.read`).
+API: Member `GET /api/me/receipts`; Staff `GET /api/transactions/:transactionId/receipt`, `GET /api/members/:id/receipts` (`members.read`).
 
 ### 4.15e `mercadopago_accounts`
 
@@ -643,36 +694,29 @@ API Staff: `GET|PUT|DELETE /api/mercadopago/account`, `POST .../test` (`mp.conne
 
 ### 4.15f `transaction_items` (campos MP)
 
-Extensión checkout/webhook (CU-PAG-001 / drop-in):
+Los campos Preference / `mp_payment_id` / URLs están en la tabla 4.15. El **cart actual** guarda Preference y `mp_payment_id` en `transactions`; los ítems del carrito no duplican el payment id (el UK de `transaction_items.mp_payment_id` queda para cobros ítem-suelto legacy).
 
-| Columna | Tipo | Notas |
-|---------|------|--------|
-| `method` | enum + `MP` | además de STUB/CASH |
-| `session_id` | uuid FK nullable → `sessions` | checkout drop-in MP |
-| `mp_preference_id` | text nullable | Preference Checkout Pro |
-| `mp_payment_id` | text nullable UK | dedup webhook |
-| `mp_init_point` / `mp_sandbox_init_point` | text nullable | URLs checkout |
-
-API: pack `POST /me|members/:id/transaction-items/mp/checkout`; drop-in `.../drop-in-checkout`. Webhook: `POST /api/webhooks/mercadopago?tenantId=` (+ `/simulate` stub). Al `APPROVED`: pack → contrato; drop-in → reserva `DROP_IN` + recibo. `transaction_items.transaction_id` nullable FK → `transactions` (columna agregada en la migración carrito).
+API Staff: `POST /api/members/:memberId/transaction-items/mp/cart` y `.../cash/cart`. Webhook: `POST /api/webhooks/payment?tenantId=`. Al `APPROVED`: pack → contrato; drop-in → reserva `DROP_IN` + un recibo **por Transaction**.
 
 ### 4.15g `transactions` + `transaction_items.transaction_id`
 
-Carrito de Caja con Mercado Pago (CU-PAG-001 / modelo MercadoLibre): 1 preference con `items[]` → **1 link con el total** → 1 pago. Al webhook APPROVED se confirma un contrato/reserva por cada transaction_item del carrito.
+Carrito de Caja (CASH y MP, CU-PAG-001 / modelo MercadoLibre): 1 cart → N ítems → 1 pago. MP: 1 preference con el total. CASH: APPROVED inmediato. Al webhook MP APPROVED se confirma un contrato/reserva por cada transaction_item.
 
 | Columna | Tipo | Notas |
 |---------|------|--------|
-| `id` | uuid PK | usado como `externalReference` de la Preference |
+| `id` | uuid PK | usado como `externalReference` de la Preference MP |
 | `tenant_id` / `member_id` | uuid FK | CASCADE |
 | `amount` | int | suma de los transaction_items (total) |
-| `status` | `PaymentStatus` | `PENDING` \| `APPROVED` \| `REJECTED` |
-| `idempotency_key` | text | unique `(tenant_id, idempotency_key)`; sub-keys `:idx` en transaction_items |
-| `mp_preference_id` / `mp_init_point` / `mp_sandbox_init_point` | text nullable | Preference + URLs checkout |
-| `mp_payment_id` | text nullable | **solo aquí** (no en los transaction_items del carrito; `transaction_items.mp_payment_id` es UK) |
+| `status` | `PaymentStatus` | `PENDING` \| `APPROVED` \| `REJECTED` \| `REFUNDED` |
+| `idempotency_key` | text | unique `(tenant_id, idempotency_key)` |
+| `mp_preference_id` / `mp_init_point` / `mp_sandbox_init_point` | text nullable | Preference + URLs (solo MP) |
+| `mp_payment_id` | text nullable | id del pago MP del cart (dedup webhook) |
+| `refunded_amount` | int | default 0; tracking de devoluciones |
 | `created_at` / `updated_at` | timestamptz | |
 
-Transaction_items del carrito: `transaction_id` FK nullable; `idempotency_key = "<cartKey>:<idx>"`. Refund de carrito MP **no soportado** (limitación conocida).
+Cada `transaction_item` tiene `transaction_id` **obligatorio**. Refund de carrito MP **no soportado** (limitación conocida).
 
-API Staff: `POST /api/members/:memberId/transaction-items/mp/cart` (`members.write`; body `{ items: [{ kind: PACK|DROP_IN, id, quantity? }], idempotencyKey? }`). Simulate: `POST /api/webhooks/mercadopago/simulate` con `transactionId` (exactamente uno entre `transactionItemId`/`transactionId`).
+API Staff: `POST /api/members/:memberId/transaction-items/mp/cart` y `.../cash/cart` (`members.write`).
 
 ### 4.15h `refund_requests` + refund en `transaction_items`
 
@@ -705,7 +749,7 @@ Tabla **legada** (credencial de vínculo stub E6). API retirada; identidad de pu
 | `issued_at` / `revoked_at` | timestamptz | |
 | `created_at` / `updated_at` | timestamptz | |
 
-Índice único parcial: una sola `ACTIVE` por `member_id`.
+Índice único parcial: una sola `ACTIVE` por `member_id` (`access_credentials_member_active_uidx`).
 
 ### 4.15j `access_attempts` + `reservations.checked_in_at`
 
@@ -840,7 +884,7 @@ Reserva con crédito o drop-in (CU-RES-001 / RN-RES-001).
 | `checked_in_at` | timestamptz nullable | presente al verify/pase (RN-RES-007) |
 | `created_at` / `updated_at` | timestamptz | |
 
-Unique parcial: una `CONFIRMED` por (`session_id`, `member_id`).
+Unique parcial: una `CONFIRMED` por (`session_id`, `member_id`) (`reservations_session_member_confirmed_uidx`).
 
 API: Member `POST|GET /api/me/reservations` (solo crédito), `PATCH .../status` (ventana RN-TEN-005); Staff `POST|GET /api/members/:memberId/reservations` (`coverage=DROP_IN` + pago stub/caja), `GET|PATCH /api/reservations/:id(/status)`. Cancelación: libera cupo; CREDIT devuelve crédito; DROP_IN no reembolsa (E5).
 
@@ -872,7 +916,7 @@ Cola FIFO de sesión (CU-RES-004 / RN-RES-004).
 | `status` | `WaitlistStatus` | `WAITING` / `PROMOTED` / `LEFT` |
 | `created_at` / `updated_at` | timestamptz | orden FIFO |
 
-Unique parcial: un `WAITING` por (`session_id`, `member_id`).
+Unique parcial: un `WAITING` por (`session_id`, `member_id`) (`waitlist_session_member_waiting_uidx`).
 
 API: Member `POST|GET /api/me/waitlist`, `PATCH /api/me/waitlist/:id/status`; Staff `POST|GET /api/members/:id/waitlist`, `GET /api/sessions/:id/waitlist` (`status` / `allStatuses`), `PATCH /api/waitlist/:id/status` (`reservations.write`). Liberación AUTO al cancelar reserva o ampliar cupo.
 
@@ -880,44 +924,11 @@ API: Member `POST|GET /api/me/waitlist`, `PATCH /api/me/waitlist/:id/status`; St
 
 ## 5. Migraciones aplicadas
 
+Historia incremental (2026-07 / 2026-08) **compactada** en un baseline (`40476fa` — `chore: recreate migrations from schema`). Postgres local tiene **una** fila en `_prisma_migrations`.
+
 | Migración | Contenido |
 |-----------|-----------|
-| `20260718120000_init_tenant` | enum `TenantStatus` + tabla `tenants` |
-| `20260718160000_auth_identities` | auth: enums, `super_users`, `staff_users`, `members`, `refresh_tokens` |
-| `20260719180000_branches` | tabla `branches` + índice único parcial default por tenant |
-| `20260719210000_roles_permissions` | `permissions`, `roles`, `role_permissions` |
-| `20260721150000_staff_user_roles` | `staff_user_roles` (multi-rol staff) |
-| `20260721190000_audit_events` | `audit_events` (EventoAuditoria append-only) |
-| `20260721200000_members_ficha_status` | `MemberStatus` + ficha (`phone`, `document`, `branch_id`) en `members` |
-| `20260722140000_services` | enum `ServiceType` + tabla `services` |
-| `20260722180000_packs` | enum `BillingPeriod` + `packs` + `pack_components` |
-| `20260722210000_contracts_payments` | `transaction_items`, `contracts`, `contract_credit_balances` |
-| `20260725150000_sessions` | enum `SessionStatus` + tabla `sessions` |
-| `20260725180000_reservations_credit` | enums reserva + tabla `reservations` |
-| `20260726140000_session_recurrence_rules` | enum `Weekday`, reglas semanales + vínculo desde `sessions` |
-| `20260726180000_tenant_settings_cancel_reservation` | `tenant_settings` + backfill horas cancelación |
-| `20260726190000_waitlist_entries` | enums waitlist + `waitlist_entries` + `waitlist_mode` en settings |
-| `20260726200000_allow_late_session_entry` | `allow_late_session_entry` en `tenant_settings` |
-| `20260726210000_reservation_drop_in` | `DROP_IN` + `drop_in_price` + `reservations.transaction_item_id` nullable FKs crédito |
-| `20260726220000_cash_movements` | enums caja + tabla `cash_movements` |
-| `20260726230000_cash_reconciliations` | tabla `cash_reconciliations` (arqueo 1/día) |
-| `20260726240000_receipts` | `ReceiptConcept` + `receipt_sequences` + `receipts` |
-| `20260726250000_mercadopago_accounts` | tabla `mercadopago_accounts` (cuenta MP por tenant) |
-| `20260726260000_payment_mp_checkout` | `PaymentMethod.MP` + ids/URLs Preference en `transaction_items` |
-| `20260726270000_refunds` | `refund_requests` + OUTCOME/REFUND caja + campos refund en transaction_items |
-| `20260727120000_access_credentials` | enum `AccessCredentialStatus` + tabla `access_credentials` |
-| `20260727180000_access_verify` | `access_attempts` + settings deuda/multi + `checked_in_at` |
-| `20260727230000_access_manual_pass` | `motive_code` + `note` en `access_attempts` |
-| `20260728120000_payment_drop_in_session` | `transaction_items.session_id` para checkout drop-in MP |
-| `20260730180000_tenant_slug` | `tenants.slug` UNIQUE (subdominio) |
-| `20260802180000_tenant_quark_provision` | `tenants.quark_*` + enum `QuarkProvisionStatus` (histórico) |
-| `20260802190000_pack_quark_configuration` | `packs.quark_*` (histórico; renombrado abajo) |
-| `20260803010000_credential_offers` | enum `CredentialOfferStatus` + tabla `credential_offers` |
-| `20260803020000_credential_offers_slim` | quita `claims` / `configuration_id` / `vct` / `transaction_item_id` / `issuance_session_id` |
-| `20260803030000_credential_offer_accepted` | enum `ACCEPTED` |
-| `20260813180000_kuatia_shared_env_drop_tenant_bind` | drop `tenants.quark_*` + enum; rename `packs.quark_*` → `kuatia_*` |
-| `20260814180000_staff_credential_offers` | `staff_credential_offers` + `access_attempts.subject_staff_id` |
-| `20260820090000_cart_checkout` | tabla `transactions` (carrito Caja MP) + `transaction_items.transaction_id` FK |
+| `20260830145646_init` | Schema completo actual: enums, tablas, FKs, índices Prisma y **índices únicos parciales** (sede default, reserva `CONFIRMED`, waitlist `WAITING`, credencial `ACTIVE`). Incluye `image_url`, `transactions` + `transaction_items.transaction_id` NOT NULL, `receipts.transaction_id`, `refunded_amount`. |
 
 Comandos y checklist “desde cero”: [13-setup-db-desde-cero.md](./13-setup-db-desde-cero.md).
 
@@ -936,15 +947,16 @@ Tras `docker compose down -v`: `up --build -d` → `migrate deploy` → `generat
 
 | Entidad | Valor |
 |---------|--------|
-| Tenant id | `00000000-0000-4000-8000-000000000001` (`Demo Gym`) |
+| Tenant id | `00000000-0000-4000-8000-000000000001` (`Gym de Prueba`) |
+| Slug | `gym-de-prueba` (`gym-de-prueba.localhost:3002`) |
 | Super | `super@faciliter.xyz` |
 | Staff | `admin@gymdeprueba.com` |
 | Member | `socio@gymdeprueba.com` |
 | Password (todos) | `ChangeMe123!` |
 
 Script: [`api/prisma/seed.ts`](../api/prisma/seed.ts).  
-Crea Super + tenant demo + **branch** + roles Admin/Profesor + staff `admin@demo.gym` con rol Admin + member. Password: `ChangeMe123!`.  
-Además bindea Kuatia compartido (`KUATIA_*_WALLET_ID` → `tenants.quark_*`; soft-fail si falta env).
+Crea Super + tenant demo + **branch** + roles Admin/Profesor + staff Admin + member. Password: `ChangeMe123!`.  
+Kuatia: wallets compartidos vía `KUATIA_*` (el seed **no** escribe columnas por tenant; esas columnas ya no existen).
 
 Detalle: [13-setup-db-desde-cero.md](./13-setup-db-desde-cero.md) · [credenciales-demo.md](./credenciales-demo.md).
 
