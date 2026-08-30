@@ -937,9 +937,9 @@ Tras `docker compose down -v`: `up --build -d` → `migrate deploy` → `generat
 | Entidad | Valor |
 |---------|--------|
 | Tenant id | `00000000-0000-4000-8000-000000000001` (`Demo Gym`) |
-| Super | `super@gymbro.local` |
-| Staff | `admin@demo.gym` |
-| Member | `socio@demo.gym` |
+| Super | `super@faciliter.xyz` |
+| Staff | `admin@gymdeprueba.com` |
+| Member | `socio@gymdeprueba.com` |
 | Password (todos) | `ChangeMe123!` |
 
 Script: [`api/prisma/seed.ts`](../api/prisma/seed.ts).  

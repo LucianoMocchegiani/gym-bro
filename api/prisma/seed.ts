@@ -5,7 +5,7 @@ const prisma = new PrismaClient();
 
 const DEMO_PASSWORD = 'ChangeMe123!';
 const DEMO_TENANT_ID = '00000000-0000-4000-8000-000000000001';
-const DEMO_SLUG = 'demo';
+const DEMO_SLUG = 'gym-de-prueba';
 
 const PERMISSIONS: { code: string; description: string; dangerous: boolean }[] =
   [
@@ -124,10 +124,10 @@ async function main(): Promise<void> {
   const passwordHash = await bcrypt.hash(DEMO_PASSWORD, 12);
 
   const superUser = await prisma.superUser.upsert({
-    where: { email: 'super@gymbro.local' },
+    where: { email: 'super@faciliter.xyz' },
     update: { passwordHash, active: true, name: 'Super Admin' },
     create: {
-      email: 'super@gymbro.local',
+      email: 'super@faciliter.xyz',
       passwordHash,
       name: 'Super Admin',
     },
@@ -136,13 +136,13 @@ async function main(): Promise<void> {
   const tenant = await prisma.tenant.upsert({
     where: { id: DEMO_TENANT_ID },
     update: {
-      name: 'Demo Gym',
+      name: 'Gym de Prueba',
       status: TenantStatus.ACTIVE,
       slug: DEMO_SLUG,
     },
     create: {
       id: DEMO_TENANT_ID,
-      name: 'Demo Gym',
+      name: 'Gym de Prueba',
       slug: DEMO_SLUG,
       status: TenantStatus.ACTIVE,
     },
@@ -235,14 +235,14 @@ async function main(): Promise<void> {
 
   const staff = await prisma.staffUser.upsert({
     where: {
-      tenantId_email: { tenantId: tenant.id, email: 'admin@demo.gym' },
+      tenantId_email: { tenantId: tenant.id, email: 'admin@gymdeprueba.com' },
     },
-    update: { passwordHash, active: true, name: 'Admin Demo' },
+    update: { passwordHash, active: true, name: 'Admin Gym de Prueba' },
     create: {
       tenantId: tenant.id,
-      email: 'admin@demo.gym',
+      email: 'admin@gymdeprueba.com',
       passwordHash,
-      name: 'Admin Demo',
+      name: 'Admin Gym de Prueba',
     },
   });
 
@@ -262,20 +262,20 @@ async function main(): Promise<void> {
 
   const member = await prisma.member.upsert({
     where: {
-      tenantId_email: { tenantId: tenant.id, email: 'socio@demo.gym' },
+      tenantId_email: { tenantId: tenant.id, email: 'socio@gymdeprueba.com' },
     },
     update: {
       passwordHash,
-      name: 'Socio Demo',
+      name: 'Socio Gym de Prueba',
       status: MemberStatus.ACTIVE,
       phone: null,
       document: null,
     },
     create: {
       tenantId: tenant.id,
-      email: 'socio@demo.gym',
+      email: 'socio@gymdeprueba.com',
       passwordHash,
-      name: 'Socio Demo',
+      name: 'Socio Gym de Prueba',
       status: MemberStatus.ACTIVE,
     },
   });

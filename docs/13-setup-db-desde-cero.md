@@ -53,9 +53,9 @@ docker compose up --build -d
 
 | Perfil | Email | Password |
 |--------|-------|----------|
-| Super | `super@gymbro.local` | `ChangeMe123!` |
-| Staff (Demo Gym) | `admin@demo.gym` | `ChangeMe123!` |
-| Afiliado | `socio@demo.gym` | `ChangeMe123!` |
+| Super | `super@faciliter.xyz` | `ChangeMe123!` |
+| Staff (Demo Gym) | `admin@gymdeprueba.com` | `ChangeMe123!` |
+| Afiliado | `socio@gymdeprueba.com` | `ChangeMe123!` |
 
 Tenant demo: slug `demo`, id fijo `00000000-0000-4000-8000-000000000001`.
 

@@ -11,9 +11,9 @@
 | Variable | Valor default |
 |----------|----------------|
 | `tenantId` | `00000000-0000-4000-8000-000000000001` |
-| `superEmail` / `superPassword` | `super@gymbro.local` / `ChangeMe123!` |
-| `staffEmail` / `staffPassword` | `admin@demo.gym` / `ChangeMe123!` |
-| `memberEmail` / `memberPassword` | `socio@demo.gym` / `ChangeMe123!` |
+| `superEmail` / `superPassword` | `super@faciliter.xyz` / `ChangeMe123!` |
+| `staffEmail` / `staffPassword` | `admin@gymdeprueba.com` / `ChangeMe123!` |
+| `memberEmail` / `memberPassword` | `socio@gymdeprueba.com` / `ChangeMe123!` |
 | `demoPassword` | `ChangeMe123!` (alias común) |
 
 Los logins usan `{{tenantId}}`, `{{staffEmail}}`, etc. Reimportá el environment si no los ves.

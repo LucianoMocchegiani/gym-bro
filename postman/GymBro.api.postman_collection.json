@@ -1,8 +1,8 @@
-﻿{
+{
     "info":  {
                  "_postman_id":  "gymbro-api-collection",
                  "name":  "GymBro API",
-                 "description":  "Health + auth (SUPER / STAFF / MEMBER) + tenants CRUD (Super).\n\n**Setup**\n1. ImportÃ¡ esta colecciÃ³n y `GymBro.local.postman_environment.json`.\n2. Arriba a la derecha: environment **GymBro Local** (obligatorio).\n3. Seed: `docker compose exec api npm run prisma:seed`.\n\n**Auth**\nCarpeta `Auth (manual)`: Login Super/Staff/Member â†’ Me â†’ Refresh â†’ Logout.\n\n**Tenants**\nLogin Super (manual) â†’ carpeta `Tenants (Super)`.\n\n**Credenciales seed (tambiÃ©n en el environment)**\n- Super: `super@gymbro.local` / `ChangeMe123!`\n- Staff: `admin@demo.gym` / `ChangeMe123!` + tenantId\n- Member: `socio@demo.gym` / `ChangeMe123!` + tenantId\n\n**Listados paginados**\nTodos los `GET` de listado devuelven `{ items, page, pageSize, total, hasMore }` (ver `postman/README.md`).",
+                 "description":  "Health + auth (SUPER / STAFF / MEMBER) + tenants CRUD (Super).\n\n**Setup**\n1. Importá esta colección y `GymBro.local.postman_environment.json`.\n2. Arriba a la derecha: environment **GymBro Local** (obligatorio).\n3. Seed: `docker compose exec api npm run prisma:seed`.\n\n**Auth**\nCarpeta `Auth (manual)`: Login Super/Staff/Member → Me → Refresh → Logout.\n\n**Tenants**\nLogin Super (manual) → carpeta `Tenants (Super)`.\n\n**Credenciales seed (también en el environment)**\n- Super: `super@faciliter.xyz` / `ChangeMe123!`\n- Staff: `admin@gymdeprueba.com` / `ChangeMe123!` + tenantId\n- Member: `socio@gymdeprueba.com` / `ChangeMe123!` + tenantId\n\n**Listados paginados**\nTodos los `GET` de listado devuelven `{ items, page, pageSize, total, hasMore }` (ver `postman/README.md`).",
                  "schema":  "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
              },
     "auth":  {
@@ -40,7 +40,7 @@
                      },
                      {
                          "key":  "superEmail",
-                         "value":  "super@gymbro.local"
+                         "value":  "super@faciliter.xyz"
                      },
                      {
                          "key":  "superPassword",
@@ -48,7 +48,7 @@
                      },
                      {
                          "key":  "staffEmail",
-                         "value":  "admin@demo.gym"
+                         "value":  "admin@gymdeprueba.com"
                      },
                      {
                          "key":  "staffPassword",
@@ -56,7 +56,7 @@
                      },
                      {
                          "key":  "memberEmail",
-                         "value":  "socio@demo.gym"
+                         "value":  "socio@gymdeprueba.com"
                      },
                      {
                          "key":  "memberPassword",
@@ -325,7 +325,7 @@
                                                                    "raw":  "{\n  \"tenantId\": \"{{tenantId}}\",\n  \"email\": \"{{staffEmail}}\",\n  \"password\": \"{{staffPassword}}\"\n}"
                                                                },
                                                       "url":  "{{baseUrl}}/api/auth/staff/login",
-                                                      "description":  " PreferÃ­ tenantSlug (demo) en UI; tenantId sigue vÃ¡lido."
+                                                      "description":  " Preferí tenantSlug (demo) en UI; tenantId sigue válido."
                                                   }
                                   },
                                   {
@@ -379,7 +379,7 @@
                                                                        "exec":  [
                                                                                     "const token = pm.environment.get(\u0027accessToken\u0027) || pm.collectionVariables.get(\u0027accessToken\u0027);",
                                                                                     "if (!token) {",
-                                                                                    "  throw new Error(\u0027accessToken vacÃ­o: corrÃ© un Login primero y seleccionÃ¡ GymBro Local\u0027);",
+                                                                                    "  throw new Error(\u0027accessToken vacío: corré un Login primero y seleccioná GymBro Local\u0027);",
                                                                                     "}"
                                                                                 ]
                                                                    }
@@ -422,7 +422,7 @@
 
                                                                  ],
                                                       "url":  "{{baseUrl}}/api/me/permissions",
-                                                      "description":  "UniÃ³n de permisos del staff (nav Admin). Requiere JWT Staff."
+                                                      "description":  "Unión de permisos del staff (nav Admin). Requiere JWT Staff."
                                                   }
                                   },
                                   {
@@ -457,7 +457,7 @@
                                                                                }
                                                                },
                                                       "url":  "{{baseUrl}}/api/auth/change-password",
-                                                      "description":  "Cambia contraseÃ±a del staff/super autenticado (JWT). Revoca todos los refresh tokens â†’ obliga a re-login. AjustÃ¡ newPassword antes de correrlo."
+                                                      "description":  "Cambia contraseña del staff/super autenticado (JWT). Revoca todos los refresh tokens → obliga a re-login. Ajustá newPassword antes de correrlo."
                                                   }
                                   },
                                   {
@@ -538,7 +538,7 @@
                  },
                  {
                      "name":  "Tenants (Super)",
-                     "description":  "CRUD tenants. Primero Login Super (manual) para llenar accessToken. Staff/Member â†’ 403.",
+                     "description":  "CRUD tenants. Primero Login Super (manual) para llenar accessToken. Staff/Member → 403.",
                      "item":  [
                                   {
                                       "name":  "POST create tenant",
@@ -806,7 +806,7 @@
                  },
                  {
                      "name":  "Roles",
-                     "description":  "Super: /tenants/:tenantId/roles. Staff: /roles (JWT tenant). GET list/detail + POST/PATCH. Admin system role â†’ 403 on PATCH. Staff requiere roles.write. UsÃ¡ createdTenantId de Tenants o tenantId demo.",
+                     "description":  "Super: /tenants/:tenantId/roles. Staff: /roles (JWT tenant). GET list/detail + POST/PATCH. Admin system role → 403 on PATCH. Staff requiere roles.write. Usá createdTenantId de Tenants o tenantId demo.",
                      "item":  [
                                   {
                                       "name":  "Super GET list roles",
@@ -1073,14 +1073,14 @@
                                                                                "{{createdRoleId}}"
                                                                            ]
                                                               },
-                                                      "description":  "Custom: se elimina aunque tenga staff asignado. Roles de sistema (admin/profesor) â†’ 403 ROLE_IS_SYSTEM."
+                                                      "description":  "Custom: se elimina aunque tenga staff asignado. Roles de sistema (admin/profesor) → 403 ROLE_IS_SYSTEM."
                                                   }
                                   }
                               ]
                  },
                  {
                      "name":  "Staff roles",
-                     "description":  "Listado/alta/asignaciÃ³n. Super: /tenants/:tenantId/staff. Staff: /staff (staff.read / staff.write). Variables: createdStaffId, createdOwnerId, createdRoleId.",
+                     "description":  "Listado/alta/asignación. Super: /tenants/:tenantId/staff. Staff: /staff (staff.read / staff.write). Variables: createdStaffId, createdOwnerId, createdRoleId.",
                      "item":  [
                                   {
                                       "name":  "Staff GET list",
@@ -1171,7 +1171,7 @@
                                                                    "raw":  "{\n  \"email\": \"nuevo.staff-{{$timestamp}}@demo.gym\",\n  \"password\": \"{{demoPassword}}\",\n  \"name\": \"Staff nuevo\",\n  \"imageUrl\": \"https://pub-xxx.r2.dev/staff/example.jpg\",\n  \"roleIds\": [\"{{createdRoleId}}\"]\n}"
                                                                },
                                                       "url":  "{{baseUrl}}/api/staff",
-                                                      "description":  "roleIds opcional; usÃ¡ createdRoleId de Roles o dejÃ¡ []."
+                                                      "description":  "roleIds opcional; usá createdRoleId de Roles o dejá []."
                                                   }
                                   },
                                   {
@@ -1334,7 +1334,7 @@
                                                                    "raw":  "{\n  \"roleIds\": []\n}"
                                                                },
                                                       "url":  "{{baseUrl}}/api/tenants/{{createdTenantId}}/staff/{{createdOwnerId}}/roles",
-                                                      "description":  "Body vacÃ­o limpia roles; reemplazÃ¡ roleIds con ids de systemRoles del create tenant (admin + profesor) para multi-rol."
+                                                      "description":  "Body vacío limpia roles; reemplazá roleIds con ids de systemRoles del create tenant (admin + profesor) para multi-rol."
                                                   }
                                   },
                                   {
@@ -1382,14 +1382,14 @@
                                                                                "{{createdStaffId}}"
                                                                            ]
                                                               },
-                                                      "description":  "FÃ­sico solo si el staff no tiene actividad (accesos, caja, devoluciones, sesiones, offers). Con actividad â†’ 409 STAFF_HAS_ACTIVITY (recomienda desactivar)."
+                                                      "description":  "Físico solo si el staff no tiene actividad (accesos, caja, devoluciones, sesiones, offers). Con actividad → 409 STAFF_HAS_ACTIVITY (recomienda desactivar)."
                                                   }
                                   }
                               ]
                  },
                  {
                      "name":  "Audit",
-                     "description":  "GET list EventoAuditoria. Staff: /audit-events (audit.read). Super: /tenants/:tenantId/audit-events. GenerÃ¡ eventos con PATCH tenant, POST/PATCH roles o PUT staff roles.",
+                     "description":  "GET list EventoAuditoria. Staff: /audit-events (audit.read). Super: /tenants/:tenantId/audit-events. Generá eventos con PATCH tenant, POST/PATCH roles o PUT staff roles.",
                      "item":  [
                                   {
                                       "name":  "Staff GET audit events",
@@ -1571,7 +1571,7 @@
                  },
                  {
                      "name":  "Upload",
-                     "description":  "Upload de imágenes (POST /upload). Requiere auth staff. Acepta multipart/form-data con campo 'file' y 'folder' (services|packs|members|staff|tenants).",
+                     "description":  "Upload de im�genes (POST /upload). Requiere auth staff. Acepta multipart/form-data con campo 'file' y 'folder' (services|packs|members|staff|tenants).",
                      "item":  [
                                   {
                                       "name":  "Upload image (services)",
@@ -1604,14 +1604,14 @@
                                                                                ]
                                                               },
                                                      "url":  "{{baseUrl}}/api/upload",
-                                                     "description":  "Sube una imagen al bucket R2. Cambiar 'folder' según corresponda."
+                                                     "description":  "Sube una imagen al bucket R2. Cambiar 'folder' seg�n corresponda."
                                                  }
                                   }
                               ]
                  },
                  {
                      "name":  "Members",
-                     "description":  "Staff: /members (members.read/write; status â†’ members.deactivate). Estado de cuenta: GET /members/:id/account y GET /me/account (CU-AFI-004/005). Super: /tenants/:tenantId/members. Login member solo si ACTIVE.",
+                     "description":  "Staff: /members (members.read/write; status → members.deactivate). Estado de cuenta: GET /members/:id/account y GET /me/account (CU-AFI-004/005). Super: /tenants/:tenantId/members. Login member solo si ACTIVE.",
                      "item":  [
                                   {
                                       "name":  "Staff GET list members",
@@ -1822,7 +1822,7 @@
 
                                                                  ],
                                                       "url":  "{{baseUrl}}/api/me/account?coverage=all",
-                                                      "description":  "CU-AFI-005. coverage=all: historial completo de contratos (ACTIVE + FINALIZED). Usado por la pestaña 'Mis packs' en mobile."
+                                                      "description":  "CU-AFI-005. coverage=all: historial completo de contratos (ACTIVE + FINALIZED). Usado por la pesta�a 'Mis packs' en mobile."
                                                   }
                                   },
                                   {
@@ -1860,14 +1860,14 @@
                                                                                "{{createdMemberId}}"
                                                                            ]
                                                               },
-                                                      "description":  "members.deactivate. FÃ­sico solo sin historial (pagos, contratos, reservas, waitlist, devoluciones, accesos, caja). Con historial â†’ 409 MEMBER_HAS_HISTORY (recomienda suspender/inactivar)."
+                                                      "description":  "members.deactivate. Físico solo sin historial (pagos, contratos, reservas, waitlist, devoluciones, accesos, caja). Con historial → 409 MEMBER_HAS_HISTORY (recomienda suspender/inactivar)."
                                                   }
                                   }
                               ]
                  },
                  {
                      "name":  "Services",
-                     "description":  "CatÃ¡logo E3. Staff: /services (catalog.write). Super: /tenants/:tenantId/services. type inmutable; baja = active false.",
+                     "description":  "Catálogo E3. Staff: /services (catalog.write). Super: /tenants/:tenantId/services. type inmutable; baja = active false.",
                      "item":  [
                                   {
                                       "name":  "Staff POST ACCESO_LIBRE",
@@ -2098,14 +2098,14 @@
                                                                                "{{createdServiceId}}"
                                                                            ]
                                                               },
-                                                      "description":  "FÃ­sico solo si no estÃ¡ en uso (packs, sesiones, reglas de recurrencia, saldos). En uso â†’ 409 SERVICE_IN_USE (recomienda dar de baja active=false)."
+                                                      "description":  "Físico solo si no está en uso (packs, sesiones, reglas de recurrencia, saldos). En uso → 409 SERVICE_IN_USE (recomienda dar de baja active=false)."
                                                   }
                                   }
                               ]
                  },
                  {
                      "name":  "Packs",
-                     "description":  "CatÃ¡logo E3 packs. Staff /packs (catalog.write). Casos MONTHLY (plan) y ONE_TIME (Ãºnico). UsÃ¡ serviceIds de Services. price = pesos enteros.",
+                     "description":  "Catálogo E3 packs. Staff /packs (catalog.write). Casos MONTHLY (plan) y ONE_TIME (único). Usá serviceIds de Services. price = pesos enteros.",
                      "item":  [
                                   {
                                       "name":  "Staff POST pack MONTHLY",
@@ -2139,7 +2139,7 @@
                                                                    "raw":  "{\n  \"name\": \"Full mensual\",\n  \"description\": \"Libre + 8 sesiones (plan mensual)\",\n  \"price\": 45000,\n  \"billingPeriod\": \"MONTHLY\",\n  \"components\": [\n    { \"serviceId\": \"{{accesoLibreServiceId}}\" },\n    { \"serviceId\": \"{{porSesionesServiceId}}\", \"creditAmount\": 8 }\n  ]\n}"
                                                                },
                                                       "url":  "{{baseUrl}}/api/packs",
-                                                      "description":  "Plan mensual: libre + crÃ©ditos comparten periodo al contratar. No hace falta creditsExpireAt."
+                                                      "description":  "Plan mensual: libre + créditos comparten periodo al contratar. No hace falta creditsExpireAt."
                                                   }
                                   },
                                   {
@@ -2169,10 +2169,10 @@
                                                                  ],
                                                       "body":  {
                                                                    "mode":  "raw",
-                                                                   "raw":  "{\n  \"name\": \"Pack 10 pilates\",\n  \"description\": \"Ãšnico: 10 crÃ©ditos (puede solapar)\",\n  \"price\": 12000,\n  \"billingPeriod\": \"ONE_TIME\",\n  \"components\": [\n    { \"serviceId\": \"{{porSesionesServiceId}}\", \"creditAmount\": 10 }\n  ]\n}"
+                                                                   "raw":  "{\n  \"name\": \"Pack 10 pilates\",\n  \"description\": \"Único: 10 créditos (puede solapar)\",\n  \"price\": 12000,\n  \"billingPeriod\": \"ONE_TIME\",\n  \"components\": [\n    { \"serviceId\": \"{{porSesionesServiceId}}\", \"creditAmount\": 10 }\n  ]\n}"
                                                                },
                                                       "url":  "{{baseUrl}}/api/packs",
-                                                      "description":  "Pack Ãºnico: al contratar se customizan startsAt/endsAt (default +1 mes). Puede solapar el plan MONTHLY."
+                                                      "description":  "Pack único: al contratar se customizan startsAt/endsAt (default +1 mes). Puede solapar el plan MONTHLY."
                                                   }
                                   },
                                   {
@@ -2304,11 +2304,11 @@
                                                                                 }
                                                                             ]
                                                               },
-                                                      "description":  "Pack con contrataciones: sin ?confirm â†’ 409 PACK_HAS_CONTRACTS. Con confirm=deactivate â†’ active=false (dejarÃ¡ de funcionar el mes siguiente) + sync Kuatia."
+                                                      "description":  "Pack con contrataciones: sin ?confirm → 409 PACK_HAS_CONTRACTS. Con confirm=deactivate → active=false (dejará de funcionar el mes siguiente) + sync Kuatia."
                                                   }
                                   },
                                   {
-                                      "name":  "Staff DELETE pack fÃ­sico (sin contratos)",
+                                      "name":  "Staff DELETE pack físico (sin contratos)",
                                       "event":  [
                                                     {
                                                         "listen":  "prerequest",
@@ -2319,7 +2319,7 @@
                                                                                     "const token = pm.environment.get(\u0027accessToken\u0027) || pm.collectionVariables.get(\u0027accessToken\u0027);",
                                                                                     "const body = {",
                                                                                     "  name: \u0027Pack desechable \u0027 + Date.now(),",
-                                                                                    "  description: \u0027Para probar DELETE fÃ­sico\u0027,",
+                                                                                    "  description: \u0027Para probar DELETE físico\u0027,",
                                                                                     "  price: 100,",
                                                                                     "  billingPeriod: \u0027ONE_TIME\u0027,",
                                                                                     "  components: [{ serviceId: pm.variables.get(\u0027createdServiceId\u0027), creditAmount: 1 }]",
@@ -2363,14 +2363,14 @@
                                                                                "{{freshPackId}}"
                                                                            ]
                                                               },
-                                                      "description":  "Pre-request crea un pack sin contrataciones y lo borra en fÃ­sico (200 {deleted:true})."
+                                                      "description":  "Pre-request crea un pack sin contrataciones y lo borra en físico (200 {deleted:true})."
                                                   }
                                   }
                               ]
                  },
                  {
                      "name":  "Contracts",
-                     "description":  "CU-CON-001 / CU-CON-002 / RN-CON-001â€“004. Staff POST crea Payment APPROVED + Contract (+ offer). Casos MONTHLY (solo startsAt) y ONE_TIME (startsAt/endsAt). Re-oferta: re-POST misma idempotencyKey. PATCH cancel.",
+                     "description":  "CU-CON-001 / CU-CON-002 / RN-CON-001–004. Staff POST crea Payment APPROVED + Contract (+ offer). Casos MONTHLY (solo startsAt) y ONE_TIME (startsAt/endsAt). Re-oferta: re-POST misma idempotencyKey. PATCH cancel.",
                      "item":  [
                                   {
                                       "name":  "Staff POST contract MONTHLY",
@@ -2405,7 +2405,7 @@
                                                                    "raw":  "{\n  \"packId\": \"{{createdMonthlyPackId}}\",\n  \"method\": \"STUB\",\n  \"idempotencyKey\": \"contract-monthly-{{$timestamp}}\",\n  \"startsAt\": \"2026-09-01T00:00:00.000Z\"\n}"
                                                                },
                                                       "url":  "{{baseUrl}}/api/members/{{createdMemberId}}/contracts",
-                                                      "description":  "RN-CON-004 MONTHLY: solo startsAt opcional (endsAt = +1 mes). Sin startsAt â†’ apila. No enviar endsAt. Key nueva cada alta; misma key = re-oferta."
+                                                      "description":  "RN-CON-004 MONTHLY: solo startsAt opcional (endsAt = +1 mes). Sin startsAt → apila. No enviar endsAt. Key nueva cada alta; misma key = re-oferta."
                                                   }
                                   },
                                   {
@@ -2441,7 +2441,7 @@
                                                                    "raw":  "{\n  \"packId\": \"{{createdOneTimePackId}}\",\n  \"method\": \"STUB\",\n  \"idempotencyKey\": \"contract-onetime-{{$timestamp}}\",\n  \"startsAt\": \"2026-08-10T00:00:00.000Z\",\n  \"endsAt\": \"2026-10-01T00:00:00.000Z\"\n}"
                                                                },
                                                       "url":  "{{baseUrl}}/api/members/{{createdMemberId}}/contracts",
-                                                      "description":  "RN-CON-004 ONE_TIME: startsAt y/o endsAt opcionales (pueden solapar). Sin fechas â†’ default +1 mes."
+                                                      "description":  "RN-CON-004 ONE_TIME: startsAt y/o endsAt opcionales (pueden solapar). Sin fechas → default +1 mes."
                                                   }
                                   },
                                   {
@@ -2474,7 +2474,7 @@
                                                                  ],
                                                       "body":  {
                                                                    "mode":  "raw",
-                                                                   "raw":  "{\n  \"status\": \"CANCELLED\",\n  \"reason\": \"Demo cancelaciÃ³n RN-SER-009\"\n}"
+                                                                   "raw":  "{\n  \"status\": \"CANCELLED\",\n  \"reason\": \"Demo cancelación RN-SER-009\"\n}"
                                                                },
                                                       "url":  "{{baseUrl}}/api/contracts/{{createdContractId}}/status",
                                                       "description":  "Cancela ACTIVE. Idempotente si ya CANCELLED. Reembolso (REFUNDED) = E5."
@@ -2789,7 +2789,7 @@
                                                                                 }
                                                                             ]
                                                               },
-                                                      "description":  "Bandeja OID4VCI del afiliado. Requiere accessToken Member. Tras accept wallet: POST .../accept â†’ ACCEPTED."
+                                                      "description":  "Bandeja OID4VCI del afiliado. Requiere accessToken Member. Tras accept wallet: POST .../accept → ACCEPTED."
                                                   }
                                   },
                                   {
@@ -2815,7 +2815,7 @@
 
                                                                  ],
                                                       "url":  "{{baseUrl}}/api/me/credential-offers/{{createdCredentialOfferId}}/accept",
-                                                      "description":  "Marca offer ACCEPTED tras OID4VCI OK en wallet (â‰¥1 credencial). Idempotente. Conserva offerUri. Requiere accessToken Member + createdCredentialOfferId PENDING."
+                                                      "description":  "Marca offer ACCEPTED tras OID4VCI OK en wallet (≥1 credencial). Idempotente. Conserva offerUri. Requiere accessToken Member + createdCredentialOfferId PENDING."
                                                   }
                                   },
                                   {
@@ -2849,14 +2849,14 @@
                                                                    "raw":  "{\n  \"reason\": \"Offer expired or invalid at issuer\"\n}"
                                                                },
                                                       "url":  "{{baseUrl}}/api/me/credential-offers/{{createdCredentialOfferId}}/fail",
-                                                      "description":  "Marca offer FAILED tras OID4VCI vencido/invÃ¡lido en wallet (sale de bandeja). Conserva offerUri; reason â†’ lastError (staff). Idempotente. No llama a Quark. Requiere accessToken Member + PENDING."
+                                                      "description":  "Marca offer FAILED tras OID4VCI vencido/inválido en wallet (sale de bandeja). Conserva offerUri; reason → lastError (staff). Idempotente. No llama a Quark. Requiere accessToken Member + PENDING."
                                                   }
                                   }
                               ]
                  },
                  {
                      "name":  "Sessions",
-                     "description":  "CU-SER-003. Staff /sessions (sessions.write). serviceId = POR_SESIONES (porSesionesServiceId). instructorId = StaffUser id (userId del login Staff). branchId opcional â†’ sede default.",
+                     "description":  "CU-SER-003. Staff /sessions (sessions.write). serviceId = POR_SESIONES (porSesionesServiceId). instructorId = StaffUser id (userId del login Staff). branchId opcional → sede default.",
                      "item":  [
                                   {
                                       "name":  "Staff POST session",
@@ -2889,7 +2889,7 @@
                                                                    "raw":  "{\n  \"serviceId\": \"{{porSesionesServiceId}}\",\n  \"startsAt\": \"2026-08-01T13:00:00.000Z\",\n  \"endsAt\": \"2026-08-01T14:00:00.000Z\",\n  \"capacity\": 12,\n  \"instructorId\": \"{{userId}}\"\n}"
                                                                },
                                                       "url":  "{{baseUrl}}/api/sessions",
-                                                      "description":  "CreÃ¡ antes un servicio POR_SESIONES. userId queda del login Staff (Auth Me)."
+                                                      "description":  "Creá antes un servicio POR_SESIONES. userId queda del login Staff (Auth Me)."
                                                   }
                                   },
                                   {
@@ -2972,7 +2972,7 @@
                                                                    "raw":  "{\n  \"capacity\": 15\n}"
                                                                },
                                                       "url":  "{{baseUrl}}/api/sessions/{{createdSessionId}}/capacity",
-                                                      "description":  "CU-SER-005. Solo amplia (capacity \u003e actual). Lista de espera aÃºn no-op."
+                                                      "description":  "CU-SER-005. Solo amplia (capacity \u003e actual). Lista de espera aún no-op."
                                                   }
                                   },
                                   {
@@ -3008,7 +3008,7 @@
                  },
                  {
                      "name":  "Session recurrence",
-                     "description":  "CU-SER-004. Regla semanal finita (mÃ¡x. 6 meses) que materializa sesiones PUBLISHED. Hora local + timezone IANA. Desactivar la regla no cancela sesiones.",
+                     "description":  "CU-SER-004. Regla semanal finita (máx. 6 meses) que materializa sesiones PUBLISHED. Hora local + timezone IANA. Desactivar la regla no cancela sesiones.",
                      "item":  [
                                   {
                                       "name":  "Staff POST weekly recurrence rule",
@@ -3041,7 +3041,7 @@
                                                                    "raw":  "{\n  \"serviceId\": \"{{porSesionesServiceId}}\",\n  \"weekdays\": [\"MONDAY\", \"WEDNESDAY\"],\n  \"localStartTime\": \"08:00\",\n  \"durationMinutes\": 60,\n  \"timezone\": \"America/Asuncion\",\n  \"startsOn\": \"2026-08-03\",\n  \"endsOn\": \"2026-08-31\",\n  \"capacity\": 12\n}"
                                                                },
                                                       "url":  "{{baseUrl}}/api/session-recurrence-rules",
-                                                      "description":  "Genera sesiones lunes/miÃ©rcoles 08:00 America/Asuncion."
+                                                      "description":  "Genera sesiones lunes/miércoles 08:00 America/Asuncion."
                                                   }
                                   },
                                   {
@@ -3140,14 +3140,14 @@
                                                                                "{{createdSessionId}}"
                                                                            ]
                                                               },
-                                                      "description":  "FÃ­sico solo sin reservas (cualquier estado, incluso canceladas). Con reservas â†’ 409 SESSION_HAS_RESERVATIONS (recomienda cancelar la sesiÃ³n)."
+                                                      "description":  "Físico solo sin reservas (cualquier estado, incluso canceladas). Con reservas → 409 SESSION_HAS_RESERVATIONS (recomienda cancelar la sesión)."
                                                   }
                                   }
                               ]
                  },
                  {
                      "name":  "Reservations",
-                     "description":  "CU-RES-001/002/003. Reserva con crÃ©dito o drop-in (staff caja). CancelaciÃ³n ventana RN-TEN-005. Member solo crÃ©dito; Staff puede coverage=DROP_IN si el servicio tiene dropInPrice.",
+                     "description":  "CU-RES-001/002/003. Reserva con crédito o drop-in (staff caja). Cancelación ventana RN-TEN-005. Member solo crédito; Staff puede coverage=DROP_IN si el servicio tiene dropInPrice.",
                      "item":  [
                                   {
                                       "name":  "Member POST me reservation",
@@ -3180,7 +3180,7 @@
                                                                    "raw":  "{\n  \"sessionId\": \"{{createdSessionId}}\"\n}"
                                                                },
                                                       "url":  "{{baseUrl}}/api/me/reservations",
-                                                      "description":  "Requiere accessToken Member + sesiÃ³n PUBLISHED (no cancelada) + crÃ©ditos del servicio."
+                                                      "description":  "Requiere accessToken Member + sesión PUBLISHED (no cancelada) + créditos del servicio."
                                                   }
                                   },
                                   {
@@ -3249,7 +3249,7 @@
                                                                    "raw":  "{\n  \"status\": \"CANCELLED\"\n}"
                                                                },
                                                       "url":  "{{baseUrl}}/api/me/reservations/{{createdReservationId}}/status",
-                                                      "description":  "CU-RES-003. Solo dentro de la ventana (default 6h). Fuera â†’ 400."
+                                                      "description":  "CU-RES-003. Solo dentro de la ventana (default 6h). Fuera → 400."
                                                   }
                                   },
                                   {
@@ -3278,7 +3278,7 @@
                                                                    "raw":  "{\n  \"sessionId\": \"{{createdSessionId}}\"\n}"
                                                                },
                                                       "url":  "{{baseUrl}}/api/members/{{createdMemberId}}/reservations",
-                                                      "description":  "CU-RES-002. Si el member ya reservÃ³ esa sesiÃ³n â†’ 409."
+                                                      "description":  "CU-RES-002. Si el member ya reservó esa sesión → 409."
                                                   }
                                   },
                                   {
@@ -3312,7 +3312,7 @@
                                                                    "raw":  "{\n  \"sessionId\": \"{{createdSessionId}}\",\n  \"coverage\": \"DROP_IN\",\n  \"method\": \"CASH\",\n  \"idempotencyKey\": \"dropin-demo-1\"\n}"
                                                                },
                                                       "url":  "{{baseUrl}}/api/members/{{createdMemberId}}/reservations",
-                                                      "description":  "Requiere servicio con dropInPrice. Crea Payment APPROVED + Reservation DROP_IN. No consume crÃ©ditos."
+                                                      "description":  "Requiere servicio con dropInPrice. Crea Payment APPROVED + Reservation DROP_IN. No consume créditos."
                                                   }
                                   },
                                   {
@@ -3408,7 +3408,7 @@
                                                                                 }
                                                                             ]
                                                               },
-                                                      "description":  "Roster de la sesiÃ³n (`reservations.write`). Incluye memberName/memberEmail."
+                                                      "description":  "Roster de la sesión (`reservations.write`). Incluye memberName/memberEmail."
                                                   }
                                   },
                                   {
@@ -3455,7 +3455,7 @@
                  },
                  {
                      "name":  "Waitlist",
-                     "description":  "CU-RES-004/005. Join solo si sesiÃ³n llena. LiberaciÃ³n AUTO_ASSIGN (crÃ©dito) al cancelar reserva o ampliar cupo. Modos MEMBER_CONFIRM/STAFF_CONFIRM: config only.",
+                     "description":  "CU-RES-004/005. Join solo si sesión llena. Liberación AUTO_ASSIGN (crédito) al cancelar reserva o ampliar cupo. Modos MEMBER_CONFIRM/STAFF_CONFIRM: config only.",
                      "item":  [
                                   {
                                       "name":  "Staff POST waitlist for member",
@@ -3487,7 +3487,7 @@
                                                                    "raw":  "{\n  \"sessionId\": \"{{createdSessionId}}\"\n}"
                                                                },
                                                       "url":  "{{baseUrl}}/api/members/{{createdMemberId}}/waitlist",
-                                                      "description":  "Requiere sesiÃ³n PUBLISHED futura llena (bookedCount \u003e= capacity)."
+                                                      "description":  "Requiere sesión PUBLISHED futura llena (bookedCount \u003e= capacity)."
                                                   }
                                   },
                                   {
@@ -3535,7 +3535,7 @@
                                                                                     "key":  "allStatuses",
                                                                                     "value":  "true",
                                                                                     "disabled":  true,
-                                                                                    "description":  "true = histÃ³rico completo (ignora status)"
+                                                                                    "description":  "true = histórico completo (ignora status)"
                                                                                 }
                                                                             ]
                                                               }
@@ -3682,7 +3682,7 @@
                  },
                  {
 "name":  "Payment register",
-                      "description":  "CU-PAG-002/003. GET /payment-register/day + POST /payment-register/day/reconcile (cashier.operate). Movimientos de caja (todos los mÃ©todos). Arqueo 1 por dÃ­a; no bloquea cobros. DÃ­a en America/Argentina/Buenos_Aires.",
+                      "description":  "CU-PAG-002/003. GET /payment-register/day + POST /payment-register/day/reconcile (cashier.operate). Movimientos de caja (todos los métodos). Arqueo 1 por día; no bloquea cobros. Día en America/Argentina/Buenos_Aires.",
                      "item":  [
                                   {
                                       "name":  "Staff GET cash day (today)",
@@ -3767,7 +3767,7 @@
                                                                    "raw":  "{\n  \"declaredAmount\": 7500,\n  \"note\": \"Faltante de prueba\"\n}"
                                                                },
                                                       "url":  "{{baseUrl}}/api/payment-register/day/reconcile",
-                                                      "description":  "OmitÃ­ date para hoy (BA). Si ya arqueado â†’ 409. declaredAmount puede diferir del esperado."
+                                                      "description":  "Omití date para hoy (BA). Si ya arqueado → 409. declaredAmount puede diferir del esperado."
                                                   }
                                   }
                               ]
@@ -3798,7 +3798,7 @@
 
                                                                  ],
                                                       "url":  "{{baseUrl}}/api/transaction-items/{{createdPaymentId}}/receipt",
-                                                      "description":  "UsÃ¡ paymentId de un contract/drop-in nuevo (legacy sin receipt â†’ 404)."
+                                                      "description":  "Usá paymentId de un contract/drop-in nuevo (legacy sin receipt → 404)."
                                                   }
                                   },
                                   {
@@ -3895,7 +3895,7 @@
                  },
                  {
                      "name":  "Mercado Pago",
-                     "description":  "CU-PAG-006 + CU-PAG-001. Cuenta: GET|PUT|DELETE /mercadopago/account + test (mp.connect). Checkout pack: Member POST /me/transaction-items/mp/checkout; Staff POST /members/:id/transaction-items/mp/checkout. Drop-in MP: .../drop-in-checkout. Cart (Caja): Staff POST /members/:id/transaction-items/mp/cart con items[] â†’ 1 link. Webhook real de MP.",
+                     "description":  "CU-PAG-006 + CU-PAG-001. Cuenta: GET|PUT|DELETE /mercadopago/account + test (mp.connect). Checkout pack: Member POST /me/transaction-items/mp/checkout; Staff POST /members/:id/transaction-items/mp/checkout. Drop-in MP: .../drop-in-checkout. Cart (Caja): Staff POST /members/:id/transaction-items/mp/cart con items[] → 1 link. Webhook real de MP.",
                      "item":  [
                                   {
                                       "name":  "Staff GET MP account status",
@@ -4068,7 +4068,7 @@
                                                                    "raw":  "{\n  \"sessionId\": \"{{createdSessionId}}\",\n  \"idempotencyKey\": \"mp-dropin-{{$timestamp}}\"\n}"
                                                                },
                                                       "url":  "{{baseUrl}}/api/me/transaction-items/mp/drop-in-checkout",
-                                                      "description":  "Member. SesiÃ³n con dropInPrice. Reserva al webhook APPROVED."
+                                                      "description":  "Member. Sesión con dropInPrice. Reserva al webhook APPROVED."
                                                   }
                                   },
                                   {
@@ -4123,7 +4123,7 @@
                                                                    "raw":  "{\n  \"items\": [\n    { \"kind\": \"PACK\", \"id\": \"{{createdPackId}}\" },\n    { \"kind\": \"DROP_IN\", \"id\": \"{{createdSessionId}}\" }\n  ],\n  \"idempotencyKey\": \"mp-cart-{{$timestamp}}\"\n}"
                                                                },
                                                       "url":  "{{baseUrl}}/api/members/{{createdMemberId}}/transaction-items/mp/cart",
-                                                      "description":  "members.write. Caja: 1 preference con items[] â†’ 1 link con el total (modelo MercadoLibre). Requiere pack activo y sesiÃ³n publicada con dropInPrice."
+                                                      "description":  "members.write. Caja: 1 preference con items[] → 1 link con el total (modelo MercadoLibre). Requiere pack activo y sesión publicada con dropInPrice."
                                                   }
                                   },
                                   {
@@ -4152,7 +4152,7 @@
                  },
                  {
                      "name":  "Refunds",
-                     "description":  "CU-PAG-004/005/007. Member POST /me/transaction-items/:transactionItemId/refund-requests. Staff GET /refund-requests + POST /transaction-items/:transactionItemId/refunds (transaction_items.refund). UsÃ¡ transactionItemId de cobro reciente (CASH/STUB/MP APPROVED).",
+                     "description":  "CU-PAG-004/005/007. Member POST /me/transaction-items/:transactionItemId/refund-requests. Staff GET /refund-requests + POST /transaction-items/:transactionItemId/refunds (transaction_items.refund). Usá transactionItemId de cobro reciente (CASH/STUB/MP APPROVED).",
                      "item":  [
                                   {
                                       "name":  "Member POST refund request",
@@ -4273,7 +4273,7 @@
                                                                  ],
                                                       "body":  {
                                                                    "mode":  "raw",
-                                                                   "raw":  "{\n  \"reason\": \"DevoluciÃ³n staff\",\n  \"motiveCode\": \"solicitud\"\n}"
+                                                                   "raw":  "{\n  \"reason\": \"Devolución staff\",\n  \"motiveCode\": \"solicitud\"\n}"
                                                                },
 "url":  "{{baseUrl}}/api/transaction-items/{{createdPaymentId}}/refunds"
                                                   }
@@ -4321,8 +4321,8 @@
                                                                                     "  pm.visualizer.set(`",
                                                                                     "    \u003cscript src=\u0027https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js\u0027\u003e\u003c\\/script\u003e",
                                                                                     "    \u003cdiv style=\u0027display:flex;flex-direction:column;align-items:center;padding:20px;font-family:sans-serif\u0027\u003e",
-                                                                                    "      \u003ch3 style=\u0027margin-bottom:8px\u0027\u003eGymBro â€” OID4VP puerta\u003c/h3\u003e",
-                                                                                    "      \u003cp style=\u0027margin:0 0 16px 0;font-size:13px;color:#555\u0027\u003eEscanear con la app (Acceso â†’ Escanear).\u003c/p\u003e",
+                                                                                    "      \u003ch3 style=\u0027margin-bottom:8px\u0027\u003eGymBro — OID4VP puerta\u003c/h3\u003e",
+                                                                                    "      \u003cp style=\u0027margin:0 0 16px 0;font-size:13px;color:#555\u0027\u003eEscanear con la app (Acceso → Escanear).\u003c/p\u003e",
                                                                                     "      \u003cdiv id=\u0027qr\u0027\u003e\u003c/div\u003e",
                                                                                     "      \u003cp style=\u0027margin-top:12px;font-size:11px;word-break:break-all;max-width:360px;text-align:center\u0027\u003e${uri}\u003c/p\u003e",
                                                                                     "      \u003cp style=\u0027font-size:12px;color:#666\u0027\u003everificationSessionId: ${sessionId}\u003c/p\u003e",
@@ -4344,7 +4344,7 @@
                                                                      }
                                                                  ],
                                                       "url":  "{{baseUrl}}/api/access/oid4vp/request",
-                                                      "description":  "Login Staff. Quark verifier READY. GuardÃ¡ requestUri/sessionId. PestaÃ±a **Visualize** â†’ QR para la app."
+                                                      "description":  "Login Staff. Quark verifier READY. Guardá requestUri/sessionId. Pestaña **Visualize** → QR para la app."
                                                   }
                                   },
                                   {
@@ -4377,7 +4377,7 @@
                                                                  ],
                                                       "body":  {
                                                                    "mode":  "raw",
-                                                                   "raw":  "{\n  \"motiveCode\": \"olvido_celular\",\n  \"note\": \"DejÃ³ el telÃ©fono en el auto\"\n}"
+                                                                   "raw":  "{\n  \"motiveCode\": \"olvido_celular\",\n  \"note\": \"Dejó el teléfono en el auto\"\n}"
                                                                },
                                                       "url":  "{{baseUrl}}/api/members/{{createdMemberId}}/access/manual-pass",
                                                       "description":  "access.manual_pass. Saltea derechos/deuda/multi. sessionId opcional."
@@ -4443,7 +4443,7 @@
                  },
                  {
                      "name":  "Member catalog",
-                     "description":  "Catálogo del afiliado (E9 mobile): sesiones publicadas, packs activos y estado MP.",
+                     "description":  "Cat�logo del afiliado (E9 mobile): sesiones publicadas, packs activos y estado MP.",
                      "item":  [
                                   {
                                       "name":  "Member GET sessions",
@@ -4453,7 +4453,7 @@
 
                                                                  ],
                                                       "url":  "{{baseUrl}}/api/me/sessions?page=1\u0026pageSize=20\u0026order=asc",
-                                                      "description":  "Sesiones publicadas del catálogo member. Requiere accessToken Member."
+                                                      "description":  "Sesiones publicadas del cat�logo member. Requiere accessToken Member."
                                                   }
                                   },
                                   {
@@ -4488,7 +4488,7 @@
 
                                                                  ],
                                                       "url":  "{{baseUrl}}/api/me/mp-status",
-                                                      "description":  "Estado de conexión MP del gym (solo { connected: boolean }). Requiere accessToken Member."
+                                                      "description":  "Estado de conexi�n MP del gym (solo { connected: boolean }). Requiere accessToken Member."
                                                   }
                                   }
                               ]

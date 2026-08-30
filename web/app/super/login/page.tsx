@@ -21,7 +21,7 @@ export default function SuperLoginPage() {
 function SuperLoginInner() {
   const { login, session, ready } = useSuperAuth();
   const router = useRouter();
-  const [email, setEmail] = useState('super@gymbro.local');
+  const [email, setEmail] = useState('super@faciliter.xyz');
   const [password, setPassword] = useState('ChangeMe123!');
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);

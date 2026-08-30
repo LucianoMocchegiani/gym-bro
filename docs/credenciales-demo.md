@@ -21,9 +21,9 @@ Super Admin: **http://localhost:3002/super/login**
 
 | Perfil | Email | Password | Extra |
 |--------|--------|----------|--------|
-| Super Admin | `super@gymbro.local` | `ChangeMe123!` | Sin tenant · `/super/login` |
-| Staff (Admin del gym) | `admin@demo.gym` | `ChangeMe123!` | slug `demo` · `demo.localhost:3002` |
-| Afiliado (Member) | `socio@demo.gym` | `ChangeMe123!` | slug `demo` · app Flutter / API |
+| Super Admin | `super@faciliter.xyz` | `ChangeMe123!` | Sin tenant · `/super/login` |
+| Staff (Admin del gym) | `admin@gymdeprueba.com` | `ChangeMe123!` | slug `gym-de-prueba` · `gym-de-prueba.localhost:3002` |
+| Afiliado (Member) | `socio@gymdeprueba.com` | `ChangeMe123!` | slug `gym-de-prueba` · app Flutter / API |
 
 El staff demo queda con rol sistema **Admin** tras el seed.  
 El afiliado demo queda `status: ACTIVE` (solo ACTIVE puede hacer login).
@@ -43,7 +43,7 @@ POST /api/auth/super/login
 Content-Type: application/json
 
 {
-  "email": "super@gymbro.local",
+  "email": "super@faciliter.xyz",
   "password": "ChangeMe123!"
 }
 ```
@@ -55,8 +55,8 @@ POST /api/auth/staff/login
 Content-Type: application/json
 
 {
-  "tenantSlug": "demo",
-  "email": "admin@demo.gym",
+  "tenantSlug": "gym-de-prueba",
+  "email": "admin@gymdeprueba.com",
   "password": "ChangeMe123!"
 }
 ```
@@ -70,8 +70,8 @@ POST /api/auth/member/login
 Content-Type: application/json
 
 {
-  "tenantSlug": "demo",
-  "email": "socio@demo.gym",
+  "tenantSlug": "gym-de-prueba",
+  "email": "socio@gymdeprueba.com",
   "password": "ChangeMe123!"
 }
 ```

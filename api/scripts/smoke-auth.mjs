@@ -16,17 +16,17 @@ async function post(path, body) {
 
 async function main() {
   const superLogin = await post('/api/auth/super/login', {
-    email: 'super@gymbro.local',
+    email: 'super@faciliter.xyz',
     password: 'ChangeMe123!',
   });
   const staffLogin = await post('/api/auth/staff/login', {
     tenantId: '00000000-0000-4000-8000-000000000001',
-    email: 'admin@demo.gym',
+    email: 'admin@gymdeprueba.com',
     password: 'ChangeMe123!',
   });
   const memberLogin = await post('/api/auth/member/login', {
     tenantId: '00000000-0000-4000-8000-000000000001',
-    email: 'socio@demo.gym',
+    email: 'socio@gymdeprueba.com',
     password: 'ChangeMe123!',
   });
 

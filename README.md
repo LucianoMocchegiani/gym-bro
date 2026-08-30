@@ -128,9 +128,9 @@ Seed y credenciales: [docs/13-setup-db-desde-cero.md](./docs/13-setup-db-desde-c
 
 | Perfil | Endpoint | Seed |
 |--------|----------|------|
-| Super | `POST /api/auth/super/login` | `super@gymbro.local` / `ChangeMe123!` |
-| Staff | `POST /api/auth/staff/login` (+ `tenantId`) | `admin@demo.gym` / `ChangeMe123!` |
-| Afiliado | `POST /api/auth/member/login` (+ `tenantId`) | `socio@demo.gym` / `ChangeMe123!` |
+| Super | `POST /api/auth/super/login` | `super@faciliter.xyz` / `ChangeMe123!` |
+| Staff | `POST /api/auth/staff/login` (+ `tenantId`) | `admin@gymdeprueba.com` / `ChangeMe123!` |
+| Afiliado | `POST /api/auth/member/login` (+ `tenantId`) | `socio@gymdeprueba.com` / `ChangeMe123!` |
 
 Detalle (bodies, tenant id): [`docs/credenciales-demo.md`](./docs/credenciales-demo.md).
 
@@ -152,7 +152,7 @@ flutter pub get
 flutter run
 ```
 
-API default del afiliado: `https://api-gymbro.pruebasaproduccunon.uno` (override con `--dart-define=API_BASE_URL=...`). Demo: slug `demo` / `socio@demo.gym` / `ChangeMe123!`.
+API default del afiliado: `https://api-gymbro.pruebasaproduccunon.uno` (override con `--dart-define=API_BASE_URL=...`). Demo: slug `gym-de-prueba` / `socio@gymdeprueba.com` / `ChangeMe123!`.
 ## Sin Docker (apps en el host)
 
 ### API

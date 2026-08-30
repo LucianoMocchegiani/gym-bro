@@ -37,7 +37,7 @@ flutter run
 | Campo | Valor |
 |-------|--------|
 | Gym (slug) | `demo` |
-| Email | `socio@demo.gym` |
+| Email | `socio@gymdeprueba.com` |
 | Password | `ChangeMe123!` |
 
 ## Slice actual

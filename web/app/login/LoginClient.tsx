@@ -24,7 +24,7 @@ export function LoginClient({ slug }: LoginClientProps) {
   const router = useRouter();
   const [tenant, setTenant] = useState<PublicTenantSummary | null>(null);
   const [tenantError, setTenantError] = useState<string | null>(null);
-  const [email, setEmail] = useState('admin@demo.gym');
+  const [email, setEmail] = useState('admin@gymdeprueba.com');
   const [password, setPassword] = useState('ChangeMe123!');
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
