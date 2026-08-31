@@ -5,14 +5,13 @@ import { ContractsModule } from '../contracts/contracts.module';
 import { RolesModule } from '../roles/roles.module';
 import { MembersController } from './members.controller';
 import { MembersService } from './members.service';
-import { SuperMembersController } from './super-members.controller';
 
 /**
  * Afiliados: alta, ficha, status, estado de cuenta (E2).
  */
 @Module({
   imports: [AuthModule, RolesModule, AuditModule, ContractsModule],
-  controllers: [MembersController, SuperMembersController],
+  controllers: [MembersController],
   providers: [MembersService],
   exports: [MembersService],
 })

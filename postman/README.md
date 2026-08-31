@@ -14,6 +14,7 @@
 | `superEmail` / `superPassword` | `super@faciliter.xyz` / `ChangeMe123!` |
 | `staffEmail` / `staffPassword` | `admin@gymdeprueba.com` / `ChangeMe123!` |
 | `memberEmail` / `memberPassword` | `socio@gymdeprueba.com` / `ChangeMe123!` |
+| `tenantSlug` | `gym-de-prueba` (login / `GET /public/tenants/by-slug/:slug`) |
 | `demoPassword` | `ChangeMe123!` (alias común) |
 
 Los logins usan `{{tenantId}}`, `{{staffEmail}}`, etc. Reimportá el environment si no los ves.
@@ -38,17 +39,17 @@ Query params comunes (ya incluidos en cada request, algunos deshabilitados por d
 
 Los filtros de dominio existentes (`status`, `active`, `type`, `from`, `to`, `memberId`, `result`, etc.) se mantienen sin cambios. Se quitó `limit` de `audit-events` y `access-attempts`: usá `pageSize`.
 
-La carpeta **Auth Runner** (flow automatizado) ya fue retirada de la colección; el flujo manual (`Auth (manual)`) es el soportado.
+Carpeta **Health**: `GET /health` y `GET /public/tenants/by-slug/{{tenantSlug}}` (sin auth).
 
 ## Manual
 
 Carpeta **Auth (manual)**: Login Super/Staff/Member → Me → Refresh → Logout. **Super Impersonate Staff**: `POST /auth/super/impersonate` con `{ tenantId, staffUserId }` (token temporal 4h; reg audit).
 
-Carpeta **Roles** / **Staff roles**: Staff necesita permisos (`roles.write` para list/get/create/patch; `staff.read` list/detail; `staff.write` alta + asignar roles). Incluye `GET|POST /staff` y equivalentes Super. El Admin seed los tiene; un rol sin esos códigos → 403.
+Carpeta **Roles** / **Staff roles**: Staff necesita permisos (`roles.write` para list/get/create/patch; `staff.read` list/detail; `staff.write` alta, `PATCH /staff/:id` ficha y asignar roles). Super: `GET /tenants/:tenantId/staff` (impersonate) + `POST /auth/super/impersonate`. El Admin seed los tiene; un rol sin esos códigos → 403. `GET|PATCH /roles/:id` usa `createdRoleId` del POST create (el rol `admin` no se edita).
 
-Carpeta **Audit**: `GET /audit-events` (Staff, `audit.read`) o Super por tenant. Generá eventos con mutaciones de tenant/roles/staff roles.
+Carpeta **Audit**: `GET /audit-events` (Staff, `audit.read`). Super no tiene nested: impersoná. Generá eventos con mutaciones de tenant/roles/staff roles.
 
-Carpeta **Members**: Staff `members.read` / `members.write` / `members.deactivate` (status). Estado de cuenta: `GET /members/:id/account` y `GET /me/account` (default `coverage=current`; `coverage=all` para historial completo). Admin seed los tiene.
+Carpeta **Members**: Staff `members.read` / `members.write` / `members.deactivate` (status). Ficha `GET /members/:id`. Estado de cuenta: `GET /members/:id/account` y `GET /me/account` (default `coverage=current`; `coverage=all` para historial completo). Admin seed los tiene.
 
 Carpeta **Sessions**: Staff `sessions.write`. Servicio `POR_SESIONES` + `instructorId` opcional (`userId` del Staff). Ampliar cupo: `PATCH .../sessions/:id/capacity`. Incluye reglas semanales con hora local y timezone.
 
@@ -60,11 +61,11 @@ Carpeta **Tenant settings**: `GET|PATCH /tenant-settings` (`tenant.settings.*`).
 
 Carpeta **Payment register**: `GET /payment-register/day` + `POST /payment-register/day/reconcile` (`cashier.operate`). `movements[]` = 1 fila por cobro o devolución de cart (misma grilla que reportes); arqueo 1/día; día en timezone BA.
 
-Carpeta **Mercado Pago**: cuenta `GET|PUT|DELETE /mercadopago/account` + test (`mp.connect`). Checkout pack: Member `POST /me/transaction-items/mp/checkout` y Staff `POST /members/:id/transaction-items/mp/checkout`. Drop-in MP: Member/Staff `.../drop-in-checkout` (reserva al APPROVED). Cart (Caja): Staff `POST /members/:id/transaction-items/mp/cart` con `items[]` → 1 link con el total (modelo MercadoLibre). Webhook `POST /webhooks/mercadopago` y `/simulate` si `MP_CHECKOUT_MODE=stub` (`transactionItemId` → `contractId`/`reservationId`; `transactionId` → carrito completo).
+Carpeta **Mercado Pago**: cuenta `GET|PUT|DELETE /mercadopago/account` + test (`mp.connect`). Caja: Staff `POST /members/:id/transaction-items/mp/cart` (`items[]` → 1 link) y `POST .../cash/cart` (APPROVED + comprobante). Webhook `POST /webhooks/payment?tenantId=` (sin JWT; body `type=payment` + `data.id`). El checkout suelto pack/drop-in (`.../mp/checkout` y `.../drop-in-checkout`) **ya no existe**.
 
 Carpeta **Refunds**: Member `POST /me/transaction-items/:transactionItemId/refund-requests` + `GET /me/refund-requests`. Staff `GET /refund-requests`, `POST /transactions/:transactionId/refunds` (lote) y `POST /transaction-items/:transactionItemId/refunds` (wrapper; `transaction_items.refund`; `motiveCode=doble_cobro` opcional).
 
-Carpeta **Receipts**: Member `GET /me/receipts`. Staff `GET /receipts/:id`, `GET /transactions/:transactionId/receipt` y `GET /members/:id/receipts` (`members.read`). Código `GB-000001`.
+Carpeta **Receipts**: Member `GET /me/receipts` y `GET /me/receipts/:id`. Staff `GET /receipts/:id`, `GET /transactions/:transactionId/receipt` y `GET /members/:id/receipts` (`members.read`). Código `GB-000001`. El cash cart guarda `createdReceiptId`.
 
 Carpeta **Member catalog**: Catálogo del afiliado (E9 mobile). Member `GET /me/sessions` (sesiones publicadas, default próximas), `GET /me/packs` (packs activos comprables), `GET /me/mp-status` (estado conexión MP: `{ connected: boolean }`).
 
@@ -82,5 +83,5 @@ Carpeta **Access OID4VP**: Staff `POST /access/oid4vp/request` (pestaña **Visua
 
 - `GET /auth/me` → `tenantId` para staff/member (del JWT).
 - Rutas de negocio futuras: `@RequireTenantAuth()` (Super → 403).
-- Rutas plataforma: `@RequireSuperAuth()` — `/api/tenants` (staff/member → 403).
+- Rutas plataforma: `@RequireSuperAuth()` — `/api/tenants` (CRUD), `GET /api/tenants/:id/staff`, `POST /api/tenants/:id/quark/provision`. Operar el gym: impersonate + rutas Staff.
 - Tenant suspendido: se corta en login/refresh, no en cada request.

@@ -8,8 +8,6 @@ import { TenantSettingsModule } from '../tenant-settings/tenant-settings.module'
 import { WaitlistModule } from '../waitlist/waitlist.module';
 import { ReservationsController } from './reservations.controller';
 import { ReservationsService } from './reservations.service';
-import { SuperReservationsController } from './super-reservations.controller';
-
 /**
  * Reservas con crédito, drop-in y cancelación (E4).
  *
@@ -27,7 +25,7 @@ import { SuperReservationsController } from './super-reservations.controller';
     SessionsModule,
     forwardRef(() => PaymentModule),
   ],
-  controllers: [ReservationsController, SuperReservationsController],
+  controllers: [ReservationsController],
   providers: [ReservationsService],
   exports: [ReservationsService],
 })

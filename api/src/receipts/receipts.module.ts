@@ -3,14 +3,12 @@ import { AuthModule } from '../auth/auth.module';
 import { RolesModule } from '../roles/roles.module';
 import { ReceiptsController } from './receipts.controller';
 import { ReceiptsService } from './receipts.service';
-import { SuperReceiptsController } from './super-receipts.controller';
-
 /**
  * Comprobantes internos (RN-PAG-009).
  */
 @Module({
   imports: [AuthModule, RolesModule],
-  controllers: [ReceiptsController, SuperReceiptsController],
+  controllers: [ReceiptsController],
   providers: [ReceiptsService],
   exports: [ReceiptsService],
 })

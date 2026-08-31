@@ -98,7 +98,7 @@ CORS: la API acepta orígenes de `CORS_ORIGIN` (default `http://localhost:3000`)
 ### 4.1 Modelo
 
 - **Tenant = Gimnasio** (row-level isolation con `tenant_id` en todas las tablas de negocio).
-- Super Admin opera fuera del scope de un gym (sin impersonación en MVP).
+- Super Admin opera fuera del scope de un gym (CRUD de tenants). Para operar un gym: `POST /auth/super/impersonate` (token Staff temporal) + rutas Staff.
 - Staff/afiliado: `tenantId` del **JWT** (`TenantGuard` + `@CurrentTenant()` / `@RequireTenantAuth()`). Nunca confiar en body (RN-TEN-001).
 - Tenant **suspendido**: se corta en **login/refresh**; el access JWT puede vivir hasta su TTL (~15 min).
 
@@ -133,8 +133,8 @@ Login por perfil → access JWT + refresh (Postgres)
 También: `POST /api/auth/refresh`, `POST /api/auth/logout`, `GET /api/auth/me` (incluye `tenantId` para staff/member), `POST /api/auth/change-password` (JWT; verifica la actual con bcrypt y revoca todos los refresh tokens del usuario → obliga a re-login).
 
 Rutas de negocio del gym: `@RequireTenantAuth()` + `@CurrentTenant()` (módulo `tenant/`).
-Rutas de plataforma (Super): `@RequireSuperAuth()` — `GET|POST|PATCH /api/tenants` (create seedéa branch + roles Admin/Profesor; catálogo global `permissions`).
-Autorización fina staff: `@RequirePermission('code')` (unión de roles; permisos `dangerous` = flags RN-ROL-007). Super bypass en rutas Super.
+Rutas de plataforma (Super): `@RequireSuperAuth()` — CRUD `/api/tenants`, `GET /api/tenants/:id/staff`, `POST /api/tenants/:id/quark/provision`. Operar un gym = `POST /api/auth/super/impersonate` + rutas Staff (no hay espejos nested).
+Autorización fina staff: `@RequirePermission('code')` (unión de roles; permisos `dangerous` = flags RN-ROL-007).
 
 Afiliado y staff **nunca** comparten el mismo perfil de sesión (RN-ROL-005).
 
@@ -286,7 +286,7 @@ Canales futuros (WhatsApp/Push) = nuevos `ChannelSender` sin tocar el dispatcher
 
 - Append-only `audit_events` (`EventoAuditoria`).
 - Emisión desde servicios: create/update tenant, create/update roles, assign staff roles (RN-ROL-008).
-- Lectura: Staff `GET /api/audit-events` (`audit.read`); Super `GET /api/tenants/:tenantId/audit-events`.
+- Lectura: Staff `GET /api/audit-events` (`audit.read`). Super no tiene nested: impersoná y usá la misma ruta.
 - Acciones futuras (pase manual, devoluciones, baja afiliado) reutilizan `AuditService.record`.
 
 ---
@@ -298,27 +298,27 @@ Prefijo sugerido: `/api/v1`.
 | Área | Endpoints / CU relacionados |
 |------|------------------------------|
 | Auth | `POST /auth/login`, refresh |
-| Super | `GET|POST /tenants`, `GET|PATCH /tenants/:id` (nombre y/o `status` ACTIVE\|SUSPENDED) |
-| Afiliados | CRUD `/tenants/:tid/members` |
+| Super | CRUD `/tenants`, `GET /tenants/:id/staff`, `POST /auth/super/impersonate`, `POST /tenants/:id/quark/provision`. Operar el gym = impersonar (rutas Staff). |
+| Afiliados | CRUD `/members` (Staff JWT) |
 | Catálogo | `/services`, `/packs`, `/sessions`, `/recurrence-rules` |
 | Reservas | `/sessions/:id/reservations`, waitlist |
 | Billing | `/transaction-items/mp/checkout`, `/transaction-items/cash`, webhooks `/webhooks/mercadopago` |
 | Access | `/access/oid4vp/request`, `/access/oid4vp/session/:id`, `/access-attempts`, manual-pass |
 | Rutinas | `/exercises`, `/routine-templates`, `/assigned-routines` |
 | Notif | `/notifications`, `/notification-templates`, preferences |
-| Afiliados | Super/Staff CRUD members + PATCH status (`members.deactivate`); estado de cuenta `GET /members/:id/account` / `GET /me/account?coverage=current\|all` |
-| Sesiones | Staff `GET|POST|PATCH /sessions`, `PATCH /sessions/:id/capacity` (ampliar cupo) + `/session-recurrence-rules` (`sessions.write`); Super mirrors bajo `/tenants/:tid/...` |
+| Afiliados | Staff CRUD members + PATCH status (`members.deactivate`); estado de cuenta `GET /members/:id/account` / `GET /me/account?coverage=current\|all` |
+| Sesiones | Staff `GET|POST|PATCH /sessions`, `PATCH /sessions/:id/capacity` (ampliar cupo) + `/session-recurrence-rules` (`sessions.write`) |
 | Reservas | Member `/me/reservations` (crédito) + cancel; Staff `/members/:id/reservations` (crédito o drop-in stub/caja) + `/reservations/:id/status` (`reservations.write`) |
 | Waitlist | Member `/me/waitlist`; Staff `/members/:id/waitlist`, `/sessions/:id/waitlist` (`reservations.write`; query `status` / `allStatuses`); promoción AUTO al liberar cupo |
-| Settings | Staff `GET|PATCH /tenant-settings` (`tenant.settings.*`; horas cancelación, `waitlistMode`, `allowLateSessionEntry`); Super `/tenants/:tid/settings` |
-| Caja | Staff `GET /payment-register/day`, `POST /payment-register/day/reconcile` (`cashier.operate`); Super `/tenants/:tid/cash-register/...`; ingresos = cart; egresos = una ejecución de devolución |
-| Mercado Pago | Staff `GET|PUT|DELETE /mercadopago/account`, `POST .../test` (`mp.connect`); Member `POST /me/transaction-items/mp/checkout`; webhook `POST /webhooks/mercadopago`; Super `/tenants/:tid/mercadopago/account` |
+| Settings | Staff `GET|PATCH /tenant-settings` (`tenant.settings.*`; horas cancelación, `waitlistMode`, `allowLateSessionEntry`) |
+| Caja | Staff `GET /payment-register/day`, `POST /payment-register/day/reconcile` (`cashier.operate`); ingresos = cart; egresos = una ejecución de devolución |
+| Mercado Pago | Staff `GET|PUT|DELETE /mercadopago/account`, `POST .../test` (`mp.connect`); webhook `POST /webhooks/payment`; cart Staff `POST /members/:id/transaction-items/mp/cart` |
 | Devoluciones | Member `POST /me/transaction-items/:id/refund-requests`, `GET /me/refund-requests`; Staff `GET /refund-requests`, `POST /transactions/:id/refunds` (lote) y `POST /transaction-items/:id/refunds` (wrapper) (`transaction_items.refund`) |
 | Comprobantes | Member `/me/receipts`; Staff `GET /receipts/:id`, `GET /transactions/:id/receipt`, `GET /members/:id/receipts` (`members.read`); `lines[]` (pack → contrato/vigencia + `services[]`; drop-in → reserva/horario) |
-| Catálogo | Super/Staff CRUD services + packs (`catalog.write`; kind inferido; `creditsExpireAt`) |
+| Catálogo | Staff CRUD services + packs (`catalog.write`; kind inferido; `creditsExpireAt`) |
 | Contrataciones | Staff `POST /members/:id/contracts` (pago stub APPROVED); `PATCH /contracts/:id/status` → `CANCELLED` (pierde derechos, RN-SER-009); Member `GET /me/contracts` |
-| Roles | Super/Staff list-get-create-patch roles; `PUT .../staff/:id/roles`; Staff `GET /me/permissions` (UI nav) |
-| Auditoría | Staff `/auditoria` → `GET /audit-events` (`audit.read`); Super mirror; escritura en mutaciones |
+| Roles | Staff list-get-create-patch roles; `PUT /staff/:id/roles`; `GET /me/permissions` (UI nav). Super: `GET /tenants/:id/staff` + impersonate |
+| Auditoría | Staff `/auditoria` → `GET /audit-events` (`audit.read`); Super impersona; escritura en mutaciones |
 | Reportes | Staff `GET /reports/summary?from&to` (`reports.read`); ingresos $ + devoluciones + snapshot; `transactions[]` misma fila que caja |
 | Caja | `/cash/day`, `/cash/close` |
 

@@ -6,7 +6,6 @@ import { RolesModule } from '../roles/roles.module';
 import { PaymentModule } from '../payment/payment.module';
 import { ContractsController } from './contracts.controller';
 import { ContractsService } from './contracts.service';
-import { SuperContractsController } from './super-contracts.controller';
 
 /**
  * Contrataciones (CU-CON-001).
@@ -23,7 +22,7 @@ import { SuperContractsController } from './super-contracts.controller';
     forwardRef(() => PaymentModule),
     KuatiaModule,
   ],
-  controllers: [ContractsController, SuperContractsController],
+  controllers: [ContractsController],
   providers: [ContractsService],
   exports: [ContractsService],
 })

@@ -5,14 +5,12 @@ import { KuatiaModule } from '../kuatia/kuatia.module';
 import { RolesModule } from '../roles/roles.module';
 import { PacksController } from './packs.controller';
 import { PacksService } from './packs.service';
-import { SuperPacksController } from './super-packs.controller';
-
 /**
  * Catálogo de packs (componentes + sync Quark OID4VCI).
  */
 @Module({
   imports: [AuthModule, RolesModule, AuditModule, KuatiaModule],
-  controllers: [PacksController, SuperPacksController],
+  controllers: [PacksController],
   providers: [PacksService],
   exports: [PacksService],
 })

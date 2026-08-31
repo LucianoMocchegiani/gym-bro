@@ -3,7 +3,6 @@ import { AuditModule } from '../audit/audit.module';
 import { AuthModule } from '../auth/auth.module';
 import { RolesModule } from '../roles/roles.module';
 import { TenantSettingsModule } from '../tenant-settings/tenant-settings.module';
-import { SuperWaitlistController } from './super-waitlist.controller';
 import { WaitlistController } from './waitlist.controller';
 import { WaitlistService } from './waitlist.service';
 
@@ -12,7 +11,7 @@ import { WaitlistService } from './waitlist.service';
  */
 @Module({
   imports: [AuthModule, RolesModule, AuditModule, TenantSettingsModule],
-  controllers: [WaitlistController, SuperWaitlistController],
+  controllers: [WaitlistController],
   providers: [WaitlistService],
   exports: [WaitlistService],
 })

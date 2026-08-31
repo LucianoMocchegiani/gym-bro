@@ -8,8 +8,6 @@ import { RolesModule } from '../roles/roles.module';
 import { WaitlistModule } from '../waitlist/waitlist.module';
 import { RefundsController } from './refunds.controller';
 import { RefundsService } from './refunds.service';
-import { SuperRefundsController } from './super-refunds.controller';
-
 /**
  * Devoluciones y reembolsos (E5 / CU-PAG-004..007).
  */
@@ -23,7 +21,7 @@ import { SuperRefundsController } from './super-refunds.controller';
     ReceiptsModule,
     WaitlistModule,
   ],
-  controllers: [RefundsController, SuperRefundsController],
+  controllers: [RefundsController],
   providers: [RefundsService],
   exports: [RefundsService],
 })

@@ -496,7 +496,7 @@ Afiliado (socio). Perfil separado del staff (RN-ROL-005). Email único **por ten
 
 **Unique:** `(tenant_id, email)`, `(tenant_id, document)`.
 
-API Staff: `GET|POST|PATCH /api/members`, `PATCH /api/members/:id/status` (`members.deactivate`, dangerous). Super: `/api/tenants/:tenantId/members`.
+API Staff: `GET|POST|PATCH /api/members`, `PATCH /api/members/:id/status` (`members.deactivate`, dangerous).
 
 ---
 
@@ -534,7 +534,7 @@ EventoAuditoria append-only (RN-ROL-008 / CU-ROL-007). Sin UPDATE/DELETE de nego
 | `before` / `after` | jsonb nullable | snapshot |
 | `created_at` | timestamptz | |
 
-API: Staff `GET /api/audit-events?limit=&action=` (`audit.read`); Super `GET /api/tenants/:tenantId/audit-events`. Escritura E1 desde servicios de tenants/roles/staff.
+API: Staff `GET /api/audit-events?limit=&action=` (`audit.read`). Super impersona y usa la misma ruta. Escritura E1 desde servicios de tenants/roles/staff.
 
 ---
 
@@ -555,7 +555,7 @@ Servicio del catálogo comercial (RN-SER-001 / CU-SER-001).
 | `branch_id` | uuid FK → `branches` nullable | SET NULL |
 | `created_at` / `updated_at` | timestamptz | |
 
-API Staff: `GET|POST|PATCH /api/services` (`catalog.write`). Super: `/api/tenants/:tenantId/services`.
+API Staff: `GET|POST|PATCH /api/services` (`catalog.write`).
 
 ---
 
@@ -580,7 +580,7 @@ Pack vendible (CU-SER-002). `price` = pesos enteros ARS. `kind` (`ACCESS`|`CREDI
 | `kuatia_last_error` | text nullable | soft-fail de sync Kuatia |
 | `created_at` / `updated_at` | timestamptz | |
 
-Al create/update de pack (API Staff/Super) se hace `PATCH` metadata del issuer Kuatia compartido (soft-fail).
+Al create/update de pack (API Staff) se hace `PATCH` metadata del issuer Kuatia compartido (soft-fail).
 
 ### 4.14 `pack_components`
 
@@ -593,7 +593,7 @@ Al create/update de pack (API Staff/Super) se hace `PATCH` metadata del issuer K
 
 **Unique:** `(pack_id, service_id)`.
 
-API Staff: `GET|POST|PATCH /api/packs`. Super: `/api/tenants/:tenantId/packs`.
+API Staff: `GET|POST|PATCH /api/packs`.
 
 ---
 
@@ -643,7 +643,7 @@ Movimiento de caja del día (CU-PAG-002 / RN-PAG-007).
 
 **Categoría (grilla Cierre/Reportes):** no hay columna. `LedgerCategory` (`SALE` / `REFUND`) se calcula en API: `OUTCOME` → devolución, resto → venta. Post-MVP (compra, gastos): persistir categoría en esta tabla; `kind` no alcanza.
 
-API: Staff `GET /api/cash-register/day?date=YYYY-MM-DD`, `POST /api/cash-register/day/reconcile` (`cashier.operate`); Super `/api/tenants/:tid/cash-register/...`.
+API: Staff `GET /api/payment-register/day?date=YYYY-MM-DD`, `POST /api/payment-register/day/reconcile` (`cashier.operate`).
 
 ### 4.15c `cash_reconciliations`
 
@@ -698,7 +698,7 @@ Cuenta Mercado Pago del gym (CU-PAG-006 / RN-PAG-001). 1:1 con tenant.
 | `last_validated_at` / `last_validation_ok` | timestamptz / bool nullable | |
 | `created_at` / `updated_at` | timestamptz | |
 
-API Staff: `GET|PUT|DELETE /api/mercadopago/account`, `POST .../test` (`mp.connect`). Super: `/api/tenants/:tenantId/mercadopago/account`. Env: `MP_CREDENTIALS_SECRET`, `MP_ACCOUNT_VALIDATE_MODE=live|stub`.
+API Staff: `GET|PUT|DELETE /api/mercadopago/account`, `POST .../test` (`mp.connect`). Env: `MP_CREDENTIALS_SECRET`, `MP_ACCOUNT_VALIDATE_MODE=live|stub`.
 
 ### 4.15f `transaction_items` (campos MP)
 
@@ -856,7 +856,7 @@ Regla semanal que materializa sesiones futuras (CU-SER-004 / RN-SER-012).
 | `capacity` | int | ≥ 1 |
 | `active` | boolean | Desactivar no altera sesiones generadas |
 
-API Staff: `GET|POST /api/session-recurrence-rules`, `PATCH /api/session-recurrence-rules/:id/status`. Super mirror bajo `/api/tenants/:tenantId/...`.
+API Staff: `GET|POST /api/session-recurrence-rules`, `PATCH /api/session-recurrence-rules/:id/status`.
 
 ### 4.19 `sessions`
 
@@ -876,7 +876,7 @@ Sesión puntual de servicio `POR_SESIONES` (CU-SER-003 / RN-SER-010..013).
 | `status` | `SessionStatus` | create → `PUBLISHED` |
 | `created_at` / `updated_at` | timestamptz | |
 
-API Staff: `GET|POST|PATCH /api/sessions`, `PATCH /api/sessions/:id/capacity` (`sessions.write`). Super: `/api/tenants/:tenantId/sessions`.
+API Staff: `GET|POST|PATCH /api/sessions`, `PATCH /api/sessions/:id/capacity` (`sessions.write`).
 
 ### 4.20 `reservations`
 
@@ -912,7 +912,7 @@ Config operativa 1:1 con tenant (RN-TEN-005).
 | `multi_entry_max_per_day` | int | default 1; tope si multi habilitado |
 | `created_at` / `updated_at` | timestamptz | |
 
-API Staff: `GET|PATCH /api/tenant-settings` (`tenant.settings.read/write`). Super: `/api/tenants/:tenantId/settings`. Create tenant + seed crean el row.
+API Staff: `GET|PATCH /api/tenant-settings` (`tenant.settings.read/write`). Create tenant + seed crean el row.
 
 ### 4.22 `waitlist_entries`
 
@@ -978,9 +978,9 @@ Detalle: [13-setup-db-desde-cero.md](./13-setup-db-desde-cero.md) · [credencial
 
 Aún no hay tablas Prisma para (ver [03](./03-modelo-dominio.md) / roadmap): **ledger de deuda de pagos**, **rutinas**, **notificaciones**, etc. La tolerancia de acceso usa atraso desde `endsAt` del contrato libre (sin tabla aparte). Se documentan aquí **al implementarlas**.
 
-**Staff ↔ roles:** tabla `staff_user_roles`. API: Super `PUT /tenants/:tenantId/staff/:staffId/roles`, Staff `PUT /staff/:staffId/roles`. Create tenant exige owner y le asigna rol Admin.
+**Staff ↔ roles:** tabla `staff_user_roles`. API: Staff `PUT /staff/:staffId/roles`. Super lista staff con `GET /tenants/:tenantId/staff` e impersona. Create tenant exige owner y le asigna rol Admin.
 
-**Auditoría:** tabla `audit_events` (RN-ROL-008). Lectura Staff `GET /audit-events` (`audit.read`); Super `GET /tenants/:tenantId/audit-events`. Escritura desde dominios cableados (tenant, roles, staff, catálogo, contratos, reservas, caja, MP, acceso, etc.).
+**Auditoría:** tabla `audit_events` (RN-ROL-008). Lectura Staff `GET /audit-events` (`audit.read`); Super impersona. Escritura desde dominios cableados (tenant, roles, staff, catálogo, contratos, reservas, caja, MP, acceso, etc.).
 
 ---
 

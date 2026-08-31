@@ -16,7 +16,6 @@ import { HttpMpAccountAdapter } from './http-mp-account.adapter';
 import { PaymentController } from './payment.controller';
 import { PaymentWebhookController } from './payment-webhook.controller';
 import { MercadoPagoAccountController } from './mercadopago-account.controller';
-import { SuperMercadoPagoAccountController } from './super-mercadopago-account.controller';
 
 @Module({
   imports: [
@@ -32,7 +31,6 @@ import { SuperMercadoPagoAccountController } from './super-mercadopago-account.c
     PaymentController,
     PaymentWebhookController,
     MercadoPagoAccountController,
-    SuperMercadoPagoAccountController,
   ],
   providers: [
     TransactionService,

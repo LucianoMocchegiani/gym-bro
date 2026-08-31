@@ -2,7 +2,6 @@ import { Module } from '@nestjs/common';
 import { AuditModule } from '../audit/audit.module';
 import { AuthModule } from '../auth/auth.module';
 import { RolesModule } from '../roles/roles.module';
-import { SuperTenantSettingsController } from './super-tenant-settings.controller';
 import { TenantSettingsController } from './tenant-settings.controller';
 import { TenantSettingsService } from './tenant-settings.service';
 
@@ -11,7 +10,7 @@ import { TenantSettingsService } from './tenant-settings.service';
  */
 @Module({
   imports: [AuthModule, RolesModule, AuditModule],
-  controllers: [TenantSettingsController, SuperTenantSettingsController],
+  controllers: [TenantSettingsController],
   providers: [TenantSettingsService],
   exports: [TenantSettingsService],
 })

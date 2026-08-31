@@ -149,7 +149,9 @@ export function deleteStaff(staffId: string): Promise<{ deleted: true }> {
 }
 
 /**
- * Lista staff de un tenant (Super Admin).
+ * Lista staff de un tenant (Super Admin, para impersonate).
+ *
+ * @remarks Único nested Super de negocio. Alta/ficha/roles/baja: impersonar.
  */
 export function listStaffByTenant(
   tenantId: string,

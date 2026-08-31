@@ -3,14 +3,12 @@ import { AuthModule } from '../auth/auth.module';
 import { RolesModule } from '../roles/roles.module';
 import { AuditController } from './audit.controller';
 import { AuditService } from './audit.service';
-import { SuperAuditController } from './super-audit.controller';
-
 /**
- * EventoAuditoria: escritura desde servicios + GET Super/Staff.
+ * EventoAuditoria: escritura desde servicios + GET Staff.
  */
 @Module({
   imports: [AuthModule, forwardRef(() => RolesModule)],
-  controllers: [AuditController, SuperAuditController],
+  controllers: [AuditController],
   providers: [AuditService],
   exports: [AuditService],
 })

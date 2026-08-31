@@ -7,7 +7,7 @@ import { StaffService } from './staff.service';
 import { SuperStaffController } from './super-staff.controller';
 
 /**
- * Staff del gym: listado, alta y asignación multi-rol.
+ * Staff del gym (Staff JWT) + listado Super para impersonate.
  */
 @Module({
   imports: [AuthModule, RolesModule, AuditModule],
