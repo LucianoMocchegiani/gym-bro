@@ -15,7 +15,7 @@
 - Concepto: mensualidad/pack/drop-in, o **carrito de Caja** (pack + drop-in en un solo link).
 
 **Flujo principal:**
-1. Actor inicia cobro con `idempotencyKey` de negocio (afiliado self-service o Staff en Admin `/caja` con medio Mercado Pago: pack, drop-in, o **carrito** con `items[]`).
+1. Actor inicia cobro con `idempotencyKey` de negocio (afiliado self-service en la app con `POST /me/transaction-items/mp/cart`, o Staff en Admin `/caja` con medio Mercado Pago: pack, drop-in, o **carrito** con `items[]`).
 2. Sistema crea Pago `pendiente` (carrito: `transactions` + un TransactionItem por ítem, todos con el mismo `transaction_id`).
 3. Muestra el link de checkout MP del gym (Staff: copiar u abrir; **sin redirect automático**). Carrito → **un solo link** con el total. Los ítems de la Preference usan el mismo copy que el comprobante GymBro: pack = nombre + servicios/créditos; drop-in = servicio + sede + horario (la vigencia del contrato aún no existe al crear el link).
 4. Webhook/confirmación MP → sistema marca `aprobado` o `rechazado` (idempotente; carrito: `externalReference` = `cart_id`).

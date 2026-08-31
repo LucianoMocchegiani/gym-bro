@@ -9,12 +9,14 @@ import 'features/auth/auth_controller.dart';
 import 'features/auth/auth_repository.dart';
 import 'features/auth/login_screen.dart';
 import 'features/auth/session_store.dart';
+import 'features/cart/member_cart_controller.dart';
 import 'features/credentials/credential_offers_repository.dart';
 import 'features/credentials/member_wallet_service.dart';
 import 'features/sessions/sessions_repository.dart';
 import 'features/shell/member_shell.dart';
 import 'features/store/store_repository.dart';
 import 'features/store/refund_repository.dart';
+import 'features/store/receipts_repository.dart';
 
 /// Punto de entrada de la app afiliado GymBro.
 void main() {
@@ -42,7 +44,9 @@ class _GymBroMemberAppState extends State<GymBroMemberApp> {
   late final SessionsRepository _sessionsRepo;
   late final StoreRepository _storeRepo;
   late final RefundRepository _refundRepo;
+  late final ReceiptsRepository _receiptsRepo;
   late final MemberWalletService _wallet;
+  late final MemberCartController _cart;
 
   @override
   void initState() {
@@ -56,9 +60,22 @@ class _GymBroMemberAppState extends State<GymBroMemberApp> {
     _sessionsRepo = SessionsRepository(_api);
     _storeRepo = StoreRepository(_api);
     _refundRepo = RefundRepository(_api);
+    _receiptsRepo = ReceiptsRepository(_api);
     _wallet = MemberWalletService();
+    _cart = MemberCartController();
     _auth = AuthController(auth: _authRepo, api: _api, wallet: _wallet);
+    _auth.addListener(_clearCartOnLogout);
     _bootstrap();
+  }
+
+  void _clearCartOnLogout() {
+    if (!_auth.isAuthenticated) _cart.clear();
+  }
+
+  @override
+  void dispose() {
+    _auth.removeListener(_clearCartOnLogout);
+    super.dispose();
   }
 
   Future<void> _bootstrap() async {
@@ -76,7 +93,9 @@ class _GymBroMemberAppState extends State<GymBroMemberApp> {
         Provider.value(value: _sessionsRepo),
         Provider.value(value: _storeRepo),
         Provider.value(value: _refundRepo),
+        Provider.value(value: _receiptsRepo),
         ChangeNotifierProvider.value(value: _wallet),
+        ChangeNotifierProvider.value(value: _cart),
       ],
       child: Consumer2<ThemeController, AuthController>(
         builder: (context, theme, auth, _) {

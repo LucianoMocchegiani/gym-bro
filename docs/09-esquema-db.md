@@ -704,7 +704,7 @@ API Staff: `GET|PUT|DELETE /api/mercadopago/account`, `POST .../test` (`mp.conne
 
 Los campos Preference / `mp_payment_id` / URLs están en la tabla 4.15. El **cart actual** guarda Preference y `mp_payment_id` en `transactions`; los ítems del carrito no duplican el payment id (el UK de `transaction_items.mp_payment_id` queda para cobros ítem-suelto legacy).
 
-API Staff: `POST /api/members/:memberId/transaction-items/mp/cart` y `.../cash/cart`. Webhook: `POST /api/webhooks/payment?tenantId=`. Al `APPROVED`: pack → contrato; drop-in → reserva `DROP_IN` + un recibo **por Transaction**.
+API: Member `POST /api/me/transaction-items/mp/cart`; Staff `POST /api/members/:memberId/transaction-items/mp/cart` y `.../cash/cart`. Webhook: `POST /api/webhooks/payment?tenantId=`. Al `APPROVED`: pack → contrato; drop-in → reserva `DROP_IN` + un recibo **por Transaction**.
 
 ### 4.15g `transactions` + `transaction_items.transaction_id`
 
@@ -725,7 +725,7 @@ Carrito de Caja (CASH y MP, CU-PAG-001 / modelo MercadoLibre): 1 cart → N íte
 
 Cada `transaction_item` tiene `transaction_id` **obligatorio**. Devolución de carrito MP: `POST /transactions/:id/refunds` (refund parcial o del saldo contra `transactions.mp_payment_id`).
 
-API Staff: `POST /api/members/:memberId/transaction-items/mp/cart` y `.../cash/cart` (`members.write`).
+API: Member `POST /api/me/transaction-items/mp/cart` (JWT Member); Staff `POST /api/members/:memberId/transaction-items/mp/cart` y `.../cash/cart` (`members.write`).
 
 ### 4.15h `refund_requests` + refund en `transaction_items`
 

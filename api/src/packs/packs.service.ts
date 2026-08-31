@@ -127,6 +127,7 @@ export class PacksService {
       id: pack.id,
       name: pack.name,
       description: pack.description,
+      imageUrl: pack.imageUrl ?? null,
       price: pack.price,
       billingPeriod: pack.billingPeriod,
       creditsExpireAt: pack.creditsExpireAt,

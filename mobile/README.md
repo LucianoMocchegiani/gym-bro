@@ -14,13 +14,13 @@ Flutter (Material 3). Estilos alineados al Admin web: tema oscuro/lima acid + cl
 Default:
 
 ```text
-https://api-gymbro.pruebasaproduccunon.uno
+https://api.faciliter.xyz
 ```
 
 Override:
 
 ```powershell
-flutter run --dart-define=API_BASE_URL=https://api-gymbro.pruebasaproduccunon.uno
+flutter run --dart-define=API_BASE_URL=https://api.faciliter.xyz
 ```
 
 ## Correr en tu Android (USB)
@@ -45,8 +45,8 @@ flutter run
 - Login afiliado (`tenantSlug`)
 - **3 hubs:** Inicio · Acceso · Ajustes
   - **Inicio:** estado breve + atajos Sesiones / Tienda
-    - **Sesiones:** catálogo de clases publicadas (sede, horario, instructor, cupos), reservar con crédito, drop-in MP, cancelar reserva, lista de espera (join/leave)
-    - **Tienda:** placeholder (pendiente packs + MP)
+    - **Sesiones:** calendario (el día abre las clases) + Mis clases (misma card). Carrito + ⋮ Historial.
+    - **Tienda:** catálogo Packs | Sesiones (card única + fotos) + carrito MP. Menú ⋮ Historial (comprobante por transacción).
   - **Acceso:** Escanear (default, cámara) · Credenciales (pendientes de aceptación máx. ½ pantalla + VCs wallet)
   - **Ajustes:** cuenta, reiniciar wallet SSI, tema, API, logout (con confirmación)
 - Cards SSI estilo quark-wallet + detalle expandible (look GymBro); eliminar VC una a una con confirmación
@@ -54,6 +54,6 @@ flutter run
 - Diálogo de carga (`runWithLoadingDialog`) mientras terminan esas acciones y al aceptar offers
 - Sin stub / `stub-venue` en la app
 
-Issuer público: `https://issuer.pruebasaproduccunon.uno`.
+Issuer público: `https://issuer.kuatia.xyz`.
 
-Pendiente: Tienda (packs + MP), devolución, rutinas, avisos; puerta Admin web stub hasta OID4VP gym.
+Pendiente: Historial fino (comprobante + listado solicitudes), rutinas, avisos.

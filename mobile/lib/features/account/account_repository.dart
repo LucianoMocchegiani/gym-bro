@@ -1,42 +1,5 @@
 import '../../core/network/api_client.dart';
 
-/// Ítem de cobro reciente del afiliado (`GET /me/account`).
-///
-/// La API expone `recentTransactionItems` (un cobro = un `transaction_item`).
-/// Compatible con `POST .../refund-requests` (CU-PAG-004).
-class AccountRecentTransactionItem {
-  /// Crea el modelo.
-  AccountRecentTransactionItem({
-    required this.id,
-    required this.amount,
-    required this.status,
-    required this.method,
-    required this.createdAt,
-    this.packId,
-  });
-
-  final String id;
-  final int amount;
-  final String status;
-  final String method;
-  final DateTime createdAt;
-  final String? packId;
-
-  factory AccountRecentTransactionItem.fromJson(Map<String, dynamic> json) {
-    return AccountRecentTransactionItem(
-      id: json['id'] as String,
-      amount: (json['amount'] as num?)?.toInt() ?? 0,
-      status: json['status'] as String? ?? '',
-      method: json['method'] as String? ?? '',
-      packId: json['packId'] as String?,
-      createdAt: DateTime.parse(json['createdAt'] as String),
-    );
-  }
-
-  /// ¿Se puede solicitar devolución? (CU-PAG-004; ítem APPROVED).
-  bool get canRefund => status == 'APPROVED';
-}
-
 /// Estado de cuenta del afiliado (CU-AFI-005).
 class MemberAccount {
   /// Crea el modelo.
@@ -45,14 +8,12 @@ class MemberAccount {
     required this.debtAmount,
     required this.contracts,
     required this.reservations,
-    required this.recentTransactionItems,
   });
 
   final String debtStatus;
   final num debtAmount;
   final List<AccountContract> contracts;
   final List<AccountReservation> reservations;
-  final List<AccountRecentTransactionItem> recentTransactionItems;
 
   /// Contratos vigentes hoy (la API con `coverage=current` ya filtra en DB).
   List<AccountContract> get activeContracts => contracts;
@@ -67,24 +28,11 @@ class MemberAccount {
         .whereType<Map>()
         .map((e) => AccountReservation.fromJson(Map<String, dynamic>.from(e)))
         .toList();
-    final rawItems =
-        json['recentTransactionItems'] as List<dynamic>? ??
-        json['recentPayments'] as List<dynamic>? ??
-        const [];
-    final recentTransactionItems = rawItems
-        .whereType<Map>()
-        .map(
-          (e) => AccountRecentTransactionItem.fromJson(
-            Map<String, dynamic>.from(e),
-          ),
-        )
-        .toList();
     return MemberAccount(
       debtStatus: debt['status'] as String? ?? 'AL_DIA',
       debtAmount: debt['amount'] as num? ?? 0,
       contracts: contracts,
       reservations: reservations,
-      recentTransactionItems: recentTransactionItems,
     );
   }
 }
@@ -92,17 +40,21 @@ class MemberAccount {
 /// Saldo de créditos por servicio dentro de un pack.
 class AccountCreditBalance {
   AccountCreditBalance({
+    required this.serviceId,
     required this.serviceName,
     required this.remaining,
     required this.initialAmount,
   });
 
+  /// Servicio del saldo (`GET /me/account` → `creditBalances.serviceId`).
+  final String serviceId;
   final String serviceName;
   final int remaining;
   final int initialAmount;
 
   factory AccountCreditBalance.fromJson(Map<String, dynamic> json) {
     return AccountCreditBalance(
+      serviceId: json['serviceId'] as String? ?? '',
       serviceName: json['serviceName'] as String? ?? 'Servicio',
       remaining: json['remaining'] as int? ?? 0,
       initialAmount: json['initialAmount'] as int? ?? 0,
@@ -179,21 +131,6 @@ class AccountRepository {
     return _api.getJson(
       '/api/me/account?coverage=current',
       parse: (json) => MemberAccount.fromJson(json! as Map<String, dynamic>),
-    );
-  }
-
-  /// Trae historial completo de contratos (vigentes + vencidos).
-  Future<List<AccountContract>> fetchMineAll() {
-    return _api.getJson<List<AccountContract>>(
-      '/api/me/account?coverage=all',
-      parse: (json) {
-        final data = json! as Map<String, dynamic>;
-        final contracts = (data['contracts'] as List<dynamic>? ?? [])
-            .whereType<Map>()
-            .map((e) => AccountContract.fromJson(Map<String, dynamic>.from(e)))
-            .toList();
-        return contracts;
-      },
     );
   }
 }

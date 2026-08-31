@@ -3578,7 +3578,7 @@
         },
         {
             "name": "Mercado Pago",
-            "description": "CU-PAG-001/006. Cuenta `GET|PUT|DELETE /mercadopago/account` + test (`mp.connect`). Caja: Staff `POST /members/:id/transaction-items/mp/cart` (1 Preference) y `.../cash/cart` (APPROVED + receipt). Webhook `POST /webhooks/payment?tenantId=` (sin JWT). El checkout suelto pack/drop-in ya no existe; el afiliado no tiene cart MP en API.",
+            "description": "CU-PAG-001/006. Cuenta `GET|PUT|DELETE /mercadopago/account` + test (`mp.connect`). Caja: Staff `POST /members/:id/transaction-items/mp/cart` (1 Preference) y `.../cash/cart` (APPROVED + receipt). Afiliado: `POST /me/transaction-items/mp/cart` (mismo body; JWT Member). Webhook `POST /webhooks/payment?tenantId=` (sin JWT). El checkout suelto pack/drop-in ya no existe.",
             "item": [
                 {
                     "name": "Staff GET MP account status",
@@ -3687,6 +3687,43 @@
                         },
                         "url": "{{baseUrl}}/api/members/{{createdMemberId}}/transaction-items/mp/cart",
                         "description": "members.write. Caja: 1 preference con items[] â†’ 1 link con el total (modelo MercadoLibre). Requiere pack activo y sesiÃ³n publicada con dropInPrice."
+                    }
+                },
+                {
+                    "name": "Member POST MP cart checkout",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('status 201', () => pm.response.to.have.status(201));",
+                                    "const body = pm.response.json();",
+                                    "pm.test('pending', () => pm.expect(body.status).to.eql('PENDING'));",
+                                    "pm.test('one checkoutUrl', () => pm.expect(body.checkoutUrl).to.be.a('string'));",
+                                    "pm.test('lines array', () => pm.expect(body.lines).to.be.an('array'));",
+                                    "if (body.transactionId) {",
+                                    "  pm.collectionVariables.set('mpCartId', body.transactionId);",
+                                    "  pm.environment.set('mpCartId', body.transactionId);",
+                                    "}"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"items\": [\n    { \"kind\": \"PACK\", \"id\": \"{{createdPackId}}\" },\n    { \"kind\": \"DROP_IN\", \"id\": \"{{createdSessionId}}\" }\n  ],\n  \"idempotencyKey\": \"mp-member-cart-{{$timestamp}}\"\n}"
+                        },
+                        "url": "{{baseUrl}}/api/me/transaction-items/mp/cart",
+                        "description": "JWT Member (login afiliado). Mismo body que Caja. Staff -> 403. Pack activo y/o sesion publicada con dropInPrice."
                     }
                 },
                 {
@@ -4096,7 +4133,7 @@
         },
         {
             "name": "Member catalog",
-            "description": "Catálogo del afiliado (E9 mobile): sesiones publicadas, packs activos y estado MP.",
+            "description": "Catálogo del afiliado (E9 mobile): sesiones publicadas (`serviceImageUrl`), packs activos (`imageUrl`) y estado MP.",
             "item": [
                 {
                     "name": "Member GET sessions",
@@ -4104,7 +4141,7 @@
                         "method": "GET",
                         "header": [],
                         "url": "{{baseUrl}}/api/me/sessions?page=1&pageSize=20&order=asc",
-                        "description": "Sesiones publicadas del catálogo member. Requiere accessToken Member."
+                        "description": "Sesiones publicadas del catálogo member (`serviceImageUrl` = foto del servicio). Requiere accessToken Member."
                     }
                 },
                 {
@@ -4113,7 +4150,7 @@
                         "method": "GET",
                         "header": [],
                         "url": "{{baseUrl}}/api/me/packs",
-                        "description": "Packs activos comprables por el afiliado (sin refs Kuatia). Requiere accessToken Member."
+                        "description": "Packs activos comprables (`imageUrl`). Sin refs Kuatia. Requiere accessToken Member."
                     }
                 },
                 {

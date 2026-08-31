@@ -255,7 +255,7 @@ export class ContractsService {
     const method = dto.method ?? PaymentMethod.STUB;
     if (method === PaymentMethod.MP) {
       throw new BadRequestException(
-        'Use POST /me/payments/mp/checkout for Mercado Pago pack purchases',
+        'Use POST /me/transaction-items/mp/cart (or Staff /members/:id/...) for Mercado Pago pack purchases',
       );
     }
     if (method === PaymentMethod.CASH) {

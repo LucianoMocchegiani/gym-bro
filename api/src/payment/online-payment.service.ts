@@ -29,7 +29,7 @@ import { mpCopyForDropIn, mpCopyForPack } from './mp-item-copy';
  * Checkout de pagos online (Mercado Pago).
  *
  * @description
- * Solo cart (Caja) — crea Transaction + TransactionItems PENDING + Preference MP.
+ * Cart MP (Caja o afiliado) — crea Transaction + TransactionItems PENDING + Preference.
  * Al webhook APPROVED se confirman los derechos (contratos/reservas).
  */
 @Injectable()
@@ -44,12 +44,13 @@ export class OnlinePaymentService {
   ) {}
 
   /**
-   * Inicia o reutiliza checkout de carrito MP (Caja): 1 preference con
-   * items[] → 1 pago. Al webhook APPROVED se confirma cada pack/reserva.
+   * Inicia o reutiliza checkout de carrito MP: 1 preference con items[] → 1 pago.
+   * Al webhook APPROVED se confirma cada pack/reserva.
    *
    * @remarks Modelo MercadoLibre: el carrito agrega ítems, pero el checkout
    * es un solo total y un solo pago (RN-PAG-009 / CU-PAG-001).
-   * `recordedByStaffId` queda en el cart y el webhook lo copia a caja.
+   * `recordedByStaffId` queda en el cart (Caja) y el webhook lo copia;
+   * en self-service del afiliado es null.
    */
   async startCartCheckout(
     tenantId: string,

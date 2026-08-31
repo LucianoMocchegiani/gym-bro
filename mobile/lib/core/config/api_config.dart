@@ -8,6 +8,6 @@ class ApiConfig {
   /// Base del API Nest (sin slash final). Incluye host; paths usan `/api/...`.
   static const String baseUrl = String.fromEnvironment(
     'API_BASE_URL',
-    defaultValue: 'https://api-gymbro.pruebasaproduccunon.uno',
+    defaultValue: 'https://api.faciliter.xyz',
   );
 }

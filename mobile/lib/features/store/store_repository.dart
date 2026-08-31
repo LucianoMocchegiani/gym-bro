@@ -12,11 +12,15 @@ class MemberPack {
     required this.kind,
     required this.components,
     this.creditsExpireAt,
+    this.imageUrl,
   });
 
   final String id;
   final String name;
   final String? description;
+
+  /// Foto del pack (`GET /me/packs`).
+  final String? imageUrl;
   final int price;
   final String billingPeriod;
   final String kind;
@@ -32,6 +36,7 @@ class MemberPack {
       id: json['id'] as String,
       name: json['name'] as String? ?? 'Pack',
       description: json['description'] as String?,
+      imageUrl: json['imageUrl'] as String?,
       price: (json['price'] as num?)?.toInt() ?? 0,
       billingPeriod: json['billingPeriod'] as String? ?? 'ONE_TIME',
       kind: json['kind'] as String? ?? 'ACCESS',
@@ -71,29 +76,31 @@ class MemberPackComponent {
   }
 }
 
-/// Resultado de checkout MP para un pack (`POST /me/transaction-items/mp/checkout`).
-class PackCheckoutResult {
+/// Resultado de checkout MP de carrito (`POST /me/transaction-items/mp/cart`).
+class MpCartCheckoutResult {
   /// Crea el modelo.
-  PackCheckoutResult({
-    required this.transactionItemId,
+  MpCartCheckoutResult({
+    required this.transactionId,
     required this.status,
     required this.amount,
     required this.checkoutUrl,
   });
 
-  final String transactionItemId;
+  final String transactionId;
   final String status;
   final int amount;
+
+  /// Link usable para abrir MP (prioriza `checkoutUrl`, cae en sandbox).
   final String? checkoutUrl;
 
-  factory PackCheckoutResult.fromJson(Map<String, dynamic> json) {
+  factory MpCartCheckoutResult.fromJson(Map<String, dynamic> json) {
     final url = (json['checkoutUrl'] as String?)?.trim();
     final sandbox = (json['sandboxCheckoutUrl'] as String?)?.trim();
     final resolved = (url != null && url.isNotEmpty)
         ? url
         : (sandbox != null && sandbox.isNotEmpty ? sandbox : null);
-    return PackCheckoutResult(
-      transactionItemId: json['transactionItemId'] as String,
+    return MpCartCheckoutResult(
+      transactionId: json['transactionId'] as String? ?? '',
       status: json['status'] as String? ?? '',
       amount: (json['amount'] as num?)?.toInt() ?? 0,
       checkoutUrl: resolved,
@@ -133,16 +140,24 @@ class StoreRepository {
     );
   }
 
-  /// Inicia checkout MP para comprar un pack.
-  Future<PackCheckoutResult> startPackCheckout(String packId) {
-    return _api.postJson<PackCheckoutResult>(
-      '/api/me/transaction-items/mp/checkout',
-      body: {'packId': packId},
+  /// Inicia checkout MP del carrito (packs y/o drop-in → un Preference).
+  ///
+  /// [items] usa `kind` PACK|DROP_IN e `id` de pack o sesión.
+  Future<MpCartCheckoutResult> startMpCart({
+    required List<Map<String, String>> items,
+    required String idempotencyKey,
+  }) {
+    return _api.postJson<MpCartCheckoutResult>(
+      '/api/me/transaction-items/mp/cart',
+      body: {
+        'items': items,
+        'idempotencyKey': idempotencyKey,
+      },
       parse: (json) {
         if (json is! Map) {
           throw ApiException('Respuesta inválida al iniciar checkout');
         }
-        return PackCheckoutResult.fromJson(Map<String, dynamic>.from(json));
+        return MpCartCheckoutResult.fromJson(Map<String, dynamic>.from(json));
       },
     );
   }

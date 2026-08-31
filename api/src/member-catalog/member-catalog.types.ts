@@ -8,6 +8,8 @@ export type MemberSessionDetail = {
   id: string;
   serviceId: string;
   serviceName: string;
+  /** Foto del servicio (drop-in); null si no hay. */
+  serviceImageUrl: string | null;
   branchName: string | null;
   instructorName: string | null;
   startsAt: Date;
@@ -32,6 +34,8 @@ export type MemberPackDetail = {
   id: string;
   name: string;
   description: string | null;
+  /** Foto del pack; null si no hay. */
+  imageUrl: string | null;
   price: number;
   billingPeriod: 'MONTHLY' | 'ONE_TIME';
   creditsExpireAt: Date | null;

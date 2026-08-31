@@ -219,11 +219,12 @@ Checkout/webhook implementados (stub local + modo live). Pendiente en roadmap: v
 ### 7.2 Flujo MP
 
 ```text
-Member POST /me/transaction-items/mp/checkout (pack + idempotencyKey)
-  → Payment(PENDING, method=MP) + Preference (cuenta del gym)
-  → Webhook POST /webhooks/mercadopago?tenantId=… (o /simulate en stub)
-  → aprueba → ContractsService.confirmFromApprovedPayment + recibo
-  → rechaza → Payment REJECTED (sin derechos)
+Member POST /me/transaction-items/mp/cart { items[], idempotencyKey }
+Staff POST /members/:id/transaction-items/mp/cart   (mismo body; members.write)
+  → Transaction PENDING + Preference (cuenta del gym; 1 link con el total)
+  → Webhook POST /webhooks/payment?tenantId=… (o /simulate en stub)
+  → aprueba → contrato/reserva por cada ítem + 1 recibo por Transaction
+  → rechaza → REJECTED (sin derechos)
 ```
 
 Env: `MP_CHECKOUT_MODE=stub|live`, `PUBLIC_API_BASE_URL` (notification_url).
@@ -302,7 +303,7 @@ Prefijo sugerido: `/api/v1`.
 | Afiliados | CRUD `/members` (Staff JWT) |
 | Catálogo | `/services`, `/packs`, `/sessions`, `/recurrence-rules` |
 | Reservas | `/sessions/:id/reservations`, waitlist |
-| Billing | `/transaction-items/mp/checkout`, `/transaction-items/cash`, webhooks `/webhooks/mercadopago` |
+| Billing | cart MP `/me|members/:id/transaction-items/mp/cart`, cash cart Staff, webhook `/webhooks/payment` |
 | Access | `/access/oid4vp/request`, `/access/oid4vp/session/:id`, `/access-attempts`, manual-pass |
 | Rutinas | `/exercises`, `/routine-templates`, `/assigned-routines` |
 | Notif | `/notifications`, `/notification-templates`, preferences |
@@ -312,10 +313,10 @@ Prefijo sugerido: `/api/v1`.
 | Waitlist | Member `/me/waitlist`; Staff `POST /members/:id/waitlist`, `GET /sessions/:id/waitlist` (`reservations.write`; query `status` / `allStatuses`); promoción AUTO al liberar cupo |
 | Settings | Staff `GET|PATCH /tenant-settings` (`tenant.settings.*`; horas cancelación, `waitlistMode`, `allowLateSessionEntry`) |
 | Caja | Staff `GET /payment-register/day`, `POST /payment-register/day/reconcile` (`cashier.operate`); ingresos = cart; egresos = una ejecución de devolución |
-| Mercado Pago | Staff `GET|PUT|DELETE /mercadopago/account`, `POST .../test` (`mp.connect`); webhook `POST /webhooks/payment`; cart Staff `POST /members/:id/transaction-items/mp/cart` |
+| Mercado Pago | Staff `GET|PUT|DELETE /mercadopago/account`, `POST .../test` (`mp.connect`); webhook `POST /webhooks/payment`; cart Member `POST /me/transaction-items/mp/cart`; cart Staff `POST /members/:id/transaction-items/mp/cart` |
 | Devoluciones | Member `POST /me/transaction-items/:id/refund-requests`, `GET /me/refund-requests`; Staff `GET /refund-requests`, `POST /transactions/:id/refunds` (lote) y `POST /transaction-items/:id/refunds` (wrapper) (`transaction_items.refund`) |
 | Comprobantes | Member `/me/receipts`; Staff `GET /receipts/:id`, `GET /transactions/:id/receipt` (`members.read`); `lines[]` (pack → contrato/vigencia + `services[]`; drop-in → reserva/horario) |
-| Catálogo | Staff CRUD services + packs (`catalog.write`; kind inferido; `creditsExpireAt`) |
+| Catálogo | Staff CRUD services + packs (`catalog.write`; kind inferido; `creditsExpireAt`; `imageUrl`). Member `GET /me/packs` (`imageUrl`) y `GET /me/sessions` (`serviceImageUrl`) |
 | Contrataciones | Staff `POST /members/:id/contracts` (pago stub APPROVED); `PATCH /contracts/:id/status` → `CANCELLED` (pierde derechos, RN-SER-009); Member `GET /me/contracts` |
 | Roles | Staff list-get-create-patch roles; `PUT /staff/:id/roles`; `GET /me/permissions` (UI nav). Super: `GET /tenants/:id/staff` + impersonate |
 | Auditoría | Staff `/auditoria` → `GET /audit-events` (`audit.read`); Super impersona; escritura en mutaciones |

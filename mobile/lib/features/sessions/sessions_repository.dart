@@ -16,11 +16,15 @@ class MemberSession {
     required this.slotsLeft,
     required this.hasSlots,
     required this.dropInPrice,
+    this.serviceImageUrl,
   });
 
   final String id;
   final String serviceId;
   final String serviceName;
+
+  /// Foto del servicio (drop-in en Tienda).
+  final String? serviceImageUrl;
   final String? branchName;
   final String? instructorName;
   final DateTime startsAt;
@@ -39,6 +43,7 @@ class MemberSession {
       id: json['id'] as String,
       serviceId: json['serviceId'] as String,
       serviceName: json['serviceName'] as String? ?? 'Sesión',
+      serviceImageUrl: json['serviceImageUrl'] as String?,
       branchName: json['branchName'] as String?,
       instructorName: json['instructorName'] as String?,
       startsAt: DateTime.parse(json['startsAt'] as String),
@@ -114,38 +119,6 @@ class WaitlistEntry {
   }
 }
 
-/// Resultado de checkout drop-in MP (`POST /me/transaction-items/mp/drop-in-checkout`).
-class DropInCheckout {
-  /// Crea el modelo.
-  DropInCheckout({
-    required this.transactionItemId,
-    required this.status,
-    required this.amount,
-    required this.checkoutUrl,
-  });
-
-  final String transactionItemId;
-  final String status;
-  final int amount;
-
-  /// Link usable para abrir MP (prioriza `checkoutUrl`, cae en sandbox).
-  final String? checkoutUrl;
-
-  factory DropInCheckout.fromJson(Map<String, dynamic> json) {
-    final url = (json['checkoutUrl'] as String?)?.trim();
-    final sandbox = (json['sandboxCheckoutUrl'] as String?)?.trim();
-    final resolved = (url != null && url.isNotEmpty)
-        ? url
-        : (sandbox != null && sandbox.isNotEmpty ? sandbox : null);
-    return DropInCheckout(
-      transactionItemId: json['transactionItemId'] as String,
-      status: json['status'] as String? ?? '',
-      amount: (json['amount'] as num?)?.toInt() ?? 0,
-      checkoutUrl: resolved,
-    );
-  }
-}
-
 /// Lista paginada de sesiones (`GET /me/sessions`).
 class SessionPage {
   /// Crea el modelo.
@@ -167,10 +140,26 @@ class SessionsRepository {
 
   final ApiClient _api;
 
-  /// Sesiones publicadas próximas (`GET /me/sessions`).
-  Future<SessionPage> listSessions({int page = 1, int pageSize = 50}) {
+  /// Sesiones publicadas (`GET /me/sessions`).
+  ///
+  /// [from]/[to] en ISO-8601; sin [from] la API usa ahora (próximas).
+  Future<SessionPage> listSessions({
+    int page = 1,
+    int pageSize = 50,
+    DateTime? from,
+    DateTime? to,
+  }) {
+    final params = <String, String>{
+      'page': '$page',
+      'pageSize': '$pageSize',
+    };
+    if (from != null) params['from'] = from.toUtc().toIso8601String();
+    if (to != null) params['to'] = to.toUtc().toIso8601String();
+    final qs = params.entries
+        .map((e) => '${e.key}=${Uri.encodeQueryComponent(e.value)}')
+        .join('&');
     return _api.getJson<SessionPage>(
-      '/api/me/sessions?page=$page&pageSize=$pageSize',
+      '/api/me/sessions?$qs',
       parse: (json) {
         final map = json is Map ? json : <String, dynamic>{};
         final items = (map['items'] as List<dynamic>? ?? [])
@@ -184,6 +173,28 @@ class SessionsRepository {
         );
       },
     );
+  }
+
+  /// Todas las sesiones publicadas en [from]–[to] (página de a 100).
+  Future<List<MemberSession>> listSessionsInRange({
+    required DateTime from,
+    required DateTime to,
+  }) async {
+    final items = <MemberSession>[];
+    var page = 1;
+    var hasMore = true;
+    while (hasMore && page <= 10) {
+      final result = await listSessions(
+        page: page,
+        pageSize: 100,
+        from: from,
+        to: to,
+      );
+      items.addAll(result.items);
+      hasMore = result.hasMore;
+      page++;
+    }
+    return items;
   }
 
   /// Reserva la sesión consumiendo 1 crédito del servicio.
@@ -274,20 +285,6 @@ class SessionsRepository {
             .whereType<Map>()
             .map((e) => WaitlistEntry.fromJson(Map<String, dynamic>.from(e)))
             .toList();
-      },
-    );
-  }
-
-  /// Inicia checkout MP para drop-in (pago único de la sesión).
-  Future<DropInCheckout> startDropIn(String sessionId) {
-    return _api.postJson<DropInCheckout>(
-      '/api/me/transaction-items/mp/drop-in-checkout',
-      body: {'sessionId': sessionId},
-      parse: (json) {
-        if (json is! Map) {
-          throw ApiException('Respuesta inválida al iniciar checkout');
-        }
-        return DropInCheckout.fromJson(Map<String, dynamic>.from(json));
       },
     );
   }

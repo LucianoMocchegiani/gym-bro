@@ -105,14 +105,55 @@ class GymBroMessagePane extends StatelessWidget {
   }
 }
 
+/// Mes abreviado en español (`ene` … `dic`).
+const _monthShort = [
+  'ene', 'feb', 'mar', 'abr', 'may', 'jun',
+  'jul', 'ago', 'sep', 'oct', 'nov', 'dic',
+];
+
 /// Formatea DateTime a `dd mes · HH:MM` (mes abreviado en español).
 String formatDateTimeShort(DateTime dt) {
-  const months = [
-    'ene','feb','mar','abr','may','jun',
-    'jul','ago','sep','oct','nov','dic',
-  ];
   final local = dt.toLocal();
-  return '${local.day} ${months[local.month - 1]} · '
+  return '${formatDayShort(dt)} · '
       '${local.hour.toString().padLeft(2, '0')}:'
       '${local.minute.toString().padLeft(2, '0')}';
+}
+
+/// Mes y año en español (`agosto 2026`).
+String formatMonthYear(DateTime dt) {
+  const months = [
+    'enero',
+    'febrero',
+    'marzo',
+    'abril',
+    'mayo',
+    'junio',
+    'julio',
+    'agosto',
+    'septiembre',
+    'octubre',
+    'noviembre',
+    'diciembre',
+  ];
+  final local = dt.toLocal();
+  return '${months[local.month - 1]} ${local.year}';
+}
+
+/// Día local (`31 ago`).
+String formatDayShort(DateTime dt) {
+  final local = dt.toLocal();
+  return '${local.day} ${_monthShort[local.month - 1]}';
+}
+
+/// ¿[a] y [b] caen el mismo día local?
+bool isSameLocalDay(DateTime a, DateTime b) {
+  final al = a.toLocal();
+  final bl = b.toLocal();
+  return al.year == bl.year && al.month == bl.month && al.day == bl.day;
+}
+
+/// Día local sin hora.
+DateTime localDateOnly(DateTime dt) {
+  final l = dt.toLocal();
+  return DateTime(l.year, l.month, l.day);
 }

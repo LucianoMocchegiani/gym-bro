@@ -383,7 +383,7 @@ export class ReservationsService {
     const method = dto.method ?? PaymentMethod.STUB;
     if (method === PaymentMethod.MP) {
       throw new BadRequestException(
-        'Use POST /me/payments/mp/drop-in-checkout (or Staff /members/:id/...) for Mercado Pago drop-in',
+        'Use POST /me/transaction-items/mp/cart (or Staff /members/:id/...) for Mercado Pago drop-in',
       );
     }
     if (method === PaymentMethod.CASH) {

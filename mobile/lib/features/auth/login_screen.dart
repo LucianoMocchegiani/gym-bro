@@ -13,7 +13,7 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  final _slug = TextEditingController(text: 'demo');
+  final _slug = TextEditingController(text: 'gym-de-prueba');
   final _email = TextEditingController(text: 'socio@gymdeprueba.com');
   final _password = TextEditingController(text: 'ChangeMe123!');
   final _formKey = GlobalKey<FormState>();
@@ -61,7 +61,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     Text(
-                      'GYMBRO',
+                      'Faciliter',
                       style: Theme.of(context).textTheme.headlineLarge
                           ?.copyWith(color: scheme.primary, letterSpacing: 2),
                     ),

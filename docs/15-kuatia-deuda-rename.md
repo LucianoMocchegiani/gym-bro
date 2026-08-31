@@ -9,7 +9,7 @@
 - Eliminado bind por tenant (`tenants.quark_*`, `POST …/quark/provision`, UI Super “Reintentar Quark”)
 - Packs: columnas `kuatia_*` (sync metadata soft-fail)
 - Wallets solo desde env `KUATIA_*` (provision en [consola Kuatia](https://kuatia.xyz/docs))
-- Package Dart en raíz: `identity_core_dart/` (antes `ssi-quark/quarkid-identity-core-dart`)
+- Package Dart en raíz: `identity_core_dart/` (antes `ssi-quark/quarkid-identity-core-dart`). Persistencia local de VCs: [mobile/isar-wallet.md](./mobile/isar-wallet.md).
 
 ## Dejar para más adelante
 

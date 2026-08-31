@@ -116,7 +116,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           child: _HubTile(
                             icon: Icons.storefront_outlined,
                             label: 'Tienda',
-                            subtitle: 'Packs',
+                            subtitle: 'Catálogo',
                             onTap: () => _open(const StoreScreen()),
                           ),
                         ),

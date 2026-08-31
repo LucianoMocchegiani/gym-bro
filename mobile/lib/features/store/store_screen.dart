@@ -1,16 +1,19 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/network/api_client.dart';
 import '../../core/widgets/gym_bro_tabs.dart';
 import '../../core/widgets/shared_widgets.dart';
-import '../account/account_repository.dart';
-import 'refund_repository.dart';
+import '../cart/cart_screen.dart';
+import '../cart/member_cart_controller.dart';
+import '../sessions/sessions_repository.dart';
+import 'catalog_card.dart';
+import 'history_screen.dart';
 import 'store_repository.dart';
 
-/// Tienda de packs + historial de pagos + solicitud de devolución (E9).
+/// Tienda: catálogo para comprar (packs + drop-in), espejo de Caja.
+///
+/// Productos = post-MVP. Historial (pagos / devoluciones) va al menú ⋮.
 class StoreScreen extends StatefulWidget {
   /// Crea la pantalla.
   const StoreScreen({super.key});
@@ -19,21 +22,18 @@ class StoreScreen extends StatefulWidget {
   State<StoreScreen> createState() => _StoreScreenState();
 }
 
-enum _StoreTab { packs, myPacks, payments }
+enum _StoreTab { packs, sessions }
 
 class _StoreScreenState extends State<StoreScreen> {
   _StoreTab _tab = _StoreTab.packs;
   List<MemberPack>? _packs;
-  List<AccountRecentTransactionItem>? _transactionItems;
-  List<AccountContract>? _contracts;
+  List<MemberSession>? _sessions;
+  Set<String> _ownedSessionIds = {};
   bool _mpConnected = false;
   String? _error;
-  bool _busy = false;
-  String? _busyId;
 
   StoreRepository get _store => context.read<StoreRepository>();
-  RefundRepository get _refund => context.read<RefundRepository>();
-  AccountRepository get _account => context.read<AccountRepository>();
+  SessionsRepository get _sessionsRepo => context.read<SessionsRepository>();
 
   @override
   void didChangeDependencies() {
@@ -46,16 +46,23 @@ class _StoreScreenState extends State<StoreScreen> {
     try {
       final results = await Future.wait([
         _store.listPacks(),
-        _account.fetchMine(),
+        _sessionsRepo.listSessions(),
         _store.getMpConnected(),
-        _account.fetchMineAll(),
+        _sessionsRepo.listReservations(),
       ]);
       if (!mounted) return;
+      final sessions = (results[1] as SessionPage).items;
+      final reservations = results[3] as List<MemberReservation>;
       setState(() {
         _packs = results[0] as List<MemberPack>;
-        _transactionItems = (results[1] as MemberAccount).recentTransactionItems;
+        _sessions = sessions
+            .where((s) => !s.started && s.dropInPrice != null)
+            .toList();
         _mpConnected = results[2] as bool;
-        _contracts = results[3] as List<AccountContract>;
+        _ownedSessionIds = reservations
+            .where((r) => r.status == 'CONFIRMED')
+            .map((r) => r.sessionId)
+            .toSet();
       });
     } catch (e) {
       if (!mounted) return;
@@ -65,206 +72,94 @@ class _StoreScreenState extends State<StoreScreen> {
     }
   }
 
-  Future<void> _buy(MemberPack pack) async {
-    // Mostrar resumen antes de abrir MP
-    final confirmed = await _showConfirmBuyDialog(pack);
-    if (confirmed != true || !mounted) return;
+  CatalogItem _packItem(MemberPack pack) {
+    return CatalogItem(
+      id: pack.id,
+      kind: CatalogKind.pack,
+      title: pack.name,
+      subtitle: pack.description,
+      imageUrl: pack.imageUrl,
+      badges: [pack.billingLabel],
+      price: pack.price,
+      details: pack.components.map((c) {
+        if (c.creditAmount != null) {
+          return '${c.serviceName} · ${c.creditAmount} créditos';
+        }
+        if (c.serviceType == 'ACCESO_LIBRE') {
+          return '${c.serviceName} · Acceso libre';
+        }
+        return c.serviceName;
+      }).toList(),
+      enabled: _mpConnected,
+    );
+  }
 
-    setState(() {
-      _busy = true;
-      _busyId = pack.id;
-    });
-    try {
-      final checkout = await _store.startPackCheckout(pack.id);
-      if (!mounted) return;
-      final url = checkout.checkoutUrl;
-      if (url == null || url.isEmpty) {
-        _snack('El pago no está disponible en este momento');
-        return;
-      }
-      await _showCheckoutLinkDialog(url, pack.name);
-    } on ApiException catch (e) {
-      if (!mounted) return;
-      _snack(e.message);
-    } catch (_) {
-      if (!mounted) return;
-      _snack('Algo salió mal, intentá de nuevo');
-    } finally {
-      if (mounted) setState(() { _busy = false; _busyId = null; });
+  CatalogItem _sessionItem(MemberSession session) {
+    final bits = <String>[
+      formatDateTimeShort(session.startsAt),
+      if (session.branchName != null) session.branchName!,
+    ];
+    final owned = _ownedSessionIds.contains(session.id);
+    return CatalogItem(
+      id: session.id,
+      kind: CatalogKind.session,
+      title: session.serviceName,
+      subtitle: bits.join(' · '),
+      imageUrl: session.serviceImageUrl,
+      badges: [
+        if (owned) 'Comprada',
+        'Drop-in',
+        'Única sesión',
+      ],
+      price: session.dropInPrice!,
+      details: [
+        if (session.instructorName != null) 'Con ${session.instructorName}',
+      ],
+      enabled: _mpConnected && !owned,
+      owned: owned,
+    );
+  }
+
+  void _addPack(MemberPack pack) {
+    final cart = context.read<MemberCartController>();
+    final added = cart.add(
+      MemberCartLine(
+        kind: MemberCartKind.pack,
+        id: pack.id,
+        title: pack.name,
+        subtitle: pack.billingLabel,
+        amount: pack.price,
+      ),
+    );
+    if (!added) {
+      _snack('Este pack ya está en el carrito');
+      return;
     }
+    showAddedToCartSnack(context);
   }
 
-  Future<bool?> _showConfirmBuyDialog(MemberPack pack) {
-    final scheme = Theme.of(context).colorScheme;
-    return showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text('Comprar ${pack.name}'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              '\$${pack.price} · ${pack.billingLabel}',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    color: scheme.primary,
-                    fontWeight: FontWeight.w600,
-                  ),
-            ),
-            const SizedBox(height: 12),
-            ...pack.components.map(
-              (c) => Padding(
-                padding: const EdgeInsets.only(bottom: 4),
-                child: Row(
-                  children: [
-                    Icon(
-                      c.serviceType == 'ACCESO_LIBRE'
-                          ? Icons.fitness_center_outlined
-                          : Icons.event_available_outlined,
-                      size: 16,
-                      color: scheme.onSurface.withValues(alpha: 0.6),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        c.serviceName,
-                        style: Theme.of(context).textTheme.bodyMedium,
-                      ),
-                    ),
-                    if (c.creditAmount != null)
-                      Text(
-                        '${c.creditAmount} créditos',
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: scheme.primary,
-                            ),
-                      ),
-                    if (c.serviceType == 'ACCESO_LIBRE')
-                      Text(
-                        'Acceso libre',
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: scheme.primary,
-                            ),
-                      ),
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(height: 12),
-            Text(
-              'Se abrirá Mercado Pago para completar el pago.',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: scheme.onSurface.withValues(alpha: 0.7),
-                  ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancelar'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('Pagar'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Future<void> _showCheckoutLinkDialog(String url, String packName) async {
-    await showDialog<void>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text('Comprar $packName'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Text(
-              'Se abrirá Mercado Pago para completar el pago.',
-              style: TextStyle(fontSize: 14),
-            ),
-            const SizedBox(height: 12),
-            SelectableText(
-              url,
-              style: Theme.of(context).textTheme.bodySmall,
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Clipboard.setData(ClipboardData(text: url));
-              if (context.mounted) {
-                Navigator.pop(context);
-                _snack('Link copiado');
-              }
-            },
-            child: const Text('Copiar link'),
-          ),
-          FilledButton(
-            onPressed: () async {
-              Navigator.pop(context);
-              final uri = Uri.parse(url);
-              if (await canLaunchUrl(uri)) {
-                await launchUrl(uri, mode: LaunchMode.externalApplication);
-              } else {
-                _snack('No se pudo abrir el navegador');
-              }
-            },
-            child: const Text('Pagar'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Future<void> _requestRefund(AccountRecentTransactionItem transactionItem) async {
-    final reasonController = TextEditingController();
-    final ok = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Solicitar devolución'),
-        content: TextField(
-          controller: reasonController,
-          maxLines: 3,
-          decoration: const InputDecoration(
-            hintText: 'Motivo (opcional)',
-            border: OutlineInputBorder(),
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancelar'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('Enviar'),
-          ),
-        ],
-      ),
-    );
-    if (ok != true || !mounted) return;
-
-    setState(() { _busy = true; _busyId = transactionItem.id; });
-    try {
-      await _refund.requestRefund(
-        transactionItem.id,
-        reason: reasonController.text.trim(),
-      );
-      if (!mounted) return;
-      _snack('Solicitud de devolución enviada');
-      await _load();
-    } on ApiException catch (e) {
-      if (!mounted) return;
-      _snack(e.message);
-    } catch (_) {
-      if (!mounted) return;
-      _snack('No se pudo enviar la solicitud');
-    } finally {
-      if (mounted) setState(() { _busy = false; _busyId = null; });
+  void _addSession(MemberSession session) {
+    if (_ownedSessionIds.contains(session.id)) {
+      _snack('Ya tenés esta sesión');
+      return;
     }
+    final price = session.dropInPrice;
+    if (price == null) return;
+    final cart = context.read<MemberCartController>();
+    final added = cart.add(
+      MemberCartLine(
+        kind: MemberCartKind.dropIn,
+        id: session.id,
+        title: session.serviceName,
+        subtitle: formatDateTimeShort(session.startsAt),
+        amount: price,
+      ),
+    );
+    if (!added) {
+      _snack('Este drop-in ya está en el carrito');
+      return;
+    }
+    showAddedToCartSnack(context);
   }
 
   void _snack(String message) {
@@ -276,14 +171,19 @@ class _StoreScreenState extends State<StoreScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Tienda')),
+      appBar: AppBar(
+        title: const Text('Tienda'),
+        actions: const [
+          CartAppBarButton(),
+          HistoryAppBarButton(),
+        ],
+      ),
       body: Column(
         children: [
           GymBroTabs(
             tabs: const [
               GymBroTab(label: 'Packs', icon: Icons.inventory_2_outlined),
-              GymBroTab(label: 'Mis packs', icon: Icons.card_membership_outlined),
-              GymBroTab(label: 'Pagos', icon: Icons.receipt_long_outlined),
+              GymBroTab(label: 'Sesiones', icon: Icons.event_available_outlined),
             ],
             selectedIndex: _tab.index,
             onChanged: (i) => setState(() => _tab = _StoreTab.values[i]),
@@ -333,377 +233,56 @@ class _StoreScreenState extends State<StoreScreen> {
         onAction: _load,
       );
     }
-    final packs = _packs;
-    if (packs == null) {
+    if (_packs == null || _sessions == null) {
       return const Center(child: CircularProgressIndicator());
     }
     return RefreshIndicator(
       onRefresh: _load,
       child: switch (_tab) {
-        _StoreTab.packs => _buildPacks(packs),
-        _StoreTab.myPacks => _buildMyPacks(),
-        _StoreTab.payments => _buildPayments(),
+        _StoreTab.packs => _buildList(
+            items: _packs!,
+            emptyIcon: Icons.storefront_outlined,
+            emptyMessage: 'No hay packs disponibles por ahora.',
+            itemBuilder: (pack) => CatalogCard(
+              item: _packItem(pack),
+              onAddToCart: () => _addPack(pack),
+            ),
+          ),
+        _StoreTab.sessions => _buildList(
+            items: _sessions!,
+            emptyIcon: Icons.event_available_outlined,
+            emptyMessage: 'No hay sesiones con drop-in por ahora.',
+            itemBuilder: (session) => CatalogCard(
+              item: _sessionItem(session),
+              onAddToCart: () => _addSession(session),
+            ),
+          ),
       },
     );
   }
 
-  Widget _buildPacks(List<MemberPack> packs) {
-    if (packs.isEmpty) {
+  Widget _buildList<T>({
+    required List<T> items,
+    required IconData emptyIcon,
+    required String emptyMessage,
+    required Widget Function(T item) itemBuilder,
+  }) {
+    if (items.isEmpty) {
       return ListView(
         children: [
-          const GymBroMessagePane(
-            icon: Icons.storefront_outlined,
-            message: 'No hay packs disponibles por ahora.',
-          ),
+          GymBroMessagePane(icon: emptyIcon, message: emptyMessage),
         ],
       );
     }
     return ListView.builder(
       padding: const EdgeInsets.fromLTRB(20, 8, 20, 28),
-      itemCount: packs.length,
+      itemCount: items.length,
       itemBuilder: (context, i) {
-        final pack = packs[i];
         return Padding(
           padding: EdgeInsets.only(top: i == 0 ? 0 : 12),
-          child: _PackCard(
-            pack: pack,
-            busy: _busy && _busyId == pack.id,
-            mpConnected: _mpConnected,
-            onBuy: () => _buy(pack),
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _buildPayments() {
-    final transactionItems = _transactionItems ?? const <AccountRecentTransactionItem>[];
-    if (transactionItems.isEmpty) {
-      return ListView(
-        children: [
-          const GymBroMessagePane(
-            icon: Icons.receipt_long,
-            message: 'Todavía no tenés pagos registrados.',
-          ),
-        ],
-      );
-    }
-    return ListView.builder(
-      padding: const EdgeInsets.fromLTRB(20, 8, 20, 28),
-      itemCount: transactionItems.length,
-      itemBuilder: (context, i) {
-        final p = transactionItems[i];
-        return Padding(
-          padding: EdgeInsets.only(top: i == 0 ? 0 : 12),
-          child: _TransactionItemCard(
-            transactionItem: p,
-            busy: _busy && _busyId == p.id,
-            onRefund: p.canRefund ? () => _requestRefund(p) : null,
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _buildMyPacks() {
-    final contracts = _contracts ?? const <AccountContract>[];
-    if (contracts.isEmpty) {
-      return ListView(
-        children: [
-          const GymBroMessagePane(
-            icon: Icons.card_membership_outlined,
-            message: 'Todavía no tenés packs contratados.',
-          ),
-        ],
-      );
-    }
-    return ListView.builder(
-      padding: const EdgeInsets.fromLTRB(20, 8, 20, 28),
-      itemCount: contracts.length,
-      itemBuilder: (context, i) {
-        final c = contracts[i];
-        return Padding(
-          padding: EdgeInsets.only(top: i == 0 ? 0 : 12),
-          child: _ContractCard(contract: c),
+          child: itemBuilder(items[i]),
         );
       },
     );
   }
 }
-
-class _PackCard extends StatelessWidget {
-  const _PackCard({
-    required this.pack,
-    required this.busy,
-    required this.mpConnected,
-    required this.onBuy,
-  });
-
-  final MemberPack pack;
-  final bool busy;
-  final bool mpConnected;
-  final VoidCallback onBuy;
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: scheme.outline.withValues(alpha: 0.5)),
-        color: scheme.surface,
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  pack.name,
-                  style: Theme.of(context).textTheme.titleLarge,
-                ),
-              ),
-              GymBroBadge(label: pack.kind, color: scheme.secondary),
-            ],
-          ),
-          if (pack.description != null && pack.description!.isNotEmpty) ...[
-            const SizedBox(height: 6),
-            Text(
-              pack.description!,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: scheme.onSurface.withValues(alpha: 0.7),
-                  ),
-            ),
-          ],
-          const SizedBox(height: 12),
-          Text(
-            '\$${pack.price} · ${pack.billingLabel}',
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  color: scheme.primary,
-                  fontWeight: FontWeight.w600,
-                ),
-          ),
-          const SizedBox(height: 12),
-          ...pack.components.map(
-            (c) => Padding(
-              padding: const EdgeInsets.only(bottom: 6),
-              child: Row(
-                children: [
-                  Icon(
-                    c.serviceType == 'ACCESO_LIBRE'
-                        ? Icons.fitness_center_outlined
-                        : Icons.event_available_outlined,
-                    size: 16,
-                    color: scheme.onSurface.withValues(alpha: 0.6),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      c.serviceName,
-                      style: Theme.of(context).textTheme.bodyMedium,
-                    ),
-                  ),
-                  if (c.creditAmount != null)
-                    Text(
-                      '${c.creditAmount} créditos',
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: scheme.primary,
-                          ),
-                    ),
-                  if (c.serviceType == 'ACCESO_LIBRE')
-                    Text(
-                      'Acceso libre',
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: scheme.primary,
-                          ),
-                    ),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(height: 14),
-          SizedBox(
-            width: double.infinity,
-            child: FilledButton(
-              onPressed: (busy || !mpConnected) ? null : onBuy,
-              child: busy
-                  ? const SizedBox(
-                      height: 20,
-                      width: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Text('Comprar'),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _TransactionItemCard extends StatelessWidget {
-  const _TransactionItemCard({
-    required this.transactionItem,
-    required this.busy,
-    required this.onRefund,
-  });
-
-  final AccountRecentTransactionItem transactionItem;
-  final bool busy;
-  final VoidCallback? onRefund;
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    final statusColor = switch (transactionItem.status) {
-      'APPROVED' => scheme.primary,
-      'REFUNDED' => scheme.error,
-      'REJECTED' => scheme.error,
-      _ => scheme.onSurface.withValues(alpha: 0.6),
-    };
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: scheme.outline.withValues(alpha: 0.5)),
-        color: scheme.surface,
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  '\$${transactionItem.amount}',
-                  style: Theme.of(context).textTheme.titleLarge,
-                ),
-              ),
-              GymBroBadge(label: transactionItem.status, color: statusColor),
-            ],
-          ),
-          const SizedBox(height: 8),
-          GymBroInfoLine(expanded: false,icon: Icons.schedule, text: formatDateTimeShort(transactionItem.createdAt)),
-          GymBroInfoLine(expanded: false,
-            icon: Icons.payment_outlined,
-            text: transactionItem.method,
-          ),
-          if (onRefund != null) ...[
-            const SizedBox(height: 12),
-            SizedBox(
-              width: double.infinity,
-              child: FilledButton.tonal(
-                onPressed: busy ? null : onRefund,
-                child: busy
-                    ? const SizedBox(
-                        height: 20,
-                        width: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Text('Solicitar devolución'),
-              ),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-}
-
-class _ContractCard extends StatelessWidget {
-  const _ContractCard({required this.contract});
-
-  final AccountContract contract;
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    final isActive = contract.status == 'ACTIVE';
-    final statusColor = isActive ? scheme.primary : scheme.onSurface.withValues(alpha: 0.5);
-    final statusLabel = isActive ? 'Activo' : contract.status;
-
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: scheme.outline.withValues(alpha: 0.5)),
-        color: scheme.surface,
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  contract.packName,
-                  style: Theme.of(context).textTheme.titleLarge,
-                ),
-              ),
-              GymBroBadge(label: statusLabel, color: statusColor),
-            ],
-          ),
-          if (contract.endsAt != null) ...[
-            const SizedBox(height: 8),
-            GymBroInfoLine(
-              icon: Icons.event_outlined,
-              text: 'Vence: ${_formatDate(contract.endsAt!)}',
-            ),
-          ],
-          if (contract.creditBalances.isNotEmpty) ...[
-            const SizedBox(height: 8),
-            ...contract.creditBalances.map(
-              (b) => Padding(
-                padding: const EdgeInsets.only(bottom: 4),
-                child: Row(
-                  children: [
-                    Icon(
-                      b.remaining > 0
-                          ? Icons.check_circle_outline
-                          : Icons.cancel_outlined,
-                      size: 16,
-                      color: b.remaining > 0 ? scheme.primary : scheme.error,
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        b.serviceName,
-                        style: Theme.of(context).textTheme.bodyMedium,
-                      ),
-                    ),
-                    Text(
-                      '${b.remaining}/${b.initialAmount}',
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: b.remaining > 0 ? scheme.primary : scheme.error,
-                            fontWeight: FontWeight.w600,
-                          ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ],
-          if (contract.hasAccessLibre) ...[
-            const SizedBox(height: 4),
-            GymBroInfoLine(
-              icon: Icons.fitness_center_outlined,
-              text: 'Acceso libre',
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-
-  String _formatDate(DateTime dt) {
-    const months = [
-      'ene','feb','mar','abr','may','jun',
-      'jul','ago','sep','oct','nov','dic',
-    ];
-    final local = dt.toLocal();
-    return '${local.day} ${months[local.month - 1]} ${local.year}';
-  }
-}
-

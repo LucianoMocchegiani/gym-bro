@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  ForbiddenException,
   HttpCode,
   HttpStatus,
   Param,
@@ -20,7 +21,9 @@ import { CreateCashCartDto } from './dto/create-cash-cart.dto';
 import { CashCartResult, MpCartCheckoutResult } from './payment.types';
 
 /**
- * Checkout de pagos (Caja): cart MP y cart CASH.
+ * Checkout de pagos: cart MP (Caja y afiliado) y cart CASH (solo Caja).
+ *
+ * @remarks CU-PAG-001. El afiliado no usa cash; `recordedByStaffId` queda null.
  */
 @Controller()
 @RequireTenantAuth()
@@ -30,6 +33,28 @@ export class PaymentController {
     private readonly cashPayment: CashPaymentService,
   ) {}
 
+  /**
+   * Checkout MP self-service del afiliado (app): mismo body que Caja.
+   *
+   * @remarks JWT Member; `memberId` del token. Sin `members.write`.
+   * @throws {ForbiddenException} Si el perfil no es MEMBER.
+   */
+  @Post('me/transaction-items/mp/cart')
+  @HttpCode(HttpStatus.CREATED)
+  startMemberCartCheckout(
+    @CurrentTenant() tenantId: string,
+    @CurrentUser() user: AuthUser,
+    @Body() dto: CreateMpCartCheckoutDto,
+  ): Promise<MpCartCheckoutResult> {
+    if (user.profileType !== 'MEMBER') {
+      throw new ForbiddenException('Member profile required');
+    }
+    return this.onlinePayment.startCartCheckout(tenantId, user.userId, dto, null);
+  }
+
+  /**
+   * Checkout MP de Caja: carrito a nombre del afiliado (`members.write`).
+   */
   @Post('members/:memberId/transaction-items/mp/cart')
   @HttpCode(HttpStatus.CREATED)
   @RequirePermission('members.write')

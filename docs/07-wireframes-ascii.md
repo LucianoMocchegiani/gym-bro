@@ -57,13 +57,34 @@ Credenciales: expandir card → Eliminar (confirmación). Ajustes: Reiniciar wal
 ## 3. App afiliado — Calendario de sesiones
 
 ```text
+Sesiones              (carrito) (⋮ Historial)
+Calendario | Mis clases
 +----------------------------------+
-| Sesiones          < Jul >        |
-| Lun 13  08:00 GAP     cupo 3/15  |
-|         (Reservar)               |
-| Lun 13  19:00 Pilates  LLENO     |
-|         (Lista espera)           |
-| Mar 14  08:00 GAP     cupo 10/15 |
+|        <  agosto 2026  >         |
+|  L  M  X  J  V  S  D             |
+|        1  2  3  4  5  6          |
+|  7  8 [9] 10 ...                 |
++----------------------------------+
+  Tocá un día → pantalla de ese día
+  (misma CatalogCard que Tienda).
+  Mes anterior solo si el visible
+  no es el mes actual. Días pasados
+  no se tocan. Crédito → Reservar;
+  sin crédito + drop-in → carrito.
+
+Día 9 ago
++----------------------------------+
+| [foto] GAP                       |
+| sin créditos: Drop-in + precio   |
+| (Reservar) | o (Al carrito)      |
++----------------------------------+
+
+Mis clases (misma card, sin precio ni badges)
++----------------------------------+
+| [foto] GAP                       |
+|         (Cancelar reserva)       |
+| [foto] Pilates                   |
+|         (Salir de la lista)      |
 +----------------------------------+
 ```
 
@@ -76,12 +97,48 @@ Credenciales: expandir card → Eliminar (confirmación). Ajustes: Reiniciar wal
 | Reservar: GAP Lun 08:00          |
 | Cobertura:                       |
 | (*) Usar 1 credito (restan 7)    |
-| ( ) Drop-in $ {precio}           |
+| ( ) Drop-in $ {precio} → carrito |
 |                                  |
-| Pago: (Mercado Pago) (Avisar     |
-|        caja en gym)              |
+| Pago: (Mercado Pago)             |
+|        (Avisar caja en gym)      |
 |                                  |
 | (Cancelar)            (Confirmar)|
++----------------------------------+
+```
+
+---
+
+## 4b. App afiliado — Tienda / carrito
+
+```text
+Tienda (Packs | Sesiones)     (carrito) (⋮ Historial)
++----------------------------------+
+| [imagen pack / servicio]         |
+| Pack {nombre}  $ {precio}        |
+|         (Al carrito)             |
++----------------------------------+
+| [imagen servicio]                |
+| Drop-in {sesión} $ {precio}      |
+|         (Al carrito)             |
++----------------------------------+
+  Productos = post-MVP (misma card)
+
+Historial (⋮)
++----------------------------------+
+| GB-000012  Pago / Devolución     |
+| {título o N ítems}  $ {total}    |
+| (Ver comprobante)                |
++----------------------------------+
+  Comprobante = código, medio, fecha,
+  líneas pack/drop-in (igual que Admin)
+
+Carrito
++----------------------------------+
+| Pack {nombre}           $ {n}    |
+| Drop-in {servicio}      $ {n}    |
+| Total $ {suma}                   |
+| (Pagar con Mercado Pago)         |
+|   → 1 Preference / 1 link        |
 +----------------------------------+
 ```
 

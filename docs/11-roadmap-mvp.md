@@ -27,7 +27,7 @@
 | E6 | Acceso QR / SSI | Credencial vínculo + verify |
 | E7 | Rutinas | Catálogo gym + asignación + cumplimiento |
 | E8 | Notificaciones N1 | Email + in-app |
-| E9 | App afiliado | Flutter: cuenta + SSI + sesiones/reservas/waitlist + drop-in hechos; falta Tienda/MP + devolución |
+| E9 | App afiliado | Flutter: cuenta + SSI + sesiones + carrito MP (tanda 1); falta comprobantes/solicitudes en Pagos |
 | E10 | Admin web | Next: thin casi cerrados; faltan MP staff / pase sesión opcional |
 | E11 | Reportes mínimos | Activos, deuda, ingresos |
 | E12 | Cierre MVP | Smoke QA, hardenin, deploy |
@@ -109,8 +109,8 @@
 - [x] Conectar cuenta MP del gym
   - `mercadopago_accounts` 1:1; access_token cifrado; PUT/GET/DELETE + test (`mp.connect`); sin checkout
 - [x] Checkout MP (pack / mensualidad / drop-in)
-  - Member/Staff pack: `POST /me|members/:id/transaction-items/mp/checkout`
-  - Member/Staff drop-in: `POST .../drop-in-checkout` → reserva al APPROVED; STUB/CASH drop-in sigue inmediato
+  - Cart: Member `POST /me/transaction-items/mp/cart`; Staff `POST /members/:id/transaction-items/mp/cart` (`items[]` PACK|DROP_IN → 1 Preference)
+  - Derechos al APPROVED; CASH de Caja: `POST .../cash/cart` (APPROVED inmediato)
 - [x] Webhook MP idempotente
   - `POST /webhooks/mercadopago?tenantId=`; simulate stub; dedup `mp_payment_id`; pack→contrato / drop-in→reserva
 - [ ] Validar checkout/webhook MP con cuenta real (sandbox → live)
@@ -189,7 +189,7 @@
 
 ## E9 — App afiliado (Flutter)
 
-**Estado real (2026-08-31):** auth + cuenta + wallet SSI + sesiones/reservas/waitlist/drop-in hechos. Tienda: hay UI + parse de `recentTransactionItems` + solicitud de devolución; checkout MP afiliado sigue pendiente de cierre.  
+**Estado real (2026-08-31):** auth + cuenta + wallet SSI + sesiones (calendario + mis clases) hechos. Tienda = catálogo (packs + drop-in, card única + fotos) + carrito MP. Historial (⋮): un comprobante por transacción + panel de líneas (como Admin).  
 **API resuelta:** `GET /me/sessions` y `GET /me/packs` (member catalog) creados en `member-catalog` module.  
 Detalle: [14-auditoria-roadmap-vs-codigo-2026-08-13.md](./14-auditoria-roadmap-vs-codigo-2026-08-13.md).
 
@@ -208,21 +208,23 @@ Detalle: [14-auditoria-roadmap-vs-codigo-2026-08-13.md](./14-auditoria-roadmap-v
   - `GET /me/sessions` — sesiones publicadas, servicios activos, próximas por defecto; campos públicos + `dropInPrice`
   - `GET /me/packs` — packs activos con precio ≥1 y componentes; sin refs Kuatia
 - [x] Sesiones + reservas + waitlist (Flutter)
-  - Catálogo de clases (sede, horario, cupos, drop-in price)
-  - Reservar con crédito, drop-in MP (link checkout en dialog), cancelar reserva
-  - Lista de espera (join/leave con posición), pestañas Clases/Reservas/Espera
-  - `ApiClient` extendido con `patchJson` para PATCH endpoints
+  - Calendario mensual (tocar el día abre sus clases; no meses anteriores al actual)
+  - Cards del día / Mis clases: misma `CatalogCard`. Crédito → Reservar; sin crédito + drop-in → carrito; llena → waitlist
+  - Mis clases: reservadas y en espera. AppBar: carrito + ⋮ Historial
+  - `GET /me/sessions?from&to`; créditos desde `GET /me/account`
 
 ### Pendiente — app
 
-- [ ] Comprar pack / pagar (Tienda)
-  - Reemplazar `StorePlaceholderScreen`
-  - Listar packs → `POST /me/transaction-items/mp/checkout` → abrir Preference (`url_launcher`)
-  - Parsear `recentTransactionItems` del account (Flutter)
+- [~] Comprar pack / pagar (Tienda) — catálogo + carrito MP (pendiente prueba)
+  - Catálogo tipo Caja: Packs | Sesiones (drop-in); card única + `imageUrl`
+  - Carrito compartido → `POST /me/transaction-items/mp/cart`
+- [~] Historial (tanda 2)
+  - Menú ⋮ → una fila por transacción/comprobante + panel (código, líneas, copy Admin)
+  - POST solicitud por ítem APPROVED; no duplicar PENDING
+  - Pendiente: paginación si hay más de 50 comprobantes
 - [x] Solicitar devolución
-  - `POST /me/transaction-items/:id/refund-requests` desde Tienda → Pagos
+  - `POST /me/transaction-items/:id/refund-requests` desde Historial
   - Cola staff: **Solicitudes de devolución**; ejecución directa en **Cierre**
-  - Pendiente fino: listado propio de solicitudes en la app
 
 ### Pendiente — depende de otras épicas
 
@@ -231,7 +233,7 @@ Detalle: [14-auditoria-roadmap-vs-codigo-2026-08-13.md](./14-auditoria-roadmap-v
 
 ### Notas
 
-- Placeholders actuales: `features/store/`.
+- Tanda 2: Historial por transacción + comprobante (en código; pendiente prueba).
 - README mobile: actualizar tunnels Quark → Kuatia cuando se toque la épica.
 
 ---
@@ -377,8 +379,8 @@ Roadmap E9/E10 realineados (2026-08-13) tras [auditoría](./14-auditoria-roadmap
 **Orden sugerido para cerrar faltantes UI:**
 
 ```text
-1) Flutter E9: Tienda/MP + devolución
-   (API member packs/sesiones ya resueltas)
+1) Flutter E9 tanda 2: comprobantes + listado de solicitudes en Pagos
+   (carrito MP tanda 1 en código; pendiente prueba)
 2) Admin E10 thin: MP staff / pase sesión opcional
    → recurrencia / creditsExpireAt / receipts (después)
 3) E5 MP live (ops) → E8 → E7 → E12

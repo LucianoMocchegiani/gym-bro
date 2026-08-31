@@ -20,6 +20,21 @@ class RefundRepository {
       },
     );
   }
+
+  /// Solicitudes propias (`GET /me/refund-requests`).
+  Future<List<RefundRequest>> listMine({int pageSize = 100}) {
+    return _api.getJson<List<RefundRequest>>(
+      '/api/me/refund-requests?page=1&pageSize=$pageSize',
+      parse: (json) {
+        final items = json is Map ? json['items'] : null;
+        if (items is! List) return <RefundRequest>[];
+        return items
+            .whereType<Map>()
+            .map((e) => RefundRequest.fromJson(Map<String, dynamic>.from(e)))
+            .toList();
+      },
+    );
+  }
 }
 
 /// Solicitud de devolución del afiliado (`/me/refund-requests`).

@@ -31,10 +31,11 @@ export class MpCartItemDto {
 }
 
 /**
- * Inicia checkout MP de carrito (Caja): 1 preference con items[] → 1 pago.
+ * Inicia checkout MP de carrito: 1 preference con items[] → 1 pago.
  *
- * @remarks CU-PAG-001 / modelo MercadoLibre. Cada ítem genera 1+ Payment
- * PENDING; los derechos (contrato/reserva) se confirman al webhook APPROVED.
+ * @remarks CU-PAG-001 / modelo MercadoLibre. Mismo body en Caja
+ * (`POST /members/:id/.../mp/cart`) y afiliado (`POST /me/.../mp/cart`).
+ * Cada ítem genera 1+ Payment PENDING; los derechos se confirman al webhook APPROVED.
  */
 export class CreateMpCartCheckoutDto {
   @IsArray()

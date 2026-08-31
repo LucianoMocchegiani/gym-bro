@@ -53,6 +53,7 @@ Leyenda resultado: `P` pass · `F` fail · `B` bloqueado · `-` no aplica
 | R10 | Recurrencia genera N sesiones | Sesiones materializadas | CU-SER-004 | |
 | R11 | Cancelar pack mixto | Pierde libre y créditos | RN-SER-009 | |
 | R12 | Sin créditos → compra otro pack | Puede comprar | RN-SER-008 | |
+| R13 | App: día del calendario, crédito o drop-in al carrito | Reserva o ítem en carrito; no se entra a un mes anterior al actual | CU-RES-001/004 | |
 
 ---
 
@@ -67,6 +68,7 @@ Leyenda resultado: `P` pass · `F` fail · `B` bloqueado · `-` no aplica
 | P3c | Staff genera link MP drop-in en Caja | Preference + PENDING; ítem MP = servicio · sede · horario (dos drop-ins del mismo servicio se distinguen); reserva al APPROVED | CU-PAG-001 | |
 | P3d | Staff genera link MP de carrito en Caja | Sin redirect automático; al webhook APPROVED aparece “Ver comprobante” (1 receipt por cart) y Staff = quien generó el link | CU-PAG-001 | |
 | P3e | Staff cobra carrito en efectivo en Caja | APPROVED inmediato; panel con líneas (pack → contrato/vigencia + servicios del pack; drop-in → reserva/horario) | CU-PAG-002 | |
+| P3f | Afiliado paga carrito MP desde la app (pack y/o drop-in) | `POST /me/transaction-items/mp/cart` → 1 Preference; mismos derechos al APPROVED que Caja; sin cash en el celular | CU-PAG-001 | |
 | P4 | Comprobante tras pago | Visible app + email E1; en reportes y cierres, “Ver comprobante” abre el panel (pack incluye servicios) | RN-PAG-009 | |
 | P5 | Devolución afiliado dentro de política | Solicitud OK | CU-PAG-004 | |
 | P6 | Devolución afiliado fuera de política | Rechazo; admin aún puede | RN-PAG-012/011 | |

@@ -138,7 +138,13 @@ export class SessionsService {
         where,
         include: {
           service: {
-            select: { id: true, name: true, active: true, dropInPrice: true },
+            select: {
+              id: true,
+              name: true,
+              active: true,
+              dropInPrice: true,
+              imageUrl: true,
+            },
           },
           branch: { select: { id: true, name: true } },
           instructor: { select: { id: true, name: true } },
@@ -164,6 +170,7 @@ export class SessionsService {
         name: string;
         active: boolean;
         dropInPrice: number | null;
+        imageUrl: string | null;
       };
       branch: { id: string; name: string };
       instructor: { id: string; name: string | null } | null;
@@ -173,6 +180,7 @@ export class SessionsService {
       id: session.id,
       serviceId: session.serviceId,
       serviceName: session.service.name,
+      serviceImageUrl: session.service.imageUrl ?? null,
       branchName: session.branch.name,
       instructorName: session.instructor?.name ?? null,
       startsAt: session.startsAt,
