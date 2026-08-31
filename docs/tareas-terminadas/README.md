@@ -16,6 +16,7 @@ La creación de registros sigue la skill:
 
 ## Índice
 
+- [2026-08-31 — App afiliado: carrito MP, historial y calendario](./2026-08-31-app-afiliado-tienda-calendario.md)
 - [2026-08-31 — Recorte de GET Staff no usados por el Admin](./2026-08-31-recorte-get-staff-sin-uso.md)
 - [2026-08-31 — Super delgado: sin espejos nested](./2026-08-31-super-sin-nested.md)
 - [2026-08-31 — Cierre, solicitudes de devolución y categoría en grilla](./2026-08-31-cierre-solicitudes-categoria.md)
