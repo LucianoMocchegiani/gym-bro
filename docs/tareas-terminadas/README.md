@@ -16,6 +16,7 @@ La creación de registros sigue la skill:
 
 ## Índice
 
+- [2026-08-31 — Cierre, solicitudes de devolución y categoría en grilla](./2026-08-31-cierre-solicitudes-categoria.md)
 - [2026-08-31 — Devolución por cart en Arqueo y copy de ítems MP](./2026-08-31-devolucion-cart-copy-mp.md)
 - [2026-08-30 — Comprobante detallado, grilla única y staff en MP](./2026-08-30-caja-grilla-unica-staff-mp.md)
 - [2026-08-20 — Limpieza lint web: react-hooks sin excepciones](./2026-08-20-limpieza-lint-web.md)
