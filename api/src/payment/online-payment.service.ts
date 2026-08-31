@@ -48,11 +48,13 @@ export class OnlinePaymentService {
    *
    * @remarks Modelo MercadoLibre: el carrito agrega ítems, pero el checkout
    * es un solo total y un solo pago (RN-PAG-009 / CU-PAG-001).
+   * `recordedByStaffId` queda en el cart y el webhook lo copia a caja.
    */
   async startCartCheckout(
     tenantId: string,
     memberId: string,
     dto: CreateMpCartCheckoutDto,
+    recordedByStaffId: string | null,
   ): Promise<MpCartCheckoutResult> {
     await this.requireActiveMember(tenantId, memberId);
     await this.requireMpConnected(tenantId);
@@ -74,6 +76,18 @@ export class OnlinePaymentService {
       throw new BadRequestException(
         'Idempotency key already used for a different checkout',
       );
+    }
+
+    if (
+      existing &&
+      recordedByStaffId &&
+      !existing.recordedByStaffId
+    ) {
+      await this.prisma.transaction.update({
+        where: { id: existing.id },
+        data: { recordedByStaffId },
+      });
+      existing.recordedByStaffId = recordedByStaffId;
     }
 
     if (
@@ -105,6 +119,7 @@ export class OnlinePaymentService {
           amount: total,
           status: PaymentStatus.PENDING,
           idempotencyKey,
+          recordedByStaffId,
         },
       });
 

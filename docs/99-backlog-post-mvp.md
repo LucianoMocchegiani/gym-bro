@@ -97,6 +97,14 @@
 
 ---
 
+## Técnico / deuda de modelo
+
+| Ítem | Notas |
+|------|--------|
+| Renombrar `cash_movements` | El nombre quedó de cuando caja era solo efectivo. Hoy es el **asiento de caja del día** para CASH y MP (1 `INCOME` / `OUTCOME` por `transaction_item`, no por cart). Candidatos más honestos: `register_movements` o `ledger_movements`. No hace falta para el MVP; es rename + migración Prisma + docs/API. |
+
+---
+
 ## Visión lejana (del resumen histórico)
 
 | Ítem | Notas |

@@ -1,22 +1,4 @@
-/**
- * Movimiento de caja expuesto por la API.
- */
-export type CashMovementDetail = {
-  id: string;
-  tenantId: string;
-  businessDate: string;
-  transactionItemId: string;
-  /** Transaction (cart) a la que pertenece el ítem cobrado. */
-  transactionId: string;
-  memberId: string;
-  memberName: string | null;
-  recordedByStaffId: string | null;
-  recordedByStaffName: string | null;
-  amount: number;
-  kind: 'INCOME' | 'OUTCOME';
-  concept: 'PACK_CONTRACT' | 'DROP_IN' | 'REFUND';
-  createdAt: Date;
-};
+import type { LedgerMovementRow } from '../payment/ledger-row';
 
 /**
  * Arqueo de caja del día (CU-PAG-003).
@@ -35,7 +17,7 @@ export type CashReconciliationDetail = {
 };
 
 /**
- * Caja del día: totales, movimientos y arqueo si existe.
+ * Caja del día: totales, movimientos agrupados (misma fila que reportes) y arqueo.
  */
 export type CashDayDetail = {
   tenantId: string;
@@ -47,6 +29,7 @@ export type CashDayDetail = {
     net: number;
     movementCount: number;
   };
-  movements: CashMovementDetail[];
+  /** 1 fila por cobro o devolución de cart (CU-PAG-003). */
+  movements: LedgerMovementRow[];
   reconciliation: CashReconciliationDetail | null;
 };

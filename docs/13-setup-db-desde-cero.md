@@ -100,7 +100,20 @@ Desde el host (sin Docker para la API): en `api/.env` usá `localhost` en `DATAB
 
 ---
 
-## 5. Qué no automatizamos (aún)
+## 5. Limpiar cobros de prueba (sin wipe del volumen)
+
+Borra carts, ítems, receipts, caja, contratos, reservas y waitlist. **No** borra gym, staff, afiliados ni catálogo. El siguiente comprobante vuelve a `GB-000001`.
+
+```powershell
+Get-Content -Raw api\prisma\limpiar-cobros-dev.sql |
+  docker compose exec -T postgres psql -U gymbro -d gymbro -v ON_ERROR_STOP=1
+```
+
+Script: [`api/prisma/limpiar-cobros-dev.sql`](../api/prisma/limpiar-cobros-dev.sql). Solo desarrollo.
+
+---
+
+## 6. Qué no automatizamos (aún)
 
 - Migraciones al `CMD` de la API (opcional a futuro solo en Compose local).
 - Seed automático (podría pisar datos locales; se deja explícito).

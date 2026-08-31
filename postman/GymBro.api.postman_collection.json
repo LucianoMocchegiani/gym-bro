@@ -1520,7 +1520,7 @@
                  },
                  {
                      "name":  "Reports",
-                     "description":  "E11. GET /reports/summary?from\u0026to (reports.read). Ingresos + snapshot comercial. Historial de puerta en access-attempts.",
+                     "description":  "E11. GET /reports/summary?from&to (reports.read). Ingresos + devoluciones + snapshot. transactions[] = misma fila que caja (cart + kind + staff + receiptId).",
                      "item":  [
                                   {
                                       "name":  "Staff GET reports summary",
@@ -3682,7 +3682,7 @@
                  },
                  {
 "name":  "Payment register",
-                      "description":  "CU-PAG-002/003. GET /payment-register/day + POST /payment-register/day/reconcile (cashier.operate). Movimientos de caja (todos los mÃ©todos). Arqueo 1 por dÃ­a; no bloquea cobros. DÃ­a en America/Argentina/Buenos_Aires.",
+                      "description":  "CU-PAG-002/003. GET /payment-register/day + POST /payment-register/day/reconcile (cashier.operate). movements[] = 1 fila por cobro o devolución de cart (misma grilla que reportes). Arqueo 1 por día; no bloquea cobros. Día en America/Argentina/Buenos_Aires.",
                      "item":  [
                                   {
                                       "name":  "Staff GET cash day (today)",
@@ -3777,6 +3777,17 @@
                      "description":  "RN-PAG-009. Comprobante interno al aprobar pago (contrato/drop-in). Member /me/receipts; Staff members.read. Sin email N1.",
                      "item":  [
                                   {
+                                      "name":  "Staff GET receipt by id",
+                                      "request":  {
+                                                      "method":  "GET",
+                                                      "header":  [
+
+                                                                 ],
+                                                      "url":  "{{baseUrl}}/api/receipts/{{createdReceiptId}}",
+                                                      "description":  "Comprobante por id (cobro o devolución). members.read."
+                                                  }
+                                  },
+                                  {
                                       "name":  "Staff GET transaction receipt",
                                       "request":  {
                                                       "method":  "GET",
@@ -3784,7 +3795,7 @@
 
                                                                  ],
                                                       "url":  "{{baseUrl}}/api/transactions/{{mpCartId}}/receipt",
-                                                      "description":  "Comprobante del cart (CASH o MP). Us\u00e1 mpCartId (transactionId) de un cobro APPROVED. members.read."
+                                                      "description":  "Comprobante del cart (CASH o MP) con lines[] (pack → contrato/vigencia + services[]; drop-in → reserva/horario). Usa mpCartId (transactionId) de un cobro APPROVED. members.read."
                                                   }
                                   },
                                   {

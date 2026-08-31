@@ -15,6 +15,7 @@ export interface InitiatePaymentParams {
   memberId: string;
   method: PaymentMethod;
   items: TransactionItemInput[];
+  recordedByStaffId?: string | null;
   mpPreferenceId?: string | null;
   mpInitPoint?: string | null;
   mpSandboxInitPoint?: string | null;
@@ -45,7 +46,7 @@ export class TransactionService {
   async initiateTransaction(
     params: InitiatePaymentParams,
   ): Promise<Prisma.TransactionGetPayload<{ include: { transactionItems: true } }>> {
-    const { tenantId, memberId, method, items, mpPreferenceId, mpInitPoint, mpSandboxInitPoint } = params;
+    const { tenantId, memberId, method, items, recordedByStaffId, mpPreferenceId, mpInitPoint, mpSandboxInitPoint } = params;
 
     const totalAmount = items.reduce((sum, item) => sum + item.amount, 0);
     const firstItem = items[0];
@@ -57,6 +58,7 @@ export class TransactionService {
         amount: totalAmount,
         status: PaymentStatus.PENDING,
         idempotencyKey: firstItem.idempotencyKey,
+        recordedByStaffId: recordedByStaffId ?? null,
         mpPreferenceId,
         mpInitPoint,
         mpSandboxInitPoint,

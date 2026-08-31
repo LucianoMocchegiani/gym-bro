@@ -1,16 +1,16 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import {
+  CashMovementKind,
   ContractStatus,
   MemberStatus,
   PaymentMethod,
-  PaymentStatus,
 } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import { ReportsSummary } from './reports.types';
 import {
-  ReportTransactionItem,
-  ReportTransactionRow,
-  ReportsSummary,
-} from './reports.types';
+  LEDGER_MOVEMENT_INCLUDE,
+  buildLedgerRows,
+} from '../payment/ledger-row';
 
 const REPORTS_TIMEZONE = 'America/Argentina/Buenos_Aires' as const;
 const DETAIL_LIMIT = 200;
@@ -18,7 +18,7 @@ const DETAIL_LIMIT = 200;
 /**
  * Reportes de dinero + snapshot comercial (E11).
  *
- * Transacciones agrupadas por `transaction_id` (CASH y MP).
+ * Movimientos = caja agrupada por cart (cobros y devoluciones), misma grilla que `/arqueo`.
  */
 @Injectable()
 export class ReportsService {
@@ -35,8 +35,13 @@ export class ReportsService {
     const to = toYmd ?? today;
     this.assertValidRange(from, to);
 
-    const rangeStart = this.dayStartUtc(from);
-    const rangeEndExclusive = this.dayStartUtc(this.addDaysYmd(to, 1));
+    const fromDate = this.parseBusinessDate(from);
+    const toDate = this.parseBusinessDate(to);
+    const movementWhere = {
+      tenantId,
+      businessDate: { gte: fromDate, lte: toDate },
+      ...(memberId ? { memberId } : {}),
+    };
 
     const [
       activeMembers,
@@ -47,8 +52,8 @@ export class ReportsService {
       contractsExpired,
       contractsCancelled,
       contractsRefunded,
-      paymentsApproved,
-      paymentRows,
+      totalsRows,
+      movementRows,
     ] = await Promise.all([
       this.prisma.member.count({
         where: { tenantId, status: MemberStatus.ACTIVE },
@@ -78,44 +83,39 @@ export class ReportsService {
       this.prisma.contract.count({
         where: { tenantId, status: ContractStatus.REFUNDED },
       }),
-      this.prisma.transactionItem.findMany({
-        where: {
-          tenantId,
-          status: PaymentStatus.APPROVED,
-          createdAt: { gte: rangeStart, lt: rangeEndExclusive },
-          ...(memberId ? { memberId } : {}),
+      this.prisma.cashMovement.findMany({
+        where: movementWhere,
+        select: {
+          amount: true,
+          kind: true,
+          transactionItem: { select: { method: true } },
         },
-        select: { amount: true, method: true },
       }),
-      this.prisma.transactionItem.findMany({
-        where: {
-          tenantId,
-          status: PaymentStatus.APPROVED,
-          createdAt: { gte: rangeStart, lt: rangeEndExclusive },
-          ...(memberId ? { memberId } : {}),
-        },
+      this.prisma.cashMovement.findMany({
+        where: movementWhere,
         orderBy: { createdAt: 'desc' },
-        take: DETAIL_LIMIT,
-        include: {
-          member: { select: { name: true, email: true } },
-          pack: { select: { name: true } },
-          transaction: { select: { id: true, mpPaymentId: true } },
-        },
+        take: DETAIL_LIMIT * 2,
+        include: LEDGER_MOVEMENT_INCLUDE,
       }),
     ]);
 
     const byMethod = { CASH: 0, MP: 0 };
     let totalApproved = 0;
-    for (const p of paymentsApproved) {
+    let totalRefunded = 0;
+    for (const p of totalsRows) {
+      if (p.kind === CashMovementKind.OUTCOME) {
+        totalRefunded += p.amount;
+        continue;
+      }
       totalApproved += p.amount;
-      if (p.method === PaymentMethod.CASH) {
+      if (p.transactionItem.method === PaymentMethod.CASH) {
         byMethod.CASH += p.amount;
-      } else if (p.method === PaymentMethod.MP) {
+      } else if (p.transactionItem.method === PaymentMethod.MP) {
         byMethod.MP += p.amount;
       }
     }
 
-    const transactions = this.buildTransactions(paymentRows);
+    const transactions = buildLedgerRows(movementRows).slice(0, DETAIL_LIMIT);
 
     return {
       from,
@@ -135,84 +135,12 @@ export class ReportsService {
       },
       income: {
         totalApproved,
+        totalRefunded,
         byMethod,
         transactions,
         transactionCount: transactions.length,
       },
     };
-  }
-
-  /**
-   * Agrupa ítems APPROVED por `transaction_id` (CASH y MP).
-   * Sin transaction_id (legacy) cada ítem es una fila.
-   */
-  private buildTransactions(
-    rows: Array<{
-      id: string;
-      amount: number;
-      method: PaymentMethod;
-      status: PaymentStatus;
-      createdAt: Date;
-      memberId: string;
-      member: { name: string | null; email: string };
-      pack: { name: string } | null;
-      sessionId: string | null;
-      transactionId: string | null;
-      transaction: { id: string; mpPaymentId: string | null } | null;
-    }>,
-  ): ReportTransactionRow[] {
-    const byTransaction = new Map<string, ReportTransactionRow>();
-    const standalone: ReportTransactionRow[] = [];
-
-    for (const row of rows) {
-      const item: ReportTransactionItem = {
-        id: row.id,
-        amount: row.amount,
-        kind: row.sessionId ? 'DROP_IN' : 'PACK',
-        packName: row.pack?.name ?? null,
-      };
-
-      if (row.transactionId && row.transaction) {
-        const existing = byTransaction.get(row.transactionId);
-        if (existing) {
-          existing.items.push(item);
-        } else {
-          byTransaction.set(row.transactionId, {
-            id: row.transactionId,
-            amount: 0,
-            method: row.method === PaymentMethod.MP ? 'MP' : 'CASH',
-            status: 'APPROVED',
-            createdAt: row.createdAt,
-            memberId: row.memberId,
-            memberName: row.member.name,
-            memberEmail: row.member.email,
-            mpPaymentId: row.transaction.mpPaymentId ?? null,
-            items: [item],
-          });
-        }
-      } else {
-        standalone.push({
-          id: row.id,
-          amount: row.amount,
-          method: 'CASH',
-          status: 'APPROVED',
-          createdAt: row.createdAt,
-          memberId: row.memberId,
-          memberName: row.member.name,
-          memberEmail: row.member.email,
-          mpPaymentId: null,
-          items: [item],
-        });
-      }
-    }
-
-    for (const tx of byTransaction.values()) {
-      tx.amount = tx.items.reduce((sum, i) => sum + i.amount, 0);
-    }
-
-    const all = [...byTransaction.values(), ...standalone];
-    all.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
-    return all;
   }
 
   private assertValidRange(from: string, to: string): void {
@@ -232,9 +160,9 @@ export class ReportsService {
     }).format(at);
   }
 
-  private dayStartUtc(ymd: string): Date {
-    this.parseYmd(ymd);
-    return new Date(`${ymd}T03:00:00.000Z`);
+  private parseBusinessDate(ymd: string): Date {
+    const { year, month, day } = this.parseYmd(ymd);
+    return new Date(Date.UTC(year, month - 1, day));
   }
 
   private parseYmd(ymd: string): { year: number; month: number; day: number } {
@@ -254,14 +182,5 @@ export class ReportsService {
       throw new BadRequestException('date is not a valid calendar day');
     }
     return { year, month, day };
-  }
-
-  private addDaysYmd(ymd: string, days: number): string {
-    const { year, month, day } = this.parseYmd(ymd);
-    const date = new Date(Date.UTC(year, month - 1, day + days));
-    const y = date.getUTCFullYear();
-    const m = String(date.getUTCMonth() + 1).padStart(2, '0');
-    const d = String(date.getUTCDate()).padStart(2, '0');
-    return `${y}-${m}-${d}`;
   }
 }

@@ -58,6 +58,7 @@ erDiagram
   tenants ||--o| receipt_sequences : numbers
   tenants ||--o{ transactions : carts
   members ||--o{ transactions : pays
+  staff_users ||--o{ transactions : charges
   transactions ||--o{ transaction_items : contains
   transactions ||--o| receipts : issues
   transaction_items ||--o| receipts : legacy
@@ -101,6 +102,7 @@ erDiagram
     uuid id PK
     uuid tenant_id FK
     uuid member_id FK
+    uuid recorded_by_staff_id FK
     int amount
     enum status
     int refunded_amount
@@ -712,6 +714,7 @@ Carrito de Caja (CASH y MP, CU-PAG-001 / modelo MercadoLibre): 1 cart → N íte
 | `mp_preference_id` / `mp_init_point` / `mp_sandbox_init_point` | text nullable | Preference + URLs (solo MP) |
 | `mp_payment_id` | text nullable | id del pago MP del cart (dedup webhook) |
 | `refunded_amount` | int | default 0; tracking de devoluciones |
+| `recorded_by_staff_id` | uuid FK nullable | staff que inició el cobro (Caja); SET NULL; null si el afiliado paga solo |
 | `created_at` / `updated_at` | timestamptz | |
 
 Cada `transaction_item` tiene `transaction_id` **obligatorio**. Refund de carrito MP **no soportado** (limitación conocida).
@@ -929,6 +932,7 @@ Historia incremental (2026-07 / 2026-08) **compactada** en un baseline (`40476fa
 | Migración | Contenido |
 |-----------|-----------|
 | `20260830145646_init` | Schema completo actual: enums, tablas, FKs, índices Prisma y **índices únicos parciales** (sede default, reserva `CONFIRMED`, waitlist `WAITING`, credencial `ACTIVE`). Incluye `image_url`, `transactions` + `transaction_items.transaction_id` NOT NULL, `receipts.transaction_id`, `refunded_amount`. |
+| `20260830220000_transaction_recorded_by_staff` | `transactions.recorded_by_staff_id` (staff que inició el cobro; el webhook MP lo copia a `cash_movements`). |
 
 Comandos y checklist “desde cero”: [13-setup-db-desde-cero.md](./13-setup-db-desde-cero.md).
 

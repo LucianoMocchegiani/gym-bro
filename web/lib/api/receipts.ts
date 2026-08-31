@@ -5,6 +5,7 @@
 import { apiRequest } from '@/lib/api/client';
 import { toSearchParams } from '@/lib/api/list';
 import type { ListParams, ListResult } from '@/lib/api/list';
+import type { PaymentLineDetail } from '@/lib/api/payment-lines';
 
 export type ReceiptMethod = 'STUB' | 'CASH' | 'MP';
 export type ReceiptConcept = 'PACK_CONTRACT' | 'DROP_IN';
@@ -23,7 +24,15 @@ export type ReceiptDetail = {
   concept: ReceiptConcept;
   description: string | null;
   createdAt: string;
+  lines: PaymentLineDetail[];
 };
+
+/**
+ * Comprobante por id (`members.read`).
+ */
+export function getReceipt(receiptId: string): Promise<ReceiptDetail> {
+  return apiRequest<ReceiptDetail>(`/receipts/${receiptId}`);
+}
 
 /**
  * Comprobante de un cart (CASH o MP) (`members.read`).

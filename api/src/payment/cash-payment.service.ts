@@ -71,6 +71,7 @@ export class CashPaymentService {
       memberId,
       method,
       items,
+      recordedByStaffId: recordedByStaffId ?? null,
     });
 
     const confirmed = await this.transactionService.confirmTransaction(

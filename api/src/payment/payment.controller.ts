@@ -36,9 +36,15 @@ export class PaymentController {
   startStaffCartCheckout(
     @CurrentTenant() tenantId: string,
     @Param('memberId', ParseUUIDPipe) memberId: string,
+    @CurrentUser() user: AuthUser,
     @Body() dto: CreateMpCartCheckoutDto,
   ): Promise<MpCartCheckoutResult> {
-    return this.onlinePayment.startCartCheckout(tenantId, memberId, dto);
+    return this.onlinePayment.startCartCheckout(
+      tenantId,
+      memberId,
+      dto,
+      user.profileType === 'STAFF' ? user.userId : null,
+    );
   }
 
   @Post('members/:memberId/transaction-items/cash/cart')

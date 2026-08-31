@@ -1,50 +1,22 @@
 'use client';
 
 import { FormEvent, useEffect, useState } from 'react';
-import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { AdminShell } from '@/components/AdminShell';
-import { DataTable, ListToolbar } from '@/components/AdminList';
+import { ListToolbar } from '@/components/AdminList';
 import { Panel } from '@/components/AdminUi';
 import { MemberPicker } from '@/components/MemberPicker';
-import { ReceiptPanel } from '@/components/ReceiptPanel';
+import { MoneyMovementsTable } from '@/components/MoneyMovementsTable';
 import { RequireStaff } from '@/components/RequireStaff';
 import { SkeletonCards } from '@/components/Skeleton';
-import { StatusPill } from '@/components/StatusPill';
-import { IconReceipt, RowIconButton } from '@/components/RowActions';
-import { memberFichaHref } from '@/lib/member-link';
 import { ApiClientError } from '@/lib/api/client';
 import { getReportsSummary } from '@/lib/api/reports';
-import type { ReportsSummary, ReportTransactionRow } from '@/lib/api/reports';
-import { getReceiptByTransaction } from '@/lib/api/receipts';
-import type { ReceiptDetail } from '@/lib/api/receipts';
+import type { ReportsSummary } from '@/lib/api/reports';
 import { formatMoney } from '@/lib/cash-labels';
 import { todayBusinessDate } from '@/lib/api/payment-register';
 
 function monthStart(ymd: string): string {
   return `${ymd.slice(0, 7)}-01`;
-}
-
-function formatWhen(iso: string): string {
-  return new Intl.DateTimeFormat('es-AR', {
-    dateStyle: 'short',
-    timeStyle: 'short',
-    timeZone: 'America/Argentina/Buenos_Aires',
-  }).format(new Date(iso));
-}
-
-function methodLabel(m: string): string {
-  if (m === 'CASH') return 'Efectivo';
-  if (m === 'MP') return 'MP';
-  return m;
-}
-
-function conceptLabel(tx: ReportTransactionRow): string {
-  if (tx.items.length === 1) {
-    const item = tx.items[0];
-    return item.kind === 'DROP_IN' ? 'Drop-in' : (item.packName ?? 'Pack');
-  }
-  return `${tx.items.length} ítems`;
 }
 
 export default function ReportesPage() {
@@ -71,12 +43,6 @@ function ReportesInner() {
   const [data, setData] = useState<ReportsSummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
-  const [receipt, setReceipt] = useState<ReceiptDetail | null>(null);
-  const [receiptBusyId, setReceiptBusyId] = useState<string | null>(null);
-  const [receiptError, setReceiptError] = useState<string | null>(null);
-
-  const [expandedId, setExpandedId] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -108,24 +74,6 @@ function ReportesInner() {
     return () => { cancelled = true; };
   }, [appliedFrom, appliedTo, appliedMemberId]);
 
-  async function openReceipt(txId: string) {
-    setReceiptBusyId(txId);
-    setReceiptError(null);
-    try {
-      const r = await getReceiptByTransaction(txId);
-      setReceipt(r);
-    } catch (err) {
-      setReceipt(null);
-      setReceiptError(
-        err instanceof ApiClientError
-          ? err.message
-          : 'No se pudo cargar el comprobante',
-      );
-    } finally {
-      setReceiptBusyId(null);
-    }
-  }
-
   function onApply(e: FormEvent) {
     e.preventDefault();
     setAppliedFrom(from);
@@ -140,6 +88,7 @@ function ReportesInner() {
 
   const transactions = data?.income.transactions ?? [];
   const transactionCount = data?.income.transactionCount ?? 0;
+  const totalRefunded = data?.income.totalRefunded ?? 0;
 
   return (
     <AdminShell
@@ -178,12 +127,15 @@ function ReportesInner() {
             <p className="muted small">
               Caja {formatMoney(data.income.byMethod.CASH)} · MP{' '}
               {formatMoney(data.income.byMethod.MP)}
+              {totalRefunded > 0
+                ? ` · Dev. ${formatMoney(totalRefunded)}`
+                : ''}
             </p>
           </Panel>
         </div>
       ) : null}
 
-      <ListToolbar hint="Ingresos del rango. Afiliados y packs son estado actual.">
+      <ListToolbar hint="Cobros y devoluciones del rango. Afiliados y packs son estado actual.">
         <form className="toolbar-field search-form" onSubmit={onApply}>
           <label>
             Desde
@@ -224,138 +176,15 @@ function ReportesInner() {
         </form>
       </ListToolbar>
 
-      <DataTable
-        title="Movimientos"
-        description={
-          data && transactionCount > transactions.length
-            ? `Mostrando ${transactions.length} de ${transactionCount}`
-            : data
-              ? `${transactionCount} transacciones`
-              : undefined
-        }
+      <MoneyMovementsTable
+        rows={transactions}
         loading={loading}
         error={error}
-        isEmpty={!loading && !error && transactions.length === 0}
-        emptyText="Sin movimientos en el período."
-        paginate={false}
-        header={
-          <>
-            <th>Fecha y hora</th>
-            <th>Afiliado</th>
-            <th>Concepto</th>
-            <th>Medio</th>
-            <th>Monto</th>
-            <th />
-          </>
+        description={
+          data ? `${transactionCount} movimientos` : undefined
         }
-      >
-        {transactions.map((tx) => {
-          const isExpanded = expandedId === tx.id;
-          return (
-            <TransactionRow
-              key={tx.id}
-              tx={tx}
-              isExpanded={isExpanded}
-              expandedId={expandedId}
-              setExpandedId={setExpandedId}
-              receiptBusyId={receiptBusyId}
-              openReceipt={openReceipt}
-            />
-          );
-        })}
-      </DataTable>
-
-      {receiptError ? <p className="error">{receiptError}</p> : null}
-
-      {receipt ? (
-        <ReceiptPanel receipt={receipt} onClose={() => setReceipt(null)} />
-      ) : null}
+        emptyText="Sin movimientos en el período."
+      />
     </AdminShell>
-  );
-}
-
-function TransactionRow({
-  tx,
-  isExpanded,
-  expandedId,
-  setExpandedId,
-  receiptBusyId,
-  openReceipt,
-}: {
-  tx: ReportTransactionRow;
-  isExpanded: boolean;
-  expandedId: string | null;
-  setExpandedId: (id: string | null) => void;
-  receiptBusyId: string | null;
-  openReceipt: (txId: string) => void;
-}) {
-  const hasMultiItems = tx.items.length > 1;
-  const showExpandable = hasMultiItems && tx.method === 'MP';
-
-  return (
-    <>
-      <tr
-        className={showExpandable ? 'clickable' : undefined}
-        onClick={showExpandable ? () => setExpandedId(isExpanded ? null : tx.id) : undefined}
-      >
-        <td>{formatWhen(tx.createdAt)}</td>
-        <td>
-          {tx.memberId ? (
-            <Link
-              href={memberFichaHref(
-                tx.memberId,
-                tx.memberName ?? tx.memberEmail ?? '',
-              )}
-            >
-              {tx.memberName?.trim() || tx.memberEmail}
-            </Link>
-          ) : (
-            tx.memberName?.trim() || tx.memberEmail || '—'
-          )}
-        </td>
-        <td>{conceptLabel(tx)}</td>
-        <td>
-          <StatusPill tone={tx.method === 'MP' ? 'ok' : 'warn'}>
-            {methodLabel(tx.method)}
-          </StatusPill>
-          {tx.mpPaymentId ? (
-            <span className="muted small" style={{ marginLeft: 6 }}>
-              #{tx.mpPaymentId}
-            </span>
-          ) : null}
-        </td>
-        <td>{formatMoney(tx.amount)}</td>
-        <td className="row-actions">
-          <RowIconButton
-            label="Ver comprobante"
-            disabled={!!receiptBusyId}
-            onClick={(e) => { e.stopPropagation(); void openReceipt(tx.id); }}
-          >
-            <IconReceipt />
-          </RowIconButton>
-          {showExpandable ? (
-            <span className="muted small">{isExpanded ? '▲' : '▼'}</span>
-          ) : null}
-        </td>
-      </tr>
-      {isExpanded && hasMultiItems && tx.method === 'MP'
-        ? tx.items.map((item) => (
-            <tr key={item.id} className="sub-row">
-              <td />
-              <td />
-              <td>
-                {item.kind === 'DROP_IN' ? 'Drop-in' : (item.packName ?? 'Pack')}
-              </td>
-              <td>
-                <StatusPill tone={item.kind === 'PACK' ? 'ok' : 'warn'}>
-                  {item.kind === 'PACK' ? 'Pack' : 'Drop-in'}
-                </StatusPill>
-              </td>
-              <td>{formatMoney(item.amount)}</td>
-              <td />
-            </tr>
-          ))
-        : null}
-    </>
   );
 }

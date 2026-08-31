@@ -1245,20 +1245,6 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator {
   font-weight: 600;
 }
 
-.data-table tbody tr.clickable {
-  cursor: pointer;
-}
-
-.data-table tbody tr.sub-row {
-  background: var(--bg-subtle, rgba(0,0,0,0.02));
-}
-
-.data-table tbody tr.sub-row td {
-  padding-top: 0.25rem;
-  padding-bottom: 0.25rem;
-  font-size: 0.88rem;
-}
-
 .status-pill {
   display: inline-block;
   padding: 0.15rem 0.5rem;
@@ -1379,6 +1365,18 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator {
 
 .detail-dl code {
   font-size: 0.85em;
+}
+
+.receipt-lines .cart-line {
+  align-items: start;
+}
+
+.payment-line-copy p {
+  margin: 0;
+}
+
+.payment-line-copy p + p {
+  margin-top: 0.15rem;
 }
 
 .audit-detail-grid {

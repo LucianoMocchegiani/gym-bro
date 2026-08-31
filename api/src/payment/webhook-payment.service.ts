@@ -204,6 +204,7 @@ export class WebhookPaymentService {
       include: {
         contract: { select: { id: true } },
         reservation: { select: { id: true } },
+        transaction: { select: { recordedByStaffId: true } },
       },
     });
 
@@ -298,7 +299,7 @@ export class WebhookPaymentService {
           concept: transactionItem.packId
             ? CashMovementConcept.PACK_CONTRACT
             : CashMovementConcept.DROP_IN,
-          recordedByStaffId: null,
+          recordedByStaffId: transactionItem.transaction?.recordedByStaffId ?? null,
         });
         if (transactionItem.transactionId) {
           const confirmed = await tx.transaction.findFirstOrThrow({
@@ -479,6 +480,7 @@ export class WebhookPaymentService {
     transaction: {
       id: string;
       memberId: string;
+      recordedByStaffId: string | null;
       transactionItems: Array<{
         id: string;
         memberId: string;
@@ -497,7 +499,7 @@ export class WebhookPaymentService {
         concept: item.packId
           ? CashMovementConcept.PACK_CONTRACT
           : CashMovementConcept.DROP_IN,
-        recordedByStaffId: null,
+        recordedByStaffId: transaction.recordedByStaffId,
       });
     }
     await this.issueMpTransactionReceipt(tx, tenantId, transaction);

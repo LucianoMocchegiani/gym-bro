@@ -15,9 +15,12 @@ import { PrismaService } from '../prisma/prisma.service';
 import { ReconcileCashDayDto } from './dto/reconcile-cash-day.dto';
 import {
   CashDayDetail,
-  CashMovementDetail,
   CashReconciliationDetail,
 } from './register.types';
+import {
+  LEDGER_MOVEMENT_INCLUDE,
+  buildLedgerRows,
+} from '../payment/ledger-row';
 
 export const CASH_REGISTER_TIMEZONE = 'America/Argentina/Buenos_Aires' as const;
 
@@ -73,9 +76,15 @@ export class PaymentRegisterService {
           kind: CashMovementKind.INCOME,
         },
       },
-      select: { id: true },
+      select: { id: true, recordedByStaffId: true },
     });
     if (existing) {
+      if (!existing.recordedByStaffId && input.recordedByStaffId) {
+        await tx.cashMovement.update({
+          where: { id: existing.id },
+          data: { recordedByStaffId: input.recordedByStaffId },
+        });
+      }
       return;
     }
 
@@ -140,11 +149,7 @@ export class PaymentRegisterService {
     const [rows, reconciliation] = await Promise.all([
       this.prisma.cashMovement.findMany({
         where: { tenantId, businessDate },
-        include: {
-          member: { select: { id: true, name: true } },
-          recordedByStaff: { select: { id: true, name: true } },
-          transactionItem: { select: { id: true, transactionId: true } },
-        },
+        include: LEDGER_MOVEMENT_INCLUDE,
         orderBy: { createdAt: 'asc' },
       }),
       this.prisma.cashReconciliation.findUnique({
@@ -157,12 +162,12 @@ export class PaymentRegisterService {
       }),
     ]);
 
-    const movements = rows.map((row) => this.toMovementDetail(row));
-    const income = movements
-      .filter((m) => m.kind === 'INCOME')
+    const movements = buildLedgerRows(rows);
+    const income = rows
+      .filter((m) => m.kind === CashMovementKind.INCOME)
       .reduce((sum, m) => sum + m.amount, 0);
-    const outcome = movements
-      .filter((m) => m.kind === 'OUTCOME')
+    const outcome = rows
+      .filter((m) => m.kind === CashMovementKind.OUTCOME)
       .reduce((sum, m) => sum + m.amount, 0);
 
     return {
@@ -317,38 +322,6 @@ export class PaymentRegisterService {
     const m = String(date.getUTCMonth() + 1).padStart(2, '0');
     const d = String(date.getUTCDate()).padStart(2, '0');
     return `${y}-${m}-${d}`;
-  }
-
-  private toMovementDetail(row: {
-    id: string;
-    tenantId: string;
-    businessDate: Date;
-    transactionItemId: string;
-    memberId: string;
-    recordedByStaffId: string | null;
-    amount: number;
-    kind: CashMovementKind;
-    concept: CashMovementConcept;
-    createdAt: Date;
-    member: { id: string; name: string | null };
-    recordedByStaff: { id: string; name: string | null } | null;
-    transactionItem: { id: string; transactionId: string };
-  }): CashMovementDetail {
-    return {
-      id: row.id,
-      tenantId: row.tenantId,
-      businessDate: this.formatBusinessDate(row.businessDate),
-      transactionItemId: row.transactionItemId,
-      transactionId: row.transactionItem.transactionId,
-      memberId: row.memberId,
-      memberName: row.member.name,
-      recordedByStaffId: row.recordedByStaffId,
-      recordedByStaffName: row.recordedByStaff?.name ?? null,
-      amount: row.amount,
-      kind: row.kind,
-      concept: row.concept,
-      createdAt: row.createdAt,
-    };
   }
 
   private toReconciliationDetail(row: {

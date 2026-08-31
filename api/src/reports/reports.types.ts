@@ -1,38 +1,17 @@
+import type { LedgerMovementRow } from '../payment/ledger-row';
+
 /**
- * Tipos del resumen de reportes mínimos (E11) — foco en dinero + contexto comercial.
+ * Tipos del resumen de reportes mínimos (E11) — dinero + snapshot comercial.
  *
- * Transacciones: 1 fila por evento financiero real.
- * - MP: 1 cart_checkout = 1 transacción (puede tener múltiples ítems)
- * - Efectivo: 1 payment = 1 transacción
+ * Movimientos: 1 fila por cobro o devolución de cart (misma grilla que caja).
  */
-
-export type ReportTransactionItem = {
-  id: string;
-  amount: number;
-  kind: 'PACK' | 'DROP_IN';
-  packName: string | null;
-};
-
-export type ReportTransactionRow = {
-  id: string;
-  amount: number;
-  method: 'CASH' | 'MP';
-  status: 'APPROVED';
-  createdAt: Date;
-  memberId: string;
-  memberName: string | null;
-  memberEmail: string;
-  /** Referencia MP (payment id de MP) — solo para transacciones MP. */
-  mpPaymentId: string | null;
-  /** Ítems de la transacción. MP puede tener N; efectivo siempre 1. */
-  items: ReportTransactionItem[];
-};
+export type ReportTransactionRow = LedgerMovementRow;
 
 /**
  * Resumen de ingresos del período + snapshot comercial.
  *
  * @remarks Conteos de afiliados/contratos son punto en el tiempo;
- * ingresos filtran por `createdAt` en el rango `[from, to]`.
+ * movimientos filtran por `businessDate` en el rango `[from, to]`.
  */
 export type ReportsSummary = {
   from: string;
@@ -53,11 +32,12 @@ export type ReportsSummary = {
   };
   income: {
     totalApproved: number;
+    totalRefunded: number;
     byMethod: {
       CASH: number;
       MP: number;
     };
-    /** Transacciones agrupadas (1 fila por pago real). */
+    /** Cobros y devoluciones agrupados (1 fila por cart + tipo). */
     transactions: ReportTransactionRow[];
     transactionCount: number;
   };

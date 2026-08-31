@@ -1,6 +1,7 @@
 'use client';
 
 import { AdminModal } from '@/components/AdminModal';
+import { PaymentLineCopy } from '@/components/PaymentLineCopy';
 import type { ReceiptDetail } from '@/lib/api/receipts';
 import { formatMoney } from '@/lib/cash-labels';
 
@@ -17,17 +18,6 @@ function formatMethod(method: ReceiptDetail['method']): string {
   }
 }
 
-function formatConcept(concept: ReceiptDetail['concept']): string {
-  switch (concept) {
-    case 'PACK_CONTRACT':
-      return 'Pack / contrato';
-    case 'DROP_IN':
-      return 'Drop-in';
-    default:
-      return concept;
-  }
-}
-
 type ReceiptPanelProps = {
   receipt: ReceiptDetail;
   onClose: () => void;
@@ -36,12 +26,15 @@ type ReceiptPanelProps = {
 
 /**
  * Modal de comprobante interno (RN-PAG-009).
+ *
+ * @remarks Muestra las líneas del cart (pack + servicios, o drop-in/reserva).
  */
 export function ReceiptPanel({
   receipt,
   onClose,
   title = 'Comprobante',
 }: ReceiptPanelProps) {
+  const lines = receipt.lines ?? [];
   return (
     <AdminModal open onClose={onClose} title={title} description={receipt.code}>
       <dl className="detail-dl">
@@ -60,16 +53,6 @@ export function ReceiptPanel({
           <dd>{formatMethod(receipt.method)}</dd>
         </div>
         <div>
-          <dt>Concepto</dt>
-          <dd>{formatConcept(receipt.concept)}</dd>
-        </div>
-        {receipt.description ? (
-          <div>
-            <dt>Detalle</dt>
-            <dd>{receipt.description}</dd>
-          </div>
-        ) : null}
-        <div>
           <dt>Emitido</dt>
           <dd>
             {new Date(receipt.createdAt).toLocaleString('es-AR', {
@@ -79,6 +62,18 @@ export function ReceiptPanel({
           </dd>
         </div>
       </dl>
+      {lines.length > 0 ? (
+        <ul className="receipt-lines">
+          {lines.map((line) => (
+            <li key={line.id} className="cart-line">
+              <PaymentLineCopy line={line} />
+              <p>{formatMoney(line.amount)}</p>
+            </li>
+          ))}
+        </ul>
+      ) : receipt.description ? (
+        <p className="muted small">{receipt.description}</p>
+      ) : null}
     </AdminModal>
   );
 }

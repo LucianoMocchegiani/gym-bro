@@ -19,7 +19,7 @@
 2. Sistema crea Pago `pendiente` (carrito: `transactions` + un TransactionItem por ítem, todos con el mismo `transaction_id`).
 3. Muestra el link de checkout MP del gym (Staff: copiar u abrir; **sin redirect automático**). Carrito → **un solo link** con el total.
 4. Webhook/confirmación MP → sistema marca `aprobado` o `rechazado` (idempotente; carrito: `externalReference` = `cart_id`).
-5. Si `aprobado`: confirma Contratacion y/o Reserva (carrito: **una por cada payment**); **un comprobante interno por Transaction** (total del cart); N1 E1.
+5. Si `aprobado`: confirma Contratacion y/o Reserva (carrito: **una por cada payment**); **un comprobante interno por Transaction** (total del cart + líneas: pack → contrato/vigencia + servicios del pack; drop-in → reserva/horario); registra quién inició el cobro (staff de Caja); N1 E1.
 6. Si `rechazado`: no confirma derechos.
 
 **Errores:**
@@ -41,7 +41,7 @@
 2. Sistema crea Pago `aprobado` (presencial) con idempotencyKey.
 3. Crea MovimientoCaja del día.
 4. Confirma Contratacion/Reserva según concepto.
-5. **Un comprobante** por Transaction (total del cart). Staff lo ve en Caja (panel + “Ver comprobante”), igual que tras un cobro MP aprobado. + E1.
+5. **Un comprobante** por Transaction (total del cart) con líneas (pack → contrato/vigencia + servicios del pack; drop-in → reserva/horario). Staff lo ve en Caja (panel + “Ver comprobante”), igual que tras un cobro MP aprobado. + E1.
 6. Auditoría.
 
 **Errores:** Sin permiso → denegado.
@@ -57,7 +57,7 @@
 **Precondiciones:** Fecha operativa.
 
 **Flujo principal:**
-1. Staff abre caja del día: listado de MovimientoCaja y totales.
+1. Staff abre caja del día: listado de movimientos (1 fila por cobro o devolución de cart; misma grilla que Reportes) y totales.
 2. Staff declara monto contado.
 3. Sistema calcula esperado vs declarado → diferencia.
 4. Guarda ArqueoCaja + auditoría.

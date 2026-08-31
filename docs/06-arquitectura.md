@@ -308,15 +308,15 @@ Prefijo sugerido: `/api/v1`.
 | Reservas | Member `/me/reservations` (crédito) + cancel; Staff `/members/:id/reservations` (crédito o drop-in stub/caja) + `/reservations/:id/status` (`reservations.write`) |
 | Waitlist | Member `/me/waitlist`; Staff `/members/:id/waitlist`, `/sessions/:id/waitlist` (`reservations.write`; query `status` / `allStatuses`); promoción AUTO al liberar cupo |
 | Settings | Staff `GET|PATCH /tenant-settings` (`tenant.settings.*`; horas cancelación, `waitlistMode`, `allowLateSessionEntry`); Super `/tenants/:tid/settings` |
-| Caja | Staff `GET /cash-register/day`, `POST /cash-register/day/reconcile` (`cashier.operate`); Super `/tenants/:tid/cash-register/...` |
+| Caja | Staff `GET /payment-register/day`, `POST /payment-register/day/reconcile` (`cashier.operate`); Super `/tenants/:tid/cash-register/...`; `movements[]` = misma fila que reportes (cart + ingreso/egreso) |
 | Mercado Pago | Staff `GET|PUT|DELETE /mercadopago/account`, `POST .../test` (`mp.connect`); Member `POST /me/transaction-items/mp/checkout`; webhook `POST /webhooks/mercadopago`; Super `/tenants/:tid/mercadopago/account` |
 | Devoluciones | Member `POST /me/transaction-items/:id/refund-requests`, `GET /me/refund-requests`; Staff `GET /refund-requests`, `POST /transaction-items/:id/refunds` (`transaction_items.refund`) |
-| Comprobantes | Member `/me/receipts`; Staff `GET /transactions/:id/receipt`, `GET /members/:id/receipts` (`members.read`) |
+| Comprobantes | Member `/me/receipts`; Staff `GET /receipts/:id`, `GET /transactions/:id/receipt`, `GET /members/:id/receipts` (`members.read`); `lines[]` (pack → contrato/vigencia + `services[]`; drop-in → reserva/horario) |
 | Catálogo | Super/Staff CRUD services + packs (`catalog.write`; kind inferido; `creditsExpireAt`) |
 | Contrataciones | Staff `POST /members/:id/contracts` (pago stub APPROVED); `PATCH /contracts/:id/status` → `CANCELLED` (pierde derechos, RN-SER-009); Member `GET /me/contracts` |
 | Roles | Super/Staff list-get-create-patch roles; `PUT .../staff/:id/roles`; Staff `GET /me/permissions` (UI nav) |
 | Auditoría | Staff `/auditoria` → `GET /audit-events` (`audit.read`); Super mirror; escritura en mutaciones |
-| Reportes | Staff `GET /reports/summary?from&to` (`reports.read`); ingresos $ + snapshot afiliados/packs (puerta en `/access-attempts`) |
+| Reportes | Staff `GET /reports/summary?from&to` (`reports.read`); ingresos $ + devoluciones + snapshot; `transactions[]` misma fila que caja |
 | Caja | `/cash/day`, `/cash/close` |
 
 Todas las rutas de tenant validan membership/permiso + `tenant_id` del token.

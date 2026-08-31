@@ -1,19 +1,13 @@
 'use client';
 
 import { FormEvent, useEffect, useState } from 'react';
-import { DataTable, ListToolbar } from '@/components/AdminList';
+import { ListToolbar } from '@/components/AdminList';
 import { AdminShell } from '@/components/AdminShell';
 import { Panel } from '@/components/AdminUi';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
-import { ReceiptPanel } from '@/components/ReceiptPanel';
+import { MoneyMovementsTable } from '@/components/MoneyMovementsTable';
 import { RequireStaff } from '@/components/RequireStaff';
 import { SkeletonCards, SkeletonPanel } from '@/components/Skeleton';
-import { StatusPill } from '@/components/StatusPill';
-import {
-  IconReceipt,
-  RowActions,
-  RowIconButton,
-} from '@/components/RowActions';
 import {
   getCashDay,
   reconcileCashDay,
@@ -21,13 +15,10 @@ import {
 } from '@/lib/api/payment-register';
 import type { CashDayDetail } from '@/lib/api/payment-register';
 import { ApiClientError } from '@/lib/api/client';
-import { getReceiptByTransaction } from '@/lib/api/receipts';
-import type { ReceiptDetail } from '@/lib/api/receipts';
-import { formatCashConcept, formatMoney } from '@/lib/cash-labels';
+import { formatMoney } from '@/lib/cash-labels';
 
 /**
- * Cierre del día: stats CASH + cierre + movimientos del día con comprobantes.
- * Los cobros se hacen en /caja (RN-PAG-009).
+ * Cierre del día: stats + arqueo + misma grilla de movimientos que Reportes.
  */
 export default function ArqueoPage() {
   return (
@@ -43,10 +34,6 @@ function ArqueoInner() {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const [receipt, setReceipt] = useState<ReceiptDetail | null>(null);
-  const [receiptError, setReceiptError] = useState<string | null>(null);
-  const [receiptBusyId, setReceiptBusyId] = useState<string | null>(null);
-
   const [declaredAmount, setDeclaredAmount] = useState('');
   const [reconcileNote, setReconcileNote] = useState('');
   const [reconcileBusy, setReconcileBusy] = useState(false);
@@ -56,6 +43,7 @@ function ArqueoInner() {
   useEffect(() => {
     let cancelled = false;
     void (async () => {
+      setLoading(true);
       try {
         const data = await getCashDay(date);
         if (cancelled) {
@@ -85,24 +73,6 @@ function ArqueoInner() {
       cancelled = true;
     };
   }, [date]);
-
-  async function openReceipt(transactionId: string) {
-    setReceiptBusyId(transactionId);
-    setReceiptError(null);
-    try {
-      const r = await getReceiptByTransaction(transactionId);
-      setReceipt(r);
-    } catch (err) {
-      setReceipt(null);
-      setReceiptError(
-        err instanceof ApiClientError
-          ? err.message
-          : 'No se pudo cargar el comprobante',
-      );
-    } finally {
-      setReceiptBusyId(null);
-    }
-  }
 
   async function onReconcile(e: FormEvent) {
     e.preventDefault();
@@ -139,9 +109,9 @@ function ArqueoInner() {
   return (
     <AdminShell
       title="Cierres y Movimientos"
-      subtitle="Cierre y movimientos CASH del día. Los cobros se hacen en Caja."
+      subtitle="Cierre del día y movimientos (cobros y devoluciones). Los cobros se hacen en Caja."
     >
-      <ListToolbar hint="Movimientos CASH del día. MP no suma al cierre de efectivo.">
+      <ListToolbar hint="Misma grilla que Reportes, filtrada al día de negocio (BA).">
         <label className="toolbar-field">
           Día (timezone BA)
           <input
@@ -151,16 +121,6 @@ function ArqueoInner() {
           />
         </label>
       </ListToolbar>
-
-      {receiptError ? <p className="error">{receiptError}</p> : null}
-
-      {receipt ? (
-        <ReceiptPanel
-          receipt={receipt}
-          title="Comprobante"
-          onClose={() => setReceipt(null)}
-        />
-      ) : null}
 
       {loading && !day ? (
         <>
@@ -258,60 +218,15 @@ function ArqueoInner() {
         </>
       ) : null}
 
-      <DataTable
-        title="Movimientos"
+      <MoneyMovementsTable
+        rows={day?.movements ?? []}
+        loading={loading}
+        error={loadError}
         description={
           day ? `${day.movements.length} del ${day.businessDate}` : undefined
         }
-        loading={loading}
-        error={loadError}
-        isEmpty={!day || day.movements.length === 0}
-        emptyText="Sin movimientos CASH en este día."
-        paginate={false}
-        header={
-          <>
-            <th>Hora</th>
-            <th>Afiliado</th>
-            <th>Concepto</th>
-            <th>Tipo</th>
-            <th>Monto</th>
-            <th>Staff</th>
-            <th />
-          </>
-        }
-      >
-        {(day?.movements ?? []).map((m) => (
-          <tr key={m.id}>
-            <td>
-              {new Date(m.createdAt).toLocaleTimeString('es-AR', {
-                hour: '2-digit',
-                minute: '2-digit',
-              })}
-            </td>
-            <td>{m.memberName ?? m.memberId.slice(0, 8)}</td>
-            <td>{formatCashConcept(m.concept)}</td>
-            <td>
-              <StatusPill tone={m.kind === 'INCOME' ? 'ok' : 'danger'}>
-                {m.kind === 'INCOME' ? 'Ingreso' : 'Egreso'}
-              </StatusPill>
-            </td>
-            <td>{formatMoney(m.amount)}</td>
-            <td>{m.recordedByStaffName ?? '—'}</td>
-            <td className="row-actions">
-              {m.kind === 'INCOME' &&
-              (m.concept === 'PACK_CONTRACT' || m.concept === 'DROP_IN') ? (
-                <RowIconButton
-                  label="Ver comprobante"
-                  disabled={receiptBusyId === m.transactionId}
-                  onClick={() => void openReceipt(m.transactionId)}
-                >
-                  <IconReceipt />
-                </RowIconButton>
-              ) : null}
-            </td>
-          </tr>
-        ))}
-      </DataTable>
+        emptyText="Sin movimientos en este día."
+      />
 
       <ConfirmDialog
         open={reconcileConfirm}

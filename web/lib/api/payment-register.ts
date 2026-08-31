@@ -3,22 +3,7 @@
  */
 
 import { apiRequest } from '@/lib/api/client';
-
-export type CashMovementDetail = {
-  id: string;
-  tenantId: string;
-  businessDate: string;
-  transactionItemId: string;
-  transactionId: string;
-  memberId: string;
-  memberName: string | null;
-  recordedByStaffId: string | null;
-  recordedByStaffName: string | null;
-  amount: number;
-  kind: 'INCOME' | 'OUTCOME';
-  concept: 'PACK_CONTRACT' | 'DROP_IN' | 'REFUND';
-  createdAt: string;
-};
+import type { LedgerMovementRow } from '@/lib/api/ledger';
 
 export type CashReconciliationDetail = {
   id: string;
@@ -43,7 +28,7 @@ export type CashDayDetail = {
     net: number;
     movementCount: number;
   };
-  movements: CashMovementDetail[];
+  movements: LedgerMovementRow[];
   reconciliation: CashReconciliationDetail | null;
 };
 

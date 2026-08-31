@@ -1,3 +1,5 @@
+import type { PaymentLineDetail } from '../payment/payment-line';
+
 /**
  * Comprobante interno expuesto por la API (RN-PAG-009).
  */
@@ -15,4 +17,6 @@ export type ReceiptDetail = {
   concept: 'PACK_CONTRACT' | 'DROP_IN';
   description: string | null;
   createdAt: Date;
+  /** Líneas del cart (pack/contrato o drop-in/reserva). Vacío si el cobro no tiene ítems. */
+  lines: PaymentLineDetail[];
 };

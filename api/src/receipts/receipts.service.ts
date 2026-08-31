@@ -18,6 +18,11 @@ import {
 } from '../common/list';
 import { PrismaService } from '../prisma/prisma.service';
 import { ReceiptDetail } from './receipts.types';
+import {
+  PAYMENT_LINE_INCLUDE,
+  toPaymentLine,
+  type PaymentLineDetail,
+} from '../payment/payment-line';
 
 type Tx = Prisma.TransactionClient;
 
@@ -141,7 +146,7 @@ export class ReceiptsService {
       this.prisma.receipt.count({ where }),
     ]);
     return toListResult(
-      rows.map((r) => this.toDetail(r)),
+      await this.withLines(tenantId, rows),
       total,
       n.page,
       n.pageSize,
@@ -165,7 +170,11 @@ export class ReceiptsService {
     if (options.ownerMemberId && receipt.memberId !== options.ownerMemberId) {
       throw new NotFoundException(`Receipt ${receiptId} not found in tenant`);
     }
-    return this.toDetail(receipt);
+    const [detail] = await this.withLines(tenantId, [receipt]);
+    if (!detail) {
+      throw new NotFoundException(`Receipt ${receiptId} not found in tenant`);
+    }
+    return detail;
   }
 
   /**
@@ -194,7 +203,13 @@ export class ReceiptsService {
       where: { transactionId },
     });
     if (receipt) {
-      return this.toDetail(receipt);
+      const [detail] = await this.withLines(tenantId, [receipt]);
+      if (!detail) {
+        throw new NotFoundException(
+          `Receipt for transaction ${transactionId} not found`,
+        );
+      }
+      return detail;
     }
     const itemReceipts = await this.prisma.receipt.findMany({
       where: {
@@ -204,7 +219,13 @@ export class ReceiptsService {
       take: 2,
     });
     if (itemReceipts.length === 1 && itemReceipts[0]) {
-      return this.toDetail(itemReceipts[0]);
+      const [detail] = await this.withLines(tenantId, [itemReceipts[0]]);
+      if (!detail) {
+        throw new NotFoundException(
+          `Receipt for transaction ${transactionId} not found`,
+        );
+      }
+      return detail;
     }
     throw new NotFoundException(
       `Receipt for transaction ${transactionId} not found`,
@@ -239,33 +260,93 @@ export class ReceiptsService {
     }
   }
 
-  private toDetail(row: {
-    id: string;
-    tenantId: string;
-    transactionItemId: string | null;
-    transactionId: string | null;
-    memberId: string;
-    number: number;
-    amount: number;
-    method: PaymentMethod;
-    concept: ReceiptConcept;
-    description: string | null;
-    createdAt: Date;
-  }): ReceiptDetail {
-    return {
-      id: row.id,
-      tenantId: row.tenantId,
-      transactionItemId: row.transactionItemId,
-      transactionId: row.transactionId,
-      memberId: row.memberId,
-      number: row.number,
-      code: this.formatCode(row.number),
-      amount: row.amount,
-      method: row.method,
-      concept: row.concept,
-      description: row.description,
-      createdAt: row.createdAt,
-    };
+  /**
+   * Adjunta líneas comerciales a comprobantes (un query de ítems por lote).
+   */
+  private async withLines(
+    tenantId: string,
+    rows: Array<{
+      id: string;
+      tenantId: string;
+      transactionItemId: string | null;
+      transactionId: string | null;
+      memberId: string;
+      number: number;
+      amount: number;
+      method: PaymentMethod;
+      concept: ReceiptConcept;
+      description: string | null;
+      createdAt: Date;
+    }>,
+  ): Promise<ReceiptDetail[]> {
+    if (rows.length === 0) {
+      return [];
+    }
+    const txIds = [
+      ...new Set(
+        rows
+          .map((r) => r.transactionId)
+          .filter((id): id is string => Boolean(id)),
+      ),
+    ];
+    const orphanItemIds = rows
+      .filter((r) => !r.transactionId && r.transactionItemId)
+      .map((r) => r.transactionItemId)
+      .filter((id): id is string => Boolean(id));
+
+    const items =
+      txIds.length > 0 || orphanItemIds.length > 0
+        ? await this.prisma.transactionItem.findMany({
+            where: {
+              tenantId,
+              OR: [
+                ...(txIds.length > 0 ? [{ transactionId: { in: txIds } }] : []),
+                ...(orphanItemIds.length > 0
+                  ? [{ id: { in: orphanItemIds } }]
+                  : []),
+              ],
+            },
+            orderBy: { createdAt: 'asc' },
+            include: PAYMENT_LINE_INCLUDE,
+          })
+        : [];
+
+    const byTx = new Map<string, PaymentLineDetail[]>();
+    const byItem = new Map<string, PaymentLineDetail>();
+    for (const item of items) {
+      const line = toPaymentLine(item);
+      byItem.set(item.id, line);
+      if (item.transactionId) {
+        const list = byTx.get(item.transactionId) ?? [];
+        list.push(line);
+        byTx.set(item.transactionId, list);
+      }
+    }
+
+    return rows.map((row) => {
+      let lines: PaymentLineDetail[] = [];
+      if (row.transactionId) {
+        lines = byTx.get(row.transactionId) ?? [];
+      } else if (row.transactionItemId) {
+        const line = byItem.get(row.transactionItemId);
+        lines = line ? [line] : [];
+      }
+      return {
+        id: row.id,
+        tenantId: row.tenantId,
+        transactionItemId: row.transactionItemId,
+        transactionId: row.transactionId,
+        memberId: row.memberId,
+        number: row.number,
+        code: this.formatCode(row.number),
+        amount: row.amount,
+        method: row.method,
+        concept: row.concept,
+        description: row.description,
+        createdAt: row.createdAt,
+        lines,
+      };
+    });
   }
 
   private formatCode(number: number): string {

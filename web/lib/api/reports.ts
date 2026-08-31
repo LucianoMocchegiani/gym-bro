@@ -1,30 +1,13 @@
 /**
  * Reportes mínimos (E11) — ingresos $ + snapshot comercial.
  *
- * Transacciones agrupadas: MP por cart_checkout, efectivo por payment individual.
+ * Movimientos: misma fila que caja (cobro o devolución por cart).
  */
 
 import { apiRequest } from '@/lib/api/client';
+import type { LedgerMovementRow } from '@/lib/api/ledger';
 
-export type ReportTransactionItem = {
-  id: string;
-  amount: number;
-  kind: 'PACK' | 'DROP_IN';
-  packName: string | null;
-};
-
-export type ReportTransactionRow = {
-  id: string;
-  amount: number;
-  method: 'CASH' | 'MP';
-  status: 'APPROVED';
-  createdAt: string;
-  memberId: string;
-  memberName: string | null;
-  memberEmail: string;
-  mpPaymentId: string | null;
-  items: ReportTransactionItem[];
-};
+export type ReportTransactionRow = LedgerMovementRow;
 
 export type ReportsSummary = {
   from: string;
@@ -44,6 +27,7 @@ export type ReportsSummary = {
   };
   income: {
     totalApproved: number;
+    totalRefunded: number;
     byMethod: {
       CASH: number;
       MP: number;
