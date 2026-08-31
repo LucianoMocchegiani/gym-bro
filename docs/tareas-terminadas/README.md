@@ -16,6 +16,7 @@ La creación de registros sigue la skill:
 
 ## Índice
 
+- [2026-08-31 — Recorte de GET Staff no usados por el Admin](./2026-08-31-recorte-get-staff-sin-uso.md)
 - [2026-08-31 — Super delgado: sin espejos nested](./2026-08-31-super-sin-nested.md)
 - [2026-08-31 — Cierre, solicitudes de devolución y categoría en grilla](./2026-08-31-cierre-solicitudes-categoria.md)
 - [2026-08-31 — Devolución por cart en Arqueo y copy de ítems MP](./2026-08-31-devolucion-cart-copy-mp.md)
