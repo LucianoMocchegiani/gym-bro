@@ -166,14 +166,6 @@ export class ContractsService {
   }
 
   /**
-   * Detalle de contratación (staff o dueño member).
-   */
-  async findOne(tenantId: string, contractId: string): Promise<ContractDetail> {
-    const contract = await this.findInTenant(tenantId, contractId);
-    return this.toDetail(contract);
-  }
-
-  /**
    * Cancela una contratación ACTIVE: pierde acceso libre y créditos remanentes.
    *
    * @remarks RN-SER-009 (pack mixto pierde todo). El Payment permanece APPROVED;

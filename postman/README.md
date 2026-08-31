@@ -53,9 +53,9 @@ Carpeta **Members**: Staff `members.read` / `members.write` / `members.deactivat
 
 Carpeta **Sessions**: Staff `sessions.write`. Servicio `POR_SESIONES` + `instructorId` opcional (`userId` del Staff). Ampliar cupo: `PATCH .../sessions/:id/capacity`. Incluye reglas semanales con hora local y timezone.
 
-Carpeta **Reservations**: Member `POST|GET /me/reservations` (crédito) + `PATCH .../status`. Staff `reservations.write` crea crédito o drop-in (`coverage=DROP_IN`) / cancela (fuera de ventana OK).
+Carpeta **Reservations**: Member `POST|GET /me/reservations` (crédito) + `PATCH .../status`. Staff `reservations.write` crea crédito (`POST /members/:id/reservations`) / cancela; roster `GET /sessions/:id/reservations`. Drop-in se cobra en Caja (cart).
 
-Carpeta **Waitlist**: Member/Staff join cuando sesión llena; leave; promoción AUTO al cancelar/ampliar cupo.
+Carpeta **Waitlist**: Member join cuando sesión llena; leave; promoción AUTO. Staff: alta a nombre del afiliado + cola de la sesión (`GET /sessions/:id/waitlist`).
 
 Carpeta **Tenant settings**: `GET|PATCH /tenant-settings` (`tenant.settings.*`). `reservationCancellationHours`, `waitlistMode`, `allowLateSessionEntry`.
 
@@ -65,7 +65,7 @@ Carpeta **Mercado Pago**: cuenta `GET|PUT|DELETE /mercadopago/account` + test (`
 
 Carpeta **Refunds**: Member `POST /me/transaction-items/:transactionItemId/refund-requests` + `GET /me/refund-requests`. Staff `GET /refund-requests`, `POST /transactions/:transactionId/refunds` (lote) y `POST /transaction-items/:transactionItemId/refunds` (wrapper; `transaction_items.refund`; `motiveCode=doble_cobro` opcional).
 
-Carpeta **Receipts**: Member `GET /me/receipts` y `GET /me/receipts/:id`. Staff `GET /receipts/:id`, `GET /transactions/:transactionId/receipt` y `GET /members/:id/receipts` (`members.read`). Código `GB-000001`. El cash cart guarda `createdReceiptId`.
+Carpeta **Receipts**: Member `GET /me/receipts` y `GET /me/receipts/:id`. Staff `GET /receipts/:id` y `GET /transactions/:transactionId/receipt` (`members.read`). Código `GB-000001`. El cash cart guarda `createdReceiptId`.
 
 Carpeta **Member catalog**: Catálogo del afiliado (E9 mobile). Member `GET /me/sessions` (sesiones publicadas, default próximas), `GET /me/packs` (packs activos comprables), `GET /me/mp-status` (estado conexión MP: `{ connected: boolean }`).
 
@@ -75,7 +75,7 @@ Carpeta **Packs**: mismos permiso. Requests **MONTHLY** y **ONE_TIME** (como Ses
 
 Carpeta **Upload**: `POST /upload` (staff auth). Multipart form-data con campo `file` (imagen) y `folder` (`services`|`packs`|`members`|`staff`|`tenants`). Retorna `{ url, key }`. Límite: 5MB, tipos: JPG/PNG/WebP/GIF. Almacenamiento en Cloudflare R2.
 
-Carpeta **Contracts**: Staff **POST contract MONTHLY** (`startsAt` opcional) y **ONE_TIME** (`startsAt`/`endsAt`); apilado RN-CON; **re-POST misma `idempotencyKey`** = re-oferta. Variables `createdMonthlyPackId` / `createdOneTimePackId`. Offers: list + accept + fail member.
+Carpeta **Contracts**: Staff **POST contract MONTHLY** (`startsAt` opcional) y **ONE_TIME** (`startsAt`/`endsAt`); apilado RN-CON; **re-POST misma `idempotencyKey`** = re-oferta. Variables `createdMonthlyPackId` / `createdOneTimePackId`. Offers: list + accept + fail member. Lectura staff: `GET /members/:id/account`.
 
 Carpeta **Access OID4VP**: Staff `POST /access/oid4vp/request` (pestaña **Visualize** → QR) + `GET /access/oid4vp/session/:id` (poll → evaluate). Pase manual + `GET /access-attempts`. Stubs de vínculo retirados.
 

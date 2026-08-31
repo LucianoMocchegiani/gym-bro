@@ -683,7 +683,7 @@ Unique parcial SQL: a lo sumo un cobro (`concept <> REFUND`) por `transaction_id
 
 `receipt_sequences`: PK `tenant_id`, `next_number`. Código API: `GB-` + number pad 6.
 
-API: Member `GET /api/me/receipts`; Staff `GET /api/receipts/:id`, `GET /api/transactions/:transactionId/receipt` (solo cobro), `GET /api/members/:id/receipts` (`members.read`).
+API: Member `GET /api/me/receipts`; Staff `GET /api/receipts/:id`, `GET /api/transactions/:transactionId/receipt` (solo cobro) (`members.read`).
 
 ### 4.15e `mercadopago_accounts`
 
@@ -806,7 +806,7 @@ Contratación tras pago aprobado (CU-CON-001).
 | `initial_amount` / `remaining` | int | |
 | `expires_at` | timestamptz nullable | = `contracts.ends_at` del mismo contrato (RN-CON-002/003) |
 
-API: Staff `POST|GET /api/members/:memberId/contracts`, `GET /api/contracts/:id`, `PATCH /api/contracts/:id/status`; Member `GET /api/me/contracts`.
+API: Staff `POST /api/members/:memberId/contracts` (re-oferta / stub), `PATCH /api/contracts/:id/status`; lectura en `GET /members/:id/account`. Member `GET /api/me/contracts`.
 
 ### 4.16b `credential_offers`
 
@@ -895,7 +895,7 @@ Reserva con crédito o drop-in (CU-RES-001 / RN-RES-001).
 
 Unique parcial: una `CONFIRMED` por (`session_id`, `member_id`) (`reservations_session_member_confirmed_uidx`).
 
-API: Member `POST|GET /api/me/reservations` (solo crédito), `PATCH .../status` (ventana RN-TEN-005); Staff `POST|GET /api/members/:memberId/reservations` (`coverage=DROP_IN` + pago stub/caja), `GET|PATCH /api/reservations/:id(/status)`. Cancelación: libera cupo; CREDIT devuelve crédito; DROP_IN no reembolsa (E5).
+API: Member `POST|GET /api/me/reservations` (solo crédito), `PATCH .../status` (ventana RN-TEN-005); Staff `POST /api/members/:memberId/reservations` (CREDIT), `GET /api/sessions/:sessionId/reservations`, `PATCH /api/reservations/:id/status`. Cancelación: libera cupo; CREDIT devuelve crédito; DROP_IN no reembolsa (E5).
 
 ### 4.21 `tenant_settings`
 
@@ -927,7 +927,7 @@ Cola FIFO de sesión (CU-RES-004 / RN-RES-004).
 
 Unique parcial: un `WAITING` por (`session_id`, `member_id`) (`waitlist_session_member_waiting_uidx`).
 
-API: Member `POST|GET /api/me/waitlist`, `PATCH /api/me/waitlist/:id/status`; Staff `POST|GET /api/members/:id/waitlist`, `GET /api/sessions/:id/waitlist` (`status` / `allStatuses`), `PATCH /api/waitlist/:id/status` (`reservations.write`). Liberación AUTO al cancelar reserva o ampliar cupo.
+API: Member `POST|GET /api/me/waitlist`, `PATCH /api/me/waitlist/:id/status`; Staff `POST /api/members/:id/waitlist`, `GET /api/sessions/:id/waitlist` (`status` / `allStatuses`), `PATCH /api/waitlist/:id/status` (`reservations.write`). Liberación AUTO al cancelar reserva o ampliar cupo.
 
 ---
 

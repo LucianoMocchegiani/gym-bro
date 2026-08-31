@@ -3,8 +3,6 @@
  */
 
 import { apiRequest } from '@/lib/api/client';
-import { toSearchParams } from '@/lib/api/list';
-import type { ListParams, ListResult } from '@/lib/api/list';
 import type { PaymentLineDetail } from '@/lib/api/payment-lines';
 
 export type ReceiptMethod = 'STUB' | 'CASH' | 'MP';
@@ -41,17 +39,4 @@ export function getReceiptByTransaction(
   transactionId: string,
 ): Promise<ReceiptDetail> {
   return apiRequest<ReceiptDetail>(`/transactions/${transactionId}/receipt`);
-}
-
-/**
- * Comprobantes de un afiliado (`members.read`).
- */
-export function listMemberReceipts(
-  memberId: string,
-  input?: ListParams,
-): Promise<ListResult<ReceiptDetail>> {
-  const qs = toSearchParams(input);
-  return apiRequest<ListResult<ReceiptDetail>>(
-    `/members/${memberId}/receipts${qs ? `?${qs}` : ''}`,
-  );
 }

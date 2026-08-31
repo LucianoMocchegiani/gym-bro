@@ -51,16 +51,6 @@ export class ReceiptsController {
     });
   }
 
-  @Get('members/:memberId/receipts')
-  @RequirePermission('members.read')
-  listByMember(
-    @CurrentTenant() tenantId: string,
-    @Param('memberId', ParseUUIDPipe) memberId: string,
-    @Query() query: ListQueryDto,
-  ): Promise<ListResult<ReceiptDetail>> {
-    return this.receipts.listByMember(tenantId, memberId, query);
-  }
-
   @Get('receipts/:receiptId')
   @RequirePermission('members.read')
   findOne(

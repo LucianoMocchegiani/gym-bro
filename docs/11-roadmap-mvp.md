@@ -289,7 +289,7 @@ Detalle: [14-auditoria…](./14-auditoria-roadmap-vs-codigo-2026-08-13.md).
   - Fecha opcional en nuevo/editar; bloque solo lectura Kuatia en `/packs/[id]`
 - [x] Comprobantes (receipts)
   - Caja: panel tras cobro; polling del comprobante en cobro MP (sin redirect automático)
-  - `GET /transactions/:id/receipt`, `GET /members/:id/receipts` (`members.read`)
+  - `GET /transactions/:id/receipt`, `GET /receipts/:id` (`members.read`)
 - [x] Auditoría UI
   - `/auditoria`: `GET /audit-events` (`audit.read`); búsqueda `q` + detalle before/after
 - [x] Nav / páginas gated por permiso (hoy se muestran todos los links)

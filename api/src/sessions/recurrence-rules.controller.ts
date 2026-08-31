@@ -45,15 +45,6 @@ export class RecurrenceRulesController {
     return this.recurrenceRules.list(tenantId, query);
   }
 
-  @Get(':ruleId')
-  @RequirePermission('sessions.write')
-  findOne(
-    @CurrentTenant() tenantId: string,
-    @Param('ruleId', ParseUUIDPipe) ruleId: string,
-  ): Promise<RecurrenceRuleDetail> {
-    return this.recurrenceRules.findOne(tenantId, ruleId);
-  }
-
   @Post()
   @HttpCode(HttpStatus.CREATED)
   @RequirePermission('sessions.write')

@@ -96,16 +96,6 @@ export class RecurrenceRulesService {
   }
 
   /**
-   * Obtiene una regla del tenant.
-   */
-  async findOne(
-    tenantId: string,
-    ruleId: string,
-  ): Promise<RecurrenceRuleDetail> {
-    return this.toDetail(await this.findInTenant(tenantId, ruleId));
-  }
-
-  /**
    * Crea una regla y materializa todas sus sesiones PUBLISHED.
    *
    * @throws {BadRequestException} Si el rango, timezone, servicio o plantilla

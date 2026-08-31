@@ -2337,70 +2337,6 @@
                     }
                 },
                 {
-                    "name": "Staff GET member contracts",
-                    "request": {
-                        "method": "GET",
-                        "header": [],
-                        "url": {
-                            "raw": "{{baseUrl}}/api/members/{{createdMemberId}}/contracts?page=1&pageSize=20&order=desc",
-                            "host": [
-                                "{{baseUrl}}"
-                            ],
-                            "path": [
-                                "api",
-                                "members",
-                                "{{createdMemberId}}",
-                                "contracts"
-                            ],
-                            "query": [
-                                {
-                                    "key": "page",
-                                    "value": "1"
-                                },
-                                {
-                                    "key": "pageSize",
-                                    "value": "20"
-                                },
-                                {
-                                    "key": "q",
-                                    "value": "",
-                                    "disabled": true
-                                },
-                                {
-                                    "key": "orderBy",
-                                    "value": "",
-                                    "disabled": true
-                                },
-                                {
-                                    "key": "order",
-                                    "value": "desc"
-                                }
-                            ]
-                        }
-                    }
-                },
-                {
-                    "name": "Staff GET contract by id",
-                    "request": {
-                        "method": "GET",
-                        "header": [],
-                        "url": "{{baseUrl}}/api/contracts/{{createdContractId}}",
-                        "description": "members.read. createdContractId del POST contract MONTHLY/ONE_TIME."
-                    },
-                    "event": [
-                        {
-                            "listen": "test",
-                            "script": {
-                                "type": "text/javascript",
-                                "exec": [
-                                    "pm.test('status 200', () => pm.response.to.have.status(200));",
-                                    "pm.test('id', () => pm.expect(pm.response.json().id).to.be.ok);"
-                                ]
-                            }
-                        }
-                    ]
-                },
-                {
                     "name": "Member GET me contracts",
                     "request": {
                         "method": "GET",
@@ -2914,14 +2850,6 @@
                     }
                 },
                 {
-                    "name": "Staff GET recurrence rule",
-                    "request": {
-                        "method": "GET",
-                        "header": [],
-                        "url": "{{baseUrl}}/api/session-recurrence-rules/{{createdRecurrenceRuleId}}"
-                    }
-                },
-                {
                     "name": "Staff GET generated sessions",
                     "request": {
                         "method": "GET",
@@ -3167,44 +3095,6 @@
                     }
                 },
                 {
-                    "name": "Staff GET member reservations",
-                    "request": {
-                        "method": "GET",
-                        "header": [],
-                        "url": {
-                            "raw": "{{baseUrl}}/api/members/{{createdMemberId}}/reservations?page=1&pageSize=20&order=asc",
-                            "host": [
-                                "{{baseUrl}}"
-                            ],
-                            "path": [
-                                "api",
-                                "members",
-                                "{{createdMemberId}}",
-                                "reservations"
-                            ],
-                            "query": [
-                                {
-                                    "key": "page",
-                                    "value": "1"
-                                },
-                                {
-                                    "key": "pageSize",
-                                    "value": "20"
-                                },
-                                {
-                                    "key": "orderBy",
-                                    "value": "",
-                                    "disabled": true
-                                },
-                                {
-                                    "key": "order",
-                                    "value": "asc"
-                                }
-                            ]
-                        }
-                    }
-                },
-                {
                     "name": "Staff GET session reservations (roster)",
                     "event": [
                         {
@@ -3256,14 +3146,6 @@
                             ]
                         },
                         "description": "Roster de la sesiÃ³n (`reservations.write`). Incluye memberName/memberEmail."
-                    }
-                },
-                {
-                    "name": "Staff GET reservation",
-                    "request": {
-                        "method": "GET",
-                        "header": [],
-                        "url": "{{baseUrl}}/api/reservations/{{createdReservationId}}"
                     }
                 },
                 {
@@ -3334,27 +3216,6 @@
                         "url": "{{baseUrl}}/api/members/{{createdMemberId}}/waitlist",
                         "description": "Requiere sesiÃ³n PUBLISHED futura llena (bookedCount >= capacity)."
                     }
-                },
-                {
-                    "name": "Staff GET member waitlist",
-                    "request": {
-                        "method": "GET",
-                        "header": [],
-                        "url": "{{baseUrl}}/api/members/{{createdMemberId}}/waitlist?page=1&pageSize=20&order=asc",
-                        "description": "reservations.write. Lista entradas de waitlist del afiliado."
-                    },
-                    "event": [
-                        {
-                            "listen": "test",
-                            "script": {
-                                "type": "text/javascript",
-                                "exec": [
-                                    "pm.test('status 200', () => pm.response.to.have.status(200));",
-                                    "pm.test('items', () => pm.expect(pm.response.json().items).to.be.an('array'));"
-                                ]
-                            }
-                        }
-                    ]
                 },
                 {
                     "name": "Staff GET session waitlist",
@@ -3651,49 +3512,6 @@
                     }
                 },
                 {
-                    "name": "Staff GET member receipts",
-                    "request": {
-                        "method": "GET",
-                        "header": [],
-                        "url": {
-                            "raw": "{{baseUrl}}/api/members/{{createdMemberId}}/receipts?page=1&pageSize=20&order=desc",
-                            "host": [
-                                "{{baseUrl}}"
-                            ],
-                            "path": [
-                                "api",
-                                "members",
-                                "{{createdMemberId}}",
-                                "receipts"
-                            ],
-                            "query": [
-                                {
-                                    "key": "page",
-                                    "value": "1"
-                                },
-                                {
-                                    "key": "pageSize",
-                                    "value": "20"
-                                },
-                                {
-                                    "key": "q",
-                                    "value": "",
-                                    "disabled": true
-                                },
-                                {
-                                    "key": "orderBy",
-                                    "value": "",
-                                    "disabled": true
-                                },
-                                {
-                                    "key": "order",
-                                    "value": "desc"
-                                }
-                            ]
-                        }
-                    }
-                },
-                {
                     "name": "Member GET me receipts",
                     "request": {
                         "method": "GET",
@@ -3742,7 +3560,7 @@
                         "method": "GET",
                         "header": [],
                         "url": "{{baseUrl}}/api/me/receipts/{{createdReceiptId}}",
-                        "description": "Token Member. createdReceiptId: del cash cart (receipt.id) o de Staff GET member receipts."
+                        "description": "Token Member. createdReceiptId: del cash cart (receipt.id) o de Staff GET receipts / transaction receipt."
                     },
                     "event": [
                         {

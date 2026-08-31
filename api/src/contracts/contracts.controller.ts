@@ -26,7 +26,7 @@ import { ContractDetail } from './contracts.types';
  * Contrataciones del gym (staff) y lectura propia (afiliado).
  *
  * @remarks CU-CON-001 / CU-CON-002 / RN-SER-009.
- * Create/cancel: `members.write`. List/get staff: `members.read`.
+ * Create/cancel: `members.write`. Lectura staff: `GET /members/:id/account`.
  */
 @Controller()
 @RequireTenantAuth()
@@ -51,25 +51,6 @@ export class ContractsController {
       dto,
       toAuditActor(user),
     );
-  }
-
-  @Get('members/:memberId/contracts')
-  @RequirePermission('members.read')
-  listByMember(
-    @CurrentTenant() tenantId: string,
-    @Param('memberId', ParseUUIDPipe) memberId: string,
-    @Query() query: ListQueryDto,
-  ): Promise<ListResult<ContractDetail>> {
-    return this.contractsService.listByMember(tenantId, memberId, query);
-  }
-
-  @Get('contracts/:contractId')
-  @RequirePermission('members.read')
-  findOne(
-    @CurrentTenant() tenantId: string,
-    @Param('contractId', ParseUUIDPipe) contractId: string,
-  ): Promise<ContractDetail> {
-    return this.contractsService.findOne(tenantId, contractId);
   }
 
   /**

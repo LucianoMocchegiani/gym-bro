@@ -172,17 +172,6 @@ export class ReservationsService {
   }
 
   /**
-   * Detalle de reserva en el tenant.
-   */
-  async findOne(
-    tenantId: string,
-    reservationId: string,
-  ): Promise<ReservationDetail> {
-    const reservation = await this.findInTenant(tenantId, reservationId);
-    return this.toDetail(reservation);
-  }
-
-  /**
    * Confirma reserva con crédito o drop-in según `coverage`.
    *
    * @remarks Default CREDIT. DROP_IN solo staff/super (CU-RES-002).

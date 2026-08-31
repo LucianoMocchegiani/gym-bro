@@ -103,16 +103,6 @@ export class WaitlistController {
     );
   }
 
-  @Get('members/:memberId/waitlist')
-  @RequirePermission('reservations.write')
-  listByMember(
-    @CurrentTenant() tenantId: string,
-    @Param('memberId', ParseUUIDPipe) memberId: string,
-    @Query() query: ListWaitlistQueryDto,
-  ): Promise<ListResult<WaitlistEntryDetail>> {
-    return this.waitlistService.listByMember(tenantId, memberId, query);
-  }
-
   @Get('sessions/:sessionId/waitlist')
   @RequirePermission('reservations.write')
   listBySession(
