@@ -71,7 +71,7 @@ Leyenda resultado: `P` pass · `F` fail · `B` bloqueado · `-` no aplica
 | P5 | Devolución afiliado dentro de política | Solicitud OK | CU-PAG-004 | |
 | P6 | Devolución afiliado fuera de política | Rechazo; admin aún puede | RN-PAG-012/011 | |
 | P7 | Admin devolución cart (parcial o todo) | Derechos de los ítems elegidos caen; un egreso + un comprobante REFUND; se puede devolver el resto después | CU-PAG-005 | |
-| P8 | Arqueo con diferencia | Se registra diff; la grilla de movimientos es la misma que Reportes (tipo + staff + comprobante) | CU-PAG-003 | |
+| P8 | Arqueo con diferencia | Se registra diff; la grilla de Cierre es la misma que Reportes (categoría + tipo + staff + comprobante) | CU-PAG-003 | |
 
 ---
 

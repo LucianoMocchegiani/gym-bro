@@ -98,8 +98,8 @@ function ArqueoInner() {
 
   return (
     <AdminShell
-      title="Cierres y Movimientos"
-      subtitle="Cierre del día y movimientos (cobros y devoluciones). Los cobros se hacen en Caja."
+      title="Cierre"
+      subtitle="Cierre del día (cobros y devoluciones). Los cobros se hacen en Caja."
     >
       <ListToolbar hint="Misma grilla que Reportes, filtrada al día de negocio (BA).">
         <label className="toolbar-field">

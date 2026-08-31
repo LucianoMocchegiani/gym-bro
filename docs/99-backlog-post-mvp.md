@@ -9,7 +9,7 @@
 
 | Ítem | Notas |
 |------|--------|
-| Tienda / e-commerce (FitApp mockup) | Módulo después del MVP de gestión. Ver idea: [checkout MP vs ML](./ideas/2026-07-13-stores-mp-vs-ml.md) — socios = MP propio; público = marketplace opcional |
+| Tienda / e-commerce (FitApp mockup) | Módulo después del MVP de gestión. Ver idea: [checkout MP vs ML](./ideas/2026-07-13-stores-mp-vs-ml.md) — socios = MP propio; público = marketplace opcional. Compra de stock + venta de producto: ver gastos en Pagos |
 | White label (logo, colores, app “del gym”) | No al inicio |
 | Varios planes SaaS GymBro (Starter/Pro/…) | Arquitectura preparada; empaquetado comercial después |
 | Módulos acoplados a planes | Cuando existan más planes |
@@ -25,6 +25,7 @@
 | Contracargos / chargebacks automatizados | |
 | Liquidación si GymBro cobrara en el medio | Hoy cobra el gym (MP del tenant) |
 | Arqueo / contabilidad avanzada más allá del mínimo | MVP ya tiene arqueo básico |
+| Gastos operativos y compra de mercadería | No cuelgan de `transactions` (eso es cobro a un afiliado). Documento propio (`expense` / `purchase`) → asiento `cash_movements` `OUTCOME` (FKs de ítem/afiliado opcionales). Venta de producto = línea nueva del carrito (`INCOME` + baja de stock). **Categoría de caja:** hoy se deriva de `kind` (`INCOME`→Venta, `OUTCOME`→Devolución) en `buildLedgerRows`; no hay columna. Cuando existan compra/gastos hay que persistir categoría (columna o enum en `cash_movements`, p. ej. `SALE` / `REFUND` / `PURCHASE` / `EXPENSE_UTILITIES` / `EXPENSE_PAYROLL`) y mapearla al crear el asiento — `kind` solo dice ingreso/egreso. Definir si banco/transferencia entra al arqueo de efectivo o solo a reportes |
 
 ---
 

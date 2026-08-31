@@ -57,7 +57,7 @@
 **Precondiciones:** Fecha operativa.
 
 **Flujo principal:**
-1. Staff abre caja del día: listado de movimientos (1 fila por cobro o devolución de cart; misma grilla que Reportes) y totales.
+1. Staff abre **Cierre** (`/arqueo`): listado de movimientos (1 fila por cobro o devolución; misma grilla que Reportes, con categoría Venta/Devolución y tipo Ingreso/Egreso) y totales.
 2. Staff declara monto contado.
 3. Sistema calcula esperado vs declarado → diferencia.
 4. Guarda ArqueoCaja + auditoría.
@@ -92,7 +92,7 @@
 **Precondiciones:** Pago aprobado; motivo informado.
 
 **Flujo principal:**
-1. Staff aprueba una solicitud o inicia devolución desde Cierres (picker del cart).
+1. Staff aprueba una solicitud (Solicitudes de devolución) o inicia devolución desde Cierre (picker del cart).
 2. Sistema:
    - Marca los `transaction_items` elegidos `reembolsado` (lote del cart; se puede devolver una parte ahora y el resto después).
    - Revierte derechos de cada ítem: cancelar contratación/reserva; pack compuesto → pierde todo (RN-SER-009).

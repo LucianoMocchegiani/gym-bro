@@ -13,7 +13,7 @@ import type { LedgerMovementRow } from '@/lib/api/ledger';
 import { getReceipt, getReceiptByTransaction } from '@/lib/api/receipts';
 import type { ReceiptDetail } from '@/lib/api/receipts';
 import { useAuth } from '@/lib/auth/AuthProvider';
-import { formatMoney } from '@/lib/cash-labels';
+import { formatMoney, ledgerCategoryLabel } from '@/lib/cash-labels';
 import { memberFichaHref } from '@/lib/member-link';
 
 function formatWhen(iso: string): string {
@@ -107,6 +107,7 @@ export function MoneyMovementsTable({
             <th>Fecha y hora</th>
             <th>Afiliado</th>
             <th>Concepto</th>
+            <th>Categoría</th>
             <th>Tipo</th>
             <th>Medio</th>
             <th>Monto</th>
@@ -138,6 +139,15 @@ export function MoneyMovementsTable({
               ) : (
                 conceptLabel(row)
               )}
+            </td>
+            <td>
+              <StatusPill
+                tone={row.category === 'REFUND' ? 'warn' : 'ok'}
+              >
+                {ledgerCategoryLabel(
+                  row.category ?? (row.kind === 'OUTCOME' ? 'REFUND' : 'SALE'),
+                )}
+              </StatusPill>
             </td>
             <td>
               <StatusPill tone={row.kind === 'INCOME' ? 'ok' : 'danger'}>

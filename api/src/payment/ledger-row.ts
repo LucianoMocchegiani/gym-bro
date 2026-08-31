@@ -62,10 +62,19 @@ export type LedgerMovementSource = {
 };
 
 /**
+ * Categoría comercial de un asiento de caja (independiente de ingreso/egreso).
+ *
+ * @remarks Hoy: venta (cobro) y devolución. Post-MVP: compra, gasto-expensas,
+ * gasto-empleados (`docs/99-backlog-post-mvp.md`).
+ */
+export type LedgerCategory = 'SALE' | 'REFUND';
+
+/**
  * Fila de la grilla de movimientos (caja y reportes).
  *
  * @remarks INCOME = 1 cobro (cart). OUTCOME = 1 ejecución de devolución
- * (puede ser un subconjunto del cart).
+ * (puede ser un subconjunto del cart). `category` es el rubro (venta vs
+ * devolución); `kind` es el sentido del dinero.
  */
 export type LedgerMovementRow = {
   id: string;
@@ -74,6 +83,7 @@ export type LedgerMovementRow = {
   amount: number;
   method: 'CASH' | 'MP';
   kind: 'INCOME' | 'OUTCOME';
+  category: LedgerCategory;
   createdAt: Date;
   memberId: string;
   memberName: string | null;
@@ -85,6 +95,10 @@ export type LedgerMovementRow = {
 
 function methodLabel(method: PaymentMethod): 'CASH' | 'MP' {
   return method === PaymentMethod.MP ? 'MP' : 'CASH';
+}
+
+function categoryFromKind(kind: CashMovementKind): LedgerCategory {
+  return kind === CashMovementKind.OUTCOME ? 'REFUND' : 'SALE';
 }
 
 /**
@@ -102,6 +116,7 @@ export function buildLedgerRows(
     const item = row.transactionItem;
     const kind: LedgerMovementRow['kind'] =
       row.kind === CashMovementKind.OUTCOME ? 'OUTCOME' : 'INCOME';
+    const category = categoryFromKind(row.kind);
     const chargeReceiptId = item.transaction?.receipts[0]?.id ?? null;
     const outcomeReceiptId =
       row.receiptId ?? item.receipt?.id ?? null;
@@ -140,6 +155,7 @@ export function buildLedgerRows(
       amount: row.amount,
       method: methodLabel(item.method),
       kind,
+      category,
       createdAt: row.createdAt,
       memberId: row.member.id,
       memberName: row.member.name,

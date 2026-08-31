@@ -56,7 +56,7 @@ function formatWhen(iso: string): string {
  * Cola de solicitudes de devolución del afiliado (CU-PAG-005).
  *
  * @remarks Requiere `transaction_items.refund`. Devolver un cobro (sin
- * solicitud) se hace en Cierres.
+ * solicitud) se hace en Cierre.
  */
 export default function DevolucionesPage() {
   return (
@@ -219,8 +219,8 @@ function DevolucionesInner() {
     selected?.status === 'PENDING' ? 'Ejecutar solicitud' : 'Solicitud';
 
   return (
-    <AdminShell title="Devoluciones">
-      <ListToolbar hint="Solicitudes del afiliado. Para devolver un cobro sin solicitud, usá Cierres.">
+    <AdminShell title="Solicitudes de devolución">
+      <ListToolbar hint="Pedidos del afiliado (app). Un cobro sin solicitud se devuelve en Cierre.">
         <ListFilterField
           label="Estado"
           value={statusFilter}
@@ -330,7 +330,7 @@ function DevolucionesInner() {
             <p className="muted small">
               Solo las pendientes se pueden ejecutar. Un cobro se devuelve
               desde{' '}
-              <Link href="/arqueo">Cierres</Link>.
+              <Link href="/arqueo">Cierre</Link>.
             </p>
           </div>
         ) : selected ? (

@@ -189,7 +189,7 @@
 
 ## E9 — App afiliado (Flutter)
 
-**Estado real (2026-08-21):** auth + cuenta + wallet SSI + sesiones/reservas/waitlist/drop-in hechos. Tienda y devolución pendientes.  
+**Estado real (2026-08-31):** auth + cuenta + wallet SSI + sesiones/reservas/waitlist/drop-in hechos. Tienda: hay UI + parse de `recentTransactionItems` + solicitud de devolución; checkout MP afiliado sigue pendiente de cierre.  
 **API resuelta:** `GET /me/sessions` y `GET /me/packs` (member catalog) creados en `member-catalog` module.  
 Detalle: [14-auditoria-roadmap-vs-codigo-2026-08-13.md](./14-auditoria-roadmap-vs-codigo-2026-08-13.md).
 
@@ -218,10 +218,11 @@ Detalle: [14-auditoria-roadmap-vs-codigo-2026-08-13.md](./14-auditoria-roadmap-v
 - [ ] Comprar pack / pagar (Tienda)
   - Reemplazar `StorePlaceholderScreen`
   - Listar packs → `POST /me/transaction-items/mp/checkout` → abrir Preference (`url_launcher`)
-  - Parsear `recentPayments` del account (hoy la API los manda; Flutter no)
-- [ ] Solicitar devolución
-  - `POST /me/transaction-items/:id/refund-requests` + listado solicitudes
-  - UI desde pagos recientes / cuenta
+  - Parsear `recentTransactionItems` del account (Flutter)
+- [x] Solicitar devolución
+  - `POST /me/transaction-items/:id/refund-requests` desde Tienda → Pagos
+  - Cola staff: **Solicitudes de devolución**; ejecución directa en **Cierre**
+  - Pendiente fino: listado propio de solicitudes en la app
 
 ### Pendiente — depende de otras épicas
 
@@ -267,8 +268,8 @@ Detalle: [14-auditoria…](./14-auditoria-roadmap-vs-codigo-2026-08-13.md).
 ### Pendiente — thin gaps (API ya existe)
 
 - [x] Devoluciones staff
-  - `/devoluciones`: listar `GET /refund-requests` + ejecutar solicitudes PENDING
-  - `/arqueo`: Devolver sobre un ingreso (picker de ítems) → `POST /transactions/:id/refunds`
+  - `/devoluciones` (**Solicitudes de devolución**): listar `GET /refund-requests` + ejecutar solicitudes PENDING
+  - `/arqueo` (**Cierre**): Devolver sobre un ingreso (picker de ítems) → `POST /transactions/:id/refunds`
   - Motivos `solicitud` / `doble_cobro` / `otro`; confirmación tipada
 - [x] Cancelar contrato desde ficha afiliado
   - `PATCH /contracts/:id/status` → `CANCELLED` (RN-SER-009); motivo opcional → auditoría

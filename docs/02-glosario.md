@@ -58,6 +58,8 @@ Términos usados en dominio, reglas y casos de uso. Una sola palabra canónica p
 | **Mercado Pago (MP)** | Medio online; la cuenta es **del gym** (tenant). |
 | **Caja** | Cobros presenciales (efectivo u otros habilitados) operados por staff. |
 | **Caja del día** | Conjunto de movimientos de caja de una fecha + arqueo. |
+| **Cierre** | Pantalla Admin (`/arqueo`) del cierre del día: totales, arqueo y grilla de movimientos. |
+| **Categoría (caja)** | Rubro del asiento, distinto de ingreso/egreso. Hoy: Venta o Devolución, **derivada** de `cash_movements.kind` (no hay columna). Post-MVP: persistir categoría (compra, gasto-expensas, gasto-empleados) porque varios rubros serán egreso. |
 | **Arqueo** | Control de lo esperado vs lo declarado en caja del día. |
 | **Idempotencia** | Garantía de que la misma operación de cobro no se ejecuta dos veces. |
 | **Comprobante interno** | Recibo GymBro (no factura AFIP). AFIP = post-MVP. |

@@ -1,9 +1,12 @@
 import '../../core/network/api_client.dart';
 
-/// Pago reciente del afiliado.
-class AccountRecentPayment {
+/// Ítem de cobro reciente del afiliado (`GET /me/account`).
+///
+/// La API expone `recentTransactionItems` (un cobro = un `transaction_item`).
+/// Compatible con `POST .../refund-requests` (CU-PAG-004).
+class AccountRecentTransactionItem {
   /// Crea el modelo.
-  AccountRecentPayment({
+  AccountRecentTransactionItem({
     required this.id,
     required this.amount,
     required this.status,
@@ -19,8 +22,8 @@ class AccountRecentPayment {
   final DateTime createdAt;
   final String? packId;
 
-  factory AccountRecentPayment.fromJson(Map<String, dynamic> json) {
-    return AccountRecentPayment(
+  factory AccountRecentTransactionItem.fromJson(Map<String, dynamic> json) {
+    return AccountRecentTransactionItem(
       id: json['id'] as String,
       amount: (json['amount'] as num?)?.toInt() ?? 0,
       status: json['status'] as String? ?? '',
@@ -30,7 +33,7 @@ class AccountRecentPayment {
     );
   }
 
-  /// ¿Se puede solicitar devolución?
+  /// ¿Se puede solicitar devolución? (CU-PAG-004; ítem APPROVED).
   bool get canRefund => status == 'APPROVED';
 }
 
@@ -42,14 +45,14 @@ class MemberAccount {
     required this.debtAmount,
     required this.contracts,
     required this.reservations,
-    required this.recentPayments,
+    required this.recentTransactionItems,
   });
 
   final String debtStatus;
   final num debtAmount;
   final List<AccountContract> contracts;
   final List<AccountReservation> reservations;
-  final List<AccountRecentPayment> recentPayments;
+  final List<AccountRecentTransactionItem> recentTransactionItems;
 
   /// Contratos vigentes hoy (la API con `coverage=current` ya filtra en DB).
   List<AccountContract> get activeContracts => contracts;
@@ -64,10 +67,16 @@ class MemberAccount {
         .whereType<Map>()
         .map((e) => AccountReservation.fromJson(Map<String, dynamic>.from(e)))
         .toList();
-    final recentPayments = (json['recentPayments'] as List<dynamic>? ?? [])
+    final rawItems =
+        json['recentTransactionItems'] as List<dynamic>? ??
+        json['recentPayments'] as List<dynamic>? ??
+        const [];
+    final recentTransactionItems = rawItems
         .whereType<Map>()
         .map(
-          (e) => AccountRecentPayment.fromJson(Map<String, dynamic>.from(e)),
+          (e) => AccountRecentTransactionItem.fromJson(
+            Map<String, dynamic>.from(e),
+          ),
         )
         .toList();
     return MemberAccount(
@@ -75,7 +84,7 @@ class MemberAccount {
       debtAmount: debt['amount'] as num? ?? 0,
       contracts: contracts,
       reservations: reservations,
-      recentPayments: recentPayments,
+      recentTransactionItems: recentTransactionItems,
     );
   }
 }

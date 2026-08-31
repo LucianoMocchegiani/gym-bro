@@ -641,6 +641,8 @@ Movimiento de caja del día (CU-PAG-002 / RN-PAG-007).
 
 **Unique:** `(transaction_item_id, kind)` (un INCOME y un OUTCOME por ítem). El cart se resuelve vía el ítem. Egresos de un mismo lote comparten `receipt_id` (grilla: 1 fila por ejecución).
 
+**Categoría (grilla Cierre/Reportes):** no hay columna. `LedgerCategory` (`SALE` / `REFUND`) se calcula en API: `OUTCOME` → devolución, resto → venta. Post-MVP (compra, gastos): persistir categoría en esta tabla; `kind` no alcanza.
+
 API: Staff `GET /api/cash-register/day?date=YYYY-MM-DD`, `POST /api/cash-register/day/reconcile` (`cashier.operate`); Super `/api/tenants/:tid/cash-register/...`.
 
 ### 4.15c `cash_reconciliations`

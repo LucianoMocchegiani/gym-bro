@@ -234,6 +234,7 @@ Env: `MP_CHECKOUT_MODE=stub|live`, `PUBLIC_API_BASE_URL` (notification_url).
 
 - `MovimientoCaja` ligado a `Pago`.
 - `ArqueoCaja` por fecha (+ sucursal cuando multi-sede UI).
+- Admin: `/arqueo` = **Cierre**; `/devoluciones` = **Solicitudes de devolución** (`refund_requests`). Grilla: `kind` (ingreso/egreso) + `category` (`SALE` / `REFUND`) **derivada de `kind`** en `buildLedgerRows`. Post-MVP: columna/enum persistido en `cash_movements` (compra y gastos no se infieren del sentido del dinero). Ver backlog Pagos.
 
 ### 7.4 Devoluciones
 

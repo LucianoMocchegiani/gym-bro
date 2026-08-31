@@ -186,7 +186,7 @@ Credenciales: expandir card → Eliminar (confirmación). Ajustes: Reiniciar wal
 +----------------------------------------------------------------+
 ```
 
-Devolver un cobro (picker de ítems del cart) vive en **Cierres** (`/arqueo`), no en Caja. Reportes usa la misma grilla sin esa acción.
+Devolver un cobro (picker de ítems del cart) vive en **Cierre** (`/arqueo`), no en Caja. Reportes usa la misma grilla sin esa acción. Columna **Categoría** (Venta / Devolución) aparte de Tipo (Ingreso / Egreso). La cola del afiliado es **Solicitudes de devolución**.
 
 ---
 

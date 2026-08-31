@@ -332,7 +332,7 @@ function CajaInner() {
       title="Caja"
       subtitle="Cobros con carrito: packs y drop-in en efectivo o Mercado Pago."
     >
-      <ListToolbar hint="Movimientos y cierre del día se ven en Cierres y Movimientos. MP no suma al cierre de efectivo.">
+      <ListToolbar hint="El cierre del día se ve en Cierre.">
         <MemberPicker
           label="Afiliado"
           value={memberId}
