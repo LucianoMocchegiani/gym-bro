@@ -71,6 +71,7 @@ export class HttpMpAccountAdapter extends MpAccountPort {
       body: JSON.stringify({
         items: input.items.map((item) => ({
           title: item.title,
+          ...(item.description ? { description: item.description } : {}),
           quantity: item.quantity,
           unit_price: item.unit_price,
           currency_id: 'ARS',
@@ -222,6 +223,7 @@ export class HttpMpAccountAdapter extends MpAccountPort {
     accessToken: string,
     mpPaymentId: string,
     amount: number,
+    idempotencyKey: string,
   ): Promise<{ ok: boolean; manualPending: boolean }> {
     const response = await fetch(
       `${MP_PAYMENTS}/${encodeURIComponent(mpPaymentId)}/refunds`,
@@ -231,7 +233,7 @@ export class HttpMpAccountAdapter extends MpAccountPort {
           Authorization: `Bearer ${accessToken}`,
           'Content-Type': 'application/json',
           Accept: 'application/json',
-          'X-Idempotency-Key': `refund-${mpPaymentId}-${amount}`,
+          'X-Idempotency-Key': idempotencyKey,
         },
         body: JSON.stringify({ amount }),
       },

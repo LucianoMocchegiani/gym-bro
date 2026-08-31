@@ -1,4 +1,4 @@
-import { CashMovementKind, PaymentMethod, Prisma } from '@prisma/client';
+import { CashMovementKind, PaymentMethod, Prisma, ReceiptConcept } from '@prisma/client';
 import {
   PAYMENT_LINE_INCLUDE,
   toPaymentLine,
@@ -9,8 +9,8 @@ import {
 /**
  * Include del `transaction_item` para armar una fila de caja/reportes.
  *
- * @remarks Recibo de cobro vive en `transaction.receipt`; el de devolución,
- * en `transactionItem.receipt` (RN-PAG-009 / CU-PAG-005).
+ * @remarks Recibo de cobro vive en `transaction.receipts` (`concept <> REFUND`);
+ * el de devolución, en `cash_movements.receipt_id` (1 por ejecución).
  */
 export const LEDGER_ITEM_INCLUDE = {
   pack: PAYMENT_LINE_INCLUDE.pack,
@@ -22,7 +22,11 @@ export const LEDGER_ITEM_INCLUDE = {
     select: {
       id: true,
       mpPaymentId: true,
-      receipt: { select: { id: true } },
+      receipts: {
+        where: { concept: { not: ReceiptConcept.REFUND } },
+        select: { id: true },
+        take: 1,
+      },
     },
   },
 } satisfies Prisma.TransactionItemInclude;
@@ -42,7 +46,7 @@ type LedgerItemSource = PaymentLineSource & {
   transaction: {
     id: string;
     mpPaymentId: string | null;
-    receipt: { id: string } | null;
+    receipts: Array<{ id: string }>;
   } | null;
 };
 
@@ -51,13 +55,17 @@ export type LedgerMovementSource = {
   amount: number;
   kind: CashMovementKind;
   createdAt: Date;
+  receiptId: string | null;
   member: { id: string; name: string | null; email: string };
   recordedByStaff: { name: string | null } | null;
   transactionItem: LedgerItemSource;
 };
 
 /**
- * Fila de la grilla de movimientos (caja y reportes): 1 cobro o 1 devolución por cart.
+ * Fila de la grilla de movimientos (caja y reportes).
+ *
+ * @remarks INCOME = 1 cobro (cart). OUTCOME = 1 ejecución de devolución
+ * (puede ser un subconjunto del cart).
  */
 export type LedgerMovementRow = {
   id: string;
@@ -80,10 +88,10 @@ function methodLabel(method: PaymentMethod): 'CASH' | 'MP' {
 }
 
 /**
- * Agrupa movimientos 1:1 con ítem en una fila por (`transactionId`, kind).
+ * Agrupa ingresos por cart y egresos por ejecución de devolución.
  *
- * @remarks INCOME = cobro del cart; OUTCOME = devolución(es) de ese cart.
- * Más recientes primero.
+ * @remarks INCOME clave = transactionId. OUTCOME clave = receiptId del lote
+ * (legacy: recibo del ítem o timestamp). Más recientes primero.
  */
 export function buildLedgerRows(
   rows: LedgerMovementSource[],
@@ -94,13 +102,17 @@ export function buildLedgerRows(
     const item = row.transactionItem;
     const kind: LedgerMovementRow['kind'] =
       row.kind === CashMovementKind.OUTCOME ? 'OUTCOME' : 'INCOME';
-    const key = `${item.transactionId}:${kind}`;
+    const chargeReceiptId = item.transaction?.receipts[0]?.id ?? null;
+    const outcomeReceiptId =
+      row.receiptId ?? item.receipt?.id ?? null;
+    const key =
+      kind === 'INCOME'
+        ? `in:${item.transactionId}`
+        : `out:${outcomeReceiptId ?? `${item.transactionId}:${row.createdAt.getTime()}`}`;
     const existing = byKey.get(key);
     const line = toPaymentLine(item);
     const receiptId =
-      kind === 'INCOME'
-        ? (item.transaction?.receipt?.id ?? item.receipt?.id ?? null)
-        : (item.receipt?.id ?? null);
+      kind === 'INCOME' ? chargeReceiptId ?? item.receipt?.id ?? null : outcomeReceiptId;
 
     if (existing) {
       existing.amount += row.amount;

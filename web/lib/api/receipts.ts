@@ -8,7 +8,7 @@ import type { ListParams, ListResult } from '@/lib/api/list';
 import type { PaymentLineDetail } from '@/lib/api/payment-lines';
 
 export type ReceiptMethod = 'STUB' | 'CASH' | 'MP';
-export type ReceiptConcept = 'PACK_CONTRACT' | 'DROP_IN';
+export type ReceiptConcept = 'PACK_CONTRACT' | 'DROP_IN' | 'REFUND';
 
 export type ReceiptDetail = {
   id: string;

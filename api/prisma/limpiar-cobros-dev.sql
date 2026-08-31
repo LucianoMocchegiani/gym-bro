@@ -3,16 +3,15 @@
 -- El próximo comprobante vuelve a GB-000001.
 --
 -- Uso (repo root):
---   Get-Content -Raw api\prisma\limpiar-cobros-dev.sql |
---     docker compose exec -T postgres psql -U gymbro -d gymbro -v ON_ERROR_STOP=1
+-- Get-Content -Raw api\prisma\limpiar-cobros-dev.sql | docker compose exec -T postgres psql -U gymbro -d gymbro -v ON_ERROR_STOP=1
 
 BEGIN;
 
 UPDATE access_attempts SET reservation_id = NULL WHERE reservation_id IS NOT NULL;
 
 DELETE FROM refund_requests;
-DELETE FROM receipts;
 DELETE FROM cash_movements;
+DELETE FROM receipts;
 DELETE FROM cash_reconciliations;
 DELETE FROM waitlist_entries;
 DELETE FROM reservations;

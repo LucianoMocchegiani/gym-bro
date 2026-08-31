@@ -43,10 +43,14 @@ export type MpRemoteMerchantOrder = {
 
 /**
  * Ítem de una Preference Checkout Pro.
+ *
+ * @remarks `title` es lo que MP muestra en «Descripción de la compra»
+ * (máx. 256). `description` va al ticket/email de MP si el flujo lo lista.
  */
 export type MpPreferenceItem = {
   id?: string;
   title: string;
+  description?: string;
   quantity: number;
   unit_price: number;
 };
@@ -101,14 +105,17 @@ export abstract class MpAccountPort {
   ): Promise<MpRemoteMerchantOrder>;
 
   /**
-   * Solicita reembolso total de un pago MP.
+   * Solicita reembolso de un pago MP (total o parcial por `amount`).
    *
-   * @returns true si MP aceptó; false si debe marcarse manual pendiente.
+   * @param amount - Monto a devolver (unidad del pago). Siempre se envía;
+   *   refunds sucesivos van contra el saldo que queda en MP.
+   * @param idempotencyKey - Único por ejecución (evita duplicar el mismo lote).
    */
   abstract refundPayment(
     accessToken: string,
     mpPaymentId: string,
     amount: number,
+    idempotencyKey: string,
   ): Promise<{ ok: boolean; manualPending: boolean }>;
 }
 

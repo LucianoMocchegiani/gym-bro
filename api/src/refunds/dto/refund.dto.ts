@@ -1,12 +1,17 @@
 import { RefundRequestStatus } from '@prisma/client';
 import {
+  ArrayMinSize,
+  ArrayUnique,
+  IsArray,
   IsEnum,
   IsIn,
   IsOptional,
   IsString,
+  IsUUID,
   MaxLength,
   MinLength,
 } from 'class-validator';
+import { Type } from 'class-transformer';
 import { ListQueryDto } from '../../common/list';
 
 /**
@@ -37,6 +42,20 @@ export class ExecuteRefundDto {
   @IsOptional()
   @IsString()
   refundRequestId?: string;
+}
+
+/**
+ * Devolución de uno o más ítems de un cart (CU-PAG-005).
+ *
+ * @remarks Un confirm = un refund MP (suma) y un comprobante/egreso.
+ */
+export class ExecuteTransactionRefundDto extends ExecuteRefundDto {
+  @IsArray()
+  @ArrayMinSize(1)
+  @ArrayUnique()
+  @IsUUID('4', { each: true })
+  @Type(() => String)
+  transactionItemIds!: string[];
 }
 
 /**

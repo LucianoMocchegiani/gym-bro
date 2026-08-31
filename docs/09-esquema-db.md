@@ -60,7 +60,8 @@ erDiagram
   members ||--o{ transactions : pays
   staff_users ||--o{ transactions : charges
   transactions ||--o{ transaction_items : contains
-  transactions ||--o| receipts : issues
+  transactions ||--o{ receipts : issues
+  receipts ||--o{ cash_movements : refund_batch
   transaction_items ||--o| receipts : legacy
   transaction_items ||--o{ cash_movements : records
   tenants ||--o{ transaction_items : charges
@@ -339,7 +340,7 @@ erDiagram
 | `WaitlistStatus` | `WAITING`, `PROMOTED`, `LEFT` | Estado ítem de cola |
 | `CashMovementKind` | `INCOME`, `OUTCOME` | Ingreso cobro / egreso devolución |
 | `CashMovementConcept` | `PACK_CONTRACT`, `DROP_IN`, `REFUND` | Concepto del movimiento |
-| `ReceiptConcept` | `PACK_CONTRACT`, `DROP_IN` | Concepto del comprobante |
+| `ReceiptConcept` | `PACK_CONTRACT`, `DROP_IN`, `REFUND` | Cobro vs comprobante de devolución |
 | `RefundRequestStatus` | `PENDING`, `REJECTED`, `EXECUTED` | Solicitud de devolución |
 | `AccessCredentialStatus` | `ACTIVE`, `REVOKED` | Credencial de vínculo de acceso |
 | `AccessAttemptResult` | `ALLOWED`, `DENIED` | Resultado de intento de ingreso |
@@ -632,12 +633,13 @@ Movimiento de caja del día (CU-PAG-002 / RN-PAG-007).
 | `transaction_item_id` | uuid FK | RESTRICT; unique **junto con** `kind` |
 | `member_id` | uuid FK | CASCADE |
 | `recorded_by_staff_id` | uuid FK nullable | SET NULL |
+| `receipt_id` | uuid FK nullable | RESTRICT; lote de devolución (`concept=REFUND`) |
 | `amount` | int | ingreso ≥ 1 |
 | `kind` | `CashMovementKind` | `INCOME` \| `OUTCOME` |
 | `concept` | `CashMovementConcept` | `PACK_CONTRACT` \| `DROP_IN` \| `REFUND` |
 | `created_at` | timestamptz | |
 
-**Unique:** `(transaction_item_id, kind)` (un INCOME y un OUTCOME por ítem). No hay columna `transaction_id` en el movimiento: el cart se resuelve vía el ítem.
+**Unique:** `(transaction_item_id, kind)` (un INCOME y un OUTCOME por ítem). El cart se resuelve vía el ítem. Egresos de un mismo lote comparten `receipt_id` (grilla: 1 fila por ejecución).
 
 API: Staff `GET /api/cash-register/day?date=YYYY-MM-DD`, `POST /api/cash-register/day/reconcile` (`cashier.operate`); Super `/api/tenants/:tid/cash-register/...`.
 
@@ -661,23 +663,25 @@ Arqueo de caja del día (CU-PAG-003 / RN-PAG-007).
 
 ### 4.15d `receipts` / `receipt_sequences`
 
-Comprobante interno (RN-PAG-009). 1:1 con `transactions` (cart CASH/MP). `transaction_item_id` queda para receipts legacy.
+Comprobante interno (RN-PAG-009). Cobro: 1 por cart (`PACK_CONTRACT` / `DROP_IN`). Devolución: 1 por ejecución (`REFUND`). `transaction_item_id` queda para receipts de cobro/devolución legacy.
 
 | Columna (`receipts`) | Tipo | Notas |
 |---------|------|--------|
 | `id` | uuid PK | |
 | `tenant_id` / `member_id` | uuid FK | CASCADE |
-| `transaction_id` | uuid FK UK nullable | RESTRICT; cart actual |
+| `transaction_id` | uuid FK nullable | RESTRICT; cobro y devoluciones del mismo cart |
 | `transaction_item_id` | uuid FK UK nullable | RESTRICT; legacy |
 | `number` | int | secuencial por tenant |
 | `amount` / `method` | int / enum | snapshot del pago |
-| `concept` | `ReceiptConcept` | `PACK_CONTRACT` \| `DROP_IN` |
-| `description` | text nullable | pack, servicio o “N items” |
+| `concept` | `ReceiptConcept` | `PACK_CONTRACT` \| `DROP_IN` \| `REFUND` |
+| `description` | text nullable | pack, servicio, “N ítems” o “Devolución: …” |
 | `created_at` | timestamptz | |
+
+Unique parcial SQL: a lo sumo un cobro (`concept <> REFUND`) por `transaction_id`. Varias devoluciones del mismo cart = varios `REFUND`.
 
 `receipt_sequences`: PK `tenant_id`, `next_number`. Código API: `GB-` + number pad 6.
 
-API: Member `GET /api/me/receipts`; Staff `GET /api/transactions/:transactionId/receipt`, `GET /api/members/:id/receipts` (`members.read`).
+API: Member `GET /api/me/receipts`; Staff `GET /api/receipts/:id`, `GET /api/transactions/:transactionId/receipt` (solo cobro), `GET /api/members/:id/receipts` (`members.read`).
 
 ### 4.15e `mercadopago_accounts`
 
@@ -717,7 +721,7 @@ Carrito de Caja (CASH y MP, CU-PAG-001 / modelo MercadoLibre): 1 cart → N íte
 | `recorded_by_staff_id` | uuid FK nullable | staff que inició el cobro (Caja); SET NULL; null si el afiliado paga solo |
 | `created_at` / `updated_at` | timestamptz | |
 
-Cada `transaction_item` tiene `transaction_id` **obligatorio**. Refund de carrito MP **no soportado** (limitación conocida).
+Cada `transaction_item` tiene `transaction_id` **obligatorio**. Devolución de carrito MP: `POST /transactions/:id/refunds` (refund parcial o del saldo contra `transactions.mp_payment_id`).
 
 API Staff: `POST /api/members/:memberId/transaction-items/mp/cart` y `.../cash/cart` (`members.write`).
 
@@ -734,9 +738,9 @@ Devoluciones (CU-PAG-004/005/007 / RN-PAG-011/012).
 | `resolved_by_staff_id` / `resolved_at` | uuid / timestamptz nullable | |
 | `created_at` / `updated_at` | timestamptz | |
 
-Transaction_items: `refunded_at`, `refund_reason`, `mp_refund_manual_pending`. Caja: `OUTCOME` + concepto `REFUND`; unique `(transaction_item_id, kind)`.
+Transaction_items: `refunded_at`, `refund_reason`, `mp_refund_manual_pending`. Caja: `OUTCOME` + concepto `REFUND`; unique `(transaction_item_id, kind)`; `receipt_id` del comprobante del lote.
 
-API: Member `POST /me/transaction-items/:id/refund-requests`, `GET /me/refund-requests`. Staff `GET /refund-requests`, `POST /transaction-items/:id/refunds` (`transaction_items.refund`).
+API: Member `POST /me/transaction-items/:id/refund-requests`, `GET /me/refund-requests`. Staff `GET /refund-requests`, `POST /transactions/:id/refunds` (lote) y `POST /transaction-items/:id/refunds` (wrapper) (`transaction_items.refund`).
 
 ### 4.15i `access_credentials`
 
@@ -933,6 +937,8 @@ Historia incremental (2026-07 / 2026-08) **compactada** en un baseline (`40476fa
 |-----------|-----------|
 | `20260830145646_init` | Schema completo actual: enums, tablas, FKs, índices Prisma y **índices únicos parciales** (sede default, reserva `CONFIRMED`, waitlist `WAITING`, credencial `ACTIVE`). Incluye `image_url`, `transactions` + `transaction_items.transaction_id` NOT NULL, `receipts.transaction_id`, `refunded_amount`. |
 | `20260830220000_transaction_recorded_by_staff` | `transactions.recorded_by_staff_id` (staff que inició el cobro; el webhook MP lo copia a `cash_movements`). |
+| `20260830223000_refund_cart_receipt` | `ReceiptConcept.REFUND`; `receipts.transaction_id` deja de ser UK; `cash_movements.receipt_id`. |
+| `20260830223100_receipts_charge_unique` | Unique parcial: un cobro (`concept <> REFUND`) por `transaction_id`. |
 
 Comandos y checklist “desde cero”: [13-setup-db-desde-cero.md](./13-setup-db-desde-cero.md).
 

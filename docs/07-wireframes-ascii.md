@@ -186,6 +186,8 @@ Credenciales: expandir card → Eliminar (confirmación). Ajustes: Reiniciar wal
 +----------------------------------------------------------------+
 ```
 
+Devolver un cobro (picker de ítems del cart) vive en **Cierres** (`/arqueo`), no en Caja. Reportes usa la misma grilla sin esa acción.
+
 ---
 
 ## 11. Web Admin — Cobro en caja

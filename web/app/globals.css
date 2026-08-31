@@ -1371,6 +1371,20 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator {
   align-items: start;
 }
 
+.refund-pick-all {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.refund-pick-line label {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 0.5rem 0.75rem;
+  align-items: start;
+  cursor: pointer;
+}
+
 .payment-line-copy p {
   margin: 0;
 }

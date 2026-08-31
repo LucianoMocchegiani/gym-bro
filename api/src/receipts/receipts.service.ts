@@ -55,8 +55,11 @@ export class ReceiptsService {
     },
   ): Promise<void> {
     if (input.transactionId) {
-      const existing = await tx.receipt.findUnique({
-        where: { transactionId: input.transactionId },
+      const existing = await tx.receipt.findFirst({
+        where: {
+          transactionId: input.transactionId,
+          concept: { not: ReceiptConcept.REFUND },
+        },
         select: { id: true },
       });
       if (existing) return;
@@ -87,42 +90,37 @@ export class ReceiptsService {
   }
 
   /**
-   * Emite comprobante de devolución para un payment refunded.
-   * idempotente por transactionItemId.
+   * Emite comprobante de una ejecución de devolución (1 por lote).
+   *
+   * @remarks `concept=REFUND` y `transactionId` del cart. Las líneas se
+   * resuelven vía `cash_movements.receipt_id`.
    */
   async issueForRefund(
     tx: Tx,
     input: {
       tenantId: string;
-      transactionItemId: string;
+      transactionId: string;
       memberId: string;
       amount: number;
       method: PaymentMethod;
-      concept: ReceiptConcept;
       description?: string | null;
     },
-  ): Promise<void> {
-    const existing = await tx.receipt.findUnique({
-      where: { transactionItemId: input.transactionItemId },
-      select: { id: true },
-    });
-    if (existing) {
-      return;
-    }
-
+  ): Promise<{ id: string }> {
     const number = await this.nextNumber(tx, input.tenantId);
-    await tx.receipt.create({
+    const created = await tx.receipt.create({
       data: {
         tenantId: input.tenantId,
-        transactionItemId: input.transactionItemId,
+        transactionId: input.transactionId,
         memberId: input.memberId,
         number,
         amount: input.amount,
         method: input.method,
-        concept: input.concept,
+        concept: ReceiptConcept.REFUND,
         description: input.description?.trim() || null,
       },
+      select: { id: true },
     });
+    return created;
   }
 
   /**
@@ -194,13 +192,17 @@ export class ReceiptsService {
     if (!transaction) {
       throw new NotFoundException(`Transaction ${transactionId} not found in tenant`);
     }
-    if (transaction.status !== PaymentStatus.APPROVED) {
+    if (transaction.status !== PaymentStatus.APPROVED &&
+      transaction.status !== PaymentStatus.REFUNDED) {
       throw new ForbiddenException(
-        'Receipt is only available for APPROVED transactions',
+        'Receipt is only available for APPROVED or REFUNDED transactions',
       );
     }
-    const receipt = await this.prisma.receipt.findUnique({
-      where: { transactionId },
+    const receipt = await this.prisma.receipt.findFirst({
+      where: {
+        transactionId,
+        concept: { not: ReceiptConcept.REFUND },
+      },
     });
     if (receipt) {
       const [detail] = await this.withLines(tenantId, [receipt]);
@@ -282,25 +284,31 @@ export class ReceiptsService {
     if (rows.length === 0) {
       return [];
     }
-    const txIds = [
+    const chargeTxIds = [
       ...new Set(
         rows
+          .filter((r) => r.concept !== ReceiptConcept.REFUND)
           .map((r) => r.transactionId)
           .filter((id): id is string => Boolean(id)),
       ),
     ];
+    const refundReceiptIds = rows
+      .filter((r) => r.concept === ReceiptConcept.REFUND)
+      .map((r) => r.id);
     const orphanItemIds = rows
       .filter((r) => !r.transactionId && r.transactionItemId)
       .map((r) => r.transactionItemId)
       .filter((id): id is string => Boolean(id));
 
     const items =
-      txIds.length > 0 || orphanItemIds.length > 0
+      chargeTxIds.length > 0 || orphanItemIds.length > 0
         ? await this.prisma.transactionItem.findMany({
             where: {
               tenantId,
               OR: [
-                ...(txIds.length > 0 ? [{ transactionId: { in: txIds } }] : []),
+                ...(chargeTxIds.length > 0
+                  ? [{ transactionId: { in: chargeTxIds } }]
+                  : []),
                 ...(orphanItemIds.length > 0
                   ? [{ id: { in: orphanItemIds } }]
                   : []),
@@ -308,6 +316,17 @@ export class ReceiptsService {
             },
             orderBy: { createdAt: 'asc' },
             include: PAYMENT_LINE_INCLUDE,
+          })
+        : [];
+
+    const refundMovements =
+      refundReceiptIds.length > 0
+        ? await this.prisma.cashMovement.findMany({
+            where: { receiptId: { in: refundReceiptIds } },
+            orderBy: { createdAt: 'asc' },
+            include: {
+              transactionItem: { include: PAYMENT_LINE_INCLUDE },
+            },
           })
         : [];
 
@@ -322,10 +341,26 @@ export class ReceiptsService {
         byTx.set(item.transactionId, list);
       }
     }
+    const byRefundReceipt = new Map<string, PaymentLineDetail[]>();
+    for (const movement of refundMovements) {
+      const receiptId = movement.receiptId;
+      if (!receiptId) {
+        continue;
+      }
+      const list = byRefundReceipt.get(receiptId) ?? [];
+      list.push(toPaymentLine(movement.transactionItem));
+      byRefundReceipt.set(receiptId, list);
+    }
 
     return rows.map((row) => {
       let lines: PaymentLineDetail[] = [];
-      if (row.transactionId) {
+      if (row.concept === ReceiptConcept.REFUND) {
+        lines = byRefundReceipt.get(row.id) ?? [];
+        if (lines.length === 0 && row.transactionItemId) {
+          const line = byItem.get(row.transactionItemId);
+          lines = line ? [line] : [];
+        }
+      } else if (row.transactionId) {
         lines = byTx.get(row.transactionId) ?? [];
       } else if (row.transactionItemId) {
         const line = byItem.get(row.transactionItemId);

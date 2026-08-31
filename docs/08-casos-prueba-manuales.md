@@ -63,14 +63,14 @@ Leyenda resultado: `P` pass · `F` fail · `B` bloqueado · `-` no aplica
 | P1 | MP rechazado | Sin contratación | CU-PAG-001 | |
 | P2 | Webhook duplicado MP | No duplica derechos | RN-PAG-005 | |
 | P3 | Cobro caja sin permiso | Denegado | RN-PAG-008 | |
-| P3b | Staff genera link MP pack en Caja | Preference + PENDING; derechos al APPROVED | CU-PAG-001 | |
-| P3c | Staff genera link MP drop-in en Caja | Preference + PENDING; reserva al APPROVED | CU-PAG-001 | |
+| P3b | Staff genera link MP pack en Caja | Preference + PENDING; ítem MP = nombre del pack + servicios/créditos; derechos al APPROVED | CU-PAG-001 | |
+| P3c | Staff genera link MP drop-in en Caja | Preference + PENDING; ítem MP = servicio · sede · horario (dos drop-ins del mismo servicio se distinguen); reserva al APPROVED | CU-PAG-001 | |
 | P3d | Staff genera link MP de carrito en Caja | Sin redirect automático; al webhook APPROVED aparece “Ver comprobante” (1 receipt por cart) y Staff = quien generó el link | CU-PAG-001 | |
 | P3e | Staff cobra carrito en efectivo en Caja | APPROVED inmediato; panel con líneas (pack → contrato/vigencia + servicios del pack; drop-in → reserva/horario) | CU-PAG-002 | |
 | P4 | Comprobante tras pago | Visible app + email E1; en reportes y cierres, “Ver comprobante” abre el panel (pack incluye servicios) | RN-PAG-009 | |
 | P5 | Devolución afiliado dentro de política | Solicitud OK | CU-PAG-004 | |
 | P6 | Devolución afiliado fuera de política | Rechazo; admin aún puede | RN-PAG-012/011 | |
-| P7 | Admin devolución pack mixto | Derechos caen todos; en reportes y cierres aparece un egreso con comprobante | CU-PAG-005 | |
+| P7 | Admin devolución cart (parcial o todo) | Derechos de los ítems elegidos caen; un egreso + un comprobante REFUND; se puede devolver el resto después | CU-PAG-005 | |
 | P8 | Arqueo con diferencia | Se registra diff; la grilla de movimientos es la misma que Reportes (tipo + staff + comprobante) | CU-PAG-003 | |
 
 ---

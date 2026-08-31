@@ -23,6 +23,7 @@ import {
   MpCartCheckoutResult,
 } from './payment.types';
 import { MP_ACCOUNT_PORT, MpAccountPort } from './mp-account.port';
+import { mpCopyForDropIn, mpCopyForPack } from './mp-item-copy';
 
 /**
  * Checkout de pagos online (Mercado Pago).
@@ -156,6 +157,7 @@ export class OnlinePaymentService {
         accessToken,
         items: lines.map((line) => ({
           title: line.title ?? '',
+          description: line.description,
           quantity: line.quantity,
           unit_price: line.amount,
         })),
@@ -218,7 +220,11 @@ export class OnlinePaymentService {
       if (item.kind === 'PACK') {
         const pack = await this.prisma.pack.findFirst({
           where: { id: item.id, tenantId },
-          include: { components: true },
+          include: {
+            components: {
+              include: { service: { select: { name: true } } },
+            },
+          },
         });
         if (!pack) {
           throw new NotFoundException(`Pack ${item.id} not found in tenant`);
@@ -232,10 +238,18 @@ export class OnlinePaymentService {
         if (pack.price < 1) {
           throw new BadRequestException('Pack price must be at least 1');
         }
+        const packCopy = mpCopyForPack(
+          pack.name,
+          pack.components.map((c) => ({
+            name: c.service.name,
+            credits: c.creditAmount,
+          })),
+        );
         lines.push({
           kind: 'PACK',
           refId: pack.id,
-          title: pack.name,
+          title: packCopy.title,
+          description: packCopy.description,
           quantity,
           amount: pack.price,
           transactionItemIds: [],
@@ -248,12 +262,25 @@ export class OnlinePaymentService {
         memberId,
         item.id,
       );
+      const dropInCopy = mpCopyForDropIn({
+        serviceName: session.service.name,
+        branchName: session.branch.name,
+        startsAt: session.startsAt,
+        endsAt: session.endsAt,
+      });
+      const dropInPrice = session.service.dropInPrice;
+      if (dropInPrice == null) {
+        throw new BadRequestException(
+          'Drop-in is not enabled for this service (set dropInPrice)',
+        );
+      }
       lines.push({
         kind: 'DROP_IN',
         refId: session.id,
-        title: `Drop-in: ${session.service.name}`,
+        title: dropInCopy.title,
+        description: dropInCopy.description,
         quantity,
-        amount: session.service.dropInPrice!,
+        amount: dropInPrice,
         transactionItemIds: [],
       });
     }

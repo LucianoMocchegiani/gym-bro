@@ -17,6 +17,7 @@ type SessionWithService = {
   bookedCount: number;
   serviceId: string;
   service: { id: string; name: string; active: boolean; dropInPrice: number | null; type: string };
+  branch: { name: string };
 };
 
 /**
@@ -47,6 +48,7 @@ export class SessionValidationService {
         service: {
           select: { id: true, name: true, active: true, dropInPrice: true, type: true },
         },
+        branch: { select: { name: true } },
       },
     });
     if (!session) {

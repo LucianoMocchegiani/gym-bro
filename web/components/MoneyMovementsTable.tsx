@@ -5,12 +5,14 @@ import Link from 'next/link';
 import { DataTable } from '@/components/AdminList';
 import { PaymentLineCopy } from '@/components/PaymentLineCopy';
 import { ReceiptPanel } from '@/components/ReceiptPanel';
+import { RefundExecuteModal } from '@/components/RefundExecuteModal';
 import { StatusPill } from '@/components/StatusPill';
-import { IconReceipt, RowIconButton } from '@/components/RowActions';
+import { IconReceipt, IconRefund, RowIconButton } from '@/components/RowActions';
 import { ApiClientError } from '@/lib/api/client';
 import type { LedgerMovementRow } from '@/lib/api/ledger';
 import { getReceipt, getReceiptByTransaction } from '@/lib/api/receipts';
 import type { ReceiptDetail } from '@/lib/api/receipts';
+import { useAuth } from '@/lib/auth/AuthProvider';
 import { formatMoney } from '@/lib/cash-labels';
 import { memberFichaHref } from '@/lib/member-link';
 
@@ -36,9 +38,10 @@ function conceptLabel(row: LedgerMovementRow): string {
 }
 
 /**
- * Grilla de cobros y devoluciones (1 fila por cart + tipo).
+ * Grilla de cobros y devoluciones (ingreso = cart; egreso = ejecución).
  *
  * @remarks Misma tabla en `/reportes` y `/arqueo` (CU-PAG-003 / E11).
+ * Devolver solo se ofrece en Arqueo (`allowRefund`).
  */
 export function MoneyMovementsTable({
   rows,
@@ -47,6 +50,8 @@ export function MoneyMovementsTable({
   description,
   emptyText = 'Sin movimientos.',
   title = 'Movimientos',
+  allowRefund = false,
+  onRefunded,
 }: {
   rows: LedgerMovementRow[];
   loading: boolean;
@@ -54,10 +59,18 @@ export function MoneyMovementsTable({
   description?: string;
   emptyText?: string;
   title?: string;
+  /** Acción Devolver (Arqueo; permiso `transaction_items.refund`). */
+  allowRefund?: boolean;
+  onRefunded?: () => void;
 }) {
+  const { session } = useAuth();
+  const canRefund =
+    allowRefund &&
+    (session?.permissionCodes?.includes('transaction_items.refund') ?? false);
   const [receipt, setReceipt] = useState<ReceiptDetail | null>(null);
   const [receiptBusyId, setReceiptBusyId] = useState<string | null>(null);
   const [receiptError, setReceiptError] = useState<string | null>(null);
+  const [refundRow, setRefundRow] = useState<LedgerMovementRow | null>(null);
 
   async function openReceipt(row: LedgerMovementRow) {
     setReceiptBusyId(row.id);
@@ -144,6 +157,16 @@ export function MoneyMovementsTable({
             <td>{formatMoney(row.amount)}</td>
             <td>{row.recordedByStaffName ?? '—'}</td>
             <td className="row-actions">
+              {canRefund &&
+              row.kind === 'INCOME' &&
+              row.items.some((i) => (i.status ?? 'APPROVED') === 'APPROVED') ? (
+                <RowIconButton
+                  label="Devolver"
+                  onClick={() => setRefundRow(row)}
+                >
+                  <IconRefund />
+                </RowIconButton>
+              ) : null}
               <RowIconButton
                 label="Ver comprobante"
                 disabled={!!receiptBusyId}
@@ -160,6 +183,20 @@ export function MoneyMovementsTable({
 
       {receipt ? (
         <ReceiptPanel receipt={receipt} onClose={() => setReceipt(null)} />
+      ) : null}
+
+      {refundRow ? (
+        <RefundExecuteModal
+          key={refundRow.id}
+          open
+          transactionId={refundRow.transactionId}
+          items={refundRow.items}
+          onClose={() => setRefundRow(null)}
+          onDone={() => {
+            setRefundRow(null);
+            onRefunded?.();
+          }}
+        />
       ) : null}
     </>
   );

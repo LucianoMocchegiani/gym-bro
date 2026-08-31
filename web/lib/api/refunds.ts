@@ -21,12 +21,27 @@ export type RefundRequestDetail = {
 };
 
 export type RefundExecutionDetail = {
-  id: string;
+  transactionId: string;
   transactionItemId: string;
+  transactionItemIds: string[];
   status: string;
+  amount: number;
   refundedAt: string;
-  refundReason: string | null;
-  refundRequestId?: string;
+  reason: string;
+  refundRequestId?: string | null;
+  receiptId?: string | null;
+  mpRefundManualPending?: boolean;
+};
+
+export type RefundBatchExecutionDetail = {
+  transactionId: string;
+  transactionItemIds: string[];
+  status: string;
+  amount: number;
+  reason: string;
+  receiptId: string | null;
+  mpRefundManualPending: boolean;
+  refundedAt: string;
 };
 
 export type ListRefundRequestsInput = {
@@ -59,17 +74,43 @@ export function listRefundRequests(
 }
 
 /**
- * Ejecuta devolución total de un transactionItem (`transaction_items.refund`).
+ * Ejecuta devolución de un transactionItem (`transaction_items.refund`).
  *
- * @remarks RN-PAG-011: staff con flag puede devolver siempre.
- * Si hay solicitud PENDING del transactionItem, la API la marca EXECUTED.
+ * @remarks Wrapper del lote del cart. RN-PAG-011.
  */
 export function executeRefund(
   transactionItemId: string,
-  input: { motiveCode?: string; note?: string },
+  input: {
+    reason: string;
+    motiveCode?: RefundMotiveCode;
+    refundRequestId?: string;
+  },
 ): Promise<RefundExecutionDetail> {
-  return apiRequest<RefundExecutionDetail>(`/transaction-items/${transactionItemId}/refunds`, {
-    method: 'POST',
-    body: input,
-  });
+  return apiRequest<RefundExecutionDetail>(
+    `/transaction-items/${transactionItemId}/refunds`,
+    {
+      method: 'POST',
+      body: input,
+    },
+  );
+}
+
+/**
+ * Devolución de uno o más ítems de un cart (un refund MP / un egreso).
+ */
+export function executeTransactionRefund(
+  transactionId: string,
+  input: {
+    transactionItemIds: string[];
+    reason: string;
+    motiveCode?: RefundMotiveCode;
+  },
+): Promise<RefundBatchExecutionDetail> {
+  return apiRequest<RefundBatchExecutionDetail>(
+    `/transactions/${transactionId}/refunds`,
+    {
+      method: 'POST',
+      body: input,
+    },
+  );
 }

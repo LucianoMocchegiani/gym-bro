@@ -40,6 +40,7 @@ export type PaymentLineService = {
 export type PaymentLineSource = {
   id: string;
   amount: number;
+  status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'REFUNDED';
   sessionId: string | null;
   pack: {
     name: string;
@@ -66,6 +67,7 @@ export type PaymentLineDetail = {
   kind: 'PACK' | 'DROP_IN';
   title: string;
   amount: number;
+  status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'REFUNDED';
   outcome: 'CONTRACT' | 'RESERVATION' | null;
   contract: { startsAt: Date; endsAt: Date | null } | null;
   session: {
@@ -95,6 +97,7 @@ export function toPaymentLine(item: PaymentLineSource): PaymentLineDetail {
     kind: isDropIn ? 'DROP_IN' : 'PACK',
     title,
     amount: item.amount,
+    status: item.status,
     outcome,
     contract: item.contract
       ? {

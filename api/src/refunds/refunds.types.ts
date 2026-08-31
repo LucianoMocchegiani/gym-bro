@@ -16,10 +16,12 @@ export type RefundRequestDetail = {
 };
 
 /**
- * Resultado de ejecutar un reembolso.
+ * Resultado de ejecutar un reembolso (endpoint por ítem, wrapper del lote).
  */
 export type RefundExecutionDetail = {
+  transactionId: string;
   transactionItemId: string;
+  transactionItemIds: string[];
   status: 'REFUNDED';
   method: 'STUB' | 'CASH' | 'MP';
   amount: number;
@@ -29,5 +31,23 @@ export type RefundExecutionDetail = {
   contractId: string | null;
   reservationId: string | null;
   refundRequestId: string | null;
+  receiptId: string | null;
+  refundedAt: string;
+};
+
+/**
+ * Resultado de devolver uno o más ítems de un cart (CU-PAG-005).
+ */
+export type RefundBatchExecutionDetail = {
+  transactionId: string;
+  transactionItemIds: string[];
+  status: 'REFUNDED';
+  method: 'STUB' | 'CASH' | 'MP';
+  amount: number;
+  reason: string;
+  motiveCode: string | null;
+  mpRefundManualPending: boolean;
+  receiptId: string | null;
+  refundRequestIds: string[];
   refundedAt: string;
 };

@@ -228,6 +228,8 @@ Member POST /me/transaction-items/mp/checkout (pack + idempotencyKey)
 
 Env: `MP_CHECKOUT_MODE=stub|live`, `PUBLIC_API_BASE_URL` (notification_url).
 
+Ítems de la Preference (`title` / `description`): mismo criterio que el comprobante interno (pack = nombre + servicios/créditos; drop-in = servicio · sede · horario). El modal de MP lista sobre todo `title`.
+
 ### 7.3 Caja
 
 - `MovimientoCaja` ligado a `Pago`.
@@ -238,13 +240,13 @@ Env: `MP_CHECKOUT_MODE=stub|live`, `PUBLIC_API_BASE_URL` (notification_url).
 ```text
 Member POST /me/transaction-items/:id/refund-requests → política RN-PAG-012
   → PENDING | rechazo (motivo)
-Staff POST /transaction-items/:id/refunds (transaction_items.refund)
-  → Payment REFUNDED + revierte contrato/reserva
-  → CASH: OUTCOME REFUND | MP: refund API o manual_pending | STUB: solo estado
+Staff POST /transactions/:id/refunds (transaction_items.refund)
+  → ítems REFUNDED + revierte contrato/reserva de cada uno
+  → 1 refund MP (suma / saldo) o manual_pending | CASH/STUB: OUTCOME REFUND
+  → 1 comprobante concept=REFUND por ejecución
+  → POST /transaction-items/:id/refunds = wrapper de un ítem
   → motiveCode=doble_cobro (CU-PAG-007)
 ```
-
-Sin comprobante de devolución ni N1 E9 en esta entrega.
 
 ---
 
@@ -308,9 +310,9 @@ Prefijo sugerido: `/api/v1`.
 | Reservas | Member `/me/reservations` (crédito) + cancel; Staff `/members/:id/reservations` (crédito o drop-in stub/caja) + `/reservations/:id/status` (`reservations.write`) |
 | Waitlist | Member `/me/waitlist`; Staff `/members/:id/waitlist`, `/sessions/:id/waitlist` (`reservations.write`; query `status` / `allStatuses`); promoción AUTO al liberar cupo |
 | Settings | Staff `GET|PATCH /tenant-settings` (`tenant.settings.*`; horas cancelación, `waitlistMode`, `allowLateSessionEntry`); Super `/tenants/:tid/settings` |
-| Caja | Staff `GET /payment-register/day`, `POST /payment-register/day/reconcile` (`cashier.operate`); Super `/tenants/:tid/cash-register/...`; `movements[]` = misma fila que reportes (cart + ingreso/egreso) |
+| Caja | Staff `GET /payment-register/day`, `POST /payment-register/day/reconcile` (`cashier.operate`); Super `/tenants/:tid/cash-register/...`; ingresos = cart; egresos = una ejecución de devolución |
 | Mercado Pago | Staff `GET|PUT|DELETE /mercadopago/account`, `POST .../test` (`mp.connect`); Member `POST /me/transaction-items/mp/checkout`; webhook `POST /webhooks/mercadopago`; Super `/tenants/:tid/mercadopago/account` |
-| Devoluciones | Member `POST /me/transaction-items/:id/refund-requests`, `GET /me/refund-requests`; Staff `GET /refund-requests`, `POST /transaction-items/:id/refunds` (`transaction_items.refund`) |
+| Devoluciones | Member `POST /me/transaction-items/:id/refund-requests`, `GET /me/refund-requests`; Staff `GET /refund-requests`, `POST /transactions/:id/refunds` (lote) y `POST /transaction-items/:id/refunds` (wrapper) (`transaction_items.refund`) |
 | Comprobantes | Member `/me/receipts`; Staff `GET /receipts/:id`, `GET /transactions/:id/receipt`, `GET /members/:id/receipts` (`members.read`); `lines[]` (pack → contrato/vigencia + `services[]`; drop-in → reserva/horario) |
 | Catálogo | Super/Staff CRUD services + packs (`catalog.write`; kind inferido; `creditsExpireAt`) |
 | Contrataciones | Staff `POST /members/:id/contracts` (pago stub APPROVED); `PATCH /contracts/:id/status` → `CANCELLED` (pierde derechos, RN-SER-009); Member `GET /me/contracts` |

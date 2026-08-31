@@ -14,9 +14,13 @@ import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { RequireSuperAuth } from '../auth/decorators/require-super-auth.decorator';
 import { toAuditActor } from '../audit/to-audit-actor';
 import { ListResult } from '../common/list';
-import { ExecuteRefundDto, ListRefundRequestsQueryDto } from './dto/refund.dto';
+import { ExecuteRefundDto, ExecuteTransactionRefundDto, ListRefundRequestsQueryDto } from './dto/refund.dto';
 import { RefundsService } from './refunds.service';
-import { RefundExecutionDetail, RefundRequestDetail } from './refunds.types';
+import {
+  RefundBatchExecutionDetail,
+  RefundExecutionDetail,
+  RefundRequestDetail,
+} from './refunds.types';
 
 /**
  * Devoluciones por tenant (Super Admin).
@@ -32,6 +36,22 @@ export class SuperRefundsController {
     @Query() query: ListRefundRequestsQueryDto,
   ): Promise<ListResult<RefundRequestDetail>> {
     return this.refunds.listForTenant(tenantId, query);
+  }
+
+  @Post('transactions/:transactionId/refunds')
+  @HttpCode(HttpStatus.CREATED)
+  executeForTransaction(
+    @Param('tenantId', ParseUUIDPipe) tenantId: string,
+    @Param('transactionId', ParseUUIDPipe) transactionId: string,
+    @CurrentUser() user: AuthUser,
+    @Body() dto: ExecuteTransactionRefundDto,
+  ): Promise<RefundBatchExecutionDetail> {
+    return this.refunds.executeForTransaction(
+      tenantId,
+      transactionId,
+      dto,
+      toAuditActor(user),
+    );
   }
 
   @Post('transaction-items/:transactionItemId/refunds')

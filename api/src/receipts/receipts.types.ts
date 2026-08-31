@@ -14,7 +14,7 @@ export type ReceiptDetail = {
   code: string;
   amount: number;
   method: 'STUB' | 'CASH' | 'MP';
-  concept: 'PACK_CONTRACT' | 'DROP_IN';
+  concept: 'PACK_CONTRACT' | 'DROP_IN' | 'REFUND';
   description: string | null;
   createdAt: Date;
   /** Líneas del cart (pack/contrato o drop-in/reserva). Vacío si el cobro no tiene ítems. */

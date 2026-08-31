@@ -129,7 +129,8 @@
 - [x] Solicitud devolución (afiliado)
   - `POST /me/transaction-items/:id/refund-requests`; política fija RN-PAG-012; rechazo con motivo
 - [x] Ejecutar devolución (staff + flag)
-  - `POST /transaction-items/:id/refunds` (`transaction_items.refund`); total; CASH egreso; MP refund/manual_pending
+  - `POST /transactions/:id/refunds` (`transaction_items.refund`); lote de ítems; CASH egreso; MP refund del pago del cart / manual_pending
+  - `POST /transaction-items/:id/refunds` queda como wrapper de un ítem
 - [x] Reembolso por doble cobro
   - mismo execute con `motiveCode=doble_cobro`
 
@@ -266,8 +267,9 @@ Detalle: [14-auditoria…](./14-auditoria-roadmap-vs-codigo-2026-08-13.md).
 ### Pendiente — thin gaps (API ya existe)
 
 - [x] Devoluciones staff
-  - `/devoluciones`: listar `GET /refund-requests` + ejecutar `POST /transaction-items/:id/refunds`
-  - Motivos `solicitud` / `doble_cobro` / `otro`; confirmación tipada; atajo desde pagos APPROVED en ficha afiliado
+  - `/devoluciones`: listar `GET /refund-requests` + ejecutar solicitudes PENDING
+  - `/arqueo`: Devolver sobre un ingreso (picker de ítems) → `POST /transactions/:id/refunds`
+  - Motivos `solicitud` / `doble_cobro` / `otro`; confirmación tipada
 - [x] Cancelar contrato desde ficha afiliado
   - `PATCH /contracts/:id/status` → `CANCELLED` (RN-SER-009); motivo opcional → auditoría
   - UI en `/afiliados/[id]`: confirmación `CANCELAR`; no reembolsa (eso es Devolver)
@@ -302,7 +304,7 @@ Detalle: [14-auditoria…](./14-auditoria-roadmap-vs-codigo-2026-08-13.md).
 - [x] Listados Admin unificados (`DataTable` / `ListToolbar` / paginación)
   - afiliados, staff, servicios, packs, sesiones, roles, auditoría, Super tenants
   - `StatusPill`; reportes, devoluciones, historial puerta (+ pager)
-  - `AdminModal`; devolución directa / ejecutar solicitud en modal
+  - `AdminModal`; ejecutar solicitud en modal; Devolver cobro en `/arqueo`
   - Alta servicio/rol en modal (`?nuevo=1`; `/nuevo` redirige)
   - Alta staff + Super tenant en modal
   - Caja: `ListToolbar` + `DataTable` movimientos (sin tabs)

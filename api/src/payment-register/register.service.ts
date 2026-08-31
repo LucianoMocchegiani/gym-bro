@@ -118,22 +118,26 @@ export class PaymentRegisterService {
       concept: CashMovementConcept;
       recordedByStaffId: string | null;
       at?: Date;
+      receiptId?: string | null;
     },
   ): Promise<void> {
     if (input.amount < 1) {
       throw new BadRequestException('Cash movement amount must be >= 1');
     }
 
+    const at = input.at ?? new Date();
     await tx.cashMovement.create({
       data: {
         tenantId: input.tenantId,
-        businessDate: this.businessDate(input.at ?? new Date()),
+        businessDate: this.businessDate(at),
         transactionItemId: input.transactionItemId,
         memberId: input.memberId,
         recordedByStaffId: input.recordedByStaffId,
+        receiptId: input.receiptId ?? null,
         amount: input.amount,
         kind: CashMovementKind.OUTCOME,
         concept: input.concept,
+        createdAt: at,
       },
     });
   }

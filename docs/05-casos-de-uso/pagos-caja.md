@@ -17,7 +17,7 @@
 **Flujo principal:**
 1. Actor inicia cobro con `idempotencyKey` de negocio (afiliado self-service o Staff en Admin `/caja` con medio Mercado Pago: pack, drop-in, o **carrito** con `items[]`).
 2. Sistema crea Pago `pendiente` (carrito: `transactions` + un TransactionItem por ítem, todos con el mismo `transaction_id`).
-3. Muestra el link de checkout MP del gym (Staff: copiar u abrir; **sin redirect automático**). Carrito → **un solo link** con el total.
+3. Muestra el link de checkout MP del gym (Staff: copiar u abrir; **sin redirect automático**). Carrito → **un solo link** con el total. Los ítems de la Preference usan el mismo copy que el comprobante GymBro: pack = nombre + servicios/créditos; drop-in = servicio + sede + horario (la vigencia del contrato aún no existe al crear el link).
 4. Webhook/confirmación MP → sistema marca `aprobado` o `rechazado` (idempotente; carrito: `externalReference` = `cart_id`).
 5. Si `aprobado`: confirma Contratacion y/o Reserva (carrito: **una por cada payment**); **un comprobante interno por Transaction** (total del cart + líneas: pack → contrato/vigencia + servicios del pack; drop-in → reserva/horario); registra quién inició el cobro (staff de Caja); N1 E1.
 6. Si `rechazado`: no confirma derechos.
@@ -92,12 +92,12 @@
 **Precondiciones:** Pago aprobado; motivo informado.
 
 **Flujo principal:**
-1. Staff aprueba solicitud o inicia devolución directa.
+1. Staff aprueba una solicitud o inicia devolución desde Cierres (picker del cart).
 2. Sistema:
-   - Marca pago `reembolsado` (total/parcial según MVP: **total** primero).
-   - Revierte derechos: cancelar contratación/reserva; pack compuesto → pierde todo (RN-SER-009).
-   - Si fue MP: intenta refund MP o marca “reembolso manual pendiente” si la API falla (estado operativo claro).
-   - Si fue caja: registra movimiento de salida / nota de caja.
+   - Marca los `transaction_items` elegidos `reembolsado` (lote del cart; se puede devolver una parte ahora y el resto después).
+   - Revierte derechos de cada ítem: cancelar contratación/reserva; pack compuesto → pierde todo (RN-SER-009).
+   - Si fue MP: un refund contra el `payment_id` del cart (total del saldo o parcial por la suma) o marca “reembolso manual pendiente” si la API falla.
+   - Caja (CASH y MP): egresos por ítem agrupados en **una** fila de ejecución + **un** comprobante `REFUND`.
 3. Comprobante de devolución + E9.
 4. Auditoría.
 

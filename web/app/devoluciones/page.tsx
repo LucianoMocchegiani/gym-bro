@@ -1,15 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import {
-  FormEvent,
-  Suspense,
-  useCallback,
-  useEffect,
-  useMemo,
-  useState,
-} from 'react';
-import { useSearchParams } from 'next/navigation';
+import { FormEvent, useCallback, useEffect, useMemo, useState } from 'react';
 import { memberFichaHref } from '@/lib/member-link';
 import {
   DataTable,
@@ -21,7 +13,6 @@ import { AdminModal } from '@/components/AdminModal';
 import { AdminShell } from '@/components/AdminShell';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { RequireStaff } from '@/components/RequireStaff';
-import { PageSkeleton } from '@/components/Skeleton';
 import {
   IconView,
   RowActions,
@@ -43,7 +34,6 @@ import type {
   RefundRequestDetail,
   RefundRequestStatus,
 } from '@/lib/api/refunds';
-import { formatMoney } from '@/lib/cash-labels';
 
 type StatusFilter = RefundRequestStatus | 'ALL';
 
@@ -63,25 +53,20 @@ function formatWhen(iso: string): string {
 }
 
 /**
- * Cola de solicitudes + devolución en modal (CU-PAG-005 / CU-PAG-007).
+ * Cola de solicitudes de devolución del afiliado (CU-PAG-005).
  *
- * @remarks Requiere permiso API `transaction_items.refund`. `?transactionItemId=` abre el modal
- * de devolución directa (p. ej. desde ficha afiliado).
+ * @remarks Requiere `transaction_items.refund`. Devolver un cobro (sin
+ * solicitud) se hace en Cierres.
  */
 export default function DevolucionesPage() {
   return (
     <RequireStaff>
-      <Suspense fallback={<PageSkeleton />}>
-        <DevolucionesInner />
-      </Suspense>
+      <DevolucionesInner />
     </RequireStaff>
   );
 }
 
 function DevolucionesInner() {
-  const searchParams = useSearchParams();
-  const prefillTransactionItemId = searchParams.get('transactionItemId')?.trim() ?? '';
-
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('PENDING');
   const [items, setItems] = useState<RefundRequestDetail[]>([]);
   const [total, setTotal] = useState(0);
@@ -92,15 +77,10 @@ function DevolucionesInner() {
   const [memberLabels, setMemberLabels] = useState<MemberLabelMap>({});
   const [flashOk, setFlashOk] = useState<string | null>(null);
 
-  const [modalOpen, setModalOpen] = useState(Boolean(prefillTransactionItemId));
+  const [modalOpen, setModalOpen] = useState(false);
   const [selected, setSelected] = useState<RefundRequestDetail | null>(null);
-  const [directTransactionItemId, setDirectTransactionItemId] = useState(prefillTransactionItemId);
-  const [reason, setReason] = useState(
-    prefillTransactionItemId ? 'Doble cobro' : '',
-  );
-  const [motiveCode, setMotiveCode] = useState<RefundMotiveCode>(
-    prefillTransactionItemId ? 'doble_cobro' : 'solicitud',
-  );
+  const [reason, setReason] = useState('');
+  const [motiveCode, setMotiveCode] = useState<RefundMotiveCode>('solicitud');
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
@@ -164,50 +144,31 @@ function DevolucionesInner() {
     };
   }, [load]);
 
-  const transactionItemIdToExecute = selected?.transactionItemId ?? directTransactionItemId.trim();
-  const canExecute =
-    !selected || selected.status === 'PENDING';
-
   const canSubmit = useMemo(() => {
     return (
-      canExecute &&
-      Boolean(transactionItemIdToExecute) &&
+      selected?.status === 'PENDING' &&
+      Boolean(selected.transactionItemId) &&
       reason.trim().length >= 3 &&
       !busy
     );
-  }, [canExecute, transactionItemIdToExecute, reason, busy]);
+  }, [selected, reason, busy]);
 
-  function resetForm(opts?: {
-    transactionItemId?: string;
-    request?: RefundRequestDetail | null;
-  }) {
-    const request = opts?.request ?? null;
-    const transactionItemId = opts?.transactionItemId ?? '';
+  function resetForm(request: RefundRequestDetail | null = null) {
     setSelected(request);
-    setDirectTransactionItemId(transactionItemId);
     setConfirmOpen(false);
     setActionError(null);
     if (request?.status === 'PENDING') {
       setMotiveCode('solicitud');
       setReason(request.reason?.trim() || 'Solicitud del afiliado');
-    } else if (transactionItemId) {
-      setMotiveCode('doble_cobro');
-      setReason('Doble cobro');
     } else {
       setMotiveCode('solicitud');
       setReason('');
     }
   }
 
-  function openDirect() {
-    setFlashOk(null);
-    resetForm();
-    setModalOpen(true);
-  }
-
   function openRequest(row: RefundRequestDetail) {
     setFlashOk(null);
-    resetForm({ request: row });
+    resetForm(row);
     setModalOpen(true);
   }
 
@@ -221,22 +182,23 @@ function DevolucionesInner() {
 
   async function onExecute(e: FormEvent) {
     e.preventDefault();
-    if (!canSubmit || !transactionItemIdToExecute) {
+    if (!canSubmit) {
       return;
     }
     setConfirmOpen(true);
   }
 
   async function doExecute() {
-    if (!transactionItemIdToExecute) {
+    if (!selected || selected.status !== 'PENDING') {
       return;
     }
     setBusy(true);
     setActionError(null);
     try {
-      await executeRefund(transactionItemIdToExecute, {
+      await executeRefund(selected.transactionItemId, {
         motiveCode,
-        note: reason.trim(),
+        reason: reason.trim(),
+        refundRequestId: selected.id,
       });
       setFlashOk('Devolución ejecutada correctamente.');
       setModalOpen(false);
@@ -253,26 +215,12 @@ function DevolucionesInner() {
     }
   }
 
-  const modalTitle = selected
-    ? selected.status === 'PENDING'
-      ? 'Ejecutar solicitud'
-      : 'Solicitud'
-    : 'Devolución directa';
-
-  const modalDescription = selected
-    ? `Solicitud ${selected.id.slice(0, 8)}… · ítem ${selected.transactionItemId.slice(0, 8)}…`
-    : 'Para doble cobro u otras devoluciones sin solicitud PENDING.';
+  const modalTitle =
+    selected?.status === 'PENDING' ? 'Ejecutar solicitud' : 'Solicitud';
 
   return (
-    <AdminShell
-      title="Devoluciones"
-      actions={
-        <button type="button" className="btn" onClick={openDirect}>
-          + Devolución directa
-        </button>
-      }
-    >
-      <ListToolbar hint="Requiere permiso transaction_items.refund.">
+    <AdminShell title="Devoluciones">
+      <ListToolbar hint="Solicitudes del afiliado. Para devolver un cobro sin solicitud, usá Cierres.">
         <ListFilterField
           label="Estado"
           value={statusFilter}
@@ -333,9 +281,7 @@ function DevolucionesInner() {
                 {refundStatusLabel(row.status)}
               </StatusPill>
             </td>
-            <td className="muted small">
-              {row.reason ?? '—'}
-            </td>
+            <td className="muted small">{row.reason ?? '—'}</td>
             <td>
               <RowActions>
                 {row.status === 'PENDING' ? (
@@ -361,10 +307,14 @@ function DevolucionesInner() {
       </DataTable>
 
       <AdminModal
-        open={modalOpen}
+        open={modalOpen && Boolean(selected)}
         onClose={closeModal}
         title={modalTitle}
-        description={modalDescription}
+        description={
+          selected
+            ? `Solicitud ${selected.id.slice(0, 8)}… · ítem ${selected.transactionItemId.slice(0, 8)}…`
+            : undefined
+        }
       >
         {selected && selected.status !== 'PENDING' ? (
           <div className="admin-stack">
@@ -375,50 +325,27 @@ function DevolucionesInner() {
               </StatusPill>
             </p>
             {selected.reason ? (
-              <p className="muted">
-                Rechazo política: {selected.reason}
-              </p>
+              <p className="muted">Motivo: {selected.reason}</p>
             ) : null}
             <p className="muted small">
-              Solo las pendientes se pueden ejecutar. Para otro pago usá
-              devolución directa.
+              Solo las pendientes se pueden ejecutar. Un cobro se devuelve
+              desde{' '}
+              <Link href="/arqueo">Cierres</Link>.
             </p>
-            <button
-              type="button"
-              className="btn"
-              onClick={() => {
-                resetForm();
-              }}
-            >
-              Abrir devolución directa
-            </button>
           </div>
-        ) : (
+        ) : selected ? (
           <form className="admin-form" onSubmit={(e) => void onExecute(e)}>
-            {!selected ? (
-              <label>
-                ID del pago
-                <input
-                  value={directTransactionItemId}
-                  onChange={(e) => setDirectTransactionItemId(e.target.value)}
-                  placeholder="uuid del transactionItem"
-                  required
-                  autoComplete="off"
-                />
-              </label>
-            ) : (
-              <p className="muted small">
-                Afiliado:{' '}
-                <Link
-                  href={memberFichaHref(
-                    selected.memberId,
-                    memberLabels[selected.memberId] ?? '',
-                  )}
-                >
-                  {memberLabels[selected.memberId] ?? selected.memberId}
-                </Link>
-              </p>
-            )}
+            <p className="muted small">
+              Afiliado:{' '}
+              <Link
+                href={memberFichaHref(
+                  selected.memberId,
+                  memberLabels[selected.memberId] ?? '',
+                )}
+              >
+                {memberLabels[selected.memberId] ?? selected.memberId}
+              </Link>
+            </p>
 
             <label>
               Motivo tipificado
@@ -466,7 +393,7 @@ function DevolucionesInner() {
               </button>
             </div>
           </form>
-        )}
+        ) : null}
       </AdminModal>
 
       <ConfirmDialog

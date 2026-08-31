@@ -4149,7 +4149,7 @@
                  },
                  {
                      "name":  "Refunds",
-                     "description":  "CU-PAG-004/005/007. Member POST /me/transaction-items/:transactionItemId/refund-requests. Staff GET /refund-requests + POST /transaction-items/:transactionItemId/refunds (transaction_items.refund). UsÃ¡ transactionItemId de cobro reciente (CASH/STUB/MP APPROVED).",
+                     "description":  "CU-PAG-004/005/007. Member POST /me/transaction-items/:transactionItemId/refund-requests. Staff GET /refund-requests + POST /transactions/:transactionId/refunds (lote del cart) + POST /transaction-items/:transactionItemId/refunds (wrapper). Usá mpCartId + createdPaymentId de cobro reciente.",
                      "item":  [
                                   {
                                       "name":  "Member POST refund request",
@@ -4273,6 +4273,36 @@
                                                                    "raw":  "{\n  \"reason\": \"DevoluciÃ³n staff\",\n  \"motiveCode\": \"solicitud\"\n}"
                                                                },
 "url":  "{{baseUrl}}/api/transaction-items/{{createdPaymentId}}/refunds"
+                                                  }
+                                  },
+                                  {
+                                      "name":  "Staff POST execute refund cart",
+                                      "event":  [
+                                                    {
+                                                        "listen":  "test",
+                                                        "script":  {
+                                                                       "type":  "text/javascript",
+                                                                       "exec":  [
+                                                                                    "pm.test(\u0027status 201\u0027, () =\u003e pm.response.to.have.status(201));",
+                                                                                    "pm.test(\u0027refunded\u0027, () =\u003e pm.expect(pm.response.json().status).to.eql(\u0027REFUNDED\u0027));"
+                                                                                ]
+                                                                   }
+                                                    }
+                                                ],
+                                      "request":  {
+                                                      "method":  "POST",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Content-Type",
+                                                                         "value":  "application/json"
+                                                                     }
+                                                                 ],
+                                                      "body":  {
+                                                                   "mode":  "raw",
+                                                                   "raw":  "{\n  \"transactionItemIds\": [\"{{createdPaymentId}}\"],\n  \"reason\": \"DevoluciÃ³n staff\",\n  \"motiveCode\": \"solicitud\"\n}"
+                                                               },
+                                                      "url":  "{{baseUrl}}/api/transactions/{{mpCartId}}/refunds",
+                                                      "description":  "CU-PAG-005. Lote del cart (un refund MP). mpCartId = transactionId; createdPaymentId = un item APPROVED."
                                                   }
                                   },
                                   {

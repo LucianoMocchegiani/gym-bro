@@ -1,6 +1,6 @@
 'use client';
 
-import { FormEvent, useEffect, useState } from 'react';
+import { FormEvent, useCallback, useEffect, useState } from 'react';
 import { ListToolbar } from '@/components/AdminList';
 import { AdminShell } from '@/components/AdminShell';
 import { Panel } from '@/components/AdminUi';
@@ -40,39 +40,29 @@ function ArqueoInner() {
   const [reconcileError, setReconcileError] = useState<string | null>(null);
   const [reconcileConfirm, setReconcileConfirm] = useState(false);
 
-  useEffect(() => {
-    let cancelled = false;
-    void (async () => {
-      setLoading(true);
-      try {
-        const data = await getCashDay(date);
-        if (cancelled) {
-          return;
-        }
-        setDay(data);
-        setLoadError(null);
-        if (!data.reconciliation) {
-          setDeclaredAmount(String(data.totals.net));
-        }
-      } catch (err) {
-        if (cancelled) {
-          return;
-        }
-        setLoadError(
-          err instanceof ApiClientError
-            ? err.message
-            : 'No se pudo cargar el cierre del día',
-        );
-      } finally {
-        if (!cancelled) {
-          setLoading(false);
-        }
+  const loadDay = useCallback(async (ymd: string) => {
+    setLoading(true);
+    try {
+      const data = await getCashDay(ymd);
+      setDay(data);
+      setLoadError(null);
+      if (!data.reconciliation) {
+        setDeclaredAmount(String(data.totals.net));
       }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [date]);
+    } catch (err) {
+      setLoadError(
+        err instanceof ApiClientError
+          ? err.message
+          : 'No se pudo cargar el cierre del día',
+      );
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void loadDay(date);
+  }, [date, loadDay]);
 
   async function onReconcile(e: FormEvent) {
     e.preventDefault();
@@ -226,6 +216,8 @@ function ArqueoInner() {
           day ? `${day.movements.length} del ${day.businessDate}` : undefined
         }
         emptyText="Sin movimientos en este día."
+        allowRefund
+        onRefunded={() => void loadDay(date)}
       />
 
       <ConfirmDialog

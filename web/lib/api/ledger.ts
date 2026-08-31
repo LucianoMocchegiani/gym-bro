@@ -1,7 +1,7 @@
 import type { PaymentLineDetail } from '@/lib/api/payment-lines';
 
 /**
- * Fila de movimientos (caja y reportes): 1 cobro o 1 devolución por cart.
+ * Fila de movimientos (caja y reportes): cobro por cart o ejecución de devolución.
  */
 export type LedgerMovementRow = {
   id: string;

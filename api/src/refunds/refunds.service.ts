@@ -11,7 +11,6 @@ import {
   PaymentMethod,
   PaymentStatus,
   Prisma,
-  ReceiptConcept,
   RefundRequestStatus,
   ReservationStatus,
   ServiceType,
@@ -28,9 +27,14 @@ import { WaitlistService } from '../waitlist/waitlist.service';
 import {
   CreateRefundRequestDto,
   ExecuteRefundDto,
+  ExecuteTransactionRefundDto,
   ListRefundRequestsQueryDto,
 } from './dto/refund.dto';
-import { RefundExecutionDetail, RefundRequestDetail } from './refunds.types';
+import {
+  RefundBatchExecutionDetail,
+  RefundExecutionDetail,
+  RefundRequestDetail,
+} from './refunds.types';
 
 const LIBRE_REFUND_HOURS = 24;
 
@@ -38,7 +42,8 @@ const LIBRE_REFUND_HOURS = 24;
  * Solicitudes y ejecución de devoluciones (CU-PAG-004/005/007).
  *
  * @remarks Política fija RN-PAG-012. Staff con `transaction_items.refund` puede
- * devolver siempre (RN-PAG-011). Sin comprobante de devolución ni N1 E9.
+ * devolver siempre (RN-PAG-011). Devolución = lote de ítems de un cart
+ * (un refund MP, un comprobante, un egreso en grilla).
  */
 @Injectable()
 export class RefundsService {
@@ -199,9 +204,9 @@ export class RefundsService {
   }
 
   /**
-   * Staff ejecuta devolución total (directa o desde solicitud).
+   * Staff ejecuta devolución de un ítem (wrapper del lote del cart).
    *
-   * @remarks Idempotente si el pago ya está REFUNDED.
+   * @remarks Idempotente si el ítem ya está REFUNDED. CU-PAG-005 / CU-PAG-007.
    */
   async execute(
     tenantId: string,
@@ -209,56 +214,151 @@ export class RefundsService {
     dto: ExecuteRefundDto,
     actor: AuditActor,
   ): Promise<RefundExecutionDetail> {
+    const item = await this.loadPaymentForRefund(tenantId, transactionItemId);
+    const batch = await this.executeForTransaction(
+      tenantId,
+      item.transactionId,
+      { ...dto, transactionItemIds: [transactionItemId] },
+      actor,
+    );
+    return this.toItemExecutionDetail(batch, transactionItemId, item);
+  }
+
+  /**
+   * Staff ejecuta devolución de uno o más ítems APPROVED del mismo cart.
+   *
+   * @remarks Un refund a MP por la suma (parcial o el saldo). CASH/STUB igual
+   * en caja. Ítems ya REFUNDED en un lote mixto → error; lote 100 %
+   * REFUNDED → idempotente.
+   */
+  async executeForTransaction(
+    tenantId: string,
+    transactionId: string,
+    dto: ExecuteTransactionRefundDto,
+    actor: AuditActor,
+  ): Promise<RefundBatchExecutionDetail> {
     if (actor.profileType !== 'STAFF' && actor.profileType !== 'SUPER') {
       throw new ForbiddenException('Staff or Super required to execute refund');
     }
 
-    const transactionItem = await this.loadPaymentForRefund(tenantId, transactionItemId);
-
-    if (transactionItem.status === PaymentStatus.REFUNDED) {
-      return this.toExecutionDetail(transactionItem, dto, null);
-    }
-    if (transactionItem.status !== PaymentStatus.APPROVED) {
-      throw new BadRequestException('Only APPROVED payments can be refunded');
-    }
-
+    const itemIds = [...new Set(dto.transactionItemIds)];
     const reason = dto.reason.trim();
     const motiveCode = dto.motiveCode ?? null;
-    let refundRequestId: string | null = dto.refundRequestId ?? null;
 
+    const transaction = await this.prisma.transaction.findFirst({
+      where: { id: transactionId, tenantId },
+      include: {
+        transactionItems: {
+          where: { id: { in: itemIds } },
+          include: {
+            contract: {
+              include: {
+                balances: true,
+                pack: {
+                  include: {
+                    components: { include: { service: true } },
+                  },
+                },
+              },
+            },
+            reservation: true,
+          },
+        },
+      },
+    });
+    if (!transaction) {
+      throw new NotFoundException(
+        `Transaction ${transactionId} not found in tenant`,
+      );
+    }
+    if (transaction.transactionItems.length !== itemIds.length) {
+      throw new BadRequestException(
+        'All transactionItemIds must belong to this transaction',
+      );
+    }
+
+    const items = transaction.transactionItems;
+    const already = items.filter((i) => i.status === PaymentStatus.REFUNDED);
+    const toRefund = items.filter((i) => i.status === PaymentStatus.APPROVED);
+
+    if (toRefund.length === 0 && already.length === items.length) {
+      return this.toBatchExecutionDetail({
+        transactionId,
+        items,
+        amount: items.reduce((sum, i) => sum + i.amount, 0),
+        method: items[0]?.method ?? PaymentMethod.CASH,
+        reason: items[0]?.refundReason ?? reason,
+        motiveCode,
+        mpRefundManualPending: items.some((i) => i.mpRefundManualPending),
+        receiptId: null,
+        refundRequestIds: dto.refundRequestId ? [dto.refundRequestId] : [],
+        refundedAt: (items[0]?.refundedAt ?? new Date()).toISOString(),
+      });
+    }
+    if (already.length > 0) {
+      throw new BadRequestException(
+        'Some selected items are already refunded',
+      );
+    }
+    if (toRefund.some((i) => i.status !== PaymentStatus.APPROVED)) {
+      throw new BadRequestException('Only APPROVED items can be refunded');
+    }
+
+    const amount = toRefund.reduce((sum, i) => sum + i.amount, 0);
+    const remaining = transaction.amount - transaction.refundedAmount;
+    if (amount > remaining) {
+      throw new BadRequestException(
+        'Refund amount exceeds remaining transaction balance',
+      );
+    }
+
+    const method = toRefund[0]?.method ?? PaymentMethod.CASH;
+    let refundRequestId: string | null = dto.refundRequestId ?? null;
     if (refundRequestId) {
       const req = await this.prisma.refundRequest.findFirst({
-        where: { id: refundRequestId, tenantId, transactionItemId },
+        where: {
+          id: refundRequestId,
+          tenantId,
+          transactionItemId: { in: itemIds },
+        },
       });
       if (!req) {
         throw new NotFoundException('Refund request not found for payment');
       }
       if (req.status === RefundRequestStatus.EXECUTED) {
-        return this.toExecutionDetail(transactionItem, dto, req.id);
+        return this.toBatchExecutionDetail({
+          transactionId,
+          items,
+          amount,
+          method,
+          reason,
+          motiveCode,
+          mpRefundManualPending: false,
+          receiptId: null,
+          refundRequestIds: [req.id],
+          refundedAt: (req.resolvedAt ?? new Date()).toISOString(),
+        });
       }
-    } else {
-      const pending = await this.prisma.refundRequest.findFirst({
-        where: {
-          tenantId,
-          transactionItemId,
-          status: RefundRequestStatus.PENDING,
-        },
-      });
-      refundRequestId = pending?.id ?? null;
     }
 
     let mpRefundManualPending = false;
-    if (transactionItem.method === PaymentMethod.MP) {
-      if (!transactionItem.mpPaymentId) {
+    if (method === PaymentMethod.MP) {
+      const mpPaymentId =
+        transaction.mpPaymentId ??
+        toRefund.find((i) => i.mpPaymentId)?.mpPaymentId ??
+        null;
+      if (!mpPaymentId) {
         mpRefundManualPending = true;
       } else {
+        const idempotencyKey = `refund-${transactionId}-${[...itemIds].sort().join(',')}`;
         try {
           const accessToken =
             await this.accounts.getDecryptedAccessToken(tenantId);
           const result = await this.mp.refundPayment(
             accessToken,
-            transactionItem.mpPaymentId,
-            transactionItem.amount,
+            mpPaymentId,
+            amount,
+            idempotencyKey,
           );
           mpRefundManualPending = result.manualPending;
         } catch {
@@ -269,134 +369,168 @@ export class RefundsService {
 
     const staffId = actor.profileType === 'STAFF' ? actor.userId : null;
     const refundedAt = new Date();
-    let sessionIdForWaitlist: string | null = null;
+    const sessionIdsForWaitlist: string[] = [];
 
-    const updated = await this.prisma.$transaction(async (tx) => {
-      const pay = await tx.transactionItem.update({
-        where: { id: transactionItem.id },
-        data: {
-          status: PaymentStatus.REFUNDED,
-          refundedAt,
-          refundReason: reason,
-          mpRefundManualPending,
-        },
-        include: {
-          contract: true,
-          reservation: true,
-        },
-      });
+    const { receiptId, refundRequestIds } = await this.prisma.$transaction(
+      async (tx) => {
+        const description =
+          toRefund.length === 1
+            ? `Devolución: ${toRefund[0]?.packId ? 'Pack' : 'Drop-in'}`
+            : `Devolución: ${toRefund.length} ítems`;
+        const receipt = await this.receipts.issueForRefund(tx, {
+          tenantId,
+          transactionId,
+          memberId: transaction.memberId,
+          amount,
+          method,
+          description,
+        });
 
-      if (pay.contract && pay.contract.status === ContractStatus.ACTIVE) {
-        await tx.contractCreditBalance.updateMany({
-          where: { contractId: pay.contract.id },
-          data: { remaining: 0 },
-        });
-        await tx.contract.update({
-          where: { id: pay.contract.id },
-          data: {
-            status: ContractStatus.REFUNDED,
-            hasAccessLibre: false,
-          },
-        });
-      }
+        for (const item of toRefund) {
+          const pay = await tx.transactionItem.update({
+            where: { id: item.id },
+            data: {
+              status: PaymentStatus.REFUNDED,
+              refundedAt,
+              refundReason: reason,
+              mpRefundManualPending,
+            },
+            include: {
+              contract: true,
+              reservation: true,
+            },
+          });
 
-      if (
-        pay.reservation &&
-        pay.reservation.status === ReservationStatus.CONFIRMED
-      ) {
-        sessionIdForWaitlist = pay.reservation.sessionId;
-        await tx.reservation.update({
-          where: { id: pay.reservation.id },
-          data: { status: ReservationStatus.CANCELLED },
-        });
-        const dec = await tx.session.updateMany({
-          where: {
-            id: pay.reservation.sessionId,
+          if (pay.contract && pay.contract.status === ContractStatus.ACTIVE) {
+            await tx.contractCreditBalance.updateMany({
+              where: { contractId: pay.contract.id },
+              data: { remaining: 0 },
+            });
+            await tx.contract.update({
+              where: { id: pay.contract.id },
+              data: {
+                status: ContractStatus.REFUNDED,
+                hasAccessLibre: false,
+              },
+            });
+          }
+
+          if (
+            pay.reservation &&
+            pay.reservation.status === ReservationStatus.CONFIRMED
+          ) {
+            sessionIdsForWaitlist.push(pay.reservation.sessionId);
+            await tx.reservation.update({
+              where: { id: pay.reservation.id },
+              data: { status: ReservationStatus.CANCELLED },
+            });
+            const dec = await tx.session.updateMany({
+              where: {
+                id: pay.reservation.sessionId,
+                tenantId,
+                bookedCount: { gt: 0 },
+              },
+              data: { bookedCount: { decrement: 1 } },
+            });
+            if (dec.count !== 1) {
+              throw new BadRequestException(
+                'Session bookedCount could not be decremented',
+              );
+            }
+          }
+
+          await this.cashRegister.recordOutcome(tx, {
             tenantId,
-            bookedCount: { gt: 0 },
-          },
-          data: { bookedCount: { decrement: 1 } },
-        });
-        if (dec.count !== 1) {
-          throw new BadRequestException(
-            'Session bookedCount could not be decremented',
-          );
+            transactionItemId: pay.id,
+            memberId: pay.memberId,
+            amount: pay.amount,
+            concept: CashMovementConcept.REFUND,
+            recordedByStaffId: staffId,
+            at: refundedAt,
+            receiptId: receipt.id,
+          });
         }
-      }
 
-      await this.cashRegister.recordOutcome(tx, {
-        tenantId,
-        transactionItemId: pay.id,
-        memberId: pay.memberId,
-        amount: pay.amount,
-        concept: CashMovementConcept.REFUND,
-        recordedByStaffId: staffId,
-        at: refundedAt,
-      });
-
-      const receiptConcept = pay.packId
-        ? ReceiptConcept.PACK_CONTRACT
-        : ReceiptConcept.DROP_IN;
-      await this.receipts.issueForRefund(tx, {
-        tenantId,
-        transactionItemId: pay.id,
-        memberId: pay.memberId,
-        amount: pay.amount,
-        method: pay.method,
-        concept: receiptConcept,
-        description: `Devolución: ${pay.packId ? 'Pack' : 'Drop-in'}`,
-      });
-
-      if (refundRequestId) {
-        await tx.refundRequest.update({
-          where: { id: refundRequestId },
-          data: {
-            status: RefundRequestStatus.EXECUTED,
-            resolvedAt: refundedAt,
-            resolvedByStaffId: staffId,
+        const newRefundedAmount = transaction.refundedAmount + amount;
+        const remainingItems = await tx.transactionItem.count({
+          where: {
+            transactionId,
+            status: { not: PaymentStatus.REFUNDED },
           },
         });
-      }
+        await tx.transaction.update({
+          where: { id: transactionId },
+          data: {
+            refundedAmount: newRefundedAmount,
+            status:
+              remainingItems === 0
+                ? PaymentStatus.REFUNDED
+                : transaction.status,
+          },
+        });
 
-      return pay;
-    });
+        const pendingReqs = await tx.refundRequest.findMany({
+          where: {
+            tenantId,
+            transactionItemId: { in: itemIds },
+            status: RefundRequestStatus.PENDING,
+          },
+          select: { id: true },
+        });
+        const executedIds = [
+          ...new Set([
+            ...(refundRequestId ? [refundRequestId] : []),
+            ...pendingReqs.map((r) => r.id),
+          ]),
+        ];
+        if (executedIds.length > 0) {
+          await tx.refundRequest.updateMany({
+            where: { id: { in: executedIds }, tenantId },
+            data: {
+              status: RefundRequestStatus.EXECUTED,
+              resolvedAt: refundedAt,
+              resolvedByStaffId: staffId,
+            },
+          });
+        }
 
-    if (sessionIdForWaitlist) {
-      await this.waitlist.tryPromoteForSession(
-        tenantId,
-        sessionIdForWaitlist,
-        1,
-        actor,
-      );
+        return { receiptId: receipt.id, refundRequestIds: executedIds };
+      },
+    );
+
+    for (const sessionId of [...new Set(sessionIdsForWaitlist)]) {
+      await this.waitlist.tryPromoteForSession(tenantId, sessionId, 1, actor);
     }
 
     await this.audit.record({
       tenantId,
       actor,
       action: AUDIT_ACTIONS.paymentRefund,
-      entityType: 'payment',
-      entityId: updated.id,
+      entityType: 'transaction',
+      entityId: transactionId,
       after: {
+        transactionItemIds: itemIds,
         status: PaymentStatus.REFUNDED,
         reason,
         motiveCode,
         mpRefundManualPending,
-        refundRequestId,
-        contractId: updated.contract?.id ?? null,
-        reservationId: updated.reservation?.id ?? null,
+        receiptId,
+        refundRequestIds,
       },
     });
 
-    return this.toExecutionDetail(
-      {
-        ...updated,
-        refundedAt,
-        refundReason: reason,
-        mpRefundManualPending,
-      },
-      dto,
-      refundRequestId,
-    );
+    return this.toBatchExecutionDetail({
+      transactionId,
+      items: toRefund,
+      amount,
+      method,
+      reason,
+      motiveCode,
+      mpRefundManualPending,
+      receiptId,
+      refundRequestIds,
+      refundedAt: refundedAt.toISOString(),
+    });
   }
 
   /**
@@ -532,32 +666,56 @@ export class RefundsService {
     };
   }
 
-  private toExecutionDetail(
-    transactionItem: {
-      id: string;
-      method: PaymentMethod;
-      amount: number;
-      refundReason: string | null;
-      mpRefundManualPending: boolean;
-      refundedAt: Date | null;
+  private toBatchExecutionDetail(input: {
+    transactionId: string;
+    items: Array<{ id: string }>;
+    amount: number;
+    method: PaymentMethod;
+    reason: string;
+    motiveCode: string | null;
+    mpRefundManualPending: boolean;
+    receiptId: string | null;
+    refundRequestIds: string[];
+    refundedAt: string;
+  }): RefundBatchExecutionDetail {
+    return {
+      transactionId: input.transactionId,
+      transactionItemIds: input.items.map((i) => i.id),
+      status: 'REFUNDED',
+      method: input.method,
+      amount: input.amount,
+      reason: input.reason,
+      motiveCode: input.motiveCode,
+      mpRefundManualPending: input.mpRefundManualPending,
+      receiptId: input.receiptId,
+      refundRequestIds: input.refundRequestIds,
+      refundedAt: input.refundedAt,
+    };
+  }
+
+  private toItemExecutionDetail(
+    batch: RefundBatchExecutionDetail,
+    transactionItemId: string,
+    item: {
       contract: { id: string } | null;
       reservation: { id: string } | null;
     },
-    dto: ExecuteRefundDto,
-    refundRequestId: string | null,
   ): RefundExecutionDetail {
     return {
-      transactionItemId: transactionItem.id,
+      transactionId: batch.transactionId,
+      transactionItemId,
+      transactionItemIds: batch.transactionItemIds,
       status: 'REFUNDED',
-      method: transactionItem.method,
-      amount: transactionItem.amount,
-      reason: transactionItem.refundReason ?? dto.reason,
-      motiveCode: dto.motiveCode ?? null,
-      mpRefundManualPending: transactionItem.mpRefundManualPending,
-      contractId: transactionItem.contract?.id ?? null,
-      reservationId: transactionItem.reservation?.id ?? null,
-      refundRequestId,
-      refundedAt: (transactionItem.refundedAt ?? new Date()).toISOString(),
+      method: batch.method,
+      amount: batch.amount,
+      reason: batch.reason,
+      motiveCode: batch.motiveCode,
+      mpRefundManualPending: batch.mpRefundManualPending,
+      contractId: item.contract?.id ?? null,
+      reservationId: item.reservation?.id ?? null,
+      refundRequestId: batch.refundRequestIds[0] ?? null,
+      receiptId: batch.receiptId,
+      refundedAt: batch.refundedAt,
     };
   }
 }

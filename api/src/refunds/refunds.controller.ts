@@ -20,10 +20,15 @@ import { RequireTenantAuth } from '../tenant/decorators/require-tenant-auth.deco
 import {
   CreateRefundRequestDto,
   ExecuteRefundDto,
+  ExecuteTransactionRefundDto,
   ListRefundRequestsQueryDto,
 } from './dto/refund.dto';
+import {
+  RefundBatchExecutionDetail,
+  RefundExecutionDetail,
+  RefundRequestDetail,
+} from './refunds.types';
 import { RefundsService } from './refunds.service';
-import { RefundExecutionDetail, RefundRequestDetail } from './refunds.types';
 
 /**
  * Devoluciones Member/Staff (CU-PAG-004 / CU-PAG-005 / CU-PAG-007).
@@ -69,6 +74,23 @@ export class RefundsController {
     @Query() query: ListRefundRequestsQueryDto,
   ): Promise<ListResult<RefundRequestDetail>> {
     return this.refunds.listForTenant(tenantId, query);
+  }
+
+  @Post('transactions/:transactionId/refunds')
+  @HttpCode(HttpStatus.CREATED)
+  @RequirePermission('transaction_items.refund')
+  executeForTransaction(
+    @CurrentTenant() tenantId: string,
+    @CurrentUser() user: AuthUser,
+    @Param('transactionId', ParseUUIDPipe) transactionId: string,
+    @Body() dto: ExecuteTransactionRefundDto,
+  ): Promise<RefundBatchExecutionDetail> {
+    return this.refunds.executeForTransaction(
+      tenantId,
+      transactionId,
+      dto,
+      toAuditActor(user),
+    );
   }
 
   @Post('transaction-items/:transactionItemId/refunds')

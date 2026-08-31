@@ -13,6 +13,8 @@ export type MpCartLine = {
   refId: string;
   /** Título para la Preference (solo en creación; no persistido). */
   title?: string;
+  /** Descripción Preference (ticket MP; el modal de compra lista sobre todo `title`). */
+  description?: string;
   quantity: number;
   amount: number;
   transactionItemIds: string[];

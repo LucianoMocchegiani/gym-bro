@@ -148,6 +148,8 @@ enum RefundRequestStatus {
 enum ReceiptConcept {
   PACK_CONTRACT
   DROP_IN
+  /// Comprobante de una ejecución de devolución (1 por lote, no por ítem).
+  REFUND
 }
 
 /// Estado de credencial de vínculo de acceso (RN-ACC-002).
@@ -665,7 +667,7 @@ model Transaction {
   member   Member    @relation(fields: [memberId], references: [id], onDelete: Cascade)
   recordedByStaff StaffUser? @relation("TransactionRecorder", fields: [recordedByStaffId], references: [id], onDelete: SetNull)
   transactionItems TransactionItem[]
-  receipt  Receipt?
+  receipts Receipt[]
 
   @@unique([tenantId, idempotencyKey])
   @@index([tenantId])
@@ -819,6 +821,8 @@ model CashMovement {
   transactionItemId  String              @map("transaction_item_id") @db.Uuid
   memberId           String              @map("member_id") @db.Uuid
   recordedByStaffId  String?             @map("recorded_by_staff_id") @db.Uuid
+  /// Comprobante de la ejecución (cobro no lo usa; devolución = 1 recibo del lote).
+  receiptId          String?             @map("receipt_id") @db.Uuid
   amount             Int
   kind               CashMovementKind    @default(INCOME)
   concept            CashMovementConcept
@@ -828,10 +832,12 @@ model CashMovement {
   transactionItem TransactionItem @relation(fields: [transactionItemId], references: [id], onDelete: Restrict)
   member          Member     @relation(fields: [memberId], references: [id], onDelete: Cascade)
   recordedByStaff StaffUser? @relation("CashMovementRecorder", fields: [recordedByStaffId], references: [id], onDelete: SetNull)
+  receipt         Receipt?   @relation(fields: [receiptId], references: [id], onDelete: Restrict)
 
   @@unique([transactionItemId, kind])
   @@index([tenantId, businessDate])
   @@index([memberId])
+  @@index([receiptId])
   @@map("cash_movements")
 }
 
@@ -954,15 +960,16 @@ model ReceiptSequence {
   @@map("receipt_sequences")
 }
 
-/// Comprobante interno de un pago aprobado (RN-PAG-009).
+/// Comprobante interno (RN-PAG-009).
 ///
-/// @remarks 1:1 con Transaction (cart CASH/MP) o TransactionItem (legacy). Número secuencial por tenant (`GB-000001`).
-/// Email N1 diferido (E8). Sin backfill de pagos legacy.
+/// @remarks Cobro: 1 por cart (`concept` PACK_CONTRACT/DROP_IN). Devolución: 1 por
+/// ejecución (`concept` REFUND), no por ítem. Unique parcial SQL: un cobro por `transaction_id`.
 model Receipt {
   id          String           @id @default(uuid()) @db.Uuid
   tenantId    String           @map("tenant_id") @db.Uuid
   transactionItemId String?     @unique @map("transaction_item_id") @db.Uuid
-  transactionId    String?     @unique @map("transaction_id") @db.Uuid
+  /// Cart. Unique parcial SQL: a lo sumo un cobro (`concept <> REFUND`) por transacción.
+  transactionId    String?     @map("transaction_id") @db.Uuid
   memberId    String           @map("member_id") @db.Uuid
   number      Int
   amount      Int
@@ -975,6 +982,7 @@ model Receipt {
   transactionItem TransactionItem? @relation(fields: [transactionItemId], references: [id], onDelete: Restrict)
   transaction    Transaction?   @relation(fields: [transactionId], references: [id], onDelete: Restrict)
   member  Member  @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  cashMovements CashMovement[]
 
   @@unique([tenantId, number])
   @@index([tenantId])

@@ -62,7 +62,7 @@ Carpeta **Payment register**: `GET /payment-register/day` + `POST /payment-regis
 
 Carpeta **Mercado Pago**: cuenta `GET|PUT|DELETE /mercadopago/account` + test (`mp.connect`). Checkout pack: Member `POST /me/transaction-items/mp/checkout` y Staff `POST /members/:id/transaction-items/mp/checkout`. Drop-in MP: Member/Staff `.../drop-in-checkout` (reserva al APPROVED). Cart (Caja): Staff `POST /members/:id/transaction-items/mp/cart` con `items[]` → 1 link con el total (modelo MercadoLibre). Webhook `POST /webhooks/mercadopago` y `/simulate` si `MP_CHECKOUT_MODE=stub` (`transactionItemId` → `contractId`/`reservationId`; `transactionId` → carrito completo).
 
-Carpeta **Refunds**: Member `POST /me/transaction-items/:transactionItemId/refund-requests` + `GET /me/refund-requests`. Staff `GET /refund-requests` + `POST /transaction-items/:transactionItemId/refunds` (`transaction_items.refund`; `motiveCode=doble_cobro` opcional).
+Carpeta **Refunds**: Member `POST /me/transaction-items/:transactionItemId/refund-requests` + `GET /me/refund-requests`. Staff `GET /refund-requests`, `POST /transactions/:transactionId/refunds` (lote) y `POST /transaction-items/:transactionItemId/refunds` (wrapper; `transaction_items.refund`; `motiveCode=doble_cobro` opcional).
 
 Carpeta **Receipts**: Member `GET /me/receipts`. Staff `GET /receipts/:id`, `GET /transactions/:transactionId/receipt` y `GET /members/:id/receipts` (`members.read`). Código `GB-000001`.
 

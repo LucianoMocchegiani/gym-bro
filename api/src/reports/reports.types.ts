@@ -3,7 +3,7 @@ import type { LedgerMovementRow } from '../payment/ledger-row';
 /**
  * Tipos del resumen de reportes mínimos (E11) — dinero + snapshot comercial.
  *
- * Movimientos: 1 fila por cobro o devolución de cart (misma grilla que caja).
+ * Movimientos: cobro por cart o ejecución de devolución (misma grilla que caja).
  */
 export type ReportTransactionRow = LedgerMovementRow;
 
@@ -37,7 +37,7 @@ export type ReportsSummary = {
       CASH: number;
       MP: number;
     };
-    /** Cobros y devoluciones agrupados (1 fila por cart + tipo). */
+    /** Cobros y devoluciones (egreso = una ejecución, no todo el historial del cart). */
     transactions: ReportTransactionRow[];
     transactionCount: number;
   };
