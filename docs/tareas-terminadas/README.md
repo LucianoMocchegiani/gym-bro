@@ -16,6 +16,7 @@ La creación de registros sigue la skill:
 
 ## Índice
 
+- [2026-08-30 — Comprobante detallado, grilla única y staff en MP](./2026-08-30-caja-grilla-unica-staff-mp.md)
 - [2026-08-20 — Limpieza lint web: react-hooks sin excepciones](./2026-08-20-limpieza-lint-web.md)
 - [2026-08-20 — Caja: carrito MP con un solo link (modelo MercadoLibre)](./2026-08-20-caja-carrito-mp.md)
 - [2026-08-19 — Sesiones: calendario semanal + roster + staff a cargo (web)](./2026-08-19-sesiones-calendario.md)
