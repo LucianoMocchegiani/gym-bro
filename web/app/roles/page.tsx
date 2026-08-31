@@ -112,7 +112,7 @@ function RolesInner() {
 
   return (
     <AdminShell
-      title="Roles"
+      title="Roles y permisos"
       actions={
         <button type="button" className="btn" onClick={openCreate}>
           + Nuevo rol
@@ -152,7 +152,7 @@ function RolesInner() {
             <td>
               <RowActions>
                 <RowIconButton
-                  label={r.slug === 'admin' ? 'Ver' : 'Editar'}
+                  label={r.slug === 'admin' ? 'Ver' : 'Editar permisos'}
                   onClick={() => openEdit(r.id)}
                 >
                   {r.slug === 'admin' ? <IconView /> : <IconEdit />}
@@ -190,7 +190,7 @@ function RolesInner() {
       <AdminModal
         open={Boolean(editId)}
         onClose={closeModals}
-        title="Editar rol"
+        title="Editar permisos"
         size="wide"
       >
         {editId ? (

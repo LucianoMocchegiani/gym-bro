@@ -61,7 +61,7 @@ const NAV_GROUPS: NavGroup[] = [
     items: [
       { href: '/afiliados', label: 'Afiliados' },
       { href: '/staff', label: 'Staff' },
-      { href: '/roles', label: 'Roles' },
+      { href: '/roles', label: 'Roles y permisos' },
     ],
   },
   {
