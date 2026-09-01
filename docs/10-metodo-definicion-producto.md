@@ -13,7 +13,7 @@
 3. **Opciones concretas.** Preguntas con A/B/C o tablas; el humano elige y aclara.
 4. **Ampliar solo lo pedido.** Si dice “dame más detalle en X”, explicar y repreguntar esa X.
 5. **Cerrar en tablas.** Toda respuesta se consolida en Decisión → Valor.
-6. **Post-MVP explícito.** Lo que no entra se anota en `99-backlog-post-mvp.md` (no se olvida ni se cuela al alcance).
+6. **Post-MVP explícito.** Lo que no entra se anota en `99-backlog-post-mvp.md` y el markdown del módulo en `99-backlog-post-mvp/` (no se olvida ni se cuela al alcance).
 7. **IDs estables.** Reglas `RN-*`, casos `CU-*`; no reutilizar IDs con otro significado.
 8. **Doc C-producto** (salvo que pidan otro nivel): maestro/alcance → glosario → dominio → reglas → CU → arquitectura → wireframes ASCII → pruebas **manuales** (sin tests de código como entregable de producto).
 
@@ -37,7 +37,7 @@
 
 Al definir un **módulo nuevo** post-MVP, en este orden:
 
-1. `99-backlog-post-mvp.md` — marcar “En diseño” / sacar ambigüedad  
+1. `99-backlog-post-mvp.md` + el md del módulo — marcar “En diseño” / sacar ambigüedad  
 2. `01-documento-maestro.md` — sección módulos / roadmap (qué entra en esta entrega)  
 3. `02-glosario.md` — términos nuevos  
 4. `03-modelo-dominio.md` — entidades  
@@ -101,7 +101,7 @@ Reglas de esta sesión:
 1. No asumas decisiones de negocio: preguntame.
 2. Trabajamos bloque a bloque; un bloque por mensaje hasta que yo cierre.
 3. Si algo es ambiguo, dame opciones A/B/C y tu recomendación breve.
-4. Todo lo que diferamos va a 99-backlog-post-mvp.md.
+4. Todo lo que diferamos va al markdown del módulo en `docs/99-backlog-post-mvp/`.
 5. Cuando yo diga "escribí la doc" o cerremos todos los bloques, actualizá los markdown del mapa (glosario → dominio → reglas → CU → arquitectura → wireframes → pruebas manuales) con IDs RN-/CU- nuevos.
 6. Idioma: español. Nombre producto: GymBro (provisorio).
 7. Nivel: C-producto (casos de uso densos; pruebas manuales, no tests de código).

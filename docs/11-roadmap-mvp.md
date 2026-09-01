@@ -27,7 +27,7 @@
 | E6 | Acceso QR / SSI | Credencial vínculo + verify |
 | E7 | Rutinas | Catálogo gym + asignación + cumplimiento |
 | E8 | Notificaciones N1 | Email + in-app |
-| E9 | App afiliado | Flutter: cuenta + SSI + sesiones + carrito MP (tanda 1); falta comprobantes/solicitudes en Pagos |
+| E9 | App afiliado | Flutter: cuenta + SSI + calendario + tienda/carrito + historial |
 | E10 | Admin web | Next: thin casi cerrados; faltan MP staff / pase sesión opcional |
 | E11 | Reportes mínimos | Activos, deuda, ingresos |
 | E12 | Cierre MVP | Smoke QA, hardenin, deploy |
@@ -286,7 +286,7 @@ Detalle: [14-auditoria…](./14-auditoria-roadmap-vs-codigo-2026-08-13.md).
 - [x] Recurrencia de sesiones (UI)
   - Toggle puntual/recurrente en `/sesiones/nuevo`; listado + desactivar en `/sesiones` (vista Recurrencias)
   - Timezone fijo `America/Asuncion`; excepciones siguen en ficha de sesión
-  - Nota: desactivar hoy no cancela sesiones → [backlog](./99-backlog-post-mvp.md)
+  - Nota: desactivar hoy no cancela sesiones → [sesiones-packs](./99-backlog-post-mvp/sesiones-packs.md)
 - [x] Packs: `creditsExpireAt` + visibilidad sync Kuatia (`packs.kuatia_*`)
   - Fecha opcional en nuevo/editar; bloque solo lectura Kuatia en `/packs/[id]`
 - [x] Comprobantes (receipts)
@@ -304,7 +304,7 @@ Detalle: [14-auditoria…](./14-auditoria-roadmap-vs-codigo-2026-08-13.md).
   - Ficha afiliado: `GET /members/:id/credential-offers`; copiar URI; re-emitir (re-POST contrato)
 - [x] Credencial SSI **staff** para molinete
   - `staff_credential_offers` + `POST/GET /staff/:id/credential-offers`; puerta DCQL pack|staff; `ok_staff`
-  - Fichaje horario → [backlog](./99-backlog-post-mvp.md)
+  - Fichaje horario → [acceso](./99-backlog-post-mvp/acceso.md)
 - [x] Listados Admin unificados (`DataTable` / `ListToolbar` / paginación)
   - afiliados, staff, servicios, packs, sesiones, roles, auditoría, Super tenants
   - `StatusPill`; reportes, devoluciones, historial puerta (+ pager)

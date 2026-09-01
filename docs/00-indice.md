@@ -12,7 +12,7 @@ Documentación **C-producto** (SRS operativo): visión, dominio, reglas, casos d
 | Casos de uso | Plantilla fija (ver abajo) |
 | Wireframes | ASCII art en `07-wireframes-ascii.md` |
 | Pruebas | Checklist manual (sin tests de código) en `08-…` |
-| Post-MVP | Todo lo diferido en `99-backlog-post-mvp.md` |
+| Post-MVP | Índice [99-backlog-post-mvp.md](./99-backlog-post-mvp.md) · detalle por módulo en [99-backlog-post-mvp/](./99-backlog-post-mvp/) |
 
 ### Plantilla de caso de uso
 
@@ -47,7 +47,7 @@ Reglas relacionadas
 | [15-kuatia-deuda-rename.md](./15-kuatia-deuda-rename.md) | Deuda rename/SDK Kuatia; path `identity_core_dart` | Viva |
 | [mobile/isar-wallet.md](./mobile/isar-wallet.md) | Wallet local (Isar): VCs en el device, secreto, workaround AGP 8 | Viva |
 | [credenciales-demo.md](./credenciales-demo.md) | Cuentas seed locales (Super / Staff / Member) | Viva |
-| [99-backlog-post-mvp.md](./99-backlog-post-mvp.md) | Diferidos para no olvidar | Cerrado (v1) |
+| [99-backlog-post-mvp.md](./99-backlog-post-mvp.md) | Índice de diferidos; detalle en [99-backlog-post-mvp/](./99-backlog-post-mvp/) | Viva |
 | [ideas/](./ideas/) | Ideas crudas (charlas, notas) antes de definir módulo | Viva |
 | [tareas-terminadas/](./tareas-terminadas/) | Registro cronológico de tareas implementadas | Viva |
 
