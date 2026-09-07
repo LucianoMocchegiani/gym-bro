@@ -1,11 +1,12 @@
 /**
- * Smoke C3: initialize + tools/list + search_members contra el MCP HTTP.
+ * Smoke C6: initialize + tools/list + tools A–D contra el MCP HTTP.
  *
  * Uso (host, stack Compose arriba):
  *   $env:ACCESS_TOKEN = "<JWT Staff>"
  *   npm run smoke
  *
  * Opcional: MCP_URL (default http://localhost:3011/mcp), SEARCH_Q (default socio).
+ * Esperá un Staff con reportes (Admin seed). Staff sin caja puede fallar list_debit_mandates.
  */
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
@@ -38,12 +39,22 @@ async function main(): Promise<void> {
   console.log('tools:', names.join(', '));
 
   const expected = [
-    'search_members',
-    'get_member_account',
-    'preview_member_access',
-    'list_sessions',
-    'get_session',
     'get_cash_day',
+    'get_help',
+    'get_member_account',
+    'get_pack',
+    'get_reports_summary',
+    'get_role',
+    'get_session',
+    'list_debit_mandates',
+    'list_packs',
+    'list_refund_requests',
+    'list_roles',
+    'list_services',
+    'list_sessions',
+    'preview_member_access',
+    'search_audit_events',
+    'search_members',
     'suggest_nav',
   ];
   const missing = expected.filter((name) => !names.includes(name));
@@ -68,6 +79,37 @@ async function main(): Promise<void> {
     throw new Error(`suggest_nav error: ${textOf(nav)}`);
   }
   console.log('suggest_nav:', textOf(nav));
+
+  const reports = await client.callTool({
+    name: 'get_reports_summary',
+    arguments: {},
+  });
+  if (reports.isError) {
+    throw new Error(`get_reports_summary error: ${textOf(reports)}`);
+  }
+  const reportsText = textOf(reports);
+  const reportsJson = JSON.parse(reportsText) as {
+    period?: string;
+    from?: string;
+    to?: string;
+  };
+  if (reportsJson.period !== 'this_month' || !reportsJson.from || !reportsJson.to) {
+    throw new Error(`get_reports_summary sin args no resolvió mes actual: ${reportsText}`);
+  }
+  console.log('get_reports_summary:', reportsText);
+
+  const help = await client.callTool({
+    name: 'get_help',
+    arguments: { topic: 'packs' },
+  });
+  if (help.isError) {
+    throw new Error(`get_help error: ${textOf(help)}`);
+  }
+  const helpText = textOf(help);
+  if (!helpText.includes('Packs') && !helpText.includes('/packs')) {
+    throw new Error(`get_help packs no parece un artículo: ${helpText}`);
+  }
+  console.log('get_help:', helpText.slice(0, 240));
 
   await client.close();
   console.log('ok');

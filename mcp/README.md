@@ -2,7 +2,7 @@
 
 Sidecar GymBro: traduce tools MCP → `GET` de Nest con el Bearer del staff. **No** es el agente (eso es `chat-api`). Sin writes.
 
-Diseño: [`docs/16-chat-mcp-diseno.md`](../docs/16-chat-mcp-diseno.md) · roadmap C3: [`docs/17-roadmap-chat-mcp.md`](../docs/17-roadmap-chat-mcp.md).
+Diseño: [`docs/16-chat-mcp-diseno.md`](../docs/16-chat-mcp-diseno.md) · roadmap C6: [`docs/17-roadmap-chat-mcp.md`](../docs/17-roadmap-chat-mcp.md).
 
 ## Env
 
@@ -26,13 +26,19 @@ docker compose up --build -d api mcp
 - Health: `GET http://localhost:3011/health` → `{ status: "ok", gymbro: "up"|"down" }` (sin auth).
 - MCP: `POST http://localhost:3011/mcp` (Streamable HTTP). Sin Bearer → 401.
 
-## Tools A (C3)
+## Tools (C3 + C6)
 
-`search_members`, `get_member_account`, `preview_member_access`, `list_sessions`, `get_session`, `get_cash_day`, `suggest_nav`.
+**A:** `search_members`, `get_member_account`, `preview_member_access`, `list_sessions`, `get_session`, `get_cash_day`, `suggest_nav`.
 
-403 de Nest → texto de tool “No hay permiso para esta consulta.” Preview de ingreso **no** escribe `access_attempts`.
+**B:** `get_reports_summary`, `list_refund_requests`, `list_debit_mandates`.
 
-Tools B/C/D (`get_help`, reportes, débitos, …) = C6.
+**C:** `list_services`, `list_packs`, `get_pack`, `list_roles`, `get_role`, `search_audit_events`.
+
+**D:** `get_help` (artículos en `mcp/help/`).
+
+403 de Nest → texto de tool “No hay permiso para esta consulta.” Preview de ingreso **no** escribe `access_attempts`. Sin writes.
+
+`get_reports_summary` sin `period` ni fechas → mes calendario actual (BA) y manda `from`/`to` a Nest.
 
 ## Smoke (host)
 
@@ -45,6 +51,6 @@ $env:ACCESS_TOKEN = "<JWT>"
 npm run smoke
 ```
 
-Esperado: lista las 7 tools, `search_members` con JSON slim, `suggest_nav` con `/caja` si el staff tiene caja.
+Esperado: lista las 17 tools, `search_members` slim, `suggest_nav`, `get_reports_summary` sin args (mes actual) y `get_help` topic `packs`.
 
 Colección Postman aparte: `postman/GymBro.mcp.postman_collection.json` (health + initialize). El flujo completo de tools es el smoke.

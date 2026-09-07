@@ -103,12 +103,12 @@ Une C2 + C3. `chat-api` sigue sin conocer afiliados.
 
 ## C6 — MCP lectura amplia + ayuda
 
-- [ ] `get_reports_summary` (`period` / `from`–`to`)
-- [ ] `list_refund_requests`, `list_debit_mandates`
-- [ ] `list_services`, `list_packs`, `get_pack`
-- [ ] `list_roles`, `get_role`
-- [ ] `search_audit_events` (slim, sin before/after)
-- [ ] `get_help` + `mcp/help/*.md`
+- [x] `get_reports_summary` (`period` / `from`–`to`)
+- [x] `list_refund_requests`, `list_debit_mandates`
+- [x] `list_services`, `list_packs`, `get_pack`
+- [x] `list_roles`, `get_role`
+- [x] `search_audit_events` (slim, sin before/after)
+- [x] `get_help` + `mcp/help/*.md`
 
 ---
 

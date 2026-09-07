@@ -5,7 +5,7 @@
 | Ítem | Estado | Notas |
 |------|--------|--------|
 | Multi-sede en UX Admin | Pendiente | Filtro sede en sesiones, afiliados, reportes. Modelo S2 ya existe. Ver también [sesiones-packs.md](./sesiones-packs.md) |
-| Asistente chat (MCP) | C5 drawer | Drawer en Admin. Abort/título/chips = C7. [17](../17-roadmap-chat-mcp.md) · [16](../16-chat-mcp-diseno.md) |
+| Asistente chat (MCP) | C6 tools B/C/D | Lectura amplia + help. Abort/título/chips = C7. [17](../17-roadmap-chat-mcp.md) · [16](../16-chat-mcp-diseno.md) |
 
 Rutinas y plantillas de notificación Admin: [roadmap E7/E8](../11-roadmap-mvp.md).
 

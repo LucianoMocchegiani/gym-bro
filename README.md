@@ -19,7 +19,7 @@ Issuer/verifier compartidos en Kuatia: ver sección Kuatia abajo.
 api/                 # NestJS — puerto 3001 — GET /api/health
 web/                 # Next.js — puerto 3000
 chat-api/            # Hono — puerto 3010 — GET /health (asistente, post-MVP)
-mcp/                 # Sidecar MCP GymBro — puerto 3011 — GET /health (tools A, C3)
+mcp/                 # Sidecar MCP GymBro — puerto 3011 — GET /health (tools A–D, C3+C6)
 mobile/              # Flutter (fuera de Docker)
 postman/             # Colección Nest + chat-api + mcp + environment
 docker-compose.yml   # postgres + redis + api + web + chat-api + mcp (dev)
@@ -64,7 +64,7 @@ Servicios:
 | chat-api mensajes | `GET/POST /v1/conversations/:id/messages` (stream + historial; C4) |
 | Admin asistente | Drawer en el topbar Staff (`NEXT_PUBLIC_CHAT_API_URL`; C5) |
 | mcp health | http://localhost:3011/health |
-| mcp tools A | `POST /mcp` Streamable HTTP (JWT Staff; C3) |
+| mcp tools | `POST /mcp` Streamable HTTP (JWT Staff; C3+C6, lectura A–D) |
 | Kuatia | URLs públicas del producto (ver `KUATIA_*_BASE_URL` en `api/.env`) |
 | Postman | [`postman/`](./postman/) |
 | Postgres | `localhost:5433` → contenedor `5432` (user/pass `gymbro`; databases `gymbro` y `chat`) |
@@ -146,7 +146,7 @@ Mensajes (C4): `POST /v1/conversations/:id/messages` body `{ "text" }` → UI Me
 
 Drawer Admin (C5): botón Asistente en el topbar Staff. `web/.env` → `NEXT_PUBLIC_CHAT_API_URL=http://localhost:3010`. Tras editar, `docker compose restart web`. Panel por túnel (`https://{slug}.faciliter.xyz`): `CORS_APP_DOMAIN` en `chat-api/.env` (mismo criterio que Nest) y recrear `chat-api`.
 
-MCP GymBro (C3): sidecar `mcp/` en Compose (`:3011`). `GET /health` (sin auth). Tools de lectura (`search_members`, `get_member_account`, `preview_member_access`, `list_sessions`, `get_session`, `get_cash_day`, `suggest_nav`) vía `POST /mcp` con el mismo JWT Staff. Nest sigue autorizando. README: [`mcp/README.md`](./mcp/README.md).
+MCP GymBro (C3+C6): sidecar `mcp/` en Compose (`:3011`). `GET /health` (sin auth). Tools de lectura A–D (operación, reportes/débitos/devoluciones, catálogo/roles/audit, `get_help`) vía `POST /mcp` con el mismo JWT Staff. Nest sigue autorizando. README: [`mcp/README.md`](./mcp/README.md).
 
 ### Auth (JWT + refresh)
 
