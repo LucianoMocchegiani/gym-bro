@@ -16,6 +16,7 @@ La creación de registros sigue la skill:
 
 ## Índice
 
+- [2026-09-07 — Drawer Admin del asistente (C5)](./2026-09-07-admin-drawer-asistente-c5.md)
 - [2026-09-07 — chat-api: agente OpenRouter, MCP y stream (C4)](./2026-09-07-chat-api-agente-c4.md)
 - [2026-09-07 — MCP GymBro: servidor Streamable HTTP y tools A (C3)](./2026-09-07-mcp-tools-a-c3.md)
 - [2026-09-07 — chat-api: introspect JWT y CRUD de hilos (C2)](./2026-09-07-chat-api-hilos-c2.md)
