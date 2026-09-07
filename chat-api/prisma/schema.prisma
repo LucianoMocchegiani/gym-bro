@@ -38,7 +38,7 @@ model Conversation {
   @@map("conversations")
 }
 
-/// Turno persistido (user / assistant / tool). El compactado de contexto es C4.
+/// Turno persistido (user / assistant / tool). La ventana de contexto recorta el prompt, no las filas.
 model Message {
   id             String       @id @default(uuid()) @db.Uuid
   conversationId String       @map("conversation_id") @db.Uuid

@@ -124,6 +124,17 @@ Leyenda resultado: `P` pass · `F` fail · `B` bloqueado · `-` no aplica
 
 ---
 
+## Asistente chat-api (post-MVP — C4; sin drawer)
+
+| # | Caso | Esperado | RN/CU | R |
+|---|------|----------|-------|---|
+| C4-1 | `POST /v1/conversations/:id/messages` `{ "text" }` con JWT Staff | stream SSE (UI Message Stream); usa tools MCP | C4 | |
+| C4-2 | `GET /v1/conversations/:id/messages` | `items[]` user + assistant/tool | C4 | |
+| C4-3 | POST sin Bearer / JWT Member | 401 / 403 | C4 | |
+| C4-4 | POST hilo archivado | 409 | C4 | |
+
+---
+
 ## Rutinas
 
 | # | Caso | Esperado | RN/CU | R |

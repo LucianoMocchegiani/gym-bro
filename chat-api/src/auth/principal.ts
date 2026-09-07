@@ -14,5 +14,6 @@ export type Principal = {
 export type AppEnv = {
   Variables: {
     principal: Principal;
+    accessToken: string;
   };
 };

@@ -5,6 +5,7 @@ import { requirePrincipal } from './auth/middleware.js';
 import type { AppEnv } from './auth/principal.js';
 import { config } from './config.js';
 import { conversationRoutes } from './conversations/routes.js';
+import { messageRoutes } from './messages/routes.js';
 import { prisma } from './prisma.js';
 
 type DatabaseStatus = 'up' | 'down';
@@ -19,7 +20,11 @@ export function createApp(): Hono<AppEnv> {
     '*',
     cors({
       origin: config.corsOrigins,
-      allowHeaders: ['Authorization', 'Content-Type'],
+      allowHeaders: [
+        'Authorization',
+        'Content-Type',
+        'x-vercel-ai-ui-message-stream',
+      ],
       allowMethods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'],
     }),
   );
@@ -57,6 +62,7 @@ export function createApp(): Hono<AppEnv> {
 
   const v1 = new Hono<AppEnv>();
   v1.use('*', requirePrincipal);
+  v1.route('/conversations/:id/messages', messageRoutes);
   v1.route('/conversations', conversationRoutes);
   app.route('/v1', v1);
 

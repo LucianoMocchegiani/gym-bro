@@ -61,6 +61,7 @@ Servicios:
 | API health | http://localhost:3001/api/health |
 | chat-api health | http://localhost:3010/health |
 | chat-api hilos | `GET/POST /v1/conversations` (JWT Staff; C2) |
+| chat-api mensajes | `GET/POST /v1/conversations/:id/messages` (stream + historial; C4) |
 | mcp health | http://localhost:3011/health |
 | mcp tools A | `POST /mcp` Streamable HTTP (JWT Staff; C3) |
 | Kuatia | URLs públicas del producto (ver `KUATIA_*_BASE_URL` en `api/.env`) |
@@ -139,6 +140,8 @@ docker compose exec chat-api npx prisma migrate deploy
 Health: `GET http://localhost:3010/health` → `{ status, database, checkedAt }` (`200` ok / `503` DB down).
 
 Hilos (C2): `Authorization: Bearer` Staff. Introspecta `AUTH_INTROSPECT_URL` (`GET /api/auth/me`). `GET/POST /v1/conversations`, `GET/PATCH/DELETE /v1/conversations/:id` (DELETE archiva). Member/Super → 403.
+
+Mensajes (C4): `POST /v1/conversations/:id/messages` body `{ "text" }` → UI Message Stream (OpenRouter + MCP con el mismo Bearer). `GET …/messages` lista user/assistant/tool. Clave real en `OPENROUTER_API_KEY`. Título automático = C7.
 
 MCP GymBro (C3): sidecar `mcp/` en Compose (`:3011`). `GET /health` (sin auth). Tools de lectura (`search_members`, `get_member_account`, `preview_member_access`, `list_sessions`, `get_session`, `get_cash_day`, `suggest_nav`) vía `POST /mcp` con el mismo JWT Staff. Nest sigue autorizando. README: [`mcp/README.md`](./mcp/README.md).
 

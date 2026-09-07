@@ -48,5 +48,6 @@ export const requirePrincipal = createMiddleware<AppEnv>(async (c, next) => {
   });
 
   c.set('principal', principal);
+  c.set('accessToken', token);
   await next();
 });

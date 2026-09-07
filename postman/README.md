@@ -85,7 +85,7 @@ Archivo [`GymBro.chat-api.postman_collection.json`](./GymBro.chat-api.postman_co
 
 1. Importá las **dos** colecciones + el environment **GymBro Local**.
 2. En **GymBro API** → Auth → Login Staff (llena `accessToken` del environment).
-3. En **GymBro chat-api**: health + CRUD `/v1/conversations` (`{{chatApiUrl}}` = `http://localhost:3010`). DELETE archiva. Variable de colección `createdConversationId`.
+3. En **GymBro chat-api**: health + CRUD `/v1/conversations` (`{{chatApiUrl}}` = `http://localhost:3010`). DELETE archiva. Variable de colección `createdConversationId`. **C4:** POST `…/messages` (stream; `OPENROUTER_API_KEY` real) y GET `…/messages` (historial).
 
 ## mcp (colección aparte)
 

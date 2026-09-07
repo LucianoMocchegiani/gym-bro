@@ -114,6 +114,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      mcp:
+        condition: service_healthy
     healthcheck:
       test:
         [

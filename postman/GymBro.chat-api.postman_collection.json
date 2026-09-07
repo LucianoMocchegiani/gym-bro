@@ -158,6 +158,49 @@
         "url": "{{chatApiUrl}}/v1/conversations/{{createdConversationId}}",
         "description": "Archiva (archivedAt). El hilo deja de listarse en GET sin archived=true."
       }
+    },
+    {
+      "name": "Staff POST message (stream)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Accept",
+            "value": "text/event-stream"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"text\": \"¿Tenemos un afiliado Socio?\"\n}"
+        },
+        "url": "{{chatApiUrl}}/v1/conversations/{{createdConversationId}}/messages",
+        "description": "C4: UI Message Stream. Requiere OPENROUTER_API_KEY real y mcp arriba. Postman muestra SSE; el historial se lee con GET messages."
+      }
+    },
+    {
+      "name": "Staff GET messages",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('status 200', () => pm.response.to.have.status(200));",
+              "pm.test('items array', () => pm.expect(pm.response.json().items).to.be.an('array'));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{chatApiUrl}}/v1/conversations/{{createdConversationId}}/messages",
+        "description": "Historial persistido (user / assistant / tool). Aislado por tenant+user."
+      }
     }
   ]
 }

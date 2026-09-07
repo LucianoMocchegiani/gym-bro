@@ -1032,7 +1032,7 @@ erDiagram
 |-------|--------|
 | `identities` | Unique `(tenant_id, user_id)`. C2 escribe `last_seen_at`. |
 | `conversations` | Índice `(tenant_id, user_id, updated_at DESC)`. Soft-archive `archived_at`. |
-| `messages` | `role` texto (`user` / `assistant` / `tool`); JSON opcional de tool. |
+| `messages` | `role` texto (`user` / `assistant` / `tool`); JSON opcional de tool. C4 escribe filas; la ventana de tokens no borra. |
 
 | Migración | Contenido |
 |-----------|-----------|

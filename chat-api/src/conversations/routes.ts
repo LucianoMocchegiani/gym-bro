@@ -1,6 +1,7 @@
 import { Hono } from 'hono';
 import { HTTPException } from 'hono/http-exception';
 import type { AppEnv } from '../auth/principal.js';
+import { requireConversationId } from './ids.js';
 import {
   archiveConversation,
   createConversation,
@@ -9,16 +10,6 @@ import {
   parseTitleInput,
   updateConversation,
 } from './service.js';
-
-const UUID_RE =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
-function requireConversationId(id: string): string {
-  if (!UUID_RE.test(id)) {
-    throw new HTTPException(400, { message: 'Invalid conversation id' });
-  }
-  return id;
-}
 
 async function readJsonBody(c: { req: { text: () => Promise<string> } }): Promise<unknown> {
   const text = await c.req.text();

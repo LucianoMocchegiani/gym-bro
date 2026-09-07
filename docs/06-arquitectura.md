@@ -330,7 +330,7 @@ Prefijo sugerido: `/api/v1`.
 | Reservas | `/sessions/:id/reservations`, waitlist |
 | Billing | cart MP `/me|members/:id/transaction-items/mp/cart`, cash cart Staff, webhook `/webhooks/payment` |
 | Access | `/access/oid4vp/request`, `/access/oid4vp/session/:id`, `/access-attempts`, `GET /members/:id/access-preview`, manual-pass |
-| Chat (servicio `chat-api` :3010) | `GET /health`; `GET/POST /v1/conversations`; `GET/PATCH/DELETE /v1/conversations/:id` (introspect Bearer; DELETE archiva) |
+| Chat (servicio `chat-api` :3010) | `GET /health`; `GET/POST /v1/conversations`; `GET/PATCH/DELETE /v1/conversations/:id`; `GET/POST /v1/conversations/:id/messages` (POST = UI Message Stream; OpenRouter + MCP) |
 | MCP (servicio `mcp` :3011) | `GET /health`; `POST /mcp` Streamable HTTP + Bearer Staff. Tools A: search_members, get_member_account, preview_member_access, list_sessions, get_session, get_cash_day, suggest_nav |
 | Rutinas | `/exercises`, `/routine-templates`, `/assigned-routines` |
 | Notif | `/notifications`, `/notification-templates`, preferences |
@@ -392,7 +392,7 @@ Stack principal cerrado en §0. Queda por cerrar al scaffold:
 | ORM (Prisma vs Drizzle) | **Prisma 6** (Drizzle descartado; Prisma 7 diferido por ESM/Nest) |
 | Runtime Node | **24 Active LTS** (`node:24-alpine` en Docker) |
 | Hosting (Railway / Fly / VPS / AWS) | Pendiente (prod) |
-| Docker Compose local (postgres, redis, api, web, chat-api, mcp) | Hecho (dev; chat-api C1–C2; mcp C3 tools A) |
+| Docker Compose local (postgres, redis, api, web, chat-api, mcp) | Hecho (dev; chat-api C1–C4: health + hilos + stream; mcp C3 tools A) |
 | CI mínimo (GitHub Actions: lint + build api/web) | Hecho (`.github/workflows/ci.yml`) |
 | Monorepo tool (pnpm workspaces / Turborepo / separado) | **Separado** — sin package.json raíz; cada app se instala sola |
 | Proveedor exacto de email | Pendiente |
@@ -409,7 +409,7 @@ Ver [99-backlog-post-mvp.md](./99-backlog-post-mvp.md). Impacto arquitectónico 
 - Feature flags por plan.
 - Offline access = cola local + sync (no en MVP).
 - Débito automático MONTHLY: Customer/Card + Payments + cron Nest (no Preference sola). Ver §7.5.
-- Asistente Admin: `chat-api` (Hono, DB `chat`, `/v1/conversations` vía introspect) + sidecar `mcp/` (`:3011`, tools A) — [16-chat-mcp-diseno.md](./16-chat-mcp-diseno.md).
+- Asistente Admin: `chat-api` (Hono, DB `chat`, hilos + `POST …/messages` stream vía OpenRouter/MCP) + sidecar `mcp/` (`:3011`, tools A) — [16-chat-mcp-diseno.md](./16-chat-mcp-diseno.md).
 
 ---
 

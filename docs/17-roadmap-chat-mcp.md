@@ -80,12 +80,13 @@ Sin modelo todavía. Se puede probar con curl + token Staff.
 
 Une C2 + C3. `chat-api` sigue sin conocer afiliados.
 
-- [ ] Cliente MCP (`CHAT_MCP_URL` + Bearer del request)
-- [ ] OpenRouter + `CHAT_SYSTEM_PROMPT`
-- [ ] `POST /v1/conversations/:id/messages` (SSE / UI Message Stream)
-- [ ] Persistencia user / assistant / tool
-- [ ] Ventana por tokens + `tool_result` viejos a una línea
-- [ ] Tope de tool-calls
+- [x] Cliente MCP (`CHAT_MCP_URL` + Bearer del request)
+- [x] OpenRouter + `CHAT_SYSTEM_PROMPT`
+- [x] `POST /v1/conversations/:id/messages` (SSE / UI Message Stream)
+- [x] Persistencia user / assistant / tool
+- [x] Ventana por tokens + `tool_result` viejos a una línea
+- [x] Tope de tool-calls
+- [x] `GET /v1/conversations/:id/messages` (historial; C5 lo reusa)
 
 ---
 

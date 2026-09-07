@@ -12,6 +12,17 @@ function required(name: string): string {
   return value;
 }
 
+/** OpenRouter trata `replace-me` como “sin Authorization”; fallá al boot. */
+function requiredOpenRouterKey(): string {
+  const value = required('OPENROUTER_API_KEY');
+  if (value === 'replace-me') {
+    throw new Error(
+      'OPENROUTER_API_KEY is still replace-me. Recreate the container after editing chat-api/.env (restart does not reload env_file).',
+    );
+  }
+  return value;
+}
+
 function parsePort(raw: string | undefined): number {
   if (!raw?.trim()) {
     return 3010;
@@ -21,6 +32,17 @@ function parsePort(raw: string | undefined): number {
     throw new Error(`Invalid PORT: ${raw}`);
   }
   return port;
+}
+
+function parsePositiveInt(raw: string | undefined, fallback: number): number {
+  if (!raw?.trim()) {
+    return fallback;
+  }
+  const value = Number(raw);
+  if (!Number.isInteger(value) || value < 1) {
+    throw new Error(`Invalid integer env: ${raw}`);
+  }
+  return value;
 }
 
 function parseOrigins(raw: string): string[] {
@@ -44,6 +66,8 @@ export type ChatConfig = {
   openrouterModel: string;
   corsOrigins: string[];
   chatSystemPrompt: string;
+  contextTokenBudget: number;
+  maxToolSteps: number;
 };
 
 export const config: ChatConfig = {
@@ -52,11 +76,13 @@ export const config: ChatConfig = {
   chatMcpUrl: required('CHAT_MCP_URL'),
   authIntrospectUrl: required('AUTH_INTROSPECT_URL'),
   authRequiredProfile: required('AUTH_REQUIRED_PROFILE'),
-  openrouterApiKey: required('OPENROUTER_API_KEY'),
+  openrouterApiKey: requiredOpenRouterKey(),
   openrouterModel:
     process.env.OPENROUTER_MODEL?.trim() || 'openai/gpt-4.1-mini',
   corsOrigins: parseOrigins(required('CORS_ORIGIN')),
   chatSystemPrompt:
     process.env.CHAT_SYSTEM_PROMPT?.trim() ||
     'Hablá en español. Usá las tools. No inventes ids.',
+  contextTokenBudget: parsePositiveInt(process.env.CHAT_CONTEXT_TOKENS, 10_000),
+  maxToolSteps: parsePositiveInt(process.env.CHAT_MAX_TOOL_STEPS, 8),
 };
