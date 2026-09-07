@@ -16,6 +16,7 @@ La creación de registros sigue la skill:
 
 ## Índice
 
+- [2026-09-07 — MCP GymBro: servidor Streamable HTTP y tools A (C3)](./2026-09-07-mcp-tools-a-c3.md)
 - [2026-09-07 — chat-api: introspect JWT y CRUD de hilos (C2)](./2026-09-07-chat-api-hilos-c2.md)
 - [2026-09-07 — chat-api: scaffold, DB chat y health (C1)](./2026-09-07-chat-api-infra-c1.md)
 - [2026-09-07 — Preview de ingreso sin persistir intentos (C0)](./2026-09-07-access-preview-c0.md)
