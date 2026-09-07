@@ -8,7 +8,7 @@
 E7 Rutinas, E8 Notificaciones y MP live siguen en el [roadmap MVP](./11-roadmap-mvp.md). No se copian acá.
 
 **En diseño / implementación (docs + código, QA pendiente):** débito automático MONTHLY — [pagos.md](./99-backlog-post-mvp/pagos.md).  
-**C4 en el repo:** asistente chat + MCP — [16-chat-mcp-diseno.md](./16-chat-mcp-diseno.md) · tareas [17-roadmap-chat-mcp.md](./17-roadmap-chat-mcp.md). `chat-api` stream + MCP; sidecar `mcp/` tools A. Drawer = C5.
+**C5 en el repo:** asistente chat + MCP — [16-chat-mcp-diseno.md](./16-chat-mcp-diseno.md) · tareas [17-roadmap-chat-mcp.md](./17-roadmap-chat-mcp.md). Drawer Admin + `chat-api` stream + sidecar `mcp/` tools A. Abort/título/chips = C7.
 
 ---
 

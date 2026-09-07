@@ -65,6 +65,7 @@ export type ChatConfig = {
   openrouterApiKey: string;
   openrouterModel: string;
   corsOrigins: string[];
+  corsAppDomain: string | null;
   chatSystemPrompt: string;
   contextTokenBudget: number;
   maxToolSteps: number;
@@ -80,6 +81,7 @@ export const config: ChatConfig = {
   openrouterModel:
     process.env.OPENROUTER_MODEL?.trim() || 'openai/gpt-4.1-mini',
   corsOrigins: parseOrigins(required('CORS_ORIGIN')),
+  corsAppDomain: process.env.CORS_APP_DOMAIN?.trim().toLowerCase() || null,
   chatSystemPrompt:
     process.env.CHAT_SYSTEM_PROMPT?.trim() ||
     'Hablá en español. Usá las tools. No inventes ids.',

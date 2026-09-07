@@ -135,6 +135,18 @@ Leyenda resultado: `P` pass · `F` fail · `B` bloqueado · `-` no aplica
 
 ---
 
+## Asistente Admin (post-MVP — C5 drawer)
+
+| # | Caso | Esperado | RN/CU | R |
+|---|------|----------|-------|---|
+| C5-1 | Staff en `demo.localhost:3002`, botón Asistente | Abre drawer; Caja sigue detrás | C5 | |
+| C5-2 | Primer uso / sin hilos | Vacío + composer; enviar crea hilo y stremea | C5 | |
+| C5-3 | Reabrir drawer | Último hilo + historial (tools en una línea) | C5 | |
+| C5-4 | Archivar hilo | Sale de la lista; si era el activo, abre otro o vacío | C5 | |
+| C5-5 | Disclaimer | “Puede equivocarse; no cobra solo.” | C5 | |
+
+---
+
 ## Rutinas
 
 | # | Caso | Esperado | RN/CU | R |

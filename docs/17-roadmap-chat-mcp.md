@@ -92,12 +92,12 @@ Une C2 + C3. `chat-api` sigue sin conocer afiliados.
 
 ## C5 — Drawer Admin
 
-- [ ] `web/lib/api/chat.ts` (Bearer de sesión Staff; refresh como `apiRequest`)
-- [ ] `AssistantDrawer` + lista + hilo + composer
-- [ ] Botón en `AdminShell`
-- [ ] `NEXT_PUBLIC_CHAT_API_URL`
-- [ ] Estados: vacío, loading, error, 401, 403
-- [ ] Disclaimer (“puede equivocarse; no cobra”)
+- [x] `web/lib/api/chat.ts` (Bearer de sesión Staff; refresh como `apiRequest`)
+- [x] `AssistantDrawer` + lista + hilo + composer
+- [x] Botón en `AdminShell`
+- [x] `NEXT_PUBLIC_CHAT_API_URL`
+- [x] Estados: vacío, loading, error, 401, 403
+- [x] Disclaimer (“puede equivocarse; no cobra”)
 
 ---
 

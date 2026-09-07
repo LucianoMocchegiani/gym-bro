@@ -151,6 +151,13 @@ export function newIdempotencyKey(prefix: string): string {
   return `${prefix}-${rand}`;
 }
 
+/**
+ * Renueva el access Staff (mismo flujo que `apiRequest`). El drawer de chat lo reusa.
+ */
+export async function refreshStaffAccess(): Promise<boolean> {
+  return tryRefresh('staff');
+}
+
 async function tryRefresh(mode: 'staff' | 'super'): Promise<boolean> {
   const refreshToken =
     mode === 'super'

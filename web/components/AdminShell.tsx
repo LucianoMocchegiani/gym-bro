@@ -8,6 +8,7 @@ import {
   type ReactNode,
 } from 'react';
 import { usePathname } from 'next/navigation';
+import { AssistantLauncher } from '@/components/assistant/AssistantDrawer';
 import {
   NavIconDumbbell,
   NavIconForHref,
@@ -94,7 +95,7 @@ function getServerHostSlug(): null {
 }
 
 /**
- * Shell Admin: sidebar de navegación + topbar (tema / perfil / logout).
+ * Shell Admin: sidebar de navegación + topbar (asistente / tema / perfil / logout).
  *
  * @remarks Filtra links según `session.permissionCodes` (GET /me/permissions).
  */
@@ -215,6 +216,7 @@ export function AdminShell({
               ) : null}
             </div>
             <div className="app-topbar-right">
+              <AssistantLauncher />
               <ThemeToggle />
               <Link
                 href="/cuenta"

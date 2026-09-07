@@ -360,6 +360,29 @@ Pestaña **Débitos** (post-MVP, CU-PAG-008..010). Ficha afiliado: atajo `/caja?
 | Puerta / pase | CU-ACC-001/004 |
 | Super | CU-ROL-001/002 |
 | Config | CU-ACC-006/007, CU-PAG-006 |
+| Asistente (drawer) | post-MVP C5; sin CU de producto |
+
+---
+
+## 16. Asistente Admin (drawer, post-MVP)
+
+Sin ruta `/asistente`. Botón en el topbar; Caja sigue detrás.
+
+```text
++--------------------------------------------------------------+
+|  GymBro Admin                         [Asistente] [tema] [yo]|
++------------+-------------------------------------------------+
+| Caja       |  Caja del día …                                 |
+|            |                                                 |
++------------+----------------------+--------------------------+
+             | Sin título           |  Staff: ¿Tenemos Socio?  |
+             | [Nuevo]              |  Buscó afiliados         |
+             |                      |  Sí, Socio Gym de Prueba |
+             |                      |  [ Preguntá…    ][Enviar]|
+             |                      |  Puede equivocarse; no   |
+             |                      |  cobra solo.             |
+             +----------------------+--------------------------+
+```
 
 ---
 

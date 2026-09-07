@@ -22,6 +22,7 @@ Con tunnel: `{slug}.{NEXT_PUBLIC_APP_DOMAIN}` (ej. `https://demo.pruebasaproducc
 | `/devoluciones` | Cola de solicitudes + ejecutar reembolso (`transaction_items.refund`) |
 | `/reportes` | Ingresos del período (detalle nominado) + snapshot packs/activos |
 | `/puerta` | Tabs: Verificar (OID4VP) · Pase manual · Historial; `/puerta/pase-manual` → `?tab=pase` |
+| Asistente | Drawer (topbar); no hay ruta `/asistente` |
 
 ## Rutas Super (apex)
 
@@ -40,7 +41,7 @@ npm install
 npm run dev
 ```
 
-API en `NEXT_PUBLIC_API_URL` (default `http://localhost:3001`). Tras migración de slug: `docker compose exec api npx prisma migrate deploy` + seed.
+API en `NEXT_PUBLIC_API_URL` (default `http://localhost:3001`). Chat: `NEXT_PUBLIC_CHAT_API_URL` (default `http://localhost:3010`). Tras migración de slug: `docker compose exec api npx prisma migrate deploy` + seed.
 
 Credenciales: `docs/credenciales-demo.md`.
 

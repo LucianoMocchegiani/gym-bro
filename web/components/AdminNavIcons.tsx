@@ -206,6 +206,14 @@ export function NavIconMenu() {
   );
 }
 
+export function NavIconAssistant() {
+  return (
+    <Svg>
+      <path d="M21 15a2 2 0 0 1-2 2H8l-5 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+    </Svg>
+  );
+}
+
 const NAV_ICONS: Record<string, () => ReactNode> = {
   '/': NavIconHome,
   '/puerta': NavIconDoor,

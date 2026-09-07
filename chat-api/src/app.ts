@@ -4,6 +4,7 @@ import { HTTPException } from 'hono/http-exception';
 import { requirePrincipal } from './auth/middleware.js';
 import type { AppEnv } from './auth/principal.js';
 import { config } from './config.js';
+import { allowCorsOrigin } from './cors.js';
 import { conversationRoutes } from './conversations/routes.js';
 import { messageRoutes } from './messages/routes.js';
 import { prisma } from './prisma.js';
@@ -19,7 +20,10 @@ export function createApp(): Hono<AppEnv> {
   app.use(
     '*',
     cors({
-      origin: config.corsOrigins,
+      origin: (origin) =>
+        origin
+          ? allowCorsOrigin(origin, config.corsOrigins, config.corsAppDomain)
+          : '*',
       allowHeaders: [
         'Authorization',
         'Content-Type',
