@@ -112,6 +112,18 @@ Leyenda resultado: `P` pass · `F` fail · `B` bloqueado · `-` no aplica
 
 ---
 
+## Asistente MCP (post-MVP — C3; sin drawer)
+
+| # | Caso | Esperado | RN/CU | R |
+|---|------|----------|-------|---|
+| M1 | `GET http://localhost:3011/health` | 200 `{ status: "ok" }` sin auth | C3 | |
+| M2 | `POST /mcp` sin Bearer | 401 | C3 | |
+| M3 | `npm run smoke` con JWT Staff | tools A + `search_members` JSON slim | C3 | |
+| M4 | `get_cash_day` con staff sin `cashier.operate` | tool error “no hay permiso” | C3 / RN-ROL-007 | |
+| M5 | `preview_member_access` | mismas RN que puerta; **sin** fila en `access_attempts` | C0/C3 | |
+
+---
+
 ## Rutinas
 
 | # | Caso | Esperado | RN/CU | R |

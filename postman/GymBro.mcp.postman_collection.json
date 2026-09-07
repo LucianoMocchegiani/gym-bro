@@ -1,0 +1,123 @@
+{
+  "info": {
+    "_postman_id": "gymbro-mcp-collection",
+    "name": "GymBro MCP",
+    "description": "Colección del sidecar **mcp** (`:3011`), no de Nest ni de chat-api.\n\n**Setup**\n1. Importá esta colección **y** `GymBro.api.postman_collection.json` + `GymBro.local.postman_environment.json`.\n2. Environment **GymBro Local** (el `accessToken` lo llena el Login Staff de la colección API).\n3. `mcpUrl` default: `http://localhost:3011`.\n\nSin Bearer: 401 en `/mcp`. Health es público.\n\nTools (`search_members`, etc.): usá `cd mcp; $env:ACCESS_TOKEN='…'; npm run smoke`. Initialize acá sirve para ver sesión MCP; el smoke cubre tools/list + una tool.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{accessToken}}",
+        "type": "string"
+      }
+    ]
+  },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "if (!pm.environment.get('mcpUrl') && !pm.collectionVariables.get('mcpUrl')) {",
+          "  pm.collectionVariables.set('mcpUrl', 'http://localhost:3011');",
+          "}"
+        ]
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "mcpUrl",
+      "value": "http://localhost:3011"
+    },
+    {
+      "key": "mcpSessionId",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "GET health",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('status 200', () => pm.response.to.have.status(200));",
+              "const body = pm.response.json();",
+              "pm.test('status ok', () => pm.expect(body.status).to.eql('ok'));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "auth": { "type": "noauth" },
+        "method": "GET",
+        "header": [],
+        "url": "{{mcpUrl}}/health"
+      }
+    },
+    {
+      "name": "POST mcp initialize",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('status 200', () => pm.response.to.have.status(200));",
+              "const sid = pm.response.headers.get('mcp-session-id');",
+              "if (sid) { pm.collectionVariables.set('mcpSessionId', sid); }",
+              "pm.test('jsonrpc result', () => {",
+              "  const body = pm.response.json();",
+              "  pm.expect(body.result || body.jsonrpc).to.be.ok;",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Accept", "value": "application/json, text/event-stream" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"jsonrpc\": \"2.0\",\n  \"id\": 1,\n  \"method\": \"initialize\",\n  \"params\": {\n    \"protocolVersion\": \"2025-03-26\",\n    \"capabilities\": {},\n    \"clientInfo\": { \"name\": \"postman\", \"version\": \"1.0.0\" }\n  }\n}"
+        },
+        "url": "{{mcpUrl}}/mcp"
+      }
+    },
+    {
+      "name": "POST mcp without Bearer",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('status 401', () => pm.response.to.have.status(401));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "auth": { "type": "noauth" },
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"jsonrpc\": \"2.0\",\n  \"id\": 1,\n  \"method\": \"initialize\",\n  \"params\": {\n    \"protocolVersion\": \"2025-03-26\",\n    \"capabilities\": {},\n    \"clientInfo\": { \"name\": \"postman\", \"version\": \"1.0.0\" }\n  }\n}"
+        },
+        "url": "{{mcpUrl}}/mcp"
+      }
+    }
+  ]
+}

@@ -1,0 +1,13 @@
+# Imagen de desarrollo para mcp (hot-reload vía volumen).
+FROM node:24-alpine
+
+WORKDIR /app
+
+COPY package.json package-lock.json* ./
+RUN npm install
+
+COPY . .
+
+EXPOSE 3011
+
+CMD ["npm", "run", "start:dev"]

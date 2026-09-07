@@ -2,7 +2,7 @@
 
 ## Importar (importante)
 
-1. **Import** → `GymBro.api.postman_collection.json` + `GymBro.local.postman_environment.json`. chat-api: `GymBro.chat-api.postman_collection.json` (colección aparte).
+1. **Import** → `GymBro.api.postman_collection.json` + `GymBro.local.postman_environment.json`. chat-api: `GymBro.chat-api.postman_collection.json`. mcp: `GymBro.mcp.postman_collection.json` (colecciones aparte).
 2. Arriba a la derecha elegí environment **GymBro Local** (si no, `{{accessToken}}` no se reemplaza).
 3. Si ya habías importado antes: borrá la colección/env viejos e importá de nuevo, o Sync variables del environment.
 
@@ -86,6 +86,15 @@ Archivo [`GymBro.chat-api.postman_collection.json`](./GymBro.chat-api.postman_co
 1. Importá las **dos** colecciones + el environment **GymBro Local**.
 2. En **GymBro API** → Auth → Login Staff (llena `accessToken` del environment).
 3. En **GymBro chat-api**: health + CRUD `/v1/conversations` (`{{chatApiUrl}}` = `http://localhost:3010`). DELETE archiva. Variable de colección `createdConversationId`.
+
+## mcp (colección aparte)
+
+Archivo [`GymBro.mcp.postman_collection.json`](./GymBro.mcp.postman_collection.json). No va mezclada con Nest ni con chat-api.
+
+1. Importá **GymBro MCP** + el environment **GymBro Local** (y la colección API para el login).
+2. Login Staff en **GymBro API** (llena `accessToken`).
+3. Health (`{{mcpUrl}}` = `http://localhost:3011`) + initialize JSON-RPC. Sin Bearer → 401.
+4. Tools A: `cd mcp; $env:ACCESS_TOKEN='…'; npm run smoke` (el cliente MCP maneja sesión). README: [`mcp/README.md`](../mcp/README.md).
 
 ## Multi-tenant
 

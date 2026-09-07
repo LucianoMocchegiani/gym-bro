@@ -30,6 +30,7 @@ docker compose up --build -d
 # 2) Esperar a que api/postgres/chat-api estén healthy (opcional)
 curl.exe -s http://localhost:3001/api/health
 curl.exe -s http://localhost:3010/health
+curl.exe -s http://localhost:3011/health
 
 # 3) Schema + client
 docker compose exec api npx prisma migrate deploy

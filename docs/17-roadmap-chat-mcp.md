@@ -66,13 +66,13 @@ Sin modelo todavía. Se puede probar con curl + token Staff.
 
 ## C3 — MCP GymBro (servidor + tools A)
 
-- [ ] Scaffold `mcp/` + Streamable HTTP + Bearer por request
-- [ ] `gymbro-client.ts` + `slim.ts` + Compose servicio `mcp`
-- [ ] Tools: `search_members`, `get_member_account`
-- [ ] Tool: `preview_member_access` (usa C0)
-- [ ] Tools: `list_sessions`, `get_session`
-- [ ] Tools: `get_cash_day`, `suggest_nav`
-- [ ] Probar tools con un cliente MCP (stdio/HTTP) y token Staff — sin drawer
+- [x] Scaffold `mcp/` + Streamable HTTP + Bearer por request
+- [x] `gymbro-client.ts` + `slim.ts` + Compose servicio `mcp`
+- [x] Tools: `search_members`, `get_member_account`
+- [x] Tool: `preview_member_access` (usa C0)
+- [x] Tools: `list_sessions`, `get_session`
+- [x] Tools: `get_cash_day`, `suggest_nav`
+- [x] Probar tools con un cliente MCP (stdio/HTTP) y token Staff — sin drawer
 
 ---
 
