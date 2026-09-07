@@ -144,7 +144,7 @@ Hilos (C2): `Authorization: Bearer` Staff. Introspecta `AUTH_INTROSPECT_URL` (`G
 
 Mensajes (C4): `POST /v1/conversations/:id/messages` body `{ "text" }` → UI Message Stream (OpenRouter + MCP con el mismo Bearer). `GET …/messages` lista user/assistant/tool. Clave real en `OPENROUTER_API_KEY`. Título automático = C7.
 
-Drawer Admin (C5): botón Asistente en el topbar Staff. `web/.env` → `NEXT_PUBLIC_CHAT_API_URL=http://localhost:3010`. Tras editar, `docker compose restart web`. Panel por túnel (`https://{slug}.faciliter.xyz`): `CORS_APP_DOMAIN` en `chat-api/.env` (mismo criterio que Nest) y recrear `chat-api`.
+Drawer Admin (C5/C7): botón Asistente en el topbar Staff. Título automático (editable) y Parar a mitad de respuesta. `web/.env` → `NEXT_PUBLIC_CHAT_API_URL=http://localhost:3010`. Tras editar, `docker compose restart web`. Panel por túnel (`https://{slug}.faciliter.xyz`): `CORS_APP_DOMAIN` en `chat-api/.env` (mismo criterio que Nest) y recrear `chat-api`.
 
 MCP GymBro (C3+C6): sidecar `mcp/` en Compose (`:3011`). `GET /health` (sin auth). Tools de lectura A–D (operación, reportes/débitos/devoluciones, catálogo/roles/audit, `get_help`) vía `POST /mcp` con el mismo JWT Staff. Nest sigue autorizando. README: [`mcp/README.md`](./mcp/README.md).
 

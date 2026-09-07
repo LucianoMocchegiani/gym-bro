@@ -16,6 +16,7 @@ import {
   createChatConversation,
   listChatConversations,
   listChatMessages,
+  patchChatConversation,
   streamChatTurn,
   type ChatConversation,
   type ChatMessage,
@@ -26,6 +27,7 @@ import {
   readLastConversationId,
   writeLastConversationId,
 } from '@/lib/chat/last-conversation';
+import { titleFromFirstMessage } from '@/lib/chat/title';
 
 function toBubbles(rows: ChatMessage[]): ThreadBubble[] {
   return rows
@@ -53,7 +55,7 @@ function subscribeNever(): () => void {
  * Botón del topbar + drawer del asistente. Caja y el resto siguen detrás.
  *
  * @remarks JWT Staff. Tools en una línea. Archivar = DELETE C2. Al abrir
- * retoma el último hilo. Abort, título auto y chips = C7.
+ * retoma el último hilo. Título auto + abort. Chips y tope de uso = C7 resto.
  */
 export function AssistantLauncher() {
   const { session } = useAuth();
@@ -71,15 +73,28 @@ export function AssistantLauncher() {
   const [error, setError] = useState<string | null>(null);
   const [archiveId, setArchiveId] = useState<string | null>(null);
   const [archiving, setArchiving] = useState(false);
+  const [titleDraft, setTitleDraft] = useState('');
 
   const threadRef = useRef<HTMLDivElement>(null);
   const activeIdRef = useRef<string | null>(null);
+  const abortRef = useRef<AbortController | null>(null);
 
-  const busy = streaming || listLoading || threadLoading || archiving;
+  const listBusy = listLoading || threadLoading || archiving;
 
   useEffect(() => {
     activeIdRef.current = activeId;
   }, [activeId]);
+
+  useEffect(() => {
+    const current = conversations.find((item) => item.id === activeId);
+    setTitleDraft(current?.title ?? '');
+  }, [activeId, conversations]);
+
+  useEffect(() => {
+    return () => {
+      abortRef.current?.abort();
+    };
+  }, []);
 
   useEffect(() => {
     const el = threadRef.current;
@@ -165,7 +180,12 @@ export function AssistantLauncher() {
   }
 
   function handleClose(): void {
+    abortRef.current?.abort();
     setOpen(false);
+  }
+
+  function handleStop(): void {
+    abortRef.current?.abort();
   }
 
   async function handleNew(): Promise<void> {
@@ -213,9 +233,35 @@ export function AssistantLauncher() {
     }
   }
 
+  async function commitTitle(): Promise<void> {
+    if (!activeId) {
+      return;
+    }
+    const next = titleDraft.trim();
+    const current = conversations.find((item) => item.id === activeId);
+    const existing = current?.title?.trim() ?? '';
+    if (next === existing) {
+      return;
+    }
+    try {
+      const updated = await patchChatConversation(activeId, {
+        title: next.length > 0 ? next : null,
+      });
+      setConversations((prev) =>
+        prev.map((item) => (item.id === updated.id ? updated : item)),
+      );
+    } catch (err) {
+      setError(statusMessage(err));
+      setTitleDraft(existing);
+    }
+  }
+
   async function handleSend(text: string): Promise<void> {
     setError(null);
     let conversationId = activeId;
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
     try {
       if (!conversationId) {
         const created = await createChatConversation();
@@ -227,57 +273,78 @@ export function AssistantLauncher() {
         }
       }
 
+      const id = conversationId;
+      setConversations((prev) =>
+        prev.map((item) =>
+          item.id === id && !item.title?.trim()
+            ? { ...item, title: titleFromFirstMessage(text) }
+            : item,
+        ),
+      );
+
       const userKey = `local-user-${Date.now()}`;
       const assistantKey = `local-assistant-${Date.now()}`;
       setBubbles((prev) => [...prev, { key: userKey, role: 'user', content: text }]);
       setStreaming(true);
 
-      const id = conversationId;
-      await streamChatTurn(id, text, {
-        onToolStart: (toolCallId, toolName) => {
-          setBubbles((prev) => {
-            if (prev.some((item) => item.key === toolCallId)) {
-              return prev;
-            }
-            return [
-              ...prev,
-              {
-                key: toolCallId,
-                role: 'tool',
-                content: '',
-                toolName,
-                pending: true,
-              },
-            ];
-          });
-        },
-        onToolDone: (toolCallId, toolName) => {
-          setBubbles((prev) =>
-            prev.map((item) =>
-              item.key === toolCallId
-                ? { ...item, toolName, pending: false }
-                : item,
-            ),
-          );
-        },
-        onTextDelta: (delta) => {
-          setBubbles((prev) => {
-            const idx = prev.findIndex((item) => item.key === assistantKey);
-            if (idx < 0) {
+      const outcome = await streamChatTurn(
+        id,
+        text,
+        {
+          onToolStart: (toolCallId, toolName) => {
+            setBubbles((prev) => {
+              if (prev.some((item) => item.key === toolCallId)) {
+                return prev;
+              }
               return [
                 ...prev,
-                { key: assistantKey, role: 'assistant', content: delta },
+                {
+                  key: toolCallId,
+                  role: 'tool',
+                  content: '',
+                  toolName,
+                  pending: true,
+                },
               ];
-            }
-            return prev.map((item, index) =>
-              index === idx ? { ...item, content: item.content + delta } : item,
+            });
+          },
+          onToolDone: (toolCallId, toolName) => {
+            setBubbles((prev) =>
+              prev.map((item) =>
+                item.key === toolCallId
+                  ? { ...item, toolName, pending: false }
+                  : item,
+              ),
             );
-          });
+          },
+          onTextDelta: (delta) => {
+            setBubbles((prev) => {
+              const idx = prev.findIndex((item) => item.key === assistantKey);
+              if (idx < 0) {
+                return [
+                  ...prev,
+                  { key: assistantKey, role: 'assistant', content: delta },
+                ];
+              }
+              return prev.map((item, index) =>
+                index === idx ? { ...item, content: item.content + delta } : item,
+              );
+            });
+          },
+          onStreamError: (message) => {
+            if (message.trim()) {
+              setError(message);
+            }
+          },
         },
-        onStreamError: (message) => {
-          setError(message);
-        },
-      });
+        controller.signal,
+      );
+
+      if (outcome === 'aborted') {
+        await new Promise((resolve) => {
+          window.setTimeout(resolve, 200);
+        });
+      }
 
       if (activeIdRef.current === id) {
         const rows = await listChatMessages(id);
@@ -288,6 +355,9 @@ export function AssistantLauncher() {
     } catch (err) {
       setError(statusMessage(err));
     } finally {
+      if (abortRef.current === controller) {
+        abortRef.current = null;
+      }
       setStreaming(false);
     }
   }
@@ -330,7 +400,7 @@ export function AssistantLauncher() {
             <ConversationList
               items={conversations}
               activeId={activeId}
-              disabled={busy}
+              disabled={listBusy || streaming}
               onSelect={(id) => {
                 void selectConversation(id);
               }}
@@ -340,6 +410,31 @@ export function AssistantLauncher() {
               onArchive={setArchiveId}
             />
             <div className="assistant-main">
+              {activeId ? (
+                <input
+                  className="assistant-thread-title"
+                  value={titleDraft}
+                  onChange={(event) => setTitleDraft(event.target.value)}
+                  onBlur={() => {
+                    void commitTitle();
+                  }}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Enter') {
+                      event.preventDefault();
+                      (event.target as HTMLInputElement).blur();
+                    }
+                    if (event.key === 'Escape') {
+                      const current = conversations.find((item) => item.id === activeId);
+                      setTitleDraft(current?.title ?? '');
+                      (event.target as HTMLInputElement).blur();
+                    }
+                  }}
+                  disabled={listBusy || streaming}
+                  maxLength={200}
+                  aria-label="Título de la conversación"
+                  placeholder="Sin título"
+                />
+              ) : null}
               <div className="assistant-thread-wrap" ref={threadRef}>
                 {listLoading || threadLoading ? (
                   <p className="muted">Cargando…</p>
@@ -347,7 +442,12 @@ export function AssistantLauncher() {
                   <MessageThread items={bubbles} emptyHint={emptyHint} />
                 )}
               </div>
-              <Composer disabled={busy} onSend={(text) => void handleSend(text)} />
+              <Composer
+                disabled={listBusy}
+                streaming={streaming}
+                onSend={(text) => void handleSend(text)}
+                onStop={handleStop}
+              />
               <p className="muted small assistant-disclaimer">
                 Puede equivocarse; no cobra solo.
               </p>

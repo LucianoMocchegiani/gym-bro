@@ -2,6 +2,7 @@ import type { Conversation } from '@prisma/client';
 import { HTTPException } from 'hono/http-exception';
 import { prisma } from '../prisma.js';
 import type { Principal } from '../auth/principal.js';
+import { titleFromFirstMessage } from './title.js';
 
 const TITLE_MAX = 200;
 const LIST_TAKE = 100;
@@ -112,6 +113,23 @@ export async function updateConversation(
     throw new HTTPException(404, { message: 'Conversation not found' });
   }
   return getConversation(principal, id);
+}
+
+/**
+ * Pone título al primer mensaje si el hilo todavía no tiene uno.
+ *
+ * @returns El título aplicado, o null si ya había título.
+ */
+export async function applyAutomaticTitle(
+  conversationId: string,
+  userText: string,
+): Promise<string | null> {
+  const title = titleFromFirstMessage(userText);
+  const result = await prisma.conversation.updateMany({
+    where: { id: conversationId, title: null },
+    data: { title },
+  });
+  return result.count > 0 ? title : null;
 }
 
 /**

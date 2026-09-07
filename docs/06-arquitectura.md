@@ -392,7 +392,7 @@ Stack principal cerrado en §0. Queda por cerrar al scaffold:
 | ORM (Prisma vs Drizzle) | **Prisma 6** (Drizzle descartado; Prisma 7 diferido por ESM/Nest) |
 | Runtime Node | **24 Active LTS** (`node:24-alpine` en Docker) |
 | Hosting (Railway / Fly / VPS / AWS) | Pendiente (prod) |
-| Docker Compose local (postgres, redis, api, web, chat-api, mcp) | Hecho (dev; chat-api C1–C4 stream; mcp C3+C6 tools A–D; drawer Admin C5) |
+| Docker Compose local (postgres, redis, api, web, chat-api, mcp) | Hecho (dev; chat-api C1–C4 stream + C7 abort/título; mcp C3+C6 tools A–D; drawer Admin C5) |
 | CI mínimo (GitHub Actions: lint + build api/web) | Hecho (`.github/workflows/ci.yml`) |
 | Monorepo tool (pnpm workspaces / Turborepo / separado) | **Separado** — sin package.json raíz; cada app se instala sola |
 | Proveedor exacto de email | Pendiente |

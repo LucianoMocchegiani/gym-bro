@@ -158,6 +158,16 @@ Leyenda resultado: `P` pass · `F` fail · `B` bloqueado · `-` no aplica
 
 ---
 
+## Asistente C7 parcial (abort, título, errores LLM)
+
+| # | Caso | Esperado | RN/CU | R |
+|---|------|----------|-------|---|
+| C7-1 | Nuevo chat + primer mensaje | Sidebar deja de decir “Sin título”; recorta el texto. Se puede editar y Enter/blur guarda | C7 | |
+| C7-2 | Parar a mitad de stream | Enviar → Parar; queda lo generado (texto/tools). Se puede seguir el hilo | C7 | |
+| C7-3 | OpenRouter sin crédito / clave mala | Banner claro (crédito o clave). No se pierde el mensaje del staff | C7 | |
+
+---
+
 ## Rutinas
 
 | # | Caso | Esperado | RN/CU | R |

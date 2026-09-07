@@ -114,8 +114,8 @@ Une C2 + C3. `chat-api` sigue sin conocer afiliados.
 
 ## C7 — Cierre de este corte
 
-- [ ] Abort de generación
-- [ ] Título automático (editable)
+- [x] Abort de generación
+- [x] Título automático (editable)
 - [ ] Chips `links` → `router.push`
 - [ ] Tope de uso por staff (mensajes/min o tokens)
 - [ ] Smoke: un gym, dos staff, profesor sin caja, comparación dos períodos

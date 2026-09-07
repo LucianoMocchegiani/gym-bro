@@ -73,7 +73,7 @@ export async function insertAssistantMessage(
   await touchConversation(conversationId);
 }
 
-async function touchConversation(conversationId: string): Promise<void> {
+export async function touchConversation(conversationId: string): Promise<void> {
   await prisma.conversation.update({
     where: { id: conversationId },
     data: { updatedAt: new Date() },

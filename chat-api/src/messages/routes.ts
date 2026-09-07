@@ -57,5 +57,5 @@ messageRoutes.post('/', async (c) => {
     throw new HTTPException(409, { message: 'Conversation archived' });
   }
   const text = readText(await readJsonBody(c));
-  return streamAgentTurn(id, c.get('accessToken'), text);
+  return streamAgentTurn(id, c.get('accessToken'), text, c.req.raw.signal);
 });

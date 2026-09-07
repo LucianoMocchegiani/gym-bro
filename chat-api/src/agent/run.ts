@@ -1,6 +1,8 @@
 import { streamText } from 'ai';
 import { HTTPException } from 'hono/http-exception';
 import { config } from '../config.js';
+import { applyAutomaticTitle } from '../conversations/service.js';
+import { isAbortError, staffFacingLlmError } from '../llm/errors.js';
 import { chatModel } from '../llm/openrouter.js';
 import { openMcpClient } from '../mcp/client.js';
 import {
@@ -9,6 +11,7 @@ import {
   insertUserMessage,
   listMessages,
   toJsonValue,
+  touchConversation,
 } from '../messages/persist.js';
 import { buildModelMessages, shrinkToolContent } from './window.js';
 
@@ -40,6 +43,17 @@ function toolOutputOf(item: LooseTool): unknown {
   return item.output ?? item.result;
 }
 
+function assistantTextOf(text: string | undefined, steps: LooseStep[]): string {
+  if (text && text.trim()) {
+    return text.trim();
+  }
+  return steps
+    .map((step) => (typeof step.text === 'string' ? step.text.trim() : ''))
+    .filter(Boolean)
+    .join('\n')
+    .trim();
+}
+
 async function persistAgentTurn(
   conversationId: string,
   text: string,
@@ -63,25 +77,34 @@ async function persistAgentTurn(
       });
     }
   }
-  await insertAssistantMessage(conversationId, text.trim());
+  const trimmed = text.trim();
+  if (trimmed.length > 0) {
+    await insertAssistantMessage(conversationId, trimmed);
+  } else {
+    await touchConversation(conversationId);
+  }
 }
 
 /**
  * Corre un turno: MCP + OpenRouter + stream UI. Persiste user, tools y assistant.
  *
+ * @remarks Abort del cliente (`AbortSignal`) corta el LLM y guarda lo ya generado.
  * @throws {HTTPException} 502 si MCP u OpenRouter no arrancan.
  */
 export async function streamAgentTurn(
   conversationId: string,
   accessToken: string,
   userText: string,
+  abortSignal?: AbortSignal,
 ): Promise<Response> {
   let mcp;
   try {
     mcp = await openMcpClient(accessToken);
   } catch (error) {
     console.error(error);
-    throw new HTTPException(502, { message: 'MCP unavailable' });
+    throw new HTTPException(502, {
+      message: 'El asistente no puede consultar los datos del gym.',
+    });
   }
 
   let tools;
@@ -90,10 +113,13 @@ export async function streamAgentTurn(
   } catch (error) {
     await mcp.close().catch(() => undefined);
     console.error(error);
-    throw new HTTPException(502, { message: 'MCP tools/list failed' });
+    throw new HTTPException(502, {
+      message: 'El asistente no puede consultar los datos del gym.',
+    });
   }
 
   await insertUserMessage(conversationId, userText);
+  await applyAutomaticTitle(conversationId, userText);
   const history = await listMessages(conversationId);
   const messages = buildModelMessages(history);
 
@@ -106,31 +132,58 @@ export async function streamAgentTurn(
     await mcp.close().catch(() => undefined);
   };
 
+  let saved = false;
+  const acc: LooseStep[] = [];
+  const saveOnce = async (text: string | undefined, steps: unknown) => {
+    if (saved) {
+      await closeMcp();
+      return;
+    }
+    saved = true;
+    const loose = Array.isArray(steps) ? (steps as LooseStep[]) : acc;
+    try {
+      await persistAgentTurn(conversationId, assistantTextOf(text, loose), loose);
+    } catch (error) {
+      console.error(error);
+    }
+    await closeMcp();
+  };
+
   try {
     const result = streamText({
       model: chatModel(),
       system: config.chatSystemPrompt,
       messages,
       tools,
+      abortSignal,
       stopWhen: ({ steps }) => steps.length >= config.maxToolSteps,
+      onStepFinish: (step) => {
+        acc.push(step as LooseStep);
+      },
       onFinish: async ({ text, steps }) => {
-        try {
-          await persistAgentTurn(conversationId, text, steps as LooseStep[]);
-        } catch (error) {
-          console.error(error);
-        }
-        await closeMcp();
+        await saveOnce(text, steps);
+      },
+      onAbort: async ({ steps }) => {
+        const fromEvent = Array.isArray(steps) ? (steps as LooseStep[]) : [];
+        await saveOnce(undefined, fromEvent.length > 0 ? fromEvent : acc);
       },
       onError: async (event) => {
-        console.error(event);
-        await closeMcp();
+        if (!isAbortError(event)) {
+          console.error(event);
+        }
+        await saveOnce(undefined, acc);
       },
     });
 
-    return result.toUIMessageStreamResponse();
+    return result.toUIMessageStreamResponse({
+      onError: (error) => staffFacingLlmError(error) || 'El proveedor de IA no está disponible. Reintentá en un momento.',
+    });
   } catch (error) {
     await closeMcp();
+    if (isAbortError(error)) {
+      throw error;
+    }
     console.error(error);
-    throw new HTTPException(502, { message: 'LLM unavailable' });
+    throw new HTTPException(502, { message: staffFacingLlmError(error) });
   }
 }

@@ -69,8 +69,13 @@ function errorMessage(status: number, parsed: unknown, fallback: string): string
   if (status === 401) {
     return 'Sesión vencida. Volvé a entrar.';
   }
+  if (status === 402) {
+    return 'No tienes crédito suficiente para usar el asistente.';
+  }
   if (status === 502) {
-    return 'El asistente no está disponible.';
+    return fallback.includes('OpenRouter') || fallback.includes('proveedor')
+      ? fallback
+      : 'El asistente no está disponible.';
   }
   return fallback;
 }
@@ -133,7 +138,7 @@ export async function listChatConversations(): Promise<ChatConversation[]> {
 }
 
 /**
- * Alta de hilo vacío. El título automático es C7.
+ * Alta de hilo vacío. El título lo pone el primer mensaje (C7).
  */
 export async function createChatConversation(): Promise<ChatConversation> {
   return chatJson<ChatConversation>('/v1/conversations', {
@@ -155,6 +160,20 @@ export async function archiveChatConversation(
 }
 
 /**
+ * Edita el título del hilo (`PATCH`). Cadena vacía = sin título.
+ */
+export async function patchChatConversation(
+  id: string,
+  patch: { title: string | null },
+): Promise<ChatConversation> {
+  return chatJson<ChatConversation>(`/v1/conversations/${id}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(patch),
+  });
+}
+
+/**
  * Historial persistido (user / assistant / tool).
  */
 export async function listChatMessages(id: string): Promise<ChatMessage[]> {
@@ -171,38 +190,55 @@ export type ChatStreamHandlers = {
   onStreamError: (message: string) => void;
 };
 
+export function isChatAbortError(error: unknown): boolean {
+  return (
+    (error instanceof DOMException && error.name === 'AbortError') ||
+    (error instanceof Error && error.name === 'AbortError')
+  );
+}
+
 /**
  * POST turno y consume UI Message Stream.
  *
- * @remarks No aborta (C7). El composer se deshabilita mientras corre.
+ * @returns `'aborted'` si el staff cortó con Parar.
  */
 export async function streamChatTurn(
   conversationId: string,
   text: string,
   handlers: ChatStreamHandlers,
-): Promise<void> {
-  const res = await chatFetch(`/v1/conversations/${conversationId}/messages`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Accept: 'text/event-stream',
-    },
-    body: JSON.stringify({ text }),
-  });
+  signal?: AbortSignal,
+): Promise<'ok' | 'aborted'> {
+  try {
+    const res = await chatFetch(`/v1/conversations/${conversationId}/messages`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'text/event-stream',
+      },
+      body: JSON.stringify({ text }),
+      signal,
+    });
 
-  if (!res.ok) {
-    const parsed = await parseJsonBody(res);
-    throw new ChatClientError(
-      res.status,
-      errorMessage(res.status, parsed, `Error HTTP ${res.status}`),
-    );
+    if (!res.ok) {
+      const parsed = await parseJsonBody(res);
+      throw new ChatClientError(
+        res.status,
+        errorMessage(res.status, parsed, `Error HTTP ${res.status}`),
+      );
+    }
+
+    if (!res.body) {
+      throw new ChatClientError(502, 'El asistente no está disponible.');
+    }
+
+    await readUiMessageStream(res.body, handlers);
+    return signal?.aborted ? 'aborted' : 'ok';
+  } catch (error) {
+    if (isChatAbortError(error) || signal?.aborted) {
+      return 'aborted';
+    }
+    throw error;
   }
-
-  if (!res.body) {
-    throw new ChatClientError(502, 'El asistente no está disponible.');
-  }
-
-  await readUiMessageStream(res.body, handlers);
 }
 
 async function readUiMessageStream(
@@ -287,7 +323,7 @@ function applyStreamEvent(event: unknown, handlers: ChatStreamHandlers): void {
     const message =
       typeof rec.errorText === 'string' && rec.errorText.trim()
         ? rec.errorText
-        : 'El asistente no está disponible.';
+        : 'El proveedor de IA no está disponible. Reintentá en un momento.';
     handlers.onStreamError(message);
   }
 }
