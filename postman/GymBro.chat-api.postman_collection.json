@@ -1,0 +1,163 @@
+{
+  "info": {
+    "_postman_id": "gymbro-chat-api-collection",
+    "name": "GymBro chat-api",
+    "description": "Colección del servicio **chat-api** (`:3010`), no de Nest.\n\n**Setup**\n1. Importá esta colección **y** `GymBro.api.postman_collection.json` + `GymBro.local.postman_environment.json`.\n2. Environment **GymBro Local** (el `accessToken` lo llena el Login Staff de la colección API).\n3. `chatApiUrl` default: `http://localhost:3010`.\n\nSin token: 401. JWT Member/Super: 403. DELETE archiva el hilo.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{accessToken}}",
+        "type": "string"
+      }
+    ]
+  },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "if (!pm.environment.get('chatApiUrl') && !pm.collectionVariables.get('chatApiUrl')) {",
+          "  pm.collectionVariables.set('chatApiUrl', 'http://localhost:3010');",
+          "}"
+        ]
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "chatApiUrl",
+      "value": "http://localhost:3010"
+    },
+    {
+      "key": "createdConversationId",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "GET health",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('status 200', () => pm.response.to.have.status(200));",
+              "const body = pm.response.json();",
+              "pm.test('database up', () => pm.expect(body.database).to.eql('up'));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "auth": { "type": "noauth" },
+        "method": "GET",
+        "header": [],
+        "url": "{{chatApiUrl}}/health"
+      }
+    },
+    {
+      "name": "Staff GET conversations",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('status 200', () => pm.response.to.have.status(200));",
+              "pm.test('items array', () => pm.expect(pm.response.json().items).to.be.an('array'));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{chatApiUrl}}/v1/conversations",
+          "host": ["{{chatApiUrl}}"],
+          "path": ["v1", "conversations"],
+          "query": [
+            {
+              "key": "archived",
+              "value": "true",
+              "disabled": true
+            }
+          ]
+        },
+        "description": "Lista hilos del staff. archived=true → solo archivados."
+      }
+    },
+    {
+      "name": "Staff POST conversation",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('status 201', () => pm.response.to.have.status(201));",
+              "const j = pm.response.json();",
+              "if (j.id) {",
+              "  pm.collectionVariables.set('createdConversationId', j.id);",
+              "}"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"title\": \"Prueba C2\"\n}"
+        },
+        "url": "{{chatApiUrl}}/v1/conversations"
+      }
+    },
+    {
+      "name": "Staff GET conversation",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{chatApiUrl}}/v1/conversations/{{createdConversationId}}"
+      }
+    },
+    {
+      "name": "Staff PATCH conversation",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"title\": \"Hilo renombrado\"\n}"
+        },
+        "url": "{{chatApiUrl}}/v1/conversations/{{createdConversationId}}"
+      }
+    },
+    {
+      "name": "Staff DELETE conversation (archive)",
+      "request": {
+        "method": "DELETE",
+        "header": [],
+        "url": "{{chatApiUrl}}/v1/conversations/{{createdConversationId}}",
+        "description": "Archiva (archivedAt). El hilo deja de listarse en GET sin archived=true."
+      }
+    }
+  ]
+}

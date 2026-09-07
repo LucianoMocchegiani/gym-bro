@@ -20,7 +20,7 @@ api/                 # NestJS — puerto 3001 — GET /api/health
 web/                 # Next.js — puerto 3000
 chat-api/            # Hono — puerto 3010 — GET /health (asistente, post-MVP)
 mobile/              # Flutter (fuera de Docker)
-postman/             # Colección + environment de prueba
+postman/             # Colección Nest + colección chat-api + environment
 docker-compose.yml   # postgres + redis + api + web + chat-api (dev)
 docker/              # pgAdmin + init Postgres (database `chat`)
 ssi-quark/           # README redirect → identity_core_dart/
@@ -57,7 +57,8 @@ Servicios:
 |----------|----------------|
 | Web | http://demo.localhost:3002 — Admin Staff (slug); http://localhost:3002/super — Super Admin |
 | API health | http://localhost:3001/api/health |
-| chat-api health | http://localhost:3010/health (DB `chat`; C1, sin hilos todavía) |
+| chat-api health | http://localhost:3010/health |
+| chat-api hilos | `GET/POST /v1/conversations` (JWT Staff; C2) |
 | Kuatia | URLs públicas del producto (ver `KUATIA_*_BASE_URL` en `api/.env`) |
 | Postman | [`postman/`](./postman/) |
 | Postgres | `localhost:5433` → contenedor `5432` (user/pass `gymbro`; databases `gymbro` y `chat`) |
@@ -133,6 +134,8 @@ docker compose exec chat-api npx prisma migrate deploy
 
 Health: `GET http://localhost:3010/health` → `{ status, database, checkedAt }` (`200` ok / `503` DB down).
 
+Hilos (C2): `Authorization: Bearer` Staff. Introspecta `AUTH_INTROSPECT_URL` (`GET /api/auth/me`). `GET/POST /v1/conversations`, `GET/PATCH/DELETE /v1/conversations/:id` (DELETE archiva). Member/Super → 403.
+
 ### Auth (JWT + refresh)
 
 Seed y credenciales: [docs/13-setup-db-desde-cero.md](./docs/13-setup-db-desde-cero.md) · [docs/credenciales-demo.md](./docs/credenciales-demo.md).
@@ -151,7 +154,7 @@ Rutas de negocio: `@RequireTenantAuth()` + `@CurrentTenant()` (tenant solo del J
 
 Super Admin — tenants: `POST /api/tenants` requiere `ownerEmail` / `ownerPassword` (+ `ownerName` opcional); crea branch, roles y owner con rol Admin. Roles del gym: `GET|POST|PATCH /api/roles` (Staff, `roles.write`). Asignar roles: `PUT /api/staff/:staffId/roles`. Super lista staff con `GET /api/tenants/:tenantId/staff` e impersona. Afiliados: `GET|POST|PATCH /api/members` (Staff: `members.read` / `members.write`; status con `members.deactivate`); estado de cuenta `GET /api/members/:memberId/account` y `GET /api/me/account`. Sesiones: `GET|POST|PATCH /api/sessions`, `PATCH /api/sessions/:id/capacity` (ampliar cupo, CU-SER-005) y reglas semanales `GET|POST|PATCH /api/session-recurrence-rules` (`sessions.write`). Reservas con crédito: Member `POST|GET /api/me/reservations`, `PATCH /api/me/reservations/:id/status` (cancelar en ventana); Staff `POST /api/members/:memberId/reservations` (crédito), `PATCH /api/reservations/:id/status` (`reservations.write`). Lista de espera: Member `POST|GET /api/me/waitlist`, `PATCH .../status`; Staff `POST /api/members/:id/waitlist`, `GET /api/sessions/:id/waitlist` (`reservations.write`; promoción AUTO al cancelar/ampliar). Settings gym: `GET|PATCH /api/tenant-settings` (`tenant.settings.read/write`; `reservationCancellationHours`, `waitlistMode`, `allowLateSessionEntry`). Caja del día: `GET /api/cash-register/day` y arqueo `POST /api/cash-register/day/reconcile` (`cashier.operate`; timezone BA). Cuenta MP: `GET|PUT|DELETE /api/mercadopago/account` + `POST .../test` (`mp.connect`; token cifrado). Checkout MP: Member `POST /api/me/transaction-items/mp/cart`; Staff `POST /api/members/:id/transaction-items/mp/cart` (`members.write`; `items[]` PACK|DROP_IN → 1 Preference). Caja cash: `POST .../cash/cart`. Webhook `POST /api/webhooks/payment?tenantId=` (+ `/simulate` en stub). Devoluciones: Member `POST /api/me/transaction-items/:id/refund-requests`; Staff `POST /api/transactions/:id/refunds` (lote) y `POST /api/transaction-items/:id/refunds` (`transaction_items.refund`). Acceso puerta OID4VP: Staff `POST /api/access/oid4vp/request` + `GET /api/access/oid4vp/session/:id` + `GET /api/access-attempts` (`access.verify`); pase manual `POST /api/members/:id/access/manual-pass` (`access.manual_pass`). Settings: tolerancia deuda y multi-ingreso en `GET|PATCH /api/tenant-settings`. Comprobantes: Member `GET /api/me/receipts`; Staff `GET /api/transactions/:transactionId/receipt` (`members.read`). Servicios: `GET|POST|PATCH /api/services` (Staff, `catalog.write`). Packs: `GET|POST|PATCH /api/packs` … Contrataciones: Staff `POST /api/members/:memberId/contracts` (`members.write`, pago stub / re-oferta); `PATCH /api/contracts/:contractId/status` → `CANCELLED` (pierde acceso/créditos); Member `GET /api/me/contracts`. Auditoría: `GET /api/audit-events`.
 
-Probar con Postman: importá [`postman/`](./postman/) (colección + environment local). Los logins guardan `accessToken` / `refreshToken` vía scripts.
+Probar con Postman: importá [`postman/`](./postman/) (colección Nest + colección `chat-api` + environment local). Los logins de **GymBro API** guardan `accessToken` / `refreshToken`; **GymBro chat-api** reusa ese token.
 
 > Nota: Postgres del Compose se publica en el host como `localhost:5433`. Desde el host, Prisma CLI usa ese puerto; dentro de Docker la API sigue con `postgres:5432`.
 

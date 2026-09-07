@@ -2,7 +2,7 @@
 
 ## Importar (importante)
 
-1. **Import** → `GymBro.api.postman_collection.json` + `GymBro.local.postman_environment.json`
+1. **Import** → `GymBro.api.postman_collection.json` + `GymBro.local.postman_environment.json`. chat-api: `GymBro.chat-api.postman_collection.json` (colección aparte).
 2. Arriba a la derecha elegí environment **GymBro Local** (si no, `{{accessToken}}` no se reemplaza).
 3. Si ya habías importado antes: borrá la colección/env viejos e importá de nuevo, o Sync variables del environment.
 
@@ -78,6 +78,14 @@ Carpeta **Upload**: `POST /upload` (staff auth). Multipart form-data con campo `
 Carpeta **Contracts**: Staff **POST contract MONTHLY** (`startsAt` opcional) y **ONE_TIME** (`startsAt`/`endsAt`); apilado RN-CON; **re-POST misma `idempotencyKey`** = re-oferta. Variables `createdMonthlyPackId` / `createdOneTimePackId`. Offers: list + accept + fail member. Lectura staff: `GET /members/:id/account`.
 
 Carpeta **Access OID4VP**: Staff `POST /access/oid4vp/request` (pestaña **Visualize** → QR) + `GET /access/oid4vp/session/:id` (poll → evaluate). `GET /members/:id/access-preview` (simula ingreso **sin** historial). Pase manual + `GET /access-attempts`. Stubs de vínculo retirados.
+
+## chat-api (colección aparte)
+
+Archivo [`GymBro.chat-api.postman_collection.json`](./GymBro.chat-api.postman_collection.json). No va mezclada con Nest.
+
+1. Importá las **dos** colecciones + el environment **GymBro Local**.
+2. En **GymBro API** → Auth → Login Staff (llena `accessToken` del environment).
+3. En **GymBro chat-api**: health + CRUD `/v1/conversations` (`{{chatApiUrl}}` = `http://localhost:3010`). DELETE archiva. Variable de colección `createdConversationId`.
 
 ## Multi-tenant
 

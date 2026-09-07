@@ -56,11 +56,11 @@ Cero `GYMBRO_*`. Imagen reutilizable.
 
 Sin modelo todavía. Se puede probar con curl + token Staff.
 
-- [ ] Introspect: `GET AUTH_INTROSPECT_URL` + cache corto
-- [ ] Exigir `AUTH_REQUIRED_PROFILE` (GymBro: `STAFF`)
-- [ ] `GET/POST /v1/conversations` (lista/alta; filtro tenant+user)
-- [ ] `GET/PATCH/DELETE /v1/conversations/:id` (título, archivar)
-- [ ] CORS hacia el Admin (`demo.localhost:3002`, etc.)
+- [x] Introspect: `GET AUTH_INTROSPECT_URL` + cache corto
+- [x] Exigir `AUTH_REQUIRED_PROFILE` (GymBro: `STAFF`)
+- [x] `GET/POST /v1/conversations` (lista/alta; filtro tenant+user)
+- [x] `GET/PATCH/DELETE /v1/conversations/:id` (título, archivar)
+- [x] CORS hacia el Admin (`demo.localhost:3002`, etc.)
 
 ---
 

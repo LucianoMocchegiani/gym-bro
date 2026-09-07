@@ -1,15 +1,19 @@
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
+import { HTTPException } from 'hono/http-exception';
+import { requirePrincipal } from './auth/middleware.js';
+import type { AppEnv } from './auth/principal.js';
 import { config } from './config.js';
+import { conversationRoutes } from './conversations/routes.js';
 import { prisma } from './prisma.js';
 
 type DatabaseStatus = 'up' | 'down';
 
 /**
- * App HTTP del chat-api. C1: CORS + `GET /health`. Rutas de hilos = C2.
+ * App HTTP del chat-api: CORS, health público, `/v1` autenticado.
  */
-export function createApp(): Hono {
-  const app = new Hono();
+export function createApp(): Hono<AppEnv> {
+  const app = new Hono<AppEnv>();
 
   app.use(
     '*',
@@ -19,6 +23,15 @@ export function createApp(): Hono {
       allowMethods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'],
     }),
   );
+
+  app.onError((err, c) => {
+    if (err instanceof HTTPException) {
+      const status = err.status as 400 | 401 | 403 | 404 | 502 | 500;
+      return c.json({ error: err.message }, status);
+    }
+    console.error(err);
+    return c.json({ error: 'Internal Server Error' }, 500);
+  });
 
   /**
    * Probe de proceso + ping a la database `chat`.
@@ -41,6 +54,11 @@ export function createApp(): Hono {
       database === 'up' ? 200 : 503,
     );
   });
+
+  const v1 = new Hono<AppEnv>();
+  v1.use('*', requirePrincipal);
+  v1.route('/conversations', conversationRoutes);
+  app.route('/v1', v1);
 
   return app;
 }
