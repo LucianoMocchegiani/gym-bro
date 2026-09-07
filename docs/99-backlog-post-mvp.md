@@ -7,7 +7,8 @@
 
 E7 Rutinas, E8 Notificaciones y MP live siguen en el [roadmap MVP](./11-roadmap-mvp.md). No se copian acá.
 
-**En diseño / implementación (docs + código, QA pendiente):** débito automático MONTHLY — [pagos.md](./99-backlog-post-mvp/pagos.md).
+**En diseño / implementación (docs + código, QA pendiente):** débito automático MONTHLY — [pagos.md](./99-backlog-post-mvp/pagos.md).  
+**Diseño cerrado (sin código):** asistente chat + MCP — [16-chat-mcp-diseno.md](./16-chat-mcp-diseno.md) · tareas [17-roadmap-chat-mcp.md](./17-roadmap-chat-mcp.md).
 
 ---
 

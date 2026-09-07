@@ -5,6 +5,7 @@
 | Ítem | Estado | Notas |
 |------|--------|--------|
 | Multi-sede en UX Admin | Pendiente | Filtro sede en sesiones, afiliados, reportes. Modelo S2 ya existe. Ver también [sesiones-packs.md](./sesiones-packs.md) |
+| Asistente chat (MCP) | Diseño cerrado | Roadmap de tareas: [17-roadmap-chat-mcp.md](../17-roadmap-chat-mcp.md). Diseño: [16-chat-mcp-diseno.md](../16-chat-mcp-diseno.md) |
 
 Rutinas y plantillas de notificación Admin: [roadmap E7/E8](../11-roadmap-mvp.md).
 

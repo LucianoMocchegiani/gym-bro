@@ -45,6 +45,46 @@ export type AccessReasonCode =
   (typeof ACCESS_REASON)[keyof typeof ACCESS_REASON];
 
 /**
+ * Texto corto (es-AR) para UI / MCP. No sustituye el `reasonCode` estable.
+ */
+export const ACCESS_REASON_LABEL: Record<AccessReasonCode, string> = {
+  [ACCESS_REASON.okAccesoLibre]: 'Puede entrar: pack de acceso libre vigente.',
+  [ACCESS_REASON.okReserva]: 'Puede entrar: tiene reserva en ventana.',
+  [ACCESS_REASON.okDeudaTolerancia]:
+    'Puede entrar: pack vencido dentro de la tolerancia de deuda.',
+  [ACCESS_REASON.okStaff]: 'Puede entrar: staff activo (molinete).',
+  [ACCESS_REASON.credencialInvalida]: 'No puede entrar: credencial inválida.',
+  [ACCESS_REASON.tenantMismatch]: 'No puede entrar: gym no coincide.',
+  [ACCESS_REASON.tenantSuspendido]: 'No puede entrar: gym suspendido.',
+  [ACCESS_REASON.afiliadoInactivo]: 'No puede entrar: afiliado inactivo.',
+  [ACCESS_REASON.staffInactivo]: 'No puede entrar: staff inactivo.',
+  [ACCESS_REASON.sinDerecho]: 'No puede entrar: sin pack ni reserva.',
+  [ACCESS_REASON.deudaExcedida]: 'No puede entrar: deuda fuera de tolerancia.',
+  [ACCESS_REASON.multiIngresoExcedido]:
+    'No puede entrar: ya alcanzó el tope de ingresos del día.',
+  [ACCESS_REASON.payloadInvalido]: 'No puede entrar: payload inválido.',
+  [ACCESS_REASON.okPaseManual]: 'Ingreso por pase manual.',
+};
+
+/**
+ * Resultado de `GET /members/:id/access-preview`.
+ *
+ * @remarks Mismas RN-ACC-004..007 que la puerta. No hay fila en
+ * `access_attempts` ni `checked_in_at`. `overdueDays` se calcula pero
+ * no incrementa el contador de multi-ingreso.
+ */
+export type AccessPreviewResult = {
+  allowed: boolean;
+  reasonCode: AccessReasonCode;
+  reasonLabel: string;
+  memberId: string;
+  reservationId: string | null;
+  sessionId: string | null;
+  overdueDays: number;
+  debtToleranceDays: number;
+};
+
+/**
  * Detalle de un intento de ingreso.
  */
 export type AccessAttemptDetail = {

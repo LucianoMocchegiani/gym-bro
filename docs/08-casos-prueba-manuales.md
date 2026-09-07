@@ -104,6 +104,7 @@ Leyenda resultado: `P` pass · `F` fail · `B` bloqueado · `-` no aplica
 | X4 | Multi-ingreso deshabilitado | Segundo ingreso deny | RN-ACC-009 | |
 | X5 | Credencial revocada | Deny | CU-AFI-003/006 | |
 | X6 | Historial muestra motivos | Lista ok/deny | CU-ACC-005 | |
+| X13 | GET access-preview (allow/deny) | 200 + `reasonCode`; **sin** fila nueva en historial | C0 chat/MCP | |
 | X7 | Ingreso tardío si política ON | Paga/crédito + entra | CU-RES-006 | |
 | X8 | Renovar MONTHLY a tiempo | `startsAt` = día después de `endsAt` previo | RN-CON-001 | |
 | X9 | Renovar tras hueco sin ingresos | `startsAt` ≈ día de pago | RN-CON-001 | |

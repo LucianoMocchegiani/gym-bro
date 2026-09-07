@@ -812,7 +812,7 @@ Intentos de ingreso (CU-ACC-001 / RN-ACC-007) y marca de presente (RN-RES-007).
 
 Reservas: `checked_in_at` timestamptz nullable (primera allow asociada).
 
-API: Staff `POST /access/oid4vp/request`, `GET /access/oid4vp/session/:id`, `GET /access-attempts` (`access.verify`); `POST /members/:id/access/manual-pass` (`access.manual_pass`).
+API: Staff `POST /access/oid4vp/request`, `GET /access/oid4vp/session/:id`, `GET /access-attempts`, `GET /members/:id/access-preview` (`access.verify`; preview **sin** persistir intento); `POST /members/:id/access/manual-pass` (`access.manual_pass`).
 
 ### 4.16 `contracts`
 

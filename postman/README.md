@@ -77,7 +77,7 @@ Carpeta **Upload**: `POST /upload` (staff auth). Multipart form-data con campo `
 
 Carpeta **Contracts**: Staff **POST contract MONTHLY** (`startsAt` opcional) y **ONE_TIME** (`startsAt`/`endsAt`); apilado RN-CON; **re-POST misma `idempotencyKey`** = re-oferta. Variables `createdMonthlyPackId` / `createdOneTimePackId`. Offers: list + accept + fail member. Lectura staff: `GET /members/:id/account`.
 
-Carpeta **Access OID4VP**: Staff `POST /access/oid4vp/request` (pestaña **Visualize** → QR) + `GET /access/oid4vp/session/:id` (poll → evaluate). Pase manual + `GET /access-attempts`. Stubs de vínculo retirados.
+Carpeta **Access OID4VP**: Staff `POST /access/oid4vp/request` (pestaña **Visualize** → QR) + `GET /access/oid4vp/session/:id` (poll → evaluate). `GET /members/:id/access-preview` (simula ingreso **sin** historial). Pase manual + `GET /access-attempts`. Stubs de vínculo retirados.
 
 ## Multi-tenant
 

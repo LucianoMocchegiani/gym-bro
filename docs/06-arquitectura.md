@@ -181,14 +181,15 @@ Diseño: [12-acceso-quark-oid4-diseno.md](./12-acceso-quark-oid4-diseno.md). Doc
 ### 6.3 Evaluación de ingreso (dominio puro)
 
 ```text
-memberId (desde VC OID4VP o pase manual)
+memberId (desde VC OID4VP, pase manual o GET access-preview)
   → load Afiliado + Contrataciones + Reservas + Config
   → decide Allow/Deny + reasonCode
-  → persist IntentoIngreso (access_attempts)
-  → maybe mark asistencia sesión (reservations.checked_in_at)
+  → [puerta] persist IntentoIngreso (access_attempts)
+  → [puerta] maybe mark asistencia sesión (reservations.checked_in_at)
+  → [preview] devolver decisión; no persistir
 ```
 
-Implementado: `POST /access/oid4vp/request` + `GET /access/oid4vp/session/:id` (Staff) y pase manual. Deuda = días calendario (BA) desde `endsAt` del último contrato libre; tolerancia vía `debtToleranceDays` (`ok_deuda_tolerancia` / `deuda_excedida`).
+Implementado: `POST /access/oid4vp/request` + `GET /access/oid4vp/session/:id` (Staff), `GET /members/:id/access-preview` (misma decisión, sin persistir) y pase manual. Deuda = días calendario (BA) desde `endsAt` del último contrato libre; tolerancia vía `debtToleranceDays` (`ok_deuda_tolerancia` / `deuda_excedida`).
 
 ### 6.4 Modos de escaneo
 
@@ -326,7 +327,7 @@ Prefijo sugerido: `/api/v1`.
 | Catálogo | `/services`, `/packs`, `/sessions`, `/recurrence-rules` |
 | Reservas | `/sessions/:id/reservations`, waitlist |
 | Billing | cart MP `/me|members/:id/transaction-items/mp/cart`, cash cart Staff, webhook `/webhooks/payment` |
-| Access | `/access/oid4vp/request`, `/access/oid4vp/session/:id`, `/access-attempts`, manual-pass |
+| Access | `/access/oid4vp/request`, `/access/oid4vp/session/:id`, `/access-attempts`, `GET /members/:id/access-preview`, manual-pass |
 | Rutinas | `/exercises`, `/routine-templates`, `/assigned-routines` |
 | Notif | `/notifications`, `/notification-templates`, preferences |
 | Afiliados | Staff CRUD members + PATCH status (`members.deactivate`); estado de cuenta `GET /members/:id/account` / `GET /me/account?coverage=current\|all` |

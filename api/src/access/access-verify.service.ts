@@ -22,7 +22,9 @@ import { ListAccessAttemptsQueryDto } from './dto/list-access-attempts.dto';
 import { ManualPassDto } from './dto/manual-pass.dto';
 import {
   ACCESS_REASON,
+  ACCESS_REASON_LABEL,
   AccessAttemptDetail,
+  AccessPreviewResult,
   AccessReasonCode,
   AccessScanMode,
   AccessVerifyResult,
@@ -33,6 +35,15 @@ const ACCESS_TIMEZONE = 'America/Argentina/Buenos_Aires';
 
 /** Ventana previa al inicio de sesión para asociar reserva (minutos). */
 const SESSION_EARLY_MINUTES = 30;
+
+type AccessDecision = {
+  allowed: boolean;
+  reasonCode: AccessReasonCode;
+  reservationId: string | null;
+  sessionId: string | null;
+  overdueDays: number;
+  debtToleranceDays: number;
+};
 
 type CoverageHit = {
   reasonCode: AccessReasonCode;
@@ -71,6 +82,37 @@ export class AccessVerifyService {
       ...input,
       scanMode: 'member_scans_gym',
     });
+  }
+
+  /**
+   * Simula si el afiliado podría ingresar ahora, **sin** escribir `access_attempts`
+   * ni marcar asistencia.
+   *
+   * @remarks Mismas RN-ACC-004..007 que la puerta. No incrementa multi-ingreso.
+   * @throws {NotFoundException} Si el afiliado no existe en el tenant.
+   */
+  async previewMemberAccess(
+    tenantId: string,
+    memberId: string,
+  ): Promise<AccessPreviewResult> {
+    const member = await this.prisma.member.findFirst({
+      where: { id: memberId, tenantId },
+      select: { id: true, status: true },
+    });
+    if (!member) {
+      throw new NotFoundException(`Member ${memberId} not found in tenant`);
+    }
+    const decision = await this.evaluateDecision(tenantId, member);
+    return {
+      allowed: decision.allowed,
+      reasonCode: decision.reasonCode,
+      reasonLabel: ACCESS_REASON_LABEL[decision.reasonCode],
+      memberId: member.id,
+      reservationId: decision.reservationId,
+      sessionId: decision.sessionId,
+      overdueDays: decision.overdueDays,
+      debtToleranceDays: decision.debtToleranceDays,
+    };
   }
 
   /**
@@ -343,88 +385,20 @@ export class AccessVerifyService {
   }): Promise<AccessVerifyResult> {
     const { tenantId, memberId, credentialRef, scanMode, actorStaffId } = input;
 
-    const tenant = await this.prisma.tenant.findUnique({
-      where: { id: tenantId },
-      select: { status: true },
-    });
-    if (!tenant || tenant.status === TenantStatus.SUSPENDED) {
-      return this.persistDenied({
-        tenantId,
-        memberId,
-        credentialRef,
-        scanMode,
-        actorStaffId,
-        reasonCode: ACCESS_REASON.tenantSuspendido,
-      });
-    }
-
     const member = await this.prisma.member.findFirst({
       where: { id: memberId, tenantId },
       select: { id: true, status: true },
     });
-    if (!member || member.status !== MemberStatus.ACTIVE) {
-      return this.persistDenied({
-        tenantId,
-        memberId,
-        credentialRef,
-        scanMode,
-        actorStaffId,
-        reasonCode: ACCESS_REASON.afiliadoInactivo,
-      });
-    }
 
-    const settings = await this.tenantSettings.get(tenantId);
-    const overdueDays = await this.resolveOverdueDays(tenantId, memberId);
-    const coverage = await this.resolveCoverage(
-      tenantId,
-      memberId,
-      overdueDays,
-      settings.debtToleranceDays,
-    );
-    if (!coverage) {
-      if (overdueDays > settings.debtToleranceDays) {
-        return this.persistDenied({
-          tenantId,
-          memberId,
-          credentialRef,
-          scanMode,
-          actorStaffId,
-          reasonCode: ACCESS_REASON.deudaExcedida,
-        });
-      }
+    const decision = await this.evaluateDecision(tenantId, member);
+    if (!decision.allowed) {
       return this.persistDenied({
         tenantId,
         memberId,
         credentialRef,
         scanMode,
         actorStaffId,
-        reasonCode: ACCESS_REASON.sinDerecho,
-      });
-    }
-
-    if (overdueDays > settings.debtToleranceDays) {
-      return this.persistDenied({
-        tenantId,
-        memberId,
-        credentialRef,
-        scanMode,
-        actorStaffId,
-        reasonCode: ACCESS_REASON.deudaExcedida,
-      });
-    }
-
-    const maxPerDay = settings.multiEntryEnabled
-      ? Math.max(1, settings.multiEntryMaxPerDay)
-      : 1;
-    const allowedToday = await this.countAllowedToday(tenantId, memberId);
-    if (allowedToday >= maxPerDay) {
-      return this.persistDenied({
-        tenantId,
-        memberId,
-        credentialRef,
-        scanMode,
-        actorStaffId,
-        reasonCode: ACCESS_REASON.multiIngresoExcedido,
+        reasonCode: decision.reasonCode,
       });
     }
 
@@ -434,10 +408,108 @@ export class AccessVerifyService {
       credentialRef,
       scanMode,
       actorStaffId,
+      reasonCode: decision.reasonCode,
+      reservationId: decision.reservationId,
+      sessionId: decision.sessionId,
+    });
+  }
+
+  /**
+   * Decisión de ingreso sin persistir (RN-ACC-004..007).
+   *
+   * @param member `null` si el id no está en el tenant (OID4VP / persist → deny).
+   */
+  private async evaluateDecision(
+    tenantId: string,
+    member: { id: string; status: MemberStatus } | null,
+  ): Promise<AccessDecision> {
+    const empty: Pick<
+      AccessDecision,
+      'reservationId' | 'sessionId' | 'overdueDays' | 'debtToleranceDays'
+    > = {
+      reservationId: null,
+      sessionId: null,
+      overdueDays: 0,
+      debtToleranceDays: 0,
+    };
+
+    const tenant = await this.prisma.tenant.findUnique({
+      where: { id: tenantId },
+      select: { status: true },
+    });
+    if (!tenant || tenant.status === TenantStatus.SUSPENDED) {
+      return {
+        allowed: false,
+        reasonCode: ACCESS_REASON.tenantSuspendido,
+        ...empty,
+      };
+    }
+
+    if (!member || member.status !== MemberStatus.ACTIVE) {
+      return {
+        allowed: false,
+        reasonCode: ACCESS_REASON.afiliadoInactivo,
+        ...empty,
+      };
+    }
+
+    const settings = await this.tenantSettings.get(tenantId);
+    const overdueDays = await this.resolveOverdueDays(tenantId, member.id);
+    const coverage = await this.resolveCoverage(
+      tenantId,
+      member.id,
+      overdueDays,
+      settings.debtToleranceDays,
+    );
+    if (!coverage) {
+      const reasonCode =
+        overdueDays > settings.debtToleranceDays
+          ? ACCESS_REASON.deudaExcedida
+          : ACCESS_REASON.sinDerecho;
+      return {
+        allowed: false,
+        reasonCode,
+        overdueDays,
+        debtToleranceDays: settings.debtToleranceDays,
+        reservationId: null,
+        sessionId: null,
+      };
+    }
+
+    if (overdueDays > settings.debtToleranceDays) {
+      return {
+        allowed: false,
+        reasonCode: ACCESS_REASON.deudaExcedida,
+        overdueDays,
+        debtToleranceDays: settings.debtToleranceDays,
+        reservationId: null,
+        sessionId: null,
+      };
+    }
+
+    const maxPerDay = settings.multiEntryEnabled
+      ? Math.max(1, settings.multiEntryMaxPerDay)
+      : 1;
+    const allowedToday = await this.countAllowedToday(tenantId, member.id);
+    if (allowedToday >= maxPerDay) {
+      return {
+        allowed: false,
+        reasonCode: ACCESS_REASON.multiIngresoExcedido,
+        overdueDays,
+        debtToleranceDays: settings.debtToleranceDays,
+        reservationId: coverage.reservationId,
+        sessionId: coverage.sessionId,
+      };
+    }
+
+    return {
+      allowed: true,
       reasonCode: coverage.reasonCode,
+      overdueDays,
+      debtToleranceDays: settings.debtToleranceDays,
       reservationId: coverage.reservationId,
       sessionId: coverage.sessionId,
-    });
+    };
   }
 
   /**

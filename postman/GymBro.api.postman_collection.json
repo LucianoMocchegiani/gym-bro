@@ -4047,7 +4047,7 @@
         },
         {
             "name": "Access OID4VP",
-            "description": "CU-ACC-001/004. Staff POST /access/oid4vp/request + GET /access/oid4vp/session/:id (modo B). Pase manual. Historial GET /access-attempts. Stubs retirados.",
+            "description": "CU-ACC-001/004. Staff POST /access/oid4vp/request + GET /access/oid4vp/session/:id (modo B). Preview GET /members/:id/access-preview (sin persistir). Pase manual. Historial GET /access-attempts. Stubs retirados.",
             "item": [
                 {
                     "name": "Staff POST oid4vp request",
@@ -4128,6 +4128,20 @@
                         },
                         "url": "{{baseUrl}}/api/members/{{createdMemberId}}/access/manual-pass",
                         "description": "access.manual_pass. Saltea derechos/deuda/multi. sessionId opcional."
+                    }
+                },
+                {
+                    "name": "Staff GET access preview",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            }
+                        ],
+                        "url": "{{baseUrl}}/api/members/{{createdMemberId}}/access-preview",
+                        "description": "access.verify. Simula ingreso ahora (RN-ACC-004..007) sin escribir access_attempts ni check-in."
                     }
                 },
                 {

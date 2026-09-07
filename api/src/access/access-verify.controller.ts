@@ -24,11 +24,12 @@ import {
   AccessAttemptDetail,
   AccessOid4VpRequestResult,
   AccessOid4VpSessionResult,
+  AccessPreviewResult,
   AccessVerifyResult,
 } from './access.types';
 
 /**
- * Puerta OID4VP, pase manual e historial (CU-ACC-001 / 004 / 005).
+ * Puerta OID4VP, preview de ingreso, pase manual e historial (CU-ACC-001 / 004 / 005).
  */
 @Controller()
 @RequireTenantAuth()
@@ -70,6 +71,25 @@ export class AccessVerifyController {
       throw new ForbiddenException('Staff profile required');
     }
     return this.oid4vp.getSession(tenantId, verificationSessionId, user.userId);
+  }
+
+  /**
+   * Simula si el afiliado podría ingresar ahora (mismas RN que la puerta).
+   *
+   * @remarks No escribe `access_attempts` ni marca asistencia. MCP / Caja.
+   * @throws {NotFoundException} Si el afiliado no existe en el tenant.
+   */
+  @Get('members/:memberId/access-preview')
+  @RequirePermission('access.verify')
+  previewMemberAccess(
+    @CurrentTenant() tenantId: string,
+    @CurrentUser() user: AuthUser,
+    @Param('memberId', ParseUUIDPipe) memberId: string,
+  ): Promise<AccessPreviewResult> {
+    if (user.profileType !== 'STAFF') {
+      throw new ForbiddenException('Staff profile required');
+    }
+    return this.accessVerify.previewMemberAccess(tenantId, memberId);
   }
 
   /**

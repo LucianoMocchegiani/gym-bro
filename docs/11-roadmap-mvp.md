@@ -2,7 +2,7 @@
 
 **Estado:** Borrador v1  
 **Objetivo:** Llegar a un MVP usable (admin web + app afiliado + acceso QR + cobros).  
-**Fuera de alcance:** ver [99-backlog-post-mvp.md](./99-backlog-post-mvp.md).  
+**Fuera de alcance MVP:** ver [99-backlog-post-mvp.md](./99-backlog-post-mvp.md). Asistente chat + MCP (post-MVP, diseño cerrado): [17-roadmap-chat-mcp.md](./17-roadmap-chat-mcp.md).  
 **Stack:** NestJS · Next.js · Flutter · PostgreSQL ([06-arquitectura.md](./06-arquitectura.md)).
 
 ## Cómo usar este doc
@@ -390,4 +390,4 @@ E7/E8 siguen `[ ]` (sin API). No marcar E9/E10 como cerradas hasta agotar las su
 
 ---
 
-[Índice](./00-indice.md) · [Backlog post-MVP](./99-backlog-post-mvp.md) · [Arquitectura](./06-arquitectura.md)
+[Índice](./00-indice.md) · [Backlog post-MVP](./99-backlog-post-mvp.md) · [Arquitectura](./06-arquitectura.md) · [Roadmap chat MCP](./17-roadmap-chat-mcp.md)
