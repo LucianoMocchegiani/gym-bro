@@ -16,6 +16,7 @@ La creación de registros sigue la skill:
 
 ## Índice
 
+- [2026-09-07 — Abort, título automático y errores OpenRouter (C7 parcial)](./2026-09-07-chat-abort-titulo-c7.md)
 - [2026-09-07 — MCP lectura amplia + ayuda (C6)](./2026-09-07-mcp-tools-bcd-c6.md)
 - [2026-09-07 — Drawer Admin del asistente (C5)](./2026-09-07-admin-drawer-asistente-c5.md)
 - [2026-09-07 — chat-api: agente OpenRouter, MCP y stream (C4)](./2026-09-07-chat-api-agente-c4.md)
