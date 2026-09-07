@@ -1,7 +1,8 @@
 # GymBro — Esquema de base de datos
 
 **Estado:** Viva (se actualiza con cada migración Prisma)  
-**Fuente de verdad del código:** [`api/prisma/schema.prisma`](../api/prisma/schema.prisma)  
+**Fuente de verdad del código:** [`api/prisma/schema.prisma`](../api/prisma/schema.prisma) (negocio GymBro)  
+**Chat (post-MVP):** [`chat-api/prisma/schema.prisma`](../chat-api/prisma/schema.prisma) — otra database `chat`, mismo Postgres.  
 **Motor:** PostgreSQL 16 · ORM Prisma 6  
 
 Documento **implementado** (tablas reales), no el modelo conceptual de [03-modelo-dominio.md](./03-modelo-dominio.md). Cuando agregues o cambies tablas, actualizá este archivo en la misma tarea.
@@ -17,7 +18,7 @@ Documento **implementado** (tablas reales), no el modelo conceptual de [03-model
 | Multi-tenant | Tablas de negocio con `tenant_id` → `tenants.id` (RN-TEN-001) |
 | Timestamps | `created_at`, `updated_at` donde aplica |
 | Soft delete | No (aún); `active` boolean en usuarios / sucursales |
-| Migraciones | `api/prisma/migrations/` (manuales en dev) |
+| Migraciones | `api/prisma/migrations/` (negocio) · `chat-api/prisma/migrations/` (DB `chat`) |
 
 ---
 
@@ -981,7 +982,7 @@ docker compose exec api npm run prisma:seed
 docker compose exec api npm run prisma:migrate       # solo en dev si creás migración nueva interactiva
 ```
 
-Tras `docker compose down -v`: `up --build -d` → `migrate deploy` → `generate` → `seed` → `restart api`.
+Tras `docker compose down -v`: `up --build -d` → `migrate deploy` → `generate` → `seed` → `restart api`. chat-api aplica sus migraciones al arrancar (`start:docker`).
 
 ---
 
@@ -1004,7 +1005,44 @@ Detalle: [13-setup-db-desde-cero.md](./13-setup-db-desde-cero.md) · [credencial
 
 ---
 
-## 7. Pendiente de modelar (dominio → DB)
+## 7. Database `chat` (chat-api)
+
+Otra database en el **mismo** contenedor Postgres. **Sin** FKs hacia `gymbro`. Schema: [`chat-api/prisma/schema.prisma`](../chat-api/prisma/schema.prisma).
+
+```mermaid
+erDiagram
+  identities {
+    uuid id PK
+    text tenant_id
+    text user_id
+  }
+  conversations {
+    uuid id PK
+    text tenant_id
+    text user_id
+  }
+  messages {
+    uuid id PK
+    uuid conversation_id FK
+  }
+  conversations ||--o{ messages : has
+```
+
+| Tabla | Notas |
+|-------|--------|
+| `identities` | Unique `(tenant_id, user_id)`. C2 escribe `last_seen_at`. |
+| `conversations` | Índice `(tenant_id, user_id, updated_at DESC)`. Soft-archive `archived_at`. |
+| `messages` | `role` texto (`user` / `assistant` / `tool`); JSON opcional de tool. |
+
+| Migración | Contenido |
+|-----------|-----------|
+| `20260907120000_init` | `identities`, `conversations`, `messages`. |
+
+Compose: init SQL en primer boot del volumen + `ensure-db.ts` si el volumen ya existía. Arranque: `prisma migrate deploy`.
+
+---
+
+## 8. Pendiente de modelar (dominio → DB)
 
 Aún no hay tablas Prisma para (ver [03](./03-modelo-dominio.md) / roadmap): **ledger de deuda de pagos**, **rutinas**, **notificaciones**, etc. La tolerancia de acceso usa atraso desde `endsAt` del contrato libre (sin tabla aparte). Se documentan aquí **al implementarlas**.
 

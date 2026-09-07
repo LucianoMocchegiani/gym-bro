@@ -1,0 +1,17 @@
+# Imagen de desarrollo para chat-api (hot-reload vía volumen).
+# Node 24 = Active LTS (estable).
+FROM node:24-alpine
+
+RUN apk add --no-cache openssl
+
+WORKDIR /app
+
+COPY package.json package-lock.json* ./
+COPY prisma ./prisma
+RUN npm install
+
+COPY . .
+
+EXPOSE 3010
+
+CMD ["npm", "run", "start:docker"]

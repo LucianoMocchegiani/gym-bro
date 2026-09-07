@@ -45,7 +45,7 @@ Reglas relacionadas
 | [13-setup-db-desde-cero.md](./13-setup-db-desde-cero.md) | Migraciones + seed al levantar de 0 / tras `down -v` | Viva |
 | [14-auditoria-roadmap-vs-codigo-2026-08-13.md](./14-auditoria-roadmap-vs-codigo-2026-08-13.md) | Contraste roadmap MVP vs API/web/mobile | Viva (corte 2026-08-13) |
 | [15-kuatia-deuda-rename.md](./15-kuatia-deuda-rename.md) | Deuda rename/SDK Kuatia; path `identity_core_dart` | Viva |
-| [16-chat-mcp-diseno.md](./16-chat-mcp-diseno.md) | Asistente Admin: `chat-api` portable + MCP GymBro + drawer; diseño cerrado (árbol = acercamiento; sin código) | Cerrado (diseño) |
+| [16-chat-mcp-diseno.md](./16-chat-mcp-diseno.md) | Asistente Admin: `chat-api` portable + MCP GymBro + drawer; diseño cerrado (C1: servicio + DB `chat`) | Cerrado (diseño) |
 | [17-roadmap-chat-mcp.md](./17-roadmap-chat-mcp.md) | Tareas ordenadas del asistente (C0–C7); post-MVP | Borrador |
 | [mobile/isar-wallet.md](./mobile/isar-wallet.md) | Wallet local (Isar): VCs en el device, secreto, workaround AGP 8 | Viva |
 | [credenciales-demo.md](./credenciales-demo.md) | Cuentas seed locales (Super / Staff / Member) | Viva |

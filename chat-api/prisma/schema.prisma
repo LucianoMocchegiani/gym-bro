@@ -1,0 +1,55 @@
+// chat-api — schema portable (database `chat`). Sin FKs al schema GymBro.
+
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+/// Principal visto por introspección (tenant + user del JWT del huésped).
+model Identity {
+  id         String   @id @default(uuid()) @db.Uuid
+  tenantId   String   @map("tenant_id")
+  userId     String   @map("user_id")
+  email      String?
+  name       String?
+  lastSeenAt DateTime @default(now()) @map("last_seen_at") @db.Timestamptz
+
+  @@unique([tenantId, userId])
+  @@map("identities")
+}
+
+/// Hilo de un staff (aislado por tenant_id + user_id).
+model Conversation {
+  id         String    @id @default(uuid()) @db.Uuid
+  tenantId   String    @map("tenant_id")
+  userId     String    @map("user_id")
+  title      String?
+  archivedAt DateTime? @map("archived_at") @db.Timestamptz
+  createdAt  DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt  DateTime  @updatedAt @map("updated_at") @db.Timestamptz
+  messages   Message[]
+
+  @@index([tenantId, userId, updatedAt(sort: Desc)])
+  @@map("conversations")
+}
+
+/// Turno persistido (user / assistant / tool). El compactado de contexto es C4.
+model Message {
+  id             String       @id @default(uuid()) @db.Uuid
+  conversationId String       @map("conversation_id") @db.Uuid
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  role           String
+  content        String       @db.Text
+  toolName       String?      @map("tool_name")
+  toolArgs       Json?        @map("tool_args")
+  toolResult     Json?        @map("tool_result")
+  createdAt      DateTime     @default(now()) @map("created_at") @db.Timestamptz
+
+  @@index([conversationId, createdAt])
+  @@map("messages")
+}

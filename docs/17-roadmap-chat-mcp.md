@@ -43,12 +43,12 @@
 
 Cero `GYMBRO_*`. Imagen reutilizable.
 
-- [ ] Scaffold `chat-api/` (Hono, Node 24, Prisma, Dockerfile)
-- [ ] Database `chat` en el Postgres de Compose (mismo contenedor)
-- [ ] Schema: `identities`, `conversations`, `messages`
-- [ ] `config.ts` + `.env.example` (`CHAT_MCP_URL`, `AUTH_INTROSPECT_URL`, `AUTH_REQUIRED_PROFILE`, OpenRouter, CORS)
-- [ ] `GET /health`
-- [ ] Servicio `chat-api` en `docker-compose.yml`
+- [x] Scaffold `chat-api/` (Hono, Node 24, Prisma, Dockerfile)
+- [x] Database `chat` en el Postgres de Compose (mismo contenedor)
+- [x] Schema: `identities`, `conversations`, `messages`
+- [x] `config.ts` + `.env.example` (`CHAT_MCP_URL`, `AUTH_INTROSPECT_URL`, `AUTH_REQUIRED_PROFILE`, OpenRouter, CORS)
+- [x] `GET /health`
+- [x] Servicio `chat-api` en `docker-compose.yml`
 
 ---
 

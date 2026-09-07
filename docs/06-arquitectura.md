@@ -26,6 +26,7 @@ Estructura de repo sugerida:
 ```text
 api/            # NestJS (+ prisma/)
 web/            # Next.js (Admin / Super Admin)
+chat-api/       # Hono + Prisma (asistente; DB `chat`; post-MVP)
 mobile/         # Flutter
 docker-compose.yml
 docs/           # C-producto (ya existe)
@@ -388,7 +389,7 @@ Stack principal cerrado en §0. Queda por cerrar al scaffold:
 | ORM (Prisma vs Drizzle) | **Prisma 6** (Drizzle descartado; Prisma 7 diferido por ESM/Nest) |
 | Runtime Node | **24 Active LTS** (`node:24-alpine` en Docker) |
 | Hosting (Railway / Fly / VPS / AWS) | Pendiente (prod) |
-| Docker Compose local (postgres, redis, api, web) | Hecho (dev) |
+| Docker Compose local (postgres, redis, api, web, chat-api) | Hecho (dev; `chat-api` = C1 post-MVP) |
 | CI mínimo (GitHub Actions: lint + build api/web) | Hecho (`.github/workflows/ci.yml`) |
 | Monorepo tool (pnpm workspaces / Turborepo / separado) | **Separado** — sin package.json raíz; cada app se instala sola |
 | Proveedor exacto de email | Pendiente |
@@ -405,6 +406,7 @@ Ver [99-backlog-post-mvp.md](./99-backlog-post-mvp.md). Impacto arquitectónico 
 - Feature flags por plan.
 - Offline access = cola local + sync (no en MVP).
 - Débito automático MONTHLY: Customer/Card + Payments + cron Nest (no Preference sola). Ver §7.5.
+- Asistente Admin: `chat-api` (Hono, DB `chat`) + sidecar `mcp/` — [16-chat-mcp-diseno.md](./16-chat-mcp-diseno.md).
 
 ---
 

@@ -12,12 +12,12 @@ Lista de migraciones / esquema: [09-esquema-db.md](./09-esquema-db.md).
 
 | Comando | Para qué |
 |---------|----------|
-| `prisma migrate deploy` | Aplica **todas** las migraciones pendientes de `api/prisma/migrations/` (idempotente). Usar en Compose / DB limpia. |
+| `prisma migrate deploy` | GymBro: `api/prisma/migrations/`. Chat: `chat-api` lo corre al arrancar; también `docker compose exec chat-api npx prisma migrate deploy`. |
 | `prisma generate` | Regenera el client TypeScript en `node_modules` del contenedor (necesario tras wipe del volumen `api_node_modules`). |
 | `npm run prisma:seed` | Carga datos demo: **Super**, tenant `demo`, branch, roles, staff, member + Quark issuer/verifier (soft-fail). |
 | `npm run prisma:migrate` | Alias de `prisma migrate dev`: **crear** migración nueva en desarrollo (interactivo). No es el flujo “desde cero”. |
 
-La API **no** corre migraciones ni seed al arrancar: hay que hacerlo a mano (o con este checklist).
+La API **no** corre migraciones ni seed al arrancar: hay que hacerlo a mano (o con este checklist). `chat-api` sí corre `ensure-db` + `migrate deploy` al arrancar (Compose).
 
 ---
 
@@ -27,8 +27,9 @@ La API **no** corre migraciones ni seed al arrancar: hay que hacerlo a mano (o c
 # 1) Stack
 docker compose up --build -d
 
-# 2) Esperar a que api/postgres estén healthy (opcional)
+# 2) Esperar a que api/postgres/chat-api estén healthy (opcional)
 curl.exe -s http://localhost:3001/api/health
+curl.exe -s http://localhost:3010/health
 
 # 3) Schema + client
 docker compose exec api npx prisma migrate deploy
@@ -116,7 +117,7 @@ Script: [`api/prisma/limpiar-cobros-dev.sql`](../api/prisma/limpiar-cobros-dev.s
 ## 6. Qué no automatizamos (aún)
 
 - Migraciones al `CMD` de la API (opcional a futuro solo en Compose local).
-- Seed automático (podría pisar datos locales; se deja explícito).
+- Seed automático de GymBro (podría pisar datos locales; se deja explícito).
 
 ---
 

@@ -1,0 +1,33 @@
+{
+  "name": "chat-api",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "build": "prisma generate && tsc",
+    "start": "node dist/index.js",
+    "start:dev": "tsx watch src/index.ts",
+    "start:docker": "tsx src/ensure-db.ts && prisma migrate deploy && npm run start:dev",
+    "typecheck": "tsc --noEmit",
+    "postinstall": "prisma generate",
+    "prisma:generate": "prisma generate",
+    "prisma:migrate": "prisma migrate dev",
+    "prisma:deploy": "prisma migrate deploy"
+  },
+  "dependencies": {
+    "@hono/node-server": "^1.19.0",
+    "@prisma/client": "6.19.3",
+    "hono": "^4.9.8",
+    "pg": "^8.16.3"
+  },
+  "devDependencies": {
+    "@types/node": "^24.3.0",
+    "@types/pg": "^8.15.5",
+    "prisma": "6.19.3",
+    "tsx": "^4.20.5",
+    "typescript": "^5.9.2"
+  }
+}

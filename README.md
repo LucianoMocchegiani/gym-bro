@@ -18,10 +18,11 @@ Issuer/verifier compartidos en Kuatia: ver sección Kuatia abajo.
 ```text
 api/                 # NestJS — puerto 3001 — GET /api/health
 web/                 # Next.js — puerto 3000
+chat-api/            # Hono — puerto 3010 — GET /health (asistente, post-MVP)
 mobile/              # Flutter (fuera de Docker)
 postman/             # Colección + environment de prueba
-docker-compose.yml   # postgres + redis + api + web (dev)
-docker/              # pgAdmin config
+docker-compose.yml   # postgres + redis + api + web + chat-api (dev)
+docker/              # pgAdmin + init Postgres (database `chat`)
 ssi-quark/           # README redirect → identity_core_dart/
 identity_core_dart/  # Package Flutter wallet (gitignore; clon local)
 docs/
@@ -39,6 +40,7 @@ Requisitos: **Docker Desktop** (o Engine + Compose). Fuera de Docker: **Node.js 
 ```powershell
 Copy-Item api\.env.example api\.env
 Copy-Item web\.env.example web\.env
+Copy-Item chat-api\.env.example chat-api\.env
 ```
 
 Completá en `api/.env` las claves y wallet IDs de Kuatia (`KUATIA_*`).
@@ -55,9 +57,10 @@ Servicios:
 |----------|----------------|
 | Web | http://demo.localhost:3002 — Admin Staff (slug); http://localhost:3002/super — Super Admin |
 | API health | http://localhost:3001/api/health |
+| chat-api health | http://localhost:3010/health (DB `chat`; C1, sin hilos todavía) |
 | Kuatia | URLs públicas del producto (ver `KUATIA_*_BASE_URL` en `api/.env`) |
 | Postman | [`postman/`](./postman/) |
-| Postgres | `localhost:5433` → contenedor `5432` (user/pass/db: `gymbro`) |
+| Postgres | `localhost:5433` → contenedor `5432` (user/pass `gymbro`; databases `gymbro` y `chat`) |
 | pgAdmin | http://localhost:5050 — `admin@example.com` / `gymbro` (server: host `postgres`, pass DB `gymbro`) |
 | Redis | `localhost:6379` |
 
@@ -78,7 +81,7 @@ Parar:
 docker compose down
 ```
 
-Hot-reload: código de `api/` y `web/` montado como volumen. `node_modules` vive en volúmenes Docker.
+Hot-reload: código de `api/`, `web/` y `chat-api/` montado como volumen. `node_modules` vive en volúmenes Docker.
 
 Si agregás dependencias nuevas en el host, sincronizá el contenedor:
 
@@ -121,6 +124,14 @@ docker compose exec api npm run prisma:seed
 ```
 
 Health con DB: `GET /api/health` → `{ status, database, checkedAt }`.
+
+chat-api (asistente, post-MVP): Prisma 6 en `chat-api/prisma/`, database **`chat`** en el mismo Postgres. Cero strings `GYMBRO_*`. Diseño: [docs/16-chat-mcp-diseno.md](./docs/16-chat-mcp-diseno.md).
+
+```powershell
+docker compose exec chat-api npx prisma migrate deploy
+```
+
+Health: `GET http://localhost:3010/health` → `{ status, database, checkedAt }` (`200` ok / `503` DB down).
 
 ### Auth (JWT + refresh)
 
