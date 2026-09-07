@@ -18,6 +18,8 @@ type MemberPickerProps = {
   onChange: (memberId: string) => void;
   /** Callback con el detalle del afiliado elegido (sin refetch). */
   onSelect?: (member: MemberDetail) => void;
+  /** Texto a mostrar cuando `value` viene de afuera (deep-link). */
+  displayLabel?: string;
   label?: string;
   placeholder?: string;
   autoFocus?: boolean;
@@ -35,17 +37,22 @@ export function MemberPicker({
   value,
   onChange,
   onSelect,
+  displayLabel,
   label,
   placeholder = 'Buscar por nombre o email…',
   autoFocus = false,
 }: MemberPickerProps) {
   const [query, setQuery] = useState('');
-  const [labelText, setLabelText] = useState('');
+  const [labelText, setLabelText] = useState(
+    value && displayLabel ? displayLabel : '',
+  );
   const [prevValue, setPrevValue] = useState(value);
   if (value !== prevValue) {
     setPrevValue(value);
     if (value === '') {
       setLabelText('');
+    } else if (displayLabel) {
+      setLabelText(displayLabel);
     }
   }
   const [open, setOpen] = useState(false);
@@ -56,6 +63,12 @@ export function MemberPicker({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [highlight, setHighlight] = useState(0);
+
+  useEffect(() => {
+    if (value && displayLabel) {
+      setLabelText(displayLabel);
+    }
+  }, [value, displayLabel]);
 
   const rootRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);

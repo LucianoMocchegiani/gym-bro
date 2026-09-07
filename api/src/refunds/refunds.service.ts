@@ -24,6 +24,7 @@ import { MercadoPagoAccountService } from '../payment/mercadopago-account.servic
 import { MP_ACCOUNT_PORT, MpAccountPort } from '../payment/mp-account.port';
 import { PrismaService } from '../prisma/prisma.service';
 import { WaitlistService } from '../waitlist/waitlist.service';
+import { DebitService } from '../debit/debit.service';
 import {
   CreateRefundRequestDto,
   ExecuteRefundDto,
@@ -54,6 +55,7 @@ export class RefundsService {
     private readonly receipts: ReceiptsService,
     private readonly accounts: MercadoPagoAccountService,
     private readonly waitlist: WaitlistService,
+    private readonly debit: DebitService,
     @Inject(MP_ACCOUNT_PORT) private readonly mp: MpAccountPort,
   ) {}
 
@@ -501,6 +503,8 @@ export class RefundsService {
     for (const sessionId of [...new Set(sessionIdsForWaitlist)]) {
       await this.waitlist.tryPromoteForSession(tenantId, sessionId, 1, actor);
     }
+
+    await this.debit.cancelByEnrolledItems(tenantId, itemIds);
 
     await this.audit.record({
       tenantId,

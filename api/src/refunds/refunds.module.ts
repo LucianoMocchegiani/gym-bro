@@ -3,6 +3,7 @@ import { AuditModule } from '../audit/audit.module';
 import { AuthModule } from '../auth/auth.module';
 import { PaymentRegisterModule } from '../payment-register/payment-register.module';
 import { PaymentModule } from '../payment/payment.module';
+import { DebitModule } from '../debit/debit.module';
 import { ReceiptsModule } from '../receipts/receipts.module';
 import { RolesModule } from '../roles/roles.module';
 import { WaitlistModule } from '../waitlist/waitlist.module';
@@ -18,6 +19,7 @@ import { RefundsService } from './refunds.service';
     AuditModule,
     PaymentRegisterModule,
     forwardRef(() => PaymentModule),
+    DebitModule,
     ReceiptsModule,
     WaitlistModule,
   ],

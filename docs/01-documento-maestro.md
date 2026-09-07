@@ -139,6 +139,7 @@ Destacados: **tienda/e-commerce**, white label, push/WhatsApp, AFIP, offline en 
 - Idempotencia anti doble cobro; si ocurre → reembolso admin.
 - Devolución pedida por afiliado (defaults configurables); admin siempre puede devolver.
 - Comprobante interno + N1 + visible en app.
+- **Débito automático MONTHLY** (post-MVP, diseño cerrado 2026-09-01): tarjeta guardada + job el día de `endsAt`; UI solo en Caja. Ver RN-PAG-013..016 / CU-PAG-008..010. Fuera de este diseño: Stripe, CBU/DEBIN, suscripción-plan MP, alta en la app.
 
 ### 9.4 Rutinas
 

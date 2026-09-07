@@ -1,19 +1,28 @@
 'use client';
 
-import { FormEvent, useEffect, useMemo, useRef, useState } from 'react';
+import { FormEvent, Suspense, useEffect, useMemo, useRef, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
+import { CajaDebitPanel } from '@/components/CajaDebitPanel';
 import { ListToolbar } from '@/components/AdminList';
 import { AdminShell } from '@/components/AdminShell';
 import { Panel } from '@/components/AdminUi';
 import { MemberPicker } from '@/components/MemberPicker';
+import { MpCardPaymentBrick } from '@/components/MpCardPaymentBrick';
+import type { MpCardTokenResult } from '@/components/MpCardPaymentBrick';
 import { ReceiptPanel } from '@/components/ReceiptPanel';
 import { IconReceipt } from '@/components/RowActions';
 import { RequireStaff } from '@/components/RequireStaff';
 import { SkeletonPanel } from '@/components/Skeleton';
 import { ApiClientError, newIdempotencyKey } from '@/lib/api/client';
 import {
+  enrollDebitMandate,
+  getMpPublicKey,
+} from '@/lib/api/debit';
+import {
   pickMpCartCheckoutUrl,
   startStaffMpCartCheckout,
 } from '@/lib/api/mercadopago';
+import { getMember } from '@/lib/api/members';
 import { listActivePacks } from '@/lib/api/packs';
 import type { PackSummary } from '@/lib/api/packs';
 import { startCashCart } from '@/lib/api/reservations';
@@ -34,6 +43,7 @@ type CartItem = {
 };
 
 type CatalogTab = 'SERVICIOS' | 'PACKS';
+type CajaVista = 'cobro' | 'debitos';
 
 /**
  * Caja: carrito de cobros (packs + drop-in) en efectivo o con links de MP
@@ -41,17 +51,25 @@ type CatalogTab = 'SERVICIOS' | 'PACKS';
  *
  * @remarks MP no redirige al checkout: muestra el link y hace polling del
  * comprobante hasta el webhook APPROVED. CASH muestra el comprobante al
- * instante (el cobro ya queda APPROVED).
+ * instante (el cobro ya queda APPROVED). Débito: Card Brick + mandato (CU-PAG-008).
  */
 export default function CajaPage() {
   return (
     <RequireStaff>
-      <CajaInner />
+      <Suspense fallback={<AdminShell title="Caja" subtitle="Cargando…"><SkeletonPanel lines={6} /></AdminShell>}>
+        <CajaInner />
+      </Suspense>
     </RequireStaff>
   );
 }
 
 function CajaInner() {
+  const searchParams = useSearchParams();
+  const initialMemberId = searchParams.get('memberId')?.trim() ?? '';
+  const initialVista =
+    searchParams.get('vista') === 'debitos' ? 'debitos' : 'cobro';
+
+  const [vista, setVista] = useState<CajaVista>(initialVista);
   const [catalogTab, setCatalogTab] = useState<CatalogTab>('SERVICIOS');
   const [packs, setPacks] = useState<PackSummary[]>([]);
   const [sessions, setSessions] = useState<SessionSummary[]>([]);
@@ -61,9 +79,12 @@ function CajaInner() {
   const [catalogLoading, setCatalogLoading] = useState(true);
   const [catalogError, setCatalogError] = useState<string | null>(null);
 
-  const [memberId, setMemberId] = useState('');
+  const [memberId, setMemberId] = useState(initialMemberId);
+  const [memberLabel, setMemberLabel] = useState('');
   const [cart, setCart] = useState<CartItem[]>([]);
   const [cobroMedio, setCobroMedio] = useState<'CASH' | 'MP'>('CASH');
+  const [debitWanted, setDebitWanted] = useState(false);
+  const [mpPublicKey, setMpPublicKey] = useState<string | null>(null);
   const [cobroBusy, setCobroBusy] = useState(false);
   const [cobroError, setCobroError] = useState<string | null>(null);
   const [cobroOk, setCobroOk] = useState<string | null>(null);
@@ -79,6 +100,21 @@ function CajaInner() {
   const [receiptError, setReceiptError] = useState<string | null>(null);
 
   const itemSeq = useRef(0);
+
+  useEffect(() => {
+    if (!initialMemberId) {
+      return;
+    }
+    void getMember(initialMemberId)
+      .then((m) => setMemberLabel(m.name?.trim() || m.email))
+      .catch(() => undefined);
+  }, [initialMemberId]);
+
+  useEffect(() => {
+    void getMpPublicKey()
+      .then((r) => setMpPublicKey(r.publicKey))
+      .catch(() => setMpPublicKey(null));
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -173,6 +209,20 @@ function CajaInner() {
     [cart],
   );
 
+  const debitEligible = useMemo(() => {
+    if (cobroMedio !== 'MP' || cart.length !== 1 || cart[0].kind !== 'PACK') {
+      return false;
+    }
+    const pack = packs.find((p) => p.id === cart[0].refId);
+    return pack?.billingPeriod === 'MONTHLY';
+  }, [cart, cobroMedio, packs]);
+
+  useEffect(() => {
+    if (!debitEligible) {
+      setDebitWanted(false);
+    }
+  }, [debitEligible]);
+
   function addPack(pack: PackSummary) {
     const key = `PACK-${pack.id}-${++itemSeq.current}`;
     setCart((prev) => [
@@ -245,6 +295,50 @@ function CajaInner() {
       .catch(() => {
         setReceiptError('No se pudo cargar el comprobante');
       });
+  }
+
+  async function onDebitToken(token: MpCardTokenResult) {
+    if (!memberId || cart.length !== 1 || cart[0].kind !== 'PACK') {
+      setCobroError('Débito solo con un pack MONTHLY');
+      return;
+    }
+    setCobroBusy(true);
+    setCobroError(null);
+    setCobroOk(null);
+    setReceipt(null);
+    try {
+      const result = await enrollDebitMandate(memberId, {
+        packId: cart[0].refId,
+        cardToken: token.token,
+        paymentMethodId: token.paymentMethodId,
+        issuerId: token.issuerId,
+        installments: token.installments,
+        identificationType: token.identificationType,
+        identificationNumber: token.identificationNumber,
+        chargeNow: true,
+        idempotencyKey: newIdempotencyKey('debit-enroll'),
+      });
+      setCart([]);
+      setDebitWanted(false);
+      setCobroOk('Cobro + débito automático activado.');
+      if (result.transactionId) {
+        setCashTransactionId(result.transactionId);
+        try {
+          setReceipt(await getReceiptByTransaction(result.transactionId));
+        } catch {
+          setReceiptError('No se pudo cargar el comprobante');
+        }
+      }
+    } catch (err) {
+      const message =
+        err instanceof ApiClientError
+          ? err.message
+          : 'No se pudo inscribir el débito';
+      setCobroError(message);
+      throw new Error(message);
+    } finally {
+      setCobroBusy(false);
+    }
   }
 
   async function onCobro(e: FormEvent) {
@@ -336,11 +430,36 @@ function CajaInner() {
         <MemberPicker
           label="Afiliado"
           value={memberId}
-          onChange={setMemberId}
+          displayLabel={memberLabel || undefined}
+          onChange={(id) => {
+            setMemberId(id);
+            setMemberLabel('');
+          }}
           placeholder="Buscar por nombre o email…"
           autoFocus
         />
       </ListToolbar>
+
+      <div className="cash-tabs" role="tablist">
+        <button
+          type="button"
+          role="tab"
+          aria-selected={vista === 'cobro'}
+          className={vista === 'cobro' ? 'active' : undefined}
+          onClick={() => setVista('cobro')}
+        >
+          Cobro
+        </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={vista === 'debitos'}
+          className={vista === 'debitos' ? 'active' : undefined}
+          onClick={() => setVista('debitos')}
+        >
+          Débitos
+        </button>
+      </div>
 
       {receiptError ? <p className="error">{receiptError}</p> : null}
 
@@ -354,6 +473,17 @@ function CajaInner() {
         </div>
       ) : null}
 
+      {vista === 'debitos' ? (
+        <CajaDebitPanel
+          memberId={memberId}
+          onNeedReceipt={(id) => {
+            setVista('cobro');
+            void getReceiptByTransaction(id)
+              .then(setReceipt)
+              .catch(() => setReceiptError('No se pudo cargar el comprobante'));
+          }}
+        />
+      ) : (
       <div className="cash-layout">
         <Panel
           title="Catálogo"
@@ -550,6 +680,40 @@ function CajaInner() {
               </p>
             ) : null}
 
+            {debitEligible ? (
+              <fieldset className="mode-toggle">
+                <legend>Débito automático</legend>
+                <label>
+                  <input
+                    type="checkbox"
+                    checked={debitWanted}
+                    onChange={(e) => setDebitWanted(e.target.checked)}
+                  />
+                  Autorizar cobro mensual de este pack al precio de catálogo
+                </label>
+              </fieldset>
+            ) : null}
+
+            {debitWanted && debitEligible && mpPublicKey ? (
+              <div>
+                <p className="muted small">
+                  Completá la tarjeta. Se cobra este mes y queda el débito para
+                  el vencimiento.
+                </p>
+                <MpCardPaymentBrick
+                  publicKey={mpPublicKey}
+                  amount={total}
+                  onToken={onDebitToken}
+                />
+              </div>
+            ) : null}
+
+            {debitWanted && debitEligible && !mpPublicKey ? (
+              <p className="error">
+                Conectá Mercado Pago en Config para tokenizar la tarjeta.
+              </p>
+            ) : null}
+
             {cobroError ? <p className="error">{cobroError}</p> : null}
             {cobroOk ? <p className="ok-msg">{cobroOk}</p> : null}
 
@@ -626,30 +790,33 @@ function CajaInner() {
               ) : (
                 <span />
               )}
-              <button
-                type="submit"
-                className="primary"
-                disabled={cobroBusy || cart.length === 0 || !memberId}
-                title={
-                  !memberId
-                    ? 'Elegí el afiliado de la lista de búsqueda'
-                    : cart.length === 0
-                      ? 'Agregá al menos un ítem al carrito'
-                      : undefined
-                }
-              >
-                {cobroBusy
-                  ? cobroMedio === 'MP'
-                    ? 'Generando link…'
-                    : 'Cobrando…'
-                  : cobroMedio === 'MP'
-                    ? 'Generar link MP'
-                    : `Cobrar en efectivo${cart.length > 1 ? ` (${cart.length})` : ''}`}
-              </button>
+              {debitWanted ? null : (
+                <button
+                  type="submit"
+                  className="primary"
+                  disabled={cobroBusy || cart.length === 0 || !memberId}
+                  title={
+                    !memberId
+                      ? 'Elegí el afiliado de la lista de búsqueda'
+                      : cart.length === 0
+                        ? 'Agregá al menos un ítem al carrito'
+                        : undefined
+                  }
+                >
+                  {cobroBusy
+                    ? cobroMedio === 'MP'
+                      ? 'Generando link…'
+                      : 'Cobrando…'
+                    : cobroMedio === 'MP'
+                      ? 'Generar link MP'
+                      : `Cobrar en efectivo${cart.length > 1 ? ` (${cart.length})` : ''}`}
+                </button>
+              )}
             </div>
           </form>
         </Panel>
       </div>
+      )}
     </AdminShell>
   );
 }

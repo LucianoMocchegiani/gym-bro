@@ -61,7 +61,7 @@ Carpeta **Tenant settings**: `GET|PATCH /tenant-settings` (`tenant.settings.*`).
 
 Carpeta **Payment register**: `GET /payment-register/day` + `POST /payment-register/day/reconcile` (`cashier.operate`). `movements[]` = 1 fila por cobro o devolución de cart (misma grilla que reportes); arqueo 1/día; día en timezone BA.
 
-Carpeta **Mercado Pago**: cuenta `GET|PUT|DELETE /mercadopago/account` + test (`mp.connect`). Caja: Staff `POST /members/:id/transaction-items/mp/cart` (`items[]` → 1 link) y `POST .../cash/cart` (APPROVED + comprobante). Afiliado: `POST /me/transaction-items/mp/cart` (mismo body; JWT Member; 403 si Staff). Webhook `POST /webhooks/payment?tenantId=` (sin JWT; body `type=payment` + `data.id`). El checkout suelto pack/drop-in (`.../mp/checkout` y `.../drop-in-checkout`) **ya no existe**.
+Carpeta **Mercado Pago**: cuenta `GET|PUT|DELETE /mercadopago/account` + test (`mp.connect`) + `GET /mercadopago/account/public-key` (Brick, `cashier.operate`). Débito MONTHLY: `GET /debit-mandates`, `GET /members/:id/debit-mandate`, `POST /members/:id/debit-mandates`, `POST /debit-mandates/:id/charge` y `.../cancel`. Caja: Staff `POST /members/:id/transaction-items/mp/cart` (`items[]` → 1 link) y `POST .../cash/cart`. Afiliado: `POST /me/transaction-items/mp/cart`. Webhook `POST /webhooks/payment?tenantId=`.
 
 Carpeta **Refunds**: Member `POST /me/transaction-items/:transactionItemId/refund-requests` + `GET /me/refund-requests`. Staff `GET /refund-requests`, `POST /transactions/:transactionId/refunds` (lote) y `POST /transaction-items/:transactionItemId/refunds` (wrapper; `transaction_items.refund`; `motiveCode=doble_cobro` opcional).
 

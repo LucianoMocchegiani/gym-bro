@@ -85,6 +85,7 @@
 **Flujo principal:**
 1. Staff abre “estado de cuenta”.
 2. Sistema muestra contrataciones, créditos, deuda, pagos recientes, reservas próximas.
+3. Si hay (o se quiere) débito automático: atajo a Caja `/caja?memberId={id}&vista=debitos` — no se gestiona el mandato en la ficha (CU-PAG-010).
 
 **Postcondiciones:** Solo lectura.
 

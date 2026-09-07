@@ -2,7 +2,7 @@
 
 **Estado:** Cerrado (v1)  
 **Reglas:** RN-PAG-*, RN-RES-001, RN-SER-009  
-**Dominio:** Pago, MovimientoCaja, ArqueoCaja, Comprobante, SolicitudDevolucion
+**Dominio:** Pago, MovimientoCaja, ArqueoCaja, Comprobante, SolicitudDevolucion, MandatoDebito
 
 ---
 
@@ -99,7 +99,8 @@
    - Si fue MP: un refund contra el `payment_id` del cart (total del saldo o parcial por la suma) o marca “reembolso manual pendiente” si la API falla.
    - Caja (CASH y MP): egresos por ítem agrupados en **una** fila de ejecución + **un** comprobante `REFUND`.
 3. Comprobante de devolución + E9.
-4. Auditoría.
+4. Si se devuelve el cobro que **inscribió** un mandato de débito → baja automática del mandato (RN-PAG-016).
+5. Auditoría.
 
 **Reglas relacionadas:** RN-PAG-011, RN-PAG-006, RN-SER-009, RN-ROL-007
 
@@ -130,6 +131,72 @@
 3. Auditoría con motivo `doble_cobro`.
 
 **Reglas relacionadas:** RN-PAG-005, RN-PAG-006
+
+---
+
+## CU-PAG-008 Alta de débito automático
+
+**Actor:** Staff con permiso de caja
+
+**Precondiciones:** Cuenta MP del gym. Pack `MONTHLY`. Staff Caja.
+
+**Flujo principal (cobro + alta):**
+1. En Caja, afiliado elegido, carrito = **un** pack MONTHLY, medio **Mercado Pago**.
+2. Staff tilda débito automático (consentimiento a la vista) y cobra.
+3. Checkout tokeniza la tarjeta (Customer + Card en la cuenta del gym), crea el cobro del mes (mismo pipeline CU-PAG-001) y, al APPROVED, deja MandatoDebito `activo`.
+4. Auditoría: quién tildó, cuándo, pack, afiliado.
+
+**Flujo alternativo (solo autorización):**
+1. El afiliado ya tiene MONTHLY vigente (p. ej. pagó en efectivo) y no hay tarjeta.
+2. Staff abre pestaña Débitos (o llega desde la ficha: `/caja?memberId=&vista=debitos`).
+3. “Autorizar tarjeta” **sin** cobrar el mes. Al guardar la tarjeta → mandato `activo`. El job cobra en el `endsAt` actual.
+
+**Errores:**
+- Carrito mixto, más de un ítem, o no MONTHLY → no hay checkbox.
+- Medio efectivo → no hay checkbox (RN-PAG-014).
+- MP no configurado / tokenización rechazada → no hay mandato; el cobro del mes sigue las reglas de CU-PAG-001 si ya se inició.
+
+**Postcondiciones:** Mandato activo o nada. Contrato del mes solo si hubo pago APPROVED.
+
+**Reglas relacionadas:** RN-PAG-013, RN-PAG-014, RN-CON-001
+
+---
+
+## CU-PAG-009 Ejecutar débito (job o cobrar ahora)
+
+**Actor:** Sistema (job) o Staff (Caja)
+
+**Precondiciones:** Mandato `activo` o `reintentando`; tarjeta guardada; día de cobro = `endsAt` del contrato vigente o reintento (+1 / +2 días).
+
+**Flujo principal:**
+1. Job (timezone del gym) o staff “Cobrar ahora”.
+2. Idempotencia por periodo: `mandato + endsAt`. Si ya hay PENDING o APPROVED de ese periodo → no duplica (RN-PAG-005).
+3. Crea Transaction del pack del mandato al **precio de catálogo actual** → Payment MP con la tarjeta guardada (sin Preference de link).
+4. Webhook APPROVED → contrato nuevo (RN-CON-001) + comprobante; mandato sigue `activo`; próximo cobro = nuevo `endsAt`.
+5. Rechazo: mandato `reintentando` o `fallido` (si era el 3.er intento); Caja muestra el error; aplica RN-ACC-005 si el pack ya venció.
+
+**Errores:** Tarjeta vencida / fondos / MP → fallo visible en pestaña Débitos. No se crea contrato.
+
+**Reglas relacionadas:** RN-PAG-015, RN-PAG-004, RN-PAG-005, RN-CON-001, RN-ACC-005
+
+---
+
+## CU-PAG-010 Gestionar mandato (cola, baja, cambio de pack)
+
+**Actor:** Staff con permiso de caja
+
+**Precondiciones:** Caja.
+
+**Flujo principal:**
+1. Pestaña **Débitos**: lista a debitar hoy, reintentos, fallidos. Elegir fila abre el panel del afiliado (mismo que si `?memberId=&vista=debitos`).
+2. Panel: estado, pack del próximo cobro, último error, “Cobrar ahora” (CU-PAG-009), “Dar de baja”, “Próximo pack” (B).
+3. Baja → mandato `baja`; contrato vigente no se toca.
+4. Cambio de pack → el job del próximo `endsAt` cobra B; A se deja vencer (sin dos MONTHLY a la vez).
+5. Ficha del afiliado: no duplica esta UI; atajo a este flujo (CU-AFI-004).
+
+**Errores:** Sin permiso → denegado.
+
+**Reglas relacionadas:** RN-PAG-013, RN-PAG-016, RN-PAG-008
 
 ---
 

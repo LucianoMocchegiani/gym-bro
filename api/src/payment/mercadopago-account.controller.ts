@@ -39,6 +39,18 @@ export class MercadoPagoAccountController {
     return this.accounts.getStatus(tenantId);
   }
 
+  /**
+   * Public key para Card Payment Brick en Caja (débito).
+   */
+  @Get('public-key')
+  @RequirePermission('cashier.operate')
+  async getPublicKey(
+    @CurrentTenant() tenantId: string,
+  ): Promise<{ publicKey: string }> {
+    const publicKey = await this.accounts.getPublicKey(tenantId);
+    return { publicKey };
+  }
+
   @Put()
   @RequirePermission('mp.connect')
   upsert(

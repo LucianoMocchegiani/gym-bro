@@ -12,6 +12,7 @@ Los CU usan la plantilla de [00-indice.md](../00-indice.md) y citan IDs de [04-r
 | CU-RES-001 | Reservar sesión | [servicios-sesiones-packs](./servicios-sesiones-packs.md) |
 | CU-PAG-001 | Pago Mercado Pago | [pagos-caja](./pagos-caja.md) |
 | CU-PAG-002 | Cobro en caja | [pagos-caja](./pagos-caja.md) |
+| CU-PAG-008 | Alta débito automático (diseño) | [pagos-caja](./pagos-caja.md) |
 | CU-ACC-001 | Verificar ingreso (OID4VP) | [acceso-qr](./acceso-qr.md) |
 | CU-ACC-004 | Pase manual | [acceso-qr](./acceso-qr.md) |
 | CU-ROL-001 | Crear gym (Super) | [roles-permisos](./roles-permisos.md) |
@@ -22,7 +23,7 @@ Los CU usan la plantilla de [00-indice.md](../00-indice.md) y citan IDs de [04-r
 |---------|--------|--------|
 | [afiliados.md](./afiliados.md) | Alta y ficha de afiliados | Cerrado (v1) |
 | [servicios-sesiones-packs.md](./servicios-sesiones-packs.md) | Servicios, sesiones, packs, reservas | Cerrado (v1) |
-| [pagos-caja.md](./pagos-caja.md) | Mercado Pago, caja, devoluciones | Cerrado (v1) |
+| [pagos-caja.md](./pagos-caja.md) | Mercado Pago, caja, devoluciones, débito (diseño) | Cerrado (v1) + post-MVP débito |
 | [acceso-qr.md](./acceso-qr.md) | Acceso / QR / SSI | Cerrado (v1) |
 | [rutinas.md](./rutinas.md) | Rutinas y progreso | Cerrado (v1) |
 | [notificaciones.md](./notificaciones.md) | N1 email + in-app | Cerrado (v1) |

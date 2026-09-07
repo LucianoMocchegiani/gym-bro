@@ -3578,7 +3578,7 @@
         },
         {
             "name": "Mercado Pago",
-            "description": "CU-PAG-001/006. Cuenta `GET|PUT|DELETE /mercadopago/account` + test (`mp.connect`). Caja: Staff `POST /members/:id/transaction-items/mp/cart` (1 Preference) y `.../cash/cart` (APPROVED + receipt). Afiliado: `POST /me/transaction-items/mp/cart` (mismo body; JWT Member). Webhook `POST /webhooks/payment?tenantId=` (sin JWT). El checkout suelto pack/drop-in ya no existe.",
+            "description": "CU-PAG-001/006/008. Cuenta `GET|PUT|DELETE /api/mercadopago/account` + test (`mp.connect`) + `GET .../public-key` (Brick, `cashier.operate`). Débito MONTHLY: `GET /debit-mandates`, `POST /members/:id/debit-mandates`, `POST .../charge` y `.../cancel`. Caja cart MP/CASH igual que antes. Webhook `POST /webhooks/payment?tenantId=`.",
             "item": [
                 {
                     "name": "Staff GET MP account status",
@@ -3598,6 +3598,63 @@
                         "method": "GET",
                         "header": [],
                         "url": "{{baseUrl}}/api/mercadopago/account"
+                    }
+                },
+                {
+                    "name": "Staff GET MP public key (Brick)",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": "{{baseUrl}}/api/mercadopago/account/public-key"
+                    }
+                },
+                {
+                    "name": "Staff GET debit mandates",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": "{{baseUrl}}/api/debit-mandates?bucket=all"
+                    }
+                },
+                {
+                    "name": "Staff GET member debit view",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": "{{baseUrl}}/api/members/{{createdMemberId}}/debit-mandate"
+                    }
+                },
+                {
+                    "name": "Staff POST enroll debit mandate",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"packId\": \"{{createdPackId}}\",\n  \"cardToken\": \"REPLACE_BRICK_TOKEN\",\n  \"chargeNow\": true\n}"
+                        },
+                        "url": "{{baseUrl}}/api/members/{{createdMemberId}}/debit-mandates"
+                    }
+                },
+                {
+                    "name": "Staff POST charge debit now",
+                    "request": {
+                        "method": "POST",
+                        "header": [],
+                        "url": "{{baseUrl}}/api/debit-mandates/{{debitMandateId}}/charge"
+                    }
+                },
+                {
+                    "name": "Staff POST cancel debit mandate",
+                    "request": {
+                        "method": "POST",
+                        "header": [],
+                        "url": "{{baseUrl}}/api/debit-mandates/{{debitMandateId}}/cancel"
                     }
                 },
                 {

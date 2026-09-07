@@ -86,6 +86,10 @@ Formato: **RN-MODULO-NNN** — enunciado — excepciones.
 | RN-PAG-010 | AFIP / factura electrónica está fuera de MVP. |
 | RN-PAG-011 | El admin (con flag) puede devolver **siempre**. |
 | RN-PAG-012 | El afiliado puede solicitar devolución por la app según política del gym. **Defaults sugeridos:** libre → dentro de 1 día; pack solo sesiones → si no consumió créditos; pack mixto → deben cumplirse ambas condiciones a la vez. Configurables por gym. |
+| RN-PAG-013 | **Débito automático** (post-MVP): solo packs `MONTHLY`. Un mandato = afiliado + pack a debitar + tarjeta en la cuenta MP del gym. No hay débito de drop-in ni `ONE_TIME`. No se usa suscripción/plan de MP: GymBro dispara el cobro (tarjeta guardada + Payment). UI solo en Caja; la ficha redirige a `/caja?memberId=&vista=debitos`. |
+| RN-PAG-014 | **Alta:** (1) cobro Caja MP de **un solo** MONTHLY con tilde de débito: tokeniza, cobra el mes y deja mandato activo; o (2) pestaña Débitos: autorizar tarjeta **sin** cobrar si ya hay MONTHLY vigente. Efectivo no inscribe. Consentimiento (checkbox) + auditoría (quién, cuándo). |
+| RN-PAG-015 | **Cobro del mandato:** job el día de `endsAt` del contrato vigente (timezone del gym). Monto = precio **actual** de catálogo del pack del mandato. Mismo pipeline que Caja (Transaction → APPROVED → contrato, RN-CON-001, RN-PAG-004/005). Reintentos: `endsAt`, +1 día, +2 días (3 intentos). Un solo PENDING por periodo (`endsAt`). “Cobrar ahora” = el mismo cobro. Tras fallar los 3: mandato `fallido`; aplica deuda/tolerancia (RN-ACC-005). |
+| RN-PAG-016 | **Baja** corta cobros futuros; el contrato vigente sigue hasta `endsAt`. Devolver el cobro que inscribió el mandato → baja automática. Cambio de pack: el próximo débito usa pack B (A se deja vencer; no solapar MONTHLY). |
 
 ---
 

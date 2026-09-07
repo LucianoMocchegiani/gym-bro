@@ -85,4 +85,8 @@ export const AUDIT_ACTIONS = {
   accessCredentialRevoke: 'access.credential.revoke',
   accessManualPass: 'access.manual_pass',
   superImpersonate: 'super.impersonate',
+  debitEnroll: 'debit.enroll',
+  debitCancel: 'debit.cancel',
+  debitCharge: 'debit.charge',
+  debitUpdatePack: 'debit.update_pack',
 } as const;

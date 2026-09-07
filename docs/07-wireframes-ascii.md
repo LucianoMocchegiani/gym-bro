@@ -251,16 +251,36 @@ Devolver un cobro (picker de ítems del cart) vive en **Cierre** (`/arqueo`), no
 
 ```text
 +----------------------------------+
-| Cobro en caja                    |
+| Caja   [ Cobro | Débitos ]       |
 | Afiliado: [ buscar...      ]     |
 | Concepto: [ Pack | Drop-in | ..] |
 | Monto:    [ auto / edit ]        |
 | Medio:    [ Efectivo | Mercado Pago ] |
-| (efectivo: comprobante al instante; MP: copiar / abrir; al aprobar: ver comprobante) |
+| [ ] Débito automático            |  ← solo 1 pack MONTHLY + MP
+| (consentimiento a la vista)      |
+| (efectivo: comprobante al instante; MP: copiar / abrir; al aprobar: ver comprobante)
 | Idempotency: (auto)              |
 | (Cancelar)  (Cobrar / Generar link MP) |
 +----------------------------------+
 ```
+
+Pestaña **Débitos** (post-MVP, CU-PAG-008..010). Ficha afiliado: atajo `/caja?memberId=&vista=debitos`.
+
+```text
++----------------------------------------------------------------+
+| Caja   [ Cobro | Débitos ]     Afiliado: Perez (desde ficha)   |
+|----------------------------------------------------------------|
+| Cola: a debitar hoy | reintentando | fallidos                  |
+| Perez   MONTHLY Yoga   endsAt hoy   reintento 2/3   (abrir)    |
+|----------------------------------------------------------------|
+| Panel Perez                                                    |
+| Mandato: activo | Pack próximo: [ Yoga mensual v ]             |
+| Tarjeta: ****4242  Último error: —                             |
+| (Cobrar ahora)  (Autorizar tarjeta)  (Dar de baja)             |
++----------------------------------------------------------------+
+```
+
+“Autorizar tarjeta” solo si hay MONTHLY vigente sin tarjeta. Efectivo no muestra el checkbox de débito.
 
 ---
 
@@ -336,7 +356,7 @@ Devolver un cobro (picker de ítems del cart) vive en **Cierre** (`/arqueo`), no
 | Calendario / reserva | CU-RES-001, CU-RES-004 |
 | Rutina | CU-RUT-005/006 |
 | Admin packs/sesiones | CU-SER-* |
-| Caja | CU-PAG-002/003 |
+| Caja | CU-PAG-002/003, CU-PAG-008/009/010 (débito, diseño) |
 | Puerta / pase | CU-ACC-001/004 |
 | Super | CU-ROL-001/002 |
 | Config | CU-ACC-006/007, CU-PAG-006 |

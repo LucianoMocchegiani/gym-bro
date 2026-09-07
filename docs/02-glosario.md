@@ -56,7 +56,7 @@ Términos usados en dominio, reglas y casos de uso. Una sola palabra canónica p
 |---------|------------|
 | **Pago** | Intento o cobro registrado (MP o caja) con estado. |
 | **Mercado Pago (MP)** | Medio online; la cuenta es **del gym** (tenant). |
-| **Caja** | Cobros presenciales (efectivo u otros habilitados) operados por staff. |
+| **Caja** | Cobros presenciales (efectivo u otros habilitados) operados por staff. También es la **única UI** del débito automático (cobro + pestaña Débitos). |
 | **Caja del día** | Conjunto de movimientos de caja de una fecha + arqueo. |
 | **Cierre** | Pantalla Admin (`/arqueo`) del cierre del día: totales, arqueo y grilla de movimientos. |
 | **Categoría (caja)** | Rubro del asiento, distinto de ingreso/egreso. Hoy: Venta o Devolución, **derivada** de `cash_movements.kind` (no hay columna). Post-MVP: persistir categoría (compra, gasto-expensas, gasto-empleados) porque varios rubros serán egreso. |
@@ -65,6 +65,9 @@ Términos usados en dominio, reglas y casos de uso. Una sola palabra canónica p
 | **Comprobante interno** | Recibo GymBro (no factura AFIP). AFIP = post-MVP. |
 | **Devolución / Reembolso** | Reverso de un pago según política del gym o decisión del admin. |
 | **Tolerancia** | Días de atraso de deuda con los que aún se permite ingreso. Default 15; por gym. |
+| **Débito automático** | Cobro recurrente de un pack **MONTHLY** sin armar el carrito: GymBro debitá la tarjeta guardada el día de `endsAt`. No es suscripción-plan de Mercado Pago. Post-MVP (diseño cerrado). |
+| **Mandato de débito** | Autorización vigente: afiliado + pack MONTHLY a debitar + tarjeta MP del gym. Alta, baja y fallos se gestionan en Caja. |
+| **Pestaña Débitos** | Vista de Caja: cola (a debitar / reintentos / fallidos) y panel del afiliado. |
 
 ---
 

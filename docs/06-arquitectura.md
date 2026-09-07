@@ -250,7 +250,29 @@ Staff POST /transactions/:id/refunds (transaction_items.refund)
   → motiveCode=doble_cobro (CU-PAG-007)
 ```
 
----
+### 7.5 Débito automático MONTHLY
+
+No es suscripción/plan de MP. GymBro guarda la tarjeta (Customer + Card, misma cuenta del gym) y un cron Nest cobra con Payments API el día de `endsAt` (timezone BA).
+
+```text
+Alta cobro (CU-PAG-008):
+  Caja carrito = 1 MONTHLY + MP + tilde débito
+  → Card Payment Brick (public key) → token
+  → POST /members/:id/debit-mandates { chargeNow: true }
+  → Customer + Card + Payment → webhook interno APPROVED → mandato ACTIVE
+
+Alta sin cobro:
+  Débitos “autorizar tarjeta” { chargeNow: false } si hay MONTHLY vigente
+
+Job / Cobrar ahora (CU-PAG-009):
+  cron '20 * * * *' BA + POST /debit-mandates/:id/charge
+  idempotency = debit:{mandateId}:{YYYY-MM-DD}
+  → Transaction PACK precio catálogo → Payment card_id
+  reintentos: día 0, +1, +2 → mandato FAILED + RN-ACC-005
+
+Caja /caja?memberId=&vista=debitos (CU-PAG-010)
+Devolver el cobro que inscribió → cancelByEnrolledItems
+```
 
 ## 8. Módulo catálogo / reservas
 
@@ -381,6 +403,7 @@ Ver [99-backlog-post-mvp.md](./99-backlog-post-mvp.md). Impacto arquitectónico 
 - Módulo `shop` aislado.
 - Feature flags por plan.
 - Offline access = cola local + sync (no en MVP).
+- Débito automático MONTHLY: Customer/Card + Payments + cron Nest (no Preference sola). Ver §7.5.
 
 ---
 

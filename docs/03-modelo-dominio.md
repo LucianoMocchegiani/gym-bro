@@ -23,6 +23,7 @@ Plataforma GymBro
       ├── Contrataciones
       ├── Reservas / ListaEspera
       ├── Pagos / Caja / Arqueo
+      │    └── MandatoDebito (post-MVP, diseño)
       ├── Ingresos (acceso)
       ├── CatálogoEjercicios / Rutinas
       └── Notificaciones (plantillas, preferencias)
@@ -80,6 +81,7 @@ Plataforma GymBro
 | **ArqueoCaja** | Cierre del día | fecha, esperado, declarado, diferencia, usuarioStaffId |
 | **SolicitudDevolucion** | Pedido afiliado | pagoId, estado, motivo |
 | **Comprobante** | Recibo interno | pagoId, numero, url/datos |
+| **MandatoDebito** | Autorización de débito MONTHLY (post-MVP, diseño) | afiliadoId, packId (próximo cobro), tarjeta MP (customer/card), estado, próximo cobro, último error, staff que inscribió |
 
 ### 2.6 Acceso
 
@@ -128,6 +130,9 @@ Pack *──* Servicio (componentes / créditos por servicio)
 
 Afiliado 1──* Contratacion
 Contratacion *──1 Pack
+Afiliado 1──* MandatoDebito
+MandatoDebito *──1 Pack
+MandatoDebito *──* Pago
 
 Sesion 1──* Reserva
 Sesion 1──* ListaEsperaItem
@@ -159,6 +164,10 @@ Borrador conceptual: `pendiente_pago` → `confirmada` | `cancelada` | `asistio`
 ### Contratacion
 
 `activa` | `vencida` | `cancelada` | `reembolsada`
+
+### MandatoDebito (post-MVP)
+
+`activo` | `reintentando` | `fallido` | `baja`
 
 ### IntentoIngreso
 

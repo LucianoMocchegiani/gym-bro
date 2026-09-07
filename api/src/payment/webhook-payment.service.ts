@@ -323,6 +323,25 @@ export class WebhookPaymentService {
   }
 
   /**
+   * Confirma un cart MP a partir de un pago (débito / Checkout API).
+   *
+   * @remarks Misma ruta que el webhook cuando `externalReference` es el cart.
+   */
+  async applyMpPaymentToCart(
+    tenantId: string,
+    transactionId: string,
+    mpPaymentId: string,
+    remoteStatus: string,
+  ): Promise<MpWebhookProcessResult> {
+    return this.applyRemoteStatusCart(
+      tenantId,
+      transactionId,
+      mpPaymentId,
+      remoteStatus,
+    );
+  }
+
+  /**
    * Aplica el status remoto de MP a un cart (`externalReference` = transaction.id).
    *
    * @remarks El primer APPROVED persiste status + `mpPaymentId`, caja y

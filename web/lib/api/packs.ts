@@ -40,7 +40,7 @@ export type PackDetail = {
 /** Alias para selects de cobro. */
 export type PackSummary = Pick<
   PackDetail,
-  'id' | 'name' | 'price' | 'active' | 'kind'
+  'id' | 'name' | 'price' | 'active' | 'kind' | 'billingPeriod'
 >;
 
 export type PackComponentInput = {

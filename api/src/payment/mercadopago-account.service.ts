@@ -260,6 +260,21 @@ export class MercadoPagoAccountService {
   }
 
   /**
+   * Public key de Checkout API / Brick (no es secreto).
+   *
+   * @throws {NotFoundException} Si el gym no tiene cuenta conectada.
+   */
+  async getPublicKey(tenantId: string): Promise<string> {
+    const row = await this.prisma.mercadoPagoAccount.findUnique({
+      where: { tenantId },
+    });
+    if (!row) {
+      throw new NotFoundException('Mercado Pago account not connected');
+    }
+    return row.publicKey;
+  }
+
+  /**
    * Descifra el access_token para uso interno (checkout futuro).
    *
    * @throws {NotFoundException} Si no hay cuenta.

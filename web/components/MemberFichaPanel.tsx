@@ -1,6 +1,7 @@
 'use client';
 
 import { FormEvent, useEffect, useState } from 'react';
+import Link from 'next/link';
 import { Panel } from '@/components/AdminUi';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { ImageUpload, uploadImageToApi } from '@/components/ImageUpload';
@@ -161,6 +162,11 @@ export function MemberFichaPanel({
 
   return (
     <div className="admin-stack">
+      <p className="muted small">
+        <Link href={`/caja?memberId=${encodeURIComponent(memberId)}&vista=debitos`}>
+          Débito automático en Caja
+        </Link>
+      </p>
       <Panel title="Datos">
         <form className="admin-form" onSubmit={(e) => void onSave(e)}>
           <label>

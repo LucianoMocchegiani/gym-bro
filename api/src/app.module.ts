@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { ScheduleModule } from '@nestjs/schedule';
 import { AccessModule } from './access/access.module';
 import { AuditModule } from './audit/audit.module';
 import { AuthModule } from './auth/auth.module';
@@ -9,6 +10,7 @@ import { HealthModule } from './health/health.module';
 import { MembersModule } from './members/members.module';
 import { MemberCatalogModule } from './member-catalog/member-catalog.module';
 import { PaymentModule } from './payment/payment.module';
+import { DebitModule } from './debit/debit.module';
 import { PacksModule } from './packs/packs.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { KuatiaModule } from './kuatia/kuatia.module';
@@ -35,6 +37,7 @@ import { UploadModule } from './upload/upload.module';
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
+    ScheduleModule.forRoot(),
     PrismaModule,
     AuthModule,
     TenantModule,
@@ -53,6 +56,7 @@ import { UploadModule } from './upload/upload.module';
     PaymentRegisterModule,
     ReceiptsModule,
     PaymentModule,
+    DebitModule,
     RefundsModule,
     ReportsModule,
     AccessModule,

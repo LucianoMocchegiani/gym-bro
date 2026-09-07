@@ -75,6 +75,19 @@ Leyenda resultado: `P` pass · `F` fail · `B` bloqueado · `-` no aplica
 | P7 | Admin devolución cart (parcial o todo) | Derechos de los ítems elegidos caen; un egreso + un comprobante REFUND; se puede devolver el resto después | CU-PAG-005 | |
 | P8 | Arqueo con diferencia | Se registra diff; la grilla de Cierre es la misma que Reportes (categoría + tipo + staff + comprobante) | CU-PAG-003 | |
 
+### Débito automático (post-MVP — diseño; no correr hasta implementar)
+
+| # | Caso | Esperado | RN/CU | R |
+|---|------|----------|-------|---|
+| P9 | Tilde débito con carrito mixto o CASH | No hay checkbox | RN-PAG-014 | |
+| P9b | Cobro MP 1 MONTHLY + tilde | Tokeniza, cobra el mes, mandato activo; auditoría | CU-PAG-008 | |
+| P9c | Socio con MONTHLY efectivo: autorizar tarjeta | Sin cobro; job en `endsAt` | CU-PAG-008 | |
+| P9d | Job el día de `endsAt` | Precio catálogo actual; contrato nuevo; no duplica si PENDING | CU-PAG-009 | |
+| P9e | MP rechaza 3 veces (día 0, +1, +2) | Mandato fallido; tolerancia/deuda como hoy | RN-PAG-015 | |
+| P9f | Baja débito | No cobra de nuevo; contrato vigente sigue | CU-PAG-010 | |
+| P9g | Devolver cobro que inscribió | Mandato a baja | RN-PAG-016 | |
+| P9h | Ficha → Caja débitos | `/caja?memberId=&vista=debitos`; no hay UI de mandato en la ficha | CU-AFI-004 | |
+
 ---
 
 ## Acceso

@@ -58,6 +58,14 @@ enum BillingPeriod {
   ONE_TIME
 }
 
+/// Estado de un mandato de débito automático MONTHLY (RN-PAG-013..016).
+enum DebitMandateStatus {
+  ACTIVE
+  RETRYING
+  FAILED
+  CANCELLED
+}
+
 /// Estado de un pago (RN-PAG-003).
 enum PaymentStatus {
   PENDING
@@ -196,6 +204,7 @@ model Tenant {
   credentialOffers CredentialOffer[]
   staffCredentialOffers StaffCredentialOffer[]
   transactions    Transaction[]
+  debitMandates   DebitMandate[]
 
   @@map("tenants")
 }
@@ -306,6 +315,8 @@ model StaffUser {
   accessAttemptsRecorded    AccessAttempt[]         @relation("AccessAttemptStaff")
   accessAttemptsAsSubject   AccessAttempt[]         @relation("AccessAttemptSubjectStaff")
   staffCredentialOffers     StaffCredentialOffer[]
+  debitMandatesEnrolled     DebitMandate[]          @relation("DebitMandateEnrolledBy")
+  debitMandatesCancelled    DebitMandate[]          @relation("DebitMandateCancelledBy")
 
   @@unique([tenantId, email])
   @@index([tenantId])
@@ -341,6 +352,7 @@ model Member {
   accessAttempts AccessAttempt[]
   credentialOffers CredentialOffer[]
   transactions  Transaction[]
+  debitMandates DebitMandate[]
 
   @@unique([tenantId, email])
   @@unique([tenantId, document])
@@ -494,6 +506,7 @@ model Pack {
   transactionItems TransactionItem[]
   contracts  Contract[]
   credentialOffers CredentialOffer[]
+  debitMandates DebitMandate[]
 
   @@index([tenantId])
   @@map("packs")
@@ -627,6 +640,7 @@ model TransactionItem {
   cashMovements CashMovement[]
   receipt Receipt?
   refundRequests RefundRequest[]
+  enrolledDebitMandate DebitMandate?
 
   @@unique([tenantId, idempotencyKey])
   @@index([tenantId])
@@ -674,6 +688,45 @@ model Transaction {
   @@index([memberId])
   @@index([recordedByStaffId])
   @@map("transactions")
+}
+
+/// Mandato de débito automático de un pack MONTHLY (CU-PAG-008..010).
+///
+/// @remarks Una fila “abierta” (ACTIVE/RETRYING/FAILED) por afiliado (índice
+/// parcial SQL). El cobro lo dispara GymBro (tarjeta guardada), no un plan MP.
+model DebitMandate {
+  id                         String             @id @default(uuid()) @db.Uuid
+  tenantId                   String             @map("tenant_id") @db.Uuid
+  memberId                   String             @map("member_id") @db.Uuid
+  /// Pack que se debitará en el próximo cobro (puede diferir del vigente).
+  packId                     String             @map("pack_id") @db.Uuid
+  enrolledTransactionItemId  String?            @unique @map("enrolled_transaction_item_id") @db.Uuid
+  mpCustomerId               String             @map("mp_customer_id")
+  mpCardId                   String             @map("mp_card_id")
+  cardLastFour               String?            @map("card_last_four")
+  cardPaymentMethodId        String?            @map("card_payment_method_id")
+  status                     DebitMandateStatus
+  attemptCount               Int                @default(0) @map("attempt_count")
+  lastError                  String?            @map("last_error")
+  lastChargedAt              DateTime?          @map("last_charged_at")
+  /// Día de negocio BA del próximo cobro (`endsAt` del contrato).
+  nextChargeOn               DateTime           @map("next_charge_on") @db.Date
+  enrolledByStaffId          String             @map("enrolled_by_staff_id") @db.Uuid
+  cancelledAt                DateTime?          @map("cancelled_at")
+  cancelledByStaffId         String?            @map("cancelled_by_staff_id") @db.Uuid
+  createdAt                  DateTime           @default(now()) @map("created_at")
+  updatedAt                  DateTime           @updatedAt @map("updated_at")
+
+  tenant                 Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  member                 Member          @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  pack                   Pack            @relation(fields: [packId], references: [id], onDelete: Restrict)
+  enrolledTransactionItem TransactionItem? @relation(fields: [enrolledTransactionItemId], references: [id], onDelete: SetNull)
+  enrolledByStaff        StaffUser       @relation("DebitMandateEnrolledBy", fields: [enrolledByStaffId], references: [id], onDelete: Restrict)
+  cancelledByStaff       StaffUser?      @relation("DebitMandateCancelledBy", fields: [cancelledByStaffId], references: [id], onDelete: SetNull)
+
+  @@index([tenantId, status, nextChargeOn])
+  @@index([memberId])
+  @@map("debit_mandates")
 }
 
 /// Contratación de pack tras pago aprobado (CU-CON-001 / RN-PAG-004).
