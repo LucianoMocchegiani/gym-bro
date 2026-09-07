@@ -16,6 +16,7 @@ La creación de registros sigue la skill:
 
 ## Índice
 
+- [2026-09-07 — chat-api: scaffold, DB chat y health (C1)](./2026-09-07-chat-api-infra-c1.md)
 - [2026-09-07 — Preview de ingreso sin persistir intentos (C0)](./2026-09-07-access-preview-c0.md)
 - [2026-08-31 — App afiliado: carrito MP, historial y calendario](./2026-08-31-app-afiliado-tienda-calendario.md)
 - [2026-08-31 — Recorte de GET Staff no usados por el Admin](./2026-08-31-recorte-get-staff-sin-uso.md)
