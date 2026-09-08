@@ -2,7 +2,7 @@
 
 **Índice:** [99-backlog-post-mvp.md](../99-backlog-post-mvp.md)
 
-El **MVP N1** (email + in-app, templates, opt-out) es **E8** en el [roadmap](../11-roadmap-mvp.md). Acá canales y motor que no entran a esa épica.
+El **MVP N1** (email + in-app, templates, opt-out) es **E8** en el [roadmap](../11-roadmap-mvp.md). **No se ataca en el [cierre go-to-market](../18-prioridades-cierre-mvp.md).** Acá canales y motor que no entran a esa épica.
 
 | Ítem | Estado | Notas |
 |------|--------|--------|

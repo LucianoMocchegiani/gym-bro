@@ -117,7 +117,7 @@ Une C2 + C3. `chat-api` sigue sin conocer afiliados.
 - [x] Abort de generación
 - [x] Título automático (editable)
 - [x] Chips `links` → `router.push`
-- [ ] Tope de uso por staff (mensajes/min o tokens)
+- [ ] Tope de uso por staff (mensajes/min o tokens) — P4 en [18](./18-prioridades-cierre-mvp.md)
 - [x] Smoke: un gym, dos staff, profesor sin caja, comparación dos períodos
 - [x] README `chat-api/` + `mcp/` (cómo se “enchufa” como Redis)
 

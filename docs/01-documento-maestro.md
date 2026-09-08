@@ -100,6 +100,8 @@ Ver lista completa y priorizable en [99-backlog-post-mvp.md](./99-backlog-post-m
 
 Destacados: **tienda/e-commerce**, white label, push/WhatsApp, AFIP, offline en puerta, catálogo global de ejercicios, IA, wearables, comunidad, multi-sede completa en UI.
 
+**Cierre para vender el primer gym:** [18-prioridades-cierre-mvp.md](./18-prioridades-cierre-mvp.md) (molinetes, débito QA, landing/pricing/SEO, tokens OpenRouter; migración al final). **E7 Rutinas y E8 N1 no se atacan en ese corte** (siguen en §7 como módulos del MVP histórico).
+
 ---
 
 ## 9. Decisiones de dominio (resumen)

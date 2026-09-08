@@ -8,7 +8,8 @@ La definición de producto (C-producto) está en [`docs/`](./docs/00-indice.md).
 
 Punto de entrada: [docs/00-indice.md](./docs/00-indice.md)
 
-Roadmap del MVP: [docs/11-roadmap-mvp.md](./docs/11-roadmap-mvp.md)
+Roadmap del MVP: [docs/11-roadmap-mvp.md](./docs/11-roadmap-mvp.md)  
+Prioridades para cerrar/vender: [docs/18-prioridades-cierre-mvp.md](./docs/18-prioridades-cierre-mvp.md)
 
 Diseño acceso OID4 (Kuatia): [docs/12-acceso-quark-oid4-diseno.md](./docs/12-acceso-quark-oid4-diseno.md)  
 Issuer/verifier compartidos en Kuatia: ver sección Kuatia abajo.

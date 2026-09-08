@@ -13,8 +13,9 @@ Notas que estaban en `local/backlog-mejoras.md` (ops). El setup de desarrollo ya
 | Onboarding de gym piloto | Pendiente | 1 gym real, capacitación, feedback |
 | Legal: ToS + privacidad (Argentina) | Pendiente | |
 | Branding / identidad visual | Pendiente | Paleta y tipos ya en uso; falta logo/guideline |
-| Pricing / planes SaaS | Pendiente | Ver [producto.md](./producto.md) |
-| Marketing landing | Pendiente | |
+| Pricing / planes SaaS | Prioridad cierre (P3) | Ver [producto.md](./producto.md) · [18](../18-prioridades-cierre-mvp.md) |
+| Marketing landing | Prioridad cierre (P3) | Landing + SEO. [18](../18-prioridades-cierre-mvp.md) |
+| Migración de datos (Excel + IA) | Prioridad baja (P5) | Importar socios/packs de otro sistema. **Después del piloto** si no bloquea. [18](../18-prioridades-cierre-mvp.md) |
 | Soporte / onboarding de más gyms | Pendiente | |
 | Deploy prod + CI/CD | Pendiente | Multi-stage, migraciones al deploy, secrets |
 

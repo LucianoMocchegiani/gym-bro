@@ -374,20 +374,16 @@ E11 → E12
 
 ## Próximo paso
 
-Roadmap E9/E10 realineados (2026-08-13) tras [auditoría](./14-auditoria-roadmap-vs-codigo-2026-08-13.md).
-
-**Orden sugerido para cerrar faltantes UI:**
+**Cierre go-to-market (corte 2026-09-08):** [18-prioridades-cierre-mvp.md](./18-prioridades-cierre-mvp.md).
 
 ```text
-1) Flutter E9 tanda 2: comprobantes + listado de solicitudes en Pagos
-   (carrito MP tanda 1 en código; pendiente prueba)
-2) Admin E10 thin: MP staff / pase sesión opcional
-   → recurrencia / creditsExpireAt / receipts (después)
-3) E5 MP live (ops) → E8 → E7 → E12
+P1 molinetes → P2 débito QA (+ E5 MP live) → P3 landing/pricing/SEO
+  → P4 tokens OpenRouter → P5 migración Excel/IA (último, opcional al piloto)
+En paralelo ops: staging/prod, ToS, smoke E12, gym piloto
+E7 rutinas y E8 N1: fuera de este corte (siguen [ ] en este roadmap)
+P1 forma del piloto (molinete vs tablet): se evalúa
 ```
-
-E7/E8 siguen `[ ]` (sin API). No marcar E9/E10 como cerradas hasta agotar las subtareas “Pendiente” de cada sección.
 
 ---
 
-[Índice](./00-indice.md) · [Backlog post-MVP](./99-backlog-post-mvp.md) · [Arquitectura](./06-arquitectura.md) · [Roadmap chat MCP](./17-roadmap-chat-mcp.md)
+[Índice](./00-indice.md) · [Prioridades cierre MVP](./18-prioridades-cierre-mvp.md) · [Backlog post-MVP](./99-backlog-post-mvp.md) · [Arquitectura](./06-arquitectura.md) · [Roadmap chat MCP](./17-roadmap-chat-mcp.md)

@@ -2,7 +2,7 @@
 
 **Índice:** [99-backlog-post-mvp.md](../99-backlog-post-mvp.md)
 
-El **MVP de rutinas** (catálogo del gym, template, asignación, cumplimiento en app) es **E7** en el [roadmap](../11-roadmap-mvp.md). Acá solo lo que queda afuera de esa épica.
+El **MVP de rutinas** (catálogo del gym, template, asignación, cumplimiento en app) es **E7** en el [roadmap](../11-roadmap-mvp.md). **No se ataca en el [cierre go-to-market](../18-prioridades-cierre-mvp.md).** Acá solo lo que queda afuera de esa épica.
 
 | Ítem | Estado | Notas |
 |------|--------|--------|

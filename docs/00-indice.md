@@ -47,6 +47,7 @@ Reglas relacionadas
 | [15-kuatia-deuda-rename.md](./15-kuatia-deuda-rename.md) | Deuda rename/SDK Kuatia; path `identity_core_dart` | Viva |
 | [16-chat-mcp-diseno.md](./16-chat-mcp-diseno.md) | Asistente Admin: `chat-api` portable + MCP GymBro + drawer; diseño cerrado (C7: chips; tope de uso pendiente) | Cerrado (diseño) |
 | [17-roadmap-chat-mcp.md](./17-roadmap-chat-mcp.md) | Tareas ordenadas del asistente (C0–C7); post-MVP | Borrador |
+| [18-prioridades-cierre-mvp.md](./18-prioridades-cierre-mvp.md) | Prioridades para un MVP vendible (molinetes, débito QA, landing/SEO, tokens, migración) | Viva |
 | [mobile/isar-wallet.md](./mobile/isar-wallet.md) | Wallet local (Isar): VCs en el device, secreto, workaround AGP 8 | Viva |
 | [credenciales-demo.md](./credenciales-demo.md) | Cuentas seed locales (Super / Staff / Member) | Viva |
 | [99-backlog-post-mvp.md](./99-backlog-post-mvp.md) | Índice de diferidos; detalle en [99-backlog-post-mvp/](./99-backlog-post-mvp/) | Viva |
@@ -71,7 +72,7 @@ Reglas relacionadas
 2. Glosario → Dominio → Reglas  
 3. Casos de uso  
 4. Arquitectura → **Esquema DB** → Wireframes → Pruebas manuales  
-5. Método de definición → Roadmap MVP → **Diseño Quark acceso** → Backlog post-MVP  
+5. Método de definición → Roadmap MVP → **Prioridades cierre MVP** → **Diseño Quark acceso** → Backlog post-MVP  
 
 Cada documento incluye al final: enlace al **índice** y al **siguiente** del flujo.
 
