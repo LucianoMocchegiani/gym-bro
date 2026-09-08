@@ -23,6 +23,7 @@ Super Admin: **http://localhost:3002/super/login**
 |--------|--------|----------|--------|
 | Super Admin | `super@faciliter.xyz` | `ChangeMe123!` | Sin tenant · `/super/login` |
 | Staff (Admin del gym) | `admin@gymdeprueba.com` | `ChangeMe123!` | slug `gym-de-prueba` · `gym-de-prueba.localhost:3002` |
+| Staff (Profesor) | `profesor@gymdeprueba.com` | `ChangeMe123!` | Sin caja ni débitos; sí reportes, puerta, sesiones, afiliados lectura |
 | Afiliado (Member) | `socio@gymdeprueba.com` | `ChangeMe123!` | slug `gym-de-prueba` · app Flutter / API |
 
 El staff demo queda con rol sistema **Admin** tras el seed.  

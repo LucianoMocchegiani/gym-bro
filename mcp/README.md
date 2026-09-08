@@ -2,7 +2,11 @@
 
 Sidecar GymBro: traduce tools MCP → `GET` de Nest con el Bearer del staff. **No** es el agente (eso es `chat-api`). Sin writes.
 
-Diseño: [`docs/16-chat-mcp-diseno.md`](../docs/16-chat-mcp-diseno.md) · roadmap C6: [`docs/17-roadmap-chat-mcp.md`](../docs/17-roadmap-chat-mcp.md).
+Diseño: [`docs/16-chat-mcp-diseno.md`](../docs/16-chat-mcp-diseno.md) · roadmap: [`docs/17-roadmap-chat-mcp.md`](../docs/17-roadmap-chat-mcp.md).
+
+## Cómo se enchufa
+
+`chat-api` es el Redis: portable, no sabe de GymBro. Este sidecar **sí** es GymBro: tools → `GET` Nest. Otra plataforma escribe **otro** MCP y apunta `CHAT_MCP_URL` ahí. El Bearer del staff viaja request a request; Nest autoriza.
 
 ## Env
 
@@ -42,15 +46,15 @@ docker compose up --build -d api mcp
 
 ## Smoke (host)
 
-1. Login Staff (Postman **GymBro API** o Admin) y copiá el access token.
-2. Con `api` + `mcp` arriba:
+Con `api` + `mcp` arriba y seed reciente (Admin + Profesor):
 
 ```powershell
 cd mcp
-$env:ACCESS_TOKEN = "<JWT>"
 npm run smoke
 ```
 
-Esperado: lista las 17 tools, `search_members` slim, `suggest_nav`, `get_reports_summary` sin args (mes actual) y `get_help` topic `packs`.
+Login automático a `http://localhost:3001` (`admin@gymdeprueba.com` y `profesor@gymdeprueba.com`). Overrides: `ACCESS_TOKEN`, `ACCESS_TOKEN_PROFESOR`, `GYMBRO_API_URL`, `TENANT_SLUG`.
+
+Esperado: 17 tools; reportes `this_month` ≠ `last_month`; Admin puede caja; Profesor recibe “no hay permiso” en caja/débitos y sí reportes + help.
 
 Colección Postman aparte: `postman/GymBro.mcp.postman_collection.json` (health + initialize). El flujo completo de tools es el smoke.

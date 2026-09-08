@@ -95,7 +95,8 @@ function getServerHostSlug(): null {
 }
 
 /**
- * Shell Admin: sidebar de navegación + topbar (asistente / tema / perfil / logout).
+ * Shell Admin: sidebar de navegación + topbar (tema / perfil).
+ * El asistente es burbuja fija (no va en el topbar).
  *
  * @remarks Filtra links según `session.permissionCodes` (GET /me/permissions).
  */
@@ -216,7 +217,6 @@ export function AdminShell({
               ) : null}
             </div>
             <div className="app-topbar-right">
-              <AssistantLauncher />
               <ThemeToggle />
               <Link
                 href="/cuenta"
@@ -243,6 +243,7 @@ export function AdminShell({
           {children}
         </div>
       </div>
+      <AssistantLauncher />
     </div>
   );
 }

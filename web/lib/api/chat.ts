@@ -27,6 +27,7 @@ export type ChatMessage = {
   role: string;
   content: string;
   toolName: string | null;
+  toolResult?: unknown;
   createdAt: string;
 };
 
@@ -185,7 +186,7 @@ export async function listChatMessages(id: string): Promise<ChatMessage[]> {
 
 export type ChatStreamHandlers = {
   onToolStart: (toolCallId: string, toolName: string) => void;
-  onToolDone: (toolCallId: string, toolName: string) => void;
+  onToolDone: (toolCallId: string, toolName: string, output?: unknown) => void;
   onTextDelta: (delta: string) => void;
   onStreamError: (message: string) => void;
 };
@@ -297,6 +298,8 @@ function applyStreamEvent(event: unknown, handlers: ChatStreamHandlers): void {
     toolName?: unknown;
     delta?: unknown;
     errorText?: unknown;
+    output?: unknown;
+    result?: unknown;
   };
   const type = typeof rec.type === 'string' ? rec.type : '';
   if (type === 'tool-input-start') {
@@ -311,7 +314,7 @@ function applyStreamEvent(event: unknown, handlers: ChatStreamHandlers): void {
     const id = typeof rec.toolCallId === 'string' ? rec.toolCallId : '';
     const name = typeof rec.toolName === 'string' ? rec.toolName : 'tool';
     if (id) {
-      handlers.onToolDone(id, name);
+      handlers.onToolDone(id, name, rec.output ?? rec.result);
     }
     return;
   }

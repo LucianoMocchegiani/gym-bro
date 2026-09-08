@@ -94,7 +94,7 @@ Archivo [`GymBro.mcp.postman_collection.json`](./GymBro.mcp.postman_collection.j
 1. Importá **GymBro MCP** + el environment **GymBro Local** (y la colección API para el login).
 2. Login Staff en **GymBro API** (llena `accessToken`).
 3. Health (`{{mcpUrl}}` = `http://localhost:3011`) + initialize JSON-RPC. Sin Bearer → 401.
-4. Tools A–D: `cd mcp; $env:ACCESS_TOKEN='…'; npm run smoke` (el cliente MCP maneja sesión). README: [`mcp/README.md`](../mcp/README.md).
+4. Tools A–D: `cd mcp; npm run smoke` (login Admin + Profesor si no hay `ACCESS_TOKEN`). README: [`mcp/README.md`](../mcp/README.md).
 
 ## Multi-tenant
 

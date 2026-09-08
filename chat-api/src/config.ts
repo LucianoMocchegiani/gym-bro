@@ -84,7 +84,7 @@ export const config: ChatConfig = {
   corsAppDomain: process.env.CORS_APP_DOMAIN?.trim().toLowerCase() || null,
   chatSystemPrompt:
     process.env.CHAT_SYSTEM_PROMPT?.trim() ||
-    'Hablá en español. Usá las tools. No inventes ids.',
+    'Hablá en español. Usá las tools. No inventes ids. Si piden abrir o el link de una pantalla, llamá suggest_nav (o la tool de navegación) en vez de escribir solo la ruta.',
   contextTokenBudget: parsePositiveInt(process.env.CHAT_CONTEXT_TOKENS, 10_000),
   maxToolSteps: parsePositiveInt(process.env.CHAT_MAX_TOOL_STEPS, 8),
 };

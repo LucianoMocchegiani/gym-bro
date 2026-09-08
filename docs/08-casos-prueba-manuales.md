@@ -139,7 +139,7 @@ Leyenda resultado: `P` pass · `F` fail · `B` bloqueado · `-` no aplica
 
 | # | Caso | Esperado | RN/CU | R |
 |---|------|----------|-------|---|
-| C5-1 | Staff en `demo.localhost:3002`, botón Asistente | Abre drawer; Caja sigue detrás | C5 | |
+| C5-1 | Staff, burbuja Asistente abajo a la derecha | Abre drawer; Caja sigue detrás | C5 | |
 | C5-2 | Primer uso / sin hilos | Vacío + composer; enviar crea hilo y stremea | C5 | |
 | C5-3 | Reabrir drawer | Último hilo + historial (tools en una línea) | C5 | |
 | C5-4 | Archivar hilo | Sale de la lista; si era el activo, abre otro o vacío | C5 | |
@@ -165,6 +165,8 @@ Leyenda resultado: `P` pass · `F` fail · `B` bloqueado · `-` no aplica
 | C7-1 | Nuevo chat + primer mensaje | Sidebar deja de decir “Sin título”; recorta el texto. Se puede editar y Enter/blur guarda | C7 | |
 | C7-2 | Parar a mitad de stream | Enviar → Parar; queda lo generado (texto/tools). Se puede seguir el hilo | C7 | |
 | C7-3 | OpenRouter sin crédito / clave mala | Banner claro (crédito o clave). No se pierde el mensaje del staff | C7 | |
+| C7-4 | Chip de una tool (p. ej. Reportes) | Cierra el drawer y navega a `/reportes` | C7 | |
+| C7-5 | `npm run smoke` en `mcp/` tras seed | Admin: dos períodos distintos; Profesor: caja/débito sin permiso, reportes+help OK | C7 | |
 
 ---
 

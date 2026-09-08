@@ -359,7 +359,7 @@ web/
         └── Composer.tsx           # Textarea, enviar, cortar stream
 ```
 
-`AdminShell.tsx` (ya existe) suma el botón del topbar. Compose: `mcp` + `chat-api`; Postgres database `chat`. `web/.env`: `NEXT_PUBLIC_CHAT_API_URL=http://localhost:3010`.
+`AdminShell.tsx` (ya existe) suma la burbuja fija abajo a la derecha. Compose: `mcp` + `chat-api`; Postgres database `chat`. `web/.env`: `NEXT_PUBLIC_CHAT_API_URL=http://localhost:3010`.
 
 ---
 
@@ -511,7 +511,7 @@ Sin passwords. Sin `tenant_id` inventado por el body: sale del JWT. Toda query d
 
 ### 12.6 Drawer en `web/`
 
-- Componente client en `AdminShell` (botón topbar).
+- Componente client en `AdminShell` (burbuja fija; no en el topbar).
 - `NEXT_PUBLIC_CHAT_API_URL` (p.ej. `http://localhost:3010`).
 - Reusa `readStaffSession().accessToken`.
 - Cliente stream del AI SDK (`useChat` apuntando a chat-api, o fetch SSE).

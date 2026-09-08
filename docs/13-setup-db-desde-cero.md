@@ -57,6 +57,7 @@ docker compose up --build -d
 |--------|-------|----------|
 | Super | `super@faciliter.xyz` | `ChangeMe123!` |
 | Staff (Demo Gym) | `admin@gymdeprueba.com` | `ChangeMe123!` |
+| Staff Profesor | `profesor@gymdeprueba.com` | `ChangeMe123!` |
 | Afiliado | `socio@gymdeprueba.com` | `ChangeMe123!` |
 
 Tenant demo: slug `demo`, id fijo `00000000-0000-4000-8000-000000000001`.

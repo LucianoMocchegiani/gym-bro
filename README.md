@@ -62,7 +62,7 @@ Servicios:
 | chat-api health | http://localhost:3010/health |
 | chat-api hilos | `GET/POST /v1/conversations` (JWT Staff; C2) |
 | chat-api mensajes | `GET/POST /v1/conversations/:id/messages` (stream + historial; C4) |
-| Admin asistente | Drawer en el topbar Staff (`NEXT_PUBLIC_CHAT_API_URL`; C5) |
+| Admin asistente | Burbuja abajo a la derecha en Staff (`NEXT_PUBLIC_CHAT_API_URL`; C5) |
 | mcp health | http://localhost:3011/health |
 | mcp tools | `POST /mcp` Streamable HTTP (JWT Staff; C3+C6, lectura A–D) |
 | Kuatia | URLs públicas del producto (ver `KUATIA_*_BASE_URL` en `api/.env`) |
@@ -132,7 +132,7 @@ docker compose exec api npm run prisma:seed
 
 Health con DB: `GET /api/health` → `{ status, database, checkedAt }`.
 
-chat-api (asistente, post-MVP): Prisma 6 en `chat-api/prisma/`, database **`chat`** en el mismo Postgres. Cero strings `GYMBRO_*`. Diseño: [docs/16-chat-mcp-diseno.md](./docs/16-chat-mcp-diseno.md).
+chat-api (asistente, post-MVP): Prisma 6 en `chat-api/prisma/`, database **`chat`** en el mismo Postgres. Cero strings `GYMBRO_*`. Cómo enchufarlo: [`chat-api/README.md`](./chat-api/README.md) · diseño: [docs/16-chat-mcp-diseno.md](./docs/16-chat-mcp-diseno.md).
 
 ```powershell
 docker compose exec chat-api npx prisma migrate deploy
@@ -142,11 +142,11 @@ Health: `GET http://localhost:3010/health` → `{ status, database, checkedAt }`
 
 Hilos (C2): `Authorization: Bearer` Staff. Introspecta `AUTH_INTROSPECT_URL` (`GET /api/auth/me`). `GET/POST /v1/conversations`, `GET/PATCH/DELETE /v1/conversations/:id` (DELETE archiva). Member/Super → 403.
 
-Mensajes (C4): `POST /v1/conversations/:id/messages` body `{ "text" }` → UI Message Stream (OpenRouter + MCP con el mismo Bearer). `GET …/messages` lista user/assistant/tool. Clave real en `OPENROUTER_API_KEY`. Título automático = C7.
+Mensajes (C4/C7): `POST /v1/conversations/:id/messages` body `{ "text" }` → UI Message Stream (OpenRouter + MCP con el mismo Bearer). `GET …/messages` lista user/assistant/tool. Clave real en `OPENROUTER_API_KEY`. Título automático + abort.
 
-Drawer Admin (C5/C7): botón Asistente en el topbar Staff. Título automático (editable) y Parar a mitad de respuesta. `web/.env` → `NEXT_PUBLIC_CHAT_API_URL=http://localhost:3010`. Tras editar, `docker compose restart web`. Panel por túnel (`https://{slug}.faciliter.xyz`): `CORS_APP_DOMAIN` en `chat-api/.env` (mismo criterio que Nest) y recrear `chat-api`.
+Drawer Admin (C5/C7): burbuja Asistente abajo a la derecha (no va en el topbar). Título automático (editable), Parar, chips de `links` hacia pantallas Admin. `web/.env` → `NEXT_PUBLIC_CHAT_API_URL=http://localhost:3010`. Tras editar, `docker compose restart web`. Panel por túnel (`https://{slug}.faciliter.xyz`): `CORS_APP_DOMAIN` en `chat-api/.env` (mismo criterio que Nest) y recrear `chat-api`.
 
-MCP GymBro (C3+C6): sidecar `mcp/` en Compose (`:3011`). `GET /health` (sin auth). Tools de lectura A–D (operación, reportes/débitos/devoluciones, catálogo/roles/audit, `get_help`) vía `POST /mcp` con el mismo JWT Staff. Nest sigue autorizando. README: [`mcp/README.md`](./mcp/README.md).
+MCP GymBro (C3+C6): sidecar `mcp/` en Compose (`:3011`). `GET /health` (sin auth). Tools de lectura A–D vía `POST /mcp` con el mismo JWT Staff. Nest sigue autorizando. README: [`mcp/README.md`](./mcp/README.md). Smoke: `cd mcp; npm run smoke` (Admin + Profesor seed).
 
 ### Auth (JWT + refresh)
 
@@ -155,7 +155,7 @@ Seed y credenciales: [docs/13-setup-db-desde-cero.md](./docs/13-setup-db-desde-c
 | Perfil | Endpoint | Seed |
 |--------|----------|------|
 | Super | `POST /api/auth/super/login` | `super@faciliter.xyz` / `ChangeMe123!` |
-| Staff | `POST /api/auth/staff/login` (+ `tenantId`) | `admin@gymdeprueba.com` / `ChangeMe123!` |
+| Staff | `POST /api/auth/staff/login` (+ `tenantId`) | `admin@gymdeprueba.com` / `ChangeMe123!` (también `profesor@gymdeprueba.com`) |
 | Afiliado | `POST /api/auth/member/login` (+ `tenantId`) | `socio@gymdeprueba.com` / `ChangeMe123!` |
 
 Detalle (bodies, tenant id): [`docs/credenciales-demo.md`](./docs/credenciales-demo.md).

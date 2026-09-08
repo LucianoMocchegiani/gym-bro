@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { createPortal } from 'react-dom';
+import { useRouter } from 'next/navigation';
 import { NavIconAssistant } from '@/components/AdminNavIcons';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { Composer } from '@/components/assistant/Composer';
@@ -27,6 +28,7 @@ import {
   readLastConversationId,
   writeLastConversationId,
 } from '@/lib/chat/last-conversation';
+import { isSafeAdminHref, parseLinksFromAssistantText, parseToolLinks } from '@/lib/chat/links';
 import { titleFromFirstMessage } from '@/lib/chat/title';
 
 function toBubbles(rows: ChatMessage[]): ThreadBubble[] {
@@ -37,6 +39,12 @@ function toBubbles(rows: ChatMessage[]): ThreadBubble[] {
       role: row.role as 'user' | 'assistant' | 'tool',
       content: row.content,
       toolName: row.toolName ?? undefined,
+      links:
+        row.role === 'tool'
+          ? parseToolLinks(row.toolResult ?? row.content)
+          : row.role === 'assistant'
+            ? parseLinksFromAssistantText(row.content)
+            : undefined,
     }));
 }
 
@@ -52,12 +60,13 @@ function subscribeNever(): () => void {
 }
 
 /**
- * Botón del topbar + drawer del asistente. Caja y el resto siguen detrás.
+ * Botón burbuja + drawer del asistente. Caja y el resto siguen detrás.
  *
  * @remarks JWT Staff. Tools en una línea. Archivar = DELETE C2. Al abrir
- * retoma el último hilo. Título auto + abort. Chips y tope de uso = C7 resto.
+ * retoma el último hilo. Título auto, abort y chips. Tope de uso queda fuera.
  */
 export function AssistantLauncher() {
+  const router = useRouter();
   const { session } = useAuth();
   const tenantId = session?.tenantId ?? '';
   const userId = session?.userId ?? '';
@@ -188,6 +197,14 @@ export function AssistantLauncher() {
     abortRef.current?.abort();
   }
 
+  function handleOpenLink(href: string): void {
+    if (!isSafeAdminHref(href)) {
+      return;
+    }
+    handleClose();
+    router.push(href);
+  }
+
   async function handleNew(): Promise<void> {
     setError(null);
     try {
@@ -308,11 +325,12 @@ export function AssistantLauncher() {
               ];
             });
           },
-          onToolDone: (toolCallId, toolName) => {
+          onToolDone: (toolCallId, toolName, output) => {
+            const links = parseToolLinks(output);
             setBubbles((prev) =>
               prev.map((item) =>
                 item.key === toolCallId
-                  ? { ...item, toolName, pending: false }
+                  ? { ...item, toolName, pending: false, links }
                   : item,
               ),
             );
@@ -323,12 +341,25 @@ export function AssistantLauncher() {
               if (idx < 0) {
                 return [
                   ...prev,
-                  { key: assistantKey, role: 'assistant', content: delta },
+                  {
+                    key: assistantKey,
+                    role: 'assistant',
+                    content: delta,
+                    links: parseLinksFromAssistantText(delta),
+                  },
                 ];
               }
-              return prev.map((item, index) =>
-                index === idx ? { ...item, content: item.content + delta } : item,
-              );
+              return prev.map((item, index) => {
+                if (index !== idx) {
+                  return item;
+                }
+                const content = item.content + delta;
+                return {
+                  ...item,
+                  content,
+                  links: parseLinksFromAssistantText(content),
+                };
+              });
             });
           },
           onStreamError: (message) => {
@@ -439,7 +470,11 @@ export function AssistantLauncher() {
                 {listLoading || threadLoading ? (
                   <p className="muted">Cargando…</p>
                 ) : (
-                  <MessageThread items={bubbles} emptyHint={emptyHint} />
+                  <MessageThread
+                    items={bubbles}
+                    emptyHint={emptyHint}
+                    onOpenLink={handleOpenLink}
+                  />
                 )}
               </div>
               <Composer
@@ -472,19 +507,25 @@ export function AssistantLauncher() {
 
   return (
     <>
-      <button
-        type="button"
-        className="theme-toggle"
-        aria-expanded={open}
-        aria-controls="assistant-panel"
-        aria-label="Abrir asistente"
-        title="Asistente"
-        onClick={() => {
-          void handleOpen();
-        }}
-      >
-        <NavIconAssistant />
-      </button>
+      {mounted
+        ? createPortal(
+            <button
+              type="button"
+              className="assistant-fab"
+              aria-expanded={open}
+              aria-controls="assistant-panel"
+              aria-label="Abrir asistente"
+              title="Asistente"
+              hidden={open}
+              onClick={() => {
+                void handleOpen();
+              }}
+            >
+              <NavIconAssistant />
+            </button>,
+            document.body,
+          )
+        : null}
       {mounted ? createPortal(overlay, document.body) : null}
     </>
   );

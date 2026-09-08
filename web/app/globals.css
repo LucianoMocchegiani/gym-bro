@@ -285,30 +285,38 @@ button.linkish:hover {
   z-index: 30;
 }
 
-/* Scrollbars: sidebar + modales (thin, tema dark/light). */
+/* Scrollbars: sidebar, modales, drawer asistente (thin, tema dark/light). */
 .app-sidebar,
 .admin-modal,
-.audit-json {
+.audit-json,
+.assistant-list,
+.assistant-thread-wrap {
   scrollbar-width: thin;
   scrollbar-color: color-mix(in srgb, var(--muted) 70%, transparent) transparent;
 }
 
 .app-sidebar::-webkit-scrollbar,
 .admin-modal::-webkit-scrollbar,
-.audit-json::-webkit-scrollbar {
+.audit-json::-webkit-scrollbar,
+.assistant-list::-webkit-scrollbar,
+.assistant-thread-wrap::-webkit-scrollbar {
   width: 8px;
   height: 8px;
 }
 
 .app-sidebar::-webkit-scrollbar-track,
 .admin-modal::-webkit-scrollbar-track,
-.audit-json::-webkit-scrollbar-track {
+.audit-json::-webkit-scrollbar-track,
+.assistant-list::-webkit-scrollbar-track,
+.assistant-thread-wrap::-webkit-scrollbar-track {
   background: transparent;
 }
 
 .app-sidebar::-webkit-scrollbar-thumb,
 .admin-modal::-webkit-scrollbar-thumb,
-.audit-json::-webkit-scrollbar-thumb {
+.audit-json::-webkit-scrollbar-thumb,
+.assistant-list::-webkit-scrollbar-thumb,
+.assistant-thread-wrap::-webkit-scrollbar-thumb {
   background-color: color-mix(in srgb, var(--muted) 55%, transparent);
   border-radius: 999px;
   border: 2px solid transparent;
@@ -317,7 +325,9 @@ button.linkish:hover {
 
 .app-sidebar::-webkit-scrollbar-thumb:hover,
 .admin-modal::-webkit-scrollbar-thumb:hover,
-.audit-json::-webkit-scrollbar-thumb:hover {
+.audit-json::-webkit-scrollbar-thumb:hover,
+.assistant-list::-webkit-scrollbar-thumb:hover,
+.assistant-thread-wrap::-webkit-scrollbar-thumb:hover {
   background-color: color-mix(in srgb, var(--accent) 75%, transparent);
   border: 2px solid transparent;
   background-clip: padding-box;
@@ -325,7 +335,9 @@ button.linkish:hover {
 
 .app-sidebar::-webkit-scrollbar-corner,
 .admin-modal::-webkit-scrollbar-corner,
-.audit-json::-webkit-scrollbar-corner {
+.audit-json::-webkit-scrollbar-corner,
+.assistant-list::-webkit-scrollbar-corner,
+.assistant-thread-wrap::-webkit-scrollbar-corner {
   background: transparent;
 }
 
@@ -2296,7 +2308,45 @@ button.danger {
   }
 }
 
-/* —— Asistente (drawer C5) —— */
+/* —— Asistente (burbuja + drawer) —— */
+
+.assistant-fab {
+  position: fixed;
+  right: max(1.25rem, env(safe-area-inset-right));
+  bottom: max(1.25rem, env(safe-area-inset-bottom));
+  z-index: 44;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 3.5rem;
+  height: 3.5rem;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: var(--accent);
+  color: var(--accent-ink);
+  box-shadow: 0 6px 22px rgba(0, 0, 0, 0.28);
+  transition: transform 0.15s ease, filter 0.15s ease;
+}
+
+.assistant-fab:hover {
+  filter: brightness(1.06);
+  transform: scale(1.05);
+}
+
+.assistant-fab:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 3px;
+}
+
+.assistant-fab[hidden] {
+  display: none;
+}
+
+.assistant-fab svg {
+  width: 1.55rem;
+  height: 1.55rem;
+}
 
 .assistant-root {
   position: fixed;
@@ -2475,8 +2525,16 @@ button.danger {
   padding: 0.15rem 0.2rem;
 }
 
-.assistant-md {
+.assistant-md-link {
+  display: inline;
   margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--accent);
+  font: inherit;
+  text-decoration: underline;
+  cursor: pointer;
 }
 
 .assistant-composer {
@@ -2499,6 +2557,23 @@ button.danger {
 
 .assistant-disclaimer {
   margin: 0 1rem 0.85rem;
+}
+
+.assistant-chips-row {
+  list-style: none;
+  padding: 0 0.2rem;
+}
+
+.assistant-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.assistant-chip {
+  margin: 0;
+  font-size: 0.82rem;
+  padding: 0.25rem 0.65rem;
 }
 
 @media (max-width: 720px) {

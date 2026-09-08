@@ -8,7 +8,7 @@
 E7 Rutinas, E8 Notificaciones y MP live siguen en el [roadmap MVP](./11-roadmap-mvp.md). No se copian acá.
 
 **En diseño / implementación (docs + código, QA pendiente):** débito automático MONTHLY — [pagos.md](./99-backlog-post-mvp/pagos.md).  
-**C7 en curso:** abort + título auto + errores OpenRouter. Faltan chips, tope de uso, smoke dos staff, README Redis. [17](./17-roadmap-chat-mcp.md) · [16](./16-chat-mcp-diseno.md).
+**C7 en el repo:** abort, título, chips, smoke dos staff, README Redis. **Tope de uso** (mensajes/min o tokens) queda pendiente. [17](./17-roadmap-chat-mcp.md) · [16](./16-chat-mcp-diseno.md).
 
 ---
 

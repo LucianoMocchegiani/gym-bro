@@ -366,14 +366,14 @@ Pestaña **Débitos** (post-MVP, CU-PAG-008..010). Ficha afiliado: atajo `/caja?
 
 ## 16. Asistente Admin (drawer, post-MVP)
 
-Sin ruta `/asistente`. Botón en el topbar; Caja sigue detrás.
+Sin ruta `/asistente`. Burbuja abajo a la derecha (estilo Mercado Libre); Caja sigue detrás.
 
 ```text
 +--------------------------------------------------------------+
-|  GymBro Admin                         [Asistente] [tema] [yo]|
+|  GymBro Admin                              [tema] [yo]       |
 +------------+-------------------------------------------------+
 | Caja       |  Caja del día …                                 |
-|            |                                                 |
+|            |                                          ( ● )  |
 +------------+----------------------+--------------------------+
              | Sin título           |  Staff: ¿Tenemos Socio?  |
              | [Nuevo]              |  Buscó afiliados         |

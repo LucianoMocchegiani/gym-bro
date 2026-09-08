@@ -94,7 +94,7 @@ Une C2 + C3. `chat-api` sigue sin conocer afiliados.
 
 - [x] `web/lib/api/chat.ts` (Bearer de sesión Staff; refresh como `apiRequest`)
 - [x] `AssistantDrawer` + lista + hilo + composer
-- [x] Botón en `AdminShell`
+- [x] Burbuja fija en `AdminShell` (no en el topbar)
 - [x] `NEXT_PUBLIC_CHAT_API_URL`
 - [x] Estados: vacío, loading, error, 401, 403
 - [x] Disclaimer (“puede equivocarse; no cobra”)
@@ -116,10 +116,10 @@ Une C2 + C3. `chat-api` sigue sin conocer afiliados.
 
 - [x] Abort de generación
 - [x] Título automático (editable)
-- [ ] Chips `links` → `router.push`
+- [x] Chips `links` → `router.push`
 - [ ] Tope de uso por staff (mensajes/min o tokens)
-- [ ] Smoke: un gym, dos staff, profesor sin caja, comparación dos períodos
-- [ ] README `chat-api/` + `mcp/` (cómo se “enchufa” como Redis)
+- [x] Smoke: un gym, dos staff, profesor sin caja, comparación dos períodos
+- [x] README `chat-api/` + `mcp/` (cómo se “enchufa” como Redis)
 
 ---
 

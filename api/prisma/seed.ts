@@ -115,7 +115,7 @@ const PROFESOR_CODES = [
 ];
 
 /**
- * Seed de desarrollo: Super + tenant demo completo (branch, roles, staff Admin, member).
+ * Seed de desarrollo: Super + tenant demo completo (branch, roles, staff Admin y Profesor, member).
  *
  * @remarks Credenciales solo para entornos locales. Kuatia: wallets compartidos
  * vía `KUATIA_*` en env (consola Kuatia); el seed no bindea por tenant.
@@ -260,6 +260,36 @@ async function main(): Promise<void> {
     },
   });
 
+  const profesorStaff = await prisma.staffUser.upsert({
+    where: {
+      tenantId_email: {
+        tenantId: tenant.id,
+        email: 'profesor@gymdeprueba.com',
+      },
+    },
+    update: { passwordHash, active: true, name: 'Profesor Gym de Prueba' },
+    create: {
+      tenantId: tenant.id,
+      email: 'profesor@gymdeprueba.com',
+      passwordHash,
+      name: 'Profesor Gym de Prueba',
+    },
+  });
+
+  await prisma.staffUserRole.upsert({
+    where: {
+      staffUserId_roleId: {
+        staffUserId: profesorStaff.id,
+        roleId: profesorRole.id,
+      },
+    },
+    update: {},
+    create: {
+      staffUserId: profesorStaff.id,
+      roleId: profesorRole.id,
+    },
+  });
+
   const member = await prisma.member.upsert({
     where: {
       tenantId_email: { tenantId: tenant.id, email: 'socio@gymdeprueba.com' },
@@ -298,6 +328,11 @@ async function main(): Promise<void> {
       id: staff.id,
       email: staff.email,
       roles: ['admin'],
+    },
+    profesorStaff: {
+      id: profesorStaff.id,
+      email: profesorStaff.email,
+      roles: ['profesor'],
     },
     profesorRoleId: profesorRole.id,
     member: { id: member.id, email: member.email },
