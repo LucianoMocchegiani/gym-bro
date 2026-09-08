@@ -5,7 +5,7 @@
 | Ítem | Estado | Notas |
 |------|--------|--------|
 | Modo offline en la puerta | Pendiente | MVP online. Nota local identidad: “offline” |
-| Molinetes / hardware de terceros | Prioridad cierre (P1) | Adaptar evaluación de puerta a tipos de molinete. [18](../18-prioridades-cierre-mvp.md) |
+| Molinetes / hardware de terceros | Prioridad cierre (P1) | Adaptar evaluación de puerta a tipos de molinete. [18](../18-prioridades-cierre-mvp.md) · inventario [ideas/tipos-molinetes](../ideas/2026-09-08-tipos-molinetes.md) |
 | Biometría (candado app / puerta) | Pendiente | Wallet: biometría opcional para desbloquear secreto local |
 | Anti-fraude avanzado (préstamo de QR) | Pendiente | |
 | Adapter Kuatia — deudas | Pendiente | Offers/VP/packs siguen. Pendiente: alinear mobile URLs públicas, push E8, reingreso. [12-acceso…](../12-acceso-quark-oid4-diseno.md) · [15-kuatia…](../15-kuatia-deuda-rename.md) |
