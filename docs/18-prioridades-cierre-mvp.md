@@ -37,7 +37,8 @@ Detalle vivo: [99-backlog-post-mvp/acceso.md](./99-backlog-post-mvp/acceso.md). 
 
 Hay que correr el [método de producto](./10-metodo-definicion-producto.md) **antes** de codear un vendor.
 
-Inventario (formas + cómo se enchufa): [ideas/2026-09-08-tipos-molinetes.md](./ideas/2026-09-08-tipos-molinetes.md).
+Inventario (formas + cómo se enchufa): [ideas/2026-09-08-tipos-molinetes.md](./ideas/2026-09-08-tipos-molinetes.md).  
+Necesidades HW/SW: [19-puerta-molinete-hw-sw.md](./19-puerta-molinete-hw-sw.md).
 
 **Forma del primer piloto (abierto):** ¿molinete físico, o `/puerta` en tablet y hardware en paralelo? Se evalúa; no bloquea el inventario de tipos (puntos 1–3).
 
