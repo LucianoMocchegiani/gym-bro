@@ -1,4 +1,4 @@
-# Acceso Quark / OID4 — diseño GymBro
+# Acceso Quark / OID4 — diseño Faciliter
 
 **Estado:** Migración a **Kuatia** en curso (issuer/verifier compartidos; Compose sin Quark local)  
 **Fecha:** 2026-08-02 (actualizado 2026-08-12)  

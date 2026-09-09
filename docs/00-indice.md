@@ -1,6 +1,6 @@
-# GymBro — Índice de documentación
+# Faciliter — Índice de documentación
 
-Documentación **C-producto** (SRS operativo): visión, dominio, reglas, casos de uso, arquitectura, wireframes ASCII y pruebas manuales. Idioma: **español**. Nombre de producto: **GymBro** (provisorio).
+Documentación **C-producto** (SRS operativo): visión, dominio, reglas, casos de uso, arquitectura, wireframes ASCII y pruebas manuales. Idioma: **español**. Nombre de producto: **Faciliter**.
 
 ## Formato de la documentación
 

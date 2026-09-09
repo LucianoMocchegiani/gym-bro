@@ -44,7 +44,7 @@ class SettingsScreen extends StatelessWidget {
       message:
           'Se borran todas las credenciales SSI de este celular. '
           'Vas a tener que volver a aceptarlas. '
-          'Tu sesión de GymBro no se cierra.',
+          'Tu sesión de Faciliter no se cierra.',
       confirmLabel: 'Reiniciar',
       isDestructive: true,
     );

@@ -1,4 +1,4 @@
-# GymBro Web (Admin + Super)
+# Faciliter Web (Admin + Super)
 
 Next.js App Router — panel staff y Super Admin.
 

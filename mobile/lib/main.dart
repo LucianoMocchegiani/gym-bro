@@ -100,7 +100,7 @@ class _GymBroMemberAppState extends State<GymBroMemberApp> {
       child: Consumer2<ThemeController, AuthController>(
         builder: (context, theme, auth, _) {
           return MaterialApp(
-            title: 'GymBro',
+            title: 'Faciliter',
             debugShowCheckedModeBanner: false,
             theme: GymBroTheme.light(),
             darkTheme: GymBroTheme.dark(),

@@ -1,4 +1,4 @@
-# GymBro — Backlog post-MVP
+# Faciliter — Backlog post-MVP
 
 **Estado:** Viva — índice; el detalle está por módulo  
 **Regla:** Si no está en el MVP del [documento maestro](./01-documento-maestro.md), va a un archivo de esta carpeta (o se descarta explícitamente).

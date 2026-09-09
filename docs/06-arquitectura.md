@@ -1,4 +1,4 @@
-# GymBro — Arquitectura
+# Faciliter — Arquitectura
 
 **Estado:** Cerrado (v1) — arquitectura conceptual + stack MVP  
 **Fuentes:** [01-documento-maestro.md](./01-documento-maestro.md), [03-modelo-dominio.md](./03-modelo-dominio.md), [05-casos-de-uso/](./05-casos-de-uso/)

@@ -103,7 +103,7 @@ Reglas de esta sesión:
 3. Si algo es ambiguo, dame opciones A/B/C y tu recomendación breve.
 4. Todo lo que diferamos va al markdown del módulo en `docs/99-backlog-post-mvp/`.
 5. Cuando yo diga "escribí la doc" o cerremos todos los bloques, actualizá los markdown del mapa (glosario → dominio → reglas → CU → arquitectura → wireframes → pruebas manuales) con IDs RN-/CU- nuevos.
-6. Idioma: español. Nombre producto: GymBro (provisorio).
+6. Idioma: español. Nombre producto: Faciliter.
 7. Nivel: C-producto (casos de uso densos; pruebas manuales, no tests de código).
 8. Equipo: 1 dev + socio negocio; preferir módulos chicos entregables.
 

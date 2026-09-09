@@ -1,4 +1,4 @@
-# GymBro — Glosario
+# Faciliter — Glosario
 
 **Estado:** Cerrado (v1)  
 **Fuente:** [01-documento-maestro.md](./01-documento-maestro.md)

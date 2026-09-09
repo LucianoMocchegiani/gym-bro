@@ -1,4 +1,4 @@
-# GymBro — Modelo de dominio
+# Faciliter — Modelo de dominio
 
 **Estado:** Cerrado (v1)  
 **Glosario:** [02-glosario.md](./02-glosario.md)  

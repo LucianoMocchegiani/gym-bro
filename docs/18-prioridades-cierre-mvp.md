@@ -1,4 +1,4 @@
-# GymBro — Prioridades para cerrar el MVP
+# Faciliter — Prioridades para cerrar el MVP
 
 **Estado:** Viva (corte 2026-09-08)  
 **Qué es:** lo que falta para un primer gym piloto **vendible**. No es el backlog post-MVP ni un rediseño de módulos.  

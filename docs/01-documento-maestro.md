@@ -1,15 +1,16 @@
-# GymBro — Documento maestro
+# Faciliter — Documento maestro
 
 **Estado:** Cerrado (v1)  
 **Fecha de definición:** 2026-07-13  
 **Idioma:** Español  
-**Nombre:** GymBro (provisorio; puede cambiar)
+**Nombre:** Faciliter  
+**Nombre de trabajo anterior:** GymBro (código, repo y `GYMBRO_*` siguen así por ahora)
 
 ---
 
 ## 1. Visión del producto
 
-GymBro es una **plataforma SaaS multi-tenant** para gimnasios independientes y estudios (pilates, funcional, etc.) en **Argentina**.
+Faciliter es una **plataforma SaaS multi-tenant** para gimnasios independientes y estudios (pilates, funcional, etc.) en **Argentina**.
 
 No es una app para un solo gym: cada establecimiento es un **tenant** con sus afiliados, servicios, cobros y acceso.
 

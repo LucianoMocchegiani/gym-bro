@@ -1,4 +1,4 @@
-# GymBro — Tareas terminadas
+# Faciliter — Tareas terminadas
 
 Registro cronológico breve de tareas implementadas y verificadas.
 

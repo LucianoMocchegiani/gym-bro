@@ -92,7 +92,7 @@ export function LoginClient({ slug }: LoginClientProps) {
           <ThemeToggle />
         </div>
         <div className="login-card">
-          <p className="brand">GymBro</p>
+          <p className="brand">Faciliter</p>
           <h1>Elegí tu gym</h1>
           <p className="muted">
             Entrá por el subdominio del gym, por ejemplo{' '}

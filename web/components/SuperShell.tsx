@@ -59,7 +59,7 @@ export function SuperShell({ title, children, actions }: SuperShellProps) {
       >
         <div className="app-sidebar-brand">
           <Link href="/super/tenants" className="brand" onClick={closeNav}>
-            SUPER
+            Faciliter
           </Link>
           <span className="eyebrow">Plataforma</span>
         </div>

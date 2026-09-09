@@ -1,4 +1,4 @@
-# GymBro — Casos de prueba manuales
+# Faciliter — Casos de prueba manuales
 
 **Estado:** Cerrado (v1)  
 **Quién ejecuta:** vos + socio (sin tests de código en esta doc)  

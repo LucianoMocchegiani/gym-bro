@@ -18,7 +18,7 @@ const body = IBM_Plex_Sans({
 });
 
 export const metadata: Metadata = {
-  title: 'GymBro Admin',
+  title: 'Faciliter Admin',
   description: 'Panel staff — acceso puerta y gestión del gym',
 };
 

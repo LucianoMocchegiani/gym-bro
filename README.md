@@ -1,4 +1,4 @@
-# GymBro
+# Faciliter
 
 Plataforma SaaS multi-tenant para gestión de gimnasios y estudios (Argentina).
 
@@ -20,7 +20,7 @@ Issuer/verifier compartidos en Kuatia: ver sección Kuatia abajo.
 api/                 # NestJS — puerto 3001 — GET /api/health
 web/                 # Next.js — puerto 3000
 chat-api/            # Hono — puerto 3010 — GET /health (asistente, post-MVP)
-mcp/                 # Sidecar MCP GymBro — puerto 3011 — GET /health (tools A–D, C3+C6)
+mcp/                 # Sidecar MCP Faciliter — puerto 3011 — GET /health (tools A–D, C3+C6)
 mobile/              # Flutter (fuera de Docker)
 postman/             # Colección Nest + chat-api + mcp + environment
 docker-compose.yml   # postgres + redis + api + web + chat-api + mcp (dev)
@@ -74,11 +74,11 @@ Servicios:
 
 ### Kuatia (OID4VCI + OID4VP)
 
-Modelo: **1 producto** GymBro → **1 issuer + 1 verifier** compartidos para todos los gyms. Distinción por claims (`tenantId`, `packId`). Docs: [kuatia.xyz/docs](https://kuatia.xyz/docs).
+Modelo: **1 producto** Faciliter → **1 issuer + 1 verifier** compartidos para todos los gyms. Distinción por claims (`tenantId`, `packId`). Docs: [kuatia.xyz/docs](https://kuatia.xyz/docs).
 
 1. Creá el producto en la consola Kuatia; copiá API keys (`iss_live_…` / `ver_live_…`) y `walletId` a `api/.env`.
 2. Compose **no** levanta issuer/verifier locales.
-3. Crear un gym solo persiste GymBro; **no** hay provision/bind por tenant. Wallets = env `KUATIA_*`.
+3. Crear un gym solo persiste Faciliter; **no** hay provision/bind por tenant. Wallets = env `KUATIA_*`.
 4. Create/update de pack → `PATCH` metadata del issuer compartido (`pack_{id}` / `urn:gymbro:pack:{id}`; soft-fail → `packs.kuatia_*`).
 5. Pack APPROVED → offer OID4VCI; puerta → OID4VP contra el verifier compartido (auth `x-api-key`).
 
@@ -147,7 +147,7 @@ Mensajes (C4/C7): `POST /v1/conversations/:id/messages` body `{ "text" }` → UI
 
 Drawer Admin (C5/C7): burbuja Asistente abajo a la derecha (no va en el topbar). Título automático (editable), Parar, chips de `links` hacia pantallas Admin. `web/.env` → `NEXT_PUBLIC_CHAT_API_URL=http://localhost:3010`. Tras editar, `docker compose restart web`. Panel por túnel (`https://{slug}.faciliter.xyz`): `CORS_APP_DOMAIN` en `chat-api/.env` (mismo criterio que Nest) y recrear `chat-api`.
 
-MCP GymBro (C3+C6): sidecar `mcp/` en Compose (`:3011`). `GET /health` (sin auth). Tools de lectura A–D vía `POST /mcp` con el mismo JWT Staff. Nest sigue autorizando. README: [`mcp/README.md`](./mcp/README.md). Smoke: `cd mcp; npm run smoke` (Admin + Profesor seed).
+MCP Faciliter (C3+C6): sidecar `mcp/` en Compose (`:3011`). `GET /health` (sin auth). Tools de lectura A–D vía `POST /mcp` con el mismo JWT Staff. Nest sigue autorizando. README: [`mcp/README.md`](./mcp/README.md). Smoke: `cd mcp; npm run smoke` (Admin + Profesor seed).
 
 ### Auth (JWT + refresh)
 
@@ -167,7 +167,7 @@ Rutas de negocio: `@RequireTenantAuth()` + `@CurrentTenant()` (tenant solo del J
 
 Super Admin — tenants: `POST /api/tenants` requiere `ownerEmail` / `ownerPassword` (+ `ownerName` opcional); crea branch, roles y owner con rol Admin. Roles del gym: `GET|POST|PATCH /api/roles` (Staff, `roles.write`). Asignar roles: `PUT /api/staff/:staffId/roles`. Super lista staff con `GET /api/tenants/:tenantId/staff` e impersona. Afiliados: `GET|POST|PATCH /api/members` (Staff: `members.read` / `members.write`; status con `members.deactivate`); estado de cuenta `GET /api/members/:memberId/account` y `GET /api/me/account`. Sesiones: `GET|POST|PATCH /api/sessions`, `PATCH /api/sessions/:id/capacity` (ampliar cupo, CU-SER-005) y reglas semanales `GET|POST|PATCH /api/session-recurrence-rules` (`sessions.write`). Reservas con crédito: Member `POST|GET /api/me/reservations`, `PATCH /api/me/reservations/:id/status` (cancelar en ventana); Staff `POST /api/members/:memberId/reservations` (crédito), `PATCH /api/reservations/:id/status` (`reservations.write`). Lista de espera: Member `POST|GET /api/me/waitlist`, `PATCH .../status`; Staff `POST /api/members/:id/waitlist`, `GET /api/sessions/:id/waitlist` (`reservations.write`; promoción AUTO al cancelar/ampliar). Settings gym: `GET|PATCH /api/tenant-settings` (`tenant.settings.read/write`; `reservationCancellationHours`, `waitlistMode`, `allowLateSessionEntry`). Caja del día: `GET /api/cash-register/day` y arqueo `POST /api/cash-register/day/reconcile` (`cashier.operate`; timezone BA). Cuenta MP: `GET|PUT|DELETE /api/mercadopago/account` + `POST .../test` (`mp.connect`; token cifrado). Checkout MP: Member `POST /api/me/transaction-items/mp/cart`; Staff `POST /api/members/:id/transaction-items/mp/cart` (`members.write`; `items[]` PACK|DROP_IN → 1 Preference). Caja cash: `POST .../cash/cart`. Webhook `POST /api/webhooks/payment?tenantId=` (+ `/simulate` en stub). Devoluciones: Member `POST /api/me/transaction-items/:id/refund-requests`; Staff `POST /api/transactions/:id/refunds` (lote) y `POST /api/transaction-items/:id/refunds` (`transaction_items.refund`). Acceso puerta OID4VP: Staff `POST /api/access/oid4vp/request` + `GET /api/access/oid4vp/session/:id` + `GET /api/access-attempts` (`access.verify`); pase manual `POST /api/members/:id/access/manual-pass` (`access.manual_pass`). Settings: tolerancia deuda y multi-ingreso en `GET|PATCH /api/tenant-settings`. Comprobantes: Member `GET /api/me/receipts`; Staff `GET /api/transactions/:transactionId/receipt` (`members.read`). Servicios: `GET|POST|PATCH /api/services` (Staff, `catalog.write`). Packs: `GET|POST|PATCH /api/packs` … Contrataciones: Staff `POST /api/members/:memberId/contracts` (`members.write`, pago stub / re-oferta); `PATCH /api/contracts/:contractId/status` → `CANCELLED` (pierde acceso/créditos); Member `GET /api/me/contracts`. Auditoría: `GET /api/audit-events`.
 
-Probar con Postman: importá [`postman/`](./postman/) (colección Nest + `chat-api` + `mcp` + environment local). Los logins de **GymBro API** guardan `accessToken` / `refreshToken`; **chat-api** y **mcp** reusan ese token.
+Probar con Postman: importá [`postman/`](./postman/) (colección Nest + `chat-api` + `mcp` + environment local). Los logins de la **API** guardan `accessToken` / `refreshToken`; **chat-api** y **mcp** reusan ese token.
 
 > Nota: Postgres del Compose se publica en el host como `localhost:5433`. Desde el host, Prisma CLI usa ese puerto; dentro de Docker la API sigue con `postgres:5432`.
 

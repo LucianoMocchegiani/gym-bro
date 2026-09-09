@@ -1,4 +1,4 @@
-# GymBro — Wireframes ASCII
+# Faciliter — Wireframes ASCII
 
 **Estado:** Cerrado (v1) — bocetos de flujo, no UI final  
 **Objetivo:** alinear pantallas con CU sin diseño visual.
@@ -11,7 +11,7 @@ Leyenda: `[ ]` input · `(btn)` botón · `{lista}` colección
 
 ```text
 +----------------------------------+
-| GymBro / {NombreGym}             |
+| Faciliter / {NombreGym}             |
 | Hola, {Nombre}                   |
 +----------------------------------+
 | Estado cuenta                    |
@@ -319,7 +319,7 @@ Pestaña **Débitos** (post-MVP, CU-PAG-008..010). Ficha afiliado: atajo `/caja?
 
 ```text
 +----------------------------------------------------------------+
-| GymBro Super Admin                                             |
+| Faciliter Super Admin                                             |
 | Tenants: (+ Crear)                                             |
 | Nombre       Estado     Plan      Acciones                     |
 | Fit Palermo  activo     default   (Suspender) (Impersonar)     |
@@ -370,7 +370,7 @@ Sin ruta `/asistente`. Burbuja abajo a la derecha (estilo Mercado Libre); Caja s
 
 ```text
 +--------------------------------------------------------------+
-|  GymBro Admin                              [tema] [yo]       |
+|  Faciliter Admin                              [tema] [yo]       |
 +------------+-------------------------------------------------+
 | Caja       |  Caja del día …                                 |
 |            |                                          ( ● )  |

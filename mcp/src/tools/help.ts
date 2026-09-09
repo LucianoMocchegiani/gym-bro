@@ -35,7 +35,7 @@ export function registerHelpTools(server: McpServer): void {
   server.registerTool(
     'get_help',
     {
-      title: 'Ayuda GymBro',
+      title: 'Ayuda Faciliter',
       description:
         'Artículo corto de cómo usar el Admin (español, una pantalla). topic: afiliados, packs, sesiones, puerta, caja, debito, devoluciones, reportes, roles, chat. Sin topic lista los temas. No cobra ni edita.',
       inputSchema: {

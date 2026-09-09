@@ -1,4 +1,4 @@
-# GymBro — Esquema de base de datos
+# Faciliter — Esquema de base de datos
 
 **Estado:** Viva (se actualiza con cada migración Prisma)  
 **Fuente de verdad del código:** [`api/prisma/schema.prisma`](../api/prisma/schema.prisma) (negocio GymBro)  

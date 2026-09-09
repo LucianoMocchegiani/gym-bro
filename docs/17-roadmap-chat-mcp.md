@@ -1,4 +1,4 @@
-# GymBro — Roadmap asistente chat + MCP
+# Faciliter — Roadmap asistente chat + MCP
 
 **Estado:** Borrador (tareas; diseño cerrado)  
 **Objetivo:** Drawer en Admin + `chat-api` portable (tipo Redis) + sidecar `mcp/` de lectura.  

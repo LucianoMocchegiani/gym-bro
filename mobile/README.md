@@ -1,4 +1,4 @@
-# GymBro Mobile — App afiliado
+# Faciliter Mobile — App afiliado
 
 Flutter (Material 3). Estilos alineados al Admin web: tema oscuro/lima acid + claro.
 

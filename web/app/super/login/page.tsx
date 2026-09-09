@@ -65,7 +65,7 @@ function SuperLoginInner() {
         <ThemeToggle />
       </div>
       <form className="login-card" onSubmit={(e) => void onSubmit(e)}>
-        <p className="brand">SUPER</p>
+        <p className="brand">Faciliter</p>
         <h1>Super Admin</h1>
         <p className="muted">Plataforma (sin tenant)</p>
 

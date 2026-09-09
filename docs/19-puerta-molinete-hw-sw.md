@@ -1,7 +1,7 @@
 # Puerta / molinete — qué hace falta (hardware y software)
 
 **Estado:** Borrador (spike P1, 2026-09-09)  
-**No es** CU ni arquitectura cerrada. Necesidades para adaptar tornos existentes a GymBro.  
+**No es** CU ni arquitectura cerrada. Necesidades para adaptar tornos existentes a Faciliter.  
 **Investigación:** [ideas/2026-09-08-tipos-molinetes.md](./ideas/2026-09-08-tipos-molinetes.md) · [18 P1](./18-prioridades-cierre-mvp.md) · SSI: [12](./12-acceso-quark-oid4-diseno.md)
 
 **Regla:** un solo evaluate en Nest. Identidad = puertos. Actuador = un relé. Kuatia nativo; DNI/huella opcionales.

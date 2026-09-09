@@ -1,4 +1,4 @@
-# GymBro — Roadmap MVP
+# Faciliter — Roadmap MVP
 
 **Estado:** Borrador v1  
 **Objetivo:** Llegar a un MVP usable (admin web + app afiliado + acceso QR + cobros).  

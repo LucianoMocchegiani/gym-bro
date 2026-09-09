@@ -1,6 +1,6 @@
 # gymbro-mcp
 
-Sidecar GymBro: traduce tools MCP → `GET` de Nest con el Bearer del staff. **No** es el agente (eso es `chat-api`). Sin writes.
+Sidecar Faciliter: traduce tools MCP → `GET` de Nest con el Bearer del staff. **No** es el agente (eso es `chat-api`). Sin writes.
 
 Diseño: [`docs/16-chat-mcp-diseno.md`](../docs/16-chat-mcp-diseno.md) · roadmap: [`docs/17-roadmap-chat-mcp.md`](../docs/17-roadmap-chat-mcp.md).
 

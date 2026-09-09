@@ -1,4 +1,4 @@
-# GymBro — Reglas de negocio
+# Faciliter — Reglas de negocio
 
 **Estado:** Cerrado (v1)  
 **Dominio:** [03-modelo-dominio.md](./03-modelo-dominio.md)  
