@@ -9,6 +9,7 @@ function isPublicMarketingPath(pathname: string): boolean {
   return (
     pathname === '/' ||
     pathname.startsWith('/legal') ||
+    pathname.startsWith('/docs') ||
     pathname === '/sitemap.xml' ||
     pathname === '/robots.txt'
   );

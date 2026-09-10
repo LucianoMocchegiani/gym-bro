@@ -141,7 +141,7 @@
 - [x] Spike Quark Compose: issuer+verifier + provision al crear tenant (soft-fail + `POST …/quark/provision`)
   - **Superseded:** Kuatia compartido — Compose sin quark local; provision = bind `KUATIA_*_WALLET_ID`
 - [x] Pack → `credentialConfigurationsSupported` en issuer Quark (soft-fail + `packs.quark_*`)
-- [x] Offer OID4VCI al pack APPROVED + `credential_offers` + `GET /me/credential-offers` (re-oferta = re-POST contrato misma key)
+- [x] Offer OID4VCI al pack APPROVED + `credential_offers` + `GET /me/credential-offers` (re-oferta = `POST /members/:id/credential-offers` del contrato vigente hoy)
 - [x] Bandeja Flutter “Aceptar” + `identity_core_dart` + `ACCEPTED` / `FAILED` en API (`POST …/accept` | `…/fail`)
 - [x] Puerta OID4VP (modo B) + evaluate
   - Staff `POST /access/oid4vp/request` + `GET /access/oid4vp/session/:id`; identidad = claim `memberId`
@@ -301,7 +301,7 @@ Detalle: [14-auditoria…](./14-auditoria-roadmap-vs-codigo-2026-08-13.md).
 - [x] Checkout MP desde Admin (staff)
   - Caja: medio Efectivo | MP; pack (`members.write`) y drop-in (`reservations.write`); abrir/copiar link
 - [x] Credential offers staff (afiliado OID4VCI en ficha)
-  - Ficha afiliado: `GET /members/:id/credential-offers`; copiar URI; re-emitir (re-POST contrato)
+  - Ficha afiliado: `GET /members/:id/credential-offers`; re-emitir `POST /members/:id/credential-offers` (contrato vigente hoy)
 - [x] Credencial SSI **staff** para molinete
   - `staff_credential_offers` + `POST/GET /staff/:id/credential-offers`; puerta DCQL pack|staff; `ok_staff`
   - Fichaje horario → [acceso](./99-backlog-post-mvp/acceso.md)

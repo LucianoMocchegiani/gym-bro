@@ -1,24 +1,19 @@
 import {
   BadRequestException,
-  Inject,
   Injectable,
   NotFoundException,
-  forwardRef,
 } from '@nestjs/common';
 import {
   AccessAttemptResult,
   BillingPeriod,
-  CashMovementConcept,
   Contract,
   ContractStatus,
   MemberStatus,
   PaymentMethod,
   PaymentStatus,
   Prisma,
-  ReceiptConcept,
   ServiceType,
 } from '@prisma/client';
-import { randomBytes } from 'node:crypto';
 import { AUDIT_ACTIONS, AuditActor } from '../audit/audit.types';
 import { AuditService } from '../audit/audit.service';
 import {
@@ -30,7 +25,6 @@ import {
 } from '../common/list';
 import { PrismaService } from '../prisma/prisma.service';
 import { KuatiaOfferService } from '../kuatia/kuatia-offer.service';
-import { CashPaymentService } from '../payment/cash-payment.service';
 import { CreateContractDto, UpdateContractStatusDto } from './dto/contract.dto';
 import { ContractDetail } from './contracts.types';
 
@@ -90,8 +84,6 @@ export class ContractsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
-    @Inject(forwardRef(() => CashPaymentService))
-    private readonly cashPayment: CashPaymentService,
     private readonly kuatiaOffers: KuatiaOfferService,
   ) {}
 
@@ -238,20 +230,19 @@ export class ContractsService {
   }
 
   /**
-   * Crea pago APPROVED + contrato ACTIVE con saldos (idempotente por key).
+   * Alta de pack por este endpoint: 400. Idempotencia: si la key ya tiene
+   * contrato, lo devuelve sin re-emitir credencial.
+   *
+   * @remarks Altas: Caja (CASH) o Mercado Pago. `STUB` deshabilitado.
+   * Re-oferta: `POST /members/:id/credential-offers` (contrato vigente hoy).
    */
   async createForMember(
     tenantId: string,
     memberId: string,
     dto: CreateContractDto,
-    actor: AuditActor,
   ): Promise<ContractDetail> {
     await this.assertMemberInTenant(tenantId, memberId, true);
 
-    const pack = await this.loadActivePackForContract(tenantId, dto.packId);
-
-    const idempotencyKey =
-      dto.idempotencyKey?.trim() || `stub-${randomBytes(16).toString('hex')}`;
     const method = dto.method ?? PaymentMethod.STUB;
     if (method === PaymentMethod.MP) {
       throw new BadRequestException(
@@ -264,79 +255,10 @@ export class ContractsService {
       );
     }
 
-    const existingTransactionItem = await this.prisma.transactionItem.findUnique({
-      where: {
-        tenantId_idempotencyKey: { tenantId, idempotencyKey },
-      },
-      include: {
-        contract: { include: this.contractInclude() },
-      },
-    });
-    if (existingTransactionItem?.contract) {
-      // Misma key = idempotencia de pago/contrato + force re-oferta Quark.
-      await this.kuatiaOffers.ensureOfferForContract(
-        tenantId,
-        existingTransactionItem.contract.id,
-        { force: true },
-      );
-      return this.toDetail(existingTransactionItem.contract);
-    }
-    if (existingTransactionItem && !existingTransactionItem.contract) {
-      throw new BadRequestException(
-        'Idempotency key already used without a contract',
-      );
-    }
-
-    const plan = await this.resolveContractPlan(tenantId, memberId, pack, {
-      startsAt: dto.startsAt ? new Date(dto.startsAt) : undefined,
-      endsAt: dto.endsAt ? new Date(dto.endsAt) : undefined,
-    });
-
-    try {
-      const contract = await this.prisma.$transaction(async (tx) => {
-        const { transaction } = await this.cashPayment.processPayment(tx, {
-          tenantId,
-          memberId,
-          items: [{
-            packId: pack.id,
-            amount: pack.price,
-            idempotencyKey,
-          }],
-          idempotencyKey,
-          method,
-          cashConcept: CashMovementConcept.PACK_CONTRACT,
-          receiptConcept: ReceiptConcept.PACK_CONTRACT,
-          description: pack.name,
-          recordedByStaffId: actor.profileType === 'STAFF' ? actor.userId : null,
-        });
-
-        return this.createContractInTx(tx, {
-          tenantId,
-          memberId,
-          packId: pack.id,
-          transactionItemId: transaction.transactionItems[0].id,
-          plan,
-        });
-      });
-
-      const detail = this.toDetail(contract);
-      await this.audit.record({
-        tenantId,
-        actor,
-        action: AUDIT_ACTIONS.contractCreate,
-        entityType: 'contract',
-        entityId: contract.id,
-        before: null,
-        after: this.auditSnapshot(detail),
-      });
-      await this.kuatiaOffers.ensureOfferForContract(tenantId, contract.id);
-      return detail;
-    } catch (error: unknown) {
-      if (
-        error instanceof Prisma.PrismaClientKnownRequestError &&
-        error.code === 'P2002'
-      ) {
-        const again = await this.prisma.transactionItem.findUnique({
+    const idempotencyKey = dto.idempotencyKey?.trim();
+    if (idempotencyKey) {
+      const existingTransactionItem =
+        await this.prisma.transactionItem.findUnique({
           where: {
             tenantId_idempotencyKey: { tenantId, idempotencyKey },
           },
@@ -344,16 +266,19 @@ export class ContractsService {
             contract: { include: this.contractInclude() },
           },
         });
-        if (again?.contract) {
-          await this.kuatiaOffers.ensureOfferForContract(
-            tenantId,
-            again.contract.id,
-          );
-          return this.toDetail(again.contract);
-        }
+      if (existingTransactionItem?.contract) {
+        return this.toDetail(existingTransactionItem.contract);
       }
-      throw error;
+      if (existingTransactionItem && !existingTransactionItem.contract) {
+        throw new BadRequestException(
+          'Idempotency key already used without a contract',
+        );
+      }
     }
+
+    throw new BadRequestException(
+      'Use Caja (efectivo) or Mercado Pago to contract a pack. STUB payments are disabled.',
+    );
   }
 
   /**
@@ -378,7 +303,9 @@ export class ContractsService {
       },
     });
     if (!transactionItem) {
-      throw new NotFoundException(`TransactionItem ${transactionItemId} not found in tenant`);
+      throw new NotFoundException(
+        `TransactionItem ${transactionItemId} not found in tenant`,
+      );
     }
     if (transactionItem.contract) {
       await this.kuatiaOffers.ensureOfferForContract(
@@ -503,9 +430,7 @@ export class ContractsService {
     }
 
     if (!transactionItem.packId || !transactionItem.pack) {
-      throw new BadRequestException(
-        'TransactionItem is not a pack payment',
-      );
+      throw new BadRequestException('TransactionItem is not a pack payment');
     }
 
     if (transactionItem.sessionId) {

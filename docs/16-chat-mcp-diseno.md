@@ -672,7 +672,7 @@ Auditoría slim: `id, action, entityType, entityId, actorId, createdAt` — **si
 |------|----------|--------|---------|
 | `get_help` | “¿Qué es un pack?” / “¿Cómo funciona Faciliter?” | Artículos en `mcp/help/` (no el maestro entero) | Staff; landing (solo este tool) |
 
-Topics: `producto` (visión), `afiliados`, `packs`, `sesiones`, `puerta`, `caja`, `debito`, `devoluciones`, `reportes`, `roles`, `chat`. `suggest_nav` puede ir al final del artículo (Admin).
+Topics: `producto` (visión), `guia` (cómo se ven panel y app; fotos en `/docs`), `afiliados`, `packs`, `sesiones`, `puerta`, `caja`, `debito`, `devoluciones`, `reportes`, `roles`, `chat`. `suggest_nav` puede ir al final del artículo (Admin).
 
 ### Slim extra
 

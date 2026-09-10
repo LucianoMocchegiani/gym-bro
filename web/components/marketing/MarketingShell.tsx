@@ -35,6 +35,7 @@ export function MarketingShell({ children }: MarketingShellProps) {
           </Link>
           <nav className="mkt-nav-links" aria-label="Secciones">
             <Link href="/#producto">Producto</Link>
+            <Link href="/docs">Guía</Link>
             <Link href="/#asistente">Asistente</Link>
             <Link href="/#precio">Precio</Link>
           </nav>
@@ -57,6 +58,9 @@ export function MarketingShell({ children }: MarketingShellProps) {
               <ul>
                 <li>
                   <Link href="/#producto">Qué incluye</Link>
+                </li>
+                <li>
+                  <Link href="/docs">Guía de uso</Link>
                 </li>
                 <li>
                   <Link href="/#asistente">Asistente</Link>

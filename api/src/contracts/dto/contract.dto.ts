@@ -11,7 +11,7 @@ import {
 } from 'class-validator';
 
 /**
- * Alta de contratación con pago stub/caja aprobado (CU-CON-001 / RN-CON-004).
+ * Alta de contratación. Las altas nuevas van por Caja o Mercado Pago (`STUB` 400).
  *
  * @remarks Fechas opcionales: MONTHLY solo `startsAt` (`endsAt` = +1 mes);
  * ONE_TIME `startsAt` y/o `endsAt`. Sin fechas → defaults de apilado / +1 mes.

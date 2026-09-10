@@ -7,6 +7,7 @@ import { jsonResult } from '../slim.js';
 
 const TOPICS = [
   'producto',
+  'guia',
   'afiliados',
   'packs',
   'sesiones',
@@ -38,7 +39,7 @@ export function registerHelpTools(server: McpServer): void {
     {
       title: 'Ayuda Faciliter',
       description:
-        'Artículo de cómo funciona Faciliter (español). topic: producto (visión: packs, caja, staff, app, puerta, cobros), afiliados, packs, sesiones, puerta, caja, debito, devoluciones, reportes, roles, chat. Sin topic lista los temas. Para “qué es un pack / la caja / el staff / cómo entra el socio”, usá producto o el tema. No cobra ni edita.',
+        'Artículo de cómo funciona Faciliter (español). topic: producto (visión), guia (cómo se ven las pantallas del panel y la app; fotos en /docs), afiliados, packs, sesiones, puerta, caja, debito, devoluciones, reportes, roles, chat. Sin topic lista los temas. Para “dónde queda / cómo se ve / qué ve el socio”, usá guia. No cobra ni edita.',
       inputSchema: {
         topic: z
           .string()

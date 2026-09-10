@@ -38,7 +38,7 @@ docker compose up --build -d api mcp
 
 **C:** `list_services`, `list_packs`, `get_pack`, `list_roles`, `get_role`, `search_audit_events`.
 
-**D:** `get_help` (artículos en `mcp/help/`: `producto` = cómo funciona Faciliter; el resto = pantallas Admin).
+**D:** `get_help` (artículos en `mcp/help/`: `producto` = cómo funciona Faciliter; `guia` = cómo se ven panel y app; el resto = temas).
 
 403 de Nest → texto de tool “No hay permiso para esta consulta.” Preview de ingreso **no** escribe `access_attempts`. Sin writes.
 

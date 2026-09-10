@@ -33,7 +33,7 @@ Leyenda resultado: `P` pass · `F` fail · `B` bloqueado · `-` no aplica
 | A2 | Baja afiliado | No ingresa; auditoría | CU-AFI-003 | |
 | A3 | Afiliado ve solo su cuenta | No ve datos de otros | CU-AFI-005, RN-TEN-001 | |
 | A4 | Staff ve credential offers en ficha | Lista status + lastError; copiar URI | E6 OID4VCI | |
-| A5 | Staff re-emite offer | Misma key; nuevo PENDING/URI (o soft-fail) | E6 OID4VCI | |
+| A5 | Staff re-emite offer | `POST /members/:id/credential-offers`; offer del pack vigente hoy; nuevo PENDING (o soft-fail); no cobra | E6 OID4VCI | |
 
 ---
 
@@ -154,6 +154,7 @@ Leyenda resultado: `P` pass · `F` fail · `B` bloqueado · `-` no aplica
 | C6-1 | `npm run smoke` con JWT Admin seed | 17 tools; `get_reports_summary` sin args = mes BA; `get_help` packs | C6 | |
 | C6-2 | Drawer: “ingresos de este mes” | Tool reportes + una línea; totales del mes | C6 | |
 | C6-3 | Drawer: “qué packs hay” / “cómo enrolar débito” | `list_packs` / `get_help` debito | C6 | |
+| C6-5 | Landing o Admin: “cómo se ve Caja / qué ve el socio en Inicio” | `get_help` topic `guia`; puede mandar a `/docs` para las fotos | C6 | |
 | C6-4 | Staff sin caja: débitos o caja | Tool “No hay permiso para esta consulta.” | C6 | |
 
 ---

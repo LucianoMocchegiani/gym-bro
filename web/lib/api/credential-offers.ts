@@ -23,6 +23,24 @@ export type CredentialOfferItem = {
 };
 
 /**
+ * Re-emite el offer OID4VCI del pack vigente hoy (`members.write`).
+ *
+ * @remarks No crea contrato ni cobro. Soft-fail Kuatia.
+ */
+export function reissueMemberCredentialOffer(
+  memberId: string,
+  force = true,
+): Promise<CredentialOfferItem> {
+  return apiRequest<CredentialOfferItem>(
+    `/members/${memberId}/credential-offers`,
+    {
+      method: 'POST',
+      body: { force },
+    },
+  );
+}
+
+/**
  * Offers OID4VCI de un afiliado (`members.read`).
  */
 export function listMemberCredentialOffers(

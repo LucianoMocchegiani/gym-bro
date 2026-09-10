@@ -49,6 +49,9 @@ Tras un wipe completo:
 docker compose down -v
 docker compose up --build -d
 # … luego pasos 3 → 5 de arriba
+# Si web no resuelve módulos (volumen node_modules vacío):
+docker compose exec web npm install
+docker compose restart web
 ```
 
 ### Seed incluye
@@ -100,6 +103,7 @@ Desde el host (sin Docker para la API): en `api/.env` usá `localhost` en `DATAB
 | Kuatia demo `MISSING` tras seed | Completá `KUATIA_ISSUER_WALLET_ID` / `KUATIA_VERIFIER_WALLET_ID` (y keys/bases) en `api/.env`; re-ejecutá `prisma:seed` o Super “Reintentar”. |
 | Offer/VP fallan con 401 | API key incorrecta o header ausente (`x-api-key`); ver [kuatia.xyz/docs/autenticacion](https://kuatia.xyz/docs/autenticacion). |
 | 404 raros en Next tras wipe | Volumen `web_next`; a veces hace falta recrear o limpiar `.next` del contenedor. |
+| Web: `Can't resolve '@mercadopago/sdk-react'` (u otro módulo) | Volumen `web_node_modules` vacío o viejo. El paquete está en `web/package.json`. `docker compose exec web npm install` y `docker compose restart web`. Un `--build` solo no pisa el volumen si ya existe. |
 
 ---
 
@@ -113,6 +117,14 @@ Get-Content -Raw api\prisma\limpiar-cobros-dev.sql |
 ```
 
 Script: [`api/prisma/limpiar-cobros-dev.sql`](../api/prisma/limpiar-cobros-dev.sql). Solo desarrollo.
+
+Solo cobros **STUB** de un tenant (default `gym-de-prueba`; no toca CASH/MP):
+
+```powershell
+docker compose exec api npm run prisma:purge-stub
+```
+
+El valor enum `STUB` queda en Prisma (legado).
 
 ---
 

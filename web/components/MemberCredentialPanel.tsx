@@ -6,15 +6,15 @@ import { SkeletonForm } from '@/components/Skeleton';
 import { ApiClientError } from '@/lib/api/client';
 import {
   listMemberCredentialOffers,
+  reissueMemberCredentialOffer,
   type CredentialOfferItem,
 } from '@/lib/api/credential-offers';
 import { getMember, type MemberDetail } from '@/lib/api/members';
-import { reissueCredentialOffer } from '@/lib/api/contracts';
 
 /**
  * Panel de credencial SSI del afiliado para molinete (OID4VCI).
  *
- * @remarks Reemisión desde el contrato activo.
+ * @remarks Reemisión del contrato ACTIVE que cubre hoy. No cobra ni crea pack.
  */
 export function MemberCredentialPanel({
   memberId,
@@ -32,10 +32,19 @@ export function MemberCredentialPanel({
   const loadOffer = useCallback(async () => {
     try {
       const result = await listMemberCredentialOffers(memberId, {
-        pageSize: 1,
+        pageSize: 50,
         order: 'desc',
       });
-      setOffer(result.items[0] ?? null);
+      const now = Date.now();
+      const covering =
+        result.items.find((item) => {
+          const from = new Date(item.validFrom).getTime();
+          const until = item.validUntil
+            ? new Date(item.validUntil).getTime()
+            : null;
+          return from <= now && (until === null || until > now);
+        }) ?? null;
+      setOffer(covering);
       setOfferError(null);
     } catch (err) {
       setOffer(null);
@@ -77,18 +86,13 @@ export function MemberCredentialPanel({
   }, [loadOffer]);
 
   async function onReissue() {
-    if (!offer) return;
     setOfferBusy(true);
     setOfferError(null);
     setOfferOk(null);
     try {
-      const idempotencyKey = `reissue-${memberId}-${Date.now()}`;
-      await reissueCredentialOffer(memberId, {
-        packId: offer.packId,
-        idempotencyKey,
-      });
+      await reissueMemberCredentialOffer(memberId, true);
       await loadOffer();
-      setOfferOk('Credencial re-emitida.');
+      setOfferOk('Credencial re-emitida del pack vigente. El socio debe Aceptar en la app.');
     } catch (err) {
       setOfferError(
         err instanceof ApiClientError
@@ -112,8 +116,8 @@ export function MemberCredentialPanel({
         {!active ? ` · ${member.status}` : ''}
       </p>
       <p className="muted small">
-        VC de vínculo afiliado → puerta OID4VP. La credencial se emite al
-        contratar un pack.
+        VC de vínculo afiliado → puerta OID4VP. Se emite al cobrar el pack.
+        Re-emitir no cobra: usa el contrato vigente hoy.
       </p>
 
       {offer ? (
@@ -122,16 +126,26 @@ export function MemberCredentialPanel({
             Pack: <strong>{offer.packName}</strong>
           </li>
           <li>
+            Vigencia:{' '}
+            <strong>
+              {new Date(offer.validFrom).toLocaleDateString('es-AR')}
+              {offer.validUntil
+                ? ` → ${new Date(offer.validUntil).toLocaleDateString('es-AR')}`
+                : ''}
+            </strong>
+          </li>
+          <li>
             Estado: <strong>{offer.status}</strong>
-            {' · '}
-            {new Date(offer.createdAt).toLocaleString('es-AR')}
           </li>
           {offer.lastError ? (
             <li className="error">Error: {offer.lastError}</li>
           ) : null}
         </ul>
       ) : (
-        <p className="muted">Sin offer todavía.</p>
+        <p className="muted">
+          Sin offer del pack vigente. Si el socio tiene contrato al día, emití
+          acá.
+        </p>
       )}
 
       {offerError ? <p className="error">{offerError}</p> : null}
@@ -140,7 +154,7 @@ export function MemberCredentialPanel({
       <button
         type="button"
         className="primary"
-        disabled={offerBusy || !active || !offer}
+        disabled={offerBusy || !active}
         onClick={() => setConfirmReissue(true)}
       >
         {offerBusy
@@ -152,9 +166,9 @@ export function MemberCredentialPanel({
 
       <ConfirmDialog
         open={confirmReissue}
-        title="Re-emitir credencial"
-        description="Se generará un nuevo offer OID4VCI para la wallet del afiliado."
-        confirmLabel="Re-emitir"
+        title={offer ? 'Re-emitir credencial' : 'Emitir credencial'}
+        description="Se genera un offer nuevo del pack que cubre hoy. No se cobra ni se crea otro contrato. El socio tiene que Aceptar en Acceso."
+        confirmLabel={offer ? 'Re-emitir' : 'Emitir'}
         busy={offerBusy}
         onConfirm={() => { setConfirmReissue(false); void onReissue(); }}
         onCancel={() => setConfirmReissue(false)}

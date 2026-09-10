@@ -34,23 +34,17 @@ export class ContractsController {
   constructor(private readonly contractsService: ContractsService) {}
 
   /**
-   * Contrata un pack para un afiliado (pago stub/caja aprobado).
+   * Contrata un pack para un afiliado. Las altas van por Caja o Mercado Pago.
    */
   @Post('members/:memberId/contracts')
   @HttpCode(HttpStatus.CREATED)
   @RequirePermission('members.write')
   createForMember(
     @CurrentTenant() tenantId: string,
-    @CurrentUser() user: AuthUser,
     @Param('memberId', ParseUUIDPipe) memberId: string,
     @Body() dto: CreateContractDto,
   ): Promise<ContractDetail> {
-    return this.contractsService.createForMember(
-      tenantId,
-      memberId,
-      dto,
-      toAuditActor(user),
-    );
+    return this.contractsService.createForMember(tenantId, memberId, dto);
   }
 
   /**

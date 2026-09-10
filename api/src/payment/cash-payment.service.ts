@@ -28,16 +28,15 @@ export interface ProcessPaymentParams {
 }
 
 /**
- * Procesa pagos (CASH o STUB).
+ * Procesa pagos CASH (caja).
  *
  * @description
- * - Crea Transaction + TransactionItems (APPROVED para CASH/STUB)
- * - Si CASH: registra movimiento en caja y emite un comprobante por Transaction
- * - Si STUB: solo crea Transaction (sin movimiento de caja, para créditos manuales)
+ * - Crea Transaction + TransactionItems APPROVED
+ * - Registra movimiento en caja y emite un comprobante por Transaction
  *
  * @remarks
- * El caller debe wrapear la llamada en $transaction si necesita atomicidad
- * con otras operaciones (ej: crear Contract después del pago).
+ * `STUB` se rechaza. El caller debe wrapear en $transaction si necesita
+ * atomicidad con otras operaciones.
  */
 @Injectable()
 export class CashPaymentService {
@@ -65,6 +64,12 @@ export class CashPaymentService {
     params: ProcessPaymentParams,
   ): Promise<{ transaction: Awaited<ReturnType<TransactionService['initiateTransaction']>> }> {
     const { tenantId, memberId, items, idempotencyKey, method, cashConcept, receiptConcept, description, recordedByStaffId } = params;
+
+    if (method === PaymentMethod.STUB) {
+      throw new BadRequestException(
+        'STUB payments are disabled. Use Caja (efectivo) or Mercado Pago.',
+      );
+    }
 
     const transaction = await this.transactionService.initiateTransaction({
       tenantId,

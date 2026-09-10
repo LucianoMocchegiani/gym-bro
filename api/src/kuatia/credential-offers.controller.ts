@@ -17,6 +17,7 @@ import { RequirePermission } from '../roles/decorators/require-permission.decora
 import { CurrentTenant } from '../tenant/decorators/current-tenant.decorator';
 import { RequireTenantAuth } from '../tenant/decorators/require-tenant-auth.decorator';
 import { FailCredentialOfferDto } from './dto/fail-credential-offer.dto';
+import { IssueMemberCredentialOfferDto } from './dto/issue-member-credential-offer.dto';
 import { IssueStaffCredentialOfferDto } from './dto/issue-staff-credential-offer.dto';
 import {
   CredentialOfferListItem,
@@ -30,7 +31,8 @@ import {
 /**
  * Credential offers OID4VCI (bandeja member + listados + offer staff molinete).
  *
- * @remarks Pack: re-oferta = re-POST contrato. Staff acceso: `POST /staff/:id/credential-offers`.
+ * @remarks Pack: re-oferta = POST del contrato vigente hoy (sin cobro).
+ * Staff acceso: `POST /staff/:id/credential-offers`.
  */
 @Controller()
 @RequireTenantAuth()
@@ -103,6 +105,24 @@ export class CredentialOffersController {
   ): Promise<ListResult<CredentialOfferListItem>> {
     return this.offers.listForMember(tenantId, memberId, query, {
       includeLastError: true,
+    });
+  }
+
+  /**
+   * Emite o re-emite el offer del pack vigente hoy (`members.write`).
+   *
+   * @remarks No crea contrato ni cobro. Soft-fail Kuatia. Default `force=true`.
+   */
+  @Post('members/:memberId/credential-offers')
+  @HttpCode(HttpStatus.CREATED)
+  @RequirePermission('members.write')
+  issueForMemberCurrentContract(
+    @CurrentTenant() tenantId: string,
+    @Param('memberId', ParseUUIDPipe) memberId: string,
+    @Body() body: IssueMemberCredentialOfferDto,
+  ): Promise<CredentialOfferListItem> {
+    return this.offers.ensureOfferForCurrentContract(tenantId, memberId, {
+      force: body?.force ?? true,
     });
   }
 

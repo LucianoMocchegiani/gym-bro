@@ -16,7 +16,7 @@
 
 **Flujo principal:**
 1. Se presenta identidad por QR/credencial (modo A: gym escanea afiliado; o modo B: afiliado escanea QR del local — ambos soportados en diseño).
-2. Adapter resuelve identidad → `afiliadoId` + `tenantId` (credencial de vínculo).
+2. Adapter OID4VP resuelve identidad → `memberId` + tenant (claim de la VC de pack).
 3. GymBro evalúa en orden:
    1. Afiliado activo y tenant activo.
    2. Sucursal correcta (si aplica).

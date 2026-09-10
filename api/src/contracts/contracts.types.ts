@@ -11,7 +11,7 @@ export type ContractCreditBalanceDetail = {
 };
 
 /**
- * Pago asociado a la contratación (stub/caja).
+ * Pago asociado a la contratación (CASH / MP; STUB legado).
  */
 export type ContractTransactionItemDetail = {
   id: string;

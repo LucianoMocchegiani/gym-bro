@@ -79,7 +79,7 @@ Términos usados en dominio, reglas y casos de uso. Una sola palabra canónica p
 | **QR / Credencial** | Medio de presentación de identidad en la puerta. |
 | **SSI** | Self-Sovereign Identity; en MVP vía Quark como proveedor. |
 | **Adapter de acceso** | Capa intercambiable (SSI u otro) que identifica al afiliado; GymBro aplica reglas. |
-| **Credencial de vínculo** | Una credencial SSI “afiliado X del gym Y”; los packs no van dentro de la credencial (MVP). |
+| **Credencial de pack** | VC OID4VCI del pack vigente (puerta). Se emite al cobro APPROVED; re-emitir no cobra. |
 | **Pase manual** | Autorización de ingreso por staff con permiso, sin pasar la regla automática. |
 
 ---

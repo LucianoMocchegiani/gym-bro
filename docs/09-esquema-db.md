@@ -336,7 +336,7 @@ erDiagram
 | `BillingPeriod` | `MONTHLY`, `ONE_TIME` | Periodicidad de cobro del pack |
 | `DebitMandateStatus` | `ACTIVE`, `RETRYING`, `FAILED`, `CANCELLED` | Mandato de débito MONTHLY |
 | `PaymentStatus` | `PENDING`, `APPROVED`, `REJECTED`, `REFUNDED` | Estado de pago (RN-PAG-003) |
-| `PaymentMethod` | `STUB`, `CASH`, `MP` | Medio de cobro |
+| `PaymentMethod` | `STUB`, `CASH`, `MP` | Medio de cobro. `STUB` es legado: no se crean cobros nuevos. |
 | `ContractStatus` | `ACTIVE`, `EXPIRED`, `CANCELLED`, `REFUNDED` | Estado de contratación |
 | `SessionStatus` | `PUBLISHED`, `CANCELLED` | Estado de sesión de calendario |
 | `Weekday` | `MONDAY` … `SUNDAY` | Días ISO de recurrencia semanal |
@@ -605,7 +605,7 @@ API Staff: `GET|POST|PATCH /api/packs`.
 
 ### 4.15 `transaction_items`
 
-Ítem de un pago (RN-PAG-003..005). En Caja (CASH y MP) siempre pertenece a una `transactions` (cart). Staff stub/caja deja el ítem `APPROVED` de inmediato; MP queda `PENDING` hasta el webhook.
+Ítem de un pago (RN-PAG-003..005). En Caja (CASH y MP) siempre pertenece a una `transactions` (cart). Caja deja el ítem `APPROVED` de inmediato; MP queda `PENDING` hasta el webhook. `STUB` es legado (no se crean cobros nuevos).
 
 | Columna | Tipo | Notas |
 |---------|------|--------|
@@ -836,7 +836,7 @@ Contratación tras pago aprobado (CU-CON-001).
 | `initial_amount` / `remaining` | int | |
 | `expires_at` | timestamptz nullable | = `contracts.ends_at` del mismo contrato (RN-CON-002/003) |
 
-API: Staff `POST /api/members/:memberId/contracts` (re-oferta / stub), `PATCH /api/contracts/:id/status`; lectura en `GET /members/:id/account`. Member `GET /api/me/contracts`.
+API: Staff `PATCH /api/contracts/:id/status`; lectura en `GET /members/:id/account`. Alta de pack: Caja o Mercado Pago (no `POST /contracts` con STUB). Member `GET /api/me/contracts`.
 
 ### 4.16b `credential_offers`
 
@@ -853,7 +853,7 @@ Claims / `configurationId` / `vct` **no** se persisten: al (re)emitir se reconst
 | `last_error` | text nullable | soft-fail |
 | `created_at` / `updated_at` | timestamptz | |
 
-API slim: Member `GET /api/me/credential-offers`; Member `POST /api/me/credential-offers/:id/accept` → `ACCEPTED` (idempotente; conserva `offerUri`); Member `POST /api/me/credential-offers/:id/fail` → `FAILED` (offer vencido/inválido en wallet; conserva `offerUri`, `reason` → `lastError` staff); Staff `GET /api/members/:memberId/credential-offers` (`members.read`, incluye `lastError`). Re-oferta: re-POST `…/members/:id/contracts` con la misma `idempotencyKey` (force Quark). Campos list: `id`, `status`, `packId`, `packName`, `contractId`, `offerUri`, `validFrom`, `validUntil`, `createdAt`.
+API slim: Member `GET /api/me/credential-offers`; Member `POST /api/me/credential-offers/:id/accept` → `ACCEPTED` (idempotente; conserva `offerUri`); Member `POST /api/me/credential-offers/:id/fail` → `FAILED` (offer vencido/inválido en wallet; conserva `offerUri`, `reason` → `lastError` staff); Staff `GET /api/members/:memberId/credential-offers` (`members.read`, incluye `lastError`); Staff `POST /api/members/:memberId/credential-offers` (`members.write`, re-emite el contrato ACTIVE que cubre hoy; no cobra). Campos list: `id`, `status`, `packId`, `packName`, `contractId`, `offerUri`, `validFrom`, `validUntil`, `createdAt`.
 
 ### 4.17b `staff_credential_offers`
 

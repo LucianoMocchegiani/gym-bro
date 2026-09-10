@@ -4,7 +4,7 @@ Next.js App Router — sitio público, panel staff y Super Admin.
 
 ## Sitio público (apex, sin slug de gym)
 
-**`http://localhost:3002/`** — landing, pricing y SEO. Burbuja del asistente (misma UI que el Admin; `#asistente` la abre). Legales: `/legal/terminos`, `/legal/privacidad`. Sitemap: `/sitemap.xml`. Canonical: `NEXT_PUBLIC_SITE_URL`.
+**`http://localhost:3002/`** — landing, pricing y SEO. Guía de uso: `/docs`. Burbuja del asistente (misma UI que el Admin; `#asistente` la abre). Legales: `/legal/terminos`, `/legal/privacidad`. Sitemap: `/sitemap.xml`. Canonical: `NEXT_PUBLIC_SITE_URL`.
 
 El panel Staff **no** vive en el apex: hace falta el subdominio del gym.
 

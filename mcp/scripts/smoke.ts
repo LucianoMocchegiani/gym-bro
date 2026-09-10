@@ -167,6 +167,15 @@ async function smokeAdmin(client: Client): Promise<void> {
     throw new Error(`get_help producto no parece el artículo: ${producto.text}`);
   }
 
+  const guia = await callJson(client, 'get_help', { topic: 'guia' });
+  if (guia.isError) {
+    throw new Error(`get_help guia error: ${guia.text}`);
+  }
+  if (!guia.text.toLowerCase().includes('/docs') || !guia.text.toLowerCase().includes('caja')) {
+    throw new Error(`get_help guia no parece el artículo de vistas: ${guia.text}`);
+  }
+  console.log('get_help guia:', guia.text.slice(0, 240));
+
   const cash = await callJson(client, 'get_cash_day', {});
   if (cash.isError) {
     throw new Error(`admin get_cash_day error: ${cash.text}`);

@@ -75,7 +75,7 @@ Formato: **RN-MODULO-NNN** — enunciado — excepciones.
 | ID | Regla |
 |----|--------|
 | RN-PAG-001 | Mercado Pago utiliza la **cuenta del gym** (tenant). |
-| RN-PAG-002 | En MVP se pueden pagar: mensualidades, packs y drop-in. |
+| RN-PAG-002 | En MVP se pueden pagar: mensualidades, packs y drop-in. Medios nuevos: Caja (efectivo) o Mercado Pago. `STUB` es legado: no se crean cobros. |
 | RN-PAG-003 | Estados de pago: `pendiente`, `aprobado`, `rechazado`, `reembolsado`. |
 | RN-PAG-004 | Una contratación o reserva solo se confirma cuando el pago queda `aprobado`. |
 | RN-PAG-005 | Todo cobro de negocio debe usar **idempotencia** para evitar doble pago. |
@@ -98,7 +98,7 @@ Formato: **RN-MODULO-NNN** — enunciado — excepciones.
 | ID | Regla |
 |----|--------|
 | RN-ACC-001 | El proveedor de identidad de acceso es intercambiable (adapter); MVP = SSI/Quark. |
-| RN-ACC-002 | La credencial SSI de MVP es de **vínculo** afiliado↔gym; los derechos (packs, deuda, sesión) los evalúa GymBro. |
+| RN-ACC-002 | La credencial SSI de MVP es la VC de **pack** (OID4VCI). Los derechos (deuda, sesión, vigencia) los evalúa GymBro en puerta. Re-emitir no cobra: usa el contrato ACTIVE que cubre hoy (CU-AFI-006). |
 | RN-ACC-003 | El diseño contempla escaneo gym→afiliado y afiliado→QR del local; el MVP implementa al menos uno. |
 | RN-ACC-004 | Para acceso libre se validan contrataciones vigentes que otorguen ese derecho y la política de deuda/tolerancia. |
 | RN-ACC-005 | Atraso = días calendario desde el `endsAt` del último contrato libre ACTIVE. Con atraso ≤ tolerancia → ingreso permitido (`ok_deuda_tolerancia` si el pack ya venció; RN-ACC-004). Con atraso > tolerancia → denegado (`deuda_excedida`), salvo pase manual. La tolerancia no define el `startsAt` de renovación (ver RN-CON-001). |

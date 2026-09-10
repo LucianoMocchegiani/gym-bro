@@ -108,7 +108,7 @@ Une C2 + C3. `chat-api` sigue sin conocer afiliados.
 - [x] `list_services`, `list_packs`, `get_pack`
 - [x] `list_roles`, `get_role`
 - [x] `search_audit_events` (slim, sin before/after)
-- [x] `get_help` + `mcp/help/*.md`
+- [x] `get_help` + `mcp/help/*.md` (`guia` = vistas panel/app; fotos siguen en `/docs`)
 
 ---
 

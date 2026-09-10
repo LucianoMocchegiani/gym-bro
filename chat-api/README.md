@@ -44,7 +44,7 @@ docker compose up --build -d chat-api mcp api web
 ```
 
 - Health: `GET http://localhost:3010/health`
-- Landing: `POST /v1/public/session` (sin JWT) → token + hilo; mensajes igual que Staff pero solo `get_help`
+- Landing: `POST /v1/public/session` (sin JWT) → token + hilo; mensajes igual que Staff pero solo `get_help` (incluye topic `guia`)
 - Hilos Staff: `GET/POST /v1/conversations` (JWT Staff)
 - Mensajes: `POST /v1/conversations/:id/messages` → UI Message Stream; **Parar** aborta y persiste lo generado
 - Título: primer mensaje recortado; `PATCH` para editar

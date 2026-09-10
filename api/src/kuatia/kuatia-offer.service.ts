@@ -60,8 +60,8 @@ export class KuatiaOfferService {
    * o `force`, reintenta Kuatia reconstruyendo claims desde el contrato.
    * Nunca lanza por fallo Kuatia.
    *
-   * @param options.force - Re-oferta (re-POST contrato misma key / confirm MP):
-   *   ignora PENDING/ACCEPTED previo (Credo puede haber perdido la sesión).
+   * @param options.force - Re-oferta (staff o confirm MP): ignora PENDING/ACCEPTED
+   *   previo (la wallet puede haber perdido la sesión).
    */
   async ensureOfferForContract(
     tenantId: string,
@@ -177,6 +177,49 @@ export class KuatiaOfferService {
   }
 
   /**
+   * Re-emite el offer del contrato ACTIVE que cubre ahora (sin cobro ni contrato nuevo).
+   *
+   * @remarks Si hay varios vigentes (MONTHLY + ONE_TIME), usa el de `startsAt` más
+   * reciente. Soft-fail Kuatia igual que {@link ensureOfferForContract}.
+   * @throws {NotFoundException} Si el afiliado no existe en el tenant.
+   * @throws {BadRequestException} Si no hay contrato ACTIVE que cubra hoy.
+   */
+  async ensureOfferForCurrentContract(
+    tenantId: string,
+    memberId: string,
+    options?: { force?: boolean },
+  ): Promise<CredentialOfferListItem> {
+    const member = await this.prisma.member.findFirst({
+      where: { id: memberId, tenantId },
+      select: { id: true },
+    });
+    if (!member) {
+      throw new NotFoundException(`Member ${memberId} not found`);
+    }
+
+    const now = new Date();
+    const contracts = await this.prisma.contract.findMany({
+      where: {
+        tenantId,
+        memberId,
+        status: 'ACTIVE',
+        startsAt: { lte: now },
+        OR: [{ endsAt: null }, { endsAt: { gt: now } }],
+      },
+      orderBy: { startsAt: 'desc' },
+      take: 1,
+    });
+    if (contracts.length === 0) {
+      throw new BadRequestException(
+        'No hay contrato vigente para emitir credencial',
+      );
+    }
+    return this.ensureOfferForContract(tenantId, contracts[0].id, {
+      force: options?.force ?? true,
+    });
+  }
+
+  /**
    * Lista offers del afiliado (paginado; más recientes primero).
    *
    * @param options.includeLastError - true para staff (ops).
@@ -269,7 +312,7 @@ export class KuatiaOfferService {
    *
    * @remarks Idempotente si ya está `FAILED`. Conserva `offerUri` (auditoría).
    * No llama a Quark. Timeout/red no deberían llegar acá (la app filtra).
-   * Staff ve `lastError`; member no. Re-oferta = re-POST contrato misma key.
+   * Staff ve `lastError`; member no. Re-oferta = POST credential-offers del vigente.
    * @throws {NotFoundException} Si no existe para el member/tenant.
    * @throws {BadRequestException} Si el status es `ACCEPTED`.
    */

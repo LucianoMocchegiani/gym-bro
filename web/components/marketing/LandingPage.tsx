@@ -128,8 +128,8 @@ export function LandingPage() {
             <a className="mkt-btn-primary" href={mailHref}>
               Agendá una reunión
             </a>
-            <Link className="mkt-btn-ghost" href="/#asistente">
-              Probá el asistente
+            <Link className="mkt-btn-ghost" href="/docs">
+              Guía de uso
             </Link>
           </div>
         </div>

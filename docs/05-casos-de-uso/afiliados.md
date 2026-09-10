@@ -2,7 +2,7 @@
 
 **Estado:** Cerrado (v1)  
 **Reglas:** RN-TEN-*, RN-ROL-*  
-**Dominio:** Afiliado, CredencialVinculo
+**Dominio:** Afiliado, CredentialOffer (pack OID4VCI)
 
 ---
 
@@ -20,12 +20,12 @@
 3. (Opcional) Asocia sucursal default.
 4. Sistema valida unicidad razonable (ej. email/DNI según config).
 5. Sistema crea Afiliado en estado activo (o pendiente si se define onboarding).
-6. Sistema dispara emisión de **credencial de vínculo** SSI vía adapter (o la encola si el proveedor no responde de inmediato).
-7. Sistema registra auditoría del alta.
+6. Sistema registra auditoría del alta.
+
+La credencial de puerta **no** se emite en el alta: sale al cobrar un pack (CU-CON-001). Re-oferta: CU-AFI-006.
 
 **Flujos alternativos / errores:**
 - Datos inválidos o duplicados → mensaje y no crea.
-- Fallo de emisión SSI → afiliado queda creado; credencial en estado pendiente/reintento; no bloquea el alta administrativa.
 
 **Postcondiciones:**
 - Afiliado existe en el tenant.
@@ -64,7 +64,7 @@
 1. Staff solicita baja o suspensión e indica motivo.
 2. Sistema confirma.
 3. Sistema marca afiliado inactivo/suspendido.
-4. Sistema revoca o marca no usable la credencial de vínculo (adapter).
+4. Ingresos futuros se deniegan por estado del afiliado (la VC en el celular no alcanza).
 5. Contrataciones activas: se marcan según política (no auto-reembolso salvo flujo de devolución).
 6. Auditoría.
 
@@ -111,23 +111,26 @@
 
 ---
 
-## CU-AFI-006 Reemitir credencial de vínculo
+## CU-AFI-006 Reemitir credencial de pack (OID4VCI)
 
-**Actor:** Staff con permiso / Super Admin soporte
+**Actor:** Staff con `members.write`
 
-**Precondiciones:** Afiliado activo; credencial perdida, revocada o fallida.
+**Precondiciones:** Afiliado activo; hay un contrato ACTIVE cuya vigencia cubre **hoy** (si hay varios, el de `startsAt` más reciente).
 
 **Flujo principal:**
-1. Actor solicita reemisión.
-2. Sistema invalida credencial anterior si existe.
-3. Adapter SSI emite nueva credencial de vínculo.
-4. Auditoría.
+1. Staff en ficha del afiliado elige Emitir / Re-emitir credencial (confirma: no cobra).
+2. Sistema llama `POST /members/:id/credential-offers` (`force` por defecto).
+3. Kuatia genera un offer nuevo del pack vigente. Soft-fail si el issuer falla (`FAILED` + `lastError`).
+4. El socio acepta en App → Acceso → Credenciales.
 
-**Errores:** Proveedor caído → reintento / estado pendiente.
+**Errores:**
+- Sin contrato vigente hoy → 400, no se crea cobro ni contrato.
+- Kuatia caído → offer `FAILED`; se puede reintentar el mismo botón.
 
-**Postcondiciones:** Nueva referencia de credencial asociada al afiliado.
+**Postcondiciones:** Offer PENDING (o FAILED). No hay transacción ni mes extra. El enum `STUB` no interviene.
 
-**Reglas relacionadas:** RN-ACC-001, RN-ACC-002
+**Reglas relacionadas:** RN-ACC-001, RN-ACC-002, RN-PAG-004
+**API:** Staff `POST /api/members/:memberId/credential-offers`. Listado `GET …/credential-offers`. Socio: `GET /me/credential-offers` + accept/fail.
 
 ---
 

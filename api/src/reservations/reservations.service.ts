@@ -7,18 +7,15 @@ import {
 } from '@nestjs/common';
 import {
   ContractStatus,
-  CashMovementConcept,
   MemberStatus,
   PaymentMethod,
   PaymentStatus,
   Prisma,
-  ReceiptConcept,
   Reservation,
   ReservationCoverage,
   ReservationStatus,
   SessionStatus,
 } from '@prisma/client';
-import { randomBytes } from 'node:crypto';
 import { AUDIT_ACTIONS, AuditActor } from '../audit/audit.types';
 import { AuditService } from '../audit/audit.service';
 import {
@@ -28,8 +25,6 @@ import {
   toListResult,
 } from '../common/list';
 import { PrismaService } from '../prisma/prisma.service';
-import { CashPaymentService } from '../payment/cash-payment.service';
-import { SessionValidationService } from '../sessions/session-validation.service';
 import { TenantSettingsService } from '../tenant-settings/tenant-settings.service';
 import { WaitlistService } from '../waitlist/waitlist.service';
 import {
@@ -63,7 +58,7 @@ type ReservationWithRelations = Reservation & {
  * Reservas con crédito o drop-in (CU-RES-001 / CU-RES-002 / RN-RES-001)
  * y cancelación (CU-RES-003).
  *
- * @remarks Drop-in: staff-only, Payment APPROVED stub/caja. CASH → movimiento
+ * @remarks Drop-in: staff-only vía Caja o Mercado Pago. CASH → movimiento
  * de caja. Comprobante interno RN-PAG-009. Cancelación: CREDIT devuelve crédito;
  * DROP_IN no reembolsa (E5). Ingreso tardío RN-RES-006.
  */
@@ -74,8 +69,6 @@ export class ReservationsService {
     private readonly audit: AuditService,
     private readonly tenantSettings: TenantSettingsService,
     private readonly waitlist: WaitlistService,
-    private readonly cashPayment: CashPaymentService,
-    private readonly sessionValidation: SessionValidationService,
   ) {}
 
   /**
@@ -186,10 +179,10 @@ export class ReservationsService {
     if (coverage === ReservationCoverage.DROP_IN) {
       if (actor.profileType === 'MEMBER') {
         throw new ForbiddenException(
-          'Drop-in reservations require staff (pay at desk / stub)',
+          'Drop-in reservations require staff (pay at desk)',
         );
       }
-      return this.createDropIn(tenantId, memberId, dto, actor);
+      return this.createDropIn(tenantId, memberId, dto);
     }
     return this.createWithCredit(tenantId, memberId, dto, actor);
   }
@@ -345,41 +338,17 @@ export class ReservationsService {
   }
 
   /**
-   * Valida que un miembro pueda hacer drop-in en una sesión.
+   * Drop-in por este endpoint ya no crea cobro. Usar Caja o Mercado Pago.
    *
-   * @throws NotFoundException Sesión no existe
-   * @throws BadRequestException Sesión no publicada / sin lugar / servicio inactivo / precio drop-in no configurado / fuera de ventana de booking
-   * @throws ConflictException Ya tiene reserva confirmada para esa sesión
-   */
-  async validateSessionForDropIn(
-    tenantId: string,
-    memberId: string,
-    sessionId: string,
-  ) {
-    return this.sessionValidation.validateSessionForDropIn(tenantId, memberId, sessionId);
-  }
-
-  /**
-   * Reserva drop-in con pago stub/caja ya aprobado (CU-RES-002 / RN-PAG-004).
-   *
-   * @remarks Precio desde `service.dropInPrice`. Idempotente por `idempotencyKey`.
+   * @remarks Idempotente si la key ya tiene reserva. `STUB` deshabilitado.
    */
   private async createDropIn(
     tenantId: string,
     memberId: string,
     dto: CreateReservationDto,
-    actor: AuditActor,
   ): Promise<ReservationDetail> {
     await this.assertMemberInTenant(tenantId, memberId, true);
 
-    const session = await this.validateSessionForDropIn(
-      tenantId,
-      memberId,
-      dto.sessionId,
-    );
-
-    const idempotencyKey =
-      dto.idempotencyKey?.trim() || `stub-${randomBytes(16).toString('hex')}`;
     const method = dto.method ?? PaymentMethod.STUB;
     if (method === PaymentMethod.MP) {
       throw new BadRequestException(
@@ -392,105 +361,10 @@ export class ReservationsService {
       );
     }
 
-    const existingTransactionItem = await this.prisma.transactionItem.findUnique({
-      where: {
-        tenantId_idempotencyKey: { tenantId, idempotencyKey },
-      },
-      include: {
-        reservation: { include: this.reservationInclude() },
-      },
-    });
-    if (existingTransactionItem?.reservation) {
-      return this.toDetail(existingTransactionItem.reservation);
-    }
-    if (existingTransactionItem && !existingTransactionItem.reservation) {
-      throw new BadRequestException(
-        'Idempotency key already used without a reservation',
-      );
-    }
-
-    try {
-      const reservation = await this.prisma.$transaction(async (tx) => {
-        const fresh = await tx.session.findFirst({
-          where: { id: session.id, tenantId },
-          select: {
-            id: true,
-            status: true,
-            capacity: true,
-            bookedCount: true,
-            startsAt: true,
-            endsAt: true,
-          },
-        });
-        if (!fresh || fresh.status !== SessionStatus.PUBLISHED) {
-          throw new BadRequestException('Session is not published');
-        }
-        await this.tenantSettings.assertSessionOpenForBooking(tenantId, fresh);
-        if (fresh.bookedCount >= fresh.capacity) {
-          throw new BadRequestException('Session is full');
-        }
-
-        const seat = await tx.session.updateMany({
-          where: {
-            id: fresh.id,
-            tenantId,
-            status: SessionStatus.PUBLISHED,
-            bookedCount: fresh.bookedCount,
-          },
-          data: { bookedCount: { increment: 1 } },
-        });
-        if (seat.count !== 1) {
-          throw new ConflictException(
-            'Session capacity changed concurrently; retry',
-          );
-        }
-
-        const { transaction } = await this.cashPayment.processPayment(tx, {
-          tenantId,
-          memberId,
-          items: [{
-            sessionId: session.id,
-            amount: session.service.dropInPrice!,
-            idempotencyKey,
-          }],
-          idempotencyKey,
-          method,
-          cashConcept: CashMovementConcept.DROP_IN,
-          receiptConcept: ReceiptConcept.DROP_IN,
-          description: session.service.name,
-          recordedByStaffId: actor.profileType === 'STAFF' ? actor.userId : null,
-        });
-
-        return tx.reservation.create({
-          data: {
-            tenantId,
-            memberId,
-            sessionId: session.id,
-            transactionItemId: transaction.transactionItems[0].id,
-            status: ReservationStatus.CONFIRMED,
-            coverage: ReservationCoverage.DROP_IN,
-          },
-          include: this.reservationInclude(),
-        });
-      });
-
-      const detail = this.toDetail(reservation);
-      await this.audit.record({
-        tenantId,
-        actor,
-        action: AUDIT_ACTIONS.reservationCreate,
-        entityType: 'reservation',
-        entityId: reservation.id,
-        before: null,
-        after: this.auditSnapshot(detail),
-      });
-      return detail;
-    } catch (error: unknown) {
-      if (
-        error instanceof Prisma.PrismaClientKnownRequestError &&
-        error.code === 'P2002'
-      ) {
-        const again = await this.prisma.transactionItem.findUnique({
+    const idempotencyKey = dto.idempotencyKey?.trim();
+    if (idempotencyKey) {
+      const existingTransactionItem =
+        await this.prisma.transactionItem.findUnique({
           where: {
             tenantId_idempotencyKey: { tenantId, idempotencyKey },
           },
@@ -498,15 +372,19 @@ export class ReservationsService {
             reservation: { include: this.reservationInclude() },
           },
         });
-        if (again?.reservation) {
-          return this.toDetail(again.reservation);
-        }
-        throw new ConflictException(
-          'Member already has a confirmed reservation for this session',
+      if (existingTransactionItem?.reservation) {
+        return this.toDetail(existingTransactionItem.reservation);
+      }
+      if (existingTransactionItem && !existingTransactionItem.reservation) {
+        throw new BadRequestException(
+          'Idempotency key already used without a reservation',
         );
       }
-      throw error;
     }
+
+    throw new BadRequestException(
+      'Use Caja (efectivo) or Mercado Pago for drop-in. STUB payments are disabled.',
+    );
   }
 
   /**
@@ -527,7 +405,9 @@ export class ReservationsService {
       },
     });
     if (!transactionItem) {
-      throw new NotFoundException(`TransactionItem ${transactionItemId} not found in tenant`);
+      throw new NotFoundException(
+        `TransactionItem ${transactionItemId} not found in tenant`,
+      );
     }
     if (transactionItem.reservation) {
       return this.toDetail(transactionItem.reservation);

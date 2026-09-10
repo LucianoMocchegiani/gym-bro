@@ -8,6 +8,7 @@ Los CU usan la plantilla de [00-indice.md](../00-indice.md) y citan IDs de [04-r
 | ID | Qué hace | Doc |
 |----|----------|-----|
 | CU-AFI-001 | Registrar afiliado | [afiliados](./afiliados.md) |
+| CU-AFI-006 | Reemitir credencial de pack (sin cobro) | [afiliados](./afiliados.md) |
 | CU-CON-001 | Comprar pack | [servicios-sesiones-packs](./servicios-sesiones-packs.md) |
 | CU-RES-001 | Reservar sesión | [servicios-sesiones-packs](./servicios-sesiones-packs.md) |
 | CU-PAG-001 | Pago Mercado Pago | [pagos-caja](./pagos-caja.md) |
