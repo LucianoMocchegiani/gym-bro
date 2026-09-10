@@ -14,7 +14,7 @@ Roadmap de épicas históricas: [11-roadmap-mvp.md](./11-roadmap-mvp.md). Diferi
 |---|-----------|------|------------|
 | P1 | Molinetes / hardware de puerta | Diseño + adapters | En backlog acceso; sin spike de marcas |
 | P2 | Débito automático MONTHLY | QA (código ya está) | Implementado; falta probar de punta a punta |
-| P3 | Landing + pricing + SEO | Comercial / web pública | No existe |
+| P3 | Landing + pricing + SEO | Comercial / web pública | Landing + SEO en el apex; precio a convenir; legales borrador |
 | P4 | Tokens y costo OpenRouter | Tope C7 + insumo de pricing | Tope C7 pendiente; no hay costo por gym |
 | P5 | Migración de datos (Excel + IA) | Ops / onboarding | El **último**; puede no existir en el primer piloto |
 
@@ -58,15 +58,14 @@ Checklist: `docs/08-casos-prueba-manuales.md` (P9…).
 
 ## P3 — Landing, pricing y SEO
 
-Hoy no hay sitio público. El Admin no es marketing.
+Sitio público en el **apex** (`http://localhost:3002/` / dominio de plataforma). El Admin sigue en `{slug}.…` y no se indexa.
 
-Este corte:
+Este corte (en código):
 
-- Landing (qué es GymBro, para quién, cómo entra un gym).
-- Pricing visible (planes / qué incluye; el empaquetado Starter/Pro puede ser **un** plan al inicio).
-- SEO decente: título/meta, OG, sitemap, indexable, copy en castellano.
-
-ToS + privacidad (Argentina) no son la landing, pero **un sitio que cobra o pide datos** las necesita. Van en [operaciones.md](./99-backlog-post-mvp/operaciones.md).
+- Landing: gyms, clubes y estudios (afiliaciones); CTA mailto `hola@faciliter.xyz`; prueba del asistente (sin datos de un gym).
+- Un plan visible, **precio a convenir** (sin número hasta P4 / costos reales).
+- SEO: title/meta, OG, canonical, JSON-LD, `sitemap.xml`, `robots.txt`, copy en castellano.
+- `/legal/terminos` y `/legal/privacidad`: **borrador** (no es el texto final Argentina). El contrato revisado sigue en [operaciones.md](./99-backlog-post-mvp/operaciones.md).
 
 El costo de OpenRouter (P4) alimenta el número de pricing; no al revés.
 
@@ -74,7 +73,7 @@ El costo de OpenRouter (P4) alimenta el número de pricing; no al revés.
 
 ## P4 — Tokens y consumo OpenRouter
 
-El asistente Admin **ya corre** (post-MVP de producto, pero en el repo). OpenRouter se paga. Sin números no se puede poner el chat en un plan ni capar abuse.
+El asistente Admin **ya corre** (post-MVP de producto, pero en el repo). La burbuja de la landing **también** llama OpenRouter. OpenRouter se paga. Sin números no se puede poner el chat en un plan ni capar abuse. La landing tiene un tope por IP/hora; el tope por staff sigue pendiente.
 
 Dos capas (no mezclarlas):
 

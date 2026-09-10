@@ -10,11 +10,15 @@ export function Composer({
   streaming,
   onSend,
   onStop,
+  placeholder = 'Preguntá por un afiliado, la caja, una sesión…',
+  ariaLabel = 'Mensaje para el asistente',
 }: {
   disabled: boolean;
   streaming: boolean;
   onSend: (text: string) => void;
   onStop: () => void;
+  placeholder?: string;
+  ariaLabel?: string;
 }) {
   const [text, setText] = useState('');
 
@@ -52,8 +56,8 @@ export function Composer({
         disabled={disabled || streaming}
         rows={2}
         maxLength={8000}
-        placeholder="Preguntá por un afiliado, la caja, una sesión…"
-        aria-label="Mensaje para el asistente"
+        placeholder={placeholder}
+        aria-label={ariaLabel}
       />
       {streaming ? (
         <button type="button" className="btn ghost" onClick={onStop}>

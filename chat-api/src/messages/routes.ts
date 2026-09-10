@@ -1,9 +1,11 @@
 import { Hono } from 'hono';
 import { HTTPException } from 'hono/http-exception';
 import { streamAgentTurn } from '../agent/run.js';
-import type { AppEnv } from '../auth/principal.js';
+import { isPublicPrincipal, type AppEnv } from '../auth/principal.js';
+import { config } from '../config.js';
 import { requireConversationId } from '../conversations/ids.js';
 import { getConversation } from '../conversations/service.js';
+import { clientIp, consumeRateLimit } from '../public/rate-limit.js';
 import { listMessages, toMessageDto } from './persist.js';
 
 const TEXT_MAX = 8000;
@@ -57,5 +59,26 @@ messageRoutes.post('/', async (c) => {
     throw new HTTPException(409, { message: 'Conversation archived' });
   }
   const text = readText(await readJsonBody(c));
-  return streamAgentTurn(id, c.get('accessToken'), text, c.req.raw.signal);
+  const principal = c.get('principal');
+  if (isPublicPrincipal(principal)) {
+    const ip = clientIp(c.req.raw.headers);
+    if (
+      !consumeRateLimit(
+        `public-turn:${ip}:${principal.userId}`,
+        config.chatPublicMaxTurnsPerHour,
+      )
+    ) {
+      throw new HTTPException(429, {
+        message:
+          'Llegaste al tope de consultas por ahora. Probá más tarde o agendá una reunión.',
+      });
+    }
+  }
+  return streamAgentTurn(
+    id,
+    c.get('accessToken'),
+    text,
+    c.req.raw.signal,
+    isPublicPrincipal(principal) ? 'public' : 'staff',
+  );
 });

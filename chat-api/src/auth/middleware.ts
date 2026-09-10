@@ -1,8 +1,13 @@
 import { createMiddleware } from 'hono/factory';
 import { HTTPException } from 'hono/http-exception';
 import { prisma } from '../prisma.js';
+import { config } from '../config.js';
 import type { AppEnv } from './principal.js';
 import { resolvePrincipal } from './introspect.js';
+import {
+  isPublicSessionToken,
+  verifyPublicSessionToken,
+} from './public-session.js';
 
 function readBearer(header: string | undefined): string | null {
   if (!header) {
@@ -13,7 +18,7 @@ function readBearer(header: string | undefined): string | null {
 }
 
 /**
- * Exige Bearer, introspecta y adjunta `principal`. Actualiza `identities`.
+ * Exige Bearer, resuelve principal (Staff via Nest o sesión landing) y actualiza `identities`.
  */
 export const requirePrincipal = createMiddleware<AppEnv>(async (c, next) => {
   if (c.req.method === 'OPTIONS') {
@@ -25,7 +30,17 @@ export const requirePrincipal = createMiddleware<AppEnv>(async (c, next) => {
     throw new HTTPException(401, { message: 'Unauthorized' });
   }
 
-  const principal = await resolvePrincipal(token);
+  const principal = isPublicSessionToken(token)
+    ? (() => {
+        if (!config.chatPublicEnabled) {
+          throw new HTTPException(503, {
+            message: 'El asistente de la landing no está habilitado.',
+          });
+        }
+        return verifyPublicSessionToken(token);
+      })()
+    : await resolvePrincipal(token);
+
   await prisma.identity.upsert({
     where: {
       tenantId_userId: {

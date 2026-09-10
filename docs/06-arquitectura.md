@@ -10,7 +10,7 @@
 | Capa | Tecnología | Notas |
 |------|------------|--------|
 | **API / backend** | **NestJS 11 + TypeScript 5.9** | Monolito modular; runtime **Node 24** (Active LTS) |
-| **Web admin / Super Admin** | **Next.js 16 (App Router) + React 19** | App en `web/` |
+| **Web** | **Next.js 16 (App Router) + React 19** | Landing (apex) + Admin / Super en `web/` |
 | **App móvil** | **Flutter** | Afiliado + acceso QR; alineado a Quark / identity-core-dart |
 | **Base de datos** | **PostgreSQL 16** | Multi-tenant por `tenant_id` |
 | **ORM** | **Prisma 6** (`api/prisma/`) | Migraciones manuales; modelo inicial `Tenant`. Prisma 7 diferido (ESM) |
@@ -83,7 +83,7 @@ Estructura lógica interna:
 
 ```text
 api/                    # NestJS (módulos por dominio dentro de src/)
-web/                    # Next.js — Admin (slug.localhost) + Super (/super)
+web/                    # Next.js — landing (apex) + Admin (slug.localhost) + Super (/super)
 mobile/                 # Flutter
 # Dominios Nest (api/src):
 #   auth, tenants, members, staff, roles, services, packs, sessions,
@@ -330,8 +330,8 @@ Prefijo sugerido: `/api/v1`.
 | Reservas | `/sessions/:id/reservations`, waitlist |
 | Billing | cart MP `/me|members/:id/transaction-items/mp/cart`, cash cart Staff, webhook `/webhooks/payment` |
 | Access | `/access/oid4vp/request`, `/access/oid4vp/session/:id`, `/access-attempts`, `GET /members/:id/access-preview`, manual-pass |
-| Chat (servicio `chat-api` :3010) | `GET /health`; `GET/POST /v1/conversations`; `GET/PATCH/DELETE /v1/conversations/:id`; `GET/POST /v1/conversations/:id/messages` (POST = UI Message Stream; OpenRouter + MCP) |
-| MCP (servicio `mcp` :3011) | `GET /health`; `POST /mcp` Streamable HTTP + Bearer Staff. Tools A–D (lectura): operación, reportes/débitos/devoluciones, catálogo/roles/audit slim, `get_help` |
+| Chat (servicio `chat-api` :3010) | `GET /health`; `POST /v1/public/session` (landing); `GET/POST /v1/conversations`; `GET/PATCH/DELETE /v1/conversations/:id`; `GET/POST /v1/conversations/:id/messages` (POST = UI Message Stream; OpenRouter + MCP) |
+| MCP (servicio `mcp` :3011) | `GET /health`; `POST /mcp` Streamable HTTP + Bearer. Tools A–D (lectura): operación, reportes/débitos/devoluciones, catálogo/roles/audit slim, `get_help` (`producto` + pantallas) |
 | Rutinas | `/exercises`, `/routine-templates`, `/assigned-routines` |
 | Notif | `/notifications`, `/notification-templates`, preferences |
 | Afiliados | Staff CRUD members + PATCH status (`members.deactivate`); estado de cuenta `GET /members/:id/account` / `GET /me/account?coverage=current\|all` |
@@ -409,7 +409,7 @@ Ver [99-backlog-post-mvp.md](./99-backlog-post-mvp.md). Impacto arquitectónico 
 - Feature flags por plan.
 - Offline access = cola local + sync (no en MVP).
 - Débito automático MONTHLY: Customer/Card + Payments + cron Nest (no Preference sola). Ver §7.5.
-- Asistente Admin: `chat-api` (Hono, DB `chat`, hilos + stream) + sidecar `mcp/` + burbuja/drawer en `AdminShell` — [16-chat-mcp-diseno.md](./16-chat-mcp-diseno.md).
+- Asistente: `chat-api` + sidecar `mcp/` + drawer Admin + la misma burbuja en la landing (sesión anónima, solo ayuda de producto) — [16-chat-mcp-diseno.md](./16-chat-mcp-diseno.md).
 
 ---
 

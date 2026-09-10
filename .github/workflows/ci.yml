@@ -33,6 +33,7 @@ jobs:
     env:
       NEXT_PUBLIC_API_URL: http://localhost:3001
       NEXT_PUBLIC_CHAT_API_URL: http://localhost:3010
+      NEXT_PUBLIC_SITE_URL: http://localhost:3002
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4

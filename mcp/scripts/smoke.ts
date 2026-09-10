@@ -154,10 +154,18 @@ async function smokeAdmin(client: Client): Promise<void> {
   if (help.isError) {
     throw new Error(`get_help error: ${help.text}`);
   }
-  if (!help.text.includes('Packs') && !help.text.includes('/packs')) {
+  if (!help.text.includes('Packs') && !help.text.includes('/packs') && !help.text.includes('pack')) {
     throw new Error(`get_help packs no parece un artículo: ${help.text}`);
   }
   console.log('get_help:', help.text.slice(0, 240));
+
+  const producto = await callJson(client, 'get_help', { topic: 'producto' });
+  if (producto.isError) {
+    throw new Error(`get_help producto error: ${producto.text}`);
+  }
+  if (!producto.text.toLowerCase().includes('afili')) {
+    throw new Error(`get_help producto no parece el artículo: ${producto.text}`);
+  }
 
   const cash = await callJson(client, 'get_cash_day', {});
   if (cash.isError) {

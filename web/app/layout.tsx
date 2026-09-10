@@ -3,7 +3,9 @@ import { Barlow_Condensed, IBM_Plex_Sans } from 'next/font/google';
 import { AuthProvider } from '@/lib/auth/AuthProvider';
 import { NavigationProgress } from '@/components/NavigationProgress';
 import { ThemeProvider } from '@/lib/theme/ThemeProvider';
+import { publicSiteUrl } from '@/lib/site-url';
 import './globals.css';
+import './marketing.css';
 
 const display = Barlow_Condensed({
   variable: '--font-display',
@@ -18,8 +20,13 @@ const body = IBM_Plex_Sans({
 });
 
 export const metadata: Metadata = {
-  title: 'Faciliter Admin',
-  description: 'Panel staff — acceso puerta y gestión del gym',
+  metadataBase: new URL(publicSiteUrl()),
+  title: {
+    default: 'Faciliter',
+    template: '%s · Faciliter',
+  },
+  description:
+    'Software de afiliaciones para gyms, clubes y estudios en Argentina: caja, packs, puerta QR y app.',
 };
 
 /** Evita flash de tema incorrecto antes de hidratar. */

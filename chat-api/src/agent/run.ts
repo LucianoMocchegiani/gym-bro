@@ -29,6 +29,19 @@ type LooseStep = {
   toolResults?: LooseTool[];
 };
 
+function pickTools(
+  listed: Record<string, unknown>,
+  allowlist: string[],
+): Record<string, unknown> {
+  const picked: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(listed)) {
+    if (allowlist.some((name) => key === name || key.endsWith(`.${name}`))) {
+      picked[key] = value;
+    }
+  }
+  return picked;
+}
+
 function toolNameOf(item: LooseTool, fallback = 'tool'): string {
   return typeof item.toolName === 'string' && item.toolName.length > 0
     ? item.toolName
@@ -96,25 +109,34 @@ export async function streamAgentTurn(
   accessToken: string,
   userText: string,
   abortSignal?: AbortSignal,
+  mode: 'staff' | 'public' = 'staff',
 ): Promise<Response> {
+  const mcpFailMessage =
+    mode === 'public'
+      ? 'El asistente no está disponible.'
+      : 'El asistente no puede consultar los datos del gym.';
   let mcp;
   try {
     mcp = await openMcpClient(accessToken);
   } catch (error) {
     console.error(error);
     throw new HTTPException(502, {
-      message: 'El asistente no puede consultar los datos del gym.',
+      message: mcpFailMessage,
     });
   }
 
   let tools;
   try {
-    tools = await mcp.tools();
+    const listed = await mcp.tools();
+    tools =
+      mode === 'public'
+        ? (pickTools(listed as Record<string, unknown>, ['get_help']) as typeof listed)
+        : listed;
   } catch (error) {
     await mcp.close().catch(() => undefined);
     console.error(error);
     throw new HTTPException(502, {
-      message: 'El asistente no puede consultar los datos del gym.',
+      message: mcpFailMessage,
     });
   }
 
@@ -122,6 +144,8 @@ export async function streamAgentTurn(
   await applyAutomaticTitle(conversationId, userText);
   const history = await listMessages(conversationId);
   const messages = buildModelMessages(history);
+  const system =
+    mode === 'public' ? config.chatPublicSystemPrompt : config.chatSystemPrompt;
 
   let closed = false;
   const closeMcp = async () => {
@@ -152,7 +176,7 @@ export async function streamAgentTurn(
   try {
     const result = streamText({
       model: chatModel(),
-      system: config.chatSystemPrompt,
+      system,
       messages,
       tools,
       abortSignal,

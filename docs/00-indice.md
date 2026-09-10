@@ -1,6 +1,6 @@
 # Faciliter — Índice de documentación
 
-Documentación **C-producto** (SRS operativo): visión, dominio, reglas, casos de uso, arquitectura, wireframes ASCII y pruebas manuales. Idioma: **español**. Nombre de producto: **Faciliter**.
+Documentación **C-producto** (SRS operativo): visión, dominio, reglas, casos de uso, arquitectura, wireframes ASCII y pruebas manuales. Idioma: **español**. Nombre de producto: **Faciliter** (gyms, clubes y estudios).
 
 ## Formato de la documentación
 

@@ -6,6 +6,7 @@ import { z } from 'zod';
 import { jsonResult } from '../slim.js';
 
 const TOPICS = [
+  'producto',
   'afiliados',
   'packs',
   'sesiones',
@@ -29,7 +30,7 @@ function isTopic(value: string): value is HelpTopic {
 }
 
 /**
- * Artículos cortos en `mcp/help/`. Cualquier Staff. No es el C-producto.
+ * Artículos en `mcp/help/`. Staff y landing pública (solo este tool). No es el C-producto.
  */
 export function registerHelpTools(server: McpServer): void {
   server.registerTool(
@@ -37,7 +38,7 @@ export function registerHelpTools(server: McpServer): void {
     {
       title: 'Ayuda Faciliter',
       description:
-        'Artículo corto de cómo usar el Admin (español, una pantalla). topic: afiliados, packs, sesiones, puerta, caja, debito, devoluciones, reportes, roles, chat. Sin topic lista los temas. No cobra ni edita.',
+        'Artículo de cómo funciona Faciliter (español). topic: producto (visión: packs, caja, staff, app, puerta, cobros), afiliados, packs, sesiones, puerta, caja, debito, devoluciones, reportes, roles, chat. Sin topic lista los temas. Para “qué es un pack / la caja / el staff / cómo entra el socio”, usá producto o el tema. No cobra ni edita.',
       inputSchema: {
         topic: z
           .string()

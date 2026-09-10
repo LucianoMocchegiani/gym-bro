@@ -1,6 +1,12 @@
-# Faciliter Web (Admin + Super)
+# Faciliter Web (landing + Admin + Super)
 
-Next.js App Router — panel staff y Super Admin.
+Next.js App Router — sitio público, panel staff y Super Admin.
+
+## Sitio público (apex, sin slug de gym)
+
+**`http://localhost:3002/`** — landing, pricing y SEO. Burbuja del asistente (misma UI que el Admin; `#asistente` la abre). Legales: `/legal/terminos`, `/legal/privacidad`. Sitemap: `/sitemap.xml`. Canonical: `NEXT_PUBLIC_SITE_URL`.
+
+El panel Staff **no** vive en el apex: hace falta el subdominio del gym.
 
 ## Rutas Staff (tenant por subdominio)
 
@@ -11,7 +17,7 @@ Con tunnel: `{slug}.{NEXT_PUBLIC_APP_DOMAIN}` (ej. `https://demo.pruebasaproducc
 | Ruta | Uso |
 |------|-----|
 | `/login` | Login Staff (slug desde el Host; sin UUID) |
-| `/` | Dashboard mínimo: KPIs del día + atajos |
+| `/` | Dashboard: KPIs del día (solo con slug de tenant) |
 | `/afiliados` | Listado / alta / ficha + estado de cuenta |
 | `/servicios` | Catálogo de servicios |
 | `/packs` | Packs + componentes |
@@ -24,9 +30,9 @@ Con tunnel: `{slug}.{NEXT_PUBLIC_APP_DOMAIN}` (ej. `https://demo.pruebasaproducc
 | `/puerta` | Tabs: Verificar (OID4VP) · Pase manual · Historial; `/puerta/pase-manual` → `?tab=pase` |
 | Asistente | Drawer (topbar); no hay ruta `/asistente` |
 
-## Rutas Super (apex)
+## Rutas Super (apex, bajo `/super`)
 
-**`http://localhost:3002/super/...`** (sin slug de gym).
+**`http://localhost:3002/super/...`** (sin slug de gym; noindex).
 
 | Ruta | Uso |
 |------|-----|
@@ -51,4 +57,4 @@ Credenciales: `docs/credenciales-demo.md`.
 - Tema claro/oscuro: `data-theme` + `localStorage` clave `gymbro.theme` (default oscuro).
 - Marca del Admin = slug del tenant (sidebar); Super = `SUPER`.
 - CORS API acepta `*.localhost` además de `CORS_ORIGIN`.
-- Prod futuro: `{slug}.gymbro.app` (mismo extractor de Host).
+- Prod futuro: `{slug}.{APP_DOMAIN}` (mismo extractor de Host). Landing en el apex / `NEXT_PUBLIC_SITE_URL`.

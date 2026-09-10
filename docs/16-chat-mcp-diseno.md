@@ -17,20 +17,21 @@ No es C-producto (sin RN/CU/wireframes). Este archivo fija despliegue, identidad
 | 1 | Dónde corre el agente | **Fuera de Nest.** `chat-api` (AI SDK + MCP + OpenRouter). Cero módulo assistant en `api/src`. |
 | 2 | Cómo se reutiliza | Como infra (Postgres, Redis, RabbitMQ): **otra instancia** + config distinta. No un SaaS único con N plataformas en el mismo proceso. |
 | 3 | MCP por instancia | **Uno.** La instancia nace apuntando a un servidor MCP (`CHAT_MCP_URL`). GymBro no “agrega MCPs” en runtime. |
-| 4 | Auth de esa instancia | **La del producto huésped.** En GymBro: login Staff de hoy (`tenantSlug` + email + password → access + refresh). El chat **no** tiene usuarios/password propios. |
-| 5 | MCP GymBro | Sidecar `mcp/` en este monorepo. Solo traduce tools → HTTP de la API existente. JWT Staff en cada llamada. |
+| 4 | Auth de esa instancia | **Admin:** JWT Staff del huésped (`/api/auth/me`). **Landing:** `POST /v1/public/session` (token HMAC `pub1.`, `tenantId=public`). El chat no tiene passwords de staff. |
+| 5 | MCP GymBro | Sidecar `mcp/` traduce tools → HTTP Nest con Bearer Staff. `get_help` no llama Nest. Landing filtra tools a `get_help`. |
 | 6 | Multi-gimnasio | Una instancia de chat sirve a **todos los tenants** de ese GymBro (igual que `web/` hoy). El aislamiento lo da el JWT (`tenantId` + `sub`) que viaja al MCP. |
-| 7 | Conversaciones | Privadas por **staff**. María (Demo) no ve los chats de Ana (otro gym) ni los de Pedro (mismo gym). |
+| 7 | Conversaciones | Privadas por **staff** (tenant+user). Landing: hilos del visitante (`public` + session id). |
 | 8 | Código ahora | No. Planificación → este doc → implementación cuando se pida. |
 | 9 | Título de conversación | Como ChatGPT: automático (primer mensaje / resumen), editable después. |
 | 10 | Postgres del chat | Mismo contenedor Compose, **otra database** `chat`. |
-| 11 | UI + login | **Ambas:** `chat-api` servicio aparte; drawer en el Admin; un JWT Staff. |
+| 11 | UI + login | Drawer Admin (JWT Staff) **y** la misma burbuja en la landing (sesión anónima). |
 | 12 | Runtime IA | Sin OpenCode. `chat-api` = Vercel AI SDK + MCP SDK + OpenRouter. |
-| 13 | Validar JWT (A.1) | Introspección: `GET /api/auth/me` con el Bearer. chat-api no guarda `JWT_ACCESS_SECRET`. |
+| 13 | Validar JWT (A.1) | Introspección: `GET /api/auth/me` con el Bearer. chat-api no guarda `JWT_ACCESS_SECRET`. Landing no introspecta Nest. |
 | 14 | Stack chat-api (A.2) | Hono + Prisma + Node 24. |
 | 15 | Contexto largo | v1: ventana por **tokens** + `tool_result` viejos a una línea en el prompt; historial intacto en DB. v2: summary buffer. No borrar filas por cantidad. System prompt siempre fuera del resumen. |
-| 16 | Catálogo MCP v1 | Lectura: operación + reportes/períodos (2 llamadas) + débitos/devoluciones list + catálogo/roles/audit slim + `get_help`. Sin writes. Preview ingreso = GET Nest nuevo. Sin tool `compare_reports`. |
+| 16 | Catálogo MCP v1 | Lectura: operación + reportes/períodos (2 llamadas) + débitos/devoluciones list + catálogo/roles/audit slim + `get_help` (incluye topic `producto`). Sin writes. Preview ingreso = GET Nest nuevo. Sin tool `compare_reports`. |
 | 17 | Árbol de archivos | **Acercamiento** (§10). No es contrato: al codear se puede mover. Invariantes: `chat-api` sin GymBro; `mcp/` GymBro; drawer en `web/`. |
+| 18 | Landing pública | Misma burbuja/drawer en apex. Tope de turnos/hora. Sin datos de un gym. `CHAT_PUBLIC_ENABLED` (default on). |
 
 ---
 
@@ -669,9 +670,9 @@ Auditoría slim: `id, action, entityType, entityId, actorId, createdAt` — **si
 
 | Tool | Pregunta | Fuente | Permiso |
 |------|----------|--------|---------|
-| `get_help` | “¿Cómo enrolar débito?” / “¿Qué es un pack?” | Artículos cortos en `mcp/help/` (no el maestro entero) | cualquiera Staff |
+| `get_help` | “¿Qué es un pack?” / “¿Cómo funciona Faciliter?” | Artículos en `mcp/help/` (no el maestro entero) | Staff; landing (solo este tool) |
 
-Topics v1 (fijos): `afiliados`, `packs`, `sesiones`, `puerta`, `caja`, `debito`, `devoluciones`, `reportes`, `roles`, `chat`. Texto en español, 1 pantalla. `suggest_nav` puede ir al final del artículo.
+Topics: `producto` (visión), `afiliados`, `packs`, `sesiones`, `puerta`, `caja`, `debito`, `devoluciones`, `reportes`, `roles`, `chat`. `suggest_nav` puede ir al final del artículo (Admin).
 
 ### Slim extra
 

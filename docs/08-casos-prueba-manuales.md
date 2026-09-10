@@ -206,6 +206,21 @@ Leyenda resultado: `P` pass · `F` fail · `B` bloqueado · `-` no aplica
 
 ---
 
+## Sitio público (landing / SEO)
+
+| # | Caso | Esperado | RN/CU | R |
+|---|------|----------|-------|---|
+| M1 | Apex `http://localhost:3002/` | Landing Faciliter (no pide login) | P3 | |
+| M2 | Tenant `http://demo.localhost:3002/` | Dashboard Admin (RequireStaff) | — | |
+| M3 | View-source apex | `<title>` Faciliter, description, canonical, JSON-LD | P3 | |
+| M4 | `/sitemap.xml` y `/robots.txt` | URLs públicas; Admin en disallow | P3 | |
+| M5 | `/legal/terminos` y `/legal/privacidad` | Borrador visible; no 404 | P3 | |
+| M6 | Host tenant: header `X-Robots-Tag` | `noindex, nofollow` | P3 | |
+| M7 | Apex burbuja `#asistente` | Abre el mismo drawer que el Admin; responde pack/caja/puerta; no pide login | P3 | |
+| M8 | Widget no lista socios de un gym | Sin tools de operación; solo ayuda de producto | C7/landing | |
+
+---
+
 ## Registro de corridas
 
 | Fecha | Build/ambiente | Tester | Notas |

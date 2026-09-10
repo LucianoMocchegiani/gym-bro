@@ -31,7 +31,9 @@ Copy-Item chat-api\.env.example chat-api\.env
 | `AUTH_REQUIRED_PROFILE` | `STAFF` |
 | `OPENROUTER_API_KEY` | No uses `replace-me`. Tras editar `.env`, recreá el contenedor |
 | `CORS_ORIGIN` / `CORS_APP_DOMAIN` | Orígenes del panel (túnel `{slug}.faciliter.xyz`) |
-| `CHAT_SYSTEM_PROMPT` | Texto de instancia; no el C-producto |
+| `CHAT_SYSTEM_PROMPT` | Texto de instancia Admin; no el C-producto |
+| `CHAT_PUBLIC_ENABLED` | Widget landing (default `true`) |
+| `CHAT_PUBLIC_SESSION_SECRET` | Firma de la sesión anónima; si falta, se deriva |
 | `CHAT_CONTEXT_TOKENS` | Ventana del prompt (default 10000) |
 | `CHAT_MAX_TOOL_STEPS` | Tope de round-trips con tools (default 8) |
 
@@ -42,7 +44,8 @@ docker compose up --build -d chat-api mcp api web
 ```
 
 - Health: `GET http://localhost:3010/health`
-- Hilos: `GET/POST /v1/conversations` (JWT Staff)
+- Landing: `POST /v1/public/session` (sin JWT) → token + hilo; mensajes igual que Staff pero solo `get_help`
+- Hilos Staff: `GET/POST /v1/conversations` (JWT Staff)
 - Mensajes: `POST /v1/conversations/:id/messages` → UI Message Stream; **Parar** aborta y persiste lo generado
 - Título: primer mensaje recortado; `PATCH` para editar
 

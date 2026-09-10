@@ -1,6 +1,6 @@
 # Faciliter
 
-Plataforma SaaS multi-tenant para gestión de gimnasios y estudios (Argentina).
+Plataforma SaaS multi-tenant de afiliaciones (gyms, clubes y estudios) en Argentina.
 
 ## Documentación
 
@@ -58,7 +58,7 @@ Servicios:
 
 | Servicio | URL / puerto |
 |----------|----------------|
-| Web | http://demo.localhost:3002 — Admin Staff (slug); http://localhost:3002/super — Super Admin |
+| Web | http://localhost:3002 — landing; http://demo.localhost:3002 — Admin Staff; http://localhost:3002/super — Super Admin |
 | API health | http://localhost:3001/api/health |
 | chat-api health | http://localhost:3010/health |
 | chat-api hilos | `GET/POST /v1/conversations` (JWT Staff; C2) |

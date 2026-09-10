@@ -2,7 +2,7 @@
 
 ## Importar (importante)
 
-1. **Import** → `GymBro.api.postman_collection.json` + `GymBro.local.postman_environment.json`. chat-api: `GymBro.chat-api.postman_collection.json`. mcp: `GymBro.mcp.postman_collection.json` (colecciones aparte).
+1. **Import** → `GymBro.api.postman_collection.json` + `GymBro.local.postman_environment.json`. chat-api: `GymBro.chat-api.postman_collection.json` (incluye `POST /v1/public/session` sin JWT). mcp: `GymBro.mcp.postman_collection.json` (colecciones aparte).
 2. Arriba a la derecha elegí environment **GymBro Local** (si no, `{{accessToken}}` no se reemplaza).
 3. Si ya habías importado antes: borrá la colección/env viejos e importá de nuevo, o Sync variables del environment.
 

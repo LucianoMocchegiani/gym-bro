@@ -10,11 +10,11 @@
 
 ## 1. Visión del producto
 
-Faciliter es una **plataforma SaaS multi-tenant** para gimnasios independientes y estudios (pilates, funcional, etc.) en **Argentina**.
+Faciliter es una **plataforma SaaS multi-tenant** de **afiliaciones** en **Argentina**. Primer mercado: **gyms, clubes y estudios** (pilates, funcional, etc.). El mismo modelo sirve a otros negocios de socios; el código y el repo siguen llamándose GymBro.
 
-No es una app para un solo gym: cada establecimiento es un **tenant** con sus afiliados, servicios, cobros y acceso.
+No es una app para un solo local: cada establecimiento es un **tenant** con sus afiliados, servicios, cobros y acceso.
 
-Se concibe como un **ERP + CRM + app** liviano: gestión del negocio, cobro, ingreso por QR (identidad SSI modulable) y experiencia del afiliado. La **tienda online** y el white label no forman parte del MVP.
+Se concibe como un **ERP + CRM + app** liviano: gestión del negocio, cobro, ingreso por QR (identidad SSI modulable) y experiencia del afiliado. La **tienda de productos** y el white label no forman parte del MVP (sesiones hoy = clases/turnos; cursos virtuales, módulos después).
 
 ---
 
@@ -42,11 +42,12 @@ Se concibe como un **ERP + CRM + app** liviano: gestión del negocio, cobro, ing
 
 | Segmento | Notas |
 |----------|--------|
-| Gimnasios independientes (no cadenas grandes) | Acceso libre + clases especiales |
+| Gimnasios independientes (no cadenas grandes) | Acceso libre + clases; **primer piloto** |
+| Clubes | Membresía + acceso; mismo modelo de afiliados |
 | Estudios (pilates, etc.) | Modelo fuerte en sesiones / cupos |
 | Mercado | Argentina (primera versión) |
 
-Cliente pagador: dueño del gym/estudio. Equipo GymBro: **1 dev** + **socio** (negocio/venta).
+Cliente pagador: dueño del gym, club o estudio. Equipo GymBro: **1 dev** + **socio** (negocio/venta).
 
 ---
 

@@ -181,6 +181,20 @@ export function NavIconDumbbell() {
   );
 }
 
+/**
+ * Mark de landing: red de nodos (Faciliter Brain), no pesa.
+ */
+export function NavIconFaciliterMark() {
+  return (
+    <Svg className="brand-mark-svg">
+      <circle cx="12" cy="6.5" r="2.15" />
+      <circle cx="6.5" cy="17" r="2.15" />
+      <circle cx="17.5" cy="17" r="2.15" />
+      <path d="M10.4 8.2 7.8 15.1M13.6 8.2l2.6 6.9M8.7 17h6.6" />
+    </Svg>
+  );
+}
+
 export function NavIconSun() {
   return (
     <Svg>

@@ -18,10 +18,12 @@ import {
   listChatConversations,
   listChatMessages,
   patchChatConversation,
+  setChatAccessTokenOverride,
   streamChatTurn,
   type ChatConversation,
   type ChatMessage,
 } from '@/lib/api/chat';
+import { ensurePublicChatSession, resetPublicChatSession } from '@/lib/api/public-chat';
 import { useAuth } from '@/lib/auth/AuthProvider';
 import {
   clearLastConversationId,
@@ -62,14 +64,18 @@ function subscribeNever(): () => void {
 /**
  * Botón burbuja + drawer del asistente. Caja y el resto siguen detrás.
  *
- * @remarks JWT Staff. Tools en una línea. Archivar = DELETE C2. Al abrir
- * retoma el último hilo. Título auto, abort y chips. Tope de uso queda fuera.
+ * @remarks `staff`: JWT Staff. `public`: sesión anónima de la landing (solo
+ * get_help). Misma UI. Tools en una línea. Archivar = DELETE C2.
  */
-export function AssistantLauncher() {
+export function AssistantLauncher({
+  variant = 'staff',
+}: {
+  variant?: 'staff' | 'public';
+}) {
   const router = useRouter();
   const { session } = useAuth();
-  const tenantId = session?.tenantId ?? '';
-  const userId = session?.userId ?? '';
+  const tenantId = variant === 'public' ? 'public' : (session?.tenantId ?? '');
+  const userId = variant === 'public' ? 'landing' : (session?.userId ?? '');
   const mounted = useSyncExternalStore(subscribeNever, () => true, () => false);
 
   const [open, setOpen] = useState(false);
@@ -93,11 +99,6 @@ export function AssistantLauncher() {
   useEffect(() => {
     activeIdRef.current = activeId;
   }, [activeId]);
-
-  useEffect(() => {
-    const current = conversations.find((item) => item.id === activeId);
-    setTitleDraft(current?.title ?? '');
-  }, [activeId, conversations]);
 
   useEffect(() => {
     return () => {
@@ -140,8 +141,9 @@ export function AssistantLauncher() {
   }, []);
 
   const selectConversation = useCallback(
-    async (id: string) => {
+    async (id: string, title?: string | null) => {
       setActiveId(id);
+      setTitleDraft(title ?? '');
       if (tenantId && userId) {
         writeLastConversationId(tenantId, userId, id);
       }
@@ -152,7 +154,7 @@ export function AssistantLauncher() {
 
   const loadList = useCallback(
     async (preferId?: string | null) => {
-      if (!tenantId || !userId) {
+      if (variant === 'staff' && (!tenantId || !userId)) {
         return;
       }
       setListLoading(true);
@@ -166,12 +168,33 @@ export function AssistantLauncher() {
           items[0]?.id ??
           null;
         if (pick) {
-          await selectConversation(pick);
+          const picked = items.find((item) => item.id === pick);
+          await selectConversation(pick, picked?.title);
         } else {
           setActiveId(null);
           setBubbles([]);
         }
       } catch (err) {
+        if (
+          variant === 'public' &&
+          err instanceof ChatClientError &&
+          err.status === 401
+        ) {
+          resetPublicChatSession();
+          const fresh = await ensurePublicChatSession();
+          setChatAccessTokenOverride(fresh.token);
+          const items = await listChatConversations();
+          setConversations(items);
+          const pick = items[0]?.id ?? null;
+          if (pick) {
+            const picked = items.find((item) => item.id === pick);
+            await selectConversation(pick, picked?.title);
+          } else {
+            setActiveId(null);
+            setBubbles([]);
+          }
+          return;
+        }
         setError(statusMessage(err));
         setConversations([]);
         setActiveId(null);
@@ -180,13 +203,48 @@ export function AssistantLauncher() {
         setListLoading(false);
       }
     },
-    [selectConversation, tenantId, userId],
+    [selectConversation, tenantId, userId, variant],
   );
 
-  async function handleOpen(): Promise<void> {
+  const handleOpen = useCallback(async () => {
     setOpen(true);
+    if (variant === 'public') {
+      try {
+        const session = await ensurePublicChatSession();
+        setChatAccessTokenOverride(session.token);
+        await loadList(session.conversation.id);
+      } catch (err) {
+        if (err instanceof ChatClientError && err.status === 401) {
+          resetPublicChatSession();
+          try {
+            const session = await ensurePublicChatSession();
+            setChatAccessTokenOverride(session.token);
+            await loadList(session.conversation.id);
+          } catch (retryErr) {
+            setError(statusMessage(retryErr));
+          }
+        } else {
+          setError(statusMessage(err));
+        }
+      }
+      return;
+    }
     await loadList();
-  }
+  }, [loadList, variant]);
+
+  useEffect(() => {
+    if (variant !== 'public') {
+      return;
+    }
+    function maybeOpen(): void {
+      if (window.location.hash === '#asistente') {
+        void handleOpen();
+      }
+    }
+    maybeOpen();
+    window.addEventListener('hashchange', maybeOpen);
+    return () => window.removeEventListener('hashchange', maybeOpen);
+  }, [handleOpen, variant]);
 
   function handleClose(): void {
     abortRef.current?.abort();
@@ -198,7 +256,7 @@ export function AssistantLauncher() {
   }
 
   function handleOpenLink(href: string): void {
-    if (!isSafeAdminHref(href)) {
+    if (variant === 'public' || !isSafeAdminHref(href)) {
       return;
     }
     handleClose();
@@ -213,7 +271,7 @@ export function AssistantLauncher() {
         created,
         ...prev.filter((item) => item.id !== created.id),
       ]);
-      await selectConversation(created.id);
+      await selectConversation(created.id, created.title);
       setBubbles([]);
     } catch (err) {
       setError(statusMessage(err));
@@ -233,7 +291,10 @@ export function AssistantLauncher() {
       if (activeId === archiveId) {
         const fallback = next[0]?.id ?? null;
         if (fallback) {
-          await selectConversation(fallback);
+          await selectConversation(
+            fallback,
+            next.find((item) => item.id === fallback)?.title,
+          );
         } else {
           setActiveId(null);
           setBubbles([]);
@@ -285,6 +346,7 @@ export function AssistantLauncher() {
         conversationId = created.id;
         setConversations((prev) => [created, ...prev]);
         setActiveId(created.id);
+        setTitleDraft('');
         if (tenantId && userId) {
           writeLastConversationId(tenantId, userId, created.id);
         }
@@ -298,6 +360,7 @@ export function AssistantLauncher() {
             : item,
         ),
       );
+      setTitleDraft((prev) => prev.trim() || titleFromFirstMessage(text));
 
       const userKey = `local-user-${Date.now()}`;
       const assistantKey = `local-assistant-${Date.now()}`;
@@ -393,9 +456,12 @@ export function AssistantLauncher() {
     }
   }
 
-  const emptyHint = activeId
-    ? 'Escribí abajo para seguir este chat.'
-    : 'Escribí abajo para empezar un chat.';
+  const emptyHint =
+    variant === 'public'
+      ? 'Preguntá cómo funciona Faciliter. Esta prueba no ve un gym real.'
+      : activeId
+        ? 'Escribí abajo para seguir este chat.'
+        : 'Escribí abajo para empezar un chat.';
 
   const overlay = (
     <>
@@ -433,7 +499,8 @@ export function AssistantLauncher() {
               activeId={activeId}
               disabled={listBusy || streaming}
               onSelect={(id) => {
-                void selectConversation(id);
+                const item = conversations.find((row) => row.id === id);
+                void selectConversation(id, item?.title);
               }}
               onNew={() => {
                 void handleNew();
@@ -480,11 +547,18 @@ export function AssistantLauncher() {
               <Composer
                 disabled={listBusy}
                 streaming={streaming}
+                placeholder={
+                  variant === 'public'
+                    ? 'Preguntá cómo funciona Faciliter…'
+                    : undefined
+                }
                 onSend={(text) => void handleSend(text)}
                 onStop={handleStop}
               />
               <p className="muted small assistant-disclaimer">
-                Puede equivocarse; no cobra solo.
+                {variant === 'public'
+                  ? 'Puede equivocarse. No ve datos de un gym; no cobra ni cambia nada.'
+                  : 'Puede equivocarse; no cobra solo.'}
               </p>
             </div>
           </div>

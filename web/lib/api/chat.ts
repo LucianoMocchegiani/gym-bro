@@ -1,8 +1,8 @@
 /**
  * Cliente HTTP+SSE hacia `NEXT_PUBLIC_CHAT_API_URL` (chat-api, no Nest).
  *
- * @remarks Reusa el JWT Staff y el refresh de `apiRequest`. 401 tras refresh
- * limpia la sesión. 403 = perfil no STAFF.
+ * @remarks Admin: JWT Staff + refresh. Landing: `setChatAccessTokenOverride`
+ * con el token de `POST /v1/public/session`.
  */
 
 import { refreshStaffAccess } from '@/lib/api/client';
@@ -49,9 +49,25 @@ function chatBaseUrl(): string {
   return base;
 }
 
+let accessTokenOverride: string | null = null;
+
+/**
+ * Bearer de la landing (sesión anónima). `null` vuelve al JWT Staff.
+ */
+export function setChatAccessTokenOverride(token: string | null): void {
+  accessTokenOverride = token;
+}
+
 function staffBearer(): string | null {
   const session = readStaffSession();
   return session?.accessToken ? `Bearer ${session.accessToken}` : null;
+}
+
+function chatBearer(): string | null {
+  if (accessTokenOverride) {
+    return `Bearer ${accessTokenOverride}`;
+  }
+  return staffBearer();
 }
 
 function errorMessage(status: number, parsed: unknown, fallback: string): string {
@@ -68,7 +84,12 @@ function errorMessage(status: number, parsed: unknown, fallback: string): string
     return 'No hay permiso para el asistente.';
   }
   if (status === 401) {
-    return 'Sesión vencida. Volvé a entrar.';
+    return accessTokenOverride
+      ? 'La sesión de prueba venció. Reintentá.'
+      : 'Sesión vencida. Volvé a entrar.';
+  }
+  if (status === 429) {
+    return 'Llegaste al tope de consultas por ahora. Probá más tarde o agendá una reunión.';
   }
   if (status === 402) {
     return 'No tienes crédito suficiente para usar el asistente.';
@@ -100,14 +121,14 @@ async function chatFetch(
 ): Promise<Response> {
   const headers = new Headers(init.headers);
   headers.set('Accept', headers.get('Accept') ?? 'application/json');
-  const bearer = staffBearer();
+  const bearer = chatBearer();
   if (bearer) {
     headers.set('Authorization', bearer);
   }
 
   const res = await fetch(`${chatBaseUrl()}${path}`, { ...init, headers });
 
-  if (res.status === 401 && !retried) {
+  if (res.status === 401 && !retried && !accessTokenOverride) {
     const refreshed = await refreshStaffAccess();
     if (refreshed) {
       return chatFetch(path, init, true);
@@ -232,7 +253,7 @@ export async function streamChatTurn(
       throw new ChatClientError(502, 'El asistente no está disponible.');
     }
 
-    await readUiMessageStream(res.body, handlers);
+    await consumeUiMessageStream(res.body, handlers);
     return signal?.aborted ? 'aborted' : 'ok';
   } catch (error) {
     if (isChatAbortError(error) || signal?.aborted) {
@@ -242,7 +263,7 @@ export async function streamChatTurn(
   }
 }
 
-async function readUiMessageStream(
+export async function consumeUiMessageStream(
   body: ReadableStream<Uint8Array>,
   handlers: ChatStreamHandlers,
 ): Promise<void> {

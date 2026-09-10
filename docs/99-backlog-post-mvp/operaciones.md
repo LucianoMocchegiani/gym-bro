@@ -11,10 +11,11 @@ Notas que estaban en `local/backlog-mejoras.md` (ops). El setup de desarrollo ya
 | Guía de contribución (CONTRIBUTING, PR template) | Pendiente | |
 | Deploy staging para piloto | Pendiente | Docker + DNS + SSL + seed |
 | Onboarding de gym piloto | Pendiente | 1 gym real, capacitación, feedback |
-| Legal: ToS + privacidad (Argentina) | Pendiente | |
+| Legal: ToS + privacidad (Argentina) | Parcial | Páginas públicas borrador en `/legal/terminos` y `/legal/privacidad`. Falta texto revisado (AAIP / contrato) |
 | Branding / identidad visual | Pendiente | Paleta y tipos ya en uso; falta logo/guideline |
-| Pricing / planes SaaS | Prioridad cierre (P3) | Ver [producto.md](./producto.md) · [18](../18-prioridades-cierre-mvp.md) |
-| Marketing landing | Prioridad cierre (P3) | Landing + SEO. [18](../18-prioridades-cierre-mvp.md) |
+| Pricing / planes SaaS | Parcial (P3) | Un plan en la landing, precio a convenir. Número cuando exista costo OpenRouter (P4). [producto.md](./producto.md) · [18](../18-prioridades-cierre-mvp.md) |
+| Marketing landing | Hecho (P3) | Apex: copy de producto, burbuja del asistente (sesión anónima), un plan, SEO. |
+| Docs de uso (web + app) | Pendiente | Apartado público tipo Kuatia, pero para usar Admin y app: módulos, primeros pasos, config. Diseño aparte; no es el C-producto. |
 | Migración de datos (Excel + IA) | Prioridad baja (P5) | Importar socios/packs de otro sistema. **Después del piloto** si no bloquea. [18](../18-prioridades-cierre-mvp.md) |
 | Soporte / onboarding de más gyms | Pendiente | |
 | Deploy prod + CI/CD | Pendiente | Multi-stage, migraciones al deploy, secrets |
