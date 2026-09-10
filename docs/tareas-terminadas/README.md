@@ -16,6 +16,7 @@ La creación de registros sigue la skill:
 
 ## Índice
 
+- [2026-09-10 — Re-emitir credencial vigente, guía pública y ayuda de vistas](./2026-09-10-reemitir-guia-publica-help.md)
 - [2026-09-10 — Landing Faciliter Brain y asistente público](./2026-09-10-landing-asistente-publico.md)
 - [2026-09-08 — Chips, burbuja del asistente y smoke C7](./2026-09-08-chat-chips-burbuja-smoke-c7.md)
 - [2026-09-07 — Abort, título automático y errores OpenRouter (C7 parcial)](./2026-09-07-chat-abort-titulo-c7.md)
