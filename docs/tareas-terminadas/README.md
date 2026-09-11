@@ -16,6 +16,7 @@ La creación de registros sigue la skill:
 
 ## Índice
 
+- [2026-09-10 — Drawer del asistente, marca pública y agenda Calendar](./2026-09-10-asistente-marca-agenda.md)
 - [2026-09-10 — Re-emitir credencial vigente, guía pública y ayuda de vistas](./2026-09-10-reemitir-guia-publica-help.md)
 - [2026-09-10 — Landing Faciliter Brain y asistente público](./2026-09-10-landing-asistente-publico.md)
 - [2026-09-08 — Chips, burbuja del asistente y smoke C7](./2026-09-08-chat-chips-burbuja-smoke-c7.md)
