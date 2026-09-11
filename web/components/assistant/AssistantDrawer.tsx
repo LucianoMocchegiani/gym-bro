@@ -69,6 +69,14 @@ function subscribeNever(): () => void {
   return () => undefined;
 }
 
+const NEAR_BOTTOM_PX = 96;
+const CHARS_PER_TICK = 5;
+const TICK_MS = 18;
+
+function isNearBottom(el: HTMLElement): boolean {
+  return el.scrollHeight - el.scrollTop - el.clientHeight < NEAR_BOTTOM_PX;
+}
+
 /**
  * Botón burbuja + drawer del asistente. Caja y el resto siguen detrás.
  *
@@ -102,6 +110,11 @@ export function AssistantLauncher({
   const threadRef = useRef<HTMLDivElement>(null);
   const activeIdRef = useRef<string | null>(null);
   const abortRef = useRef<AbortController | null>(null);
+  const stickRef = useRef(true);
+  const queueRef = useRef('');
+  const tickRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const assistantKeyRef = useRef<string | null>(null);
+  const sseOpenRef = useRef(false);
 
   const listBusy = listLoading || threadLoading || archiving;
 
@@ -112,15 +125,83 @@ export function AssistantLauncher({
   useEffect(() => {
     return () => {
       abortRef.current?.abort();
+      if (tickRef.current) {
+        clearTimeout(tickRef.current);
+      }
     };
   }, []);
 
-  useEffect(() => {
+  const scrollIfStuck = useCallback(() => {
     const el = threadRef.current;
-    if (el) {
+    if (el && stickRef.current) {
       el.scrollTop = el.scrollHeight;
     }
-  }, [bubbles, streaming]);
+  }, []);
+
+  const drainQueue = useCallback(() => {
+    if (tickRef.current) {
+      clearTimeout(tickRef.current);
+      tickRef.current = null;
+    }
+    const chunk = queueRef.current.slice(0, CHARS_PER_TICK);
+    if (!chunk) {
+      if (!sseOpenRef.current) {
+        setStreaming(false);
+      }
+      return;
+    }
+    queueRef.current = queueRef.current.slice(CHARS_PER_TICK);
+    const assistantKey = assistantKeyRef.current;
+    setBubbles((prev) => {
+      const idx = assistantKey
+        ? prev.findIndex((item) => item.key === assistantKey)
+        : -1;
+      if (idx < 0) {
+        const key = assistantKey ?? `local-assistant-${Date.now()}`;
+        assistantKeyRef.current = key;
+        return [
+          ...prev,
+          {
+            key,
+            role: 'assistant',
+            content: chunk,
+            links: parseLinksFromAssistantText(chunk),
+          },
+        ];
+      }
+      return prev.map((item, index) => {
+        if (index !== idx) {
+          return item;
+        }
+        const content = item.content + chunk;
+        return {
+          ...item,
+          content,
+          links: parseLinksFromAssistantText(content),
+        };
+      });
+    });
+    tickRef.current = setTimeout(drainQueue, TICK_MS);
+  }, []);
+
+  useEffect(() => {
+    scrollIfStuck();
+  }, [bubbles, streaming, scrollIfStuck]);
+
+  useEffect(() => {
+    if (!open) {
+      return;
+    }
+    const node = threadRef.current;
+    if (!node) {
+      return;
+    }
+    function onScroll(): void {
+      stickRef.current = isNearBottom(node);
+    }
+    node.addEventListener('scroll', onScroll, { passive: true });
+    return () => node.removeEventListener('scroll', onScroll);
+  }, [open, expanded, bubbles.length]);
 
   useEffect(() => {
     if (!open) {
@@ -369,6 +450,14 @@ export function AssistantLauncher({
 
       const userKey = `local-user-${Date.now()}`;
       const assistantKey = `local-assistant-${Date.now()}`;
+      assistantKeyRef.current = assistantKey;
+      queueRef.current = '';
+      if (tickRef.current) {
+        clearTimeout(tickRef.current);
+        tickRef.current = null;
+      }
+      stickRef.current = true;
+      sseOpenRef.current = true;
       setBubbles((prev) => [
         ...prev,
         { key: userKey, role: 'user', content: text, at: new Date().toISOString() },
@@ -407,31 +496,13 @@ export function AssistantLauncher({
             );
           },
           onTextDelta: (delta) => {
-            setBubbles((prev) => {
-              const idx = prev.findIndex((item) => item.key === assistantKey);
-              if (idx < 0) {
-                return [
-                  ...prev,
-                  {
-                    key: assistantKey,
-                    role: 'assistant',
-                    content: delta,
-                    links: parseLinksFromAssistantText(delta),
-                  },
-                ];
-              }
-              return prev.map((item, index) => {
-                if (index !== idx) {
-                  return item;
-                }
-                const content = item.content + delta;
-                return {
-                  ...item,
-                  content,
-                  links: parseLinksFromAssistantText(content),
-                };
-              });
-            });
+            if (!delta) {
+              return;
+            }
+            queueRef.current += delta;
+            if (!tickRef.current) {
+              drainQueue();
+            }
           },
           onStreamError: (message) => {
             if (message.trim()) {
@@ -442,25 +513,18 @@ export function AssistantLauncher({
         controller.signal,
       );
 
-      if (outcome === 'aborted') {
-        await new Promise((resolve) => {
-          window.setTimeout(resolve, 200);
-        });
-      }
-
-      if (activeIdRef.current === id) {
-        const rows = await listChatMessages(id);
-        setBubbles(toBubbles(rows));
-      }
       const items = await listChatConversations();
       setConversations(items);
     } catch (err) {
       setError(statusMessage(err));
     } finally {
+      sseOpenRef.current = false;
       if (abortRef.current === controller) {
         abortRef.current = null;
       }
-      setStreaming(false);
+      if (!queueRef.current && !tickRef.current) {
+        setStreaming(false);
+      }
     }
   }
 
