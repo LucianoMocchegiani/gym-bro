@@ -196,11 +196,12 @@ export function AssistantLauncher({
     if (!node) {
       return;
     }
+    const scroller: HTMLElement = node;
     function onScroll(): void {
-      stickRef.current = isNearBottom(node);
+      stickRef.current = isNearBottom(scroller);
     }
-    node.addEventListener('scroll', onScroll, { passive: true });
-    return () => node.removeEventListener('scroll', onScroll);
+    scroller.addEventListener('scroll', onScroll, { passive: true });
+    return () => scroller.removeEventListener('scroll', onScroll);
   }, [open, expanded, bubbles.length]);
 
   useEffect(() => {
