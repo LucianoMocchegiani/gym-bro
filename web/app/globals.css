@@ -1,4 +1,4 @@
-/* Default = dark (acid / docs/images). Override with data-theme="light". */
+﻿/* Default = dark (acid / docs/images). Override with data-theme="light". */
 
 :root,
 [data-theme='dark'] {
@@ -288,35 +288,27 @@ button.linkish:hover {
 /* Scrollbars: sidebar, modales, drawer asistente (thin, tema dark/light). */
 .app-sidebar,
 .admin-modal,
-.audit-json,
-.assistant-list,
-.assistant-thread-wrap {
+.audit-json {
   scrollbar-width: thin;
   scrollbar-color: color-mix(in srgb, var(--muted) 70%, transparent) transparent;
 }
 
 .app-sidebar::-webkit-scrollbar,
 .admin-modal::-webkit-scrollbar,
-.audit-json::-webkit-scrollbar,
-.assistant-list::-webkit-scrollbar,
-.assistant-thread-wrap::-webkit-scrollbar {
+.audit-json::-webkit-scrollbar {
   width: 8px;
   height: 8px;
 }
 
 .app-sidebar::-webkit-scrollbar-track,
 .admin-modal::-webkit-scrollbar-track,
-.audit-json::-webkit-scrollbar-track,
-.assistant-list::-webkit-scrollbar-track,
-.assistant-thread-wrap::-webkit-scrollbar-track {
+.audit-json::-webkit-scrollbar-track {
   background: transparent;
 }
 
 .app-sidebar::-webkit-scrollbar-thumb,
 .admin-modal::-webkit-scrollbar-thumb,
-.audit-json::-webkit-scrollbar-thumb,
-.assistant-list::-webkit-scrollbar-thumb,
-.assistant-thread-wrap::-webkit-scrollbar-thumb {
+.audit-json::-webkit-scrollbar-thumb {
   background-color: color-mix(in srgb, var(--muted) 55%, transparent);
   border-radius: 999px;
   border: 2px solid transparent;
@@ -325,9 +317,7 @@ button.linkish:hover {
 
 .app-sidebar::-webkit-scrollbar-thumb:hover,
 .admin-modal::-webkit-scrollbar-thumb:hover,
-.audit-json::-webkit-scrollbar-thumb:hover,
-.assistant-list::-webkit-scrollbar-thumb:hover,
-.assistant-thread-wrap::-webkit-scrollbar-thumb:hover {
+.audit-json::-webkit-scrollbar-thumb:hover {
   background-color: color-mix(in srgb, var(--accent) 75%, transparent);
   border: 2px solid transparent;
   background-clip: padding-box;
@@ -335,9 +325,7 @@ button.linkish:hover {
 
 .app-sidebar::-webkit-scrollbar-corner,
 .admin-modal::-webkit-scrollbar-corner,
-.audit-json::-webkit-scrollbar-corner,
-.assistant-list::-webkit-scrollbar-corner,
-.assistant-thread-wrap::-webkit-scrollbar-corner {
+.audit-json::-webkit-scrollbar-corner {
   background: transparent;
 }
 
@@ -2307,289 +2295,3 @@ button.danger {
     display: none;
   }
 }
-
-/* —— Asistente (burbuja + drawer) —— */
-
-.assistant-fab {
-  position: fixed;
-  right: max(1.25rem, env(safe-area-inset-right));
-  bottom: max(1.25rem, env(safe-area-inset-bottom));
-  z-index: 44;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 3.5rem;
-  height: 3.5rem;
-  padding: 0;
-  border: 0;
-  border-radius: 999px;
-  background: var(--accent);
-  color: var(--accent-ink);
-  box-shadow: 0 6px 22px rgba(0, 0, 0, 0.28);
-  transition: transform 0.15s ease, filter 0.15s ease;
-}
-
-.assistant-fab:hover {
-  filter: brightness(1.06);
-  transform: scale(1.05);
-}
-
-.assistant-fab:focus-visible {
-  outline: 2px solid var(--ink);
-  outline-offset: 3px;
-}
-
-.assistant-fab[hidden] {
-  display: none;
-}
-
-.assistant-fab svg {
-  width: 1.55rem;
-  height: 1.55rem;
-}
-
-.assistant-root {
-  position: fixed;
-  inset: 0;
-  z-index: 45;
-  pointer-events: none;
-}
-
-.assistant-root.open {
-  pointer-events: auto;
-}
-
-.assistant-overlay {
-  position: absolute;
-  inset: 0;
-  border: 0;
-  border-radius: 0;
-  padding: 0;
-  background: rgba(0, 0, 0, 0.35);
-}
-
-.assistant-panel {
-  position: absolute;
-  top: 0;
-  right: 0;
-  display: flex;
-  flex-direction: column;
-  width: min(42rem, 100%);
-  height: 100%;
-  background: var(--bg-elevated);
-  border-left: 1px solid var(--line);
-  box-shadow: var(--shadow);
-}
-
-.assistant-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.75rem;
-  padding: 0.85rem 1rem;
-  border-bottom: 1px solid var(--line);
-}
-
-.assistant-header h2 {
-  margin: 0;
-  font-size: 1.1rem;
-}
-
-.assistant-error {
-  margin: 0.75rem 1rem 0;
-}
-
-.assistant-body {
-  display: grid;
-  grid-template-columns: 11.5rem 1fr;
-  min-height: 0;
-  flex: 1;
-}
-
-.assistant-list {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  padding: 0.75rem;
-  border-right: 1px solid var(--line);
-  min-height: 0;
-  overflow: auto;
-}
-
-.assistant-list-new {
-  width: 100%;
-}
-
-.assistant-list-empty {
-  margin: 0;
-}
-
-.assistant-list-items {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: grid;
-  gap: 0.35rem;
-}
-
-.assistant-list-items li {
-  display: grid;
-  grid-template-columns: 1fr auto;
-  gap: 0.2rem;
-  align-items: center;
-}
-
-.assistant-list-item {
-  text-align: left;
-  padding: 0.45rem 0.55rem;
-  border-radius: 8px;
-  border: 1px solid transparent;
-  background: transparent;
-  color: var(--ink);
-  font-weight: 500;
-  font-size: 0.88rem;
-}
-
-.assistant-list-item.active {
-  background: var(--accent-soft);
-  border-color: var(--line);
-}
-
-.assistant-list-archive {
-  background: transparent;
-  color: var(--muted);
-  padding: 0.2rem 0.45rem;
-  font-size: 1.1rem;
-  line-height: 1;
-}
-
-.assistant-list-archive:hover {
-  color: var(--danger);
-}
-
-.assistant-main {
-  display: grid;
-  grid-template-rows: auto 1fr auto auto;
-  min-width: 0;
-  min-height: 0;
-}
-
-.assistant-thread-title {
-  margin: 0.55rem 1rem 0;
-  width: calc(100% - 2rem);
-  font-size: 0.92rem;
-  font-weight: 600;
-}
-
-.assistant-thread-wrap {
-  overflow: auto;
-  padding: 0.85rem 1rem;
-}
-
-.assistant-thread {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: grid;
-  gap: 0.65rem;
-}
-
-.assistant-thread-empty {
-  margin: 0;
-}
-
-.assistant-bubble {
-  padding: 0.65rem 0.8rem;
-  border-radius: 10px;
-  font-size: 0.94rem;
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
-}
-
-.assistant-bubble.user {
-  background: var(--accent-soft);
-  color: var(--ink);
-  justify-self: end;
-  max-width: 90%;
-}
-
-.assistant-bubble.assistant {
-  background: var(--input-bg);
-  border: 1px solid var(--line);
-}
-
-.assistant-bubble.tool {
-  font-size: 0.82rem;
-  color: var(--muted);
-  background: transparent;
-  padding: 0.15rem 0.2rem;
-}
-
-.assistant-md-link {
-  display: inline;
-  margin: 0;
-  padding: 0;
-  border: 0;
-  background: none;
-  color: var(--accent);
-  font: inherit;
-  text-decoration: underline;
-  cursor: pointer;
-}
-
-.assistant-composer {
-  display: grid;
-  grid-template-columns: 1fr auto;
-  gap: 0.5rem;
-  align-items: end;
-  padding: 0.75rem 1rem 0.35rem;
-  border-top: 1px solid var(--line);
-}
-
-.assistant-composer textarea {
-  resize: none;
-  min-height: 3.2rem;
-}
-
-.assistant-composer .btn {
-  margin: 0;
-}
-
-.assistant-disclaimer {
-  margin: 0 1rem 0.85rem;
-}
-
-.assistant-chips-row {
-  list-style: none;
-  padding: 0 0.2rem;
-}
-
-.assistant-chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.35rem;
-}
-
-.assistant-chip {
-  margin: 0;
-  font-size: 0.82rem;
-  padding: 0.25rem 0.65rem;
-}
-
-@media (max-width: 720px) {
-  .assistant-panel {
-    width: 100%;
-  }
-
-  .assistant-body {
-    grid-template-columns: 1fr;
-    grid-template-rows: auto 1fr;
-  }
-
-  .assistant-list {
-    border-right: 0;
-    border-bottom: 1px solid var(--line);
-    max-height: 9.5rem;
-  }
-}
-

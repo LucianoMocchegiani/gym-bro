@@ -19,4 +19,8 @@ export function publicSiteUrl(): string {
   return platformOrigin();
 }
 
-export const MARKETING_MAIL = 'hola@faciliter.xyz';
+/** Contacto comercial (footer y legales). */
+export const MARKETING_MAIL = 'faciliterapps@gmail.com';
+
+/** Agenda de reuniones (Google Calendar). */
+export const BOOKING_URL = 'https://calendar.app.google/dcTzccnNjB6tTLXR8';

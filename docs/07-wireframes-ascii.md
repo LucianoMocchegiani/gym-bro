@@ -386,16 +386,17 @@ Sin ruta `/asistente`. Burbuja abajo a la derecha (estilo Mercado Libre); Caja s
 
 ## 17. Landing pública (apex)
 
-Misma composición que Kuatia (`identity-kuatia` marketing): contenedor ancho, hero 2 columnas + teléfono, franja de 3 pilares, casos, un plan.
+Misma composición que Kuatia (`identity-kuatia` marketing): contenedor ancho, hero de una columna (sin mock de teléfono), franja de 3 pilares, casos, un plan.
 
 ```text
 +------------------------------------------------------------------+
 | Faciliter          Producto  Asistente  Precio                  [tema]
-+-------------------------------------+----------------------------+
-| Faciliter Brain                      |  +------------------+        |
-| El cerebro de tus afiliados         |  | mock app socio |        |
-| Afiliados, cobros, puerta y app      |  +------------------+        |
-+-------------------------------------+----------------------------+
++------------------------------------------------------------------+
+| Faciliter Brain                                                   |
+| El cerebro de tus afiliados                                      |
+| Afiliados, cobros, puerta y app                                   |
+| [Agendá una reunión]  [Guía de uso]                             |
++------------------------------------------------------------------+
 | [Cobrar] | [Entrar] | [Consultar]
 +------------------------------------------------------------------+
 | Un solo producto — 3 columnas (mostrador, puerta, app)          |

@@ -1,6 +1,8 @@
 'use client';
 
 import { useState, type FormEvent, type KeyboardEvent } from 'react';
+import { IconSend, IconStop } from '@/components/assistant/icons';
+import styles from '@/components/assistant/assistant.module.css';
 
 /**
  * Composer del asistente. En stream, Enviar pasa a Parar (abort).
@@ -10,7 +12,7 @@ export function Composer({
   streaming,
   onSend,
   onStop,
-  placeholder = 'Preguntá por un afiliado, la caja, una sesión…',
+  placeholder = 'Preguntame',
   ariaLabel = 'Mensaje para el asistente',
 }: {
   disabled: boolean;
@@ -47,27 +49,42 @@ export function Composer({
     }
   }
 
+  const canSend = !disabled && text.trim().length > 0;
+
   return (
-    <form className="assistant-composer" onSubmit={handleSubmit}>
-      <textarea
-        value={text}
-        onChange={(event) => setText(event.target.value)}
-        onKeyDown={handleKeyDown}
-        disabled={disabled || streaming}
-        rows={2}
-        maxLength={8000}
-        placeholder={placeholder}
-        aria-label={ariaLabel}
-      />
-      {streaming ? (
-        <button type="button" className="btn ghost" onClick={onStop}>
-          Parar
-        </button>
-      ) : (
-        <button type="submit" className="btn" disabled={disabled || !text.trim()}>
-          Enviar
-        </button>
-      )}
+    <form className={styles.composer} onSubmit={handleSubmit}>
+      <div className={styles.pill}>
+        <textarea
+          className={styles.field}
+          value={text}
+          onChange={(event) => setText(event.target.value)}
+          onKeyDown={handleKeyDown}
+          disabled={disabled || streaming}
+          rows={1}
+          maxLength={8000}
+          placeholder={placeholder}
+          aria-label={ariaLabel}
+        />
+        {streaming ? (
+          <button
+            type="button"
+            className={`${styles.send} ${styles.sendReady}`}
+            onClick={onStop}
+            aria-label="Parar"
+          >
+            <IconStop />
+          </button>
+        ) : (
+          <button
+            type="submit"
+            className={`${styles.send} ${canSend ? styles.sendReady : ''}`}
+            disabled={!canSend}
+            aria-label="Enviar"
+          >
+            <IconSend />
+          </button>
+        )}
+      </div>
     </form>
   );
 }

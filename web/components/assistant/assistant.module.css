@@ -1,0 +1,498 @@
+.fab {
+  position: fixed;
+  right: max(1.25rem, env(safe-area-inset-right));
+  bottom: max(1.25rem, env(safe-area-inset-bottom));
+  z-index: 44;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 3.5rem;
+  height: 3.5rem;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: var(--accent);
+  color: var(--accent-ink);
+  box-shadow: 0 6px 22px rgba(0, 0, 0, 0.28);
+}
+
+.fab:hover {
+  filter: brightness(1.06);
+}
+
+.fab[hidden] {
+  display: none;
+}
+
+.fab svg {
+  width: 1.4rem;
+  height: 1.4rem;
+}
+
+.root {
+  position: fixed;
+  inset: 0;
+  z-index: 45;
+  pointer-events: none;
+}
+
+.rootOpen {
+  pointer-events: auto;
+}
+
+.overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: rgba(0, 0, 0, 0.42);
+}
+
+.panel {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  width: min(26rem, 100%);
+  height: 100%;
+  background: var(--bg);
+  border-left: 1px solid var(--line);
+  box-shadow: var(--shadow);
+}
+
+.panelExpanded {
+  left: 0;
+  width: 100%;
+  max-width: none;
+  border-left: 0;
+  box-shadow: none;
+}
+
+.overlayHidden {
+  display: none;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex: none;
+  padding: 0.7rem 0.8rem 0.7rem 1.1rem;
+  border-bottom: 1px solid var(--line);
+}
+
+.title {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin: 0;
+  color: var(--ink);
+  font-family: var(--font-body), 'IBM Plex Sans', sans-serif;
+  font-size: 1rem;
+  font-weight: 600;
+  letter-spacing: 0;
+  line-height: 1;
+  text-transform: none;
+}
+
+.title svg {
+  color: var(--accent);
+}
+
+.headerActions {
+  display: flex;
+  align-items: center;
+  gap: 0.1rem;
+}
+
+.iconBtn {
+  display: grid;
+  place-items: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--muted);
+  font-weight: 400;
+}
+
+.iconBtn:hover {
+  background: color-mix(in srgb, var(--ink) 8%, transparent);
+  color: var(--ink);
+}
+
+.toolBtn {
+  display: grid;
+  place-items: center;
+  width: 2.55rem;
+  height: 2.55rem;
+  margin: 0;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--bg-elevated);
+  color: var(--ink);
+  font-weight: 400;
+}
+
+.toolBtn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.toolbar {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  padding: 0.85rem 1.1rem 0.2rem;
+}
+
+.main {
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  min-width: 0;
+  min-height: 0;
+  flex: 1;
+}
+
+.mainEmpty .threadWrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.error {
+  margin: 0.5rem 1.15rem 0;
+  flex: none;
+}
+
+.threadWrap {
+  min-width: 0;
+  overflow: auto;
+  padding: 0.2rem 1.2rem 0.5rem;
+  scrollbar-width: thin;
+}
+
+.thread {
+  list-style: none;
+  margin: 0;
+  padding: 0.2rem 0 1rem;
+  display: grid;
+  gap: 0.85rem;
+}
+
+.disclaimer {
+  margin: 0;
+  padding: 0.2rem 0.5rem 0.4rem;
+  color: var(--muted);
+  font-size: 0.78rem;
+  line-height: 1.4;
+  text-align: center;
+}
+
+.welcome {
+  display: grid;
+  justify-items: center;
+  text-align: center;
+  gap: 0.15rem;
+  padding: 0 0.75rem;
+}
+
+.welcomeHi,
+.welcomeAsk {
+  margin: 0;
+  color: var(--ink);
+  font-family: var(--font-body), 'IBM Plex Sans', sans-serif;
+  font-size: 1.45rem;
+  font-weight: 500;
+  letter-spacing: 0;
+  line-height: 1.35;
+}
+
+.user {
+  display: grid;
+  justify-items: end;
+  justify-self: end;
+  gap: 0.3rem;
+  max-width: min(17.5rem, 86%);
+}
+
+.userText {
+  display: block;
+  padding: 0.55rem 0.95rem;
+  border-radius: 1.15rem 1.15rem 0.3rem 1.15rem;
+  background: var(--bg-elevated);
+  border: 1px solid var(--line);
+  color: var(--ink);
+  font-size: 0.94rem;
+  line-height: 1.4;
+  font-weight: 400;
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+}
+
+.userTime {
+  display: block;
+  color: var(--muted);
+  font-size: 0.7rem;
+  font-weight: 400;
+  line-height: 1;
+}
+
+.assistant {
+  max-width: 100%;
+  color: var(--ink);
+  font-size: 0.95rem;
+  line-height: 1.55;
+  font-weight: 400;
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+}
+
+.md {
+  margin: 0;
+}
+
+.tool {
+  color: var(--muted);
+  font-size: 0.8rem;
+  font-weight: 400;
+}
+
+.mdLink {
+  display: inline;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--accent);
+  font: inherit;
+  font-weight: 500;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.chipsRow {
+  list-style: none;
+  padding: 0;
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.chip {
+  margin: 0;
+  font-size: 0.82rem;
+  padding: 0.25rem 0.65rem;
+}
+
+.composer {
+  padding: 0.35rem 1rem 1.1rem;
+}
+
+.pill {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.25rem;
+  padding: 0.28rem 0.35rem 0.28rem 1.05rem;
+  border: 1px solid var(--line);
+  border-radius: 1.7rem;
+  background: var(--bg-elevated);
+}
+
+.field {
+  flex: 1 1 auto;
+  width: 0;
+  min-width: 0;
+  min-height: 2.4rem;
+  max-height: 6.5rem;
+  margin: 0;
+  padding: 0.55rem 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  font-weight: 400;
+  resize: none;
+  box-shadow: none;
+}
+
+.field:focus {
+  outline: none;
+}
+
+.send {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 2.2rem;
+  height: 2.2rem;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--muted);
+  font-weight: 400;
+}
+
+.sendReady {
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+
+.history {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+  min-height: 0;
+  flex: 1;
+  overflow: auto;
+  padding: 0.7rem 1.1rem 1.25rem;
+  scrollbar-width: thin;
+}
+
+.historyBar {
+  display: grid;
+  grid-template-columns: 2.25rem 1fr 2.25rem;
+  align-items: center;
+}
+
+.historyTitle {
+  margin: 0;
+  color: var(--ink);
+  font-family: var(--font-body), 'IBM Plex Sans', sans-serif;
+  font-size: 1rem;
+  font-weight: 600;
+  text-align: center;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.search {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.1rem 0.9rem;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--bg-elevated);
+  color: var(--muted);
+}
+
+.searchInput {
+  width: 0;
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  padding: 0.55rem 0;
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  box-shadow: none;
+}
+
+.searchInput:focus {
+  outline: none;
+}
+
+.groupTitle {
+  margin: 0 0 0.2rem;
+  color: var(--muted);
+  font-family: var(--font-body), 'IBM Plex Sans', sans-serif;
+  font-size: 0.78rem;
+  font-weight: 500;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.empty {
+  margin: 0.5rem 0.15rem;
+}
+
+.list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.list li {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+}
+
+.listItem {
+  text-align: left;
+  padding: 0.75rem 0.35rem;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--ink);
+  font-weight: 500;
+  font-size: 0.92rem;
+}
+
+.listItemActive {
+  color: var(--accent);
+}
+
+.archive {
+  display: grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--muted);
+  font-weight: 400;
+}
+
+.archive:hover {
+  color: var(--danger);
+}
+
+.expanded .toolbar {
+  width: 100%;
+  padding-right: 1.35rem;
+}
+
+.expanded .threadWrap,
+.expanded .composer,
+.expanded .history {
+  width: min(42rem, calc(100% - 2.5rem));
+  margin-inline: auto;
+}
+
+.expanded .welcomeHi,
+.expanded .welcomeAsk {
+  font-size: 1.7rem;
+}
+
+.expanded .composer {
+  width: min(38rem, calc(100% - 2.5rem));
+}
+
+@media (max-width: 720px) {
+  .panel {
+    width: 100%;
+  }
+}

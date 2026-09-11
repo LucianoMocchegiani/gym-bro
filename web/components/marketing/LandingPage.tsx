@@ -4,13 +4,11 @@ import {
   NavIconDoor,
   NavIconPeople,
 } from '@/components/AdminNavIcons';
-import { AppHomeMock } from '@/components/marketing/AppHomeMock';
 import { CheckList } from '@/components/marketing/CheckList';
 import { MarketingShell } from '@/components/marketing/MarketingShell';
 import { MktShell } from '@/components/marketing/MktShell';
-import { PhoneFrame } from '@/components/marketing/PhoneFrame';
 import { ProductPreviewCard } from '@/components/marketing/ProductPreviewCard';
-import { MARKETING_MAIL, publicSiteUrl } from '@/lib/site-url';
+import { BOOKING_URL, publicSiteUrl } from '@/lib/site-url';
 
 const PILLARS: {
   title: string;
@@ -87,7 +85,6 @@ function PillarIcon({ name }: { name: (typeof PILLARS)[number]['icon'] }) {
  */
 export function LandingPage() {
   const site = publicSiteUrl();
-  const mailHref = `mailto:${MARKETING_MAIL}?subject=${encodeURIComponent('Agendar reunión Faciliter')}`;
   const jsonLd = {
     '@context': 'https://schema.org',
     '@type': 'SoftwareApplication',
@@ -125,7 +122,12 @@ export function LandingPage() {
             Los registros los ves en el panel o se los preguntás al asistente.
           </p>
           <div className="mkt-hero-actions">
-            <a className="mkt-btn-primary" href={mailHref}>
+            <a
+              className="mkt-btn-primary"
+              href={BOOKING_URL}
+              target="_blank"
+              rel="noreferrer"
+            >
               Agendá una reunión
             </a>
             <Link className="mkt-btn-ghost" href="/docs">
@@ -133,9 +135,6 @@ export function LandingPage() {
             </Link>
           </div>
         </div>
-        <PhoneFrame>
-          <AppHomeMock />
-        </PhoneFrame>
       </MktShell>
 
       <section className="mkt-inner mkt-section-tight">
@@ -260,7 +259,12 @@ export function LandingPage() {
               'Asistente de consulta en el panel: lee la operación; no cobra ni cambia datos solo',
             ]}
           />
-          <a className="mkt-btn-primary" href={mailHref}>
+          <a
+            className="mkt-btn-primary"
+            href={BOOKING_URL}
+            target="_blank"
+            rel="noreferrer"
+          >
             Agendá una reunión
           </a>
         </div>
@@ -277,7 +281,12 @@ export function LandingPage() {
             </p>
           </div>
           <div className="mkt-hero-actions">
-            <a className="mkt-btn-primary" href={mailHref}>
+            <a
+              className="mkt-btn-primary"
+              href={BOOKING_URL}
+              target="_blank"
+              rel="noreferrer"
+            >
               Agendá una reunión
             </a>
           </div>

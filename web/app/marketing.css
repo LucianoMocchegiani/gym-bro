@@ -130,8 +130,8 @@
 .mkt-hero {
   display: grid;
   align-items: center;
-  gap: 3rem;
-  padding-block: 2.5rem 4rem;
+  gap: 2rem;
+  padding-block: 2.5rem 3.5rem;
 }
 
 .mkt-hero h1,
@@ -146,7 +146,7 @@
 .mkt-hero h1 {
   font-size: clamp(2.4rem, 6vw, 5.25rem);
   margin: 0.75rem 0 1.25rem;
-  max-width: 14ch;
+  max-width: 16ch;
 }
 
 .mkt-lead,
@@ -192,146 +192,29 @@
   border-color: var(--accent);
 }
 
-.mkt-phone {
-  position: relative;
-  width: min(100%, 300px);
-  margin-inline: auto;
+.mkt-section {
+  padding-block: 2.15rem;
 }
 
-.mkt-phone-glow {
-  position: absolute;
-  inset: -2rem;
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--accent) 20%, transparent);
-  filter: blur(48px);
-}
-
-.mkt-phone-bezel {
-  position: relative;
-  overflow: hidden;
-  border-radius: 2.2rem;
-  border: 1px solid var(--line);
-  padding: 0.5rem;
-  background: linear-gradient(180deg, var(--panel-bg), var(--bg-elevated));
-  box-shadow: var(--shadow);
-}
-
-.mkt-phone-speaker {
-  width: 4rem;
-  height: 0.35rem;
-  margin: 0 auto 0.5rem;
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--muted) 35%, transparent);
-}
-
-.mkt-phone-screen {
-  overflow: hidden;
-  border-radius: 1.6rem;
-  border: 1px solid var(--line);
-  background: var(--bg);
-}
-
-.mkt-app-mock {
-  display: flex;
-  flex-direction: column;
-  min-height: 32rem;
-  color: var(--ink);
-}
-
-.mkt-app-mock-head {
-  padding: 0.85rem 0.9rem 0.5rem;
-}
-
-.mkt-app-mock-gym {
-  margin: 0;
-  font-size: 0.72rem;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: var(--muted);
-}
-
-.mkt-app-mock-hi {
-  margin: 0.15rem 0 0;
-  font-family: var(--font-display), 'Barlow Condensed', sans-serif;
-  font-size: 1.35rem;
-  font-weight: 700;
-}
-
-.mkt-app-mock-card {
-  margin: 0.35rem 0.65rem;
-  padding: 0.85rem 0.9rem;
-  border-radius: 0.9rem;
-  border: 1px solid var(--line);
-  background: var(--panel-bg);
-}
-
-.mkt-app-mock-pack {
-  margin: 0.2rem 0;
-  font-weight: 700;
-  font-size: 1.05rem;
-}
-
-.mkt-app-mock-credits {
-  margin: 0.45rem 0 0;
-  color: var(--accent);
-  font-weight: 600;
-}
-
-.mkt-app-mock-actions {
-  display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
-  gap: 0.4rem;
-  padding: 0.75rem 0.65rem;
-}
-
-.mkt-app-mock-actions span {
-  text-align: center;
-  font-size: 0.78rem;
-  font-weight: 600;
-  padding: 0.45rem 0.2rem;
-  border-radius: 999px;
-  border: 1px solid var(--line);
-}
-
-.mkt-app-mock-actions .is-accent {
-  background: var(--accent);
-  color: var(--accent-ink);
-  border-color: var(--accent);
-}
-
-.mkt-app-mock-nav {
-  margin-top: auto;
-  display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
-  border-top: 1px solid var(--line);
-  background: var(--panel-bg);
-  padding: 0.75rem 0.4rem;
-  font-size: 0.72rem;
-  text-align: center;
-  color: var(--muted);
-}
-
-.mkt-app-mock-nav .is-on {
-  color: var(--accent);
-  font-weight: 700;
-}
-
-.mkt-section,
 .mkt-legal {
-  padding-block: 5rem;
+  padding-block: 3.5rem;
 }
 
 .mkt-section-tight {
-  padding-block: 0 4rem;
+  padding-block: 0 2.25rem;
 }
 
 .mkt-h2 {
   font-size: clamp(1.85rem, 4vw, 3.6rem);
-  margin: 0 0 1rem;
+  margin: 0 0 0.75rem;
 }
 
 .mkt-section-lead {
-  margin-bottom: 2.5rem;
+  margin-bottom: 1.25rem;
+}
+
+.mkt-section-lead:last-child {
+  margin-bottom: 0;
 }
 
 .mkt-features {
@@ -899,9 +782,8 @@ html.mkt-docs-lightbox-open body {
   }
 
   .mkt-hero {
-    grid-template-columns: 1.05fr 0.95fr;
-    gap: 4rem;
-    padding-block: 4rem 6rem;
+    gap: 2rem;
+    padding-block: 3rem 3.5rem;
   }
 
   .mkt-features {

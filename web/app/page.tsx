@@ -40,11 +40,20 @@ export async function generateMetadata(): Promise<Metadata> {
       siteName: 'Faciliter',
       title: LANDING_TITLE,
       description: LANDING_DESCRIPTION,
+      images: [
+        {
+          url: `${site}/og-stack.png`,
+          width: 1200,
+          height: 1200,
+          alt: 'Faciliter Brain — el cerebro de tus afiliados',
+        },
+      ],
     },
     twitter: {
-      card: 'summary',
+      card: 'summary_large_image',
       title: LANDING_TITLE,
       description: LANDING_DESCRIPTION,
+      images: [`${site}/og-stack.png`],
     },
     alternates: { canonical: site },
     robots: { index: true, follow: true },

@@ -1,12 +1,19 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react';
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore, type CSSProperties } from 'react';
 import { createPortal } from 'react-dom';
 import { useRouter } from 'next/navigation';
-import { NavIconAssistant } from '@/components/AdminNavIcons';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { Composer } from '@/components/assistant/Composer';
 import { ConversationList } from '@/components/assistant/ConversationList';
+import {
+  IconClose,
+  IconCollapse,
+  IconExpand,
+  IconHistory,
+  IconNewChat,
+  IconSparkle,
+} from '@/components/assistant/icons';
 import {
   MessageThread,
   type ThreadBubble,
@@ -17,7 +24,6 @@ import {
   createChatConversation,
   listChatConversations,
   listChatMessages,
-  patchChatConversation,
   setChatAccessTokenOverride,
   streamChatTurn,
   type ChatConversation,
@@ -32,6 +38,7 @@ import {
 } from '@/lib/chat/last-conversation';
 import { isSafeAdminHref, parseLinksFromAssistantText, parseToolLinks } from '@/lib/chat/links';
 import { titleFromFirstMessage } from '@/lib/chat/title';
+import styles from '@/components/assistant/assistant.module.css';
 
 function toBubbles(rows: ChatMessage[]): ThreadBubble[] {
   return rows
@@ -40,6 +47,7 @@ function toBubbles(rows: ChatMessage[]): ThreadBubble[] {
       key: row.id,
       role: row.role as 'user' | 'assistant' | 'tool',
       content: row.content,
+      at: row.createdAt,
       toolName: row.toolName ?? undefined,
       links:
         row.role === 'tool'
@@ -88,7 +96,8 @@ export function AssistantLauncher({
   const [error, setError] = useState<string | null>(null);
   const [archiveId, setArchiveId] = useState<string | null>(null);
   const [archiving, setArchiving] = useState(false);
-  const [titleDraft, setTitleDraft] = useState('');
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const [expanded, setExpanded] = useState(false);
 
   const threadRef = useRef<HTMLDivElement>(null);
   const activeIdRef = useRef<string | null>(null);
@@ -118,12 +127,32 @@ export function AssistantLauncher({
       return;
     }
     function onKey(event: KeyboardEvent): void {
-      if (event.key === 'Escape') {
-        setOpen(false);
+      if (event.key !== 'Escape') {
+        return;
       }
+      if (historyOpen) {
+        setHistoryOpen(false);
+        return;
+      }
+      if (expanded) {
+        setExpanded(false);
+        return;
+      }
+      handleClose();
     }
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
+  }, [open, historyOpen, expanded]);
+
+  useEffect(() => {
+    if (!open) {
+      return;
+    }
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = previous;
+    };
   }, [open]);
 
   const loadMessages = useCallback(async (id: string) => {
@@ -143,7 +172,6 @@ export function AssistantLauncher({
   const selectConversation = useCallback(
     async (id: string, title?: string | null) => {
       setActiveId(id);
-      setTitleDraft(title ?? '');
       if (tenantId && userId) {
         writeLastConversationId(tenantId, userId, id);
       }
@@ -248,6 +276,8 @@ export function AssistantLauncher({
 
   function handleClose(): void {
     abortRef.current?.abort();
+    setHistoryOpen(false);
+    setExpanded(false);
     setOpen(false);
   }
 
@@ -311,29 +341,6 @@ export function AssistantLauncher({
     }
   }
 
-  async function commitTitle(): Promise<void> {
-    if (!activeId) {
-      return;
-    }
-    const next = titleDraft.trim();
-    const current = conversations.find((item) => item.id === activeId);
-    const existing = current?.title?.trim() ?? '';
-    if (next === existing) {
-      return;
-    }
-    try {
-      const updated = await patchChatConversation(activeId, {
-        title: next.length > 0 ? next : null,
-      });
-      setConversations((prev) =>
-        prev.map((item) => (item.id === updated.id ? updated : item)),
-      );
-    } catch (err) {
-      setError(statusMessage(err));
-      setTitleDraft(existing);
-    }
-  }
-
   async function handleSend(text: string): Promise<void> {
     setError(null);
     let conversationId = activeId;
@@ -346,7 +353,6 @@ export function AssistantLauncher({
         conversationId = created.id;
         setConversations((prev) => [created, ...prev]);
         setActiveId(created.id);
-        setTitleDraft('');
         if (tenantId && userId) {
           writeLastConversationId(tenantId, userId, created.id);
         }
@@ -360,11 +366,13 @@ export function AssistantLauncher({
             : item,
         ),
       );
-      setTitleDraft((prev) => prev.trim() || titleFromFirstMessage(text));
 
       const userKey = `local-user-${Date.now()}`;
       const assistantKey = `local-assistant-${Date.now()}`;
-      setBubbles((prev) => [...prev, { key: userKey, role: 'user', content: text }]);
+      setBubbles((prev) => [
+        ...prev,
+        { key: userKey, role: 'user', content: text, at: new Date().toISOString() },
+      ]);
       setStreaming(true);
 
       const outcome = await streamChatTurn(
@@ -456,90 +464,119 @@ export function AssistantLauncher({
     }
   }
 
-  const emptyHint =
-    variant === 'public'
-      ? 'Preguntá cómo funciona Faciliter. Esta prueba no ve un gym real.'
-      : activeId
-        ? 'Escribí abajo para seguir este chat.'
-        : 'Escribí abajo para empezar un chat.';
+  const helloName = session?.name?.trim().split(/\s+/)[0];
+  const isEmpty = !listLoading && !threadLoading && bubbles.length === 0;
+  const disclaimer =
+    'Este asistente usa inteligencia artificial para responderte.';
 
   const overlay = (
     <>
-      <div className={`assistant-root${open ? ' open' : ''}`} hidden={!open}>
+      <div
+        className={`${styles.root} ${open ? styles.rootOpen : ''} ${expanded ? styles.expanded : ''}`}
+        hidden={!open}
+      >
         <button
           type="button"
-          className="assistant-overlay"
+          className={`${styles.overlay} ${expanded ? styles.overlayHidden : ''}`}
           aria-label="Cerrar asistente"
           onClick={handleClose}
         />
         <aside
           id="assistant-panel"
-          className="assistant-panel"
+          className={`${styles.panel} ${expanded ? styles.panelExpanded : ''}`}
+          style={
+            expanded
+              ? ({
+                  position: 'fixed',
+                  inset: 0,
+                  width: '100%',
+                  height: '100dvh',
+                  maxWidth: 'none',
+                  borderLeft: 'none',
+                } satisfies CSSProperties)
+              : undefined
+          }
           role="dialog"
           aria-modal="true"
           aria-labelledby="assistant-title"
         >
-          <header className="assistant-header">
-            <h2 id="assistant-title">Asistente</h2>
-            <button
-              type="button"
-              className="theme-toggle"
-              aria-label="Cerrar asistente"
-              onClick={handleClose}
-            >
-              ×
-            </button>
+          <header className={styles.header}>
+            <h2 id="assistant-title" className={styles.title}>
+              <IconSparkle />
+              Asistente
+            </h2>
+            <div className={styles.headerActions}>
+              <button
+                type="button"
+                className={styles.iconBtn}
+                aria-label={expanded ? 'Reducir asistente' : 'Expandir asistente'}
+                title={expanded ? 'Reducir' : 'Expandir'}
+                aria-pressed={expanded}
+                onClick={() => setExpanded((value) => !value)}
+              >
+                {expanded ? <IconCollapse /> : <IconExpand />}
+              </button>
+              <button
+                type="button"
+                className={styles.iconBtn}
+                aria-label="Cerrar asistente"
+                onClick={handleClose}
+              >
+                <IconClose />
+              </button>
+            </div>
           </header>
 
-          {error ? <p className="err-msg assistant-error">{error}</p> : null}
+          {error ? <p className={`err-msg ${styles.error}`}>{error}</p> : null}
 
-          <div className="assistant-body">
+          {historyOpen ? (
             <ConversationList
               items={conversations}
               activeId={activeId}
               disabled={listBusy || streaming}
+              onBack={() => setHistoryOpen(false)}
               onSelect={(id) => {
                 const item = conversations.find((row) => row.id === id);
+                setHistoryOpen(false);
                 void selectConversation(id, item?.title);
-              }}
-              onNew={() => {
-                void handleNew();
               }}
               onArchive={setArchiveId}
             />
-            <div className="assistant-main">
-              {activeId ? (
-                <input
-                  className="assistant-thread-title"
-                  value={titleDraft}
-                  onChange={(event) => setTitleDraft(event.target.value)}
-                  onBlur={() => {
-                    void commitTitle();
-                  }}
-                  onKeyDown={(event) => {
-                    if (event.key === 'Enter') {
-                      event.preventDefault();
-                      (event.target as HTMLInputElement).blur();
-                    }
-                    if (event.key === 'Escape') {
-                      const current = conversations.find((item) => item.id === activeId);
-                      setTitleDraft(current?.title ?? '');
-                      (event.target as HTMLInputElement).blur();
-                    }
-                  }}
-                  disabled={listBusy || streaming}
-                  maxLength={200}
-                  aria-label="Título de la conversación"
-                  placeholder="Sin título"
-                />
-              ) : null}
-              <div className="assistant-thread-wrap" ref={threadRef}>
+          ) : (
+            <div className={`${styles.main} ${isEmpty ? styles.mainEmpty : ''}`}>
+              <div className={styles.toolbar}>
+                {isEmpty ? null : (
+                  <button
+                    type="button"
+                    className={styles.toolBtn}
+                    aria-label="Nuevo chat"
+                    title="Nuevo chat"
+                    disabled={listBusy || streaming}
+                    onClick={() => {
+                      void handleNew();
+                    }}
+                  >
+                    <IconNewChat />
+                  </button>
+                )}
+                <button
+                  type="button"
+                  className={styles.toolBtn}
+                  aria-label="Chats anteriores"
+                  title="Chats anteriores"
+                  onClick={() => setHistoryOpen(true)}
+                >
+                  <IconHistory />
+                </button>
+              </div>
+              <div className={styles.threadWrap} ref={threadRef}>
                 {listLoading || threadLoading ? (
                   <p className="muted">Cargando…</p>
                 ) : (
                   <MessageThread
                     items={bubbles}
-                    emptyHint={emptyHint}
+                    helloName={variant === 'staff' ? helloName : undefined}
+                    disclaimer={disclaimer}
                     onOpenLink={handleOpenLink}
                   />
                 )}
@@ -547,21 +584,12 @@ export function AssistantLauncher({
               <Composer
                 disabled={listBusy}
                 streaming={streaming}
-                placeholder={
-                  variant === 'public'
-                    ? 'Preguntá cómo funciona Faciliter…'
-                    : undefined
-                }
+                placeholder="Preguntame"
                 onSend={(text) => void handleSend(text)}
                 onStop={handleStop}
               />
-              <p className="muted small assistant-disclaimer">
-                {variant === 'public'
-                  ? 'Puede equivocarse. No ve datos de un gym; no cobra ni cambia nada.'
-                  : 'Puede equivocarse; no cobra solo.'}
-              </p>
             </div>
-          </div>
+          )}
         </aside>
       </div>
 
@@ -585,7 +613,7 @@ export function AssistantLauncher({
         ? createPortal(
             <button
               type="button"
-              className="assistant-fab"
+              className={styles.fab}
               aria-expanded={open}
               aria-controls="assistant-panel"
               aria-label="Abrir asistente"
@@ -595,7 +623,7 @@ export function AssistantLauncher({
                 void handleOpen();
               }}
             >
-              <NavIconAssistant />
+              <IconSparkle size={22} />
             </button>,
             document.body,
           )

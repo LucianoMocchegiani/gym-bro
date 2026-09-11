@@ -3,6 +3,7 @@
 import { Fragment, type ReactNode } from 'react';
 import { toolLineLabel } from '@/lib/chat/tool-label';
 import { mergeLinks, isSafeAdminHref, type ChatNavLink } from '@/lib/chat/links';
+import styles from '@/components/assistant/assistant.module.css';
 
 export type ThreadBubble = {
   key: string;
@@ -11,7 +12,23 @@ export type ThreadBubble = {
   toolName?: string;
   pending?: boolean;
   links?: ChatNavLink[];
+  at?: string;
 };
+
+function clockOf(iso?: string): string | null {
+  if (!iso) {
+    return null;
+  }
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) {
+    return null;
+  }
+  return new Intl.DateTimeFormat('es-AR', {
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  }).format(date);
+}
 
 function AssistantMarkdown({
   text,
@@ -22,7 +39,7 @@ function AssistantMarkdown({
 }) {
   const chunks = text.split(/(\[[^\]]+\]\([^)]+\)|\*\*[^*]+\*\*)/g);
   return (
-    <p className="assistant-md">
+    <p className={styles.md}>
       {chunks.map((part, index) => {
         const md = part.match(/^\[([^\]]+)\]\((\/[^)]+)\)$/);
         if (md) {
@@ -33,7 +50,7 @@ function AssistantMarkdown({
               <button
                 key={index}
                 type="button"
-                className="assistant-md-link"
+                className={styles.mdLink}
                 onClick={() => onOpen(href)}
               >
                 {label}
@@ -61,13 +78,13 @@ function ChipRow({
     return null;
   }
   return (
-    <li className="assistant-chips-row">
-      <div className="assistant-chips">
+    <li className={styles.chipsRow}>
+      <div className={styles.chips}>
         {links.map((link) => (
           <button
             key={link.href}
             type="button"
-            className="btn ghost assistant-chip"
+            className={`btn ghost ${styles.chip}`}
             onClick={() => onOpen(link.href)}
           >
             {link.label}
@@ -85,20 +102,26 @@ function bubbleNode(
   if (item.role === 'tool') {
     const name = item.toolName ?? 'tool';
     return (
-      <li key={item.key} className="assistant-bubble tool">
+      <li key={item.key} className={styles.tool}>
         {toolLineLabel(name, Boolean(item.pending))}
       </li>
     );
   }
   if (item.role === 'user') {
+    const clock = clockOf(item.at);
     return (
-      <li key={item.key} className="assistant-bubble user">
-        {item.content}
+      <li key={item.key} className={styles.user}>
+        <span className={styles.userText}>{item.content}</span>
+        {clock ? (
+          <time className={styles.userTime} dateTime={item.at}>
+            {clock}
+          </time>
+        ) : null}
       </li>
     );
   }
   return (
-    <li key={item.key} className="assistant-bubble assistant">
+    <li key={item.key} className={styles.assistant}>
       <AssistantMarkdown text={item.content} onOpen={onOpen} />
     </li>
   );
@@ -128,25 +151,34 @@ function groupTurns(items: ThreadBubble[]): Turn[] {
 }
 
 /**
- * Hilo: user, assistant (markdown liviano), tools en una línea y chips de `links`.
+ * Hilo: user a la derecha, assistant sin burbuja, tools en una línea y chips.
  */
 export function MessageThread({
   items,
-  emptyHint,
+  helloName,
+  disclaimer,
   onOpenLink,
 }: {
   items: ThreadBubble[];
-  emptyHint: string;
+  helloName?: string | null;
+  disclaimer?: string;
   onOpenLink: (href: string) => void;
 }) {
   if (items.length === 0) {
-    return <p className="muted assistant-thread-empty">{emptyHint}</p>;
+    const greeting = helloName?.trim() ? `¡Hola, ${helloName}!` : '¡Hola!';
+    return (
+      <div className={styles.welcome}>
+        <p className={styles.welcomeHi}>{greeting}</p>
+        <p className={styles.welcomeAsk}>¿Cómo puedo ayudarte?</p>
+      </div>
+    );
   }
 
   const turns = groupTurns(items);
 
   return (
-    <ol className="assistant-thread">
+    <ol className={styles.thread}>
+      {disclaimer ? <li className={styles.disclaimer}>{disclaimer}</li> : null}
       {turns.map((turn) => (
         <Fragment key={turn.key}>
           {turn.items.map((item) => bubbleNode(item, onOpenLink))}

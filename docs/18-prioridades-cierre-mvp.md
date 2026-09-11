@@ -62,7 +62,7 @@ Sitio público en el **apex** (`http://localhost:3002/` / dominio de plataforma)
 
 Este corte (en código):
 
-- Landing: gyms, clubes y estudios (afiliaciones); CTA mailto `hola@faciliter.xyz`; prueba del asistente (sin datos de un gym).
+- Landing: gyms, clubes y estudios (afiliaciones); CTA a Google Calendar (`https://calendar.app.google/dcTzccnNjB6tTLXR8`); prueba del asistente (sin datos de un gym).
 - Un plan visible, **precio a convenir** (sin número hasta P4 / costos reales).
 - SEO: title/meta, OG, canonical, JSON-LD, `sitemap.xml`, `robots.txt`, copy en castellano.
 - `/legal/terminos` y `/legal/privacidad`: **borrador** (no es el texto final Argentina). El contrato revisado sigue en [operaciones.md](./99-backlog-post-mvp/operaciones.md).
