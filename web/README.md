@@ -47,7 +47,7 @@ npm install
 npm run dev
 ```
 
-API en `NEXT_PUBLIC_API_URL` (default `http://localhost:3001`). Chat: `NEXT_PUBLIC_CHAT_API_URL` (default `http://localhost:3010`). Tras migración de slug: `docker compose exec api npx prisma migrate deploy` + seed.
+API en `NEXT_PUBLIC_API_URL` (default `http://localhost:3001`). Chat: `NEXT_PUBLIC_CHAT_API_URL` (default `http://localhost:3010`). Tras wipe de DB: seed a mano (`docs/13-setup-db-desde-cero.md`).
 
 Credenciales: `docs/credenciales-demo.md`.
 

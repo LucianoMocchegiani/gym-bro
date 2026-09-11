@@ -12,35 +12,28 @@ Lista de migraciones / esquema: [09-esquema-db.md](./09-esquema-db.md).
 
 | Comando | Para qué |
 |---------|----------|
-| `prisma migrate deploy` | GymBro: `api/prisma/migrations/`. Chat: `chat-api` lo corre al arrancar; también `docker compose exec chat-api npx prisma migrate deploy`. |
-| `prisma generate` | Regenera el client TypeScript en `node_modules` del contenedor (necesario tras wipe del volumen `api_node_modules`). |
-| `npm run prisma:seed` | Carga datos demo: **Super**, tenant `demo`, branch, roles, staff, member + Quark issuer/verifier (soft-fail). |
-| `npm run prisma:migrate` | Alias de `prisma migrate dev`: **crear** migración nueva en desarrollo (interactivo). No es el flujo “desde cero”. |
+| `prisma migrate deploy` | GymBro: la API lo corre al arrancar. Chat: `chat-api` corre `ensure-db` + `migrate deploy` al arrancar. |
+| `prisma generate` | En la imagen Docker ya va generado. En el host: `npx prisma generate` tras cambiar el schema. |
+| `npm run prisma:seed` | Carga datos demo: **Super**, tenant `gym-de-prueba`, branch, roles, staff, member. **No** corre al arrancar. |
+| `npm run prisma:migrate` | Alias de `prisma migrate dev`: **crear** migración nueva (interactivo). En el host, con `DATABASE_URL` a `localhost:5433`. |
 
-La API **no** corre migraciones ni seed al arrancar: hay que hacerlo a mano (o con este checklist). `chat-api` sí corre `ensure-db` + `migrate deploy` al arrancar (Compose).
+La API aplica migraciones al `CMD`. El seed **no**: hay que ejecutarlo a mano (o con este checklist).
 
 ---
 
 ## 2. Checklist — levantar de 0
 
 ```powershell
-# 1) Stack
+# 1) Stack (api y chat-api migran solas al arrancar)
 docker compose up --build -d
 
-# 2) Esperar a que api/postgres/chat-api estén healthy (opcional)
+# 2) Esperar health
 curl.exe -s http://localhost:3001/api/health
 curl.exe -s http://localhost:3010/health
 curl.exe -s http://localhost:3011/health
 
-# 3) Schema + client
-docker compose exec api npx prisma migrate deploy
-docker compose exec api npx prisma generate
-
-# 4) Datos demo (incluye Super)
+# 3) Datos demo (incluye Super) — una vez, no en cada restart
 docker compose exec api npm run prisma:seed
-
-# 5) Si la API compiló con client viejo, reiniciar
-docker compose restart api
 ```
 
 Tras un wipe completo:
@@ -48,10 +41,7 @@ Tras un wipe completo:
 ```powershell
 docker compose down -v
 docker compose up --build -d
-# … luego pasos 3 → 5 de arriba
-# Si web no resuelve módulos (volumen node_modules vacío):
-docker compose exec web npm install
-docker compose restart web
+# … luego el seed (paso 3)
 ```
 
 ### Seed incluye
@@ -63,33 +53,31 @@ docker compose restart web
 | Staff Profesor | `profesor@gymdeprueba.com` | `ChangeMe123!` |
 | Afiliado | `socio@gymdeprueba.com` | `ChangeMe123!` |
 
-Tenant demo: slug `demo`, id fijo `00000000-0000-4000-8000-000000000001`.
+Tenant demo: slug `gym-de-prueba`, id fijo `00000000-0000-4000-8000-000000000001`.
 
-Kuatia (si `KUATIA_ISSUER_WALLET_ID` / `KUATIA_VERIFIER_WALLET_ID` están en env):
-
-| Campo tenant | Valor típico |
-|--------------|--------------|
-| `quark_status` | `READY` (o `MISSING` + `quark_last_error` si falta env) |
-| `quark_issuer_wallet_id` | = `KUATIA_ISSUER_WALLET_ID` (compartido) |
-| `quark_verifier_wallet_id` | = `KUATIA_VERIFIER_WALLET_ID` (compartido) |
-
-Script: [`api/prisma/seed.ts`](../api/prisma/seed.ts) + [`seed-quark-demo.ts`](../api/prisma/seed-quark-demo.ts). Idempotente; solo bindea IDs, no crea productos en Kuatia.
+Kuatia: el seed **no** crea productos. Wallets compartidos van en `api/.env` (`KUATIA_*`). Script: [`api/prisma/seed.ts`](../api/prisma/seed.ts). Idempotente; **cada run resetea** las passwords demo a `ChangeMe123!`.
 
 ---
 
 ## 3. Crear una migración nueva (día a día)
 
 1. Editá `api/prisma/schema.prisma`.
-2. Con Compose arriba:
+2. Con Postgres arriba, **desde el host** (`api/.env` con `localhost:5433`):
 
 ```powershell
-docker compose exec api npm run prisma:migrate
+cd api
+npm run prisma:migrate
 ```
 
-3. Actualizá [09-esquema-db.md](./09-esquema-db.md) (tablas / lista de migraciones).
-4. En otros entornos / DB limpia: solo `migrate deploy` (+ `generate` si hace falta).
+3. Rebuild para que la imagen copie la migración nueva:
 
-Desde el host (sin Docker para la API): en `api/.env` usá `localhost` en `DATABASE_URL`, luego `npm run prisma:migrate` dentro de `api/`.
+```powershell
+docker compose up --build -d api
+```
+
+4. Actualizá [09-esquema-db.md](./09-esquema-db.md) (tablas / lista de migraciones).
+
+Al arrancar, la API aplica la migración nueva sola (`migrate deploy`).
 
 ---
 
@@ -97,13 +85,12 @@ Desde el host (sin Docker para la API): en `api/.env` usá `localhost` en `DATAB
 
 | Síntoma | Qué hacer |
 |---------|-----------|
-| API: `Property '…' does not exist on type 'Pack'` (u otro modelo) | Falta `prisma generate` en el contenedor → paso 3 + `restart api`. |
-| Health / queries: schema not ready | Falta `migrate deploy`. |
+| API: `Property '…' does not exist on type 'Pack'` (u otro modelo) | Schema nuevo: rebuild de la imagen `docker compose up --build -d api`. |
+| Health / queries: schema not ready | Esperá el `start_period` o mirá logs: `docker compose logs api`. |
 | No entra Super / staff demo | Falta `prisma:seed`. |
 | Kuatia demo `MISSING` tras seed | Completá `KUATIA_ISSUER_WALLET_ID` / `KUATIA_VERIFIER_WALLET_ID` (y keys/bases) en `api/.env`; re-ejecutá `prisma:seed` o Super “Reintentar”. |
 | Offer/VP fallan con 401 | API key incorrecta o header ausente (`x-api-key`); ver [kuatia.xyz/docs/autenticacion](https://kuatia.xyz/docs/autenticacion). |
-| 404 raros en Next tras wipe | Volumen `web_next`; a veces hace falta recrear o limpiar `.next` del contenedor. |
-| Web: `Can't resolve '@mercadopago/sdk-react'` (u otro módulo) | Volumen `web_node_modules` vacío o viejo. El paquete está en `web/package.json`. `docker compose exec web npm install` y `docker compose restart web`. Un `--build` solo no pisa el volumen si ya existe. |
+| Web no refleja `NEXT_PUBLIC_*` | Esas vars se bakean en el build. Cambiá el `.env` de la raíz (o export) y `docker compose up --build -d web`. |
 
 ---
 
@@ -128,10 +115,9 @@ El valor enum `STUB` queda en Prisma (legado).
 
 ---
 
-## 6. Qué no automatizamos (aún)
+## 6. Qué no automatizamos
 
-- Migraciones al `CMD` de la API (opcional a futuro solo en Compose local).
-- Seed automático de GymBro (podría pisar datos locales; se deja explícito).
+- Seed automático: cada `prisma:seed` **resetea** passwords demo a `ChangeMe123!`. Se deja explícito.
 
 ---
 

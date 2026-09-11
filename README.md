@@ -23,7 +23,7 @@ chat-api/            # Hono — puerto 3010 — GET /health (asistente, post-MVP
 mcp/                 # Sidecar MCP Faciliter — puerto 3011 — GET /health (tools A–D, C3+C6)
 mobile/              # Flutter (fuera de Docker)
 postman/             # Colección Nest + chat-api + mcp + environment
-docker-compose.yml   # postgres + redis + api + web + chat-api + mcp (dev)
+docker-compose.yml   # postgres + redis + api + web + chat-api + mcp (imágenes de build)
 docker/              # pgAdmin + init Postgres (database `chat`)
 ssi-quark/           # README redirect → identity_core_dart/
 identity_core_dart/  # Package Flutter wallet (gitignore; clon local)
@@ -35,7 +35,9 @@ Cada app tiene su propio manifest y su propio `.env`. **No** hay `package.json` 
 
 Requisitos: **Docker Desktop** (o Engine + Compose). Fuera de Docker: **Node.js 24 (Active LTS)** y **Flutter** si corrés apps en el host.
 
-## Desarrollo con Docker (recomendado)
+## Docker Compose
+
+Imágenes compiladas (sin hot-reload). Postgres/Redis solo en localhost. pgAdmin comentado.
 
 1. Env por app (Compose los lee desde cada carpeta):
 
@@ -68,9 +70,8 @@ Servicios:
 | mcp tools | `POST /mcp` Streamable HTTP (JWT Staff; C3+C6, lectura A–D) |
 | Kuatia | URLs públicas del producto (ver `KUATIA_*_BASE_URL` en `api/.env`) |
 | Postman | [`postman/`](./postman/) |
-| Postgres | `localhost:5433` → contenedor `5432` (user/pass `gymbro`; databases `gymbro` y `chat`) |
-| pgAdmin | http://localhost:5050 — `admin@example.com` / `gymbro` (server: host `postgres`, pass DB `gymbro`) |
-| Redis | `localhost:6379` |
+| Postgres | `localhost:5433` → contenedor `5432` (user/pass `gymbro`; databases `gymbro` y `chat`; solo loopback) |
+| Redis | `localhost:6379` (solo loopback) |
 
 ### Kuatia (OID4VCI + OID4VP)
 
@@ -89,48 +90,29 @@ Parar:
 docker compose down
 ```
 
-Hot-reload: código de `api/`, `web/`, `chat-api/` y `mcp/` montado como volumen. `node_modules` vive en volúmenes Docker.
+Si venías del Compose de dev (contenedores `postgres` / `api` / `web`): `docker compose down` y, si hace falta, `docker rm postgres api web redis pgadmin chat-api mcp`.
 
-Si agregás dependencias nuevas, instalá **en el contenedor** (el volumen `*_node_modules` no se llena con un rebuild si ya existía):
+No hay hot-reload: un cambio de código pide `docker compose up --build -d`, o las apps con `npm run start:dev` / `next dev` en el host (Postgres en `localhost:5433`).
 
-```powershell
-docker compose exec api npm install
-docker compose exec web npm install
-docker compose restart api web
-```
+`NEXT_PUBLIC_*` de web se bakean en el **build**. Defaults = local (`localhost:3001` / `:3002` / `:3010`). En VPS, un `.env` junto a `docker-compose.yml` (o `export`) y rebuild de `web`.
 
-Tras `docker compose down -v`, el `--build` no alcanza si el volumen de `node_modules` queda vacío o viejo. Síntoma típico en web: `Can't resolve '@mercadopago/sdk-react'` (el paquete está en `web/package.json`). Misma receta: `exec web npm install` + `restart web`.
-
-O regenerar volúmenes (borra también datos de Postgres/Redis **y** `node_modules` de los contenedores):
+Después de `down -v` la DB queda vacía: la API migra sola; el seed es a mano. Checklist: [docs/13-setup-db-desde-cero.md](./docs/13-setup-db-desde-cero.md).
 
 ```powershell
-docker compose down -v
-docker compose up --build -d
-```
-
-Después de `down -v` la DB queda vacía: migraciones + generate + seed. Checklist completo: [docs/13-setup-db-desde-cero.md](./docs/13-setup-db-desde-cero.md).
-
-```powershell
-docker compose exec api npx prisma migrate deploy
-docker compose exec api npx prisma generate
 docker compose exec api npm run prisma:seed
-docker compose restart api
 ```
-
-Si el health da `socket hang up` o la API no compila tras un schema nuevo, suele faltar el `prisma generate` en el volumen del contenedor (paso de arriba).
 
 ### Base de datos (Prisma)
 
 ORM: **Prisma 6** en `api/prisma/` (Prisma 7 queda diferido: exige ESM + driver adapters poco amigables con Nest CJS). Ver [docs/13-setup-db-desde-cero.md](./docs/13-setup-db-desde-cero.md).
 
 ```powershell
-# Aplicar pendientes (DB limpia / Compose):
-docker compose exec api npx prisma migrate deploy
+# Crear migración nueva (host; DATABASE_URL → localhost:5433):
+cd api
+npm run prisma:migrate
+docker compose up --build -d api
 
-# Crear migración nueva en dev:
-docker compose exec api npm run prisma:migrate
-
-# Seed (Super + demo):
+# Seed (Super + demo); no corre al arrancar:
 docker compose exec api npm run prisma:seed
 ```
 
@@ -139,6 +121,7 @@ Health con DB: `GET /api/health` → `{ status, database, checkedAt }`.
 chat-api (asistente, post-MVP): Prisma 6 en `chat-api/prisma/`, database **`chat`** en el mismo Postgres. Cero strings `GYMBRO_*`. Cómo enchufarlo: [`chat-api/README.md`](./chat-api/README.md) · diseño: [docs/16-chat-mcp-diseno.md](./docs/16-chat-mcp-diseno.md).
 
 ```powershell
+# chat-api migra al arrancar; esto es opcional si hace falta reaplicar:
 docker compose exec chat-api npx prisma migrate deploy
 ```
 
@@ -148,7 +131,7 @@ Hilos (C2): `Authorization: Bearer` Staff. Introspecta `AUTH_INTROSPECT_URL` (`G
 
 Mensajes (C4/C7): `POST /v1/conversations/:id/messages` body `{ "text" }` → UI Message Stream (OpenRouter + MCP con el mismo Bearer). `GET …/messages` lista user/assistant/tool. Clave real en `OPENROUTER_API_KEY`. Título automático + abort.
 
-Drawer Admin (C5/C7): burbuja Asistente abajo a la derecha (no va en el topbar). Título automático (editable), Parar, chips de `links` hacia pantallas Admin. `web/.env` → `NEXT_PUBLIC_CHAT_API_URL=http://localhost:3010`. Tras editar, `docker compose restart web`. Panel por túnel (`https://{slug}.faciliter.xyz`): `CORS_APP_DOMAIN` en `chat-api/.env` (mismo criterio que Nest) y recrear `chat-api`.
+Drawer Admin (C5/C7): burbuja Asistente abajo a la derecha (no va en el topbar). Título automático (editable), Parar, chips de `links` hacia pantallas Admin. `NEXT_PUBLIC_CHAT_API_URL` se bakea en el build de web. Panel por túnel (`https://{slug}.faciliter.xyz`): `CORS_APP_DOMAIN` en `chat-api/.env` (mismo criterio que Nest) y recrear `chat-api`.
 
 MCP Faciliter (C3+C6): sidecar `mcp/` en Compose (`:3011`). `GET /health` (sin auth). Tools de lectura A–D vía `POST /mcp` con el mismo JWT Staff. Nest sigue autorizando. README: [`mcp/README.md`](./mcp/README.md). Smoke: `cd mcp; npm run smoke` (Admin + Profesor seed).
 

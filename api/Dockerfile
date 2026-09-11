@@ -1,4 +1,4 @@
-# Imagen portable de chat-api (otra plataforma = otro Compose + env).
+# Imagen de la API NestJS (migrate deploy al arrancar; seed a mano).
 FROM node:24-alpine AS build
 
 RUN apk add --no-cache openssl
@@ -8,15 +8,17 @@ WORKDIR /app
 COPY package.json package-lock.json ./
 COPY prisma ./prisma
 RUN npm ci
-COPY tsconfig.json ./
+COPY nest-cli.json tsconfig.json tsconfig.build.json ./
 COPY src ./src
-RUN npx prisma generate && npx tsc
+RUN npx prisma generate && npm run build
 
 FROM node:24-alpine
 
 RUN apk add --no-cache openssl
 
 WORKDIR /app
+
+ENV NODE_ENV=production
 
 COPY package.json package-lock.json ./
 COPY prisma ./prisma
@@ -25,6 +27,6 @@ RUN npm ci --omit=dev \
   && npx prisma generate
 COPY --from=build /app/dist ./dist
 
-EXPOSE 3010
+EXPOSE 3001
 
-CMD ["sh", "-c", "node dist/ensure-db.js && npx prisma migrate deploy && exec node dist/index.js"]
+CMD ["sh", "-c", "npx prisma migrate deploy && exec node dist/main.js"]

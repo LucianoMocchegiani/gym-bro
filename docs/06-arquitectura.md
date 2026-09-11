@@ -13,7 +13,7 @@
 | **Web** | **Next.js 16 (App Router) + React 19** | Landing (apex) + Admin / Super en `web/` |
 | **App móvil** | **Flutter** | Afiliado + acceso QR; alineado a Quark / identity-core-dart |
 | **Base de datos** | **PostgreSQL 16** | Multi-tenant por `tenant_id` |
-| **ORM** | **Prisma 6** (`api/prisma/`) | Migraciones manuales; modelo inicial `Tenant`. Prisma 7 diferido (ESM) |
+| **ORM** | **Prisma 6** (`api/prisma/`) | `migrate deploy` al arrancar la API; seed demo a mano. Prisma 7 diferido (ESM) |
 | **Auth API** | JWT + refresh (propio) en MVP | Clerk/Auth0 opcional después |
 | **Jobs** | BullMQ + Redis (cuando haga falta) | Vencimientos, mails, recurrencias |
 | **Email N1** | Proveedor ESP (Resend/SES/similar) | |
@@ -392,7 +392,7 @@ Stack principal cerrado en §0. Queda por cerrar al scaffold:
 | ORM (Prisma vs Drizzle) | **Prisma 6** (Drizzle descartado; Prisma 7 diferido por ESM/Nest) |
 | Runtime Node | **24 Active LTS** (`node:24-alpine` en Docker) |
 | Hosting (Railway / Fly / VPS / AWS) | Pendiente (prod) |
-| Docker Compose local (postgres, redis, api, web, chat-api, mcp) | Hecho (dev; chat-api C1–C7 salvo tope de uso; mcp C3+C6; drawer Admin chips) |
+| Docker Compose (postgres, redis, api, web, chat-api, mcp) | Hecho (imágenes de build; migrate al arrancar; seed a mano; chat-api C1–C7 salvo tope de uso; mcp C3+C6; drawer Admin chips) |
 | CI mínimo (GitHub Actions: lint + build api/web) | Hecho (`.github/workflows/ci.yml`) |
 | Monorepo tool (pnpm workspaces / Turborepo / separado) | **Separado** — sin package.json raíz; cada app se instala sola |
 | Proveedor exacto de email | Pendiente |

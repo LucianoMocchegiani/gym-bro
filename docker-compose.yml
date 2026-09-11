@@ -1,15 +1,30 @@
+# Faciliter — local + VPS (un solo Compose)
+#
+# Imágenes compiladas (sin bind-mount de código). Iterar: npm en el host
+# contra Postgres/Redis publicados, o `docker compose up --build`.
+#
+# NEXT_PUBLIC_* se bakean en el build de web. Defaults = local.
+# En VPS, un `.env` junto a este archivo (o export) antes de `--build`.
+#
+# Primer boot (DB vacía): la API corre migrate deploy sola.
+# Seed demo (Super / gym-de-prueba): a mano, ver docs/13-setup-db-desde-cero.md
+#
+# Uso:
+#   docker compose up -d --build
+#   docker compose exec api npm run prisma:seed
+
 services:
   postgres:
     image: postgres:16-alpine
-    container_name: postgres
+    container_name: faciliter-postgres
     restart: unless-stopped
     environment:
       POSTGRES_USER: gymbro
       POSTGRES_PASSWORD: gymbro
       POSTGRES_DB: gymbro
     ports:
-      # Host 5433: evita choque con otro Postgres local en 5432. En la red Compose sigue siendo postgres:5432.
-      - "5433:5432"
+      # Host 5433: convive con otro Postgres (p. ej. Kuatia en 5432).
+      - "127.0.0.1:5433:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
       # Primer boot: crea database `chat`. Si el volumen ya existía, lo hace chat-api.
@@ -22,10 +37,10 @@ services:
 
   redis:
     image: redis:7-alpine
-    container_name: redis
+    container_name: faciliter-redis
     restart: unless-stopped
     ports:
-      - "6379:6379"
+      - "127.0.0.1:6379:6379"
     volumes:
       - redis_data:/data
     healthcheck:
@@ -34,83 +49,97 @@ services:
       timeout: 3s
       retries: 10
 
-  pgadmin:
-    image: dpage/pgadmin4:8
-    container_name: pgadmin
-    restart: unless-stopped
-    environment:
-      PGADMIN_DEFAULT_EMAIL: admin@example.com
-      PGADMIN_DEFAULT_PASSWORD: gymbro
-      PGADMIN_CONFIG_SERVER_MODE: "False"
-    ports:
-      - "5050:80"
-    volumes:
-      - pgadmin_data:/var/lib/pgadmin
-      - ./docker/pgadmin/servers.json:/pgadmin4/servers.json:ro
-    depends_on:
-      postgres:
-        condition: service_healthy
+  # Opcional: descomentar para UI de Postgres
+  # pgadmin:
+  #   image: dpage/pgadmin4:8
+  #   container_name: faciliter-pgadmin
+  #   restart: unless-stopped
+  #   environment:
+  #     PGADMIN_DEFAULT_EMAIL: admin@example.com
+  #     PGADMIN_DEFAULT_PASSWORD: gymbro
+  #     PGADMIN_CONFIG_SERVER_MODE: "False"
+  #   ports:
+  #     - "127.0.0.1:5050:80"
+  #   volumes:
+  #     - pgadmin_data:/var/lib/pgadmin
+  #     - ./docker/pgadmin/servers.json:/pgadmin4/servers.json:ro
+  #   depends_on:
+  #     postgres:
+  #       condition: service_healthy
 
   api:
     build:
       context: ./api
-      dockerfile: Dockerfile.dev
-    container_name: api
+      dockerfile: Dockerfile
+    container_name: faciliter-api
     restart: unless-stopped
     env_file:
       - ./api/.env
     environment:
-      NODE_ENV: development
-      CHOKIDAR_USEPOLLING: "true"
+      NODE_ENV: production
     ports:
       - "3001:3001"
-    volumes:
-      - ./api:/app
-      - api_node_modules:/app/node_modules
     depends_on:
       postgres:
         condition: service_healthy
       redis:
         condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "node -e \"fetch('http://127.0.0.1:3001/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))\"",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 45s
 
   web:
     build:
       context: ./web
-      dockerfile: Dockerfile.dev
-    container_name: web
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:3001}
+        NEXT_PUBLIC_APP_DOMAIN: ${NEXT_PUBLIC_APP_DOMAIN:-}
+        NEXT_PUBLIC_PLATFORM_HOST: ${NEXT_PUBLIC_PLATFORM_HOST:-}
+        NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL:-http://localhost:3002}
+        NEXT_PUBLIC_CHAT_API_URL: ${NEXT_PUBLIC_CHAT_API_URL:-http://localhost:3010}
+    container_name: faciliter-web
     restart: unless-stopped
     env_file:
       - ./web/.env
     environment:
-      NODE_ENV: development
-      WATCHPACK_POLLING: "true"
-      CHOKIDAR_USEPOLLING: "true"
+      NODE_ENV: production
     ports:
-      # Host 3002: evita choque con otro proceso en 3000. Dentro del contenedor sigue 3000.
+      # Host 3002: convive con otro Next (p. ej. Kuatia en 3000).
       - "3002:3000"
-    volumes:
-      - ./web:/app
-      - web_node_modules:/app/node_modules
-      - web_next:/app/.next
     depends_on:
-      - api
+      api:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "node -e \"fetch('http://127.0.0.1:3000/').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))\"",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
 
   chat-api:
     build:
       context: ./chat-api
-      dockerfile: Dockerfile.dev
-    container_name: chat-api
+      dockerfile: Dockerfile
+    container_name: faciliter-chat-api
     restart: unless-stopped
     env_file:
       - ./chat-api/.env
     environment:
-      NODE_ENV: development
-      CHOKIDAR_USEPOLLING: "true"
+      NODE_ENV: production
     ports:
       - "3010:3010"
-    volumes:
-      - ./chat-api:/app
-      - chat_api_node_modules:/app/node_modules
     depends_on:
       postgres:
         condition: service_healthy
@@ -130,21 +159,18 @@ services:
   mcp:
     build:
       context: ./mcp
-      dockerfile: Dockerfile.dev
-    container_name: mcp
+      dockerfile: Dockerfile
+    container_name: faciliter-mcp
     restart: unless-stopped
     env_file:
       - ./mcp/.env
     environment:
-      NODE_ENV: development
-      CHOKIDAR_USEPOLLING: "true"
+      NODE_ENV: production
     ports:
       - "3011:3011"
-    volumes:
-      - ./mcp:/app
-      - mcp_node_modules:/app/node_modules
     depends_on:
-      - api
+      api:
+        condition: service_healthy
     healthcheck:
       test:
         [
@@ -159,9 +185,4 @@ services:
 volumes:
   postgres_data:
   redis_data:
-  pgadmin_data:
-  api_node_modules:
-  web_node_modules:
-  web_next:
-  chat_api_node_modules:
-  mcp_node_modules:
+  # pgadmin_data:

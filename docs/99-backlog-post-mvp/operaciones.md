@@ -18,6 +18,6 @@ Notas que estaban en `local/backlog-mejoras.md` (ops). El setup de desarrollo ya
 | Docs de uso (web + app) | Pendiente | Apartado público tipo Kuatia, pero para usar Admin y app: módulos, primeros pasos, config. Diseño aparte; no es el C-producto. |
 | Migración de datos (Excel + IA) | Prioridad baja (P5) | Importar socios/packs de otro sistema. **Después del piloto** si no bloquea. [18](../18-prioridades-cierre-mvp.md) |
 | Soporte / onboarding de más gyms | Pendiente | |
-| Deploy prod + CI/CD | Pendiente | Multi-stage, migraciones al deploy, secrets |
+| Deploy prod + CI/CD | Parcial | Compose con imágenes de build + migrate al arrancar. Falta CI/CD y proxy TLS |
 
 [Índice post-MVP](../99-backlog-post-mvp.md)

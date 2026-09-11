@@ -16,8 +16,8 @@ Genera el **cliente Prisma** (tipos TypeScript y métodos) a partir del schema. 
 # En entorno local (dentro de /api)
 npx prisma generate
 
-# Dentro de Docker
-docker-compose exec api npx prisma generate
+# Dentro de Docker (imagen ya incluye el client; schema nuevo → rebuild)
+docker compose exec api npx prisma generate
 ```
 
 **Cuando ejecutarlo:**
@@ -44,7 +44,7 @@ npx prisma migrate deploy
 npx prisma migrate status
 ```
 
-**Atención:** En GymBro, las migraciones se ejecutan **manualmente** contra el contenedor Docker de Postgres. Esto es porque la migración original del rename `Payment` → `TransactionItem` y `CartCheckout` → `Transaction` requirió mover datos (no solo alterar schema) y se hizo con SQL directo.
+**Atención:** En Compose, la API corre `prisma migrate deploy` al arrancar. Crear una migración nueva se hace **en el host** (`npm run prisma:migrate` con `DATABASE_URL` a `localhost:5433`) y después rebuild de `api`.
 
 ---
 
@@ -154,11 +154,8 @@ Property 'transactionItem' does not exist on type 'PrismaService'
 **Solución:**
 
 ```bash
-# 1. Regenerar el cliente dentro del container
-docker-compose exec api npx prisma generate
-
-# 2. Reiniciar el container
-docker-compose restart api
+# 1. Rebuild de la API (el client se genera en la imagen)
+docker compose up --build -d api
 ```
 
 ### Rebuild completo de la imagen
@@ -166,14 +163,14 @@ docker-compose restart api
 Si el schema nuevo no está siendo copiado al container:
 
 ```bash
-docker-compose build api --no-cache
-docker-compose up -d api
+docker compose build api --no-cache
+docker compose up -d api
 ```
 
 ### Verificar que el schema es el correcto dentro del container
 
 ```bash
-docker-compose exec api cat prisma/schema.prisma | grep -A 5 "model TransactionItem"
+docker compose exec api cat prisma/schema.prisma | grep -A 5 "model TransactionItem"
 ```
 
 ---
@@ -245,8 +242,8 @@ Causa: El cliente Prisma no fue regenerado después de un cambio de schema.
 Solución:
 ```bash
 npx prisma generate
-# o dentro de Docker:
-docker-compose exec api npx prisma generate
+# o rebuild de la imagen:
+docker compose up --build -d api
 ```
 
 ### Error: `The table 'X' does not exist`
@@ -258,8 +255,8 @@ Solución:
 # Ver estado de migraciones
 npx prisma migrate status
 
-# Aplicar migraciones pendientes
-docker exec -i postgres psql -U postgres -d gymbro < api/prisma/migrations/mi_migracion.sql
+# Aplicar migraciones pendientes (la API ya lo hace al arrancar)
+docker compose exec api npx prisma migrate deploy
 ```
 
 ### Error: `Invalid value for argument` en operaciones Prisma

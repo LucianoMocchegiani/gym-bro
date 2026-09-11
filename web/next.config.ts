@@ -16,6 +16,7 @@ const allowedDevOrigins = [
 ];
 
 const nextConfig: NextConfig = {
+  output: 'standalone',
   allowedDevOrigins,
 };
 
