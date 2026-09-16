@@ -23,7 +23,7 @@ Plataforma GymBro
       ├── Contrataciones
       ├── Reservas / ListaEspera
       ├── Pagos / Caja / Arqueo
-      │    └── MandatoDebito (post-MVP, diseño)
+      │    └── MandatoDebito (post-MVP; suscripción MP)
       ├── Ingresos (acceso)
       ├── CatálogoEjercicios / Rutinas
       └── Notificaciones (plantillas, preferencias)
@@ -58,7 +58,7 @@ Plataforma GymBro
 | Entidad | Responsabilidad | Atributos clave |
 |---------|-----------------|-----------------|
 | **Servicio** | Qué se ofrece | tipo (`ACCESO_LIBRE` \| `POR_SESIONES`), nombre, activo, sucursal? |
-| **Pack** | Cómo se vende/combina | componentes (servicios/créditos), precio, periodicidad, políticaVencimientoCreditos, políticaDevolucion |
+| **Pack** | Cómo se vende/combina | componentes, precio, periodicidad, políticaVencimientoCreditos, políticaDevolucion, mpPreapprovalPlanId? (MONTHLY) |
 | **Oferta** | Precio/modalidad puntual | puede unificarse con Pack en implementación |
 | **Sesion** | Instancia calendarizada | servicioId, inicio, fin, cupo, cupoActual, profesorId?, sucursalId, estado |
 | **ReglaRecurrencia** | Genera sesiones | patrón semanal, fechaInicio/fin, plantilla cupo/profe |
@@ -81,7 +81,7 @@ Plataforma GymBro
 | **ArqueoCaja** | Cierre del día | fecha, esperado, declarado, diferencia, usuarioStaffId |
 | **SolicitudDevolucion** | Pedido afiliado | pagoId, estado, motivo |
 | **Comprobante** | Recibo interno | pagoId, numero, url/datos |
-| **MandatoDebito** | Autorización de débito MONTHLY (post-MVP, diseño) | afiliadoId, packId (próximo cobro), tarjeta MP (customer/card), estado, próximo cobro, último error, staff que inscribió |
+| **MandatoDebito** | Espejo de suscripción MP MONTHLY (post-MVP) | afiliadoId, packId, mpPreapprovalId, mpPlanId, estado, próximo cobro MP, último error, staff, initPoint |
 
 ### 2.6 Acceso
 
@@ -167,7 +167,8 @@ Borrador conceptual: `pendiente_pago` → `confirmada` | `cancelada` | `asistio`
 
 ### MandatoDebito (post-MVP)
 
-`activo` | `reintentando` | `fallido` | `baja`
+`pendiente_checkout` | `activo` | `fallido` | `baja`  
+(MP puede estar reintentando detrás de `activo`; Caja muestra el último error. No hay máquina propia día 0/+1/+2.)
 
 ### IntentoIngreso
 

@@ -9,7 +9,7 @@ E7 Rutinas y E8 Notificaciones siguen en el [roadmap MVP](./11-roadmap-mvp.md) (
 
 **Cierre go-to-market (no es este backlog):** [18-prioridades-cierre-mvp.md](./18-prioridades-cierre-mvp.md) — molinetes, débito QA, landing/pricing/SEO, tokens OpenRouter, migración al final.
 
-**En diseño / implementación (docs + código, QA pendiente):** débito automático MONTHLY — [pagos.md](./99-backlog-post-mvp/pagos.md).  
+**En diseño / implementación:** débito MONTHLY — C-producto 2026-09-15 (suscripción MP); código aún tarjeta+job — [pagos.md](./99-backlog-post-mvp/pagos.md).  
 **C7 en el repo:** abort, título, chips, smoke dos staff, README Redis. **Tope de uso** (mensajes/min o tokens) queda pendiente y entra en P4 del doc 18. [17](./17-roadmap-chat-mcp.md) · [16](./16-chat-mcp-diseno.md).
 
 ---

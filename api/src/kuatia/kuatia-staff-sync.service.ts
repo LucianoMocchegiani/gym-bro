@@ -7,7 +7,7 @@ import { KuatiaEnvService } from './kuatia-env.service';
 /**
  * IDs canónicos de configuration OID4VCI para credencial de acceso staff.
  *
- * @remarks `configurationId = staff_{tenantId}`; `vct = urn:gymbro:staff:{tenantId}`.
+ * @remarks `configurationId = staff_{tenantId}`; `vct = urn:faciliter:staff:{tenantId}`.
  */
 export function staffKuatiaIds(tenantId: string): {
   configurationId: string;
@@ -15,7 +15,7 @@ export function staffKuatiaIds(tenantId: string): {
 } {
   return {
     configurationId: `staff_${tenantId}`,
-    vct: `urn:gymbro:staff:${tenantId}`,
+    vct: `urn:faciliter:staff:${tenantId}`,
   };
 }
 

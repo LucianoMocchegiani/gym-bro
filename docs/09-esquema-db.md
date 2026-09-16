@@ -334,7 +334,7 @@ erDiagram
 | `MemberStatus` | `ACTIVE`, `SUSPENDED`, `INACTIVE` | Estado del afiliado (CU-AFI-003) |
 | `ServiceType` | `ACCESO_LIBRE`, `POR_SESIONES` | Tipo de servicio (RN-SER-001) |
 | `BillingPeriod` | `MONTHLY`, `ONE_TIME` | Periodicidad de cobro del pack |
-| `DebitMandateStatus` | `ACTIVE`, `RETRYING`, `FAILED`, `CANCELLED` | Mandato de débito MONTHLY |
+| `DebitMandateStatus` | `ACTIVE`, `RETRYING`, `FAILED`, `CANCELLED` (hoy). Objetivo: `PENDING_CHECKOUT`, `ACTIVE`, `FAILED`, `CANCELLED` | Mandato / suscripción MP |
 | `PaymentStatus` | `PENDING`, `APPROVED`, `REJECTED`, `REFUNDED` | Estado de pago (RN-PAG-003) |
 | `PaymentMethod` | `STUB`, `CASH`, `MP` | Medio de cobro. `STUB` es legado: no se crean cobros nuevos. |
 | `ContractStatus` | `ACTIVE`, `EXPIRED`, `CANCELLED`, `REFUNDED` | Estado de contratación |
@@ -581,7 +581,7 @@ Pack vendible (CU-SER-002). `price` = pesos enteros ARS. `kind` (`ACCESS`|`CREDI
 | `credits_expire_at` | timestamptz nullable | null = sin vencimiento de catálogo |
 | `active` | boolean | default true |
 | `kuatia_configuration_id` | text nullable | clave OID4VCI `pack_{id}` |
-| `kuatia_vct` | text nullable | `urn:gymbro:pack:{id}` |
+| `kuatia_vct` | text nullable | `urn:faciliter:pack:{id}` |
 | `kuatia_synced_at` | timestamptz nullable | último PATCH metadata OK |
 | `kuatia_last_error` | text nullable | soft-fail de sync Kuatia |
 | `created_at` / `updated_at` | timestamptz | |
@@ -735,27 +735,31 @@ API: Member `POST /api/me/transaction-items/mp/cart` (JWT Member); Staff `POST /
 
 ### 4.15h2 `debit_mandates`
 
-Mandato de débito automático MONTHLY (RN-PAG-013..016 / CU-PAG-008..010). GymBro guarda Customer+Card MP y un job cobra el día de `endsAt` (timezone BA). No es suscripción-plan de MP.
+Mandato MONTHLY = espejo de **suscripción MP** (RN-PAG-013..016 / CU-PAG-008..010). Plan + preapproval en la cuenta del gym; cobro por webhook. No es Customer+Card+job.
+
+**Hoy en Postgres (hasta migrar):** `mp_customer_id` / `mp_card_id`, `RETRYING`, `POST .../charge`, cron. **Objetivo:**
 
 | Columna | Tipo | Notas |
 |---------|------|--------|
 | `id` | uuid PK | |
 | `tenant_id` / `member_id` | uuid FK | CASCADE |
-| `pack_id` | uuid FK | pack del **próximo** cobro; RESTRICT |
-| `enrolled_transaction_item_id` | uuid FK nullable unique | cobro que inscribió; SET NULL; devolverlo → baja |
-| `mp_customer_id` / `mp_card_id` | text | ids en la cuenta MP del gym |
-| `card_last_four` / `card_payment_method_id` | text nullable | UI Caja |
-| `status` | `DebitMandateStatus` | `ACTIVE` \| `RETRYING` \| `FAILED` \| `CANCELLED` |
-| `attempt_count` | int | 0..3; al 3.er fallo → `FAILED` |
-| `last_error` / `last_charged_at` | text / timestamptz nullable | |
-| `next_charge_on` | date | día BA del próximo cobro |
+| `pack_id` | uuid FK | pack del próximo cobro; RESTRICT |
+| `enrolled_transaction_item_id` | uuid FK nullable unique | primer cobro que inscribió; SET NULL; devolverlo → baja MP |
+| `mp_preapproval_id` | text | id `/preapproval` |
+| `mp_preapproval_plan_id` | text nullable | plan del pack (también puede vivir en `packs`) |
+| `mp_init_point` | text nullable | link de checkout mientras `PENDIENTE_CHECKOUT` |
+| `status` | `DebitMandateStatus` | `PENDING_CHECKOUT` \| `ACTIVE` \| `FAILED` \| `CANCELLED` (sacar `RETRYING` como máquina nuestra) |
+| `last_error` / `last_charged_at` | text / timestamptz nullable | error MP |
+| `next_charge_on` | date nullable | espejo de `next_payment_date` MP |
 | `enrolled_by_staff_id` | uuid FK | RESTRICT |
 | `cancelled_at` / `cancelled_by_staff_id` | timestamptz / uuid nullable | |
 | `created_at` / `updated_at` | timestamptz | |
 
-Unique parcial: un mandato abierto (`ACTIVE`/`RETRYING`/`FAILED`) por `(tenant_id, member_id)`.
+Unique parcial: un mandato abierto (`PENDING_CHECKOUT`/`ACTIVE`/`FAILED`) por `(tenant_id, member_id)`.
 
-API Staff (`cashier.operate`): `GET /api/debit-mandates`, `GET /api/members/:id/debit-mandate`, `POST /api/members/:id/debit-mandates`, `PATCH /api/debit-mandates/:id`, `POST .../cancel`, `POST .../charge`. Public key Brick: `GET /api/mercadopago/account/public-key`. Job Nest cron horario (BA).
+API Staff (`cashier.operate`): `GET /api/debit-mandates`, `GET /api/members/:id/debit-mandate`, `POST /api/members/:id/debit-mandates` (crea preapproval + init_point), `PATCH` (pack B), `POST .../cancel`. **Sin** `POST .../charge`. Webhooks: `subscription_preapproval`, `subscription_authorized_payment` (+ `payment` actual).
+
+Pack MONTHLY: `mp_preapproval_plan_id` (o equivalente) al crear/editar precio.
 
 ### 4.15h `refund_requests` + refund en `transaction_items`
 
@@ -867,7 +871,7 @@ Offer OID4VCI de **acceso staff** (molinete). 1 fila por staff (`staff_user_id` 
 | `offer_uri` / `last_error` | text nullable | soft-fail Kuatia |
 | `created_at` / `updated_at` | timestamptz | |
 
-API: `GET|POST /api/staff/:staffId/credential-offers` (`staff.read` / `staff.write`). `configurationId` = `staff_{tenantId}`; `vct` = `urn:gymbro:staff:{tenantId}`.
+API: `GET|POST /api/staff/:staffId/credential-offers` (`staff.read` / `staff.write`). `configurationId` = `staff_{tenantId}`; `vct` = `urn:faciliter:staff:{tenantId}`.
 
 ### 4.18 `session_recurrence_rules`
 
@@ -971,7 +975,7 @@ Historia incremental (2026-07 / 2026-08) **compactada** en un baseline (`40476fa
 | `20260830220000_transaction_recorded_by_staff` | `transactions.recorded_by_staff_id` (staff que inició el cobro; el webhook MP lo copia a `cash_movements`). |
 | `20260830223000_refund_cart_receipt` | `ReceiptConcept.REFUND`; `receipts.transaction_id` deja de ser UK; `cash_movements.receipt_id`. |
 | `20260830223100_receipts_charge_unique` | Unique parcial: un cobro (`concept <> REFUND`) por `transaction_id`. |
-| `20260901120000_debit_mandates` | `DebitMandateStatus` + tabla `debit_mandates` (tarjeta guardada + job MONTHLY). Unique parcial un mandato abierto por afiliado. |
+| `20260901120000_debit_mandates` | `DebitMandateStatus` + `debit_mandates` (impl. vieja: tarjeta+job). Diseño 2026-09-15: migrar a preapproval. |
 
 Comandos y checklist “desde cero”: [13-setup-db-desde-cero.md](./13-setup-db-desde-cero.md).
 

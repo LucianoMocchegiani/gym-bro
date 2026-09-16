@@ -80,7 +80,7 @@ Modelo: **1 producto** Faciliter → **1 issuer + 1 verifier** compartidos para 
 1. Creá el producto en la consola Kuatia; copiá API keys (`iss_live_…` / `ver_live_…`) y `walletId` a `api/.env`.
 2. Compose **no** levanta issuer/verifier locales.
 3. Crear un gym solo persiste Faciliter; **no** hay provision/bind por tenant. Wallets = env `KUATIA_*`.
-4. Create/update de pack → `PATCH` metadata del issuer compartido (`pack_{id}` / `urn:gymbro:pack:{id}`; soft-fail → `packs.kuatia_*`).
+4. Create/update de pack → `PATCH` metadata del issuer compartido (`pack_{id}` / `urn:faciliter:pack:{id}`; soft-fail → `packs.kuatia_*`).
 5. Pack APPROVED → offer OID4VCI; puerta → OID4VP contra el verifier compartido (auth `x-api-key`).
 
 Deuda rename/SDK: [docs/15-kuatia-deuda-rename.md](./docs/15-kuatia-deuda-rename.md).
@@ -118,7 +118,7 @@ docker compose exec api npm run prisma:seed
 
 Health con DB: `GET /api/health` → `{ status, database, checkedAt }`.
 
-chat-api (asistente, post-MVP): Prisma 6 en `chat-api/prisma/`, database **`chat`** en el mismo Postgres. Cero strings `GYMBRO_*`. Cómo enchufarlo: [`chat-api/README.md`](./chat-api/README.md) · diseño: [docs/16-chat-mcp-diseno.md](./docs/16-chat-mcp-diseno.md).
+chat-api (asistente, post-MVP): Prisma 6 en `chat-api/prisma/`, database **`chat`** en el mismo Postgres. Cero strings `GYMBRO_*`. Cómo enchufarlo: [`chat-api/README.md`](./chat-api/README.md) · implementación: [`chat-api/docs/`](./chat-api/docs/00-indice.md) · diseño: [docs/16-chat-mcp-diseno.md](./docs/16-chat-mcp-diseno.md).
 
 ```powershell
 # chat-api migra al arrancar; esto es opcional si hace falta reaplicar:

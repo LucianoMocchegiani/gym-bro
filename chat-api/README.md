@@ -2,7 +2,7 @@
 
 Motor del asistente: hilos, stream y cliente MCP. **Portable**: GymBro se conecta; este paquete **no** conoce afiliados, caja ni Nest.
 
-Diseño: [`docs/16-chat-mcp-diseno.md`](../docs/16-chat-mcp-diseno.md) · roadmap: [`docs/17-roadmap-chat-mcp.md`](../docs/17-roadmap-chat-mcp.md).
+Cómo está modelado y qué hace cada módulo: [`docs/`](./docs/00-indice.md). Decisiones de producto: [`docs/16-chat-mcp-diseno.md`](../docs/16-chat-mcp-diseno.md) · roadmap: [`docs/17-roadmap-chat-mcp.md`](../docs/17-roadmap-chat-mcp.md).
 
 Otra plataforma = **otra instancia** (Compose + env). Misma imagen. Cero strings `GYMBRO_*`.
 

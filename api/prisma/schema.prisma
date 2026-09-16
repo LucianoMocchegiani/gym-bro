@@ -493,7 +493,7 @@ model Pack {
   active          Boolean       @default(true)
   /// Clave en `credentialConfigurationsSupported` del issuer Kuatia (`pack_{id}`).
   kuatiaConfigurationId String?   @map("kuatia_configuration_id")
-  /// VCT OID4VCI (`urn:gymbro:pack:{id}`).
+  /// VCT OID4VCI (`urn:faciliter:pack:{id}`).
   kuatiaVct             String?   @map("kuatia_vct")
   kuatiaSyncedAt        DateTime? @map("kuatia_synced_at")
   /// Último error de sync metadata (soft-fail).

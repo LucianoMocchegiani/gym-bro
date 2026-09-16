@@ -65,7 +65,7 @@ Puerta (afiliado escanea local o gym escanea)
 
 - `staffId`, `staffName`, `tenantId` (+ `tenantName` opcional)
 - Roles **no** van en la VC; se leen de DB al verificar (`active`)
-- `configurationId` = `staff_{tenantId}`; `vct` = `urn:gymbro:staff:{tenantId}`
+- `configurationId` = `staff_{tenantId}`; `vct` = `urn:faciliter:staff:{tenantId}`
 - Emisión Admin: `POST /staff/:id/credential-offers`; persistencia `staff_credential_offers`
 - Puerta: mismo QR; DCQL OR pack|staff; reason `ok_staff` / `staff_inactivo`
 - Fichaje horario: diferido (backlog)
@@ -109,7 +109,7 @@ La **evaluación fina** (deuda real, cupo sesión, reingreso) puede seguir en Gy
 ## 5. Orden de implementación
 
 1. **[x] Spike:** Compose issuer+verifier (sin RabbitMQ) + al crear tenant GymBro → Quark + soft-fail + `POST …/quark/provision` + UI Super.  
-2. **[x] Pack → configuration** en metadata issuer (`pack_{id}` / `urn:gymbro:pack:{id}`; soft-fail; `packs.quark_*`).  
+2. **[x] Pack → configuration** en metadata issuer (`pack_{id}` / `urn:faciliter:pack:{id}`; soft-fail; `packs.quark_*`).  
 3. **[x] Offer al pago** (API): al pack APPROVED → `POST …/openid4vc/offer` + tabla `credential_offers` slim + `GET /me/credential-offers` (soft-fail). Re-oferta: `POST /members/:id/credential-offers` del contrato ACTIVE que cubre hoy (sin cobro).  
    - Claims VC (solo en llamada Quark): `memberId`, `memberName`, `tenantId`, `tenantName`, `packId`, `packName`, `validFrom`, `validUntil`.  
    - **Bandeja Flutter:** Home lista `PENDING` + Aceptar con `identity_core_dart` (secreto device-bound). Tras ≥1 VC → `POST /me/credential-offers/:id/accept` → `ACCEPTED`. Si el issuer responde vencido/inválido → `POST …/fail` → `FAILED` (sale de bandeja; `lastError` staff). Issuer público: `https://issuer.pruebasaproduccunon.uno` (tunnel).  
@@ -134,7 +134,7 @@ Hasta (4) inclusive el stub quedó fuera de producción.
 
 ## 7. Abierto (no bloquea el diseño)
 
-- `vct` / `configurationId`: **cerrado** — `pack_{packId}` y `urn:gymbro:pack:{packId}`.  
+- `vct` / `configurationId`: **cerrado** — `pack_{packId}` y `urn:faciliter:pack:{packId}`.  
 - ¿Drop-in comparte configuration genérica o tipo propio?  
 - Tolerancia en puerta: **cerrado** en GymBro (días desde `endsAt`); claim `graceUntil` / segunda VC sigue opcional.  
 - Hosting issuer/verifier: **cerrado** — Kuatia en dominio (no Compose local).

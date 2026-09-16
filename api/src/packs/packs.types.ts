@@ -31,7 +31,7 @@ export type PackDetail = {
   components: PackComponentDetail[];
   /** Clave en `credentialConfigurationsSupported` (`pack_{id}`). */
   kuatiaConfigurationId: string | null;
-  /** VCT (`urn:gymbro:pack:{id}`). */
+  /** VCT (`urn:faciliter:pack:{id}`). */
   kuatiaVct: string | null;
   kuatiaSyncedAt: Date | null;
   /** Soft-fail de sync; null si OK o nunca intentado. */

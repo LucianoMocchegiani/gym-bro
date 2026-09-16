@@ -13,7 +13,7 @@ Roadmap de épicas históricas: [11-roadmap-mvp.md](./11-roadmap-mvp.md). Diferi
 | # | Prioridad | Tipo | Estado hoy |
 |---|-----------|------|------------|
 | P1 | Molinetes / hardware de puerta | Diseño + adapters | En backlog acceso; sin spike de marcas |
-| P2 | Débito automático MONTHLY | QA (código ya está) | Implementado; falta probar de punta a punta |
+| P2 | Débito automático MONTHLY | Diseño + código | **Diseño 2026-09-15:** suscripción MP + link. Código viejo (tarjeta+job) a reemplazar; QA P9 del diseño anterior no aplica |
 | P3 | Landing + pricing + SEO | Comercial / web pública | Landing + SEO en el apex; precio a convenir; legales borrador |
 | P4 | Tokens y costo OpenRouter | Tope C7 + insumo de pricing | Tope C7 pendiente; no hay costo por gym |
 | P5 | Migración de datos (Excel + IA) | Ops / onboarding | El **último**; puede no existir en el primer piloto |
@@ -44,15 +44,15 @@ Necesidades HW/SW: [19-puerta-molinete-hw-sw.md](./19-puerta-molinete-hw-sw.md).
 
 ---
 
-## P2 — Débito automático (probar que ande)
+## P2 — Débito automático (suscripción MP)
 
-No es feature nueva. Diseño cerrado (RN-PAG-013..016, CU-PAG-008..010). UI en Caja (`/caja?memberId=&vista=debitos`).
+Diseño reabierto **2026-09-15** (RN-PAG-013..016, CU-PAG-008..010): Mercado Pago cobra con **plan + preapproval**; Caja genera `init_point`; contrato al webhook. UI `/caja?memberId=&vista=debitos`.
 
-Hay que **correr** el flujo con MP de verdad (o sandbox serio): alta del mandato, cobro el día de `endsAt`, fallo de tarjeta, baja, que no cobre si el carrito no era MONTHLY+MP.
+El código en repo **todavía** es tarjeta guardada + job. Hay que **reemplazarlo**, no solo “probar P9 del diseño 2026-09-01”.
 
-Dependencia ops: [E5 validar MP live](./11-roadmap-mvp.md) — sin webhook público el débito no se puede firmar como “anda”.
+Dependencia: producto Suscripciones + webhooks en la app MP del gym; [E5 MP live](./11-roadmap-mvp.md).
 
-Checklist: `docs/08-casos-prueba-manuales.md` (P9…).
+Checklist: `docs/08-casos-prueba-manuales.md` (P9… P9j).
 
 ---
 

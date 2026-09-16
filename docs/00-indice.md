@@ -47,6 +47,7 @@ Reglas relacionadas
 | [14-auditoria-roadmap-vs-codigo-2026-08-13.md](./14-auditoria-roadmap-vs-codigo-2026-08-13.md) | Contraste roadmap MVP vs API/web/mobile | Viva (corte 2026-08-13) |
 | [15-kuatia-deuda-rename.md](./15-kuatia-deuda-rename.md) | Deuda rename/SDK Kuatia; path `identity_core_dart` | Viva |
 | [16-chat-mcp-diseno.md](./16-chat-mcp-diseno.md) | Asistente Admin: `chat-api` portable + MCP GymBro + drawer; diseño cerrado (C7: chips; tope de uso pendiente) | Cerrado (diseño) |
+| [`chat-api/docs/`](../chat-api/docs/00-indice.md) | Implementación de `chat-api`: modelo, módulos, flujos HTTP (no C-producto) | Viva |
 | [17-roadmap-chat-mcp.md](./17-roadmap-chat-mcp.md) | Tareas ordenadas del asistente (C0–C7); post-MVP | Borrador |
 | [18-prioridades-cierre-mvp.md](./18-prioridades-cierre-mvp.md) | Prioridades para un MVP vendible (molinetes, débito QA, landing/SEO, tokens, migración) | Viva |
 | [19-puerta-molinete-hw-sw.md](./19-puerta-molinete-hw-sw.md) | Molinete: BOM hardware + software (relé, agente, Kuatia nativo, DNI/huella opcionales) | Borrador |

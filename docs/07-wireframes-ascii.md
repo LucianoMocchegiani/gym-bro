@@ -264,23 +264,26 @@ Devolver un cobro (picker de ítems del cart) vive en **Cierre** (`/arqueo`), no
 +----------------------------------+
 ```
 
-Pestaña **Débitos** (post-MVP, CU-PAG-008..010). Ficha afiliado: atajo `/caja?memberId=&vista=debitos`.
+Con tilde débito: el botón es **Generar link de suscripción** (`init_point` del preapproval), no Preference de carrito ni Brick.
+
+Pestaña **Débitos** (CU-PAG-008..010). Ficha: `/caja?memberId=&vista=debitos`.
 
 ```text
 +----------------------------------------------------------------+
 | Caja   [ Cobro | Débitos ]     Afiliado: Perez (desde ficha)   |
 |----------------------------------------------------------------|
-| Cola: a debitar hoy | reintentando | fallidos                  |
-| Perez   MONTHLY Yoga   endsAt hoy   reintento 2/3   (abrir)    |
+| Cola: pendiente checkout | activos | fallidos                  |
+| Perez   MONTHLY Yoga   autorizado   próximo cobro MP   (abrir) |
 |----------------------------------------------------------------|
 | Panel Perez                                                    |
 | Mandato: activo | Pack próximo: [ Yoga mensual v ]             |
-| Tarjeta: ****4242  Último error: —                             |
-| (Cobrar ahora)  (Autorizar tarjeta)  (Dar de baja)             |
+| Link (si pendiente): copiar / abrir                            |
+| Último error MP: —                                             |
+| (Generar / regenerar link)  (Dar de baja)                      |
 +----------------------------------------------------------------+
 ```
 
-“Autorizar tarjeta” solo si hay MONTHLY vigente sin tarjeta. Efectivo no muestra el checkbox de débito.
+Efectivo no muestra el tilde. “Generar link” sin cobro solo si hay MONTHLY vigente. No hay “Cobrar ahora”.
 
 ---
 

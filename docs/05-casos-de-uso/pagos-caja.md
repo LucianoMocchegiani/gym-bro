@@ -138,44 +138,46 @@
 
 **Actor:** Staff con permiso de caja
 
-**Precondiciones:** Cuenta MP del gym. Pack `MONTHLY`. Staff Caja.
+**Precondiciones:** Cuenta MP del gym. Pack `MONTHLY`. Staff Caja. App MP con Suscripciones + webhooks.
 
-**Flujo principal (cobro + alta):**
-1. En Caja, afiliado elegido, carrito = **un** pack MONTHLY, medio **Mercado Pago**.
-2. Staff tilda débito automático (consentimiento a la vista) y cobra.
-3. Checkout tokeniza la tarjeta (Customer + Card en la cuenta del gym), crea el cobro del mes (mismo pipeline CU-PAG-001) y, al APPROVED, deja MandatoDebito `activo`.
-4. Auditoría: quién tildó, cuándo, pack, afiliado.
+**Flujo principal (primer mes + suscripción):**
+1. En Caja, afiliado elegido, carrito = **un** pack MONTHLY, medio **Mercado Pago**, tilde de débito (consentimiento).
+2. Sistema asegura un `preapproval_plan` del pack (lo crea o actualiza al precio de catálogo).
+3. Crea `preapproval` `pending` (cuenta del gym) y muestra **link** `init_point` (copiar / abrir; **sin** Brick ni PAN en Faciliter). Mandato `pendiente_checkout`.
+4. El socio completa el checkout en Mercado Pago. Webhook: suscripción `authorized` + primer cobro approved → Transaction PACK → contrato (CU-PAG-001 / RN-CON-001). Mandato `activo`.
+5. Auditoría: quién tildó, cuándo, pack, afiliado, id de preapproval.
 
-**Flujo alternativo (solo autorización):**
-1. El afiliado ya tiene MONTHLY vigente (p. ej. pagó en efectivo) y no hay tarjeta.
-2. Staff abre pestaña Débitos (o llega desde la ficha: `/caja?memberId=&vista=debitos`).
-3. “Autorizar tarjeta” **sin** cobrar el mes. Al guardar la tarjeta → mandato `activo`. El job cobra en el `endsAt` actual.
+**Flujo alternativo (solo autorización, mes ya pagado):**
+1. MONTHLY vigente (p. ej. efectivo) y no hay mandato abierto.
+2. Pestaña Débitos (`/caja?memberId=&vista=debitos`): “Generar link de suscripción”.
+3. Mismo `init_point` con `start_date` = `endsAt` del contrato. Autoriza ahora; el primer cobro lo hace MP en esa fecha (CU-PAG-009).
 
 **Errores:**
-- Carrito mixto, más de un ítem, o no MONTHLY → no hay checkbox.
-- Medio efectivo → no hay checkbox (RN-PAG-014).
-- MP no configurado / tokenización rechazada → no hay mandato; el cobro del mes sigue las reglas de CU-PAG-001 si ya se inició.
+- Carrito mixto, más de un ítem, o no MONTHLY → no hay tilde.
+- Medio efectivo → no hay tilde.
+- MP no configurado / link rechazado → no hay mandato; si no hubo tilde, el cobro sigue CU-PAG-001.
+- Checkout abandonado → mandato `pendiente_checkout`; se puede regenerar link.
 
-**Postcondiciones:** Mandato activo o nada. Contrato del mes solo si hubo pago APPROVED.
+**Postcondiciones:** Mandato pendiente o activo. Contrato del mes solo si hubo cobro MP approved.
 
 **Reglas relacionadas:** RN-PAG-013, RN-PAG-014, RN-CON-001
 
 ---
 
-## CU-PAG-009 Ejecutar débito (job o cobrar ahora)
+## CU-PAG-009 Aplicar cobro de suscripción (webhook)
 
-**Actor:** Sistema (job) o Staff (Caja)
+**Actor:** Sistema (notificación MP)
 
-**Precondiciones:** Mandato `activo` o `reintentando`; tarjeta guardada; día de cobro = `endsAt` del contrato vigente o reintento (+1 / +2 días).
+**Precondiciones:** Mandato con `preapproval` en la cuenta del gym.
 
 **Flujo principal:**
-1. Job (timezone del gym) o staff “Cobrar ahora”.
-2. Idempotencia por periodo: `mandato + endsAt`. Si ya hay PENDING o APPROVED de ese periodo → no duplica (RN-PAG-005).
-3. Crea Transaction del pack del mandato al **precio de catálogo actual** → Payment MP con la tarjeta guardada (sin Preference de link).
-4. Webhook APPROVED → contrato nuevo (RN-CON-001) + comprobante; mandato sigue `activo`; próximo cobro = nuevo `endsAt`.
-5. Rechazo: mandato `reintentando` o `fallido` (si era el 3.er intento); Caja muestra el error; aplica RN-ACC-005 si el pack ya venció.
+1. MP cobra un ciclo (o reintenta). Llega `subscription_authorized_payment` y/o `payment`.
+2. GymBro consulta el recurso por id (no confía solo en el body). Si no está **approved**, no crea contrato; guarda error en el mandato si aplica.
+3. Idempotencia: mismo cobro MP / mismo ciclo → no duplica Transaction ni contrato (RN-PAG-005).
+4. Approved → Transaction PACK (monto del plan) → mismo pipeline que Caja (comprobante, RN-CON-001). Mandato `activo`; próximo cobro = el que informe MP.
+5. Si MP deja la suscripción fallida/cancelada por impago → mandato `fallido`; aplica RN-ACC-005.
 
-**Errores:** Tarjeta vencida / fondos / MP → fallo visible en pestaña Débitos. No se crea contrato.
+**Errores:** Webhook perdido → reconciliar después (fuera del happy path). No hay job que dispare Payment ni botón “Cobrar ahora”.
 
 **Reglas relacionadas:** RN-PAG-015, RN-PAG-004, RN-PAG-005, RN-CON-001, RN-ACC-005
 
@@ -188,13 +190,14 @@
 **Precondiciones:** Caja.
 
 **Flujo principal:**
-1. Pestaña **Débitos**: lista a debitar hoy, reintentos, fallidos. Elegir fila abre el panel del afiliado (mismo que si `?memberId=&vista=debitos`).
-2. Panel: estado, pack del próximo cobro, último error, “Cobrar ahora” (CU-PAG-009), “Dar de baja”, “Próximo pack” (B).
-3. Baja → mandato `baja`; contrato vigente no se toca.
-4. Cambio de pack → el job del próximo `endsAt` cobra B; A se deja vencer (sin dos MONTHLY a la vez).
-5. Ficha del afiliado: no duplica esta UI; atajo a este flujo (CU-AFI-004).
+1. Pestaña **Débitos**: cola por estado (pendiente de checkout, activos, fallidos). Elegir fila abre el panel (`?memberId=&vista=debitos`).
+2. Panel: estado, pack, link si sigue pendiente, último error MP, “Dar de baja”, “Próximo pack” (B).
+3. Baja → `cancelled` en MP + mandato `baja`; contrato vigente no se toca.
+4. Cambio de pack A→B: cancelar preapproval A; alta de B (CU-PAG-008) para el **próximo** cobro; A se deja vencer (sin prorrateo, sin dos MONTHLY).
+5. Precio de catálogo del pack: actualizar el `preapproval_plan` (suscriptores del mismo pack).
+6. Ficha: no duplica esta UI; atajo (CU-AFI-004).
 
-**Errores:** Sin permiso → denegado.
+**Errores:** Sin permiso → denegado. MP no cancela → error visible; reintentar baja.
 
 **Reglas relacionadas:** RN-PAG-013, RN-PAG-016, RN-PAG-008
 

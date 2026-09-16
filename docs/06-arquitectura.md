@@ -158,7 +158,7 @@ Staff GET /access/oid4vp/session/:id (poll)
   → evaluateAndPersist → access_attempts
 ```
 
-Identidad = claim `memberId` de la VC de pack (`urn:gymbro:pack:{id}`). Sin stub de vínculo ni `stub-venue`. Claims se mapean en GymBro (no en Quark).
+Identidad = claim `memberId` de la VC de pack (`urn:faciliter:pack:{id}`). Sin stub de vínculo ni `stub-venue`. Claims se mapean en GymBro (no en Quark).
 
 ### 6.2 Stubs retirados
 
@@ -176,7 +176,7 @@ Diseño: [12-acceso-quark-oid4-diseno.md](./12-acceso-quark-oid4-diseno.md). Doc
 - Auth admin: header `x-api-key` (`iss_live_…` / `ver_live_…`) en `HttpQuarkAdminAdapter`.
 - Al `POST /api/tenants`: solo DB GymBro + **bind** de wallet IDs compartidos (`READY` / `MISSING` si falta env). No crea issuer/verifier.
 - Reintento Super: `POST /api/tenants/:id/quark/provision` (mismo bind).
-- Create/update pack → `PATCH …/records/metadata` del issuer compartido (`pack_{id}` / `urn:gymbro:pack:{id}`; soft-fail en `packs.quark_*`).
+- Create/update pack → `PATCH …/records/metadata` del issuer compartido (`pack_{id}` / `urn:faciliter:pack:{id}`; soft-fail en `packs.quark_*`).
 - Offer / VP: mismos flujos, contra IDs fijos de env.
 - Columnas/módulo `quark_*` se mantienen por compatibilidad de schema/API.
 
@@ -255,26 +255,31 @@ Staff POST /transactions/:id/refunds (transaction_items.refund)
 
 ### 7.5 Débito automático MONTHLY
 
-No es suscripción/plan de MP. GymBro guarda la tarjeta (Customer + Card, misma cuenta del gym) y un cron Nest cobra con Payments API el día de `endsAt` (timezone BA).
+Suscripción Mercado Pago (plan + preapproval) en la cuenta del gym. GymBro no guarda tarjeta ni corre un cron de cobro. El contrato sigue al cobro approved de MP.
+
+**Código (2026-09-15):** aún Customer+Card+Payments+job. Este § es el **diseño a implementar**.
 
 ```text
 Alta cobro (CU-PAG-008):
   Caja carrito = 1 MONTHLY + MP + tilde débito
-  → Card Payment Brick (public key) → token
-  → POST /members/:id/debit-mandates { chargeNow: true }
-  → Customer + Card + Payment → webhook interno APPROVED → mandato ACTIVE
+  → preapproval_plan del pack (precio catálogo)
+  → POST /preapproval pending → init_point (copiar/abrir)
+  → mandato PENDIENTE_CHECKOUT
+  → socio paga en MP
+  → webhook subscription_preapproval + authorized_payment/payment
+  → GET recurso → APPROVED → Transaction PACK → contrato; mandato ACTIVE
 
 Alta sin cobro:
-  Débitos “autorizar tarjeta” { chargeNow: false } si hay MONTHLY vigente
+  Débitos “Generar link” { start_date = endsAt del MONTHLY vigente }
 
-Job / Cobrar ahora (CU-PAG-009):
-  cron '20 * * * *' BA + POST /debit-mandates/:id/charge
-  idempotency = debit:{mandateId}:{YYYY-MM-DD}
-  → Transaction PACK precio catálogo → Payment card_id
-  reintentos: día 0, +1, +2 → mandato FAILED + RN-ACC-005
+Cobro recurrente (CU-PAG-009):
+  lo dispara MP; webhook → mismo pipeline que Caja
+  reintentos = MP; sin POST .../charge; sin DebitJobService
 
 Caja /caja?memberId=&vista=debitos (CU-PAG-010)
-Devolver el cobro que inscribió → cancelByEnrolledItems
+  baja = PUT preapproval cancelled
+  cambio pack = cancel A + alta B
+  devolver cobro que inscribió → cancelByEnrolledItems + cancel MP
 ```
 
 ## 8. Módulo catálogo / reservas

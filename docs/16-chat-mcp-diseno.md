@@ -1,6 +1,6 @@
 # Asistente chat + MCP — diseño
 
-**Estado:** Cerrado (diseño; **sin código**). Árboles de archivos = **acercamiento**: al implementar se pueden unir, partir o renombrar archivos sin reabrir las decisiones de producto.  
+**Estado:** Cerrado (diseño). El código vive en `chat-api/`; cómo está modelado hoy: [`chat-api/docs/`](../chat-api/docs/00-indice.md). Árboles de archivos de este doc = **acercamiento** histórico: al implementar se pudieron unir, partir o renombrar archivos sin reabrir las decisiones de producto.  
 **Fecha:** 2026-09-02 (cierre 2026-09-04)  
 **Fuera de MVP.** La IA está explícitamente out en el [documento maestro](./01-documento-maestro.md).  
 **Backlog:** [admin.md](./99-backlog-post-mvp/admin.md) · [tecnico.md](./99-backlog-post-mvp/tecnico.md)  

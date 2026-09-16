@@ -49,7 +49,8 @@ export class AccessOid4VpService {
    * Crea authorization request OID4VP (pack afiliado **o** VC staff).
    *
    * @remarks DCQL: dos credentials + `credential_sets` (OR). Staff VCT =
-   * `urn:gymbro:staff:{tenantId}`.
+   * `urn:faciliter:staff:{tenantId}`. Ids locales del query: `faciliter_pack` /
+   * `faciliter_staff` (no son el vct ni el configurationId de Kuatia).
    */
   async createRequest(tenantId: string): Promise<AccessOid4VpRequestResult> {
     const verifierWalletId = this.requireVerifierWallet();
@@ -61,7 +62,7 @@ export class AccessOid4VpService {
     const staffVct = staffKuatiaIds(tenantId).vct;
 
     const packCredential: Record<string, unknown> = {
-      id: 'gymbro_pack',
+      id: 'faciliter_pack',
       format: 'dc+sd-jwt',
       claims: [
         { path: ['memberId'] },
@@ -73,7 +74,7 @@ export class AccessOid4VpService {
     }
 
     const staffCredential: Record<string, unknown> = {
-      id: 'gymbro_staff',
+      id: 'faciliter_staff',
       format: 'dc+sd-jwt',
       meta: { vct_values: [staffVct] },
       claims: [
@@ -86,7 +87,7 @@ export class AccessOid4VpService {
       credentials: [packCredential, staffCredential],
       credential_sets: [
         {
-          options: [['gymbro_pack'], ['gymbro_staff']],
+          options: [['faciliter_pack'], ['faciliter_staff']],
           required: true,
         },
       ],

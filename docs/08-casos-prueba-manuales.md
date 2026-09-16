@@ -75,18 +75,20 @@ Leyenda resultado: `P` pass · `F` fail · `B` bloqueado · `-` no aplica
 | P7 | Admin devolución cart (parcial o todo) | Derechos de los ítems elegidos caen; un egreso + un comprobante REFUND; se puede devolver el resto después | CU-PAG-005 | |
 | P8 | Arqueo con diferencia | Se registra diff; la grilla de Cierre es la misma que Reportes (categoría + tipo + staff + comprobante) | CU-PAG-003 | |
 
-### Débito automático (post-MVP — diseño; no correr hasta implementar)
+### Débito automático (post-MVP — diseño 2026-09-15; no correr contra el código viejo)
 
 | # | Caso | Esperado | RN/CU | R |
 |---|------|----------|-------|---|
-| P9 | Tilde débito con carrito mixto o CASH | No hay checkbox | RN-PAG-014 | |
-| P9b | Cobro MP 1 MONTHLY + tilde | Tokeniza, cobra el mes, mandato activo; auditoría | CU-PAG-008 | |
-| P9c | Socio con MONTHLY efectivo: autorizar tarjeta | Sin cobro; job en `endsAt` | CU-PAG-008 | |
-| P9d | Job el día de `endsAt` | Precio catálogo actual; contrato nuevo; no duplica si PENDING | CU-PAG-009 | |
-| P9e | MP rechaza 3 veces (día 0, +1, +2) | Mandato fallido; tolerancia/deuda como hoy | RN-PAG-015 | |
-| P9f | Baja débito | No cobra de nuevo; contrato vigente sigue | CU-PAG-010 | |
-| P9g | Devolver cobro que inscribió | Mandato a baja | RN-PAG-016 | |
+| P9 | Tilde débito con carrito mixto o CASH | No hay tilde | RN-PAG-014 | |
+| P9b | MP 1 MONTHLY + tilde | Link `init_point` de suscripción (no Brick); al pagar en MP: mandato activo + contrato del primer ciclo; auditoría | CU-PAG-008 | |
+| P9c | Socio con MONTHLY efectivo: generar link | Autoriza; primer cobro en `endsAt` (`start_date`); sin cobro ahora | CU-PAG-008 | |
+| P9d | MP cobra el ciclo | Contrato nuevo; no duplica si el mismo payment/ciclo ya se aplicó | CU-PAG-009 | |
+| P9e | MP rechaza y deja fallido | Mandato fallido; tolerancia/deuda como hoy | RN-PAG-015 | |
+| P9f | Baja débito | Cancela preapproval; contrato vigente sigue | CU-PAG-010 | |
+| P9g | Devolver cobro que inscribió | Mandato a baja + cancel en MP | RN-PAG-016 | |
 | P9h | Ficha → Caja débitos | `/caja?memberId=&vista=debitos`; no hay UI de mandato en la ficha | CU-AFI-004 | |
+| P9i | Cambio de pack A→B | Cancela A; alta B para el próximo cobro; sin prorrateo | RN-PAG-016 | |
+| P9j | Cambio de precio del pack | Se actualiza el `preapproval_plan` | RN-PAG-013 | |
 
 ---
 

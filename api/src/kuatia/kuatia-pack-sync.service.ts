@@ -9,7 +9,7 @@ const MAX_ERROR_LEN = 500;
 /**
  * IDs canónicos de una configuration OID4VCI por pack.
  *
- * @remarks `configurationId = pack_{packId}`; `vct = urn:gymbro:pack:{packId}`.
+ * @remarks `configurationId = pack_{packId}`; `vct = urn:faciliter:pack:{packId}`.
  * @see docs/12-acceso-quark-oid4-diseno.md
  */
 export function packKuatiaIds(packId: string): {
@@ -18,7 +18,7 @@ export function packKuatiaIds(packId: string): {
 } {
   return {
     configurationId: `pack_${packId}`,
-    vct: `urn:gymbro:pack:${packId}`,
+    vct: `urn:faciliter:pack:${packId}`,
   };
 }
 
