@@ -586,7 +586,7 @@ Pase manual: el personal con permiso deja pasar a alguien que la regla no dejar�
 
 Pestañas: **Inicio | Acceso | Ajustes**.
 
-- Inicio: cuenta, pack, atajos Sesiones / Tienda.
+- Inicio: cuenta, pack (créditos agrupados; clase suelta usada no se lista), atajos Sesiones / Tienda.
 - Sesiones: calendario, día, mis clases.
 - Tienda: pestaña Packs y pestaña Sesiones (drop-in), carrito, historial.
 - Acceso: credencial / QR.

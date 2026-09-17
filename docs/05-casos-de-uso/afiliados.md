@@ -101,7 +101,7 @@ La credencial de puerta **no** se emite en el alta: sale al cobrar un pack (CU-C
 
 **Flujo principal:**
 1. Afiliado abre perfil / cuenta / Inicio.
-2. Sistema muestra **packs vigentes hoy** (contrataciones ACTIVE cuya vigencia incluye la fecha actual), créditos por servicio, deuda, reservas próximas.
+2. Sistema muestra **packs vigentes hoy** (contrataciones ACTIVE cuya vigencia incluye la fecha actual), agrupados por pack: créditos sumados, sin card si el saldo de sesiones es 0 y no hay acceso libre. Deuda y reservas próximas aparte.
 3. Contrataciones de otros períodos (pasado / futuro apilado) no entran en esta vista; van a un **historial de compras** (backlog).
 
 **Postcondiciones:** Solo datos propios.

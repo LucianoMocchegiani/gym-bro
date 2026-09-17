@@ -199,7 +199,7 @@ Detalle: [14-auditoria-roadmap-vs-codigo-2026-08-13.md](./14-auditoria-roadmap-v
 - [x] Login afiliado
   - Flutter: slug + email/password; API `tenantSlug` (o `tenantId`); sesión secure storage + refresh
 - [x] Home / estado de cuenta
-  - `GET /me/account?coverage=current`; packs vigentes, créditos, deuda, próximas reservas (lectura)
+  - `GET /me/account?coverage=current`; Inicio agrupa por pack (créditos sumados; oculta drop-in en 0), deuda, próximas reservas
   - Nav real: **Inicio · Acceso · Ajustes** (tema claro/oscuro)
 - [x] Acceso + Credenciales (SSI)
   - Escanear OID4VCI/VP + bandeja offers (`accept`/`fail`) + `identity_core_dart`

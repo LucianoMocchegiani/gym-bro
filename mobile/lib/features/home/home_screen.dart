@@ -171,7 +171,7 @@ class _ContractedPacks extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    final packs = account.activeContracts;
+    final packs = account.homePacks;
     final alDia = account.debtStatus == 'AL_DIA';
 
     return Column(
@@ -208,7 +208,7 @@ class _ContractedPacks extends StatelessWidget {
         else
           for (var i = 0; i < packs.length; i++) ...[
             if (i > 0) const SizedBox(height: 10),
-            _PackCard(contract: packs[i]),
+            _PackCard(pack: packs[i]),
           ],
       ],
     );
@@ -216,14 +216,14 @@ class _ContractedPacks extends StatelessWidget {
 }
 
 class _PackCard extends StatelessWidget {
-  const _PackCard({required this.contract});
+  const _PackCard({required this.pack});
 
-  final AccountContract contract;
+  final AccountPackGroup pack;
 
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    final ends = contract.endsAt;
+    final ends = pack.endsAt;
     final endsLabel = ends == null
         ? null
         : 'Hasta ${ends.toLocal().toIso8601String().split('T').first}';
@@ -246,7 +246,7 @@ class _PackCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            contract.packName,
+            pack.packName,
             style: Theme.of(context).textTheme.titleLarge,
           ),
           if (endsLabel != null) ...[
@@ -267,7 +267,7 @@ class _PackCard extends StatelessWidget {
 
   List<Widget> _serviceLines(BuildContext context) {
     final lines = <Widget>[];
-    if (contract.hasAccessLibre) {
+    if (pack.hasAccessLibre) {
       lines.add(
         const _ServiceRow(
           icon: Icons.fitness_center_outlined,
@@ -276,7 +276,7 @@ class _PackCard extends StatelessWidget {
         ),
       );
     }
-    for (final b in contract.creditBalances) {
+    for (final b in pack.creditBalances) {
       if (lines.isNotEmpty) {
         lines.add(const SizedBox(height: 8));
       }

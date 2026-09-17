@@ -34,7 +34,7 @@ Nav: Inicio | Acceso | Ajustes
 Inicio
 +----------------------------------+
 | Hola, {nombre}                   |
-| [ pack · créditos · libre ]      |
+| [ pack · créditos sumados ]      |
 | (Sesiones)  (Tienda)             |
 +----------------------------------+
 
