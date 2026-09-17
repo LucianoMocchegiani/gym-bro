@@ -16,6 +16,7 @@ La creación de registros sigue la skill:
 
 ## Índice
 
+- [2026-09-17 — Drop-in ONE_TIME y cancelar serie con crédito](./2026-09-17-dropin-one-time-cancelar-serie.md)
 - [2026-09-10 — Compose de imágenes de build y sidebar fija](./2026-09-10-compose-prod-sidebar.md)
 - [2026-09-10 — Drawer del asistente, marca pública y agenda Calendar](./2026-09-10-asistente-marca-agenda.md)
 - [2026-09-10 — Re-emitir credencial vigente, guía pública y ayuda de vistas](./2026-09-10-reemitir-guia-publica-help.md)
