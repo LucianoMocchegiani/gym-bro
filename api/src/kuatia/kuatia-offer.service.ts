@@ -54,7 +54,7 @@ export class KuatiaOfferService {
   ) {}
 
   /**
-   * Asegura un offer para el contrato (idempotente por `contractId`).
+   * Asegura un offer para el pack del contrato (una fila por afiliado+pack).
    *
    * @remarks Si ya hay PENDING con URI y no es `force`, lo reutiliza. Si FAILED
    * o `force`, reintenta Kuatia reconstruyendo claims desde el contrato.
@@ -68,8 +68,13 @@ export class KuatiaOfferService {
     contractId: string,
     options?: { force?: boolean },
   ): Promise<CredentialOfferListItem> {
-    const existing = await this.prisma.credentialOffer.findUnique({
-      where: { contractId },
+    const ctx = await this.loadContractContext(tenantId, contractId);
+    if (!ctx) {
+      throw new NotFoundException(`Contract ${contractId} not found`);
+    }
+
+    const existing = await this.prisma.credentialOffer.findFirst({
+      where: { memberId: ctx.memberId, packId: ctx.packId },
       include: {
         pack: { select: { name: true } },
         contract: { select: { startsAt: true, endsAt: true } },
@@ -91,11 +96,6 @@ export class KuatiaOfferService {
       return this.toListItem(existing, existing.pack.name, existing.contract, {
         includeLastError: true,
       });
-    }
-
-    const ctx = await this.loadContractContext(tenantId, contractId);
-    if (!ctx) {
-      throw new NotFoundException(`Contract ${contractId} not found`);
     }
 
     const { configurationId, vct } = packKuatiaIds(ctx.packId);
@@ -475,16 +475,24 @@ export class KuatiaOfferService {
       lastError,
     };
 
-    const row = input.existingId
-      ? await this.prisma.credentialOffer.update({
-          where: { id: input.existingId },
-          data,
-        })
-      : await this.prisma.credentialOffer.upsert({
-          where: { contractId: input.contractId },
-          create: data,
-          update: data,
-        });
+    let row;
+    if (input.existingId) {
+      row = await this.prisma.credentialOffer.update({
+        where: { id: input.existingId },
+        data,
+      });
+    } else {
+      const current = await this.prisma.credentialOffer.findFirst({
+        where: { memberId: input.memberId, packId: input.packId },
+        select: { id: true },
+      });
+      row = current
+        ? await this.prisma.credentialOffer.update({
+            where: { id: current.id },
+            data,
+          })
+        : await this.prisma.credentialOffer.create({ data });
+    }
 
     return this.toListItem(
       row,

@@ -15,6 +15,7 @@ import {
 import { randomBytes } from 'node:crypto';
 import { PrismaService } from '../prisma/prisma.service';
 import { MercadoPagoAccountService } from './mercadopago-account.service';
+import { PacksService } from '../packs/packs.service';
 import { SessionValidationService } from '../sessions/session-validation.service';
 import { CreateMpCartCheckoutDto, MpCartItemDto } from './dto/create-mp-cart-checkout.dto';
 import { TransactionService } from './transaction.service';
@@ -41,6 +42,7 @@ export class OnlinePaymentService {
     private readonly config: ConfigService,
     @Inject(MP_ACCOUNT_PORT) private readonly mp: MpAccountPort,
     private readonly sessionValidation: SessionValidationService,
+    private readonly packs: PacksService,
   ) {}
 
   /**
@@ -132,7 +134,8 @@ export class OnlinePaymentService {
             data: {
               tenantId,
               memberId,
-              packId: line.kind === 'PACK' ? line.refId : null,
+              packId:
+                line.kind === 'PACK' ? line.refId : (line.packId ?? null),
               sessionId: line.kind === 'DROP_IN' ? line.refId : null,
               amount: line.amount,
               status: PaymentStatus.PENDING,
@@ -220,7 +223,7 @@ export class OnlinePaymentService {
       const quantity = item.quantity ?? 1;
       if (item.kind === 'PACK') {
         const pack = await this.prisma.pack.findFirst({
-          where: { id: item.id, tenantId },
+          where: { id: item.id, tenantId, originServiceId: null },
           include: {
             components: {
               include: { service: { select: { name: true } } },
@@ -263,25 +266,30 @@ export class OnlinePaymentService {
         memberId,
         item.id,
       );
+      const dropInPack = await this.packs.ensureDropInPack(
+        tenantId,
+        session.serviceId,
+        { requireEnabled: true },
+      );
+      if (!dropInPack) {
+        throw new BadRequestException(
+          'Drop-in is not enabled for this service (set dropInPrice)',
+        );
+      }
       const dropInCopy = mpCopyForDropIn({
         serviceName: session.service.name,
         branchName: session.branch.name,
         startsAt: session.startsAt,
         endsAt: session.endsAt,
       });
-      const dropInPrice = session.service.dropInPrice;
-      if (dropInPrice == null) {
-        throw new BadRequestException(
-          'Drop-in is not enabled for this service (set dropInPrice)',
-        );
-      }
       lines.push({
         kind: 'DROP_IN',
         refId: session.id,
+        packId: dropInPack.id,
         title: dropInCopy.title,
         description: dropInCopy.description,
         quantity,
-        amount: dropInPrice,
+        amount: dropInPack.price,
         transactionItemIds: [],
       });
     }

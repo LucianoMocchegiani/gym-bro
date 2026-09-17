@@ -538,39 +538,16 @@ export class WebhookPaymentService {
       }>;
     },
   ): Promise<MpWebhookProcessResult> {
-    const actor = {
-      profileType: 'MEMBER' as const,
-      userId: transaction.memberId,
-    };
     let contractId: string | null = null;
     let reservationId: string | null = null;
 
     for (const transactionItem of transaction.transactionItems) {
-      if (transactionItem.sessionId) {
-        if (transactionItem.reservation) {
-          reservationId = transactionItem.reservation.id;
-          continue;
-        }
-        const reservation =
-          await this.reservationsService.confirmDropInFromApprovedPayment(
-            tenantId,
-            transactionItem.id,
-            actor,
-          );
-        reservationId = reservation.id;
-        continue;
+      const fulfilled = await this.fulfillApprovedItem(tenantId, transactionItem);
+      if (fulfilled.contractId) {
+        contractId = fulfilled.contractId;
       }
-      if (transactionItem.packId) {
-        if (transactionItem.contract) {
-          contractId = transactionItem.contract.id;
-          continue;
-        }
-        const contract = await this.contractsService.confirmFromApprovedPayment(
-          tenantId,
-          transactionItem.id,
-          actor,
-        );
-        contractId = contract.id;
+      if (fulfilled.reservationId) {
+        reservationId = fulfilled.reservationId;
       }
     }
 
@@ -596,62 +573,57 @@ export class WebhookPaymentService {
       reservation: { id: string } | null;
     },
   ): Promise<MpWebhookProcessResult> {
+    return this.fulfillApprovedItem(tenantId, transactionItem);
+  }
+
+  /**
+   * Contrato (si hay pack) y reserva CREDIT (si hay sesión) para un ítem APPROVED.
+   */
+  private async fulfillApprovedItem(
+    tenantId: string,
+    transactionItem: {
+      id: string;
+      memberId: string;
+      status: PaymentStatus;
+      sessionId: string | null;
+      packId: string | null;
+      contract: { id: string } | null;
+      reservation: { id: string } | null;
+    },
+  ): Promise<MpWebhookProcessResult> {
     const actor = {
       profileType: 'MEMBER' as const,
       userId: transactionItem.memberId,
     };
 
-    if (transactionItem.sessionId) {
-      if (transactionItem.reservation) {
-        return {
-          handled: true,
-          transactionItemId: transactionItem.id,
-          transactionId: null,
-          status: transactionItem.status,
-          contractId: null,
-          reservationId: transactionItem.reservation.id,
-        };
-      }
-      const reservation =
-        await this.reservationsService.confirmDropInFromApprovedPayment(
-          tenantId,
-          transactionItem.id,
-          actor,
-        );
-      return {
-        handled: true,
-        transactionItemId: transactionItem.id,
-        transactionId: null,
-        status: transactionItem.status,
-        contractId: null,
-        reservationId: reservation.id,
-      };
-    }
+    let contractId = transactionItem.contract?.id ?? null;
+    let reservationId = transactionItem.reservation?.id ?? null;
 
-    if (transactionItem.packId) {
-      if (transactionItem.contract) {
-        return {
-          handled: true,
-          transactionItemId: transactionItem.id,
-          transactionId: null,
-          status: transactionItem.status,
-          contractId: transactionItem.contract.id,
-          reservationId: null,
-        };
-      }
+    if (transactionItem.packId && !contractId) {
       const contract = await this.contractsService.confirmFromApprovedPayment(
         tenantId,
         transactionItem.id,
         actor,
       );
-      return {
-        handled: true,
-        transactionItemId: transactionItem.id,
-        transactionId: null,
-        status: transactionItem.status,
-        contractId: contract.id,
-        reservationId: null,
-      };
+      contractId = contract.id;
+    }
+
+    if (transactionItem.sessionId && !reservationId) {
+      if (!contractId) {
+        throw new BadRequestException(
+          'Drop-in payment is missing pack contract',
+        );
+      }
+      const reservation = await this.reservationsService.createForMember(
+        tenantId,
+        transactionItem.memberId,
+        {
+          sessionId: transactionItem.sessionId,
+          contractId,
+        },
+        actor,
+      );
+      reservationId = reservation.id;
     }
 
     return {
@@ -659,8 +631,8 @@ export class WebhookPaymentService {
       transactionItemId: transactionItem.id,
       transactionId: null,
       status: transactionItem.status,
-      contractId: null,
-      reservationId: null,
+      contractId,
+      reservationId,
     };
   }
 

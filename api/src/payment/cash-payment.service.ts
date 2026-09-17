@@ -1,5 +1,5 @@
 import { BadRequestException, Inject, Injectable, Logger, forwardRef, NotFoundException } from '@nestjs/common';
-import { PaymentMethod, SessionStatus, ReservationStatus, ReservationCoverage } from '@prisma/client';
+import { PaymentMethod } from '@prisma/client';
 import { TransactionService, TransactionItemInput } from './transaction.service';
 import { PaymentRegisterService } from '../payment-register/register.service';
 import { CashMovementConcept, ReceiptConcept } from '@prisma/client';
@@ -8,6 +8,8 @@ import { ReceiptsService } from '../receipts/receipts.service';
 import type { ReceiptDetail } from '../receipts/receipts.types';
 import { SessionValidationService } from '../sessions/session-validation.service';
 import { ContractsService } from '../contracts/contracts.service';
+import { PacksService } from '../packs/packs.service';
+import { ReservationsService } from '../reservations/reservations.service';
 import { AuditActor } from '../audit/audit.types';
 import { CreateCashCartDto } from './dto/create-cash-cart.dto';
 import { CashCartResult } from './payment.types';
@@ -50,6 +52,9 @@ export class CashPaymentService {
     private readonly sessionValidation: SessionValidationService,
     @Inject(forwardRef(() => ContractsService))
     private readonly contracts: ContractsService,
+    @Inject(forwardRef(() => ReservationsService))
+    private readonly reservations: ReservationsService,
+    private readonly packs: PacksService,
   ) {}
 
   /**
@@ -117,10 +122,7 @@ export class CashPaymentService {
    *
    * @description
    * - Valida sesiones (DROP_IN) y packs antes de procesar
-   * - Incrementa bookedCount para cada sesión
-   * - Crea Transaction APPROVED con todos los items
-   * - Un receipt por el total del cart
-   * - Crea contratos para PACK y reservas para DROP_IN
+   * - Crea Transaction APPROVED, contratos (pack o drop-in ONE_TIME) y reservas CREDIT
    *
    * @returns Cart APPROVED con `receipt` leído **después** del commit (el
    *   lookup no puede ir dentro de `$transaction`: `findByTransactionId` usa
@@ -144,6 +146,7 @@ export class CashPaymentService {
 
     const sessions: Array<{
       sessionId: string;
+      packId: string;
       amount: number;
       name: string;
       quantity: number;
@@ -161,10 +164,21 @@ export class CashPaymentService {
         memberId,
         item.id,
       );
+      const dropInPack = await this.packs.ensureDropInPack(
+        tenantId,
+        session.serviceId,
+        { requireEnabled: true },
+      );
+      if (!dropInPack) {
+        throw new BadRequestException(
+          'Drop-in is not enabled for this service (set dropInPrice)',
+        );
+      }
       const qty = item.quantity ?? 1;
       sessions.push({
         sessionId: session.id,
-        amount: session.service.dropInPrice!,
+        packId: dropInPack.id,
+        amount: dropInPack.price,
         name: session.service.name,
         quantity: qty,
       });
@@ -172,7 +186,7 @@ export class CashPaymentService {
 
     for (const item of packItems) {
       const pack = await this.prisma.pack.findFirst({
-        where: { id: item.id, tenantId, active: true },
+        where: { id: item.id, tenantId, active: true, originServiceId: null },
         select: { id: true, name: true, price: true, components: true },
       });
       if (!pack) {
@@ -192,124 +206,97 @@ export class CashPaymentService {
       });
     }
 
-    const result = await this.prisma.$transaction(async (tx) => {
-      for (const s of sessions) {
-        for (let q = 0; q < s.quantity; q++) {
-          const fresh = await tx.session.findFirst({
-            where: { id: s.sessionId, tenantId, status: SessionStatus.PUBLISHED },
-            select: { id: true, bookedCount: true, capacity: true },
-          });
-          if (!fresh || fresh.bookedCount >= fresh.capacity) {
-            throw new BadRequestException(
-              `Session ${s.sessionId} is full or not available`,
-            );
-          }
-          const updated = await tx.session.updateMany({
-            where: { id: fresh.id, tenantId, bookedCount: fresh.bookedCount },
-            data: { bookedCount: { increment: 1 } },
-          });
-          if (updated.count !== 1) {
-            throw new BadRequestException(
-              `Session ${s.sessionId} capacity changed concurrently`,
-            );
-          }
-        }
+    const allItems: TransactionItemInput[] = [];
+    let idx = 0;
+    for (const s of sessions) {
+      for (let q = 0; q < s.quantity; q++) {
+        allItems.push({
+          packId: s.packId,
+          sessionId: s.sessionId,
+          amount: s.amount,
+          idempotencyKey: `${idempotencyKey}-${idx++}`,
+        });
       }
+    }
+    for (const p of packs) {
+      for (let q = 0; q < p.quantity; q++) {
+        allItems.push({
+          packId: p.packId,
+          amount: p.amount,
+          idempotencyKey: `${idempotencyKey}-${idx++}`,
+        });
+      }
+    }
 
-      const allItems: TransactionItemInput[] = [];
-      let idx = 0;
-      for (const s of sessions) {
-        for (let q = 0; q < s.quantity; q++) {
-          allItems.push({
-            sessionId: s.sessionId,
-            amount: s.amount,
-            idempotencyKey: `${idempotencyKey}-${idx++}`,
-          });
-        }
-      }
-      for (const p of packs) {
-        for (let q = 0; q < p.quantity; q++) {
-          allItems.push({
-            packId: p.packId,
-            amount: p.amount,
-            idempotencyKey: `${idempotencyKey}-${idx++}`,
-          });
-        }
-      }
-
-      const totalItems = sessions.reduce((sum, s) => sum + s.quantity, 0) +
-        packs.reduce((sum, p) => sum + p.quantity, 0);
-      const totalAmount = sessions.reduce((sum, s) => sum + s.amount * s.quantity, 0) +
-        packs.reduce((sum, p) => sum + p.amount * p.quantity, 0);
-      const label = totalItems === 1
+    const totalItems =
+      sessions.reduce((sum, s) => sum + s.quantity, 0) +
+      packs.reduce((sum, p) => sum + p.quantity, 0);
+    const label =
+      totalItems === 1
         ? (sessions[0]?.name ?? packs[0]?.name ?? 'Cart')
         : `${totalItems} items`;
+    const cashConcept =
+      sessions.length > 0
+        ? CashMovementConcept.DROP_IN
+        : CashMovementConcept.PACK_CONTRACT;
+    const receiptConcept =
+      sessions.length > 0 ? ReceiptConcept.DROP_IN : ReceiptConcept.PACK_CONTRACT;
 
-      const { transaction } = await this.processPayment(tx, {
+    const { transaction } = await this.prisma.$transaction(async (tx) => {
+      return this.processPayment(tx, {
         tenantId,
         memberId,
         items: allItems,
         idempotencyKey,
         method: PaymentMethod.CASH,
-        cashConcept: CashMovementConcept.DROP_IN,
-        receiptConcept: ReceiptConcept.DROP_IN,
+        cashConcept,
+        receiptConcept,
         description: label,
         recordedByStaffId: actor.profileType === 'STAFF' ? actor.userId : null,
       });
-
-      for (const s of sessions) {
-        for (let q = 0; q < s.quantity; q++) {
-          const txItem = transaction.transactionItems.find(
-            (ti) => ti.sessionId === s.sessionId && ti.status === 'APPROVED',
-          );
-          if (!txItem) continue;
-          await tx.reservation.create({
-            data: {
-              tenantId,
-              memberId,
-              sessionId: s.sessionId,
-              transactionItemId: txItem.id,
-              status: ReservationStatus.CONFIRMED,
-              coverage: ReservationCoverage.DROP_IN,
-            },
-          });
-        }
-      }
-
-      for (const p of packs) {
-        for (let q = 0; q < p.quantity; q++) {
-          const txItem = transaction.transactionItems.find(
-            (ti) => ti.packId === p.packId && ti.status === 'APPROVED',
-          );
-          if (!txItem) continue;
-          await this.contracts.createFromTransactionItem(
-            tenantId,
-            txItem.id,
-            actor,
-          );
-        }
-      }
-
-      return { transaction };
     });
+
+    const usedItemIds = new Set<string>();
+    for (const item of transaction.transactionItems) {
+      if (item.status !== 'APPROVED' || !item.packId) {
+        continue;
+      }
+      if (usedItemIds.has(item.id)) {
+        continue;
+      }
+      usedItemIds.add(item.id);
+      const contract = await this.contracts.createFromTransactionItem(
+        tenantId,
+        item.id,
+        actor,
+      );
+      if (item.sessionId) {
+        await this.reservations.createForMember(
+          tenantId,
+          memberId,
+          { sessionId: item.sessionId, contractId: contract.id },
+          actor,
+        );
+      }
+    }
 
     let receipt: ReceiptDetail | null = null;
     try {
       receipt = await this.receiptsService.findByTransactionId(
         tenantId,
-        result.transaction.id,
+        transaction.id,
       );
     } catch {
       this.logger.warn(
-        `CASH cart ${result.transaction.id} committed without receipt`,
+        `CASH cart ${transaction.id} committed without receipt`,
       );
     }
 
     return {
-      transactionId: result.transaction.id,
-      amount: result.transaction.amount,
-      status: result.transaction.status,
-      transactionItems: result.transaction.transactionItems.map((item) => ({
+      transactionId: transaction.id,
+      amount: transaction.amount,
+      status: transaction.status,
+      transactionItems: transaction.transactionItems.map((item) => ({
         id: item.id,
         sessionId: item.sessionId,
         packId: item.packId,

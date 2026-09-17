@@ -14,10 +14,9 @@ import { ListQueryDto } from '../../common/list';
 /**
  * Alta de reserva con crédito o drop-in (CU-RES-001 / CU-RES-002).
  *
- * @remarks Default `coverage=CREDIT`. Drop-in (`DROP_IN`) es staff-only, crea
- * Payment APPROVED (stub/caja) con `idempotencyKey` y no consume créditos.
- * `method=MP` no aplica aquí: usar checkout MP drop-in.
- * `contractId` solo aplica a CREDIT.
+ * @remarks Default `coverage=CREDIT`. Drop-in va por Caja/MP (pack ONE_TIME).
+ * `method=MP` no aplica aquí: usar checkout MP.
+ * `contractId` opcional para forzar saldo.
  */
 export class CreateReservationDto {
   @IsUUID('4')

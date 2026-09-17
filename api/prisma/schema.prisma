@@ -467,6 +467,7 @@ model Service {
   tenant          Tenant                  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   branch          Branch?                 @relation(fields: [branchId], references: [id], onDelete: SetNull)
   packComponents  PackComponent[]
+  dropInPack      Pack?                   @relation("ServiceDropInPack")
   creditBalances  ContractCreditBalance[]
   sessions        Session[]
   recurrenceRules SessionRecurrenceRule[]
@@ -481,6 +482,7 @@ model Service {
 ///
 /// @remarks El `kind` (ACCESS/CREDITS/MIXED) se infiere de los componentes.
 /// `price` en pesos enteros ARS. `creditsExpireAt` null = créditos sin fecha de vencimiento de catálogo.
+/// `originServiceId` = pack espejo de drop-in (1 crédito ONE_TIME); no se lista en tienda.
 model Pack {
   id              String        @id @default(uuid()) @db.Uuid
   tenantId        String        @map("tenant_id") @db.Uuid
@@ -491,6 +493,8 @@ model Pack {
   billingPeriod   BillingPeriod @map("billing_period")
   creditsExpireAt DateTime?     @map("credits_expire_at")
   active          Boolean       @default(true)
+  /// Servicio POR_SESIONES cuyo drop-in espeja este pack. Null = pack de catálogo.
+  originServiceId String?       @unique @map("origin_service_id") @db.Uuid
   /// Clave en `credentialConfigurationsSupported` del issuer Kuatia (`pack_{id}`).
   kuatiaConfigurationId String?   @map("kuatia_configuration_id")
   /// VCT OID4VCI (`urn:faciliter:pack:{id}`).
@@ -502,6 +506,7 @@ model Pack {
   updatedAt       DateTime      @updatedAt @map("updated_at")
 
   tenant     Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  originService Service?     @relation("ServiceDropInPack", fields: [originServiceId], references: [id], onDelete: Restrict)
   components PackComponent[]
   transactionItems TransactionItem[]
   contracts  Contract[]
@@ -749,7 +754,7 @@ model Contract {
   transactionItem TransactionItem       @relation(fields: [transactionItemId], references: [id], onDelete: Restrict)
   balances     ContractCreditBalance[]
   reservations Reservation[]
-  credentialOffer CredentialOffer?
+  credentialOffers CredentialOffer[]
 
   @@index([tenantId])
   @@index([memberId])
@@ -777,17 +782,17 @@ model ContractCreditBalance {
   @@map("contract_credit_balances")
 }
 
-/// Offer OID4VCI por contrato (bandeja afiliado + re-oferta staff).
+/// Offer OID4VCI (bandeja afiliado + re-oferta staff).
 ///
-/// @remarks Soft-fail al pago APPROVED: contrato existe aunque status=FAILED.
-/// Un offer por contrato (MVP). `ACCEPTED` tras OID4VCI OK en app.
+/// @remarks Soft-fail al pago APPROVED. Una oferta por (afiliado, pack); el
+/// `contractId` apunta al contrato más reciente (drop-in ONE_TIME reusa la VC).
 /// Claims/config/vct se reconstruyen del contrato al (re)emitir.
 model CredentialOffer {
   id         String                @id @default(uuid()) @db.Uuid
   tenantId   String                @map("tenant_id") @db.Uuid
   memberId   String                @map("member_id") @db.Uuid
   packId     String                @map("pack_id") @db.Uuid
-  contractId String                @unique @map("contract_id") @db.Uuid
+  contractId String                @map("contract_id") @db.Uuid
   status     CredentialOfferStatus @default(PENDING)
   offerUri   String?               @map("offer_uri")
   lastError  String?               @map("last_error")
@@ -799,16 +804,18 @@ model CredentialOffer {
   pack     Pack     @relation(fields: [packId], references: [id], onDelete: Restrict)
   contract Contract @relation(fields: [contractId], references: [id], onDelete: Cascade)
 
+  @@unique([memberId, packId])
   @@index([tenantId])
   @@index([memberId])
   @@index([status])
+  @@index([contractId])
   @@map("credential_offers")
 }
 
 /// Reserva confirmada de una sesión (CU-RES-001 / RN-RES-001).
 ///
 /// @remarks Cobertura `CREDIT` (contrato + saldo) o `DROP_IN` (pago aprobado).
-/// Cancelación con ventana: CU-RES-003. Drop-in no reembolsa el pago en esta entrega.
+/// Cancelación con ventana: CU-RES-003. Gym cancela clase → devuelve crédito.
 /// Unique parcial SQL: una `CONFIRMED` por (`session_id`, `member_id`).
 model Reservation {
   id              String              @id @default(uuid()) @db.Uuid

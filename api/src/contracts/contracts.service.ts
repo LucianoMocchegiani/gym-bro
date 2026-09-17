@@ -328,11 +328,6 @@ export class ContractsService {
     if (!transactionItem.packId || !transactionItem.pack) {
       throw new BadRequestException('MP pack payment is missing packId');
     }
-    if (transactionItem.sessionId) {
-      throw new BadRequestException(
-        'TransactionItem looks like a drop-in checkout, not pack',
-      );
-    }
 
     const pack = transactionItem.pack;
     if (pack.components.length === 0) {
@@ -431,12 +426,6 @@ export class ContractsService {
 
     if (!transactionItem.packId || !transactionItem.pack) {
       throw new BadRequestException('TransactionItem is not a pack payment');
-    }
-
-    if (transactionItem.sessionId) {
-      throw new BadRequestException(
-        'TransactionItem looks like a drop-in, not pack',
-      );
     }
 
     const pack = transactionItem.pack;

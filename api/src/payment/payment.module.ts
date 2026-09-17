@@ -7,6 +7,7 @@ import { AuditModule } from '../audit/audit.module';
 import { PaymentRegisterModule } from '../payment-register/payment-register.module';
 import { ReceiptsModule } from '../receipts/receipts.module';
 import { RolesModule } from '../roles/roles.module';
+import { PacksModule } from '../packs/packs.module';
 import { SessionsModule } from '../sessions/sessions.module';
 import { ContractsModule } from '../contracts/contracts.module';
 import { ReservationsModule } from '../reservations/reservations.module';
@@ -25,6 +26,7 @@ import { MercadoPagoAccountController } from './mercadopago-account.controller';
     forwardRef(() => ContractsModule),
     forwardRef(() => ReservationsModule),
     SessionsModule,
+    PacksModule,
     RolesModule,
   ],
   controllers: [

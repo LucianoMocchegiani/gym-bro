@@ -5,6 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import {
+  BillingPeriod,
   ContractStatus,
   Pack,
   Prisma,
@@ -75,6 +76,7 @@ export class PacksService {
     );
     const where: Prisma.PackWhereInput = {
       tenantId,
+      originServiceId: null,
       ...(query.active !== undefined ? { active: query.active } : {}),
       ...(n.q ? { name: { contains: n.q, mode: 'insensitive' } } : {}),
     };
@@ -113,13 +115,121 @@ export class PacksService {
   async listForMember(tenantId: string): Promise<MemberPackDetail[]> {
     await this.assertTenantExists(tenantId);
     const packs = await this.prisma.pack.findMany({
-      where: { tenantId, active: true },
+      where: { tenantId, active: true, originServiceId: null },
       include: this.packInclude(),
       orderBy: { createdAt: 'desc' },
     });
     return packs
       .filter((p) => p.price >= 1 && p.components.length > 0)
       .map((p) => this.toMemberDetail(p));
+  }
+
+  /**
+   * Asegura el pack ONE_TIME de 1 crédito que espeja el drop-in del servicio.
+   *
+   * @remarks Precio = `dropInPrice`. No aparece en tienda (`originServiceId`).
+   * Si el drop-in se apaga: se desactiva (o se borra si no hay contratos).
+   */
+  async ensureDropInPack(
+    tenantId: string,
+    serviceId: string,
+    options?: { requireEnabled?: boolean },
+  ): Promise<{ id: string; price: number } | null> {
+    const service = await this.prisma.service.findFirst({
+      where: { id: serviceId, tenantId },
+    });
+    if (!service) {
+      throw new NotFoundException(`Service ${serviceId} not found in tenant`);
+    }
+
+    const enabled =
+      service.type === ServiceType.POR_SESIONES &&
+      service.dropInPrice != null &&
+      service.dropInPrice >= 1 &&
+      service.active;
+
+    const existing = await this.prisma.pack.findFirst({
+      where: { tenantId, originServiceId: serviceId },
+      include: { components: true },
+    });
+
+    if (!enabled) {
+      if (existing) {
+        const contracts = await this.prisma.contract.count({
+          where: { packId: existing.id, tenantId },
+        });
+        if (contracts === 0) {
+          await this.prisma.pack.delete({ where: { id: existing.id } });
+        } else if (existing.active) {
+          await this.prisma.pack.update({
+            where: { id: existing.id },
+            data: { active: false },
+          });
+        }
+      }
+      if (options?.requireEnabled) {
+        throw new BadRequestException(
+          'Drop-in is not enabled for this service (set dropInPrice)',
+        );
+      }
+      return null;
+    }
+
+    const name = `${service.name} — clase suelta`;
+    const price = service.dropInPrice!;
+
+    if (existing) {
+      await this.prisma.$transaction(async (tx) => {
+        await tx.pack.update({
+          where: { id: existing.id },
+          data: {
+            name,
+            price,
+            active: true,
+            billingPeriod: BillingPeriod.ONE_TIME,
+          },
+        });
+        if (existing.components.length === 0) {
+          await tx.packComponent.create({
+            data: {
+              packId: existing.id,
+              serviceId: service.id,
+              creditAmount: 1,
+            },
+          });
+        } else {
+          await tx.packComponent.updateMany({
+            where: { packId: existing.id },
+            data: { serviceId: service.id, creditAmount: 1 },
+          });
+        }
+      });
+      await this.kuatiaPackSync.syncPackConfiguration(
+        tenantId,
+        existing.id,
+        name,
+      );
+      return { id: existing.id, price };
+    }
+
+    const created = await this.prisma.pack.create({
+      data: {
+        tenantId,
+        name,
+        price,
+        billingPeriod: BillingPeriod.ONE_TIME,
+        active: true,
+        originServiceId: service.id,
+        components: {
+          create: {
+            serviceId: service.id,
+            creditAmount: 1,
+          },
+        },
+      },
+    });
+    await this.kuatiaPackSync.syncPackConfiguration(tenantId, created.id, name);
+    return { id: created.id, price };
   }
 
   private toMemberDetail(pack: PackWithComponents): MemberPackDetail {
@@ -220,6 +330,7 @@ export class PacksService {
     }
 
     const before = await this.findInTenant(tenantId, packId);
+    this.assertCatalogPack(before);
     const resolved =
       dto.components !== undefined
         ? await this.resolveComponents(tenantId, dto.components)
@@ -315,6 +426,7 @@ export class PacksService {
     totalContracts?: number;
   }> {
     const pack = await this.findInTenant(tenantId, packId);
+    this.assertCatalogPack(pack);
     const totalContracts = await this.prisma.contract.count({
       where: { packId, tenantId },
     });
@@ -396,6 +508,14 @@ export class PacksService {
     });
     if (!tenant) {
       throw new NotFoundException(`Tenant ${tenantId} not found`);
+    }
+  }
+
+  private assertCatalogPack(pack: PackWithComponents): void {
+    if (pack.originServiceId) {
+      throw new BadRequestException(
+        'Drop-in packs are managed from the service dropInPrice, not the pack catalog',
+      );
     }
   }
 

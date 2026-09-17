@@ -78,7 +78,7 @@ export function createRecurrenceRule(
 }
 
 /**
- * Desactiva la regla (no cancela sesiones ya generadas).
+ * Desactiva la regla y cancela sesiones futuras de la serie.
  */
 export function deactivateRecurrenceRule(
   ruleId: string,

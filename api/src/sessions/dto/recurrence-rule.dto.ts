@@ -59,7 +59,7 @@ export class CreateRecurrenceRuleDto {
 }
 
 /**
- * Desactivación de regla sin alterar sesiones ya materializadas.
+ * Desactivación de regla: apaga la serie y cancela sesiones futuras.
  */
 export class DeactivateRecurrenceRuleDto {
   @Equals(false)

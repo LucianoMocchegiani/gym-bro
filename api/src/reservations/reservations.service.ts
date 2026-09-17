@@ -1,7 +1,6 @@
-import {
+﻿import {
   BadRequestException,
   ConflictException,
-  ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -55,12 +54,12 @@ type ReservationWithRelations = Reservation & {
 };
 
 /**
- * Reservas con crédito o drop-in (CU-RES-001 / CU-RES-002 / RN-RES-001)
- * y cancelación (CU-RES-003).
+ * Reservas con crÃ©dito o drop-in (CU-RES-001 / CU-RES-002 / RN-RES-001)
+ * y cancelaciÃ³n (CU-RES-003).
  *
- * @remarks Drop-in: staff-only vía Caja o Mercado Pago. CASH → movimiento
- * de caja. Comprobante interno RN-PAG-009. Cancelación: CREDIT devuelve crédito;
- * DROP_IN no reembolsa (E5). Ingreso tardío RN-RES-006.
+ * @remarks Drop-in: staff-only vÃ­a Caja o Mercado Pago. CASH â†’ movimiento
+ * de caja. Comprobante interno RN-PAG-009. CancelaciÃ³n: CREDIT devuelve crÃ©dito;
+ * DROP_IN no reembolsa (E5). Ingreso tardÃ­o RN-RES-006.
  */
 @Injectable()
 export class ReservationsService {
@@ -72,7 +71,7 @@ export class ReservationsService {
   ) {}
 
   /**
-   * Lista reservas de un afiliado (paginado; próximas primero por defecto).
+   * Lista reservas de un afiliado (paginado; prÃ³ximas primero por defecto).
    */
   async listByMember(
     tenantId: string,
@@ -114,7 +113,7 @@ export class ReservationsService {
   }
 
   /**
-   * Roster de una sesión (paginado; confirmadas primero por defecto vía filtro).
+   * Roster de una sesiÃ³n (paginado; confirmadas primero por defecto vÃ­a filtro).
    *
    * @remarks Staff `reservations.write`. Default UI: `status=CONFIRMED`.
    */
@@ -165,9 +164,9 @@ export class ReservationsService {
   }
 
   /**
-   * Confirma reserva con crédito o drop-in según `coverage`.
+   * Confirma reserva con crÃ©dito (CU-RES-001).
    *
-   * @remarks Default CREDIT. DROP_IN solo staff/super (CU-RES-002).
+   * @remarks Drop-in de caja/MP crea un pack ONE_TIME y reserva CREDIT.
    */
   async createForMember(
     tenantId: string,
@@ -175,24 +174,20 @@ export class ReservationsService {
     dto: CreateReservationDto,
     actor: AuditActor,
   ): Promise<ReservationDetail> {
-    const coverage = dto.coverage ?? ReservationCoverage.CREDIT;
-    if (coverage === ReservationCoverage.DROP_IN) {
-      if (actor.profileType === 'MEMBER') {
-        throw new ForbiddenException(
-          'Drop-in reservations require staff (pay at desk)',
-        );
-      }
-      return this.createDropIn(tenantId, memberId, dto);
+    if (dto.coverage === ReservationCoverage.DROP_IN) {
+      throw new BadRequestException(
+        'Use Caja or Mercado Pago for drop-in (ONE_TIME pack + credit reservation)',
+      );
     }
     return this.createWithCredit(tenantId, memberId, dto, actor);
   }
 
   /**
-   * Confirma reserva consumiendo 1 crédito del servicio de la sesión.
+   * Confirma reserva consumiendo 1 crÃ©dito del servicio de la sesiÃ³n.
    *
-   * @remarks Elige saldo con `expiresAt` más próximo (nulls al final).
+   * @remarks Elige saldo con `expiresAt` mÃ¡s prÃ³ximo (nulls al final).
    * Incrementa `bookedCount` de forma condicional para evitar overbooking.
-   * Si la sesión ya inició, solo permite si el gym tiene ingreso tardío ON y
+   * Si la sesiÃ³n ya iniciÃ³, solo permite si el gym tiene ingreso tardÃ­o ON y
    * `endsAt` es futuro (CU-RES-006).
    */
   private async createWithCredit(
@@ -337,226 +332,76 @@ export class ReservationsService {
     }
   }
 
-  /**
-   * Drop-in por este endpoint ya no crea cobro. Usar Caja o Mercado Pago.
-   *
-   * @remarks Idempotente si la key ya tiene reserva. `STUB` deshabilitado.
-   */
-  private async createDropIn(
-    tenantId: string,
-    memberId: string,
-    dto: CreateReservationDto,
-  ): Promise<ReservationDetail> {
-    await this.assertMemberInTenant(tenantId, memberId, true);
-
-    const method = dto.method ?? PaymentMethod.STUB;
-    if (method === PaymentMethod.MP) {
-      throw new BadRequestException(
-        'Use POST /me/transaction-items/mp/cart (or Staff /members/:id/...) for Mercado Pago drop-in',
-      );
-    }
-    if (method === PaymentMethod.CASH) {
-      throw new BadRequestException(
-        'Use POST /members/:id/transaction-items/cash/cart for CASH drop-ins',
-      );
-    }
-
-    const idempotencyKey = dto.idempotencyKey?.trim();
-    if (idempotencyKey) {
-      const existingTransactionItem =
-        await this.prisma.transactionItem.findUnique({
-          where: {
-            tenantId_idempotencyKey: { tenantId, idempotencyKey },
-          },
-          include: {
-            reservation: { include: this.reservationInclude() },
-          },
-        });
-      if (existingTransactionItem?.reservation) {
-        return this.toDetail(existingTransactionItem.reservation);
-      }
-      if (existingTransactionItem && !existingTransactionItem.reservation) {
-        throw new BadRequestException(
-          'Idempotency key already used without a reservation',
-        );
-      }
-    }
-
-    throw new BadRequestException(
-      'Use Caja (efectivo) or Mercado Pago for drop-in. STUB payments are disabled.',
-    );
-  }
 
   /**
-   * Confirma reserva DROP_IN + comprobante para un pago MP ya APPROVED.
+   * Cancela reservas CONFIRMED de una sesión que el gym acaba de cancelar.
    *
-   * @remarks Idempotente si la reserva ya existe. Usado por webhook (CU-RES-001).
-   * Si el cupo se agotó tras el pago, lanza error (admin/reembolso edge case).
+   * @remarks Devuelve crédito (incl. drop-in ONE_TIME). No promociona waitlist.
+   * No aplica ventana del socio. No toca reservas si la clase ya empezó.
    */
-  async confirmDropInFromApprovedPayment(
+  async cancelReservationsForGymCancelledSession(
     tenantId: string,
-    transactionItemId: string,
+    sessionId: string,
     actor: AuditActor,
-  ): Promise<ReservationDetail> {
-    const transactionItem = await this.prisma.transactionItem.findFirst({
-      where: { id: transactionItemId, tenantId },
-      include: {
-        reservation: { include: this.reservationInclude() },
-      },
-    });
-    if (!transactionItem) {
-      throw new NotFoundException(
-        `TransactionItem ${transactionItemId} not found in tenant`,
-      );
-    }
-    if (transactionItem.reservation) {
-      return this.toDetail(transactionItem.reservation);
-    }
-    if (transactionItem.status !== PaymentStatus.APPROVED) {
-      throw new BadRequestException(
-        `TransactionItem must be APPROVED to confirm drop-in (current: ${transactionItem.status})`,
-      );
-    }
-    if (transactionItem.method !== PaymentMethod.MP) {
-      throw new BadRequestException(
-        'confirmDropInFromApprovedPayment is only for MP payments',
-      );
-    }
-    if (!transactionItem.sessionId) {
-      throw new BadRequestException('MP drop-in payment is missing sessionId');
-    }
-    if (transactionItem.packId) {
-      throw new BadRequestException(
-        'TransactionItem looks like a pack checkout, not drop-in',
-      );
-    }
-
+  ): Promise<void> {
     const session = await this.prisma.session.findFirst({
-      where: { id: transactionItem.sessionId, tenantId },
-      select: {
-        id: true,
-        status: true,
-        startsAt: true,
-        endsAt: true,
-        capacity: true,
-        bookedCount: true,
-        service: { select: { name: true } },
-      },
+      where: { id: sessionId, tenantId },
+      select: { id: true, startsAt: true },
     });
-    if (!session) {
-      throw new NotFoundException(
-        `Session ${transactionItem.sessionId} not found in tenant`,
-      );
-    }
-    if (session.status !== SessionStatus.PUBLISHED) {
-      throw new BadRequestException('Session is not published');
+    if (!session || session.startsAt.getTime() <= Date.now()) {
+      return;
     }
 
-    const existingRes = await this.prisma.reservation.findFirst({
+    const rows = await this.prisma.reservation.findMany({
       where: {
         tenantId,
-        memberId: transactionItem.memberId,
-        sessionId: session.id,
+        sessionId,
         status: ReservationStatus.CONFIRMED,
       },
-      select: { id: true },
+      include: this.reservationInclude(),
     });
-    if (existingRes) {
-      throw new ConflictException(
-        'Member already has a confirmed reservation for this session',
-      );
-    }
 
-    try {
-      await this.tenantSettings.assertSessionOpenForBooking(tenantId, session);
-
-      const reservation = await this.prisma.$transaction(async (tx) => {
-        const fresh = await tx.session.findFirst({
-          where: { id: session.id, tenantId },
-          select: {
-            id: true,
-            status: true,
-            capacity: true,
-            bookedCount: true,
-            startsAt: true,
-            endsAt: true,
-          },
-        });
-        if (!fresh || fresh.status !== SessionStatus.PUBLISHED) {
-          throw new BadRequestException('Session is not published');
-        }
-        await this.tenantSettings.assertSessionOpenForBooking(tenantId, fresh);
-        if (fresh.bookedCount >= fresh.capacity) {
-          throw new BadRequestException(
-            'Session is full; refund the MP drop-in payment',
-          );
-        }
-
-        const seat = await tx.session.updateMany({
+    for (const before of rows) {
+      await this.prisma.$transaction(async (tx) => {
+        const updated = await tx.reservation.updateMany({
           where: {
-            id: fresh.id,
+            id: before.id,
             tenantId,
-            status: SessionStatus.PUBLISHED,
-            bookedCount: fresh.bookedCount,
-          },
-          data: { bookedCount: { increment: 1 } },
-        });
-        if (seat.count !== 1) {
-          throw new ConflictException(
-            'Session capacity changed concurrently; retry',
-          );
-        }
-
-        return tx.reservation.create({
-          data: {
-            tenantId,
-            memberId: transactionItem.memberId,
-            sessionId: session.id,
-            transactionItemId: transactionItem.id,
             status: ReservationStatus.CONFIRMED,
-            coverage: ReservationCoverage.DROP_IN,
           },
-          include: this.reservationInclude(),
+          data: { status: ReservationStatus.CANCELLED },
         });
+        if (updated.count !== 1) {
+          return;
+        }
+        await tx.session.updateMany({
+          where: { id: sessionId, tenantId, bookedCount: { gt: 0 } },
+          data: { bookedCount: { decrement: 1 } },
+        });
+        if (before.creditBalanceId) {
+          await tx.contractCreditBalance.update({
+            where: { id: before.creditBalanceId },
+            data: { remaining: { increment: 1 } },
+          });
+        }
       });
-
-      const detail = this.toDetail(reservation);
       await this.audit.record({
         tenantId,
         actor,
-        action: AUDIT_ACTIONS.reservationCreate,
+        action: AUDIT_ACTIONS.reservationCancel,
         entityType: 'reservation',
-        entityId: reservation.id,
-        before: null,
-        after: this.auditSnapshot(detail),
+        entityId: before.id,
+        before: this.auditSnapshot(this.toDetail(before)),
+        after: null,
       });
-      return detail;
-    } catch (error: unknown) {
-      if (
-        error instanceof Prisma.PrismaClientKnownRequestError &&
-        error.code === 'P2002'
-      ) {
-        const again = await this.prisma.transactionItem.findUnique({
-          where: { id: transactionItemId },
-          include: {
-            reservation: { include: this.reservationInclude() },
-          },
-        });
-        if (again?.reservation) {
-          return this.toDetail(again.reservation);
-        }
-        throw new ConflictException(
-          'Member already has a confirmed reservation for this session',
-        );
-      }
-      throw error;
     }
   }
+
 
   /**
    * Cancela una reserva confirmada (CU-RES-003 / RN-RES-003 / RN-TEN-005).
    *
-   * @remarks Libera cupo. Si coverage CREDIT, devuelve 1 crédito. DROP_IN no
+   * @remarks Libera cupo. Si coverage CREDIT, devuelve 1 crÃ©dito. DROP_IN no
    * reembolsa el pago (E5). Invoca waitlist AUTO_ASSIGN. Idempotente si ya CANCELLED.
    * @param ownerMemberId Si se indica, exige que la reserva pertenezca a ese afiliado.
    *   El afiliado (actor MEMBER) valida la ventana de horas del gym; Staff/Super no.

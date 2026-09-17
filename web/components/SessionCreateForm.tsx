@@ -222,8 +222,8 @@ export function SessionCreateForm({
         <>
           <p className="muted small">
             Genera sesiones futuras (máx. 6 meses). Zona horaria:{' '}
-            {DEFAULT_RECURRENCE_TIMEZONE}. Desactivar la regla no cancela las ya
-            creadas.
+            {DEFAULT_RECURRENCE_TIMEZONE}. Desactivar cancela las clases que
+            aún no empezaron y devuelve créditos.
           </p>
           <div className="weekday-row" role="group" aria-label="Días">
             {WEEKDAY_OPTIONS.map((opt) => (

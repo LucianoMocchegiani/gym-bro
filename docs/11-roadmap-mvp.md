@@ -89,6 +89,7 @@
 
 - [x] Crear sesión puntual
 - [x] Regla de recurrencia simple
+  - desactivar cancela sesiones futuras + créditos (drop-in = pack ONE_TIME)
 - [x] Ampliar cupo
 - [x] Reservar con crédito
 - [x] Reservar drop-in (pago)

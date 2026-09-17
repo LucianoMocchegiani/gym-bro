@@ -5,7 +5,7 @@
 | Ítem | Estado | Notas |
 |------|--------|--------|
 | Recurrencias avanzadas (excepciones, feriados, “solo este lunes”) | Pendiente | MVP: regla simple tipo calendario |
-| Desactivar regla → cancelar sesiones futuras de esa serie | Pendiente | Hoy `active=false` es solo marca; las materializadas siguen. Al desactivar: cancelar `PUBLISHED` futuras de `recurrence_rule_id` (definir reservas/waitlist) |
+| Desactivar regla → cancelar sesiones futuras de esa serie | Hecho | `active=false` cancela `PUBLISHED` con `startsAt > now`; reservas CREDIT (y drop-in ONE_TIME) recuperan crédito |
 | Lista de espera modos 2/3 | Pendiente | Confirma afiliado + timeout job; confirma staff + notif. MVP: cola + AUTO_ASSIGN con crédito |
 | Políticas finas de no-show (multas, bans) | Pendiente | |
 | Multi-sede completa en UX | Pendiente | Modelo S2 desde día 1; UI después |

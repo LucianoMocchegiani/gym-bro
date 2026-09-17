@@ -25,6 +25,7 @@ import {
   ListRecurrenceRulesQueryDto,
 } from './dto/recurrence-rule.dto';
 import { RecurrenceRuleDetail } from './recurrence-rules.types';
+import { SessionsService } from './sessions.service';
 
 const MAX_RANGE_MONTHS = 6;
 
@@ -59,6 +60,7 @@ export class RecurrenceRulesService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
+    private readonly sessions: SessionsService,
   ) {}
 
   /**
@@ -192,7 +194,7 @@ export class RecurrenceRulesService {
   }
 
   /**
-   * Desactiva la regla; no cancela ni elimina sesiones ya generadas.
+   * Desactiva la regla y cancela sesiones PUBLISHED aún no empezadas.
    */
   async deactivate(
     tenantId: string,
@@ -206,6 +208,20 @@ export class RecurrenceRulesService {
     }
     if (!before.active) {
       return this.toDetail(before);
+    }
+
+    const now = new Date();
+    const future = await this.prisma.session.findMany({
+      where: {
+        tenantId,
+        recurrenceRuleId: ruleId,
+        status: SessionStatus.PUBLISHED,
+        startsAt: { gt: now },
+      },
+      select: { id: true },
+    });
+    for (const session of future) {
+      await this.sessions.cancelPublishedSession(tenantId, session.id, actor);
     }
 
     const rule = await this.prisma.sessionRecurrenceRule.update({

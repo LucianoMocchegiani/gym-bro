@@ -377,7 +377,7 @@ function RulesList() {
       <ConfirmDialog
         open={deactivateTarget !== null}
         title="Desactivar recurrencia"
-        description={`¿Desactivar la recurrencia de ${deactivateTarget?.serviceName ?? ''}? Las sesiones ya generadas no se cancelan.`}
+        description={`¿Desactivar la recurrencia de ${deactivateTarget?.serviceName ?? ''}? Se cancelan las clases que aún no empezaron y se devuelve el crédito (incluida la clase suelta).`}
         confirmLabel="Desactivar"
         tone="danger"
         busy={deactivateBusy}

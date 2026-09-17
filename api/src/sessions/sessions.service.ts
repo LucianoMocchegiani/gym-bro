@@ -4,7 +4,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { Prisma, ServiceType, Session, SessionStatus } from '@prisma/client';
+import { Prisma, ServiceType, Session, SessionStatus, WaitlistStatus } from '@prisma/client';
 import { AUDIT_ACTIONS, AuditActor } from '../audit/audit.types';
 import { AuditService } from '../audit/audit.service';
 import {
@@ -14,6 +14,7 @@ import {
   toListResult,
 } from '../common/list';
 import { PrismaService } from '../prisma/prisma.service';
+import { ReservationsService } from '../reservations/reservations.service';
 import { WaitlistService } from '../waitlist/waitlist.service';
 import {
   CreateSessionDto,
@@ -45,6 +46,7 @@ export class SessionsService {
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
     private readonly waitlist: WaitlistService,
+    private readonly reservations: ReservationsService,
   ) {}
 
   /**
@@ -312,7 +314,8 @@ export class SessionsService {
     }
 
     if (dto.status === SessionStatus.CANCELLED) {
-      data.status = SessionStatus.CANCELLED;
+      await this.cancelPublishedSession(tenantId, sessionId, actor);
+      return this.findOne(tenantId, sessionId);
     }
 
     if (
@@ -387,6 +390,54 @@ export class SessionsService {
       tenantId,
       actor,
       action: AUDIT_ACTIONS.sessionCapacityExpand,
+      entityType: 'session',
+      entityId: sessionId,
+      before: this.auditSnapshot(this.toDetail(before)),
+      after: this.auditSnapshot(detail),
+    });
+    return detail;
+  }
+
+  /**
+   * Cancela una sesión publicada: reservas (crédito de vuelta) y waitlist.
+   *
+   * @remarks Clases ya empezadas: no se tocan las reservas. CU-SER-004 serie.
+   */
+  async cancelPublishedSession(
+    tenantId: string,
+    sessionId: string,
+    actor: AuditActor,
+  ): Promise<SessionDetail> {
+    const before = await this.findInTenant(tenantId, sessionId);
+    if (before.status === SessionStatus.CANCELLED) {
+      return this.toDetail(before);
+    }
+
+    await this.reservations.cancelReservationsForGymCancelledSession(
+      tenantId,
+      sessionId,
+      actor,
+    );
+
+    await this.prisma.waitlistEntry.updateMany({
+      where: {
+        tenantId,
+        sessionId,
+        status: WaitlistStatus.WAITING,
+      },
+      data: { status: WaitlistStatus.LEFT },
+    });
+
+    const session = await this.prisma.session.update({
+      where: { id: sessionId },
+      data: { status: SessionStatus.CANCELLED },
+      include: this.sessionInclude(),
+    });
+    const detail = this.toDetail(session);
+    await this.audit.record({
+      tenantId,
+      actor,
+      action: AUDIT_ACTIONS.sessionCancel,
       entityType: 'session',
       entityId: sessionId,
       before: this.auditSnapshot(this.toDetail(before)),

@@ -11,6 +11,8 @@ export type MpCheckoutStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | 'REFUNDED';
 export type MpCartLine = {
   kind: 'PACK' | 'DROP_IN';
   refId: string;
+  /** Pack ONE_TIME del drop-in; solo `DROP_IN`. */
+  packId?: string;
   /** Título para la Preference (solo en creación; no persistido). */
   title?: string;
   /** Descripción Preference (ticket MP; el modal de compra lista sobre todo `title`). */

@@ -76,7 +76,7 @@ erDiagram
   tenants ||--o{ refund_requests : has
   members ||--o{ refund_requests : requests
   tenants ||--o{ credential_offers : issues
-  contracts ||--o| credential_offers : offers
+  contracts ||--o{ credential_offers : offers
   tenants ||--o{ staff_credential_offers : issues
   staff_users ||--o| staff_credential_offers : holds
   tenants ||--o{ access_credentials : issues
@@ -584,6 +584,7 @@ Pack vendible (CU-SER-002). `price` = pesos enteros ARS. `kind` (`ACCESS`|`CREDI
 | `kuatia_vct` | text nullable | `urn:faciliter:pack:{id}` |
 | `kuatia_synced_at` | timestamptz nullable | último PATCH metadata OK |
 | `kuatia_last_error` | text nullable | soft-fail de sync Kuatia |
+| `origin_service_id` | uuid FK unique nullable | Pack espejo drop-in (1 crédito ONE_TIME); null = catálogo |
 | `created_at` / `updated_at` | timestamptz | |
 
 Al create/update de pack (API Staff) se hace `PATCH` metadata del issuer Kuatia compartido (soft-fail).
@@ -844,18 +845,20 @@ API: Staff `PATCH /api/contracts/:id/status`; lectura en `GET /members/:id/accou
 
 ### 4.16b `credential_offers`
 
-Offer OID4VCI al contratar pack (soft-fail). Un row por `contract_id`.  
+Offer OID4VCI al contratar pack (soft-fail). Un row por `(member_id, pack_id)`; `contract_id` es el contrato más reciente.  
 Claims / `configurationId` / `vct` **no** se persisten: al (re)emitir se reconstruyen desde el contrato.
 
 | Columna | Tipo | Notas |
 |---------|------|--------|
 | `id` | uuid PK | |
 | `tenant_id` / `member_id` / `pack_id` | uuid FK | |
-| `contract_id` | uuid UK FK → `contracts` | CASCADE |
+| `contract_id` | uuid FK → `contracts` | CASCADE; no unique |
 | `status` | `CredentialOfferStatus` | `PENDING` \| `FAILED` \| `ACCEPTED` |
 | `offer_uri` | text nullable | null si FAILED |
 | `last_error` | text nullable | soft-fail |
 | `created_at` / `updated_at` | timestamptz | |
+
+**Unique:** `(member_id, pack_id)`.
 
 API slim: Member `GET /api/me/credential-offers`; Member `POST /api/me/credential-offers/:id/accept` → `ACCEPTED` (idempotente; conserva `offerUri`); Member `POST /api/me/credential-offers/:id/fail` → `FAILED` (offer vencido/inválido en wallet; conserva `offerUri`, `reason` → `lastError` staff); Staff `GET /api/members/:memberId/credential-offers` (`members.read`, incluye `lastError`); Staff `POST /api/members/:memberId/credential-offers` (`members.write`, re-emite el contrato ACTIVE que cubre hoy; no cobra). Campos list: `id`, `status`, `packId`, `packName`, `contractId`, `offerUri`, `validFrom`, `validUntil`, `createdAt`.
 
@@ -888,7 +891,7 @@ Regla semanal que materializa sesiones futuras (CU-SER-004 / RN-SER-012).
 | `timezone` | text | IANA, ej. `America/Argentina/Buenos_Aires` |
 | `starts_on` / `ends_on` | date | Rango finito máximo 6 meses |
 | `capacity` | int | ≥ 1 |
-| `active` | boolean | Desactivar no altera sesiones generadas |
+| `active` | boolean | Desactivar cancela sesiones futuras no empezadas |
 
 API Staff: `GET|POST /api/session-recurrence-rules`, `PATCH /api/session-recurrence-rules/:id/status`.
 

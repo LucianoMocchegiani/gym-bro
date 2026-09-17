@@ -19,6 +19,7 @@ import {
   ListServicesQueryDto,
   UpdateServiceDto,
 } from './dto/service.dto';
+import { PacksService } from '../packs/packs.service';
 import { ServiceDetail } from './services.types';
 
 /** Whitelist de orden para {@link ServicesService.list}. */
@@ -34,6 +35,7 @@ export class ServicesService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
+    private readonly packs: PacksService,
   ) {}
 
   /**
@@ -120,6 +122,7 @@ export class ServicesService {
       before: null,
       after: this.auditSnapshot(detail),
     });
+    await this.packs.ensureDropInPack(tenantId, service.id);
     return detail;
   }
 
@@ -186,6 +189,7 @@ export class ServicesService {
       before: this.auditSnapshot(this.toDetail(before)),
       after: this.auditSnapshot(detail),
     });
+    await this.packs.ensureDropInPack(tenantId, service.id);
     return detail;
   }
 
@@ -203,6 +207,19 @@ export class ServicesService {
     actor: AuditActor,
   ): Promise<{ deleted: true }> {
     const service = await this.findInTenant(tenantId, serviceId);
+
+    const dropInPack = await this.prisma.pack.findFirst({
+      where: { tenantId, originServiceId: serviceId },
+      select: { id: true },
+    });
+    if (dropInPack) {
+      const dropInContracts = await this.prisma.contract.count({
+        where: { packId: dropInPack.id, tenantId },
+      });
+      if (dropInContracts === 0) {
+        await this.prisma.pack.delete({ where: { id: dropInPack.id } });
+      }
+    }
 
     const useCounts = await this.prisma.service.findUnique({
       where: { id: serviceId },

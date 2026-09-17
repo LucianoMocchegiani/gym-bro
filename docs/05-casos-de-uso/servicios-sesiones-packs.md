@@ -74,7 +74,7 @@
 **Flujo principal:**
 1. Staff define patrón (ej. lunes y miércoles 08:00), cupo, profesor default, rango de fechas o “sin fin” con horizonte de generación.
 2. Sistema genera sesiones futuras según regla simple.
-3. Staff puede editar/cancelar una sesión individual sin romper toda la serie (comportamiento MVP: excepción local).
+3. Staff puede editar/cancelar una sesión individual sin romper toda la serie (excepción local). Cancelar una clase futura (o desactivar la regla) cancela reservas y **devuelve créditos**. Desactivar la regla cancela las sesiones **aún no empezadas** de esa serie.
 
 **Postcondiciones:** Sesiones materializadas + regla activa.
 

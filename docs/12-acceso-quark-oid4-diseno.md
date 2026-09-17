@@ -17,7 +17,7 @@
 | Por gym (Super crea tenant) | **No** crear issuer/verifier; solo DB GymBro + bind de wallet IDs compartidos |
 | Issuer / verifier | **1 + 1 compartidos** para todos los gyms; distinción por claims (`tenantId`, `packId`) |
 | Por pack | Nuevo **tipo** en metadata OID4VCI del issuer compartido (`credentialConfigurationsSupported` + `vct`) |
-| Emisión de instancia | Al **pago APPROVED** (pack / renovación / drop-in según tipo) |
+| Emisión de instancia | Al **pago APPROVED** del pack (incl. drop-in ONE_TIME). Una VC por afiliado+pack. |
 | Renovación online | **Offer remoto** (URI in-app / deep link / push luego); usuario **Acepta** (1 tap), sin escanear QR |
 | Celu perdido / sin batería | Misma cuenta GymBro; recepción **reemite** VC del pack vigente (revoca la anterior vía StatusList) |
 | Wallet en GymBro app | `identity_core_dart` (no copiar UX completa de `quark-wallet`) |

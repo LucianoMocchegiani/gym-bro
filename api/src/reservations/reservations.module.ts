@@ -10,8 +10,7 @@ import { ReservationsService } from './reservations.service';
  * Reservas con crédito, drop-in y cancelación (E4).
  *
  * @remarks
- * Drop-in se cobra en Caja o Mercado Pago. `STUB` deshabilitado.
- * MP se confirma vía webhook → WebhookPaymentService → ReservationsService.confirmDropInFromApprovedPayment.
+ * Drop-in se cobra en Caja o Mercado Pago como pack ONE_TIME + reserva CREDIT.
  */
 @Module({
   imports: [

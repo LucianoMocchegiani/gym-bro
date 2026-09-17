@@ -34,7 +34,7 @@ Formato: **RN-MODULO-NNN** — enunciado — excepciones.
 | RN-SER-003 | Un servicio por sesiones se consume mediante **Sesiones** en calendario y **Reservas**. |
 | RN-SER-004 | El admin puede componer **Packs** que combinan servicios (incl. packs mixtos). |
 | RN-SER-005 | El acceso libre y los packs compuestos de tipo suscripción se cobran en modalidad **mensual** (u otra periodicidad de suscripción definida en el pack). |
-| RN-SER-006 | Para actividad por sesiones, el gym habilita drop-in y/o packs de créditos por servicio/pack. |
+| RN-SER-006 | Para actividad por sesiones, el gym habilita drop-in y/o packs de créditos por servicio/pack. El drop-in es un pack **ONE_TIME** de 1 crédito del servicio (precio = `dropInPrice`); emite la misma VC de pack (una por afiliado+pack). |
 | RN-SER-007 | El vencimiento de créditos: en packs **MONTHLY** coincide con el `endsAt` del contrato (mismo periodo que el libre). En packs **ONE_TIME** es configurable por pack (`creditsExpireAt`; default +1 mes desde el alta). Quién edita catálogo: admin; profesor si tiene permiso. |
 | RN-SER-008 | Si el afiliado se queda sin créditos, puede comprar otro pack (si el gym lo ofrece) y/o drop-in. |
 | RN-SER-009 | Al cancelar o reembolsar un **pack compuesto**, el afiliado pierde **todos** los componentes del pack. |
