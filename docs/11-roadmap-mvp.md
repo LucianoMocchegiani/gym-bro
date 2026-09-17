@@ -303,7 +303,7 @@ Detalle: [14-auditoria…](./14-auditoria-roadmap-vs-codigo-2026-08-13.md).
 - [x] Credential offers staff (afiliado OID4VCI en ficha)
   - Ficha afiliado: `GET /members/:id/credential-offers`; re-emitir `POST /members/:id/credential-offers` (contrato vigente hoy)
 - [x] Credencial SSI **staff** para molinete
-  - `staff_credential_offers` + `POST/GET /staff/:id/credential-offers`; puerta DCQL pack|staff; `ok_staff`
+  - `staff_credential_offers` + `POST/GET /staff/:id/credential-offers`; puerta DCQL pack+staff en un query; `ok_staff`
   - Fichaje horario → [acceso](./99-backlog-post-mvp/acceso.md)
 - [x] Listados Admin unificados (`DataTable` / `ListToolbar` / paginación)
   - afiliados, staff, servicios, packs, sesiones, roles, auditoría, Super tenants

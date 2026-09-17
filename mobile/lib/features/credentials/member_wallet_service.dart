@@ -144,17 +144,21 @@ class MemberWalletService extends ChangeNotifier {
       final disclosures = <String, List<String>>{};
       for (final entry in request.submission.entries) {
         final matching = entry.matchingCredentials;
-        if (matching == null || matching.isEmpty) {
-          return const WalletScanResult.vp(
-            presentationOk: false,
-            errorMessage: 'Faltan credenciales para presentar.',
-          );
+        if (!entry.isSatisfied || matching == null || matching.isEmpty) {
+          continue;
         }
         selected[entry.inputDescriptorId] = matching.first.id;
         final paths = entry.requestedClaimPaths;
         if (paths != null && paths.isNotEmpty) {
           disclosures[entry.inputDescriptorId] = paths;
         }
+      }
+      if (selected.isEmpty) {
+        return const WalletScanResult.vp(
+          presentationOk: false,
+          errorMessage:
+              'No tenés una credencial que cumpla lo pedido por el gym.',
+        );
       }
       final result = await session.openid4vp.shareCredentials(
         resolvedRequest: request,

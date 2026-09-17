@@ -48,9 +48,10 @@ export class AccessOid4VpService {
   /**
    * Crea authorization request OID4VP (pack afiliado **o** VC staff).
    *
-   * @remarks DCQL: dos credentials + `credential_sets` (OR). Staff VCT =
-   * `urn:faciliter:staff:{tenantId}`. Ids locales del query: `faciliter_pack` /
-   * `faciliter_staff` (no son el vct ni el configurationId de Kuatia).
+   * @remarks Una sola DCQL credential: `vct_values` = packs del gym + staff.
+   * El SDK holder no honra `credential_sets` (trata dos queries como AND).
+   * Claims `memberId`/`staffId` van para disclosure; evaluate elige según cuál
+   * vino en el VP. VCT staff = `urn:faciliter:staff:{tenantId}`.
    */
   async createRequest(tenantId: string): Promise<AccessOid4VpRequestResult> {
     const verifierWalletId = this.requireVerifierWallet();
@@ -58,37 +59,22 @@ export class AccessOid4VpService {
       where: { tenantId },
       select: { id: true },
     });
-    const packVcts = packs.map((p) => packKuatiaIds(p.id).vct);
-    const staffVct = staffKuatiaIds(tenantId).vct;
-
-    const packCredential: Record<string, unknown> = {
-      id: 'faciliter_pack',
-      format: 'dc+sd-jwt',
-      claims: [
-        { path: ['memberId'] },
-        { path: ['tenantId'], values: [tenantId] },
-      ],
-    };
-    if (packVcts.length > 0) {
-      packCredential.meta = { vct_values: packVcts };
-    }
-
-    const staffCredential: Record<string, unknown> = {
-      id: 'faciliter_staff',
-      format: 'dc+sd-jwt',
-      meta: { vct_values: [staffVct] },
-      claims: [
-        { path: ['staffId'] },
-        { path: ['tenantId'], values: [tenantId] },
-      ],
-    };
+    const vctValues = [
+      ...packs.map((p) => packKuatiaIds(p.id).vct),
+      staffKuatiaIds(tenantId).vct,
+    ];
 
     const dcqlQuery = {
-      credentials: [packCredential, staffCredential],
-      credential_sets: [
+      credentials: [
         {
-          options: [['faciliter_pack'], ['faciliter_staff']],
-          required: true,
+          id: 'faciliter_access',
+          format: 'dc+sd-jwt',
+          meta: { vct_values: vctValues },
+          claims: [
+            { path: ['memberId'] },
+            { path: ['staffId'] },
+            { path: ['tenantId'], values: [tenantId] },
+          ],
         },
       ],
     };

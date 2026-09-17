@@ -67,7 +67,7 @@ Puerta (afiliado escanea local o gym escanea)
 - Roles **no** van en la VC; se leen de DB al verificar (`active`)
 - `configurationId` = `staff_{tenantId}`; `vct` = `urn:faciliter:staff:{tenantId}`
 - Emisión Admin: `POST /staff/:id/credential-offers`; persistencia `staff_credential_offers`
-- Puerta: mismo QR; DCQL OR pack|staff; reason `ok_staff` / `staff_inactivo`
+- Puerta: mismo QR; DCQL **una** credential (`faciliter_access`) con `vct_values` pack+staff (el holder no honra `credential_sets` AND); reason `ok_staff` / `staff_inactivo`
 - Fichaje horario: diferido (backlog)
 
 La **evaluación fina** (deuda real, cupo sesión, reingreso) puede seguir en GymBro usando estos claims + DB (solo afiliado).

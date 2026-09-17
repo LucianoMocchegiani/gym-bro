@@ -150,7 +150,7 @@ Pruebas manuales: colección Postman en [`postman/`](../postman/).
 
 ```text
 Staff POST /access/oid4vp/request
-  → Quark verifier crea authorization request (DCQL pack VC + memberId/tenantId)
+  → Quark verifier crea authorization request (DCQL `faciliter_access`: vcts pack+staff, tenantId)
   → QR = requestUri
 App afiliado escanea → OID4VP share
 Staff GET /access/oid4vp/session/:id (poll)
