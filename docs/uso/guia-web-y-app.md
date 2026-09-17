@@ -390,7 +390,7 @@ Estados: **Activo / Suspendido / Inactivo**. Suspender corta el acceso; no es bo
 
 Al contratar un pack se emite la **credencial de acceso** (para la puerta). En el panel: PENDING hasta que el socio la acepta; ACCEPTED cuando ya está en el celular. El socio lo hace en App → **Acceso** → Credenciales → **Aceptar**.
 
-**Re-emitir** (billetera reseteada, celu nuevo, o Kuatia falló al cobrar): genera un offer nuevo del **contrato vigente hoy**. No cobra ni crea otro mes. El socio vuelve a Aceptar.
+**Re-emitir** (billetera reseteada, celu nuevo, o Kuatia falló al cobrar): en la ficha, elegí el **pack que cubre hoy** (si hay varios) y se genera un offer nuevo de ese pack. No cobra ni crea otro mes. El socio vuelve a Aceptar.
 
 **Qué ve el socio:** su Inicio, no el padrón. No ve a otros afiliados.
 

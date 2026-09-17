@@ -177,17 +177,18 @@ export class KuatiaOfferService {
   }
 
   /**
-   * Re-emite el offer del contrato ACTIVE que cubre ahora (sin cobro ni contrato nuevo).
+   * Re-emite el offer de un contrato ACTIVE que cubre ahora (sin cobro ni contrato nuevo).
    *
-   * @remarks Si hay varios vigentes (MONTHLY + ONE_TIME), usa el de `startsAt` más
-   * reciente. Soft-fail Kuatia igual que {@link ensureOfferForContract}.
+   * @remarks Sin `packId`: el de `startsAt` más reciente (MONTHLY u ONE_TIME).
+   * Con `packId`: el vigente hoy de ese pack (si hay varios ONE_TIME, el más nuevo).
+   * Soft-fail Kuatia igual que {@link ensureOfferForContract}.
    * @throws {NotFoundException} Si el afiliado no existe en el tenant.
-   * @throws {BadRequestException} Si no hay contrato ACTIVE que cubra hoy.
+   * @throws {BadRequestException} Si no hay contrato ACTIVE que cubra hoy (o ese pack).
    */
   async ensureOfferForCurrentContract(
     tenantId: string,
     memberId: string,
-    options?: { force?: boolean },
+    options?: { force?: boolean; packId?: string },
   ): Promise<CredentialOfferListItem> {
     const member = await this.prisma.member.findFirst({
       where: { id: memberId, tenantId },
@@ -205,13 +206,16 @@ export class KuatiaOfferService {
         status: 'ACTIVE',
         startsAt: { lte: now },
         OR: [{ endsAt: null }, { endsAt: { gt: now } }],
+        ...(options?.packId ? { packId: options.packId } : {}),
       },
       orderBy: { startsAt: 'desc' },
       take: 1,
     });
     if (contracts.length === 0) {
       throw new BadRequestException(
-        'No hay contrato vigente para emitir credencial',
+        options?.packId
+          ? 'No hay contrato vigente hoy para ese pack'
+          : 'No hay contrato vigente para emitir credencial',
       );
     }
     return this.ensureOfferForContract(tenantId, contracts[0].id, {
@@ -312,7 +316,7 @@ export class KuatiaOfferService {
    *
    * @remarks Idempotente si ya está `FAILED`. Conserva `offerUri` (auditoría).
    * No llama a Quark. Timeout/red no deberían llegar acá (la app filtra).
-   * Staff ve `lastError`; member no. Re-oferta = POST credential-offers del vigente.
+   * Staff ve `lastError`; member no. Re-oferta = POST credential-offers (`packId` opcional).
    * @throws {NotFoundException} Si no existe para el member/tenant.
    * @throws {BadRequestException} Si el status es `ACCEPTED`.
    */

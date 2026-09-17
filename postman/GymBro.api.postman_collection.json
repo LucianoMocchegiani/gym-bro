@@ -2432,7 +2432,7 @@
                                 }
                             ]
                         },
-                        "description": "OID4VCI offers del afiliado (members.read). Re-oferta: POST /members/:id/credential-offers (contrato vigente hoy, sin cobro)."
+                        "description": "OID4VCI offers del afiliado (members.read). Re-oferta: POST /members/:id/credential-offers (pack que cubre hoy, packId opcional, sin cobro)."
                     }
                 },
                 {
@@ -2468,10 +2468,10 @@
                         ],
                         "body": {
                             "mode": "raw",
-                            "raw": "{\n  \"force\": true\n}"
+                            "raw": "{\n  \"force\": true,\n  \"packId\": \"{{createdPackId}}\"\n}"
                         },
                         "url": "{{baseUrl}}/api/members/{{createdMemberId}}/credential-offers",
-                        "description": "Re-emite el offer del contrato ACTIVE que cubre hoy. No crea pago ni contrato. 400 si no hay pack vigente."
+                        "description": "Re-emite el offer de un pack ACTIVE que cubre hoy (`packId` opcional; sin él, el más reciente). No crea pago ni contrato. 400 si no hay pack vigente."
                     }
                 },
                 {

@@ -97,11 +97,17 @@ export function getMember(memberId: string): Promise<MemberDetail> {
 
 /**
  * Estado de cuenta (CU-AFI-004).
+ *
+ * @param coverage Staff default API = `all`. `current` = contratos que cubren hoy.
  */
 export function getMemberAccount(
   memberId: string,
+  input?: { coverage?: 'current' | 'all' },
 ): Promise<MemberAccountDetail> {
-  return apiRequest<MemberAccountDetail>(`/members/${memberId}/account`);
+  const qs = input?.coverage ? `?coverage=${input.coverage}` : '';
+  return apiRequest<MemberAccountDetail>(
+    `/members/${memberId}/account${qs}`,
+  );
 }
 
 /**

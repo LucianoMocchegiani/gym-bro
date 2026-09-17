@@ -33,7 +33,7 @@ Leyenda resultado: `P` pass · `F` fail · `B` bloqueado · `-` no aplica
 | A2 | Baja afiliado | No ingresa; auditoría | CU-AFI-003 | |
 | A3 | Afiliado ve solo su cuenta | No ve datos de otros | CU-AFI-005, RN-TEN-001 | |
 | A4 | Staff ve credential offers en ficha | Lista status + lastError; copiar URI | E6 OID4VCI | |
-| A5 | Staff re-emite offer | `POST /members/:id/credential-offers`; offer del pack vigente hoy; nuevo PENDING (o soft-fail); no cobra | E6 OID4VCI | |
+| A5 | Staff re-emite offer | `POST /members/:id/credential-offers` (`packId` opcional); offer del pack que cubre hoy; nuevo PENDING (o soft-fail); no cobra | E6 OID4VCI | |
 
 ---
 

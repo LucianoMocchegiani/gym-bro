@@ -115,22 +115,22 @@ La credencial de puerta **no** se emite en el alta: sale al cobrar un pack (CU-C
 
 **Actor:** Staff con `members.write`
 
-**Precondiciones:** Afiliado activo; hay un contrato ACTIVE cuya vigencia cubre **hoy** (si hay varios, el de `startsAt` más reciente).
+**Precondiciones:** Afiliado activo; hay al menos un contrato ACTIVE cuya vigencia cubre **hoy**.
 
 **Flujo principal:**
-1. Staff en ficha del afiliado elige Emitir / Re-emitir credencial (confirma: no cobra).
-2. Sistema llama `POST /members/:id/credential-offers` (`force` por defecto).
-3. Kuatia genera un offer nuevo del pack vigente. Soft-fail si el issuer falla (`FAILED` + `lastError`).
+1. Staff en ficha elige el pack vigente (select; default = `startsAt` más reciente) y Emitir / Re-emitir (confirma: no cobra).
+2. Sistema llama `POST /members/:id/credential-offers` (`force` por defecto; `packId` del select).
+3. Kuatia genera un offer nuevo de **ese** pack. Soft-fail si el issuer falla (`FAILED` + `lastError`).
 4. El socio acepta en App → Acceso → Credenciales.
 
 **Errores:**
-- Sin contrato vigente hoy → 400, no se crea cobro ni contrato.
+- Sin contrato vigente hoy (o sin vigente de ese `packId`) → 400, no se crea cobro ni contrato.
 - Kuatia caído → offer `FAILED`; se puede reintentar el mismo botón.
 
-**Postcondiciones:** Offer PENDING (o FAILED). No hay transacción ni mes extra. El enum `STUB` no interviene.
+**Postcondiciones:** Offer PENDING (o FAILED) de ese pack. Las ofertas de otros packs no se pisan. No hay transacción ni mes extra. El enum `STUB` no interviene.
 
 **Reglas relacionadas:** RN-ACC-001, RN-ACC-002, RN-PAG-004
-**API:** Staff `POST /api/members/:memberId/credential-offers`. Listado `GET …/credential-offers`. Socio: `GET /me/credential-offers` + accept/fail.
+**API:** Staff `POST /api/members/:memberId/credential-offers` (`packId` opcional). Listado `GET …/credential-offers`. Socio: `GET /me/credential-offers` + accept/fail.
 
 ---
 

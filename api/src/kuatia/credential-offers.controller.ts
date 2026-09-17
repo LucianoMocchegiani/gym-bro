@@ -31,7 +31,7 @@ import {
 /**
  * Credential offers OID4VCI (bandeja member + listados + offer staff molinete).
  *
- * @remarks Pack: re-oferta = POST del contrato vigente hoy (sin cobro).
+ * @remarks Pack: re-oferta = POST del pack que cubre hoy (`packId` opcional).
  * Staff acceso: `POST /staff/:id/credential-offers`.
  */
 @Controller()
@@ -109,9 +109,10 @@ export class CredentialOffersController {
   }
 
   /**
-   * Emite o re-emite el offer del pack vigente hoy (`members.write`).
+   * Emite o re-emite el offer de un pack que cubre hoy (`members.write`).
    *
-   * @remarks No crea contrato ni cobro. Soft-fail Kuatia. Default `force=true`.
+   * @remarks `packId` opcional; sin él, el contrato vigente de `startsAt` más
+   * reciente. No crea contrato ni cobro. Soft-fail Kuatia. Default `force=true`.
    */
   @Post('members/:memberId/credential-offers')
   @HttpCode(HttpStatus.CREATED)
@@ -123,6 +124,7 @@ export class CredentialOffersController {
   ): Promise<CredentialOfferListItem> {
     return this.offers.ensureOfferForCurrentContract(tenantId, memberId, {
       force: body?.force ?? true,
+      packId: body?.packId,
     });
   }
 

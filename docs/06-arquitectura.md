@@ -349,7 +349,7 @@ Prefijo sugerido: `/api/v1`.
 | Devoluciones | Member `POST /me/transaction-items/:id/refund-requests`, `GET /me/refund-requests`; Staff `GET /refund-requests`, `POST /transactions/:id/refunds` (lote) y `POST /transaction-items/:id/refunds` (wrapper) (`transaction_items.refund`) |
 | Comprobantes | Member `/me/receipts`; Staff `GET /receipts/:id`, `GET /transactions/:id/receipt` (`members.read`); `lines[]` (pack → contrato/vigencia + `services[]`; drop-in → reserva/horario) |
 | Catálogo | Staff CRUD services + packs (`catalog.write`; kind inferido; `creditsExpireAt`; `imageUrl`). Member `GET /me/packs` (`imageUrl`) y `GET /me/sessions` (`serviceImageUrl`) |
-| Contrataciones | Alta de pack: Caja o MP; `POST /members/:id/contracts` con STUB → 400; re-oferta `POST /members/:id/credential-offers`; `PATCH /contracts/:id/status` → `CANCELLED` (pierde derechos, RN-SER-009); Member `GET /me/contracts` |
+| Contrataciones | Alta de pack: Caja o MP; `POST /members/:id/contracts` con STUB → 400; re-oferta `POST /members/:id/credential-offers` (`packId` opcional); `PATCH /contracts/:id/status` → `CANCELLED` (pierde derechos, RN-SER-009); Member `GET /me/contracts` |
 | Roles | Staff list-get-create-patch roles; `PUT /staff/:id/roles`; `GET /me/permissions` (UI nav). Super: `GET /tenants/:id/staff` + impersonate |
 | Auditoría | Staff `/auditoria` → `GET /audit-events` (`audit.read`); Super impersona; escritura en mutaciones |
 | Reportes | Staff `GET /reports/summary?from&to` (`reports.read`); ingresos $ + devoluciones + snapshot; `transactions[]` misma fila que caja |

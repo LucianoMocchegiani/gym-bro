@@ -860,7 +860,7 @@ Claims / `configurationId` / `vct` **no** se persisten: al (re)emitir se reconst
 
 **Unique:** `(member_id, pack_id)`.
 
-API slim: Member `GET /api/me/credential-offers`; Member `POST /api/me/credential-offers/:id/accept` → `ACCEPTED` (idempotente; conserva `offerUri`); Member `POST /api/me/credential-offers/:id/fail` → `FAILED` (offer vencido/inválido en wallet; conserva `offerUri`, `reason` → `lastError` staff); Staff `GET /api/members/:memberId/credential-offers` (`members.read`, incluye `lastError`); Staff `POST /api/members/:memberId/credential-offers` (`members.write`, re-emite el contrato ACTIVE que cubre hoy; no cobra). Campos list: `id`, `status`, `packId`, `packName`, `contractId`, `offerUri`, `validFrom`, `validUntil`, `createdAt`.
+API slim: Member `GET /api/me/credential-offers`; Member `POST /api/me/credential-offers/:id/accept` → `ACCEPTED` (idempotente; conserva `offerUri`); Member `POST /api/me/credential-offers/:id/fail` → `FAILED` (offer vencido/inválido en wallet; conserva `offerUri`, `reason` → `lastError` staff); Staff `GET /api/members/:memberId/credential-offers` (`members.read`, incluye `lastError`); Staff `POST /api/members/:memberId/credential-offers` (`members.write`, re-emite un contrato ACTIVE que cubre hoy; `packId` opcional; no cobra). Campos list: `id`, `status`, `packId`, `packName`, `contractId`, `offerUri`, `validFrom`, `validUntil`, `createdAt`.
 
 ### 4.17b `staff_credential_offers`
 
