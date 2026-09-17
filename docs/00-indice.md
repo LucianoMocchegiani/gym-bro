@@ -45,7 +45,7 @@ Reglas relacionadas
 | [13-setup-db-desde-cero.md](./13-setup-db-desde-cero.md) | Migraciones + seed al levantar de 0 / tras `down -v` | Viva |
 | [uso/guia-web-y-app.md](./uso/guia-web-y-app.md) | Guía de uso (staff). Sitio público: `/docs` | Viva (se refina) |
 | [14-auditoria-roadmap-vs-codigo-2026-08-13.md](./14-auditoria-roadmap-vs-codigo-2026-08-13.md) | Contraste roadmap MVP vs API/web/mobile | Viva (corte 2026-08-13) |
-| [15-kuatia-deuda-rename.md](./15-kuatia-deuda-rename.md) | Deuda rename/SDK Kuatia; path `identity_core_dart` | Viva |
+| [15-kuatia-deuda-rename.md](./15-kuatia-deuda-rename.md) | Deuda rename/SDK Kuatia; path `identity-core-dart` | Viva |
 | [16-chat-mcp-diseno.md](./16-chat-mcp-diseno.md) | Asistente Admin: `chat-api` portable + MCP GymBro + drawer; diseño cerrado (C7: chips; tope de uso pendiente) | Cerrado (diseño) |
 | [`chat-api/docs/`](../chat-api/docs/00-indice.md) | Implementación de `chat-api`: modelo, módulos, flujos HTTP (no C-producto) | Viva |
 | [17-roadmap-chat-mcp.md](./17-roadmap-chat-mcp.md) | Tareas ordenadas del asistente (C0–C7); post-MVP | Borrador |

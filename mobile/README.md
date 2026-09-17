@@ -7,7 +7,7 @@ Flutter (Material 3). Estilos alineados al Admin web: tema oscuro/lima acid + cl
 - Flutter 3.41+ / Dart 3.11+
 - Device Android por USB con depuración ADB
 - API alcanzable (tunnel o red)
-- Clon local `identity_core_dart/` en la raíz del monorepo (wallet; ver `docs/15-kuatia-deuda-rename.md`)
+- Clon local `identity-core-dart/` en la raíz del monorepo (wallet; ver `docs/15-kuatia-deuda-rename.md`)
 - Issuer/verifier: Kuatia (`KUATIA_*` en API); no hace falta issuer local
 ## API
 

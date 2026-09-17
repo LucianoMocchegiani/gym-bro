@@ -307,7 +307,7 @@ packages:
   identity_core_dart:
     dependency: "direct main"
     description:
-      path: "../identity_core_dart"
+      path: "../identity-core-dart"
       relative: true
     source: path
     version: "0.1.0"

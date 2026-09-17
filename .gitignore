@@ -36,6 +36,7 @@ local/
 
 # Clon local: package Flutter identity_core_dart (wallet OID4)
 # Issuer/verifier: Kuatia en dominio (no se clonan acá)
+identity-core-dart/
 identity_core_dart/
 
 # `git-hooks/` del repo se versiona (plantillas). `.git/hooks/` es local y no entra en git.

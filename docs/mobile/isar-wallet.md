@@ -6,7 +6,7 @@
 Isar es el **disco local de la wallet de credenciales** en el celular. No es un servicio de GymBro ni de Kuatia.
 
 Producto / protocolos: [12-acceso-quark-oid4-diseno.md](../12-acceso-quark-oid4-diseno.md).  
-Package holder: `identity_core_dart/` (clon local; [15-kuatia-deuda-rename.md](../15-kuatia-deuda-rename.md)).
+Package holder: `identity-core-dart/` (clon local; [15-kuatia-deuda-rename.md](../15-kuatia-deuda-rename.md)).
 
 ---
 
@@ -70,7 +70,7 @@ adb devices
 fvm flutter run -d <deviceId>
 ```
 
-Requisito: clon `identity_core_dart/` en la raíz del monorepo.
+Requisito: clon `identity-core-dart/` en la raíz del monorepo.
 
 ---
 
