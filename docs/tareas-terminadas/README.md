@@ -16,6 +16,7 @@ La creación de registros sigue la skill:
 
 ## Índice
 
+- [2026-09-18 — Grillas Admin contenidas en viewport angosto](./2026-09-18-admin-grillas-responsive.md)
 - [2026-09-18 — Sidebar sin cartel de soporte; contacto vía MCP](./2026-09-18-sidebar-soporte-mcp.md)
 - [2026-09-18 — Cards de credencial Faciliter, display de pack e icono de app](./2026-09-18-credential-cards-icono.md)
 - [2026-09-18 — Chat: scrollbar del asistente alineada al resto](./2026-09-18-chat-scrollbar.md)
