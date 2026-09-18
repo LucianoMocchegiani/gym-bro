@@ -16,6 +16,7 @@ La creación de registros sigue la skill:
 
 ## Índice
 
+- [2026-09-18 — Caja: card de link MP con QR y limpiar](./2026-09-18-caja-link-mp-qr.md)
 - [2026-09-18 — Grillas Admin contenidas en viewport angosto](./2026-09-18-admin-grillas-responsive.md)
 - [2026-09-18 — Sidebar sin cartel de soporte; contacto vía MCP](./2026-09-18-sidebar-soporte-mcp.md)
 - [2026-09-18 — Cards de credencial Faciliter, display de pack e icono de app](./2026-09-18-credential-cards-icono.md)
