@@ -11,7 +11,7 @@ import 'features/auth/login_screen.dart';
 import 'features/auth/session_store.dart';
 import 'features/cart/member_cart_controller.dart';
 import 'features/credentials/credential_offers_repository.dart';
-import 'features/credentials/member_wallet_service.dart';
+import 'features/credentials/device_wallet_service.dart';
 import 'features/sessions/sessions_repository.dart';
 import 'features/shell/member_shell.dart';
 import 'features/store/store_repository.dart';
@@ -45,7 +45,7 @@ class _GymBroMemberAppState extends State<GymBroMemberApp> {
   late final StoreRepository _storeRepo;
   late final RefundRepository _refundRepo;
   late final ReceiptsRepository _receiptsRepo;
-  late final MemberWalletService _wallet;
+  late final DeviceWalletService _wallet;
   late final MemberCartController _cart;
 
   @override
@@ -61,7 +61,7 @@ class _GymBroMemberAppState extends State<GymBroMemberApp> {
     _storeRepo = StoreRepository(_api);
     _refundRepo = RefundRepository(_api);
     _receiptsRepo = ReceiptsRepository(_api);
-    _wallet = MemberWalletService();
+    _wallet = DeviceWalletService();
     _cart = MemberCartController();
     _auth = AuthController(auth: _authRepo, api: _api, wallet: _wallet);
     _auth.addListener(_clearCartOnLogout);

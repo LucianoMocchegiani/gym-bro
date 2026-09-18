@@ -11,7 +11,7 @@ import '../../core/config/quark_public_config.dart';
 /// Resultado de escanear un QR SSI (OID4VCI u OID4VP).
 enum WalletScanKind { oid4vci, oid4vp }
 
-/// Payload de [MemberWalletService.handleScannedInvitation].
+/// Payload de [DeviceWalletService.handleScannedInvitation].
 class WalletScanResult {
   /// Crea el resultado VCI.
   const WalletScanResult.vci({
@@ -48,20 +48,18 @@ class UnsupportedInvitationException implements Exception {
 
 /// Wallet holder local (OID4VCI / OID4VP) con secreto device-bound.
 ///
-/// @remarks El secreto NO se deriva del password GymBro ni se sube al backend
-/// (docs/12). Se usa como PIN de [WalletService] (Argon2id interno del SDK).
-/// Notifica listeners tras [deleteCredential] / [resetWallet] para reiniciar
-/// el watch de la UI.
-class MemberWalletService extends ChangeNotifier {
+/// Independiente del perfil GymBro (afiliado o staff). El secreto no se deriva
+/// del password ni se sube al backend. `walletId` `faciliter-device`.
+class DeviceWalletService extends ChangeNotifier {
   /// Crea el servicio.
-  MemberWalletService({
+  DeviceWalletService({
     FlutterSecureStorage? storage,
     WalletService? walletService,
   }) : _storage = storage ?? const FlutterSecureStorage(),
        _walletService = walletService ?? WalletService();
 
-  static const _walletId = 'gymbro-member';
-  static const _secretKey = 'gymbro.wallet.secret';
+  static const _walletId = 'faciliter-device';
+  static const _secretKey = 'faciliter.wallet.secret';
 
   final FlutterSecureStorage _storage;
   final WalletService _walletService;
@@ -216,7 +214,7 @@ class MemberWalletService extends ChangeNotifier {
     final secret = base64UrlEncode(bytes);
     await _storage.write(key: _secretKey, value: secret);
     if (kDebugMode) {
-      debugPrint('MemberWalletService: secreto wallet generado (device-bound)');
+      debugPrint('DeviceWalletService: secreto wallet generado (device-bound)');
     }
     return secret;
   }

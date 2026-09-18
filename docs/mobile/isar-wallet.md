@@ -1,4 +1,4 @@
-# Wallet local (Isar) — app afiliado
+# Wallet local (Isar) — app móvil
 
 **Fecha:** 2026-08-31  
 **Estado:** viva (workaround AGP 8 en el build Android)
@@ -16,10 +16,10 @@ En el device hay dos piezas de identidad, en lados distintos:
 
 | Pieza | Dónde | Qué es |
 |-------|--------|--------|
-| Secreto de la wallet | Keystore / Keychain (`flutter_secure_storage`) | Candado. Random, device-bound. No se sube al backend ni se deriva del password GymBro. |
-| Credenciales (VCs) | **Isar** (vía `identity_core_dart`) | Pack / staff / etc. aceptadas. Sirven para listarlas en Acceso y presentarlas en la puerta (OID4VP). |
+| Secreto de la wallet | Keystore / Keychain (`faciliter.wallet.secret`) | Candado. Random, device-bound. No se sube al backend ni se deriva del password GymBro. |
+| Credenciales (VCs) | **Isar** (`walletId` `faciliter-device`, vía `identity_core_dart`) | Pack / staff / etc. aceptadas. Sirven para listarlas en Acceso y presentarlas en la puerta (OID4VP). |
 
-`MemberWalletService` (`mobile/lib/features/credentials/member_wallet_service.dart`) solo orquesta: unlock/create con el secreto, y el SDK persiste las VCs en Isar (`credentialStore`).
+`DeviceWalletService` (`mobile/lib/features/credentials/device_wallet_service.dart`) solo orquesta: unlock/create con el secreto, y el SDK persiste las VCs en Isar (`credentialStore`). Afiliado y staff usan la misma wallet del dispositivo.
 
 La API GymBro **no** guarda el contenido de la wallet. Persiste offers, contratos y el resultado del verify. Kuatia **emite**; el celular **guarda y presenta**.
 

@@ -6,7 +6,7 @@ import '../../core/network/api_client.dart';
 import '../../core/widgets/gym_bro_tabs.dart';
 import '../credentials/credential_offers_repository.dart';
 import '../credentials/credentials_screen.dart';
-import '../credentials/member_wallet_service.dart';
+import '../credentials/device_wallet_service.dart';
 
 /// Hub Acceso: Escanear (default) + Credenciales (pendientes + wallet).
 class AccessScreen extends StatefulWidget {
@@ -96,7 +96,7 @@ class _ScanTabState extends State<_ScanTab> {
     await _scanner.stop();
 
     if (!mounted) return;
-    final wallet = context.read<MemberWalletService>();
+    final wallet = context.read<DeviceWalletService>();
     final offers = context.read<CredentialOffersRepository>();
 
     try {

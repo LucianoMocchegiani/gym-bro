@@ -4,7 +4,7 @@ import 'package:provider/provider.dart';
 import '../../core/network/api_client.dart';
 import '../../core/widgets/loading_dialog.dart';
 import 'credential_offers_repository.dart';
-import 'member_wallet_service.dart';
+import 'device_wallet_service.dart';
 
 /// Credenciales pendientes de aceptación (OID4VCI) + botón Aceptar.
 ///
@@ -67,7 +67,7 @@ class _CredentialOffersSectionState extends State<CredentialOffersSection> {
     }
     setState(() => _accepting.add(item.id));
     final messenger = ScaffoldMessenger.of(context);
-    final wallet = context.read<MemberWalletService>();
+    final wallet = context.read<DeviceWalletService>();
     final repo = context.read<CredentialOffersRepository>();
     try {
       await runWithLoadingDialog(

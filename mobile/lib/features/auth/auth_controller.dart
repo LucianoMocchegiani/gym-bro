@@ -1,17 +1,17 @@
 import 'package:flutter/foundation.dart';
 
 import '../../core/network/api_client.dart';
-import '../credentials/member_wallet_service.dart';
+import '../credentials/device_wallet_service.dart';
 import 'auth_repository.dart';
 import 'session_store.dart';
 
-/// Estado de autenticación Member para la UI.
+/// Estado de autenticación de la app para la UI.
 class AuthController extends ChangeNotifier {
   /// Crea el controller.
   AuthController({
     required AuthRepository auth,
     required ApiClient api,
-    MemberWalletService? wallet,
+    DeviceWalletService? wallet,
   }) : _auth = auth,
        _api = api,
        _wallet = wallet {
@@ -20,15 +20,15 @@ class AuthController extends ChangeNotifier {
 
   final AuthRepository _auth;
   final ApiClient _api;
-  final MemberWalletService? _wallet;
+  final DeviceWalletService? _wallet;
 
-  MemberSession? _session;
+  AppSession? _session;
   bool _ready = false;
   String? _error;
   bool _busy = false;
 
   /// Sesión actual o null.
-  MemberSession? get session => _session;
+  AppSession? get session => _session;
 
   /// Hidratación inicial terminada.
   bool get ready => _ready;

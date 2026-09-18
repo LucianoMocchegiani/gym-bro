@@ -6,7 +6,7 @@ import '../../core/theme/theme_controller.dart';
 import '../../core/widgets/confirm_dialog.dart';
 import '../../core/widgets/loading_dialog.dart';
 import '../auth/auth_controller.dart';
-import '../credentials/member_wallet_service.dart';
+import '../credentials/device_wallet_service.dart';
 
 /// Hub Ajustes: cuenta, wallet SSI, sistema y sesión.
 class SettingsScreen extends StatelessWidget {
@@ -49,7 +49,7 @@ class SettingsScreen extends StatelessWidget {
       isDestructive: true,
     );
     if (!ok || !context.mounted) return;
-    final wallet = context.read<MemberWalletService>();
+    final wallet = context.read<DeviceWalletService>();
     try {
       await runWithLoadingDialog(
         context,

@@ -2,16 +2,17 @@ import 'dart:convert';
 
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
-/// Sesión afiliado persistida en secure storage.
-class MemberSession {
+/// Sesión GymBro persistida (afiliado o staff). No es la clase de calendario.
+class AppSession {
   /// Crea la sesión en memoria.
-  const MemberSession({
+  const AppSession({
     required this.accessToken,
     required this.refreshToken,
     required this.tenantId,
     required this.tenantSlug,
     required this.userId,
     required this.email,
+    required this.profileType,
     this.name,
   });
 
@@ -23,6 +24,9 @@ class MemberSession {
   final String email;
   final String? name;
 
+  /// `MEMBER` o `STAFF` (JWT GymBro).
+  final String profileType;
+
   /// Serializa a JSON.
   Map<String, dynamic> toJson() => {
     'accessToken': accessToken,
@@ -32,11 +36,12 @@ class MemberSession {
     'userId': userId,
     'email': email,
     'name': name,
+    'profileType': profileType,
   };
 
   /// Parsea desde JSON.
-  factory MemberSession.fromJson(Map<String, dynamic> json) {
-    return MemberSession(
+  factory AppSession.fromJson(Map<String, dynamic> json) {
+    return AppSession(
       accessToken: json['accessToken'] as String,
       refreshToken: json['refreshToken'] as String,
       tenantId: json['tenantId'] as String,
@@ -44,15 +49,16 @@ class MemberSession {
       userId: json['userId'] as String,
       email: json['email'] as String,
       name: json['name'] as String?,
+      profileType: json['profileType'] as String? ?? 'MEMBER',
     );
   }
 
   /// Copia con tokens nuevos.
-  MemberSession copyWithTokens({
+  AppSession copyWithTokens({
     required String accessToken,
     required String refreshToken,
   }) {
-    return MemberSession(
+    return AppSession(
       accessToken: accessToken,
       refreshToken: refreshToken,
       tenantId: tenantId,
@@ -60,28 +66,29 @@ class MemberSession {
       userId: userId,
       email: email,
       name: name,
+      profileType: profileType,
     );
   }
 }
 
-/// Persistencia de sesión Member (RN-ROL-005).
+/// Persistencia de [AppSession] (RN-ROL-005).
 class SessionStore {
   /// Crea el store.
   SessionStore({FlutterSecureStorage? storage})
     : _storage = storage ?? const FlutterSecureStorage();
 
-  static const _key = 'gymbro.member.session';
+  static const _key = 'faciliter.app.session';
   final FlutterSecureStorage _storage;
 
   /// Lee sesión o null.
-  Future<MemberSession?> read() async {
+  Future<AppSession?> read() async {
     final raw = await _storage.read(key: _key);
     if (raw == null || raw.isEmpty) {
       return null;
     }
     try {
       final map = jsonDecode(raw) as Map<String, dynamic>;
-      return MemberSession.fromJson(map);
+      return AppSession.fromJson(map);
     } catch (_) {
       await clear();
       return null;
@@ -89,7 +96,7 @@ class SessionStore {
   }
 
   /// Guarda sesión.
-  Future<void> write(MemberSession session) async {
+  Future<void> write(AppSession session) async {
     await _storage.write(key: _key, value: jsonEncode(session.toJson()));
   }
 

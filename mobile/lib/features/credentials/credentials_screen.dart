@@ -7,7 +7,7 @@ import 'package:provider/provider.dart';
 import '../../core/widgets/confirm_dialog.dart';
 import '../../core/widgets/loading_dialog.dart';
 import 'credential_offers_section.dart';
-import 'member_wallet_service.dart';
+import 'device_wallet_service.dart';
 import 'ssi_credential_tile.dart';
 import 'wallet_credential_ui.dart';
 
@@ -30,12 +30,12 @@ class _CredentialsScreenState extends State<CredentialsScreen> {
   bool _loading = true;
   String? _error;
   int _pendingRefresh = 0;
-  MemberWalletService? _wallet;
+  DeviceWalletService? _wallet;
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    final wallet = context.read<MemberWalletService>();
+    final wallet = context.read<DeviceWalletService>();
     if (!identical(_wallet, wallet)) {
       _wallet?.removeListener(_onWalletChanged);
       _wallet = wallet;
@@ -54,7 +54,7 @@ class _CredentialsScreenState extends State<CredentialsScreen> {
   }
 
   StreamSubscription<List<CredentialRecord>> _startWatch() {
-    final wallet = context.read<MemberWalletService>();
+    final wallet = context.read<DeviceWalletService>();
     return Stream.fromFuture(wallet.ensureUnlocked())
         .asyncExpand((_) => wallet.watchCredentials())
         .listen(
@@ -101,7 +101,7 @@ class _CredentialsScreenState extends State<CredentialsScreen> {
       _pendingRefresh++;
     });
     try {
-      final wallet = context.read<MemberWalletService>();
+      final wallet = context.read<DeviceWalletService>();
       final records = await wallet.listCredentials();
       if (!mounted) return;
       setState(() {
@@ -130,7 +130,7 @@ class _CredentialsScreenState extends State<CredentialsScreen> {
       isDestructive: true,
     );
     if (!ok || !mounted) return;
-    final wallet = context.read<MemberWalletService>();
+    final wallet = context.read<DeviceWalletService>();
     try {
       await runWithLoadingDialog(
         context,

@@ -47,7 +47,7 @@ class AuthRepository {
   final SessionStore _store;
 
   /// Login por slug de gym + email/password.
-  Future<MemberSession> login({
+  Future<AppSession> login({
     required String tenantSlug,
     required String email,
     required String password,
@@ -66,7 +66,7 @@ class AuthRepository {
     if (tokens.profileType != 'MEMBER') {
       throw ApiException('Se requiere perfil afiliado');
     }
-    final session = MemberSession(
+    final session = AppSession(
       accessToken: tokens.accessToken,
       refreshToken: tokens.refreshToken,
       tenantId: tokens.tenantId,
@@ -74,6 +74,7 @@ class AuthRepository {
       userId: tokens.userId,
       email: tokens.email,
       name: tokens.name,
+      profileType: tokens.profileType,
     );
     await _store.write(session);
     _api.accessToken = session.accessToken;
@@ -81,7 +82,7 @@ class AuthRepository {
   }
 
   /// Restaura sesión desde storage.
-  Future<MemberSession?> restore() async {
+  Future<AppSession?> restore() async {
     final session = await _store.read();
     if (session != null) {
       _api.accessToken = session.accessToken;
