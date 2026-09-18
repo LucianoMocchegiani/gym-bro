@@ -69,7 +69,7 @@ function subscribeNever(): () => void {
   return () => undefined;
 }
 
-const NEAR_BOTTOM_PX = 96;
+const NEAR_BOTTOM_PX = 40;
 const TICK_MS = 32;
 
 function nextTypeChunk(queue: string): string {
@@ -121,6 +121,8 @@ export function AssistantLauncher({
   const activeIdRef = useRef<string | null>(null);
   const abortRef = useRef<AbortController | null>(null);
   const stickRef = useRef(true);
+  const jumpingRef = useRef(false);
+  const lastTouchYRef = useRef(0);
   const queueRef = useRef('');
   const tickRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const assistantKeyRef = useRef<string | null>(null);
@@ -144,7 +146,11 @@ export function AssistantLauncher({
   const scrollIfStuck = useCallback(() => {
     const el = threadRef.current;
     if (el && stickRef.current) {
+      jumpingRef.current = true;
       el.scrollTop = el.scrollHeight;
+      requestAnimationFrame(() => {
+        jumpingRef.current = false;
+      });
     }
   }, []);
 
@@ -208,10 +214,36 @@ export function AssistantLauncher({
     }
     const scroller: HTMLElement = node;
     function onScroll(): void {
+      if (jumpingRef.current) {
+        return;
+      }
       stickRef.current = isNearBottom(scroller);
     }
+    function onWheel(e: WheelEvent): void {
+      if (e.deltaY < 0) {
+        stickRef.current = false;
+      }
+    }
+    function onTouchStart(e: TouchEvent): void {
+      lastTouchYRef.current = e.touches[0]?.clientY ?? 0;
+    }
+    function onTouchMove(e: TouchEvent): void {
+      const y = e.touches[0]?.clientY ?? lastTouchYRef.current;
+      if (y - lastTouchYRef.current > 6) {
+        stickRef.current = false;
+      }
+      lastTouchYRef.current = y;
+    }
     scroller.addEventListener('scroll', onScroll, { passive: true });
-    return () => scroller.removeEventListener('scroll', onScroll);
+    scroller.addEventListener('wheel', onWheel, { passive: true });
+    scroller.addEventListener('touchstart', onTouchStart, { passive: true });
+    scroller.addEventListener('touchmove', onTouchMove, { passive: true });
+    return () => {
+      scroller.removeEventListener('scroll', onScroll);
+      scroller.removeEventListener('wheel', onWheel);
+      scroller.removeEventListener('touchstart', onTouchStart);
+      scroller.removeEventListener('touchmove', onTouchMove);
+    };
   }, [open, expanded, bubbles.length]);
 
   useEffect(() => {

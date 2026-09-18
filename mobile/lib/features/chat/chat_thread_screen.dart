@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/network/api_client.dart';
@@ -24,6 +25,7 @@ class ChatThreadScreen extends StatefulWidget {
 
 class _ChatThreadScreenState extends State<ChatThreadScreen> {
   final _input = TextEditingController();
+  final _scroll = ScrollController();
   late ChatThread _thread;
   late ChatRepository _repo;
   List<ChatMessage> _messages = const [];
@@ -37,6 +39,8 @@ class _ChatThreadScreenState extends State<ChatThreadScreen> {
   String _queue = '';
   Timer? _tick;
   bool _started = false;
+  bool _stickToEnd = true;
+  bool _pointerDown = false;
 
   @override
   void initState() {
@@ -57,6 +61,7 @@ class _ChatThreadScreenState extends State<ChatThreadScreen> {
   @override
   void dispose() {
     _tick?.cancel();
+    _scroll.dispose();
     _repo.abortTurn();
     _input.dispose();
     super.dispose();
@@ -85,6 +90,7 @@ class _ChatThreadScreenState extends State<ChatThreadScreen> {
         _listBusy = false;
         _listError = null;
       });
+      _scrollToEnd();
     } catch (e) {
       if (!mounted) {
         return;
@@ -111,6 +117,7 @@ class _ChatThreadScreenState extends State<ChatThreadScreen> {
       _pendingUser = null;
       _liveAssistant = '';
       _queue = '';
+      _stickToEnd = true;
       _tick?.cancel();
       _tick = null;
       _listBusy = true;
@@ -166,6 +173,7 @@ class _ChatThreadScreenState extends State<ChatThreadScreen> {
     setState(() {
       _streaming = true;
       _sseOpen = true;
+      _stickToEnd = true;
       _liveAssistant = '';
       _queue = '';
       _pendingUser = ChatMessage(
@@ -174,6 +182,7 @@ class _ChatThreadScreenState extends State<ChatThreadScreen> {
         content: text,
       );
     });
+    _scrollToEnd();
     try {
       await _repo.sendTurn(
         _thread.id,
@@ -231,7 +240,66 @@ class _ChatThreadScreenState extends State<ChatThreadScreen> {
     setState(() {
       _liveAssistant += chunk;
     });
+    _scrollToEnd();
     _scheduleDrain();
+  }
+
+  void _scrollToEnd() {
+    if (!_stickToEnd || _pointerDown) {
+      return;
+    }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !_stickToEnd || _pointerDown || !_scroll.hasClients) {
+        return;
+      }
+      final pos = _scroll.position;
+      if (pos.maxScrollExtent <= 0) {
+        return;
+      }
+      _scroll.jumpTo(pos.maxScrollExtent);
+    });
+  }
+
+  void _restickIfAtEnd() {
+    if (!_scroll.hasClients) {
+      return;
+    }
+    final pos = _scroll.position;
+    _stickToEnd = pos.pixels >= pos.maxScrollExtent - 24;
+  }
+
+  void _onPointerDown(PointerDownEvent event) {
+    _pointerDown = true;
+  }
+
+  void _onPointerMove(PointerMoveEvent event) {
+    if (event.delta.distanceSquared > 1) {
+      _stickToEnd = false;
+    }
+  }
+
+  void _onPointerUp(PointerEvent event) {
+    _pointerDown = false;
+    _restickIfAtEnd();
+  }
+
+  bool _onScrollNotification(ScrollNotification n) {
+    if (_pointerDown) {
+      return false;
+    }
+    if (n is ScrollStartNotification && n.dragDetails != null) {
+      _stickToEnd = false;
+      return false;
+    }
+    if (n is UserScrollNotification &&
+        n.direction == ScrollDirection.reverse) {
+      _stickToEnd = false;
+      return false;
+    }
+    if (n is ScrollEndNotification) {
+      _restickIfAtEnd();
+    }
+    return false;
   }
 
   Future<void> _completeStreaming() async {
@@ -335,17 +403,26 @@ class _ChatThreadScreenState extends State<ChatThreadScreen> {
     }
     final thinking = _streaming && live.isEmpty;
     final extra = thinking ? 1 : 0;
-    return ListView.builder(
-      reverse: true,
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
-      itemCount: items.length + extra,
-      itemBuilder: (context, i) {
-        if (thinking && i == 0) {
-          return _thinkingBubble(scheme);
-        }
-        final m = items[items.length - 1 - (i - extra)];
-        return _messageBubble(scheme, m);
-      },
+    return Listener(
+      onPointerDown: _onPointerDown,
+      onPointerMove: _onPointerMove,
+      onPointerUp: _onPointerUp,
+      onPointerCancel: _onPointerUp,
+      child: NotificationListener<ScrollNotification>(
+        onNotification: _onScrollNotification,
+        child: ListView.builder(
+          controller: _scroll,
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+          itemCount: items.length + extra,
+          itemBuilder: (context, i) {
+            if (thinking && i == items.length) {
+              return _thinkingBubble(scheme);
+            }
+            return _messageBubble(scheme, items[i]);
+          },
+        ),
+      ),
     );
   }
 
