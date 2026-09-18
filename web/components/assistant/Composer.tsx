@@ -76,7 +76,7 @@ export function Composer({
       <div className={styles.pill}>
         <textarea
           ref={fieldRef}
-          className={styles.field}
+          className={`${styles.field} app-scroll`}
           value={text}
           onChange={(event) => setText(event.target.value)}
           onKeyDown={handleKeyDown}

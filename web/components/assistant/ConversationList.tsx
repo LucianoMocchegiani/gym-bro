@@ -64,7 +64,7 @@ export function ConversationList({
   const groups = groupConversations(filtered);
 
   return (
-    <div className={styles.history}>
+    <div className={`${styles.history} app-scroll`}>
       <div className={styles.historyBar}>
         <button
           type="button"

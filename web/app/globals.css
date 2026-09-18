@@ -306,6 +306,7 @@ button.linkish:hover {
 }
 
 /* Scrollbars: sidebar, modales, drawer asistente (thin, tema dark/light). */
+.app-scroll,
 .app-sidebar,
 .admin-modal,
 .audit-json {
@@ -313,6 +314,7 @@ button.linkish:hover {
   scrollbar-color: color-mix(in srgb, var(--muted) 70%, transparent) transparent;
 }
 
+.app-scroll::-webkit-scrollbar,
 .app-sidebar::-webkit-scrollbar,
 .admin-modal::-webkit-scrollbar,
 .audit-json::-webkit-scrollbar {
@@ -320,12 +322,14 @@ button.linkish:hover {
   height: 8px;
 }
 
+.app-scroll::-webkit-scrollbar-track,
 .app-sidebar::-webkit-scrollbar-track,
 .admin-modal::-webkit-scrollbar-track,
 .audit-json::-webkit-scrollbar-track {
   background: transparent;
 }
 
+.app-scroll::-webkit-scrollbar-thumb,
 .app-sidebar::-webkit-scrollbar-thumb,
 .admin-modal::-webkit-scrollbar-thumb,
 .audit-json::-webkit-scrollbar-thumb {
@@ -335,6 +339,7 @@ button.linkish:hover {
   background-clip: padding-box;
 }
 
+.app-scroll::-webkit-scrollbar-thumb:hover,
 .app-sidebar::-webkit-scrollbar-thumb:hover,
 .admin-modal::-webkit-scrollbar-thumb:hover,
 .audit-json::-webkit-scrollbar-thumb:hover {
@@ -343,6 +348,7 @@ button.linkish:hover {
   background-clip: padding-box;
 }
 
+.app-scroll::-webkit-scrollbar-corner,
 .app-sidebar::-webkit-scrollbar-corner,
 .admin-modal::-webkit-scrollbar-corner,
 .audit-json::-webkit-scrollbar-corner {

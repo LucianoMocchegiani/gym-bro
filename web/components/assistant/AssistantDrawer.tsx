@@ -676,7 +676,7 @@ export function AssistantLauncher({
                   <IconHistory />
                 </button>
               </div>
-              <div className={styles.threadWrap} ref={threadRef}>
+              <div className={`${styles.threadWrap} app-scroll`} ref={threadRef}>
                 {listLoading || threadLoading ? (
                   <p className="muted">Cargando…</p>
                 ) : (
