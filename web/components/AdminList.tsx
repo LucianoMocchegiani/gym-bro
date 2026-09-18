@@ -193,7 +193,9 @@ export function DataTable({
         description={description}
         className="table-wrap"
       >
-        <SkeletonTable rows={6} cols={5} />
+        <div className="table-scroll">
+          <SkeletonTable rows={6} cols={5} />
+        </div>
       </Panel>
     );
   }
@@ -206,12 +208,14 @@ export function DataTable({
       {isEmpty ? (
         <p className="muted">{emptyText}</p>
       ) : (
-        <table className="data-table">
-          <thead>
-            <tr>{header}</tr>
-          </thead>
-          <tbody>{children}</tbody>
-        </table>
+        <div className="table-scroll">
+          <table className="data-table">
+            <thead>
+              <tr>{header}</tr>
+            </thead>
+            <tbody>{children}</tbody>
+          </table>
+        </div>
       )}
       {paginate && onPageChange ? (
         <ListPagination

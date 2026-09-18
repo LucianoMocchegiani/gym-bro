@@ -627,6 +627,8 @@ button.linkish:hover {
 
 .app-content {
   width: min(1100px, 100%);
+  max-width: 100%;
+  min-width: 0;
   min-height: 100vh;
   margin: 0 auto;
   padding: 1.25rem clamp(1rem, 3vw, 1.5rem) 2.5rem;
@@ -634,6 +636,7 @@ button.linkish:hover {
   display: flex;
   flex-direction: column;
   justify-content: start;
+  box-sizing: border-box;
 }
 
 .app-page-head {
@@ -671,6 +674,9 @@ button.linkish:hover {
   flex-wrap: nowrap;
   gap: 0.4rem;
   min-height: 2.35rem;
+  min-width: 0;
+  max-width: 100%;
+  overflow-x: auto;
 }
 
 .page-tabs a {
@@ -832,14 +838,19 @@ a.btn.ghost:hover,
   border-radius: var(--radius);
   box-shadow: var(--shadow);
   padding: 1.15rem;
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .admin-panel-head {
   display: flex;
+  flex-wrap: wrap;
   align-items: baseline;
   justify-content: space-between;
   gap: 1rem;
   margin-bottom: 1rem;
+  min-width: 0;
 }
 
 .admin-panel-head h2 {
@@ -981,6 +992,7 @@ button.row-icon-btn:disabled {
 .admin-stack {
   display: grid;
   gap: 1.1rem;
+  min-width: 0;
 }
 
 .admin-form {
@@ -1206,7 +1218,13 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator {
 }
 
 .table-wrap {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.table-scroll {
   overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .pager {
@@ -1228,6 +1246,7 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator {
   text-align: left;
   padding: 0.75rem 0.65rem;
   border-bottom: 1px solid var(--line);
+  white-space: nowrap;
 }
 
 .data-table th {
@@ -1486,6 +1505,7 @@ button.danger {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 0.75rem;
+  min-width: 0;
 }
 
 .stat-card {
@@ -1837,6 +1857,10 @@ button.danger {
 }
 
 @media (max-width: 560px) {
+  .stat-row {
+    grid-template-columns: 1fr;
+  }
+
   .attempts-list li {
     grid-template-columns: auto 1fr;
   }
@@ -1850,12 +1874,15 @@ button.danger {
 .session-calendar {
   display: grid;
   gap: 0.75rem;
+  min-width: 0;
 }
 
 .cal-nav {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 0.5rem;
+  min-width: 0;
 }
 
 .cal-title {
@@ -1878,11 +1905,18 @@ button.danger {
   white-space: nowrap;
 }
 
+.cal-week-scroll {
+  min-width: 0;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
 .cal-week {
   display: grid;
-  grid-template-columns: 52px repeat(7, minmax(0, 1fr));
+  grid-template-columns: 52px repeat(7, minmax(6.25rem, 1fr));
   grid-template-rows: auto var(--cal-body-h);
   gap: 1px;
+  min-width: calc(52px + 7 * 6.25rem);
   background: var(--line-strong);
   border: 1px solid var(--line-strong);
   border-radius: 8px;
@@ -2300,7 +2334,8 @@ button.danger {
 
 @media (max-width: 720px) {
   .cal-week {
-    grid-template-columns: 44px repeat(7, minmax(0, 1fr));
+    grid-template-columns: 44px repeat(7, minmax(5.75rem, 1fr));
+    min-width: calc(44px + 7 * 5.75rem);
   }
 
   .cal-block-meta {

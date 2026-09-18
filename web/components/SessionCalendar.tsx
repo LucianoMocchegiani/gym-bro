@@ -335,15 +335,16 @@ export function SessionCalendar({
       {loading ? (
         <SkeletonTable rows={10} cols={8} />
       ) : (
-        <div
-          className="cal-week"
-          style={
-            {
-              '--cal-body-h': `${(HOUR_END - HOUR_START) * PX_PER_HOUR}px`,
-              '--cal-hour-h': `${PX_PER_HOUR}px`,
-            } as CSSProperties
-          }
-        >
+        <div className="cal-week-scroll">
+          <div
+            className="cal-week"
+            style={
+              {
+                '--cal-body-h': `${(HOUR_END - HOUR_START) * PX_PER_HOUR}px`,
+                '--cal-hour-h': `${PX_PER_HOUR}px`,
+              } as CSSProperties
+            }
+          >
           <div className="cal-corner" />
           {days.map((d, i) => (
             <div
@@ -459,6 +460,7 @@ export function SessionCalendar({
               </div>
             );
           })}
+          </div>
         </div>
       )}
 

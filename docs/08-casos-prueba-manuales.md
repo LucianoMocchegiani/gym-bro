@@ -209,6 +209,16 @@ Leyenda resultado: `P` pass · `F` fail · `B` bloqueado · `-` no aplica
 
 ---
 
+## Panel Admin (layout)
+
+| # | Caso | Esperado | RN/CU | R |
+|---|------|----------|-------|---|
+| W1 | Viewport ~375px: Cierre, Reportes, Afiliados, Auditoría, Packs | La página no se estira; la tabla scrollea horizontal **dentro** del panel | — | |
+| W2 | Mismo viewport: Sesiones calendario | Semana con scroll horizontal; columnas de día usables | CU-SER-003 | |
+| W3 | Reportes/Cierre KPIs en ~375px | Stats en **una** columna | — | |
+
+---
+
 ## Sitio público (landing / SEO)
 
 | # | Caso | Esperado | RN/CU | R |
