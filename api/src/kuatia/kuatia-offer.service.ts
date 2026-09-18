@@ -15,7 +15,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { KuatiaHttpError } from './http-kuatia-admin.adapter';
 import { KuatiaAdminPort } from './kuatia-admin.port';
 import { KuatiaEnvService } from './kuatia-env.service';
-import { packKuatiaIds } from './kuatia-pack-sync.service';
+import { KuatiaPackSyncService, packKuatiaIds } from './kuatia-pack-sync.service';
 
 const MAX_ERROR_LEN = 500;
 
@@ -39,8 +39,8 @@ export type CredentialOfferListItem = {
 /**
  * Crea y lista credential offers OID4VCI tras contratación pack (soft-fail).
  *
- * @remarks No persiste claims ni config Kuatia: al (re)emitir se reconstruyen
- * desde el contrato (`ensureOfferForContract`).
+ * @remarks Al (re)emitir sincroniza `display.name` del pack en el issuer
+ * (igual que staff) y reconstruye claims desde el contrato.
  * @see docs/12-acceso-quark-oid4-diseno.md
  */
 @Injectable()
@@ -51,6 +51,7 @@ export class KuatiaOfferService {
     private readonly prisma: PrismaService,
     private readonly kuatia: KuatiaAdminPort,
     private readonly kuatiaEnv: KuatiaEnvService,
+    private readonly packSync: KuatiaPackSyncService,
   ) {}
 
   /**
@@ -101,6 +102,12 @@ export class KuatiaOfferService {
     const { configurationId, vct } = packKuatiaIds(ctx.packId);
     const claims = this.buildClaims(tenantId, ctx);
     const claimsDisplay = this.buildClaimsDisplay();
+
+    await this.packSync.syncPackConfiguration(
+      tenantId,
+      ctx.packId,
+      ctx.packName,
+    );
 
     let issuerWalletId: string;
     try {

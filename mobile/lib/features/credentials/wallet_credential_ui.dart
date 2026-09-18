@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:identity_core_dart/identity_core.dart';
 
+import '../../core/theme/gymbro_theme.dart';
+
 /// Estilos visuales desde `displayMetadata` OID4VCI (como quark-wallet).
 @immutable
 class CredentialDisplayStyle {
@@ -16,8 +18,25 @@ class CredentialDisplayStyle {
   final String? logoUrl;
   final String? backgroundImageUrl;
 
-  static const neutralBackground = Color(0xFFEDEFF2);
-  static const neutralForeground = Color(0xFF252B37);
+  /// Verde Faciliter (mezcla charcoal + lima), como packs vigentes.
+  static final Color brandGreenDeep = Color.lerp(
+    GymBroColors.darkBg,
+    GymBroColors.lime,
+    0.14,
+  )!;
+
+  static final Color brandGreen = Color.lerp(
+    GymBroColors.darkBg,
+    GymBroColors.lime,
+    0.38,
+  )!;
+
+  static const Color brandForeground = Color(0xFFF4F6F2);
+
+  /// Fallback de tarjeta: verde oscuro Faciliter (el tile pinta el gradiente).
+  static (Color bg, Color fg) neutralFor(Brightness _) {
+    return (brandGreenDeep, brandForeground);
+  }
 
   static Color? colorFromHex(dynamic value) {
     if (value is! String || value.isEmpty) return null;
@@ -29,6 +48,29 @@ class CredentialDisplayStyle {
       return Color(int.parse(hex, radix: 16));
     }
     return null;
+  }
+
+  static bool isLightColor(Color color) => color.computeLuminance() > 0.45;
+
+  static Color contrastAgainst(Color textColor) => isLightColor(textColor)
+      ? const Color(0xFF000000)
+      : const Color(0xFFFFFFFF);
+
+  /// Sombras para texto sobre foto de fondo.
+  static List<Shadow> legibilityShadows(Color textColor) {
+    final edge = contrastAgainst(textColor);
+    return [
+      Shadow(
+        color: edge.withValues(alpha: 0.55),
+        blurRadius: 6,
+        offset: const Offset(0, 1),
+      ),
+      Shadow(
+        color: edge.withValues(alpha: 0.35),
+        blurRadius: 2,
+        offset: Offset.zero,
+      ),
+    ];
   }
 
   static bool isRasterImageUrl(String? url) {
@@ -87,11 +129,19 @@ class WalletCredentialUi {
   final String? backgroundImageUrl;
   final Color? textColor;
 
-  Color get resolvedBackground =>
-      backgroundColor ?? CredentialDisplayStyle.neutralBackground;
+  Color resolvedBackground(Brightness brightness) {
+    if (backgroundColor != null) {
+      return backgroundColor!;
+    }
+    return CredentialDisplayStyle.neutralFor(brightness).$1;
+  }
 
-  Color get resolvedForeground =>
-      textColor ?? CredentialDisplayStyle.neutralForeground;
+  Color resolvedForeground(Brightness brightness) {
+    if (textColor != null) {
+      return textColor!;
+    }
+    return CredentialDisplayStyle.neutralFor(brightness).$2;
+  }
 }
 
 /// Mapea [CredentialRecord] → UI (subset de CredentialUiMapper de quark-wallet).
@@ -119,42 +169,111 @@ abstract final class WalletCredentialMapper {
       MdocRecord(:final displayMetadata) => displayMetadata,
       _ => null,
     };
-    if (direct != null && direct.isNotEmpty) return direct;
+    if (direct != null && direct.isNotEmpty) {
+      return direct;
+    }
     if (record is SdJwtVcRecord) {
-      final display = record.issuerMetadata?['display'];
-      if (display is List && display.isNotEmpty) {
-        final first = display.first;
-        if (first is Map) return Map<String, dynamic>.from(first);
+      return _pickDisplayEntry(record.issuerMetadata?['display']);
+    }
+    return null;
+  }
+
+  /// Título: `display.name`. Si falta, `vct` / tipo (no es lo ideal).
+  static String _title(CredentialRecord record, Map<String, dynamic>? display) {
+    final named = _nameFromDisplay(display);
+    if (named != null) {
+      return named;
+    }
+    if (record is SdJwtVcRecord && record.vct.trim().isNotEmpty) {
+      return record.vct.trim();
+    }
+    if (record is W3cCredentialRecord) {
+      final type = record.types.lastOrNull;
+      if (type != null && type.trim().isNotEmpty) {
+        return type.trim();
+      }
+    }
+    if (record is MdocRecord && record.docType.trim().isNotEmpty) {
+      return record.docType.trim();
+    }
+    return 'Credencial';
+  }
+
+  /// Emisor: marca OID4VCI. Si falta, DID / `iss` crudo.
+  static String? _issuer(CredentialRecord record) {
+    if (record is SdJwtVcRecord) {
+      final meta = record.issuerMetadata;
+      final brand = _nameFromDisplay(
+        _asStringKeyedMap(meta?['issuer_brand_display']),
+      );
+      if (brand != null) {
+        return brand;
+      }
+      final iss = meta?['issuer'];
+      if (iss is String && iss.trim().isNotEmpty) {
+        return iss.trim();
+      }
+    }
+    if (record is W3cCredentialRecord) {
+      final named = _nameFromDisplay(
+        _asStringKeyedMap(record.displayMetadata?['issuer']),
+      );
+      if (named != null) {
+        return named;
+      }
+      final did = record.issuerDid?.trim();
+      if (did != null && did.isNotEmpty) {
+        return did;
       }
     }
     return null;
   }
 
-  static String _title(
-    CredentialRecord record,
-    Map<String, dynamic>? display,
-  ) {
-    final name = display?['name'] as String?;
-    if (name != null && name.isNotEmpty) return name;
-    if (record is SdJwtVcRecord) return record.vct.split('.').last;
-    if (record is W3cCredentialRecord) {
-      return record.types.lastOrNull ?? 'Credencial';
+  static Map<String, dynamic>? _pickDisplayEntry(
+    dynamic display, {
+    String preferredLocale = 'es',
+  }) {
+    if (display is Map) {
+      return _asStringKeyedMap(display);
     }
-    if (record is MdocRecord) return record.docType.split('.').last;
-    return 'Credencial';
+    if (display is! List || display.isEmpty) {
+      return null;
+    }
+    Map<String, dynamic>? fallback;
+    final preferred = preferredLocale.toLowerCase();
+    for (final entry in display) {
+      final map = _asStringKeyedMap(entry);
+      if (map == null) {
+        continue;
+      }
+      fallback ??= map;
+      final locale = (map['locale'] as String?)?.toLowerCase();
+      if (locale == null) {
+        continue;
+      }
+      if (locale == preferred || locale.startsWith('$preferred-')) {
+        return map;
+      }
+    }
+    return fallback;
   }
 
-  static String? _issuer(CredentialRecord record) {
-    if (record is SdJwtVcRecord) {
-      final brand = record.issuerMetadata?['issuer_brand_display'];
-      if (brand is Map) {
-        final n = brand['name'];
-        if (n is String && n.isNotEmpty) return n;
-      }
-      final iss = record.issuerMetadata?['issuer'];
-      if (iss is String && iss.isNotEmpty) return iss;
+  static String? _nameFromDisplay(Map<String, dynamic>? display) {
+    final name = display?['name'];
+    if (name is! String) {
+      return null;
     }
-    if (record is W3cCredentialRecord) return record.issuerDid;
+    final trimmed = name.trim();
+    return trimmed.isEmpty ? null : trimmed;
+  }
+
+  static Map<String, dynamic>? _asStringKeyedMap(dynamic value) {
+    if (value is Map<String, dynamic>) {
+      return value;
+    }
+    if (value is Map) {
+      return Map<String, dynamic>.from(value);
+    }
     return null;
   }
 }
