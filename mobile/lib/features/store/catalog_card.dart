@@ -1,15 +1,12 @@
 import 'package:flutter/material.dart';
 
+import '../../core/widgets/catalog_add_button.dart';
 import '../../core/widgets/shared_widgets.dart';
 
 /// Tipo de ítem del catálogo afiliado (Tienda).
 ///
 /// [product] queda listo para el módulo post-MVP; no hay pestaña todavía.
-enum CatalogKind {
-  pack,
-  session,
-  product,
-}
+enum CatalogKind { pack, session, product }
 
 /// Ítem vendible: pack, drop-in de sesión o producto futuro.
 ///
@@ -80,18 +77,28 @@ class CatalogCard extends StatelessWidget {
   final bool actionBusy;
 
   IconData get _placeholderIcon => switch (item.kind) {
-        CatalogKind.pack => Icons.inventory_2_outlined,
-        CatalogKind.session => Icons.event_available_outlined,
-        CatalogKind.product => Icons.shopping_bag_outlined,
-      };
+    CatalogKind.pack => Icons.inventory_2_outlined,
+    CatalogKind.session => Icons.event_available_outlined,
+    CatalogKind.product => Icons.shopping_bag_outlined,
+  };
 
-  String get _label =>
-      actionLabel ?? (item.owned ? 'Comprada' : 'Al carrito');
+  String get _label => actionLabel ?? (item.owned ? 'Comprada' : 'Al carrito');
 
   VoidCallback? get _onPressed {
     if (onAction != null) return onAction;
     if (item.enabled && !item.owned) return onAddToCart;
     return null;
+  }
+
+  /// Caja/Tienda: **+** circular como en la web. Otros CTAs siguen en botón.
+  bool get _showAdd {
+    if (item.owned) {
+      return false;
+    }
+    if (actionLabel == 'Al carrito') {
+      return true;
+    }
+    return actionLabel == null && onAddToCart != null && onAction == null;
   }
 
   Color _badgeColor(ColorScheme scheme, String label) {
@@ -135,10 +142,7 @@ class CatalogCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  item.title,
-                  style: Theme.of(context).textTheme.titleLarge,
-                ),
+                Text(item.title, style: Theme.of(context).textTheme.titleLarge),
                 if (item.badges.isNotEmpty) ...[
                   const SizedBox(height: 8),
                   Wrap(
@@ -158,8 +162,8 @@ class CatalogCard extends StatelessWidget {
                   Text(
                     item.subtitle!,
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: scheme.onSurface.withValues(alpha: 0.7),
-                        ),
+                      color: scheme.onSurface.withValues(alpha: 0.7),
+                    ),
                   ),
                 ],
                 if (item.details.isNotEmpty) ...[
@@ -170,35 +174,52 @@ class CatalogCard extends StatelessWidget {
                       child: Text(
                         line,
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: scheme.onSurface.withValues(alpha: 0.7),
-                            ),
+                          color: scheme.onSurface.withValues(alpha: 0.7),
+                        ),
                       ),
                     ),
                 ],
-                if (item.price != null) ...[
+                if (item.price != null || _showAdd) ...[
                   const SizedBox(height: 12),
-                  Text(
-                    '\$${item.price}',
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          color: scheme.primary,
-                          fontWeight: FontWeight.w600,
+                  Row(
+                    children: [
+                      if (item.price != null)
+                        Expanded(
+                          child: Text(
+                            '\$${item.price}',
+                            style: Theme.of(context).textTheme.titleMedium
+                                ?.copyWith(
+                                  color: scheme.primary,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                          ),
+                        )
+                      else
+                        const Spacer(),
+                      if (_showAdd)
+                        CatalogAddButton(
+                          onPressed: actionBusy ? null : _onPressed,
+                          tooltip: _label,
                         ),
+                    ],
                   ),
                 ],
-                const SizedBox(height: 12),
-                SizedBox(
-                  width: double.infinity,
-                  child: FilledButton(
-                    onPressed: actionBusy ? null : _onPressed,
-                    child: actionBusy
-                        ? const SizedBox(
-                            height: 20,
-                            width: 20,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : Text(_label),
+                if (!_showAdd) ...[
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    width: double.infinity,
+                    child: FilledButton(
+                      onPressed: actionBusy ? null : _onPressed,
+                      child: actionBusy
+                          ? const SizedBox(
+                              height: 20,
+                              width: 20,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : Text(_label),
+                    ),
                   ),
-                ),
+                ],
               ],
             ),
           ),

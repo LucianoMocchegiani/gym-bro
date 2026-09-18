@@ -22,6 +22,7 @@ dependencies:
   identity_core_dart:
     path: ../identity-core-dart
   share_plus: ^12.0.2
+  qr_flutter: ^4.1.0
 
 dev_dependencies:
   flutter_test:

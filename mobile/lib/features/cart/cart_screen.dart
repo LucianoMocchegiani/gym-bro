@@ -4,15 +4,16 @@ import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/network/api_client.dart';
+import '../../core/widgets/mp_checkout_share.dart';
 import '../../core/widgets/shared_widgets.dart';
 import '../store/store_repository.dart';
 import 'member_cart_controller.dart';
 
 /// Abre la pantalla del carrito (Tienda / Sesiones).
 void openMemberCart(BuildContext context) {
-  Navigator.of(context).push(
-    MaterialPageRoute<void>(builder: (_) => const CartScreen()),
-  );
+  Navigator.of(
+    context,
+  ).push(MaterialPageRoute<void>(builder: (_) => const CartScreen()));
 }
 
 /// Botón de AppBar con badge de cantidad.
@@ -85,8 +86,7 @@ class _CartScreenState extends State<CartScreen> {
         items: cart.lines
             .map((line) => {'kind': line.apiKind, 'id': line.id})
             .toList(),
-        idempotencyKey:
-            'mp-cart-${DateTime.now().millisecondsSinceEpoch}',
+        idempotencyKey: 'mp-cart-${DateTime.now().millisecondsSinceEpoch}',
       );
       if (!mounted) return;
 
@@ -115,45 +115,37 @@ class _CartScreenState extends State<CartScreen> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Pagar en Mercado Pago'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Total \$$amount. Se abrirá Mercado Pago para completar el pago.',
-              style: const TextStyle(fontSize: 14),
-            ),
-            const SizedBox(height: 12),
-            SelectableText(
-              url,
-              style: Theme.of(context).textTheme.bodySmall,
-            ),
-          ],
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Total \$$amount. Escaneá el QR o copiá el link.',
+                style: const TextStyle(fontSize: 14),
+              ),
+              const SizedBox(height: 12),
+              MpCheckoutShare(
+                url: url,
+                approved: false,
+                clearLabel: 'Cerrar',
+                onCopy: () {
+                  Clipboard.setData(ClipboardData(text: url));
+                  _snack('Link copiado');
+                },
+                onOpen: () async {
+                  final uri = Uri.parse(url);
+                  if (await canLaunchUrl(uri)) {
+                    await launchUrl(uri, mode: LaunchMode.externalApplication);
+                  } else if (mounted) {
+                    _snack('No se pudo abrir el navegador');
+                  }
+                },
+                onClear: () => Navigator.pop(context),
+              ),
+            ],
+          ),
         ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Clipboard.setData(ClipboardData(text: url));
-              if (context.mounted) {
-                Navigator.pop(context);
-                _snack('Link copiado');
-              }
-            },
-            child: const Text('Copiar link'),
-          ),
-          FilledButton(
-            onPressed: () async {
-              Navigator.pop(context);
-              final uri = Uri.parse(url);
-              if (await canLaunchUrl(uri)) {
-                await launchUrl(uri, mode: LaunchMode.externalApplication);
-              } else if (mounted) {
-                _snack('No se pudo abrir el navegador');
-              }
-            },
-            child: const Text('Pagar'),
-          ),
-        ],
       ),
     );
   }
@@ -204,9 +196,7 @@ class _CartScreenState extends State<CartScreen> {
                           children: [
                             Text(
                               'Total \$${cart.total}',
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .titleMedium
+                              style: Theme.of(context).textTheme.titleMedium
                                   ?.copyWith(
                                     color: scheme.primary,
                                     fontWeight: FontWeight.w600,
@@ -246,8 +236,7 @@ class _CartLineCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    final kindLabel =
-        line.kind == MemberCartKind.pack ? 'Pack' : 'Drop-in';
+    final kindLabel = line.kind == MemberCartKind.pack ? 'Pack' : 'Drop-in';
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -277,17 +266,17 @@ class _CartLineCard extends StatelessWidget {
                   Text(
                     line.subtitle!,
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: scheme.onSurface.withValues(alpha: 0.7),
-                        ),
+                      color: scheme.onSurface.withValues(alpha: 0.7),
+                    ),
                   ),
                 ],
                 const SizedBox(height: 8),
                 Text(
                   '\$${line.amount}',
                   style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                        color: scheme.primary,
-                        fontWeight: FontWeight.w600,
-                      ),
+                    color: scheme.primary,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ],
             ),

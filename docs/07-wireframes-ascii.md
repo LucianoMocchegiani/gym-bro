@@ -71,8 +71,8 @@ Inicio
 * Caja solo con permiso cashier.operate.
   Sesiones: calendario del socio → día → roster (crédito).
   Caja: picker afiliado (20 + Cargar más); Cobro | Débitos;
-  catálogo y carrito en dos recuadros; CASH + link MP;
-  panel de comprobante + Compartir (hoja del sistema);
+  catálogo (**+** al carrito) y carrito en dos recuadros; CASH + link MP
+  (QR, copiar, abrir, cancelar y limpiar); panel de comprobante + Compartir;
   débitos ver/baja (alta Card Brick en web).
 
 Acceso → igual que afiliado (wallet + QR puerta)

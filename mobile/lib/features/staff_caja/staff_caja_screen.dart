@@ -6,9 +6,11 @@ import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/network/api_client.dart';
+import '../../core/widgets/catalog_add_button.dart';
 import '../../core/widgets/confirm_dialog.dart';
 import '../../core/widgets/gym_bro_tabs.dart';
 import '../../core/widgets/loading_dialog.dart';
+import '../../core/widgets/mp_checkout_share.dart';
 import '../staff_sessions/staff_member_search_field.dart';
 import '../staff_sessions/staff_sessions_repository.dart';
 import '../store/receipt_panel.dart';
@@ -37,8 +39,12 @@ class _StaffCajaScreenState extends State<StaffCajaScreen> {
   bool _catalogLoading = true;
   String _medio = 'CASH';
   String? _mpUrl;
+  String? _mpTransactionId;
+  bool _mpApproved = false;
   String? _okMessage;
   Timer? _poll;
+  final _scroll = ScrollController();
+  final _mpShareKey = GlobalKey();
   MemberReceipt? _lastReceipt;
   List<DebitMandate> _queue = const [];
   MemberDebitView? _debitView;
@@ -55,6 +61,7 @@ class _StaffCajaScreenState extends State<StaffCajaScreen> {
   @override
   void dispose() {
     _poll?.cancel();
+    _scroll.dispose();
     super.dispose();
   }
 
@@ -234,19 +241,25 @@ class _StaffCajaScreenState extends State<StaffCajaScreen> {
       final url = result.checkoutUrl;
       setState(() {
         _mpUrl = url;
+        _mpTransactionId = result.transactionId.isEmpty
+            ? null
+            : result.transactionId;
+        _mpApproved = false;
         _okMessage = 'Link MP listo. El comprobante aparece al pagar.';
       });
+      _scrollToCheckout();
       _poll?.cancel();
-      if (result.transactionId.isNotEmpty) {
+      final txId = _mpTransactionId;
+      if (txId != null) {
         _poll = Timer.periodic(const Duration(seconds: 4), (_) async {
           try {
-            final r = await caja.receiptByTransaction(result.transactionId);
+            final r = await caja.receiptByTransaction(txId);
             if (!mounted) {
               return;
             }
             _poll?.cancel();
             setState(() {
-              _cart.clear();
+              _mpApproved = true;
               _lastReceipt = r;
               _okMessage = 'MP aprobado · ${r.code}';
             });
@@ -265,12 +278,72 @@ class _StaffCajaScreenState extends State<StaffCajaScreen> {
     }
   }
 
+  void _scrollToCheckout() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final ctx = _mpShareKey.currentContext;
+      if (ctx == null) {
+        return;
+      }
+      Scrollable.ensureVisible(
+        ctx,
+        alignment: 0.08,
+        duration: const Duration(milliseconds: 320),
+        curve: Curves.easeOut,
+      );
+    });
+  }
+
   Future<void> _openUrl(String raw) async {
     final uri = Uri.tryParse(raw);
     if (uri == null) {
       return;
     }
     await launchUrl(uri, mode: LaunchMode.externalApplication);
+  }
+
+  void _resetCobroStation() {
+    _poll?.cancel();
+    setState(() {
+      _cart.clear();
+      _member = null;
+      _mpUrl = null;
+      _mpTransactionId = null;
+      _mpApproved = false;
+      _okMessage = null;
+      _lastReceipt = null;
+      _debitView = null;
+    });
+  }
+
+  Future<void> _requestClearMp() async {
+    if (_mpApproved) {
+      _resetCobroStation();
+      return;
+    }
+    final ok = await showConfirmDialog(
+      context,
+      title: 'Cancelar y limpiar',
+      message:
+          'Se saca el link de esta pantalla, el carrito y el afiliado. '
+          'Si el socio ya pagó en Mercado Pago, el cobro igual puede entrar.',
+      confirmLabel: 'Limpiar',
+      cancelLabel: 'Seguir esperando',
+      isDestructive: true,
+    );
+    if (!ok || !mounted) {
+      return;
+    }
+    _resetCobroStation();
+  }
+
+  Future<void> _copyMpUrl(String url) async {
+    await Clipboard.setData(ClipboardData(text: url));
+    if (!mounted) {
+      return;
+    }
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('Link copiado')));
   }
 
   Future<void> _cancelMandate(String id) async {
@@ -301,6 +374,7 @@ class _StaffCajaScreenState extends State<StaffCajaScreen> {
     return Scaffold(
       appBar: AppBar(title: const Text('Caja')),
       body: ListView(
+        controller: _scroll,
         padding: const EdgeInsets.fromLTRB(16, 12, 16, 28),
         children: [
           StaffMemberSearchField(
@@ -400,8 +474,16 @@ class _StaffCajaScreenState extends State<StaffCajaScreen> {
                 '${_two(s.startsAt.toLocal().day)}/${_two(s.startsAt.toLocal().month)} '
                 '${_two(s.startsAt.toLocal().hour)}:${_two(s.startsAt.toLocal().minute)}',
               ),
-              trailing: Text('\$$price'),
-              onTap: () => _addDropIn(s, price),
+              trailing: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text('\$$price'),
+                  CatalogAddButton(
+                    tooltip: 'Agregar ${s.serviceName} al carrito',
+                    onPressed: () => _addDropIn(s, price),
+                  ),
+                ],
+              ),
             );
           })
         else
@@ -412,8 +494,16 @@ class _StaffCajaScreenState extends State<StaffCajaScreen> {
               subtitle: Text(
                 p.billingPeriod == 'MONTHLY' ? 'Mensual' : 'Único',
               ),
-              trailing: Text('\$${p.price}'),
-              onTap: () => _addPack(p),
+              trailing: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text('\$${p.price}'),
+                  CatalogAddButton(
+                    tooltip: 'Agregar ${p.name} al carrito',
+                    onPressed: () => _addPack(p),
+                  ),
+                ],
+              ),
             ),
           ),
       ],
@@ -429,7 +519,7 @@ class _StaffCajaScreenState extends State<StaffCajaScreen> {
         if (_cart.isEmpty)
           const Padding(
             padding: EdgeInsets.symmetric(vertical: 8),
-            child: Text('Vacío. Tocá un ítem del catálogo.'),
+            child: Text('Vacío. Agregá con + en el catálogo.'),
           )
         else
           ..._cart.map(
@@ -481,22 +571,17 @@ class _StaffCajaScreenState extends State<StaffCajaScreen> {
           child: Text(_medio == 'CASH' ? 'Cobrar efectivo' : 'Crear link MP'),
         ),
         if (_mpUrl != null) ...[
-          const SizedBox(height: 8),
-          OutlinedButton(
-            onPressed: () => _openUrl(_mpUrl!),
-            child: const Text('Abrir link'),
-          ),
-          TextButton(
-            onPressed: () async {
-              await Clipboard.setData(ClipboardData(text: _mpUrl!));
-              if (!mounted) {
-                return;
-              }
-              ScaffoldMessenger.of(
-                context,
-              ).showSnackBar(const SnackBar(content: Text('Link copiado')));
-            },
-            child: const Text('Copiar link'),
+          const SizedBox(height: 16),
+          MpCheckoutShare(
+            key: _mpShareKey,
+            url: _mpUrl!,
+            approved: _mpApproved,
+            onCopy: () => _copyMpUrl(_mpUrl!),
+            onOpen: () => _openUrl(_mpUrl!),
+            onClear: _requestClearMp,
+            onReceipt: _lastReceipt == null
+                ? null
+                : () => _openReceipt(_lastReceipt!),
           ),
         ],
       ],

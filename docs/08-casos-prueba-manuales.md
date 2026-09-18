@@ -67,7 +67,7 @@ Leyenda resultado: `P` pass · `F` fail · `B` bloqueado · `-` no aplica
 | P3b | Staff genera link MP pack en Caja | Preference + PENDING; ítem MP = nombre del pack + servicios/créditos; derechos al APPROVED | CU-PAG-001 | |
 | P3c | Staff genera link MP drop-in en Caja | Preference + PENDING; ítem MP = servicio · sede · horario (dos drop-ins del mismo servicio se distinguen); reserva al APPROVED | CU-PAG-001 | |
 | P3d | Staff genera link MP de carrito en Caja | Sin redirect; QR + copiar/abrir; al webhook APPROVED “Ver comprobante” (1 receipt por cart) y Staff = quien generó el link | CU-PAG-001 | |
-| P3d2 | Cancelar y limpiar con link pendiente | Confirma; saca link/carrito/afiliado de Caja. No anula MP: un pago posterior igual puede aprobar | CU-PAG-001 | |
+| P3d2 | Cancelar y limpiar con link pendiente (web y app staff) | Confirma; saca link/carrito/afiliado de Caja. No anula MP: un pago posterior igual puede aprobar | CU-PAG-001 | |
 | P3e | Staff cobra carrito en efectivo en Caja | APPROVED inmediato; panel con líneas (pack → contrato/vigencia + servicios del pack; drop-in → reserva/horario) | CU-PAG-002 | |
 | P3f | Afiliado paga carrito MP desde la app (pack y/o drop-in) | `POST /me/transaction-items/mp/cart` → 1 Preference; mismos derechos al APPROVED que Caja; sin cash en el celular | CU-PAG-001 | |
 | P4 | Comprobante tras pago | Visible app + email E1; en reportes y cierres, “Ver comprobante” abre el panel (pack incluye servicios) | RN-PAG-009 | |
