@@ -16,6 +16,7 @@ La creación de registros sigue la skill:
 
 ## Índice
 
+- [2026-09-18 — Chat: stream en el hilo y Parar](./2026-09-18-chat-stream-stop.md)
 - [2026-09-18 — Composer del chat: crece y después scrollea](./2026-09-18-chat-composer-autogrow.md)
 - [2026-09-18 — Comprobante compartir, AuthGate y chat al último mensaje](./2026-09-18-comprobante-share-authgate.md)
 - [2026-09-18 — App staff: roster de sesiones y Caja](./2026-09-18-app-staff-roster-caja.md)
