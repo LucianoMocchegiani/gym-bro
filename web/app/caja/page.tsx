@@ -9,6 +9,8 @@ import { Panel } from '@/components/AdminUi';
 import { MemberPicker } from '@/components/MemberPicker';
 import { MpCardPaymentBrick } from '@/components/MpCardPaymentBrick';
 import type { MpCardTokenResult } from '@/components/MpCardPaymentBrick';
+import { ConfirmDialog } from '@/components/ConfirmDialog';
+import { MpCheckoutShare } from '@/components/MpCheckoutShare';
 import { ReceiptPanel } from '@/components/ReceiptPanel';
 import { IconReceipt } from '@/components/RowActions';
 import { RequireStaff } from '@/components/RequireStaff';
@@ -92,6 +94,7 @@ function CajaInner() {
   const [mpTransactionId, setMpTransactionId] = useState<string | null>(null);
   const [mpApproved, setMpApproved] = useState(false);
   const [copyKey, setCopyKey] = useState<string | null>(null);
+  const [mpClearConfirm, setMpClearConfirm] = useState(false);
   const [cashTransactionId, setCashTransactionId] = useState<string | null>(
     null,
   );
@@ -278,6 +281,31 @@ function CajaInner() {
     } catch {
       setCobroError('No se pudo copiar el link');
     }
+  }
+
+  function resetCobroStation() {
+    setMpCheckoutUrl(null);
+    setMpTransactionId(null);
+    setMpApproved(false);
+    setCart([]);
+    setMemberId('');
+    setMemberLabel('');
+    setCashTransactionId(null);
+    setCobroOk(null);
+    setCobroError(null);
+    setReceipt(null);
+    setReceiptError(null);
+    setDebitWanted(false);
+    setMpClearConfirm(false);
+    setCopyKey(null);
+  }
+
+  function requestClearMpCheckout() {
+    if (mpApproved) {
+      resetCobroStation();
+      return;
+    }
+    setMpClearConfirm(true);
   }
 
   function showReceipt(transactionId: string | null) {
@@ -737,44 +765,17 @@ function CajaInner() {
             ) : null}
 
             {mpCheckoutUrl ? (
-              <div className="cart-line">
-                <div>
-                  <p className="cart-name">Link de pago MP</p>
-                  <p className="muted small mp-link-url">{mpCheckoutUrl}</p>
-                </div>
-                <div className="row-actions">
-                  {mpApproved ? (
-                    <button
-                      type="button"
-                      className="btn primary"
-                      onClick={() => showReceipt(mpTransactionId)}
-                    >
-                      <IconReceipt />
-                      Ver comprobante
-                    </button>
-                  ) : (
-                    <button type="button" className="btn ghost" disabled>
-                      Esperando aprobación…
-                    </button>
-                  )}
-                  <button
-                    type="button"
-                    className="btn ghost"
-                    onClick={() =>
-                      window.open(mpCheckoutUrl, '_blank', 'noopener,noreferrer')
-                    }
-                  >
-                    Abrir
-                  </button>
-                  <button
-                    type="button"
-                    className="btn ghost"
-                    onClick={() => void copyMpUrl(mpCheckoutUrl)}
-                  >
-                    {copyKey === mpCheckoutUrl ? 'Copiado' : 'Copiar'}
-                  </button>
-                </div>
-              </div>
+              <MpCheckoutShare
+                url={mpCheckoutUrl}
+                approved={mpApproved}
+                copyDone={copyKey === mpCheckoutUrl}
+                onCopy={() => void copyMpUrl(mpCheckoutUrl)}
+                onOpen={() =>
+                  window.open(mpCheckoutUrl, '_blank', 'noopener,noreferrer')
+                }
+                onClear={requestClearMpCheckout}
+                onReceipt={() => showReceipt(mpTransactionId)}
+              />
             ) : null}
 
             <div className="row-actions cart-actions">
@@ -817,6 +818,16 @@ function CajaInner() {
         </Panel>
       </div>
       )}
+      <ConfirmDialog
+        open={mpClearConfirm}
+        title="Cancelar y limpiar"
+        description="Se saca el link de esta pantalla, el carrito y el afiliado. Si el socio ya pagó en Mercado Pago, el cobro igual puede entrar por el webhook."
+        confirmLabel="Limpiar"
+        cancelLabel="Seguir esperando"
+        tone="danger"
+        onConfirm={resetCobroStation}
+        onCancel={() => setMpClearConfirm(false)}
+      />
     </AdminShell>
   );
 }

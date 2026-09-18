@@ -2312,6 +2312,83 @@ button.danger {
   margin-top: 0;
 }
 
+.mp-checkout {
+  display: grid;
+  gap: 0.75rem;
+  min-width: 0;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--line);
+}
+
+.mp-checkout-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.mp-checkout-head .cart-name {
+  margin: 0;
+}
+
+.mp-checkout-qr {
+  justify-self: center;
+  background: #fff;
+  padding: 0.4rem;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  line-height: 0;
+}
+
+.mp-checkout-qr img {
+  display: block;
+  width: 148px;
+  height: 148px;
+}
+
+.mp-checkout-qr .venue-qr-skeleton {
+  width: 148px;
+  --qr-size: 148px;
+}
+
+.mp-checkout-url {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  min-width: 0;
+  padding: 0.35rem 0.4rem 0.35rem 0.7rem;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--input-bg);
+}
+
+.mp-checkout-url code {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.mp-checkout-url .btn {
+  flex-shrink: 0;
+}
+
+.mp-checkout-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.mp-checkout-wait {
+  margin: 0;
+  flex: 1 1 8rem;
+}
+
 .mp-link-url {
   overflow-wrap: anywhere;
   word-break: break-all;
