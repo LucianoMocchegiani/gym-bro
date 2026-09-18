@@ -16,6 +16,7 @@ La creación de registros sigue la skill:
 
 ## Índice
 
+- [2026-09-18 — Cards de credencial Faciliter, display de pack e icono de app](./2026-09-18-credential-cards-icono.md)
 - [2026-09-18 — Chat: scrollbar del asistente alineada al resto](./2026-09-18-chat-scrollbar.md)
 - [2026-09-18 — Chat: no empujar el scroll mientras pinta](./2026-09-18-chat-scroll-stick.md)
 - [2026-09-18 — Chat: stream en el hilo y Parar](./2026-09-18-chat-stream-stop.md)
