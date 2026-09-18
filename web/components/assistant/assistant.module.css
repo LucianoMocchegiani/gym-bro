@@ -319,7 +319,7 @@
   width: 0;
   min-width: 0;
   min-height: 2.4rem;
-  max-height: 6.5rem;
+  max-height: 10rem;
   margin: 0;
   padding: 0.55rem 0;
   border: 0;
@@ -328,7 +328,9 @@
   color: var(--ink);
   font: inherit;
   font-weight: 400;
+  line-height: 1.4;
   resize: none;
+  overflow-y: auto;
   box-shadow: none;
 }
 

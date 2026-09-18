@@ -1,11 +1,21 @@
 'use client';
 
-import { useState, type FormEvent, type KeyboardEvent } from 'react';
+import {
+  useEffect,
+  useRef,
+  useState,
+  type FormEvent,
+  type KeyboardEvent,
+} from 'react';
 import { IconSend, IconStop } from '@/components/assistant/icons';
 import styles from '@/components/assistant/assistant.module.css';
 
+const FIELD_MAX_PX = 160;
+
 /**
  * Composer del asistente. En stream, Enviar pasa a Parar (abort).
+ *
+ * @remarks El campo crece con el texto hasta ~8 líneas y después scrollea.
  */
 export function Composer({
   disabled,
@@ -23,6 +33,16 @@ export function Composer({
   ariaLabel?: string;
 }) {
   const [text, setText] = useState('');
+  const fieldRef = useRef<HTMLTextAreaElement>(null);
+
+  useEffect(() => {
+    const el = fieldRef.current;
+    if (!el) {
+      return;
+    }
+    el.style.height = '0px';
+    el.style.height = `${Math.min(el.scrollHeight, FIELD_MAX_PX)}px`;
+  }, [text]);
 
   function submit(): void {
     const trimmed = text.trim();
@@ -55,6 +75,7 @@ export function Composer({
     <form className={styles.composer} onSubmit={handleSubmit}>
       <div className={styles.pill}>
         <textarea
+          ref={fieldRef}
           className={styles.field}
           value={text}
           onChange={(event) => setText(event.target.value)}

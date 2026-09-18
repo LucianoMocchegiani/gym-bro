@@ -213,6 +213,7 @@ class _ChatThreadScreenState extends State<ChatThreadScreen> {
             child: Padding(
               padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
               child: Row(
+                crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   Expanded(
                     child: TextField(
@@ -221,8 +222,9 @@ class _ChatThreadScreenState extends State<ChatThreadScreen> {
                         hintText: 'Mensaje',
                       ),
                       minLines: 1,
-                      maxLines: 4,
-                      onSubmitted: (_) => _send(),
+                      maxLines: 5,
+                      keyboardType: TextInputType.multiline,
+                      textInputAction: TextInputAction.newline,
                     ),
                   ),
                   IconButton(
