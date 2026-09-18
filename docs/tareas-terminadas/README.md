@@ -16,6 +16,7 @@ La creación de registros sigue la skill:
 
 ## Índice
 
+- [2026-09-18 — Rol Entrenador: borrable, slug y login demo](./2026-09-18-rol-entrenador-borrable.md)
 - [2026-09-17 — Inicio agrupa packs y oculta drop-in usado](./2026-09-17-inicio-agrupar-packs-dropin.md)
 - [2026-09-17 — Re-emitir credencial: select de pack vigente](./2026-09-17-reemitir-credencial-pack-select.md)
 - [2026-09-17 — Drop-in ONE_TIME y cancelar serie con crédito](./2026-09-17-dropin-one-time-cancelar-serie.md)
