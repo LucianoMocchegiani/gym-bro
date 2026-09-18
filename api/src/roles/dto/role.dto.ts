@@ -23,7 +23,7 @@ export class CreateRoleDto {
 }
 
 /**
- * Edición de rol (Profesor o custom). Nombre y/o permisos.
+ * Edición de rol (Entrenador o custom). Nombre y/o permisos.
  *
  * @remarks El rol sistema `admin` no admite update (403).
  */

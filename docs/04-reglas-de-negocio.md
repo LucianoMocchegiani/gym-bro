@@ -21,7 +21,7 @@ Formato: **RN-MODULO-NNN** — enunciado — excepciones.
 | RN-TEN-005 | Las horas mínimas para cancelar una reserva las define el gym. |
 | RN-TEN-006 | El modo de lista de espera lo define el gym (ver RN-RES). |
 | RN-TEN-007 | El multi-ingreso diario (sí/no y límites) lo define el gym. |
-| RN-TEN-008 | El alcance de alumnos visibles para el rol Profesor lo define el admin; **default: ver todos** (lectura). |
+| RN-TEN-008 | El alcance de alumnos visibles para el rol Entrenador lo define el admin; **default: ver todos** (lectura). |
 
 ---
 
@@ -143,14 +143,14 @@ Formato: **RN-MODULO-NNN** — enunciado — excepciones.
 | ID | Regla |
 |----|--------|
 | RN-ROL-001 | Super Admin es exclusivo del equipo GymBro. |
-| RN-ROL-002 | Al crear un gym se generan roles seed (incl. profesor y afiliado como defaults de producto); el gym puede crear y editar roles. |
+| RN-ROL-002 | Al crear un gym se generan roles seed (Admin, Entrenador; slug `entrenador`). El gym puede crear, editar y **eliminar** roles; el **Admin** de sistema no se edita ni se elimina. Entrenador es seed (permisos default) y sí se puede editar o borrar. |
 | RN-ROL-003 | Los permisos tienen scope de **tenant**. |
 | RN-ROL-004 | Un usuario staff puede tener **múltiples roles**. |
 | RN-ROL-005 | Afiliado y staff son **perfiles distintos**. |
 | RN-ROL-006 | Alta de staff: Super Admin, Admin del gym, u otro rol con el permiso correspondiente. |
 | RN-ROL-007 | Acciones peligrosas (devoluciones, borrados sensibles, exports) requieren **flag explícito**. |
 | RN-ROL-008 | Pase manual, devoluciones y cambios críticos generan **EventoAuditoria**. |
-| RN-ROL-009 | Matriz default de referencia (ajustable por rol custom): config/MP/plantillas → Admin; afiliados CRUD → Admin y roles con permiso (ej. recepción); caja → Admin/permiso; rutinas → Admin+Profe; afiliado → self-service. |
+| RN-ROL-009 | Matriz default de referencia (ajustable por rol custom): config/MP/plantillas → Admin; afiliados CRUD → Admin y roles con permiso (ej. recepción); caja → Admin/permiso; rutinas → Admin+Entrenador; afiliado → self-service. |
 
 ---
 

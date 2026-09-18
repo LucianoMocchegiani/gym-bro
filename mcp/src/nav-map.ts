@@ -52,7 +52,7 @@ export const NAV_MAP: readonly NavEntry[] = [
     href: '/staff',
     label: 'Staff',
     anyOf: ['staff.read'],
-    keywords: ['staff', 'profesor', 'profesores'],
+    keywords: ['staff', 'entrenador', 'profesor', 'profesores'],
   },
   {
     href: '/roles',

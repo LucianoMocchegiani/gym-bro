@@ -55,7 +55,7 @@ export function createRole(input: CreateRoleInput): Promise<RoleDetail> {
 }
 
 /**
- * Edición de Profesor o custom (Admin sistema → 403).
+ * Edición de Entrenador o custom (Admin sistema → 403).
  */
 export function updateRole(
   roleId: string,
@@ -68,7 +68,7 @@ export function updateRole(
 }
 
 /**
- * Eliminación de rol custom (roles de sistema → 403 `ROLE_IS_SYSTEM`).
+ * Eliminación de rol (Admin sistema → 403 `ROLE_IS_SYSTEM`).
  */
 export function deleteRole(roleId: string): Promise<{ deleted: true }> {
   return apiRequest<{ deleted: true }>(`/roles/${roleId}`, {

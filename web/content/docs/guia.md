@@ -157,7 +157,7 @@ En esta guía no documentamos el Super Admin (eso es interno de Faciliter). En e
 
 **Captura:** `web-login-staff.png` — lista.  
 **Dónde:** `{slug}.faciliter.xyz`, sin estar logueado.  
-**Qué se ve:** **Acceso staff**, nombre del local, email y contraseña, Entrar.
+**Qué se ve:** **Acceso staff**, nombre del local, email y contraseña, atajos demo Admin / Entrenador, Entrar.
 
 **Captura:** `app-login.png` — lista.  
 **Dónde:** App, pantalla de entrada.  
@@ -329,13 +329,13 @@ El socio **no** es un rol de staff. Si la misma persona es profesor y socio, son
 
 El rol **Admin** viene **de sistema**: no se edita ni se elimina (en la lista solo el ojo: ver). Es el que usa el dueño al arrancar.
 
-**Profesor** también es de sistema, pero **sí se le pueden cambiar los permisos** (lápiz). En la demo: ve afiliados y sesiones; no opera Caja.
+**Entrenador** también es seed (permisos default), **sí se le pueden cambiar los permisos** y **sí se puede eliminar**. En la demo: ve afiliados y sesiones; no opera Caja.
 
 **+ Nuevo rol** arma un rol custom (recepción, etc.) tildando permisos del catálogo.
 
 Orden:
 
-1. Dejá Admin como está. Ajustá Profesor o creá un rol si hace falta (qué puede hacer: caja, puerta, catálogo…).
+1. Dejá Admin como está. Ajustá Entrenador o creá un rol si hace falta (qué puede hacer: caja, puerta, catálogo…).
 2. Alta de staff: nombre, email, contraseña inicial, roles.
 
 ### Staff
@@ -346,10 +346,10 @@ Orden:
 
 **Captura:** `web-roles-lista.png` — lista.  
 **Dónde:** Roles y permisos.  
-**Qué se ve:** Admin (Sistema, solo ver) y Profesor (Sistema, se edita).
+**Qué se ve:** Admin (Sistema, solo ver) y Entrenador (Sistema, se edita y se puede eliminar).
 
 **Captura:** `web-roles-flags.png` — lista.  
-**Dónde:** lápiz de Profesor.  
+**Dónde:** lápiz de Entrenador.  
 **Qué se ve:** permisos tildados; **Operar caja del día** no. Admin no tiene esta pantalla.
 
 **Captura:** `web-roles-alta.png` — lista.  
@@ -370,7 +370,7 @@ Orden:
 
 **Captura:** `web-staff-roles.png` — lista.  
 **Dónde:** asignar roles al staff.  
-**Qué se ve:** Admin / Profesor. Se puede tener más de uno.
+**Qué se ve:** Admin / Entrenador. Se puede tener más de uno.
 
 No usamos la captura de **Credencial de acceso** (Kuatia / molinete): no es el arranque de un local.
 

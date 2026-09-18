@@ -13,7 +13,7 @@ export type PermissionDefinition = {
 /** Slugs de roles sistema creados al alta de tenant (RN-ROL-002). */
 export const SYSTEM_ROLE_SLUGS = {
   admin: 'admin',
-  profesor: 'profesor',
+  entrenador: 'entrenador',
 } as const;
 
 export type SystemRoleSlug =
@@ -120,8 +120,8 @@ export const PERMISSION_CATALOG: readonly PermissionDefinition[] = [
   },
 ] as const;
 
-/** Códigos asignados al rol sistema Profesor (Admin recibe todo el catálogo). */
-export const PROFESOR_PERMISSION_CODES: readonly string[] = [
+/** Códigos asignados al rol seed Entrenador (Admin recibe todo el catálogo). */
+export const ENTRENADOR_PERMISSION_CODES: readonly string[] = [
   'members.read',
   'sessions.write',
   'routines.write',

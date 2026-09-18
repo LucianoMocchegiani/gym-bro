@@ -169,7 +169,7 @@ Leyenda resultado: `P` pass · `F` fail · `B` bloqueado · `-` no aplica
 | C7-2 | Parar a mitad de stream | Enviar → Parar; queda lo generado (texto/tools). Se puede seguir el hilo | C7 | |
 | C7-3 | OpenRouter sin crédito / clave mala | Banner claro (crédito o clave). No se pierde el mensaje del staff | C7 | |
 | C7-4 | Chip de una tool (p. ej. Reportes) | Cierra el drawer y navega a `/reportes` | C7 | |
-| C7-5 | `npm run smoke` en `mcp/` tras seed | Admin: dos períodos distintos; Profesor: caja/débito sin permiso, reportes+help OK | C7 | |
+| C7-5 | `npm run smoke` en `mcp/` tras seed | Admin: dos períodos distintos; Entrenador: caja/débito sin permiso, reportes+help OK | C7 | |
 
 ---
 

@@ -53,7 +53,7 @@ Solo servicios por sesiones. Pestañas **Calendario** (semana, cupo) y **Recurre
 
 ## Staff y roles
 
-Roles y permisos, después Staff. Admin es de sistema (no se edita). Profesor se le pueden cambiar permisos (en la demo: no opera Caja). El socio no ve Staff.
+Roles y permisos, después Staff. Admin es de sistema (no se edita). Entrenador se le pueden cambiar permisos (en la demo: no opera Caja). El socio no ve Staff.
 
 ## Afiliados
 

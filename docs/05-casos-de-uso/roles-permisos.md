@@ -13,7 +13,7 @@
 **Flujo principal:**
 1. Crea Tenant (nombre, estado activo).
 2. Crea Sucursal inicial (S2).
-3. Genera roles seed (Admin, Profesor, Afiliado, …).
+3. Genera roles seed (Admin, Entrenador, …).
 4. Crea usuario Admin del gym.
 5. Aplica config default (tolerancia 15, etc.).
 

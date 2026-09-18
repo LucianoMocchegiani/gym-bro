@@ -106,7 +106,7 @@ const PERMISSIONS: { code: string; description: string; dangerous: boolean }[] =
     },
   ];
 
-const PROFESOR_CODES = [
+const ENTRENADOR_CODES = [
   'members.read',
   'sessions.write',
   'routines.write',
@@ -115,7 +115,7 @@ const PROFESOR_CODES = [
 ];
 
 /**
- * Seed de desarrollo: Super + tenant demo completo (branch, roles, staff Admin y Profesor, member).
+ * Seed de desarrollo: Super + tenant demo completo (branch, roles, staff Admin y Entrenador, member).
  *
  * @remarks Credenciales solo para entornos locales. Kuatia: wallets compartidos
  * vía `KUATIA_*` en env (consola Kuatia); el seed no bindea por tenant.
@@ -204,29 +204,46 @@ async function main(): Promise<void> {
     });
   }
 
-  let profesorRole = await prisma.role.findUnique({
+  let entrenadorRole = await prisma.role.findUnique({
     where: {
-      tenantId_slug: { tenantId: tenant.id, slug: 'profesor' },
+      tenantId_slug: { tenantId: tenant.id, slug: 'entrenador' },
     },
   });
-  if (!profesorRole) {
-    profesorRole = await prisma.role.create({
+  if (!entrenadorRole) {
+    entrenadorRole = await prisma.role.findUnique({
+      where: {
+        tenantId_slug: { tenantId: tenant.id, slug: 'profesor' },
+      },
+    });
+    if (entrenadorRole) {
+      entrenadorRole = await prisma.role.update({
+        where: { id: entrenadorRole.id },
+        data: { name: 'Entrenador', slug: 'entrenador' },
+      });
+    }
+  }
+  if (!entrenadorRole) {
+    entrenadorRole = await prisma.role.create({
       data: {
         tenantId: tenant.id,
-        name: 'Profesor',
-        slug: 'profesor',
+        name: 'Entrenador',
+        slug: 'entrenador',
         isSystem: true,
         rolePermissions: {
-          create: PROFESOR_CODES.map((code) => ({
+          create: ENTRENADOR_CODES.map((code) => ({
             permissionId: byCode.get(code)!.id,
           })),
         },
       },
     });
   } else {
+    await prisma.role.update({
+      where: { id: entrenadorRole.id },
+      data: { name: 'Entrenador', slug: 'entrenador' },
+    });
     await prisma.rolePermission.createMany({
-      data: PROFESOR_CODES.map((code) => ({
-        roleId: profesorRole!.id,
+      data: ENTRENADOR_CODES.map((code) => ({
+        roleId: entrenadorRole!.id,
         permissionId: byCode.get(code)!.id,
       })),
       skipDuplicates: true,
@@ -260,33 +277,53 @@ async function main(): Promise<void> {
     },
   });
 
-  const profesorStaff = await prisma.staffUser.upsert({
+  const oldEntrenadorStaff = await prisma.staffUser.findUnique({
     where: {
       tenantId_email: {
         tenantId: tenant.id,
         email: 'profesor@gymdeprueba.com',
       },
     },
-    update: { passwordHash, active: true, name: 'Profesor Gym de Prueba' },
+  });
+  if (oldEntrenadorStaff) {
+    await prisma.staffUser.update({
+      where: { id: oldEntrenadorStaff.id },
+      data: {
+        email: 'entrenador@gymdeprueba.com',
+        passwordHash,
+        active: true,
+        name: 'Entrenador Gym de Prueba',
+      },
+    });
+  }
+
+  const entrenadorStaff = await prisma.staffUser.upsert({
+    where: {
+      tenantId_email: {
+        tenantId: tenant.id,
+        email: 'entrenador@gymdeprueba.com',
+      },
+    },
+    update: { passwordHash, active: true, name: 'Entrenador Gym de Prueba' },
     create: {
       tenantId: tenant.id,
-      email: 'profesor@gymdeprueba.com',
+      email: 'entrenador@gymdeprueba.com',
       passwordHash,
-      name: 'Profesor Gym de Prueba',
+      name: 'Entrenador Gym de Prueba',
     },
   });
 
   await prisma.staffUserRole.upsert({
     where: {
       staffUserId_roleId: {
-        staffUserId: profesorStaff.id,
-        roleId: profesorRole.id,
+        staffUserId: entrenadorStaff.id,
+        roleId: entrenadorRole.id,
       },
     },
     update: {},
     create: {
-      staffUserId: profesorStaff.id,
-      roleId: profesorRole.id,
+      staffUserId: entrenadorStaff.id,
+      roleId: entrenadorRole.id,
     },
   });
 
@@ -329,12 +366,12 @@ async function main(): Promise<void> {
       email: staff.email,
       roles: ['admin'],
     },
-    profesorStaff: {
-      id: profesorStaff.id,
-      email: profesorStaff.email,
-      roles: ['profesor'],
+    entrenadorStaff: {
+      id: entrenadorStaff.id,
+      email: entrenadorStaff.email,
+      roles: ['entrenador'],
     },
-    profesorRoleId: profesorRole.id,
+    entrenadorRoleId: entrenadorRole.id,
     member: { id: member.id, email: member.email },
     password: DEMO_PASSWORD,
     kuatia:

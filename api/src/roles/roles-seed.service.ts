@@ -3,7 +3,7 @@ import { Permission, Prisma, Role } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import {
   PERMISSION_CATALOG,
-  PROFESOR_PERMISSION_CODES,
+  ENTRENADOR_PERMISSION_CODES,
   SYSTEM_ROLE_SLUGS,
 } from './permission-catalog';
 
@@ -81,7 +81,7 @@ export class RolesSeedService {
   }
 
   /**
-   * Crea roles Admin y Profesor del tenant con sus permisos.
+   * Crea roles Admin y Entrenador del tenant con sus permisos.
    *
    * @param tx - Cliente de la transacción del create tenant.
    * @param tenantId - Gym recién creado.
@@ -102,7 +102,7 @@ export class RolesSeedService {
       permissions.map((p) => p.id),
     );
 
-    const profesorPermissionIds = PROFESOR_PERMISSION_CODES.map((code) => {
+    const entrenadorPermissionIds = ENTRENADOR_PERMISSION_CODES.map((code) => {
       const permission = byCode.get(code);
       if (!permission) {
         throw new Error(`Missing permission in catalog: ${code}`);
@@ -110,12 +110,12 @@ export class RolesSeedService {
       return permission.id;
     });
 
-    const profesor = await this.createSystemRole(
+    const entrenador = await this.createSystemRole(
       tx,
       tenantId,
-      'Profesor',
-      SYSTEM_ROLE_SLUGS.profesor,
-      profesorPermissionIds,
+      'Entrenador',
+      SYSTEM_ROLE_SLUGS.entrenador,
+      entrenadorPermissionIds,
     );
 
     return [
@@ -123,7 +123,7 @@ export class RolesSeedService {
         admin,
         permissions.map((p) => p.code),
       ),
-      this.toSummary(profesor, [...PROFESOR_PERMISSION_CODES]),
+      this.toSummary(entrenador, [...ENTRENADOR_PERMISSION_CODES]),
     ];
   }
 

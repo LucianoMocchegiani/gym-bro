@@ -29,7 +29,7 @@ import { TenantResponse } from './tenants.types';
  * CRUD de tenants para Super Admin (plataforma).
  *
  * @remarks Rutas bajo `/api/tenants`. No usa TenantGuard (RN-TEN-002 / CU-ROL-002).
- * Al crear: seed de sucursal default (RN-TEN-003 / S2) y roles Admin/Profesor (RN-ROL-002).
+ * Al crear: seed de sucursal default (RN-TEN-003 / S2) y roles Admin/Entrenador (RN-ROL-002).
  */
 @Controller('tenants')
 @RequireSuperAuth()

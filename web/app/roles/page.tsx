@@ -158,7 +158,7 @@ function RolesInner() {
                   {r.slug === 'admin' ? <IconView /> : <IconEdit />}
                 </RowIconButton>
                 <DeleteRowButton
-                  hidden={r.isSystem}
+                  hidden={r.slug === 'admin'}
                   dialogTitle={`Eliminar rol ${r.name}?`}
                   description="Se elimina aunque tenga staff asignado."
                   onDelete={() => deleteRole(r.id)}

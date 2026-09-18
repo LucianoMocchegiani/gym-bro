@@ -413,7 +413,7 @@ Se hace upsert al crear un tenant (`RolesSeedService.ensurePermissionCatalog`).
 
 ### 4.4 `roles`
 
-Rol de staff **por tenant** (RN-ROL-002). Seed: `Admin` (`slug=admin`) y `Profesor` (`slug=profesor`), `is_system=true`.
+Rol de staff **por tenant** (RN-ROL-002). Seed: `Admin` (`slug=admin`) y `Entrenador` (`slug=entrenador`), `is_system=true`. Solo `admin` no se edita ni se elimina.
 
 | Columna | Tipo | Notas |
 |---------|------|--------|
@@ -421,7 +421,7 @@ Rol de staff **por tenant** (RN-ROL-002). Seed: `Admin` (`slug=admin`) y `Profes
 | `tenant_id` | uuid FK → `tenants` | ON DELETE CASCADE |
 | `name` | text | unique por tenant |
 | `slug` | text | unique por tenant |
-| `is_system` | boolean | seed no borrable fácilmente |
+| `is_system` | boolean | seed (Admin/Entrenador); solo Admin no se puede borrar |
 | `created_at` / `updated_at` | timestamptz | |
 
 ---
@@ -979,6 +979,8 @@ Historia incremental (2026-07 / 2026-08) **compactada** en un baseline (`40476fa
 | `20260830223000_refund_cart_receipt` | `ReceiptConcept.REFUND`; `receipts.transaction_id` deja de ser UK; `cash_movements.receipt_id`. |
 | `20260830223100_receipts_charge_unique` | Unique parcial: un cobro (`concept <> REFUND`) por `transaction_id`. |
 | `20260901120000_debit_mandates` | `DebitMandateStatus` + `debit_mandates` (impl. vieja: tarjeta+job). Diseño 2026-09-15: migrar a preapproval. |
+| `20260917120000_dropin_one_time_pack` | `packs.origin_service_id`; unique `credential_offers (member_id, pack_id)`. |
+| `20260918120000_role_profesor_name_entrenador` | Rol seed: `name` Entrenador, `slug` entrenador; staff demo `entrenador@gymdeprueba.com`. |
 
 Comandos y checklist “desde cero”: [13-setup-db-desde-cero.md](./13-setup-db-desde-cero.md).
 
@@ -1005,7 +1007,7 @@ Tras `docker compose down -v`: `up --build -d` → `migrate deploy` → `generat
 | Password (todos) | `ChangeMe123!` |
 
 Script: [`api/prisma/seed.ts`](../api/prisma/seed.ts).  
-Crea Super + tenant demo + **branch** + roles Admin/Profesor + staff Admin + member. Password: `ChangeMe123!`.  
+Crea Super + tenant demo + **branch** + roles Admin/Entrenador + staff Admin + member. Password: `ChangeMe123!`.  
 Kuatia: wallets compartidos vía `KUATIA_*` (el seed **no** escribe columnas por tenant; esas columnas ya no existen).
 
 Detalle: [13-setup-db-desde-cero.md](./13-setup-db-desde-cero.md) · [credenciales-demo.md](./credenciales-demo.md).

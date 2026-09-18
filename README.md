@@ -133,7 +133,7 @@ Mensajes (C4/C7): `POST /v1/conversations/:id/messages` body `{ "text" }` → UI
 
 Drawer Admin (C5/C7): burbuja Asistente abajo a la derecha (no va en el topbar). Título automático (editable), Parar, chips de `links` hacia pantallas Admin. `NEXT_PUBLIC_CHAT_API_URL` se bakea en el build de web. Panel por túnel (`https://{slug}.faciliter.xyz`): `CORS_APP_DOMAIN` en `chat-api/.env` (mismo criterio que Nest) y recrear `chat-api`.
 
-MCP Faciliter (C3+C6): sidecar `mcp/` en Compose (`:3011`). `GET /health` (sin auth). Tools de lectura A–D vía `POST /mcp` con el mismo JWT Staff. Nest sigue autorizando. README: [`mcp/README.md`](./mcp/README.md). Smoke: `cd mcp; npm run smoke` (Admin + Profesor seed).
+MCP Faciliter (C3+C6): sidecar `mcp/` en Compose (`:3011`). `GET /health` (sin auth). Tools de lectura A–D vía `POST /mcp` con el mismo JWT Staff. Nest sigue autorizando. README: [`mcp/README.md`](./mcp/README.md). Smoke: `cd mcp; npm run smoke` (Admin + Entrenador seed).
 
 ### Auth (JWT + refresh)
 
@@ -142,7 +142,7 @@ Seed y credenciales: [docs/13-setup-db-desde-cero.md](./docs/13-setup-db-desde-c
 | Perfil | Endpoint | Seed |
 |--------|----------|------|
 | Super | `POST /api/auth/super/login` | `super@faciliter.xyz` / `ChangeMe123!` |
-| Staff | `POST /api/auth/staff/login` (+ `tenantId`) | `admin@gymdeprueba.com` / `ChangeMe123!` (también `profesor@gymdeprueba.com`) |
+| Staff | `POST /api/auth/staff/login` (+ `tenantId`) | `admin@gymdeprueba.com` / `ChangeMe123!` (también `entrenador@gymdeprueba.com`) |
 | Afiliado | `POST /api/auth/member/login` (+ `tenantId`) | `socio@gymdeprueba.com` / `ChangeMe123!` |
 
 Detalle (bodies, tenant id): [`docs/credenciales-demo.md`](./docs/credenciales-demo.md).

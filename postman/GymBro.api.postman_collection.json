@@ -586,7 +586,7 @@
                                     "  pm.expect(body.defaultBranch.name).to.eql('Sede principal');",
                                     "  pm.expect(body.systemRoles).to.be.an('array').that.has.length(2);",
                                     "  const slugs = body.systemRoles.map((r) => r.slug).sort();",
-                                    "  pm.expect(slugs).to.eql(['admin', 'profesor']);",
+                                    "  pm.expect(slugs).to.eql(['admin', 'entrenador']);",
                                     "  pm.expect(body.owner).to.be.an('object');",
                                     "  pm.expect(body.owner.email).to.eql('owner.postman@test.gym');",
                                     "});",
@@ -1001,7 +1001,7 @@
                                 "{{createdRoleId}}"
                             ]
                         },
-                        "description": "Custom: se elimina aunque tenga staff asignado. Roles de sistema (admin/profesor) â†’ 403 ROLE_IS_SYSTEM."
+                        "description": "Se elimina aunque tenga staff asignado. Solo Admin (slug admin) \u2192 403 ROLE_IS_SYSTEM. Entrenador se puede borrar."
                     }
                 }
             ]

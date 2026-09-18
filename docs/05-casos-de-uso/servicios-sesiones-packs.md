@@ -84,7 +84,7 @@
 
 ## CU-SER-005 Ampliar cupo de sesión
 
-**Actor:** Admin o Profesor con permiso
+**Actor:** Admin o Entrenador con permiso
 
 **Precondiciones:** Sesión existente.
 

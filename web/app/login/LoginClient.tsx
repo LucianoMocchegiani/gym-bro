@@ -138,6 +138,26 @@ export function LoginClient({ slug }: LoginClientProps) {
             disabled={!!tenantError}
           />
         </label>
+        <p className="muted small">
+          Demo:{' '}
+          <button
+            type="button"
+            className="link-btn"
+            disabled={!!tenantError}
+            onClick={() => setEmail('admin@gymdeprueba.com')}
+          >
+            Admin
+          </button>
+          {' · '}
+          <button
+            type="button"
+            className="link-btn"
+            disabled={!!tenantError}
+            onClick={() => setEmail('entrenador@gymdeprueba.com')}
+          >
+            Entrenador
+          </button>
+        </p>
         <label>
           Password
           <input

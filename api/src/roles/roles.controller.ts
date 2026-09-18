@@ -33,7 +33,7 @@ export class RolesController {
   constructor(private readonly rolesService: RolesService) {}
 
   /**
-   * Lista roles del tenant del JWT (Admin, Profesor y custom).
+   * Lista roles del tenant del JWT (Admin, Entrenador y custom).
    */
   @Get()
   @RequirePermission('roles.write')
@@ -71,7 +71,7 @@ export class RolesController {
   }
 
   /**
-   * Edita Profesor o un rol custom del tenant del JWT.
+   * Edita Entrenador o un rol custom del tenant del JWT.
    */
   @Patch(':roleId')
   @RequirePermission('roles.write')
@@ -85,7 +85,7 @@ export class RolesController {
   }
 
   /**
-   * Elimina un rol custom del tenant del JWT (no de sistema).
+   * Elimina un rol del tenant del JWT (Admin → 403).
    */
   @Delete(':roleId')
   @RequirePermission('roles.write')

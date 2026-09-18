@@ -8,7 +8,7 @@
 
 ## CU-RUT-001 Alta de ejercicio en catálogo del gym
 
-**Actor:** Staff con permiso de rutinas (default Admin/Profesor)
+**Actor:** Staff con permiso de rutinas (default Admin/Entrenador)
 
 **Precondiciones:** Tenant activo.
 

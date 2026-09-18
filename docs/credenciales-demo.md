@@ -23,10 +23,10 @@ Super Admin: **http://localhost:3002/super/login**
 |--------|--------|----------|--------|
 | Super Admin | `super@faciliter.xyz` | `ChangeMe123!` | Sin tenant · `/super/login` |
 | Staff (Admin del gym) | `admin@gymdeprueba.com` | `ChangeMe123!` | slug `gym-de-prueba` · `gym-de-prueba.localhost:3002` |
-| Staff (Profesor) | `profesor@gymdeprueba.com` | `ChangeMe123!` | Sin caja ni débitos; sí reportes, puerta, sesiones, afiliados lectura |
+| Staff (Entrenador) | `entrenador@gymdeprueba.com` | `ChangeMe123!` | Sin caja ni débitos; sí reportes, puerta, sesiones, afiliados lectura |
 | Afiliado (Member) | `socio@gymdeprueba.com` | `ChangeMe123!` | slug `gym-de-prueba` · app Flutter / API |
 
-El staff demo queda con rol sistema **Admin** tras el seed.  
+El staff demo queda con rol sistema **Admin** tras el seed. El segundo staff queda con rol **Entrenador** (`entrenador@…`).  
 El afiliado demo queda `status: ACTIVE` (solo ACTIVE puede hacer login).
 
 Kuatia del demo: `tenants.quark_*` = `KUATIA_ISSUER_WALLET_ID` / `KUATIA_VERIFIER_WALLET_ID` (compartidos). Ver [13-setup-db-desde-cero.md](./13-setup-db-desde-cero.md).

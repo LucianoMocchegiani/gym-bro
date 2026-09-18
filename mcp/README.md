@@ -46,15 +46,15 @@ docker compose up --build -d api mcp
 
 ## Smoke (host)
 
-Con `api` + `mcp` arriba y seed reciente (Admin + Profesor):
+Con `api` + `mcp` arriba y seed reciente (Admin + Entrenador):
 
 ```powershell
 cd mcp
 npm run smoke
 ```
 
-Login automático a `http://localhost:3001` (`admin@gymdeprueba.com` y `profesor@gymdeprueba.com`). Overrides: `ACCESS_TOKEN`, `ACCESS_TOKEN_PROFESOR`, `GYMBRO_API_URL`, `TENANT_SLUG`.
+Login automático a `http://localhost:3001` (`admin@gymdeprueba.com` y `entrenador@gymdeprueba.com`). Overrides: `ACCESS_TOKEN`, `ACCESS_TOKEN_ENTRENADOR`, `GYMBRO_API_URL`, `TENANT_SLUG`.
 
-Esperado: 17 tools; reportes `this_month` ≠ `last_month`; Admin puede caja; Profesor recibe “no hay permiso” en caja/débitos y sí reportes + help.
+Esperado: 17 tools; reportes `this_month` ≠ `last_month`; Admin puede caja; Entrenador recibe “no hay permiso” en caja/débitos y sí reportes + help.
 
 Colección Postman aparte: `postman/GymBro.mcp.postman_collection.json` (health + initialize). El flujo completo de tools es el smoke.

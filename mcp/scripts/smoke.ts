@@ -1,10 +1,10 @@
 /**
- * Smoke C7: tools A–D + reportes dos períodos + Admin vs Profesor (sin caja).
+ * Smoke C7: tools A–D + reportes dos períodos + Admin vs Entrenador (sin caja).
  *
- * Uso (host, stack Compose arriba; seed con Admin y Profesor):
+ * Uso (host, stack Compose arriba; seed con Admin y Entrenador):
  *   npm run smoke
  *
- * Tokens opcionales: ACCESS_TOKEN, ACCESS_TOKEN_PROFESOR.
+ * Tokens opcionales: ACCESS_TOKEN, ACCESS_TOKEN_ENTRENADOR.
  * Si faltan, hace login a GYMBRO_API_URL (default http://localhost:3001).
  */
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
@@ -182,28 +182,28 @@ async function smokeAdmin(client: Client): Promise<void> {
   }
 }
 
-async function smokeProfesor(client: Client): Promise<void> {
+async function smokeEntrenador(client: Client): Promise<void> {
   const cash = await callJson(client, 'get_cash_day', {});
   if (!cash.isError || !cash.text.toLowerCase().includes('permiso')) {
-    throw new Error(`profesor get_cash_day debía negar permiso: ${cash.text}`);
+    throw new Error(`entrenador get_cash_day debía negar permiso: ${cash.text}`);
   }
-  console.log('profesor get_cash_day:', cash.text);
+  console.log('entrenador get_cash_day:', cash.text);
 
   const debit = await callJson(client, 'list_debit_mandates', {});
   if (!debit.isError || !debit.text.toLowerCase().includes('permiso')) {
-    throw new Error(`profesor list_debit_mandates debía negar permiso: ${debit.text}`);
+    throw new Error(`entrenador list_debit_mandates debía negar permiso: ${debit.text}`);
   }
-  console.log('profesor list_debit_mandates:', debit.text);
+  console.log('entrenador list_debit_mandates:', debit.text);
 
   const reports = await callJson(client, 'get_reports_summary', {});
   if (reports.isError) {
-    throw new Error(`profesor get_reports_summary error: ${reports.text}`);
+    throw new Error(`entrenador get_reports_summary error: ${reports.text}`);
   }
   const help = await callJson(client, 'get_help', { topic: 'packs' });
   if (help.isError) {
-    throw new Error(`profesor get_help error: ${help.text}`);
+    throw new Error(`entrenador get_help error: ${help.text}`);
   }
-  console.log('profesor reports+help: ok');
+  console.log('entrenador reports+help: ok');
 }
 
 async function main(): Promise<void> {
@@ -211,9 +211,9 @@ async function main(): Promise<void> {
     'ACCESS_TOKEN',
     process.env.STAFF_EMAIL?.trim() || 'admin@gymdeprueba.com',
   );
-  const profesorToken = await resolveToken(
-    'ACCESS_TOKEN_PROFESOR',
-    process.env.PROFESOR_EMAIL?.trim() || 'profesor@gymdeprueba.com',
+  const entrenadorToken = await resolveToken(
+    'ACCESS_TOKEN_ENTRENADOR',
+    process.env.ENTRENADOR_EMAIL?.trim() || 'entrenador@gymdeprueba.com',
   );
 
   const admin = await openClient(adminToken);
@@ -224,11 +224,11 @@ async function main(): Promise<void> {
     await admin.close();
   }
 
-  const profesor = await openClient(profesorToken);
+  const entrenador = await openClient(entrenadorToken);
   try {
-    await smokeProfesor(profesor);
+    await smokeEntrenador(entrenador);
   } finally {
-    await profesor.close();
+    await entrenador.close();
   }
 
   console.log('ok');

@@ -68,7 +68,7 @@ Cliente pagador: dueño del gym, club o estudio. Equipo GymBro: **1 dev** + **so
 |-------|-------------|
 | **Super Administrador** | Solo equipo GymBro: crear/suspender gyms, soporte, métricas globales |
 | **Admin del gym** | Dueño/gestor del tenant: config, cobros, staff, servicios |
-| **Profesor** | Staff; permisos por rol (default: rutinas, sesiones según flags) |
+| **Entrenador** | Staff; permisos por rol (default: rutinas, sesiones según flags) |
 | **Afiliado** | Socio del gym; app de autogestión + QR |
 
 Roles **seed** al crear el gym (editables). El gym puede **crear y editar roles**. Un usuario staff puede tener **varios roles**. Afiliado y profesor son **perfiles distintos** aunque sea la misma persona en la vida real.

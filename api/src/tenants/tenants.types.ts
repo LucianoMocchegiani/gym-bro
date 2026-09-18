@@ -11,7 +11,7 @@ export type BranchSummary = {
 };
 
 /**
- * Rol sistema sembrado al crear el tenant (Admin / Profesor).
+ * Rol sistema sembrado al crear el tenant (Admin / Entrenador).
  */
 export type RoleSummary = {
   id: string;
