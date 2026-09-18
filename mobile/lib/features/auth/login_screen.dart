@@ -3,7 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../auth/auth_controller.dart';
 
-/// Login afiliado: slug + email + password.
+/// Login afiliado o staff: slug + email + password (RN-ROL-005).
 class LoginScreen extends StatefulWidget {
   /// Crea la pantalla.
   const LoginScreen({super.key});
@@ -17,6 +17,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final _email = TextEditingController(text: 'socio@gymdeprueba.com');
   final _password = TextEditingController(text: 'ChangeMe123!');
   final _formKey = GlobalKey<FormState>();
+  String _profile = 'MEMBER';
 
   @override
   void dispose() {
@@ -24,6 +25,17 @@ class _LoginScreenState extends State<LoginScreen> {
     _email.dispose();
     _password.dispose();
     super.dispose();
+  }
+
+  void _setProfile(String profile) {
+    setState(() {
+      _profile = profile;
+      if (profile == 'STAFF') {
+        _email.text = 'admin@gymdeprueba.com';
+      } else {
+        _email.text = 'socio@gymdeprueba.com';
+      }
+    });
   }
 
   Future<void> _submit() async {
@@ -35,6 +47,7 @@ class _LoginScreenState extends State<LoginScreen> {
       tenantSlug: _slug.text,
       email: _email.text,
       password: _password.text,
+      profileType: _profile,
     );
     if (!ok && mounted) {
       ScaffoldMessenger.of(
@@ -67,8 +80,25 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      'Acceso afiliado',
+                      _profile == 'STAFF'
+                          ? 'Acceso staff'
+                          : 'Acceso afiliado',
                       style: Theme.of(context).textTheme.titleMedium,
+                    ),
+                    const SizedBox(height: 16),
+                    SegmentedButton<String>(
+                      segments: const [
+                        ButtonSegment(
+                          value: 'MEMBER',
+                          label: Text('Afiliado'),
+                        ),
+                        ButtonSegment(
+                          value: 'STAFF',
+                          label: Text('Staff'),
+                        ),
+                      ],
+                      selected: {_profile},
+                      onSelectionChanged: (s) => _setProfile(s.first),
                     ),
                     const SizedBox(height: 24),
                     TextFormField(

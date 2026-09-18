@@ -874,7 +874,7 @@ Offer OID4VCI de **acceso staff** (molinete). 1 fila por staff (`staff_user_id` 
 | `offer_uri` / `last_error` | text nullable | soft-fail Kuatia |
 | `created_at` / `updated_at` | timestamptz | |
 
-API: `GET|POST /api/staff/:staffId/credential-offers` (`staff.read` / `staff.write`). `configurationId` = `staff_{tenantId}`; `vct` = `urn:faciliter:staff:{tenantId}`.
+API: `GET|POST /api/staff/:staffId/credential-offers` (`staff.read` / `staff.write`). Bandeja propia: `GET /api/me/staff-credential-offers` + `POST .../accept` y `.../fail` (JWT staff). `configurationId` = `staff_{tenantId}`; `vct` = `urn:faciliter:staff:{tenantId}`.
 
 ### 4.18 `session_recurrence_rules`
 

@@ -3,8 +3,10 @@ import 'package:provider/provider.dart';
 
 import '../../core/network/api_client.dart';
 import '../../core/widgets/loading_dialog.dart';
+import '../auth/auth_controller.dart';
 import 'credential_offers_repository.dart';
 import 'device_wallet_service.dart';
+import 'staff_credential_offers_repository.dart';
 
 /// Credenciales pendientes de aceptación (OID4VCI) + botón Aceptar.
 ///
@@ -53,11 +55,39 @@ class _CredentialOffersSectionState extends State<CredentialOffersSection> {
   }
 
   Future<void> _reload() async {
-    final repo = context.read<CredentialOffersRepository>();
     setState(() {
-      _future = repo.listPending();
+      _future = _listPending();
     });
     await _future;
+  }
+
+  Future<List<CredentialOfferItem>> _listPending() {
+    if (context.read<AuthController>().isStaff) {
+      return context.read<StaffCredentialOffersRepository>().listPending();
+    }
+    return context.read<CredentialOffersRepository>().listPending();
+  }
+
+  Future<void> _markAccepted(String offerId) {
+    if (context.read<AuthController>().isStaff) {
+      return context
+          .read<StaffCredentialOffersRepository>()
+          .markAccepted(offerId);
+    }
+    return context.read<CredentialOffersRepository>().markAccepted(offerId);
+  }
+
+  Future<void> _markFailed(String offerId, {String? reason}) {
+    if (context.read<AuthController>().isStaff) {
+      return context.read<StaffCredentialOffersRepository>().markFailed(
+            offerId,
+            reason: reason,
+          );
+    }
+    return context.read<CredentialOffersRepository>().markFailed(
+          offerId,
+          reason: reason,
+        );
   }
 
   Future<void> _accept(CredentialOfferItem item) async {
@@ -68,7 +98,6 @@ class _CredentialOffersSectionState extends State<CredentialOffersSection> {
     setState(() => _accepting.add(item.id));
     final messenger = ScaffoldMessenger.of(context);
     final wallet = context.read<DeviceWalletService>();
-    final repo = context.read<CredentialOffersRepository>();
     try {
       await runWithLoadingDialog(
         context,
@@ -78,7 +107,7 @@ class _CredentialOffersSectionState extends State<CredentialOffersSection> {
           if (count < 1) {
             throw const _OfferEmptyException();
           }
-          await repo.markAccepted(item.id);
+          await _markAccepted(item.id);
           return count;
         },
       );
@@ -109,8 +138,7 @@ class _CredentialOffersSectionState extends State<CredentialOffersSection> {
       }
       if (_isInvalidOfferError(e)) {
         try {
-          final repo = context.read<CredentialOffersRepository>();
-          await repo.markFailed(
+          await _markFailed(
             item.id,
             reason: _failReason(e),
           );

@@ -1,4 +1,4 @@
-﻿# Postman — GymBro API
+# Postman — GymBro API
 
 ## Importar (importante)
 
@@ -78,6 +78,8 @@ Carpeta **Upload**: `POST /upload` (staff auth). Multipart form-data con campo `
 Carpeta **Contracts**: Staff **POST contract MONTHLY/ONE_TIME** con `method: STUB` → 400. Alta de pack: Caja o MP. **Re-oferta:** `POST /members/:id/credential-offers` (contrato vigente hoy). Variables `createdMonthlyPackId` / `createdOneTimePackId`. Offers: list + accept + fail member. Lectura staff: `GET /members/:id/account`.
 
 Carpeta **Access OID4VP**: Staff `POST /access/oid4vp/request` (pestaña **Visualize** → QR) + `GET /access/oid4vp/session/:id` (poll → evaluate). `GET /members/:id/access-preview` (simula ingreso **sin** historial). Pase manual + `GET /access-attempts`. Stubs de vínculo retirados.
+
+Bandeja staff propia: `GET /me/staff-credential-offers` + accept/fail (JWT Staff; no es la de packs del socio).
 
 ## chat-api (colección aparte)
 

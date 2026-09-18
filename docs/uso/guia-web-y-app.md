@@ -151,7 +151,7 @@ Faciliter te crea el tenant (el “gimnasio” en el sistema). Vos recibís:
 - URL del panel: `{slug}.faciliter.xyz` (en la demo: `gym-de-prueba.faciliter.xyz`)
 - Usuario admin (email + contraseña)
 
-La app del socio usa **el mismo** Faciliter, otra puerta: **Acceso afiliado**. El email es el que le cargaste en Afiliados. En la app también pide el **slug** del local (`gym-de-prueba`); en la web el slug ya va en la URL.
+La app usa **el mismo** Faciliter. En el login elegís **Afiliado** o **Staff**. El email de socio es el de Afiliados; el de staff es el del panel. Pedí el **slug** del local (`gym-de-prueba`); en la web el slug ya va en la URL.
 
 En esta guía no documentamos el Super Admin (eso es interno de Faciliter). En el login staff puede verse el enlace; el dueño del local no lo usa.
 
@@ -161,7 +161,7 @@ En esta guía no documentamos el Super Admin (eso es interno de Faciliter). En e
 
 **Captura:** `app-login.png` — lista.  
 **Dónde:** App, pantalla de entrada.  
-**Qué se ve:** **Acceso afiliado**, Faciliter, campos slug + email + contraseña. No es el mismo formulario que el panel.
+**Qué se ve:** interruptor **Afiliado | Staff**, Faciliter, campos slug + email + contraseña. Staff entra a Inicio · Acceso · Ajustes y una burbuja de chat.
 
 ---
 

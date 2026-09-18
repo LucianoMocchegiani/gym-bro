@@ -1,4 +1,4 @@
-/// Configuración de la API para la app afiliado.
+/// Configuración de la API Nest para la app.
 ///
 /// Override en runtime:
 /// `flutter run --dart-define=API_BASE_URL=https://...`

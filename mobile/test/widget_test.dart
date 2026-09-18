@@ -4,8 +4,8 @@ import 'package:mobile/main.dart';
 
 void main() {
   testWidgets('App arranca y muestra login o loader', (tester) async {
-    await tester.pumpWidget(const GymBroMemberApp());
+    await tester.pumpWidget(const FaciliterApp());
     await tester.pump();
-    expect(find.byType(GymBroMemberApp), findsOneWidget);
+    expect(find.byType(FaciliterApp), findsOneWidget);
   });
 }

@@ -1,4 +1,4 @@
-﻿import {
+import {
   Body,
   Controller,
   ForbiddenException,
@@ -33,6 +33,7 @@ import {
  *
  * @remarks Pack: re-oferta = POST del pack que cubre hoy (`packId` opcional).
  * Staff acceso: `POST /staff/:id/credential-offers`.
+ * Bandeja propia staff: `GET /me/staff-credential-offers` (no mezcla packs).
  */
 @Controller()
 @RequireTenantAuth()
@@ -86,6 +87,61 @@ export class CredentialOffersController {
       throw new ForbiddenException('Member profile required');
     }
     return this.offers.markFailedByMember(
+      tenantId,
+      user.userId,
+      offerId,
+      body?.reason,
+    );
+  }
+
+  /**
+   * Offers de acceso del staff autenticado (bandeja; no es la de packs).
+   */
+  @Get('me/staff-credential-offers')
+  listMyStaffOffers(
+    @CurrentTenant() tenantId: string,
+    @CurrentUser() user: AuthUser,
+    @Query() query: ListQueryDto,
+  ): Promise<ListResult<StaffCredentialOfferListItem>> {
+    if (user.profileType !== 'STAFF') {
+      throw new ForbiddenException('Staff profile required');
+    }
+    return this.staffOffers.listForStaff(tenantId, user.userId, query);
+  }
+
+  /**
+   * Confirma aceptación en wallet de la credencial de acceso staff.
+   */
+  @Post('me/staff-credential-offers/:offerId/accept')
+  acceptMyStaffOffer(
+    @CurrentTenant() tenantId: string,
+    @CurrentUser() user: AuthUser,
+    @Param('offerId', ParseUUIDPipe) offerId: string,
+  ): Promise<StaffCredentialOfferListItem> {
+    if (user.profileType !== 'STAFF') {
+      throw new ForbiddenException('Staff profile required');
+    }
+    return this.staffOffers.markAcceptedByStaff(
+      tenantId,
+      user.userId,
+      offerId,
+    );
+  }
+
+  /**
+   * Marca offer staff `FAILED` tras OID4VCI inválido/vencido en wallet.
+   */
+  @Post('me/staff-credential-offers/:offerId/fail')
+  failMyStaffOffer(
+    @CurrentTenant() tenantId: string,
+    @CurrentUser() user: AuthUser,
+    @Param('offerId', ParseUUIDPipe) offerId: string,
+    @Body() body: FailCredentialOfferDto,
+  ): Promise<StaffCredentialOfferListItem> {
+    if (user.profileType !== 'STAFF') {
+      throw new ForbiddenException('Staff profile required');
+    }
+    return this.staffOffers.markFailedByStaff(
       tenantId,
       user.userId,
       offerId,

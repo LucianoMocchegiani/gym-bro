@@ -11,7 +11,7 @@
 |------|------------|--------|
 | **API / backend** | **NestJS 11 + TypeScript 5.9** | Monolito modular; runtime **Node 24** (Active LTS) |
 | **Web** | **Next.js 16 (App Router) + React 19** | Landing (apex) + Admin / Super en `web/` |
-| **App móvil** | **Flutter** | Afiliado + acceso QR; alineado a Quark / identity-core-dart |
+| **App móvil** | **Flutter** | Afiliado y staff (mismo binario); acceso QR / wallet SSI |
 | **Base de datos** | **PostgreSQL 16** | Multi-tenant por `tenant_id` |
 | **ORM** | **Prisma 6** (`api/prisma/`) | `migrate deploy` al arrancar la API; seed demo a mano. Prisma 7 diferido (ESM) |
 | **Auth API** | JWT + refresh (propio) en MVP | Clerk/Auth0 opcional después |

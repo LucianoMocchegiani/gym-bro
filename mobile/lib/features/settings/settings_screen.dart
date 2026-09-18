@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/config/api_config.dart';
+import '../../core/config/chat_config.dart';
 import '../../core/theme/theme_controller.dart';
 import '../../core/widgets/confirm_dialog.dart';
 import '../../core/widgets/loading_dialog.dart';
@@ -90,7 +91,7 @@ class SettingsScreen extends StatelessWidget {
         Card(
           child: ListTile(
             leading: const Icon(Icons.person_outline),
-            title: Text(session?.name ?? 'Afiliado'),
+            title: Text(session?.name ?? (session?.profileType == 'STAFF' ? 'Staff' : 'Afiliado')),
             subtitle: Text(
               [
                 if (session?.email != null) session!.email,
@@ -150,6 +151,14 @@ class SettingsScreen extends StatelessWidget {
             subtitle: Text(ApiConfig.baseUrl),
           ),
         ),
+        if (session?.profileType == 'STAFF')
+          Card(
+            child: ListTile(
+              leading: const Icon(Icons.chat_outlined),
+              title: const Text('Chat API'),
+              subtitle: Text(ChatConfig.baseUrl),
+            ),
+          ),
         const SizedBox(height: 24),
         FilledButton.tonal(
           onPressed: () => _logout(context),

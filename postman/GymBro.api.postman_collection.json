@@ -2677,6 +2677,108 @@
                         "url": "{{baseUrl}}/api/me/credential-offers/{{createdCredentialOfferId}}/fail",
                         "description": "Marca offer FAILED tras OID4VCI vencido/invÃ¡lido en wallet (sale de bandeja). Conserva offerUri; reason â†’ lastError (staff). Idempotente. No llama a Quark. Requiere accessToken Member + PENDING."
                     }
+                },
+                {
+                    "name": "Staff GET me staff-credential-offers",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('status 200', () => pm.response.to.have.status(200));",
+                                    "const body = pm.response.json();",
+                                    "pm.test('paginated list', () => {",
+                                    "  pm.expect(body.items).to.be.an('array');",
+                                    "  pm.expect(body.total).to.be.a('number');",
+                                    "});"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/me/staff-credential-offers?page=1&pageSize=20&order=desc",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "me",
+                                "staff-credential-offers"
+                            ],
+                            "query": [
+                                {
+                                    "key": "page",
+                                    "value": "1"
+                                },
+                                {
+                                    "key": "pageSize",
+                                    "value": "20"
+                                },
+                                {
+                                    "key": "order",
+                                    "value": "desc"
+                                }
+                            ]
+                        },
+                        "description": "Bandeja OID4VCI de acceso staff del JWT. No mezcla packs. Requiere accessToken Staff."
+                    }
+                },
+                {
+                    "name": "Staff POST me staff-credential-offer accept",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('status 200|201', () => pm.expect([200,201]).to.include(pm.response.code));",
+                                    "const body = pm.response.json();",
+                                    "pm.test('ACCEPTED', () => pm.expect(body.status).to.eql('ACCEPTED'));"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [],
+                        "url": "{{baseUrl}}/api/me/staff-credential-offers/{{createdStaffCredentialOfferId}}/accept",
+                        "description": "Marca offer staff ACCEPTED tras OID4VCI OK en wallet. Idempotente. Requiere accessToken Staff."
+                    }
+                },
+                {
+                    "name": "Staff POST me staff-credential-offer fail",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('status 200|201', () => pm.expect([200,201]).to.include(pm.response.code));",
+                                    "const body = pm.response.json();",
+                                    "pm.test('FAILED', () => pm.expect(body.status).to.eql('FAILED'));"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"reason\": \"Offer expired or invalid at issuer\"\n}"
+                        },
+                        "url": "{{baseUrl}}/api/me/staff-credential-offers/{{createdStaffCredentialOfferId}}/fail",
+                        "description": "Marca offer staff FAILED tras OID4VCI vencido/inválido. Requiere accessToken Staff + PENDING."
+                    }
                 }
             ]
         },

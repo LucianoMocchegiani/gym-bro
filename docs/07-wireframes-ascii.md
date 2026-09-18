@@ -54,6 +54,32 @@ Credenciales: expandir card → Eliminar (confirmación). Ajustes: Reiniciar wal
 
 ---
 
+## 2b. App staff — hubs (nav)
+
+```text
+Login: Afiliado | Staff  (mismo formulario, otro POST)
+
+Nav staff: Inicio | Acceso | Ajustes
+Burbuja flotante (arrastrable) → Asistente / chat-api
+
+Inicio
++----------------------------------+
+| Hola, {nombre}                   |
+| (Sesiones)  (Caja)*              |
++----------------------------------+
+* Caja solo con permiso cashier.operate.
+  Roster y caja POS: siguiente corte.
+
+Acceso → igual que afiliado (wallet + QR puerta)
+  Bandeja: GET /me/staff-credential-offers (no packs)
+
+Chat → burbuja flotante arrastrable; abre el último hilo. Lápiz = nuevo; reloj = historial.
+
+Ajustes → cuenta staff · wallet · tema · API / Chat API · salir
+```
+
+---
+
 ## 3. App afiliado — Calendario de sesiones
 
 ```text

@@ -1,4 +1,9 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  Logger,
+  NotFoundException,
+} from '@nestjs/common';
 import {
   CredentialOfferStatus,
   Prisma,
@@ -196,6 +201,90 @@ export class KuatiaStaffOfferService {
       n.page,
       n.pageSize,
     );
+  }
+
+  /**
+   * Marca offer `ACCEPTED` tras OID4VCI OK en la wallet del staff.
+   */
+  async markAcceptedByStaff(
+    tenantId: string,
+    staffUserId: string,
+    offerId: string,
+  ): Promise<StaffCredentialOfferListItem> {
+    const staff = await this.requireStaff(tenantId, staffUserId);
+    const row = await this.prisma.staffCredentialOffer.findFirst({
+      where: { id: offerId, tenantId, staffUserId },
+    });
+    if (!row) {
+      throw new NotFoundException(`Staff credential offer ${offerId} not found`);
+    }
+    if (row.status === CredentialOfferStatus.ACCEPTED) {
+      return this.toListItem(row, staff);
+    }
+    if (row.status !== CredentialOfferStatus.PENDING) {
+      throw new BadRequestException(
+        `Staff credential offer ${offerId} cannot be accepted (status=${row.status})`,
+      );
+    }
+    const updated = await this.prisma.staffCredentialOffer.update({
+      where: { id: row.id },
+      data: { status: CredentialOfferStatus.ACCEPTED, lastError: null },
+    });
+    return this.toListItem(updated, staff);
+  }
+
+  /**
+   * Marca offer `FAILED` tras OID4VCI inválido/vencido en wallet.
+   */
+  async markFailedByStaff(
+    tenantId: string,
+    staffUserId: string,
+    offerId: string,
+    reason?: string,
+  ): Promise<StaffCredentialOfferListItem> {
+    const staff = await this.requireStaff(tenantId, staffUserId);
+    const row = await this.prisma.staffCredentialOffer.findFirst({
+      where: { id: offerId, tenantId, staffUserId },
+    });
+    if (!row) {
+      throw new NotFoundException(`Staff credential offer ${offerId} not found`);
+    }
+    if (row.status === CredentialOfferStatus.FAILED) {
+      return this.toListItem(row, staff);
+    }
+    if (row.status === CredentialOfferStatus.ACCEPTED) {
+      throw new BadRequestException(
+        `Staff credential offer ${offerId} cannot be failed (status=ACCEPTED)`,
+      );
+    }
+    if (row.status !== CredentialOfferStatus.PENDING) {
+      throw new BadRequestException(
+        `Staff credential offer ${offerId} cannot be failed (status=${String(row.status)})`,
+      );
+    }
+    const raw = reason?.trim() || 'Offer expired or invalid at issuer';
+    const updated = await this.prisma.staffCredentialOffer.update({
+      where: { id: row.id },
+      data: {
+        status: CredentialOfferStatus.FAILED,
+        lastError: raw.slice(0, MAX_ERROR_LEN),
+      },
+    });
+    return this.toListItem(updated, staff);
+  }
+
+  private async requireStaff(
+    tenantId: string,
+    staffUserId: string,
+  ): Promise<{ id: string; name: string | null; email: string }> {
+    const staff = await this.prisma.staffUser.findFirst({
+      where: { id: staffUserId, tenantId },
+      select: { id: true, name: true, email: true },
+    });
+    if (!staff) {
+      throw new NotFoundException(`Staff ${staffUserId} not found`);
+    }
+    return staff;
   }
 
   private async persistOffer(input: {

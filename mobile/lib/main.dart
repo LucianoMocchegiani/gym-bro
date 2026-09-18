@@ -10,30 +10,33 @@ import 'features/auth/auth_repository.dart';
 import 'features/auth/login_screen.dart';
 import 'features/auth/session_store.dart';
 import 'features/cart/member_cart_controller.dart';
+import 'features/chat/chat_repository.dart';
 import 'features/credentials/credential_offers_repository.dart';
 import 'features/credentials/device_wallet_service.dart';
+import 'features/credentials/staff_credential_offers_repository.dart';
 import 'features/sessions/sessions_repository.dart';
 import 'features/shell/member_shell.dart';
+import 'features/shell/staff_shell.dart';
 import 'features/store/store_repository.dart';
 import 'features/store/refund_repository.dart';
 import 'features/store/receipts_repository.dart';
 
-/// Punto de entrada de la app afiliado GymBro.
+/// Punto de entrada de la app Faciliter.
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
-  runApp(const GymBroMemberApp());
+  runApp(const FaciliterApp());
 }
 
-/// App raíz: tema + auth + shell.
-class GymBroMemberApp extends StatefulWidget {
+/// App raíz: tema + auth + shell afiliado o staff.
+class FaciliterApp extends StatefulWidget {
   /// Crea la app.
-  const GymBroMemberApp({super.key});
+  const FaciliterApp({super.key});
 
   @override
-  State<GymBroMemberApp> createState() => _GymBroMemberAppState();
+  State<FaciliterApp> createState() => _FaciliterAppState();
 }
 
-class _GymBroMemberAppState extends State<GymBroMemberApp> {
+class _FaciliterAppState extends State<FaciliterApp> {
   late final ApiClient _api;
   late final SessionStore _store;
   late final AuthRepository _authRepo;
@@ -41,12 +44,14 @@ class _GymBroMemberAppState extends State<GymBroMemberApp> {
   late final ThemeController _theme;
   late final AccountRepository _accountRepo;
   late final CredentialOffersRepository _offersRepo;
+  late final StaffCredentialOffersRepository _staffOffersRepo;
   late final SessionsRepository _sessionsRepo;
   late final StoreRepository _storeRepo;
   late final RefundRepository _refundRepo;
   late final ReceiptsRepository _receiptsRepo;
   late final DeviceWalletService _wallet;
   late final MemberCartController _cart;
+  late final ChatRepository _chatRepo;
 
   @override
   void initState() {
@@ -57,12 +62,14 @@ class _GymBroMemberAppState extends State<GymBroMemberApp> {
     _theme = ThemeController();
     _accountRepo = AccountRepository(_api);
     _offersRepo = CredentialOffersRepository(_api);
+    _staffOffersRepo = StaffCredentialOffersRepository(_api);
     _sessionsRepo = SessionsRepository(_api);
     _storeRepo = StoreRepository(_api);
     _refundRepo = RefundRepository(_api);
     _receiptsRepo = ReceiptsRepository(_api);
     _wallet = DeviceWalletService();
     _cart = MemberCartController();
+    _chatRepo = ChatRepository(api: _api);
     _auth = AuthController(auth: _authRepo, api: _api, wallet: _wallet);
     _auth.addListener(_clearCartOnLogout);
     _bootstrap();
@@ -90,10 +97,12 @@ class _GymBroMemberAppState extends State<GymBroMemberApp> {
         ChangeNotifierProvider.value(value: _theme),
         Provider.value(value: _accountRepo),
         Provider.value(value: _offersRepo),
+        Provider.value(value: _staffOffersRepo),
         Provider.value(value: _sessionsRepo),
         Provider.value(value: _storeRepo),
         Provider.value(value: _refundRepo),
         Provider.value(value: _receiptsRepo),
+        Provider.value(value: _chatRepo),
         ChangeNotifierProvider.value(value: _wallet),
         ChangeNotifierProvider.value(value: _cart),
       ],
@@ -110,7 +119,9 @@ class _GymBroMemberAppState extends State<GymBroMemberApp> {
                     body: Center(child: CircularProgressIndicator()),
                   )
                 : auth.isAuthenticated
-                ? const MemberShell()
+                ? (auth.isStaff
+                    ? const StaffShell()
+                    : const MemberShell())
                 : const LoginScreen(),
           );
         },
