@@ -39,6 +39,11 @@ class AuthController extends ChangeNotifier {
       _session?.profileType == 'STAFF' &&
       _permissionCodes.contains('cashier.operate');
 
+  /// Calendario / roster (`sessions.write`).
+  bool get canWriteSessions =>
+      _session?.profileType == 'STAFF' &&
+      _permissionCodes.contains('sessions.write');
+
   /// Hidratación inicial terminada.
   bool get ready => _ready;
 

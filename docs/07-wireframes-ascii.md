@@ -68,7 +68,10 @@ Inicio
 | (Sesiones)  (Caja)*              |
 +----------------------------------+
 * Caja solo con permiso cashier.operate.
-  Roster y caja POS: siguiente corte.
+  Sesiones: calendario del socio → día → roster (crédito).
+  Caja: picker afiliado (20 + Cargar más); Cobro | Débitos;
+  catálogo y carrito en dos recuadros; CASH + link MP (polling código);
+  débitos ver/baja (alta Card Brick en web). Panel de comprobante: pendiente.
 
 Acceso → igual que afiliado (wallet + QR puerta)
   Bandeja: GET /me/staff-credential-offers (no packs)

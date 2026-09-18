@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../auth/auth_controller.dart';
-import '../shell/coming_soon_screen.dart';
+import '../staff_caja/staff_caja_screen.dart';
+import '../staff_sessions/staff_calendar_screen.dart';
 
 /// Hub Inicio staff: saludo y atajos Sesiones / Caja.
 class StaffHomeScreen extends StatelessWidget {
@@ -24,6 +25,7 @@ class StaffHomeScreen extends StatelessWidget {
         : (session?.email ?? 'staff');
     final scheme = Theme.of(context).colorScheme;
     final caja = auth.canOperateCashier;
+    final sesiones = auth.canWriteSessions;
 
     return ListView(
       padding: const EdgeInsets.fromLTRB(20, 12, 20, 28),
@@ -48,43 +50,32 @@ class StaffHomeScreen extends StatelessWidget {
         const SizedBox(height: 12),
         Row(
           children: [
-            Expanded(
-              child: _HubTile(
-                icon: Icons.calendar_today_outlined,
-                label: 'Sesiones',
-                subtitle: 'Clases',
-                onTap: () => _open(
-                  context,
-                  const ComingSoonScreen(
-                    title: 'Sesiones',
-                    message:
-                        'El roster de clases del staff llega en el próximo corte. '
-                        'Hoy usá Acceso para la puerta.',
-                  ),
+            if (sesiones)
+              Expanded(
+                child: _HubTile(
+                  icon: Icons.calendar_today_outlined,
+                  label: 'Sesiones',
+                  subtitle: 'Clases',
+                  onTap: () => _open(context, const StaffCalendarScreen()),
                 ),
               ),
-            ),
-            if (caja) ...[
-              const SizedBox(width: 12),
+            if (sesiones && caja) const SizedBox(width: 12),
+            if (caja)
               Expanded(
                 child: _HubTile(
                   icon: Icons.point_of_sale_outlined,
                   label: 'Caja',
                   subtitle: 'Cobros',
-                  onTap: () => _open(
-                    context,
-                    const ComingSoonScreen(
-                      title: 'Caja',
-                      message:
-                          'La caja en el celular llega en el próximo corte. '
-                          'Mientras tanto usá el panel web.',
-                    ),
-                  ),
+                  onTap: () => _open(context, const StaffCajaScreen()),
                 ),
               ),
-            ],
           ],
         ),
+        if (!sesiones && !caja)
+          Text(
+            'Tu rol no tiene Sesiones ni Caja. Pedile al admin que te asigne permisos.',
+            style: Theme.of(context).textTheme.bodyMedium,
+          ),
       ],
     );
   }

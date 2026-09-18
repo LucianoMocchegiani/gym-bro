@@ -17,6 +17,8 @@ import 'features/credentials/staff_credential_offers_repository.dart';
 import 'features/sessions/sessions_repository.dart';
 import 'features/shell/member_shell.dart';
 import 'features/shell/staff_shell.dart';
+import 'features/staff_caja/staff_caja_repository.dart';
+import 'features/staff_sessions/staff_sessions_repository.dart';
 import 'features/store/store_repository.dart';
 import 'features/store/refund_repository.dart';
 import 'features/store/receipts_repository.dart';
@@ -52,6 +54,8 @@ class _FaciliterAppState extends State<FaciliterApp> {
   late final DeviceWalletService _wallet;
   late final MemberCartController _cart;
   late final ChatRepository _chatRepo;
+  late final StaffSessionsRepository _staffSessionsRepo;
+  late final StaffCajaRepository _staffCajaRepo;
 
   @override
   void initState() {
@@ -70,6 +74,8 @@ class _FaciliterAppState extends State<FaciliterApp> {
     _wallet = DeviceWalletService();
     _cart = MemberCartController();
     _chatRepo = ChatRepository(api: _api);
+    _staffSessionsRepo = StaffSessionsRepository(_api);
+    _staffCajaRepo = StaffCajaRepository(_api);
     _auth = AuthController(auth: _authRepo, api: _api, wallet: _wallet);
     _auth.addListener(_clearCartOnLogout);
     _bootstrap();
@@ -103,6 +109,8 @@ class _FaciliterAppState extends State<FaciliterApp> {
         Provider.value(value: _refundRepo),
         Provider.value(value: _receiptsRepo),
         Provider.value(value: _chatRepo),
+        Provider.value(value: _staffSessionsRepo),
+        Provider.value(value: _staffCajaRepo),
         ChangeNotifierProvider.value(value: _wallet),
         ChangeNotifierProvider.value(value: _cart),
       ],

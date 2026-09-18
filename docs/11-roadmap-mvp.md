@@ -190,7 +190,7 @@
 
 ## E9 — App afiliado (Flutter)
 
-**Estado real (2026-09-18):** auth + cuenta + wallet SSI + sesiones (calendario + mis clases) hechos. Tienda = catálogo (packs + drop-in, card única + fotos) + carrito MP. Historial (⋮): un comprobante por transacción + panel de líneas (como Admin). App staff (mismo binario): login Staff, shell Inicio·Acceso·Ajustes, burbuja de chat, bandeja `GET /me/staff-credential-offers`. Roster y Caja POS aún no.  
+**Estado real (2026-09-18):** auth + cuenta + wallet SSI + sesiones (calendario + mis clases) hechos. Tienda = catálogo (packs + drop-in, card única + fotos) + carrito MP. Historial (⋮): un comprobante por transacción + panel de líneas (como Admin). App staff (mismo binario): login Staff, shell Inicio·Acceso·Ajustes, burbuja de chat, bandeja `GET /me/staff-credential-offers`, calendario/roster staff y Caja (efectivo + link MP).  
 **API resuelta:** `GET /me/sessions` y `GET /me/packs` (member catalog) creados en `member-catalog` module.  
 Detalle: [14-auditoria-roadmap-vs-codigo-2026-08-13.md](./14-auditoria-roadmap-vs-codigo-2026-08-13.md).
 
@@ -201,7 +201,9 @@ Detalle: [14-auditoria-roadmap-vs-codigo-2026-08-13.md](./14-auditoria-roadmap-v
 - [x] Login staff (mismo binario)
   - Switch Afiliado | Staff; `POST /auth/staff/login`; shell Inicio · Acceso · Ajustes
   - Burbuja del asistente (arrastrable) → chat-api
-  - Bandeja `GET /me/staff-credential-offers` (+ accept/fail); Caja atajo si `cashier.operate` (POS y roster: siguiente corte)
+  - Bandeja `GET /me/staff-credential-offers` (+ accept/fail)
+  - Sesiones: `MonthCalendar` → día → roster (`GET /sessions`, reservas crédito)
+  - Caja (`cashier.operate`): picker + catálogo/carrito; CASH + link MP (polling código); débitos ver/baja. Panel de comprobante: pendiente.
 - [x] Home / estado de cuenta
   - `GET /me/account?coverage=current`; Inicio agrupa por pack (créditos sumados; oculta drop-in en 0), deuda, próximas reservas
   - Nav real: **Inicio · Acceso · Ajustes** (tema claro/oscuro)
