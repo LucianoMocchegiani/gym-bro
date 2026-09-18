@@ -16,6 +16,7 @@ La creación de registros sigue la skill:
 
 ## Índice
 
+- [2026-09-18 — Vencimientos: cola de recepción (corte 1)](./2026-09-18-vencimientos-cola-recepcion.md)
 - [2026-09-18 — App: checkout MP con QR, + de catálogo y scroll](./2026-09-18-mobile-caja-mp-qr.md)
 - [2026-09-18 — Caja: card de link MP con QR y limpiar](./2026-09-18-caja-link-mp-qr.md)
 - [2026-09-18 — Grillas Admin contenidas en viewport angosto](./2026-09-18-admin-grillas-responsive.md)
