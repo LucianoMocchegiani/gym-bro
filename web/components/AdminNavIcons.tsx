@@ -163,16 +163,6 @@ export function NavIconAudit() {
   );
 }
 
-export function NavIconSupport() {
-  return (
-    <Svg>
-      <path d="M4 14v-2a8 8 0 0 1 16 0v2" />
-      <path d="M4 14v2a2 2 0 0 0 2 2h1v-6H6a2 2 0 0 0-2 2Z" />
-      <path d="M20 14v2a2 2 0 0 1-2 2h-1v-6h1a2 2 0 0 1 2 2Z" />
-    </Svg>
-  );
-}
-
 export function NavIconDumbbell() {
   return (
     <Svg className="brand-mark-svg">

@@ -18,6 +18,7 @@ const TOPICS = [
   'reportes',
   'roles',
   'chat',
+  'soporte',
 ] as const;
 
 type HelpTopic = (typeof TOPICS)[number];
@@ -39,7 +40,7 @@ export function registerHelpTools(server: McpServer): void {
     {
       title: 'Ayuda Faciliter',
       description:
-        'Artículo de cómo funciona Faciliter (español). topic: producto (visión), guia (cómo se ven las pantallas del panel y la app; fotos en /docs), afiliados, packs, sesiones, puerta, caja, debito, devoluciones, reportes, roles, chat. Sin topic lista los temas. Para “dónde queda / cómo se ve / qué ve el socio”, usá guia. No cobra ni edita.',
+        'Artículo de cómo funciona Faciliter (español). topic: producto (visión), guia (pantallas; fotos en /docs), afiliados, packs, sesiones, puerta, caja, debito, devoluciones, reportes, roles, chat, soporte (contacto si hay un problema). Sin topic lista los temas. Si reportan un error, bug o piden ayuda humana, usá soporte. Para “dónde queda / cómo se ve / qué ve el socio”, usá guia. No cobra ni edita.',
       inputSchema: {
         topic: z
           .string()

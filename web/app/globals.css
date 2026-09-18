@@ -484,29 +484,6 @@ button.linkish:hover {
   color: var(--accent);
 }
 
-.app-sidebar-support {
-  display: flex;
-  gap: 0.65rem;
-  align-items: flex-start;
-  margin-top: auto;
-  padding: 0.85rem;
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  background: var(--bg-elevated);
-}
-
-.app-sidebar-support-icon {
-  display: inline-flex;
-  color: var(--accent);
-  margin-top: 0.1rem;
-}
-
-.app-sidebar-support-title {
-  margin: 0;
-  font-weight: 700;
-  font-size: 0.88rem;
-}
-
 .accent-text {
   color: var(--accent);
   font-weight: 600;

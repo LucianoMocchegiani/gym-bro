@@ -13,7 +13,6 @@ import {
   NavIconDumbbell,
   NavIconForHref,
   NavIconMenu,
-  NavIconSupport,
 } from '@/components/AdminNavIcons';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { useAuth } from '@/lib/auth/AuthProvider';
@@ -183,16 +182,6 @@ export function AdminShell({
             </div>
           ))}
         </nav>
-
-        <div className="app-sidebar-support">
-          <span className="app-sidebar-support-icon" aria-hidden="true">
-            <NavIconSupport />
-          </span>
-          <div>
-            <p className="app-sidebar-support-title">Soporte</p>
-            <p className="muted small">¿Necesitás ayuda? Escribinos.</p>
-          </div>
-        </div>
       </aside>
 
       <div className="app-main">
