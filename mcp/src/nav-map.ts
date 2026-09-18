@@ -25,6 +25,12 @@ export const NAV_MAP: readonly NavEntry[] = [
     keywords: ['caja', 'cobro', 'cobrar', 'efectivo'],
   },
   {
+    href: '/vencimientos',
+    label: 'Vencimientos',
+    anyOf: ['members.read'],
+    keywords: ['vencimiento', 'vencimientos', 'renovar', 'tolerancia'],
+  },
+  {
     href: '/arqueo',
     label: 'Arqueo',
     anyOf: ['cashier.operate'],

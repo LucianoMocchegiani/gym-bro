@@ -216,12 +216,27 @@ Carrito
 +----------------------------------------------------------------+
 | Hoy: ingresos $.. | activos .. | deuda .. | ingresos puerta .. |
 +----------------------------------------------------------------+
-| Afiliados | Servicios | Packs | Sesiones | Pagos | Rutinas     |
-| Roles     | Config    | Avisos| Reportes                       |
+| Afiliados | Servicios | Packs | Sesiones | Caja | Vencimientos |
+| Roles     | Config    | Avisos| Reportes | Rutinas           |
 +----------------------------------------------------------------+
 ```
 
 Sin sesión / 401 sin refresh → `/login` (RequireStaff + `GET /auth/me`). Super: `/super/login`.
+
+**Vencimientos** (Operación, corte 1): cola sobre contratos MONTHLY + mandato; no es módulo de dominio ni reporte. Lista + ficha/Caja/Débitos. Avisos automáticos = E8.
+
+```text
++------------------------------------------------------------------+
+| Vencimientos            [7 días] [tolerancia] [débito] [a mano]  |
+| 11 por vencer · 4 en tolerancia · 6 débito · 9 renovación a mano |
++------------------------------------------------------------------+
+| Afiliado  Pack     Vence      Cómo paga        Acción            |
+| Luis      Mensual  mañana     A mano           → Caja            |
+| Ana       Mixto    4 días     Débito (MP)      → Ficha           |
+| Sofi      Mensual  -3 d (tol) A mano           → Caja            |
+| Pedro     Créditos 7 días     Débito fallido   → Débitos         |
++------------------------------------------------------------------+
+```
 
 ---
 
@@ -394,6 +409,7 @@ Efectivo no muestra el tilde. “Generar link” sin cobro solo si hay MONTHLY v
 | Rutina | CU-RUT-005/006 |
 | Admin packs/sesiones | CU-SER-* |
 | Caja | CU-PAG-002/003, CU-PAG-008/009/010 (débito, diseño) |
+| Vencimientos | Cola MONTHLY (diseño 2026-09-18); avisos E8 |
 | Puerta / pase | CU-ACC-001/004 |
 | Super | CU-ROL-001/002 |
 | Config | CU-ACC-006/007, CU-PAG-006 |

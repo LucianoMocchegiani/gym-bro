@@ -15,6 +15,7 @@ export const ADMIN_NAV_PERMISSIONS: readonly NavPermissionRule[] = [
   { href: '/', anyOf: [] },
   { href: '/puerta', anyOf: ['access.verify', 'access.manual_pass'] },
   { href: '/caja', anyOf: ['cashier.operate'] },
+  { href: '/vencimientos', anyOf: ['members.read'] },
   { href: '/arqueo', anyOf: ['cashier.operate'] },
   { href: '/devoluciones', anyOf: ['transaction_items.refund'] },
   { href: '/reportes', anyOf: ['reports.read'] },

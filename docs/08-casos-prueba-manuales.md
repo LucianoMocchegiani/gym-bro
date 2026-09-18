@@ -198,6 +198,18 @@ Leyenda resultado: `P` pass · `F` fail · `B` bloqueado · `-` no aplica
 
 ---
 
+## Vencimientos (cola recepción)
+
+| # | Caso | Esperado | RN/CU | R |
+|---|------|----------|-------|---|
+| V1 | Staff Admin, `/vencimientos` | Lista MONTHLY por vencer (0–7 días) o en tolerancia; pills 7 días / tolerancia / débito / a mano; stats En cola | RN-CON-001, RN-ACC-005 | |
+| V2 | Fila a mano + permiso caja | Caja abre `/caja?memberId=`; Débitos no aparece | CU-PAG-002 | |
+| V3 | Fila débito o débito fallido | Caja y Débitos (`vista=debitos`) | CU-AFI-004 | |
+| V4 | Entrenador (`members.read`, sin caja) | Ve la lista; no ve Caja/Débitos | RN-ROL-007 | |
+| V5 | `GET /expirations` sin `members.read` | 403 | — | |
+
+---
+
 ## Roles
 
 | # | Caso | Esperado | RN/CU | R |

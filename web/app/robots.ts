@@ -14,6 +14,7 @@ export default function robots(): MetadataRoute.Robots {
         '/login',
         '/super/',
         '/caja',
+        '/vencimientos',
         '/afiliados',
         '/packs',
         '/servicios',

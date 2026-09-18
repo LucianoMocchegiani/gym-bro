@@ -353,6 +353,7 @@ Prefijo sugerido: `/api/v1`.
 | Roles | Staff list-get-create-patch roles; `PUT /staff/:id/roles`; `GET /me/permissions` (UI nav). Super: `GET /tenants/:id/staff` + impersonate |
 | Auditoría | Staff `/auditoria` → `GET /audit-events` (`audit.read`); Super impersona; escritura en mutaciones |
 | Reportes | Staff `GET /reports/summary?from&to` (`reports.read`); ingresos $ + devoluciones + snapshot; `transactions[]` misma fila que caja |
+| Vencimientos | Staff `GET /expirations?view&pay` (`members.read`); cola MONTHLY por vencer (7 días) o en tolerancia; no es reporte |
 | Caja | `/cash/day`, `/cash/close` |
 
 Todas las rutas de tenant validan membership/permiso + `tenant_id` del token.

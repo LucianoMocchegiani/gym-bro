@@ -59,6 +59,8 @@ Carpeta **Waitlist**: Member join cuando sesión llena; leave; promoción AUTO. 
 
 Carpeta **Tenant settings**: `GET|PATCH /tenant-settings` (`tenant.settings.*`). `reservationCancellationHours`, `waitlistMode`, `allowLateSessionEntry`.
 
+Carpeta **Expirations**: Staff `GET /expirations` (`members.read`). Query `view` (`all`\|`upcoming`\|`tolerance`) y `pay` (`all`\|`debit`\|`manual`). Cola MONTHLY por vencer o en tolerancia; no pagina.
+
 Carpeta **Payment register**: `GET /payment-register/day` + `POST /payment-register/day/reconcile` (`cashier.operate`). `movements[]` = 1 fila por cobro o devolución de cart (misma grilla que reportes); arqueo 1/día; día en timezone BA.
 
 Carpeta **Mercado Pago**: cuenta `GET|PUT|DELETE /mercadopago/account` + test (`mp.connect`) + `GET /mercadopago/account/public-key` (Brick, `cashier.operate`). Débito MONTHLY: `GET /debit-mandates`, `GET /members/:id/debit-mandate`, `POST /members/:id/debit-mandates`, `POST /debit-mandates/:id/charge` y `.../cancel`. Caja: Staff `POST /members/:id/transaction-items/mp/cart` (`items[]` → 1 link) y `POST .../cash/cart`. Afiliado: `POST /me/transaction-items/mp/cart`. Webhook `POST /webhooks/payment?tenantId=`.

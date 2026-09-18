@@ -16,6 +16,7 @@ import { PrismaModule } from './prisma/prisma.module';
 import { KuatiaModule } from './kuatia/kuatia.module';
 import { ReceiptsModule } from './receipts/receipts.module';
 import { RefundsModule } from './refunds/refunds.module';
+import { ExpirationsModule } from './expirations/expirations.module';
 import { ReportsModule } from './reports/reports.module';
 import { RolesModule } from './roles/roles.module';
 import { ServicesModule } from './services/services.module';
@@ -58,6 +59,7 @@ import { UploadModule } from './upload/upload.module';
     PaymentModule,
     DebitModule,
     RefundsModule,
+    ExpirationsModule,
     ReportsModule,
     AccessModule,
     TenantsModule,

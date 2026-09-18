@@ -51,6 +51,7 @@ const NAV_GROUPS: NavGroup[] = [
       { href: '/', label: 'Inicio' },
       { href: '/puerta', label: 'Puerta' },
       { href: '/caja', label: 'Caja' },
+      { href: '/vencimientos', label: 'Vencimientos' },
       { href: '/arqueo', label: 'Cierre' },
       { href: '/devoluciones', label: 'Solicitudes de devolución' },
       { href: '/reportes', label: 'Reportes' },

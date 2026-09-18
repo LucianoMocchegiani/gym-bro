@@ -1335,6 +1335,54 @@
             ]
         },
         {
+            "name": "Expirations",
+            "description": "Cola recepción MONTHLY. GET /expirations (members.read). view=all|upcoming|tolerance; pay=all|debit|manual. counts siempre sobre la cola completa.",
+            "item": [
+                {
+                    "name": "Staff GET expirations",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('status 200', () => pm.response.to.have.status(200));",
+                                    "pm.test('has counts', () => pm.expect(pm.response.json()).to.have.property('counts'));",
+                                    "pm.test('has items', () => pm.expect(pm.response.json()).to.have.property('items'));"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/expirations",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "expirations"
+                            ],
+                            "query": [
+                                {
+                                    "key": "view",
+                                    "value": "upcoming",
+                                    "disabled": true
+                                },
+                                {
+                                    "key": "pay",
+                                    "value": "manual",
+                                    "disabled": true
+                                }
+                            ]
+                        }
+                    }
+                }
+            ]
+        },
+        {
             "name": "Reports",
             "description": "E11. GET /reports/summary?from&to (reports.read). Ingresos + devoluciones + snapshot. transactions[] = misma fila que caja (cart + kind + staff + receiptId).",
             "item": [

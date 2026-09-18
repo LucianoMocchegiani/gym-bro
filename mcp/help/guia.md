@@ -19,7 +19,7 @@ El socio **no ve** el tablero del staff. En la app ve su pack, clases y Acceso.
 
 A la izquierda, agrupado:
 
-- **Operación:** Inicio, Puerta, Caja, Cierre, solicitudes de devolución, Reportes.
+- **Operación:** Inicio, Puerta, Caja, Vencimientos, Cierre, solicitudes de devolución, Reportes.
 - **Personas:** Afiliados, Staff, Roles y permisos.
 - **Catálogo:** Servicios, Packs, Sesiones.
 - **Sistema:** Config (y el resto de sistema).
@@ -62,6 +62,10 @@ Alta: nombre, email, password, etc. Entra a la app con ese email + slug. Pack se
 ## Caja
 
 Mostrador. Pestaña **Cobro** (afiliado, catálogo Packs o Servicios, carrito, efectivo o link MP). Pestaña **Débitos** (autorizar tarjeta para el mes siguiente; no es un cobro ahora; cola Hoy / Reintentando / Fallidos). El asistente lista; **no cobra**.
+
+## Vencimientos
+
+Lista de packs mensuales por vencer (7 días) o en tolerancia. Filtros débito vs a mano. No envía WhatsApp ni mail. Renovar: Caja. Ver mandato: Débitos.
 
 ## Cierre
 

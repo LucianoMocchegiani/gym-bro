@@ -14,6 +14,8 @@ E7 Rutinas y E8 Notificaciones siguen en el [roadmap MVP](./11-roadmap-mvp.md) (
 
 **Tickets de reclamo con IA** (estilo Mercado Libre / Mercado Pago): no está en el MVP. Pendiente en [admin.md](./99-backlog-post-mvp/admin.md) y [app-afiliado.md](./99-backlog-post-mvp/app-afiliado.md). Hoy el contacto es mail (`get_help` topic `soporte`).
 
+**Vencimientos:** cola de recepción (lista MONTHLY + débito). Corte 1 en código (`GET /expirations`, Admin `/vencimientos`). Avisos = E8. [admin.md](./99-backlog-post-mvp/admin.md) · wireframe §7.
+
 ---
 
 ## Módulos

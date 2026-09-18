@@ -46,6 +46,18 @@ export function NavIconDoor() {
   );
 }
 
+export function NavIconCalendar() {
+  return (
+    <Svg>
+      <rect x="3" y="5" width="18" height="16" rx="2" />
+      <path d="M3 10h18" />
+      <path d="M8 3v4" />
+      <path d="M16 3v4" />
+      <path d="M8 15h.01M12 15h.01M16 15h.01" />
+    </Svg>
+  );
+}
+
 export function NavIconCash() {
   return (
     <Svg>
@@ -222,6 +234,7 @@ const NAV_ICONS: Record<string, () => ReactNode> = {
   '/': NavIconHome,
   '/puerta': NavIconDoor,
   '/caja': NavIconCash,
+  '/vencimientos': NavIconCalendar,
   '/arqueo': NavIconCash,
   '/devoluciones': NavIconRefund,
   '/reportes': NavIconChart,
