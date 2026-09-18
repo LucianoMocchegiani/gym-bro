@@ -16,6 +16,7 @@ La creación de registros sigue la skill:
 
 ## Índice
 
+- [2026-09-18 — Comprobante compartir, AuthGate y chat al último mensaje](./2026-09-18-comprobante-share-authgate.md)
 - [2026-09-18 — App staff: roster de sesiones y Caja](./2026-09-18-app-staff-roster-caja.md)
 - [2026-09-18 — App staff: login, Acceso, offers y burbuja de chat](./2026-09-18-app-staff-login-shell.md)
 - [2026-09-18 — Wallet de dispositivo y AppSession](./2026-09-18-device-wallet-appsession.md)
