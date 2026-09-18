@@ -15,6 +15,7 @@
 | Historial de packs de otros períodos | Pendiente | Inicio solo vigencia **hoy** (`coverage=current`). UI + `coverage=all` o endpoint dedicado. No es el Historial de comprobantes (eso ya está) |
 | Paginación de comprobantes | Pendiente | Hoy lista hasta 50 |
 | Productos en Tienda | Pendiente | Misma `CatalogCard`; módulo shop → [producto.md](./producto.md) |
+| Tickets de reclamo (IA) | Pendiente | Abrir un reclamo desde la app; la IA lleva el hilo (estilo ML/MP). Inbox Admin: [admin.md](./admin.md) |
 
 ## Mejoras de UX (charla)
 

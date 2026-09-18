@@ -12,6 +12,8 @@ E7 Rutinas y E8 Notificaciones siguen en el [roadmap MVP](./11-roadmap-mvp.md) (
 **En diseño / implementación:** débito MONTHLY — C-producto 2026-09-15 (suscripción MP); código aún tarjeta+job — [pagos.md](./99-backlog-post-mvp/pagos.md).  
 **C7 en el repo:** abort, título, chips, smoke dos staff, README Redis. **Tope de uso** (mensajes/min o tokens) queda pendiente y entra en P4 del doc 18. [17](./17-roadmap-chat-mcp.md) · [16](./16-chat-mcp-diseno.md).
 
+**Tickets de reclamo con IA** (estilo Mercado Libre / Mercado Pago): no está en el MVP. Pendiente en [admin.md](./99-backlog-post-mvp/admin.md) y [app-afiliado.md](./99-backlog-post-mvp/app-afiliado.md). Hoy el contacto es mail (`get_help` topic `soporte`).
+
 ---
 
 ## Módulos
