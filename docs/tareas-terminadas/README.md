@@ -16,6 +16,7 @@ La creación de registros sigue la skill:
 
 ## Índice
 
+- [2026-09-18 — App staff: login, Acceso, offers y burbuja de chat](./2026-09-18-app-staff-login-shell.md)
 - [2026-09-18 — Wallet de dispositivo y AppSession](./2026-09-18-device-wallet-appsession.md)
 - [2026-09-18 — Rol Entrenador: borrable, slug y login demo](./2026-09-18-rol-entrenador-borrable.md)
 - [2026-09-17 — Inicio agrupa packs y oculta drop-in usado](./2026-09-17-inicio-agrupar-packs-dropin.md)
