@@ -241,6 +241,19 @@ class StaffCajaRepository {
     );
   }
 
+  /// Detalle de comprobante (staff, `members.read`).
+  Future<MemberReceipt> getReceipt(String receiptId) {
+    return _api.getJson<MemberReceipt>(
+      '/api/receipts/$receiptId',
+      parse: (json) {
+        if (json is! Map) {
+          throw ApiException('Respuesta inválida al cargar el comprobante');
+        }
+        return MemberReceipt.fromJson(Map<String, dynamic>.from(json));
+      },
+    );
+  }
+
   /// Cola de mandatos.
   Future<List<DebitMandate>> listMandates({String bucket = 'due'}) {
     return _api.getJson<List<DebitMandate>>(

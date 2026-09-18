@@ -181,10 +181,11 @@ class _ChatThreadScreenState extends State<ChatThreadScreen> {
                         );
                       }
                       return ListView.builder(
+                        reverse: true,
                         padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
                         itemCount: items.length,
                         itemBuilder: (context, i) {
-                          final m = items[i];
+                          final m = items[items.length - 1 - i];
                           final mine = m.role == 'user';
                           return Align(
                             alignment: mine

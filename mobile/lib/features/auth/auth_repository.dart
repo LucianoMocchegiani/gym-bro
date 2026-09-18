@@ -142,6 +142,22 @@ class AuthRepository {
     return session;
   }
 
+  /// ¿El access token responde en `GET /auth/me`?
+  ///
+  /// Un 401 dispara el refresh del [ApiClient]. Si igual falla, la sesión
+  /// ya se limpió. Error de red: se considera viva para no echar offline.
+  Future<bool> sessionIsAlive() async {
+    try {
+      await _api.getJson<void>('/api/auth/me', parse: (_) {});
+      return true;
+    } on ApiException catch (e) {
+      if (e.statusCode == 401) {
+        return false;
+      }
+      return await _store.read() != null;
+    }
+  }
+
   /// Refresca tokens; false si falla.
   Future<bool> refresh() async {
     final current = await _store.read();

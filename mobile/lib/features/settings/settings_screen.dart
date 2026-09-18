@@ -9,7 +9,7 @@ import '../../core/widgets/loading_dialog.dart';
 import '../auth/auth_controller.dart';
 import '../credentials/device_wallet_service.dart';
 
-/// Hub Ajustes: cuenta, wallet SSI, sistema y sesión.
+/// Hub Ajustes: cuenta, wallet SSI, sistema, desarrolladores y sesión.
 class SettingsScreen extends StatelessWidget {
   /// Crea la pantalla.
   const SettingsScreen({super.key});
@@ -78,15 +78,7 @@ class SettingsScreen extends StatelessWidget {
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 28),
       children: [
-        Text(
-          'Cuenta',
-          style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                color: Theme.of(context)
-                    .colorScheme
-                    .onSurface
-                    .withValues(alpha: 0.55),
-              ),
-        ),
+        _sectionTitle(context, 'Cuenta'),
         const SizedBox(height: 8),
         Card(
           child: ListTile(
@@ -101,15 +93,7 @@ class SettingsScreen extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 20),
-        Text(
-          'Wallet SSI',
-          style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                color: Theme.of(context)
-                    .colorScheme
-                    .onSurface
-                    .withValues(alpha: 0.55),
-              ),
-        ),
+        _sectionTitle(context, 'Wallet SSI'),
         const SizedBox(height: 8),
         Card(
           child: ListTile(
@@ -125,15 +109,7 @@ class SettingsScreen extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 20),
-        Text(
-          'Sistema',
-          style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                color: Theme.of(context)
-                    .colorScheme
-                    .onSurface
-                    .withValues(alpha: 0.55),
-              ),
-        ),
+        _sectionTitle(context, 'Sistema'),
         const SizedBox(height: 8),
         Card(
           child: SwitchListTile(
@@ -144,6 +120,9 @@ class SettingsScreen extends StatelessWidget {
             onChanged: (_) => theme.toggle(),
           ),
         ),
+        const SizedBox(height: 20),
+        _sectionTitle(context, 'Desarrolladores'),
+        const SizedBox(height: 8),
         Card(
           child: ListTile(
             leading: const Icon(Icons.cloud_outlined),
@@ -165,6 +144,18 @@ class SettingsScreen extends StatelessWidget {
           child: const Text('Cerrar sesión'),
         ),
       ],
+    );
+  }
+
+  Widget _sectionTitle(BuildContext context, String label) {
+    return Text(
+      label,
+      style: Theme.of(context).textTheme.titleSmall?.copyWith(
+            color: Theme.of(context)
+                .colorScheme
+                .onSurface
+                .withValues(alpha: 0.55),
+          ),
     );
   }
 }

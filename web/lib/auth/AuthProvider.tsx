@@ -6,10 +6,11 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useState,
   useSyncExternalStore,
   type ReactNode,
 } from 'react';
-import { staffLogin, staffLogout } from '@/lib/api/auth';
+import { fetchAuthMe, staffLogin, staffLogout } from '@/lib/api/auth';
 import { getMyPermissions } from '@/lib/api/permissions';
 import {
   clearStaffSession,
@@ -24,6 +25,8 @@ import {
 type AuthContextValue = {
   session: StaffSession | null;
   ready: boolean;
+  /** `GET /auth/me` (o sin sesión) ya resolvió; si el token murió, `session` es null. */
+  verified: boolean;
   login: (input: {
     tenantSlug?: string;
     tenantId?: string;
@@ -58,6 +61,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     () => true,
     () => false,
   );
+
+  const [verified, setVerified] = useState(false);
 
   const login = useCallback(
     async (input: {
@@ -95,6 +100,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
+    if (!ready) {
+      return;
+    }
+    if (!session) {
+      setVerified(true);
+      return;
+    }
+    let cancelled = false;
+    setVerified(false);
+    void (async () => {
+      try {
+        await fetchAuthMe('staff');
+      } catch {
+        // 401: apiRequest ya limpió la sesión → RequireStaff va a /login.
+      }
+      if (!cancelled) {
+        setVerified(true);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [ready, session?.userId]);
+
+  useEffect(() => {
     if (!session || session.permissionCodes != null) {
       return;
     }
@@ -115,8 +145,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [session]);
 
   const value = useMemo(
-    () => ({ session, ready, login, logout, refreshPermissions }),
-    [session, ready, login, logout, refreshPermissions],
+    () => ({ session, ready, verified, login, logout, refreshPermissions }),
+    [session, ready, verified, login, logout, refreshPermissions],
   );
 
   return (

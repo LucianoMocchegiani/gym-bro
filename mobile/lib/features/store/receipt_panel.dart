@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:share_plus/share_plus.dart';
 
 import '../../core/widgets/shared_widgets.dart';
 import 'receipts_repository.dart';
@@ -64,6 +66,33 @@ String _methodLabel(String method) {
   };
 }
 
+/// Texto plano del comprobante para WhatsApp, mail, etc. (RN-PAG-009).
+String formatReceiptShareText(MemberReceipt receipt) {
+  final buf = StringBuffer()
+    ..writeln('Comprobante ${receipt.code}')
+    ..writeln('Total \$${receipt.amount}')
+    ..writeln('Medio: ${_methodLabel(receipt.method)}')
+    ..writeln(formatDateTimeShort(receipt.createdAt));
+  if (receipt.lines.isNotEmpty) {
+    buf.writeln();
+    for (final line in receipt.lines) {
+      buf.writeln('• ${line.title} \$${line.amount}');
+      final meta = formatPaymentLineMeta(line);
+      if (meta.isNotEmpty) {
+        buf.writeln('  $meta');
+      }
+      for (final s in line.services) {
+        buf.writeln('  ${formatPaymentLineService(s)}');
+      }
+    }
+  } else if (receipt.description != null && receipt.description!.isNotEmpty) {
+    buf
+      ..writeln()
+      ..writeln(receipt.description);
+  }
+  return buf.toString().trim();
+}
+
 /// Panel de comprobante (RN-PAG-009), mismo contenido que Admin.
 Future<void> showMemberReceiptPanel({
   required BuildContext context,
@@ -71,6 +100,7 @@ Future<void> showMemberReceiptPanel({
   required Set<String> pendingRefundItemIds,
   required Future<void> Function(PaymentLine line) onRequestRefund,
   required bool refundBusy,
+  bool allowRefund = true,
 }) {
   return showDialog<void>(
     context: context,
@@ -85,10 +115,19 @@ Future<void> showMemberReceiptPanel({
               pendingRefundItemIds: pendingRefundItemIds,
               onRequestRefund: onRequestRefund,
               refundBusy: refundBusy,
+              allowRefund: allowRefund,
             ),
           ),
         ),
         actions: [
+          Builder(
+            builder: (buttonContext) {
+              return TextButton(
+                onPressed: () => _shareReceipt(buttonContext, receipt),
+                child: const Text('Compartir'),
+              );
+            },
+          ),
           TextButton(
             onPressed: () => Navigator.pop(context),
             child: const Text('Cerrar'),
@@ -99,18 +138,50 @@ Future<void> showMemberReceiptPanel({
   );
 }
 
+Future<void> _shareReceipt(BuildContext context, MemberReceipt receipt) async {
+  final text = formatReceiptShareText(receipt);
+  final box = context.findRenderObject() as RenderBox?;
+  final origin = box == null
+      ? null
+      : box.localToGlobal(Offset.zero) & box.size;
+  try {
+    await SharePlus.instance.share(
+      ShareParams(
+        text: text,
+        subject: 'Comprobante ${receipt.code}',
+        sharePositionOrigin: origin,
+      ),
+    );
+  } catch (_) {
+    await Clipboard.setData(ClipboardData(text: text));
+    if (!context.mounted) {
+      return;
+    }
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text(
+          'No se pudo abrir compartir. El texto quedó copiado. '
+          'Cerrá la app y volvé a abrirla (run completo).',
+        ),
+      ),
+    );
+  }
+}
+
 class _ReceiptBody extends StatelessWidget {
   const _ReceiptBody({
     required this.receipt,
     required this.pendingRefundItemIds,
     required this.onRequestRefund,
     required this.refundBusy,
+    required this.allowRefund,
   });
 
   final MemberReceipt receipt;
   final Set<String> pendingRefundItemIds;
   final Future<void> Function(PaymentLine line) onRequestRefund;
   final bool refundBusy;
+  final bool allowRefund;
 
   @override
   Widget build(BuildContext context) {
@@ -146,7 +217,8 @@ class _ReceiptBody extends StatelessWidget {
               padding: const EdgeInsets.only(bottom: 12),
               child: _ReceiptLine(
                 line: line,
-                showRefund: receipt.isCharge &&
+                showRefund: allowRefund &&
+                    receipt.isCharge &&
                     line.status == 'APPROVED' &&
                     !pendingRefundItemIds.contains(line.id),
                 pending: pendingRefundItemIds.contains(line.id),

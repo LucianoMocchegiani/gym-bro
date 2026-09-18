@@ -4,11 +4,13 @@ import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
+  useState,
   useSyncExternalStore,
   type ReactNode,
 } from 'react';
-import { superLogin, superLogout } from '@/lib/api/auth';
+import { fetchAuthMe, superLogin, superLogout } from '@/lib/api/auth';
 import {
   clearSuperSession,
   getSuperSessionServerSnapshot,
@@ -21,6 +23,7 @@ import {
 type SuperAuthContextValue = {
   session: SuperSession | null;
   ready: boolean;
+  verified: boolean;
   login: (input: { email: string; password: string }) => Promise<void>;
   logout: () => Promise<void>;
 };
@@ -41,6 +44,7 @@ export function SuperAuthProvider({ children }: { children: ReactNode }) {
     () => true,
     () => false,
   );
+  const [verified, setVerified] = useState(false);
 
   const login = useCallback(
     async (input: { email: string; password: string }) => {
@@ -58,9 +62,34 @@ export function SuperAuthProvider({ children }: { children: ReactNode }) {
     clearSuperSession();
   }, []);
 
+  useEffect(() => {
+    if (!ready) {
+      return;
+    }
+    if (!session) {
+      setVerified(true);
+      return;
+    }
+    let cancelled = false;
+    setVerified(false);
+    void (async () => {
+      try {
+        await fetchAuthMe('super');
+      } catch {
+        // 401: apiRequest ya limpió la sesión → RequireSuper va a /super/login.
+      }
+      if (!cancelled) {
+        setVerified(true);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [ready, session?.userId]);
+
   const value = useMemo(
-    () => ({ session, ready, login, logout }),
-    [session, ready, login, logout],
+    () => ({ session, ready, verified, login, logout }),
+    [session, ready, verified, login, logout],
   );
 
   return (

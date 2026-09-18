@@ -47,7 +47,8 @@ Acceso → Escanear (default) | Credenciales
 |  [ cards VC en el celular ]      |
 +----------------------------------+
 
-Ajustes → cuenta · wallet SSI (reiniciar) · tema · API · salir
+Ajustes → cuenta · wallet SSI (reiniciar) · tema · Desarrolladores (API) · salir
+Sin sesión / 401 sin refresh → login (AuthGate).
 ```
 
 Credenciales: expandir card → Eliminar (confirmación). Ajustes: Reiniciar wallet / Cerrar sesión usan el mismo diálogo de confirmación.
@@ -70,15 +71,16 @@ Inicio
 * Caja solo con permiso cashier.operate.
   Sesiones: calendario del socio → día → roster (crédito).
   Caja: picker afiliado (20 + Cargar más); Cobro | Débitos;
-  catálogo y carrito en dos recuadros; CASH + link MP (polling código);
-  débitos ver/baja (alta Card Brick en web). Panel de comprobante: pendiente.
+  catálogo y carrito en dos recuadros; CASH + link MP;
+  panel de comprobante + Compartir (hoja del sistema);
+  débitos ver/baja (alta Card Brick en web).
 
 Acceso → igual que afiliado (wallet + QR puerta)
   Bandeja: GET /me/staff-credential-offers (no packs)
 
 Chat → burbuja flotante arrastrable; abre el último hilo. Lápiz = nuevo; reloj = historial.
 
-Ajustes → cuenta staff · wallet · tema · API / Chat API · salir
+Ajustes → cuenta staff · wallet · tema · Desarrolladores (API / Chat API) · salir
 ```
 
 ---
@@ -159,7 +161,8 @@ Historial (⋮)
 | (Ver comprobante)                |
 +----------------------------------+
   Comprobante = código, medio, fecha,
-  líneas pack/drop-in (igual que Admin)
+  líneas pack/drop-in (igual que Admin);
+  Compartir (hoja del sistema: WhatsApp, mail, …)
 
 Carrito
 +----------------------------------+
@@ -217,6 +220,8 @@ Carrito
 | Roles     | Config    | Avisos| Reportes                       |
 +----------------------------------------------------------------+
 ```
+
+Sin sesión / 401 sin refresh → `/login` (RequireStaff + `GET /auth/me`). Super: `/super/login`.
 
 ---
 

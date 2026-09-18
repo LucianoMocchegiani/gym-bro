@@ -59,10 +59,21 @@ class AuthController extends ChangeNotifier {
   /// ¿Perfil staff?
   bool get isStaff => _session?.profileType == 'STAFF';
 
-  /// Carga sesión desde secure storage.
+  Future<bool>? _refreshInFlight;
+
+  /// Carga sesión desde secure storage y valida el token.
   Future<void> bootstrap() async {
     _session = await _auth.restore();
-    await _hydratePermissions();
+    if (_session != null) {
+      final alive = await _auth.sessionIsAlive();
+      if (!alive) {
+        await _wallet?.lock();
+        _session = null;
+        _permissionCodes = const [];
+      } else {
+        await _hydratePermissions();
+      }
+    }
     _ready = true;
     notifyListeners();
   }
@@ -105,19 +116,35 @@ class AuthController extends ChangeNotifier {
     }
   }
 
-  /// Intento de refresh ante 401.
+  /// Intento de refresh ante 401. Si falla, cierra sesión y el [AuthGate]
+  /// vuelve al login.
   Future<bool> refreshIfNeeded() async {
+    final inFlight = _refreshInFlight;
+    if (inFlight != null) {
+      return inFlight;
+    }
+    final future = _refreshSession();
+    _refreshInFlight = future;
+    try {
+      return await future;
+    } finally {
+      _refreshInFlight = null;
+    }
+  }
+
+  Future<bool> _refreshSession() async {
     final ok = await _auth.refresh();
     if (ok) {
       _session = await _auth.restore();
       await _hydratePermissions();
       notifyListeners();
-    } else {
-      _session = null;
-      _permissionCodes = const [];
-      notifyListeners();
+      return true;
     }
-    return ok;
+    await _wallet?.lock();
+    _session = null;
+    _permissionCodes = const [];
+    notifyListeners();
+    return false;
   }
 
   /// Cierra sesión GymBro y bloquea la wallet local.

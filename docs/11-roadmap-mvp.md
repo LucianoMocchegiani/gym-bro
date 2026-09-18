@@ -197,13 +197,13 @@ Detalle: [14-auditoria-roadmap-vs-codigo-2026-08-13.md](./14-auditoria-roadmap-v
 ### Hecho
 
 - [x] Login afiliado
-  - Flutter: slug + email/password; API `tenantSlug` (o `tenantId`); sesión secure storage + refresh
+  - Flutter: slug + email/password; API `tenantSlug` (o `tenantId`); sesión secure storage + refresh; AuthGate → login si 401
 - [x] Login staff (mismo binario)
   - Switch Afiliado | Staff; `POST /auth/staff/login`; shell Inicio · Acceso · Ajustes
   - Burbuja del asistente (arrastrable) → chat-api
   - Bandeja `GET /me/staff-credential-offers` (+ accept/fail)
   - Sesiones: `MonthCalendar` → día → roster (`GET /sessions`, reservas crédito)
-  - Caja (`cashier.operate`): picker + catálogo/carrito; CASH + link MP (polling código); débitos ver/baja. Panel de comprobante: pendiente.
+  - Caja (`cashier.operate`): picker + catálogo/carrito; CASH + link MP; panel de comprobante + Compartir; débitos ver/baja.
 - [x] Home / estado de cuenta
   - `GET /me/account?coverage=current`; Inicio agrupa por pack (créditos sumados; oculta drop-in en 0), deuda, próximas reservas
   - Nav real: **Inicio · Acceso · Ajustes** (tema claro/oscuro)
@@ -226,7 +226,7 @@ Detalle: [14-auditoria-roadmap-vs-codigo-2026-08-13.md](./14-auditoria-roadmap-v
   - Catálogo tipo Caja: Packs | Sesiones (drop-in); card única + `imageUrl`
   - Carrito compartido → `POST /me/transaction-items/mp/cart`
 - [~] Historial (tanda 2)
-  - Menú ⋮ → una fila por transacción/comprobante + panel (código, líneas, copy Admin)
+  - Menú ⋮ → una fila por transacción/comprobante + panel (código, líneas, Compartir)
   - POST solicitud por ítem APPROVED; no duplicar PENDING
   - Pendiente: paginación si hay más de 50 comprobantes
 - [x] Solicitar devolución
@@ -255,6 +255,7 @@ Detalle: [14-auditoria…](./14-auditoria-roadmap-vs-codigo-2026-08-13.md).
 
 - [x] Login staff / Super Admin
   - Staff: `{slug}.localhost:3002/login` (o `{slug}.{APP_DOMAIN}`); Super: `/super/login`
+  - `GET /auth/me` al entrar; 401 sin refresh → login (RequireStaff / RequireSuper)
 - [x] Dashboard mínimo
   - `/`: KPIs del día (caja, activos, sin pack proxy, puerta, sesiones) + atajos
   - Deuda $ agregada: no hay endpoint; proxy vía reportes / sin pack

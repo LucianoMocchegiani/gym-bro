@@ -11,6 +11,8 @@ import '../../core/widgets/gym_bro_tabs.dart';
 import '../../core/widgets/loading_dialog.dart';
 import '../staff_sessions/staff_member_search_field.dart';
 import '../staff_sessions/staff_sessions_repository.dart';
+import '../store/receipt_panel.dart';
+import '../store/receipts_repository.dart';
 import 'staff_caja_repository.dart';
 
 /// Caja: cobro (efectivo / link MP) y débitos (ver / baja).
@@ -37,6 +39,7 @@ class _StaffCajaScreenState extends State<StaffCajaScreen> {
   String? _mpUrl;
   String? _okMessage;
   Timer? _poll;
+  MemberReceipt? _lastReceipt;
   List<DebitMandate> _queue = const [];
   MemberDebitView? _debitView;
 
@@ -146,6 +149,30 @@ class _StaffCajaScreenState extends State<StaffCajaScreen> {
   String _idem(String prefix) =>
       '$prefix-${DateTime.now().microsecondsSinceEpoch}';
 
+  Future<void> _openReceipt(MemberReceipt receipt) async {
+    var detail = receipt;
+    if (detail.lines.isEmpty) {
+      try {
+        detail = await context.read<StaffCajaRepository>().getReceipt(
+          detail.id,
+        );
+      } catch (_) {
+        // El resumen del cobro alcanza para mostrar/compartir.
+      }
+    }
+    if (!mounted) {
+      return;
+    }
+    await showMemberReceiptPanel(
+      context: context,
+      receipt: detail,
+      pendingRefundItemIds: const {},
+      refundBusy: false,
+      allowRefund: false,
+      onRequestRefund: (_) async {},
+    );
+  }
+
   Future<void> _cobrarCash() async {
     final member = _member;
     if (member == null || _cart.isEmpty) {
@@ -168,10 +195,14 @@ class _StaffCajaScreenState extends State<StaffCajaScreen> {
       setState(() {
         _cart.clear();
         _mpUrl = null;
+        _lastReceipt = result.receipt;
         _okMessage = result.receipt != null
             ? 'Cobrado ${result.receipt!.code}'
             : 'Cobrado en efectivo';
       });
+      if (result.receipt != null) {
+        await _openReceipt(result.receipt!);
+      }
     } catch (e) {
       if (!mounted) {
         return;
@@ -216,8 +247,10 @@ class _StaffCajaScreenState extends State<StaffCajaScreen> {
             _poll?.cancel();
             setState(() {
               _cart.clear();
+              _lastReceipt = r;
               _okMessage = 'MP aprobado · ${r.code}';
             });
+            await _openReceipt(r);
           } catch (_) {
             // PENDING
           }
@@ -290,8 +323,19 @@ class _StaffCajaScreenState extends State<StaffCajaScreen> {
           const SizedBox(height: 8),
           if (_okMessage != null)
             Padding(
-              padding: const EdgeInsets.only(bottom: 12),
+              padding: const EdgeInsets.only(bottom: 8),
               child: Text(_okMessage!),
+            ),
+          if (_lastReceipt != null)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: TextButton(
+                  onPressed: () => _openReceipt(_lastReceipt!),
+                  child: Text('Ver comprobante ${_lastReceipt!.code}'),
+                ),
+              ),
             ),
           if (_vista == 0) ...[
             _tabPanel(_buildCatalogo()),

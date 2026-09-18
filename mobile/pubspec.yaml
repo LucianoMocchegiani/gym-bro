@@ -21,6 +21,7 @@ dependencies:
   # Clon local en la raíz del monorepo (ver docs/15-kuatia-deuda-rename.md)
   identity_core_dart:
     path: ../identity-core-dart
+  share_plus: ^12.0.2
 
 dev_dependencies:
   flutter_test:

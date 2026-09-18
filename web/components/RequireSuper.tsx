@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { SuperAuthProvider, useSuperAuth } from '@/lib/auth/SuperAuthProvider';
 
 /**
- * Exige sesión Super; envuelve con provider.
+ * Exige sesión Super válida (`GET /auth/me`); envuelve con provider.
  */
 export function RequireSuper({ children }: { children: React.ReactNode }) {
   return (
@@ -16,16 +16,16 @@ export function RequireSuper({ children }: { children: React.ReactNode }) {
 }
 
 function RequireSuperInner({ children }: { children: React.ReactNode }) {
-  const { session, ready } = useSuperAuth();
+  const { session, ready, verified } = useSuperAuth();
   const router = useRouter();
 
   useEffect(() => {
-    if (ready && !session) {
+    if (ready && verified && !session) {
       router.replace('/super/login');
     }
-  }, [ready, session, router]);
+  }, [ready, verified, session, router]);
 
-  if (!ready) {
+  if (!ready || !verified) {
     return <p className="muted">Cargando sesión…</p>;
   }
   if (!session) {

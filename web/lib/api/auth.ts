@@ -72,6 +72,15 @@ export async function superLogout(refreshToken: string): Promise<void> {
 }
 
 /**
+ * Smoke de sesión (`GET /auth/me`). 401 limpia tokens en el cliente HTTP.
+ */
+export function fetchAuthMe(
+  auth: 'staff' | 'super' = 'staff',
+): Promise<unknown> {
+  return apiRequest('/auth/me', { auth });
+}
+
+/**
  * Cambia la contraseña del usuario autenticado.
  *
  * @remarks Revoca refresh tokens → obliga a re-login. Usar `auth: 'super'`

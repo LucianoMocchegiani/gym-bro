@@ -6,8 +6,8 @@ import 'core/theme/gymbro_theme.dart';
 import 'core/theme/theme_controller.dart';
 import 'features/account/account_repository.dart';
 import 'features/auth/auth_controller.dart';
+import 'features/auth/auth_gate.dart';
 import 'features/auth/auth_repository.dart';
-import 'features/auth/login_screen.dart';
 import 'features/auth/session_store.dart';
 import 'features/cart/member_cart_controller.dart';
 import 'features/chat/chat_repository.dart';
@@ -15,8 +15,6 @@ import 'features/credentials/credential_offers_repository.dart';
 import 'features/credentials/device_wallet_service.dart';
 import 'features/credentials/staff_credential_offers_repository.dart';
 import 'features/sessions/sessions_repository.dart';
-import 'features/shell/member_shell.dart';
-import 'features/shell/staff_shell.dart';
 import 'features/staff_caja/staff_caja_repository.dart';
 import 'features/staff_sessions/staff_sessions_repository.dart';
 import 'features/store/store_repository.dart';
@@ -117,20 +115,17 @@ class _FaciliterAppState extends State<FaciliterApp> {
       child: Consumer2<ThemeController, AuthController>(
         builder: (context, theme, auth, _) {
           return MaterialApp(
+            key: ValueKey(auth.session?.userId ?? 'guest'),
             title: 'Faciliter',
             debugShowCheckedModeBanner: false,
             theme: GymBroTheme.light(),
             darkTheme: GymBroTheme.dark(),
             themeMode: theme.isDark ? ThemeMode.dark : ThemeMode.light,
-            home: !auth.ready || !theme.ready
+            home: !theme.ready
                 ? const Scaffold(
                     body: Center(child: CircularProgressIndicator()),
                   )
-                : auth.isAuthenticated
-                ? (auth.isStaff
-                    ? const StaffShell()
-                    : const MemberShell())
-                : const LoginScreen(),
+                : const AuthGate(),
           );
         },
       ),

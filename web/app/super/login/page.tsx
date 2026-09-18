@@ -19,7 +19,7 @@ export default function SuperLoginPage() {
 }
 
 function SuperLoginInner() {
-  const { login, session, ready } = useSuperAuth();
+  const { login, session, ready, verified } = useSuperAuth();
   const router = useRouter();
   const [email, setEmail] = useState('super@faciliter.xyz');
   const [password, setPassword] = useState('ChangeMe123!');
@@ -36,10 +36,10 @@ function SuperLoginInner() {
   }, []);
 
   useEffect(() => {
-    if (ready && session) {
+    if (ready && verified && session) {
       router.replace('/super/tenants');
     }
-  }, [ready, session, router]);
+  }, [ready, verified, session, router]);
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();

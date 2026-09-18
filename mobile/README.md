@@ -42,13 +42,15 @@ flutter run
 
 ## Slice actual
 
-- Login afiliado (`tenantSlug`)
+- Login afiliado (`tenantSlug`) o staff
 - **3 hubs:** Inicio · Acceso · Ajustes
-  - **Inicio:** estado breve + atajos Sesiones / Tienda
+  - **Inicio afiliado:** atajos Sesiones / Tienda
     - **Sesiones:** calendario (el día abre las clases) + Mis clases (misma card). Carrito + ⋮ Historial.
-    - **Tienda:** catálogo Packs | Sesiones (card única + fotos) + carrito MP. Menú ⋮ Historial (comprobante por transacción).
+    - **Tienda:** catálogo Packs | Sesiones (card única + fotos) + carrito MP. Menú ⋮ Historial (comprobante + Compartir).
+  - **Inicio staff:** Sesiones (roster) / Caja (`cashier.operate`)
+    - **Caja:** picker, cobro CASH/MP, panel de comprobante + Compartir
   - **Acceso:** Escanear (default, cámara) · Credenciales (pendientes de aceptación máx. ½ pantalla + VCs wallet)
-  - **Ajustes:** cuenta, reiniciar wallet SSI, tema, API, logout (con confirmación)
+  - **Ajustes:** cuenta, wallet, tema, Desarrolladores (API / Chat API en staff), logout
 - Cards SSI estilo quark-wallet + detalle expandible (look GymBro); eliminar VC una a una con confirmación
 - Diálogo de confirmación reutilizable (`showConfirmDialog`) para logout / borrar VC / reiniciar wallet
 - Diálogo de carga (`runWithLoadingDialog`) mientras terminan esas acciones y al aceptar offers

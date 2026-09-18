@@ -5,19 +5,19 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth/AuthProvider';
 
 /**
- * Redirige a `/login` si no hay sesión Staff.
+ * Redirige a `/login` si no hay sesión Staff válida (`GET /auth/me`).
  */
 export function RequireStaff({ children }: { children: React.ReactNode }) {
-  const { session, ready } = useAuth();
+  const { session, ready, verified } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
-    if (ready && !session) {
+    if (ready && verified && !session) {
       router.replace('/login');
     }
-  }, [ready, session, router]);
+  }, [ready, verified, session, router]);
 
-  if (!ready) {
+  if (!ready || !verified) {
     return <p className="muted">Cargando sesión…</p>;
   }
   if (!session) {

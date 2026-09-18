@@ -20,7 +20,7 @@ type LoginClientProps = {
  * @remarks El tenant ya viene del Host; no se lee `window` en el render.
  */
 export function LoginClient({ slug }: LoginClientProps) {
-  const { login, session, ready } = useAuth();
+  const { login, session, ready, verified } = useAuth();
   const router = useRouter();
   const [tenant, setTenant] = useState<PublicTenantSummary | null>(null);
   const [tenantError, setTenantError] = useState<string | null>(null);
@@ -57,10 +57,10 @@ export function LoginClient({ slug }: LoginClientProps) {
   }, [slug]);
 
   useEffect(() => {
-    if (ready && session) {
+    if (ready && verified && session) {
       router.replace('/');
     }
-  }, [ready, session, router]);
+  }, [ready, verified, session, router]);
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
