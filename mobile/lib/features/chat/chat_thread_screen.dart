@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -9,7 +11,7 @@ import 'chat_last_store.dart';
 import 'chat_list_screen.dart';
 import 'chat_repository.dart';
 
-/// Conversación: historial + envío (el stream se espera y luego se recarga).
+/// Conversación: historial + envío. El stream no bloquea; Parar aborta.
 class ChatThreadScreen extends StatefulWidget {
   /// Crea la pantalla.
   const ChatThreadScreen({super.key, required this.thread});
@@ -23,7 +25,18 @@ class ChatThreadScreen extends StatefulWidget {
 class _ChatThreadScreenState extends State<ChatThreadScreen> {
   final _input = TextEditingController();
   late ChatThread _thread;
-  Future<List<ChatMessage>>? _future;
+  late ChatRepository _repo;
+  List<ChatMessage> _messages = const [];
+  bool _listBusy = true;
+  String? _listError;
+  bool _streaming = false;
+  bool _sseOpen = false;
+  bool _completing = false;
+  ChatMessage? _pendingUser;
+  String _liveAssistant = '';
+  String _queue = '';
+  Timer? _tick;
+  bool _started = false;
 
   @override
   void initState() {
@@ -34,12 +47,17 @@ class _ChatThreadScreenState extends State<ChatThreadScreen> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    _future ??=
-        context.read<ChatRepository>().listMessages(_thread.id);
+    _repo = context.read<ChatRepository>();
+    if (!_started) {
+      _started = true;
+      unawaited(_loadMessages());
+    }
   }
 
   @override
   void dispose() {
+    _tick?.cancel();
+    _repo.abortTurn();
     _input.dispose();
     super.dispose();
   }
@@ -56,32 +74,59 @@ class _ChatThreadScreenState extends State<ChatThreadScreen> {
     );
   }
 
+  Future<void> _loadMessages() async {
+    try {
+      final items = await _repo.listMessages(_thread.id);
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _messages = items;
+        _listBusy = false;
+        _listError = null;
+      });
+    } catch (e) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _listBusy = false;
+        _listError = e is ApiException
+            ? e.message
+            : 'No se pudo cargar el hilo';
+      });
+    }
+  }
+
   Future<void> _showThread(ChatThread thread) async {
+    _repo.abortTurn();
     await _remember(thread.id);
     if (!mounted) {
       return;
     }
     setState(() {
       _thread = thread;
-      _future = context.read<ChatRepository>().listMessages(thread.id);
+      _streaming = false;
+      _sseOpen = false;
+      _pendingUser = null;
+      _liveAssistant = '';
+      _queue = '';
+      _tick?.cancel();
+      _tick = null;
+      _listBusy = true;
+      _listError = null;
+      _messages = const [];
     });
-    await _future;
-  }
-
-  Future<void> _reload() async {
-    setState(() {
-      _future = context.read<ChatRepository>().listMessages(_thread.id);
-    });
-    await _future;
+    await _loadMessages();
   }
 
   Future<void> _newChat() async {
-    final repo = context.read<ChatRepository>();
+    _repo.abortTurn();
     try {
       final created = await runWithLoadingDialog(
         context,
         message: 'Nuevo chat…',
-        action: repo.createThread,
+        action: _repo.createThread,
       );
       if (!mounted) {
         return;
@@ -97,6 +142,7 @@ class _ChatThreadScreenState extends State<ChatThreadScreen> {
   }
 
   Future<void> _openHistory() async {
+    _repo.abortTurn();
     final picked = await Navigator.of(context).push<ChatThread>(
       MaterialPageRoute(
         builder: (_) => const ChatListScreen(),
@@ -110,30 +156,107 @@ class _ChatThreadScreenState extends State<ChatThreadScreen> {
 
   Future<void> _send() async {
     final text = _input.text.trim();
-    if (text.isEmpty) {
+    if (text.isEmpty || _streaming) {
       return;
     }
-    final repo = context.read<ChatRepository>();
-    try {
-      await runWithLoadingDialog(
-        context,
-        message: 'Pensando…',
-        action: () => repo.sendTurn(_thread.id, text),
+    _input.clear();
+    _tick?.cancel();
+    _tick = null;
+    _completing = false;
+    setState(() {
+      _streaming = true;
+      _sseOpen = true;
+      _liveAssistant = '';
+      _queue = '';
+      _pendingUser = ChatMessage(
+        id: 'pending',
+        role: 'user',
+        content: text,
       );
-      _input.clear();
-      await _reload();
+    });
+    try {
+      await _repo.sendTurn(
+        _thread.id,
+        text,
+        onDelta: (delta) {
+          _queue += delta;
+          _scheduleDrain();
+        },
+      );
+    } on ChatTurnAbortedException {
+      // Recargamos lo tipeado / persistido.
     } catch (e) {
-      if (!mounted) {
-        return;
+      if (mounted) {
+        final msg = e is ApiException ? e.message : 'No se pudo enviar';
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
       }
-      final msg = e is ApiException ? e.message : 'No se pudo enviar';
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
+    } finally {
+      _sseOpen = false;
+      if (_queue.isEmpty) {
+        await _completeStreaming();
+      } else {
+        _scheduleDrain();
+      }
     }
+  }
+
+  String _nextChunk(String queue) {
+    if (queue.isEmpty) {
+      return '';
+    }
+    final space = queue.indexOf(' ');
+    if (space > 0 && space <= 18) {
+      return queue.substring(0, space + 1);
+    }
+    return queue.substring(0, queue.length < 2 ? queue.length : 2);
+  }
+
+  void _scheduleDrain() {
+    _tick ??= Timer(const Duration(milliseconds: 32), _drain);
+  }
+
+  void _drain() {
+    _tick = null;
+    if (!mounted) {
+      return;
+    }
+    final chunk = _nextChunk(_queue);
+    if (chunk.isEmpty) {
+      if (!_sseOpen) {
+        unawaited(_completeStreaming());
+      }
+      return;
+    }
+    _queue = _queue.substring(chunk.length);
+    setState(() {
+      _liveAssistant += chunk;
+    });
+    _scheduleDrain();
+  }
+
+  Future<void> _completeStreaming() async {
+    if (_completing || !mounted) {
+      return;
+    }
+    _completing = true;
+    _tick?.cancel();
+    _tick = null;
+    setState(() {
+      _streaming = false;
+      _pendingUser = null;
+      _liveAssistant = '';
+      _queue = '';
+    });
+    await _loadMessages();
+    _completing = false;
+  }
+
+  void _stop() {
+    _repo.abortTurn();
   }
 
   @override
   Widget build(BuildContext context) {
-    final future = _future;
     final scheme = Theme.of(context).colorScheme;
     return Scaffold(
       appBar: AppBar(
@@ -159,56 +282,7 @@ class _ChatThreadScreenState extends State<ChatThreadScreen> {
       ),
       body: Column(
         children: [
-          Expanded(
-            child: future == null
-                ? const Center(child: CircularProgressIndicator())
-                : FutureBuilder<List<ChatMessage>>(
-                    future: future,
-                    builder: (context, snap) {
-                      if (snap.connectionState != ConnectionState.done) {
-                        return const Center(child: CircularProgressIndicator());
-                      }
-                      if (snap.hasError) {
-                        final msg = snap.error is ApiException
-                            ? (snap.error! as ApiException).message
-                            : 'No se pudo cargar el hilo';
-                        return Center(child: Text(msg));
-                      }
-                      final items = snap.data ?? const <ChatMessage>[];
-                      if (items.isEmpty) {
-                        return const Center(
-                          child: Text('Escribí el primer mensaje.'),
-                        );
-                      }
-                      return ListView.builder(
-                        reverse: true,
-                        padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
-                        itemCount: items.length,
-                        itemBuilder: (context, i) {
-                          final m = items[items.length - 1 - i];
-                          final mine = m.role == 'user';
-                          return Align(
-                            alignment: mine
-                                ? Alignment.centerRight
-                                : Alignment.centerLeft,
-                            child: Container(
-                              margin: const EdgeInsets.only(bottom: 8),
-                              padding: const EdgeInsets.all(12),
-                              constraints: const BoxConstraints(maxWidth: 320),
-                              decoration: BoxDecoration(
-                                color: mine
-                                    ? scheme.primaryContainer
-                                    : scheme.surfaceContainerHighest,
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: Text(m.content),
-                            ),
-                          );
-                        },
-                      );
-                    },
-                  ),
-          ),
+          Expanded(child: _buildThread(scheme)),
           SafeArea(
             child: Padding(
               padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
@@ -218,6 +292,7 @@ class _ChatThreadScreenState extends State<ChatThreadScreen> {
                   Expanded(
                     child: TextField(
                       controller: _input,
+                      enabled: !_streaming,
                       decoration: const InputDecoration(
                         hintText: 'Mensaje',
                       ),
@@ -228,14 +303,101 @@ class _ChatThreadScreenState extends State<ChatThreadScreen> {
                     ),
                   ),
                   IconButton(
-                    onPressed: _send,
-                    icon: const Icon(Icons.send),
+                    tooltip: _streaming ? 'Parar' : 'Enviar',
+                    onPressed: _streaming ? _stop : _send,
+                    icon: Icon(_streaming ? Icons.stop_circle : Icons.send),
                   ),
                 ],
               ),
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildThread(ColorScheme scheme) {
+    if (_listBusy && _messages.isEmpty && _pendingUser == null) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    if (_listError != null && _messages.isEmpty && _pendingUser == null) {
+      return Center(child: Text(_listError!));
+    }
+    final live = _liveAssistant;
+    final items = [
+      ..._messages,
+      ?_pendingUser,
+      if (live.isNotEmpty)
+        ChatMessage(id: 'live', role: 'assistant', content: live),
+    ];
+    if (items.isEmpty && !_streaming) {
+      return const Center(child: Text('Escribí el primer mensaje.'));
+    }
+    final thinking = _streaming && live.isEmpty;
+    final extra = thinking ? 1 : 0;
+    return ListView.builder(
+      reverse: true,
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+      itemCount: items.length + extra,
+      itemBuilder: (context, i) {
+        if (thinking && i == 0) {
+          return _thinkingBubble(scheme);
+        }
+        final m = items[items.length - 1 - (i - extra)];
+        return _messageBubble(scheme, m);
+      },
+    );
+  }
+
+  Widget _thinkingBubble(ColorScheme scheme) {
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 8),
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: scheme.surfaceContainerHighest,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            SizedBox(
+              width: 14,
+              height: 14,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: scheme.onSurface.withValues(alpha: 0.6),
+              ),
+            ),
+            const SizedBox(width: 10),
+            Text(
+              'Pensando…',
+              style: TextStyle(
+                color: scheme.onSurface.withValues(alpha: 0.7),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _messageBubble(ColorScheme scheme, ChatMessage m) {
+    final mine = m.role == 'user';
+    return Align(
+      alignment: mine ? Alignment.centerRight : Alignment.centerLeft,
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 8),
+        padding: const EdgeInsets.all(12),
+        constraints: const BoxConstraints(maxWidth: 320),
+        decoration: BoxDecoration(
+          color: mine
+              ? scheme.primaryContainer
+              : scheme.surfaceContainerHighest,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Text(m.content),
       ),
     );
   }

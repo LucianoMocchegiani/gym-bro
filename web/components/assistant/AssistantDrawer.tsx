@@ -70,8 +70,18 @@ function subscribeNever(): () => void {
 }
 
 const NEAR_BOTTOM_PX = 96;
-const CHARS_PER_TICK = 5;
-const TICK_MS = 18;
+const TICK_MS = 32;
+
+function nextTypeChunk(queue: string): string {
+  if (!queue) {
+    return '';
+  }
+  const space = queue.indexOf(' ', 1);
+  if (space > 0 && space <= 18) {
+    return queue.slice(0, space + 1);
+  }
+  return queue.slice(0, Math.min(2, queue.length));
+}
 
 function isNearBottom(el: HTMLElement): boolean {
   return el.scrollHeight - el.scrollTop - el.clientHeight < NEAR_BOTTOM_PX;
@@ -143,14 +153,14 @@ export function AssistantLauncher({
       clearTimeout(tickRef.current);
       tickRef.current = null;
     }
-    const chunk = queueRef.current.slice(0, CHARS_PER_TICK);
+    const chunk = nextTypeChunk(queueRef.current);
     if (!chunk) {
       if (!sseOpenRef.current) {
         setStreaming(false);
       }
       return;
     }
-    queueRef.current = queueRef.current.slice(CHARS_PER_TICK);
+    queueRef.current = queueRef.current.slice(chunk.length);
     const assistantKey = assistantKeyRef.current;
     setBubbles((prev) => {
       const idx = assistantKey
@@ -640,6 +650,7 @@ export function AssistantLauncher({
                 ) : (
                   <MessageThread
                     items={bubbles}
+                    streaming={streaming}
                     helloName={variant === 'staff' ? helloName : undefined}
                     disclaimer={disclaimer}
                     onOpenLink={handleOpenLink}

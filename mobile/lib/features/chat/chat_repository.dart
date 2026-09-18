@@ -67,6 +67,8 @@ class ChatRepository {
 
   final ApiClient _api;
   final http.Client _http;
+  http.Client? _turnClient;
+  bool _turnAborted = false;
 
   /// Lista hilos no archivados.
   Future<List<ChatThread>> listThreads() async {
@@ -106,12 +108,22 @@ class ChatRepository {
         .toList();
   }
 
-  /// Envía un turno y espera a que el stream termine (luego hay que recargar).
-  Future<void> sendTurn(String conversationId, String text) async {
+  /// Envía un turno y emite `text-delta` del UI Message Stream.
+  ///
+  /// [abortTurn] corta el HTTP. En ese caso lanza [ChatTurnAbortedException].
+  Future<void> sendTurn(
+    String conversationId,
+    String text, {
+    required void Function(String delta) onDelta,
+  }) async {
     final token = _api.accessToken;
     if (token == null || token.isEmpty) {
       throw ApiException('Sin sesión');
     }
+    abortTurn();
+    _turnAborted = false;
+    final client = http.Client();
+    _turnClient = client;
     final uri = Uri.parse(
       '${ChatConfig.baseUrl}/v1/conversations/$conversationId/messages',
     );
@@ -120,11 +132,90 @@ class ChatRepository {
       ..headers['Content-Type'] = 'application/json'
       ..headers['Accept'] = 'text/event-stream'
       ..body = jsonEncode({'text': text});
-    final res = await _http.send(req);
-    await res.stream.drain<void>();
-    if (res.statusCode < 200 || res.statusCode >= 300) {
-      throw ApiException('Error ${res.statusCode} al enviar el mensaje');
+    try {
+      final res = await client.send(req);
+      if (res.statusCode < 200 || res.statusCode >= 300) {
+        await res.stream.drain<void>();
+        throw ApiException('Error ${res.statusCode} al enviar el mensaje');
+      }
+      var buffer = '';
+      await for (final piece in res.stream.transform(utf8.decoder)) {
+        if (_turnAborted) {
+          throw const ChatTurnAbortedException();
+        }
+        buffer += piece;
+        while (true) {
+          final split = buffer.indexOf('\n\n');
+          if (split < 0) {
+            break;
+          }
+          final block = buffer.substring(0, split);
+          buffer = buffer.substring(split + 2);
+          _dispatchSseBlock(block, onDelta);
+        }
+      }
+      if (buffer.trim().isNotEmpty) {
+        _dispatchSseBlock(buffer, onDelta);
+      }
+    } catch (e) {
+      if (e is ChatTurnAbortedException) {
+        rethrow;
+      }
+      if (_turnAborted || e is http.ClientException) {
+        throw const ChatTurnAbortedException();
+      }
+      rethrow;
+    } finally {
+      if (identical(_turnClient, client)) {
+        _turnClient = null;
+      }
+      client.close();
     }
+  }
+
+  void _dispatchSseBlock(String block, void Function(String delta) onDelta) {
+    for (final line in block.split('\n')) {
+      final trimmed = line.trim();
+      if (!trimmed.startsWith('data:')) {
+        continue;
+      }
+      final payload = trimmed.substring(5).trim();
+      if (payload.isEmpty || payload == '[DONE]') {
+        continue;
+      }
+      Object? event;
+      try {
+        event = jsonDecode(payload);
+      } catch (_) {
+        continue;
+      }
+      if (event is! Map) {
+        continue;
+      }
+      final type = event['type'] as String? ?? '';
+      if (type == 'text-delta') {
+        final delta = event['delta'];
+        if (delta is String && delta.isNotEmpty) {
+          onDelta(delta);
+        }
+      }
+      if (type == 'error') {
+        final msg = event['errorText'];
+        throw ApiException(
+          msg is String && msg.trim().isNotEmpty
+              ? msg
+              : 'El asistente no está disponible',
+        );
+      }
+    }
+  }
+
+  /// Corta el stream del turno en curso (botón Parar).
+  void abortTurn() {
+    _turnAborted = true;
+    final client = _turnClient;
+    _turnClient = null;
+    client?.close();
   }
 
   Future<Object?> _json(
@@ -179,4 +270,10 @@ class ChatRepository {
     }
     return 'Error ${res.statusCode}';
   }
+}
+
+/// El staff cortó el stream del asistente.
+class ChatTurnAbortedException implements Exception {
+  /// Crea la excepción.
+  const ChatTurnAbortedException();
 }

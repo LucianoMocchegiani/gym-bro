@@ -157,14 +157,16 @@ export function MessageThread({
   items,
   helloName,
   disclaimer,
+  streaming = false,
   onOpenLink,
 }: {
   items: ThreadBubble[];
   helloName?: string | null;
   disclaimer?: string;
+  streaming?: boolean;
   onOpenLink: (href: string) => void;
 }) {
-  if (items.length === 0) {
+  if (items.length === 0 && !streaming) {
     const greeting = helloName?.trim() ? `¡Hola, ${helloName}!` : '¡Hola!';
     return (
       <div className={styles.welcome}>
@@ -175,6 +177,10 @@ export function MessageThread({
   }
 
   const turns = groupTurns(items);
+  const last = items.length > 0 ? items[items.length - 1] : null;
+  const showThinking =
+    streaming &&
+    (last == null || last.role !== 'assistant' || last.content.length === 0);
 
   return (
     <ol className={styles.thread}>
@@ -185,6 +191,11 @@ export function MessageThread({
           <ChipRow links={turn.links} onOpen={onOpenLink} />
         </Fragment>
       ))}
+      {showThinking ? (
+        <li className={styles.assistant}>
+          <p className={`${styles.md} ${styles.thinking}`}>Pensando…</p>
+        </li>
+      ) : null}
     </ol>
   );
 }

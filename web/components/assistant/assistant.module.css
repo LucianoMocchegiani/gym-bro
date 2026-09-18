@@ -264,6 +264,10 @@
   margin: 0;
 }
 
+.thinking {
+  color: var(--muted);
+}
+
 .tool {
   color: var(--muted);
   font-size: 0.8rem;
