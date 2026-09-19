@@ -4,12 +4,10 @@ import 'package:provider/provider.dart';
 import '../shell/member_shell.dart';
 import '../shell/staff_shell.dart';
 import 'auth_controller.dart';
+import 'gym_picker_screen.dart';
 import 'login_screen.dart';
 
-/// Enruta a login o al shell según la sesión (RN-ROL-005).
-///
-/// Si el token no vale, vuelve al login. El [MaterialApp] debe llevar una
-/// [ValueKey] de sesión para tirar el stack de rutas (Caja, roster, etc.).
+/// Enruta login, picker de gym o shell (RN-ROL-005).
 class AuthGate extends StatelessWidget {
   /// Crea el protector.
   const AuthGate({super.key});
@@ -22,12 +20,15 @@ class AuthGate extends StatelessWidget {
         body: Center(child: CircularProgressIndicator()),
       );
     }
-    if (!auth.isAuthenticated) {
-      return const LoginScreen();
+    if (auth.isAuthenticated) {
+      if (auth.isStaff) {
+        return const StaffShell();
+      }
+      return const MemberShell();
     }
-    if (auth.isStaff) {
-      return const StaffShell();
+    if (auth.needsGymPicker) {
+      return const GymPickerScreen();
     }
-    return const MemberShell();
+    return const LoginScreen();
   }
 }

@@ -47,8 +47,9 @@ Acceso → Escanear (default) | Credenciales
 |  [ cards VC en el celular ]      |
 +----------------------------------+
 
-Ajustes → cuenta · wallet SSI (reiniciar) · tema · Desarrolladores (API) · salir
-Sin sesión / 401 sin refresh → login (AuthGate).
+Ajustes → cuenta · cambiar gym · wallet SSI (reiniciar) · tema · Desarrolladores (API) · salir
+Sin sesión / 401 sin refresh → login cuenta (email+password; Google/Apple después).
+Identity sin gym → picker de locales (socio/staff). Wallet = de la cuenta, no se borra al cambiar gym.
 ```
 
 Credenciales: expandir card → Eliminar (confirmación). Ajustes: Reiniciar wallet / Cerrar sesión usan el mismo diálogo de confirmación.
@@ -58,7 +59,7 @@ Credenciales: expandir card → Eliminar (confirmación). Ajustes: Reiniciar wal
 ## 2b. App staff — hubs (nav)
 
 ```text
-Login: Afiliado | Staff  (mismo formulario, otro POST)
+Login: email + password de la cuenta (mismo binario socio/staff)
 
 Nav staff: Inicio | Acceso | Ajustes
 Burbuja flotante (arrastrable) → Asistente / chat-api
@@ -80,7 +81,7 @@ Acceso → igual que afiliado (wallet + QR puerta)
 
 Chat → burbuja flotante arrastrable; abre el último hilo. Lápiz = nuevo; reloj = historial.
 
-Ajustes → cuenta staff · wallet · tema · Desarrolladores (API / Chat API) · salir
+Ajustes → cuenta staff · cambiar gym · wallet · tema · Desarrolladores (API / Chat API) · salir
 ```
 
 ---

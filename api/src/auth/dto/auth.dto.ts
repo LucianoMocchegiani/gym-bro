@@ -1,5 +1,6 @@
 import {
   IsEmail,
+  IsIn,
   IsOptional,
   IsString,
   IsUUID,
@@ -104,4 +105,27 @@ export class ImpersonateDto {
 
   @IsUUID()
   staffUserId!: string;
+}
+
+/**
+ * Login de persona (sin gym). Email+password de `identities`.
+ */
+export class IdentityLoginDto {
+  @IsEmail()
+  email!: string;
+
+  @IsString()
+  @MinLength(8)
+  password!: string;
+}
+
+/**
+ * Elige membresía y emite JWT de negocio (MEMBER o STAFF + tenantId).
+ */
+export class SelectContextDto {
+  @IsUUID()
+  tenantId!: string;
+
+  @IsIn(['MEMBER', 'STAFF'])
+  profile!: 'MEMBER' | 'STAFF';
 }

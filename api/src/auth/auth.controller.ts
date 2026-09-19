@@ -1,14 +1,17 @@
 import { Body, Controller, Get, Post, UseGuards } from '@nestjs/common';
 import { AuthService } from './auth.service';
-import { AuthTokens, type AuthUser } from './auth.types';
+import { AuthTokens, MembershipsList, type AuthUser } from './auth.types';
 import { CurrentUser } from './decorators/current-user.decorator';
+import { RequireIdentityAuth } from './decorators/require-identity-auth.decorator';
 import { RequireSuperAuth } from './decorators/require-super-auth.decorator';
 import {
   ChangePasswordDto,
+  IdentityLoginDto,
   ImpersonateDto,
   LogoutDto,
   MemberLoginDto,
   RefreshTokenDto,
+  SelectContextDto,
   StaffLoginDto,
   SuperLoginDto,
 } from './dto/auth.dto';
@@ -59,6 +62,37 @@ export class AuthController {
   @Post('member/login')
   loginMember(@Body() dto: MemberLoginDto): Promise<AuthTokens> {
     return this.authService.loginMember(dto);
+  }
+
+  /**
+   * Login de persona (sin gym). Google/Apple vienen después.
+   */
+  @Post('identity/login')
+  loginIdentity(@Body() dto: IdentityLoginDto): Promise<AuthTokens> {
+    return this.authService.loginIdentity(dto);
+  }
+
+  /**
+   * Lista de gyms/perfiles de la identity.
+   */
+  @Get('memberships')
+  @RequireIdentityAuth()
+  listMemberships(
+    @CurrentUser() user: AuthUser,
+  ): Promise<MembershipsList> {
+    return this.authService.listMemberships(user.userId);
+  }
+
+  /**
+   * Emite JWT de negocio para un gym + perfil.
+   */
+  @Post('select-context')
+  @RequireIdentityAuth()
+  selectContext(
+    @CurrentUser() user: AuthUser,
+    @Body() dto: SelectContextDto,
+  ): Promise<AuthTokens> {
+    return this.authService.selectContext(user.userId, dto);
   }
 
   /**

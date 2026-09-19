@@ -35,6 +35,9 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
     ) {
       throw new UnauthorizedException('Invalid token claims');
     }
+    if (payload.profileType === 'IDENTITY' && payload.tenantId) {
+      throw new UnauthorizedException('Invalid token claims');
+    }
 
     return {
       userId: payload.sub,

@@ -15,11 +15,19 @@ import {
   assertValidTenantSlug,
   normalizeTenantSlug,
 } from '../tenants/tenant-slug';
-import { AuthTokens, JwtAccessPayload, type AuthUser } from './auth.types';
+import {
+  AuthTokens,
+  JwtAccessPayload,
+  MembershipRow,
+  MembershipsList,
+  type AuthUser,
+} from './auth.types';
 import {
   ChangePasswordDto,
+  IdentityLoginDto,
   ImpersonateDto,
   MemberLoginDto,
+  SelectContextDto,
   StaffLoginDto,
   SuperLoginDto,
 } from './dto/auth.dto';
@@ -139,11 +147,12 @@ export class AuthService {
           email: dto.email.toLowerCase(),
         },
       },
+      include: { identity: { select: { passwordHash: true } } },
     });
     if (!user?.active) {
       throw new UnauthorizedException('Invalid credentials');
     }
-    await this.assertPassword(dto.password, user.passwordHash);
+    await this.assertPassword(dto.password, user.identity.passwordHash);
     return this.issueTokens({
       profileType: AuthProfileType.STAFF,
       userId: user.id,
@@ -171,11 +180,140 @@ export class AuthService {
           email: dto.email.toLowerCase(),
         },
       },
+      include: { identity: { select: { passwordHash: true } } },
     });
     if (!user || user.status !== MemberStatus.ACTIVE) {
       throw new UnauthorizedException('Invalid credentials');
     }
-    await this.assertPassword(dto.password, user.passwordHash);
+    await this.assertPassword(dto.password, user.identity.passwordHash);
+    return this.issueTokens({
+      profileType: AuthProfileType.MEMBER,
+      userId: user.id,
+      email: user.email,
+      name: user.name,
+      tenantId: user.tenantId,
+    });
+  }
+
+  /**
+   * Login de persona Faciliter (sin gym). Password de `identities`.
+   *
+   * @throws {UnauthorizedException} Credenciales inválidas.
+   */
+  async loginIdentity(dto: IdentityLoginDto): Promise<AuthTokens> {
+    const email = dto.email.toLowerCase();
+    const identity = await this.prisma.identity.findUnique({
+      where: { email },
+    });
+    if (!identity) {
+      throw new UnauthorizedException('Invalid credentials');
+    }
+    await this.assertPassword(dto.password, identity.passwordHash);
+    return this.issueTokens({
+      profileType: AuthProfileType.IDENTITY,
+      userId: identity.id,
+      email: identity.email,
+      name: identity.name,
+    });
+  }
+
+  /**
+   * Gyms donde esta persona es socio y/o staff (tenant activo).
+   */
+  async listMemberships(identityId: string): Promise<MembershipsList> {
+    const [members, staff] = await Promise.all([
+      this.prisma.member.findMany({
+        where: {
+          identityId,
+          status: MemberStatus.ACTIVE,
+          tenant: { status: TenantStatus.ACTIVE },
+        },
+        select: {
+          id: true,
+          tenantId: true,
+          tenant: { select: { slug: true, name: true } },
+        },
+      }),
+      this.prisma.staffUser.findMany({
+        where: {
+          identityId,
+          active: true,
+          tenant: { status: TenantStatus.ACTIVE },
+        },
+        select: {
+          id: true,
+          tenantId: true,
+          tenant: { select: { slug: true, name: true } },
+        },
+      }),
+    ]);
+
+    const items: MembershipRow[] = [
+      ...members.map((m) => ({
+        tenantId: m.tenantId,
+        tenantSlug: m.tenant.slug,
+        tenantName: m.tenant.name,
+        profile: 'MEMBER' as const,
+        memberId: m.id,
+      })),
+      ...staff.map((s) => ({
+        tenantId: s.tenantId,
+        tenantSlug: s.tenant.slug,
+        tenantName: s.tenant.name,
+        profile: 'STAFF' as const,
+        staffUserId: s.id,
+      })),
+    ];
+    items.sort(
+      (a, b) =>
+        a.tenantName.localeCompare(b.tenantName) ||
+        a.profile.localeCompare(b.profile),
+    );
+    return { items };
+  }
+
+  /**
+   * Emite JWT MEMBER/STAFF del gym elegido (la identity debe tener esa fila).
+   *
+   * @throws {UnauthorizedException} Sin membresía o inactiva.
+   * @throws {ForbiddenException} Tenant suspendido.
+   */
+  async selectContext(
+    identityId: string,
+    dto: SelectContextDto,
+  ): Promise<AuthTokens> {
+    await this.assertTenantActive(dto.tenantId);
+    if (dto.profile === 'STAFF') {
+      const user = await this.prisma.staffUser.findUnique({
+        where: {
+          tenantId_identityId: {
+            tenantId: dto.tenantId,
+            identityId,
+          },
+        },
+      });
+      if (!user?.active) {
+        throw new UnauthorizedException('Invalid credentials');
+      }
+      return this.issueTokens({
+        profileType: AuthProfileType.STAFF,
+        userId: user.id,
+        email: user.email,
+        name: user.name,
+        tenantId: user.tenantId,
+      });
+    }
+    const user = await this.prisma.member.findUnique({
+      where: {
+        tenantId_identityId: {
+          tenantId: dto.tenantId,
+          identityId,
+        },
+      },
+    });
+    if (!user || user.status !== MemberStatus.ACTIVE) {
+      throw new UnauthorizedException('Invalid credentials');
+    }
     return this.issueTokens({
       profileType: AuthProfileType.MEMBER,
       userId: user.id,
@@ -194,7 +332,12 @@ export class AuthService {
     const tokenHash = this.hashToken(refreshToken);
     const stored = await this.prisma.refreshToken.findUnique({
       where: { tokenHash },
-      include: { superUser: true, staffUser: true, member: true },
+      include: {
+        superUser: true,
+        staffUser: true,
+        member: true,
+        identity: true,
+      },
     });
 
     if (!stored || stored.revokedAt || stored.expiresAt <= new Date()) {
@@ -246,6 +389,15 @@ export class AuthService {
       });
     }
 
+    if (stored.profileType === AuthProfileType.IDENTITY && stored.identity) {
+      return this.issueTokens({
+        profileType: AuthProfileType.IDENTITY,
+        userId: stored.identity.id,
+        email: stored.identity.email,
+        name: stored.identity.name,
+      });
+    }
+
     throw new UnauthorizedException('Invalid refresh token');
   }
 
@@ -264,8 +416,8 @@ export class AuthService {
   /**
    * Cambia la contraseña del usuario autenticado (STAFF o SUPER).
    *
-   * @remarks Verifica la actual con bcrypt; si cambia, revoca todos los
-   * refresh tokens del usuario (obliga a re-login).
+   * @remarks Cambia el hash de `identities` (misma pass en todos los gyms).
+   * Revoca refresh de ese staff y de la identity.
    * @throws {UnauthorizedException} Contraseña actual inválida o perfil sin soporte.
    */
   async changePassword(
@@ -277,17 +429,27 @@ export class AuthService {
     if (user.profileType === AuthProfileType.STAFF) {
       const staffUser = await this.prisma.staffUser.findUnique({
         where: { id: user.userId },
+        include: { identity: { select: { id: true, passwordHash: true } } },
       });
       if (!staffUser) {
         throw new UnauthorizedException('Invalid credentials');
       }
-      await this.assertPassword(dto.currentPassword, staffUser.passwordHash);
-      await this.prisma.staffUser.update({
-        where: { id: user.userId },
+      await this.assertPassword(
+        dto.currentPassword,
+        staffUser.identity.passwordHash,
+      );
+      await this.prisma.identity.update({
+        where: { id: staffUser.identity.id },
         data: { passwordHash: newHash },
       });
       await this.prisma.refreshToken.updateMany({
-        where: { staffUserId: user.userId, revokedAt: null },
+        where: {
+          revokedAt: null,
+          OR: [
+            { staffUserId: user.userId },
+            { identityId: staffUser.identity.id },
+          ],
+        },
         data: { revokedAt: new Date() },
       });
       return { ok: true };
@@ -388,6 +550,8 @@ export class AuthService {
           owner.profileType === AuthProfileType.STAFF ? owner.userId : null,
         memberId:
           owner.profileType === AuthProfileType.MEMBER ? owner.userId : null,
+        identityId:
+          owner.profileType === AuthProfileType.IDENTITY ? owner.userId : null,
       },
     });
 

@@ -42,6 +42,7 @@ Tras un wipe completo:
 docker compose down -v
 docker compose up --build -d
 # … luego el seed (paso 3)
+docker compose exec api npm run prisma:seed
 ```
 
 ### Seed incluye

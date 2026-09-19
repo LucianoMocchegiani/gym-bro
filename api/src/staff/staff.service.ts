@@ -15,6 +15,7 @@ import {
   resolveOrderField,
   toListResult,
 } from '../common/list';
+import { IdentityService } from '../auth/identity.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateStaffDto, SetStaffRolesDto, UpdateStaffDto } from './dto/staff.dto';
 import { StaffUserDetail } from './staff.types';
@@ -43,6 +44,7 @@ export class StaffService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
+    private readonly identities: IdentityService,
   ) {}
 
   /**
@@ -119,11 +121,16 @@ export class StaffService {
 
     try {
       const staff = await this.prisma.$transaction(async (tx) => {
+        const identity = await this.identities.ensure(tx, {
+          email,
+          passwordHash,
+          name: dto.name?.trim() || null,
+        });
         const created = await tx.staffUser.create({
           data: {
             tenantId,
+            identityId: identity.id,
             email,
-            passwordHash,
             name: dto.name?.trim() || null,
             imageUrl: dto.imageUrl ?? null,
             active: true,

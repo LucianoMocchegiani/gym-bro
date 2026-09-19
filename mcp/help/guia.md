@@ -32,8 +32,8 @@ Saludo, tarjetas del día (afiliados activos, ingresos, accesos, socios sin pack
 
 ## Login
 
-- **Staff:** “Acceso staff”, nombre del local, email y contraseña.
-- **App:** “Acceso afiliado”: slug del local + email + contraseña. No es el mismo formulario.
+- **Staff:** “Acceso staff”, nombre del local, email y contraseña (el gym sale del subdominio).
+- **App:** email y contraseña de la **cuenta** Faciliter (sin slug). Si hay varios gyms, se elige local y socio/staff. Google/Apple después.
 
 ## Config
 

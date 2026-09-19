@@ -5,8 +5,10 @@ import { PassportModule } from '@nestjs/passport';
 import { AuditModule } from '../audit/audit.module';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
+import { IdentityGuard } from './guards/identity.guard';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { SuperGuard } from './guards/super.guard';
+import { IdentityService } from './identity.service';
 import { JwtStrategy } from './strategies/jwt.strategy';
 
 /**
@@ -25,7 +27,21 @@ import { JwtStrategy } from './strategies/jwt.strategy';
     forwardRef(() => AuditModule),
   ],
   controllers: [AuthController],
-  providers: [AuthService, JwtStrategy, JwtAuthGuard, SuperGuard],
-  exports: [AuthService, JwtModule, PassportModule, JwtAuthGuard, SuperGuard],
+  providers: [
+    AuthService,
+    IdentityService,
+    JwtStrategy,
+    JwtAuthGuard,
+    SuperGuard,
+    IdentityGuard,
+  ],
+  exports: [
+    AuthService,
+    IdentityService,
+    JwtModule,
+    PassportModule,
+    JwtAuthGuard,
+    SuperGuard,
+  ],
 })
 export class AuthModule {}

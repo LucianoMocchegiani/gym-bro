@@ -31,6 +31,8 @@ enum AuthProfileType {
   SUPER
   STAFF
   MEMBER
+  /// Sesión de persona (picker de gym). Sin tenantId en el JWT.
+  IDENTITY
 }
 
 /// Estado operativo del afiliado en el tenant (CU-AFI-003).
@@ -291,12 +293,32 @@ model SuperUser {
   @@map("super_users")
 }
 
+/// Persona Faciliter (login Google/Apple/password). Las membresías son `members` / `staff_users`.
+model Identity {
+  id           String   @id @default(uuid()) @db.Uuid
+  email        String   @unique
+  passwordHash String   @map("password_hash")
+  /// OIDC Google (corte B). Null hasta vincular.
+  googleSub    String?  @unique @map("google_sub")
+  /// Sign in with Apple (después). Null hasta vincular.
+  appleSub     String?  @unique @map("apple_sub")
+  name         String?
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  members       Member[]
+  staffUsers    StaffUser[]
+  refreshTokens RefreshToken[]
+
+  @@map("identities")
+}
+
 /// Usuario staff de un tenant (puede tener N roles en E1).
 model StaffUser {
   id           String   @id @default(uuid()) @db.Uuid
   tenantId     String   @map("tenant_id") @db.Uuid
+  identityId   String   @map("identity_id") @db.Uuid
   email        String
-  passwordHash String   @map("password_hash")
   name         String?
   imageUrl     String?  @map("image_url")
   active       Boolean  @default(true)
@@ -304,6 +326,7 @@ model StaffUser {
   updatedAt    DateTime @updatedAt @map("updated_at")
 
   tenant                    Tenant                  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  identity                  Identity                @relation(fields: [identityId], references: [id], onDelete: Restrict)
   refreshTokens             RefreshToken[]
   staffRoles                StaffUserRole[]
   instructedSessions        Session[]               @relation("SessionInstructor")
@@ -319,7 +342,9 @@ model StaffUser {
   debitMandatesCancelled    DebitMandate[]          @relation("DebitMandateCancelledBy")
 
   @@unique([tenantId, email])
+  @@unique([tenantId, identityId])
   @@index([tenantId])
+  @@index([identityId])
   @@map("staff_users")
 }
 
@@ -327,8 +352,8 @@ model StaffUser {
 model Member {
   id           String       @id @default(uuid()) @db.Uuid
   tenantId     String       @map("tenant_id") @db.Uuid
+  identityId   String       @map("identity_id") @db.Uuid
   email        String
-  passwordHash String       @map("password_hash")
   name         String?
   phone        String?
   document     String?
@@ -339,6 +364,7 @@ model Member {
   updatedAt    DateTime     @updatedAt @map("updated_at")
 
   tenant        Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  identity      Identity       @relation(fields: [identityId], references: [id], onDelete: Restrict)
   branch        Branch?        @relation(fields: [branchId], references: [id], onDelete: SetNull)
   refreshTokens RefreshToken[]
   transactionItems TransactionItem[]
@@ -356,7 +382,9 @@ model Member {
 
   @@unique([tenantId, email])
   @@unique([tenantId, document])
+  @@unique([tenantId, identityId])
   @@index([tenantId])
+  @@index([identityId])
   @@index([branchId])
   @@map("members")
 }
@@ -369,6 +397,7 @@ model RefreshToken {
   superUserId String?         @map("super_user_id") @db.Uuid
   staffUserId String?         @map("staff_user_id") @db.Uuid
   memberId    String?         @map("member_id") @db.Uuid
+  identityId  String?         @map("identity_id") @db.Uuid
   expiresAt   DateTime        @map("expires_at")
   revokedAt   DateTime?       @map("revoked_at")
   createdAt   DateTime        @default(now()) @map("created_at")
@@ -376,10 +405,12 @@ model RefreshToken {
   superUser SuperUser? @relation(fields: [superUserId], references: [id], onDelete: Cascade)
   staffUser StaffUser? @relation(fields: [staffUserId], references: [id], onDelete: Cascade)
   member    Member?    @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  identity  Identity?  @relation(fields: [identityId], references: [id], onDelete: Cascade)
 
   @@index([superUserId])
   @@index([staffUserId])
   @@index([memberId])
+  @@index([identityId])
   @@map("refresh_tokens")
 }
 

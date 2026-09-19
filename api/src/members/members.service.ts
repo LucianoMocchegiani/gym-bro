@@ -22,6 +22,7 @@ import {
 } from '../common/list';
 import { ContractsService } from '../contracts/contracts.service';
 import { ContractDetail } from '../contracts/contracts.types';
+import { IdentityService } from '../auth/identity.service';
 import { PrismaService } from '../prisma/prisma.service';
 import {
   CreateMemberDto,
@@ -48,6 +49,7 @@ export class MembersService {
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
     private readonly contractsService: ContractsService,
+    private readonly identities: IdentityService,
   ) {}
 
   /**
@@ -249,18 +251,25 @@ export class MembersService {
     const passwordHash = await bcrypt.hash(dto.password, 12);
 
     try {
-      const member = await this.prisma.member.create({
-        data: {
-          tenantId,
+      const member = await this.prisma.$transaction(async (tx) => {
+        const identity = await this.identities.ensure(tx, {
           email,
           passwordHash,
           name: dto.name.trim(),
-          phone,
-          document,
-          imageUrl: dto.imageUrl ?? null,
-          branchId,
-          status: MemberStatus.ACTIVE,
-        },
+        });
+        return tx.member.create({
+          data: {
+            tenantId,
+            identityId: identity.id,
+            email,
+            name: dto.name.trim(),
+            phone,
+            document,
+            imageUrl: dto.imageUrl ?? null,
+            branchId,
+            status: MemberStatus.ACTIVE,
+          },
+        });
       });
       const detail = this.toDetail(member);
       await this.audit.record({

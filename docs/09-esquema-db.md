@@ -26,6 +26,9 @@ Documento **implementado** (tablas reales), no el modelo conceptual de [03-model
 
 ```mermaid
 erDiagram
+  identities ||--o{ members : memberships
+  identities ||--o{ staff_users : staff
+  identities ||--o{ refresh_tokens : sessions
   tenants ||--o{ staff_users : has
   tenants ||--o{ members : has
   tenants ||--o{ branches : has
@@ -211,8 +214,8 @@ erDiagram
   staff_users {
     uuid id PK
     uuid tenant_id FK
+    uuid identity_id FK
     text email
-    text password_hash
     text name
     text image_url
     boolean active
@@ -223,8 +226,8 @@ erDiagram
   members {
     uuid id PK
     uuid tenant_id FK
+    uuid identity_id FK
     text email
-    text password_hash
     text name
     text phone
     text document
@@ -330,7 +333,7 @@ erDiagram
 | `TenantStatus` | `ACTIVE`, `SUSPENDED` | Estado del gym (RN-TEN-002) |
 | `QuarkProvisionStatus` | _(eliminado)_ | Histórico; wallets ahora solo env Kuatia |
 | `CredentialOfferStatus` | `PENDING`, `FAILED`, `ACCEPTED` | Offer OID4VCI (soft-fail + accept wallet) |
-| `AuthProfileType` | `SUPER`, `STAFF`, `MEMBER` | Dueño del refresh token (RN-ROL-005) |
+| `AuthProfileType` | `SUPER`, `STAFF`, `MEMBER`, `IDENTITY` | Dueño del refresh token. IDENTITY = persona (picker), sin tenant |
 | `MemberStatus` | `ACTIVE`, `SUSPENDED`, `INACTIVE` | Estado del afiliado (CU-AFI-003) |
 | `ServiceType` | `ACCESO_LIBRE`, `POR_SESIONES` | Tipo de servicio (RN-SER-001) |
 | `BillingPeriod` | `MONTHLY`, `ONE_TIME` | Periodicidad de cobro del pack |
@@ -463,22 +466,40 @@ Super Admin de plataforma (sin `tenant_id`, RN-ROL-001).
 
 ---
 
+### 4.7b `identities`
+
+Persona Faciliter (login de la app). Membresías = `members` / `staff_users`.
+
+| Columna | Tipo | Notas |
+|---------|------|--------|
+| `id` | uuid PK | |
+| `email` | text UK | minúsculas |
+| `password_hash` | text | Corte A. Google/Apple: `google_sub` / `apple_sub` |
+| `google_sub` | text UK nullable | |
+| `apple_sub` | text UK nullable | |
+| `name` | text nullable | |
+| `created_at` / `updated_at` | timestamptz | |
+
+API app: `POST /auth/identity/login`, `GET /auth/memberships`, `POST /auth/select-context`.
+
+---
+
 ### 4.8 `staff_users`
 
-Staff de un gym. Email único **por tenant**.
+Staff de un gym. Email único **por tenant**. `identity_id` FK → `identities` (Restrict). Unique `(tenant_id, identity_id)`.
 
 | Columna | Tipo | Notas |
 |---------|------|--------|
 | `id` | uuid PK | |
 | `tenant_id` | uuid FK → `tenants` | ON DELETE CASCADE · index |
+| `identity_id` | uuid FK → `identities` | Restrict · unique con tenant |
 | `email` | text | |
-| `password_hash` | text | |
 | `name` | text nullable | |
 | `image_url` | text nullable | foto de perfil (R2) |
 | `active` | boolean | |
 | `created_at` / `updated_at` | timestamptz | |
 
-**Unique:** `(tenant_id, email)`.
+**Unique:** `(tenant_id, email)`, `(tenant_id, identity_id)`.
 
 ---
 
@@ -490,8 +511,8 @@ Afiliado (socio). Perfil separado del staff (RN-ROL-005). Email único **por ten
 |---------|------|--------|
 | `id` | uuid PK | |
 | `tenant_id` | uuid FK → `tenants` | ON DELETE CASCADE · index |
+| `identity_id` | uuid FK → `identities` | Restrict · unique `(tenant_id, identity_id)` |
 | `email` | text | |
-| `password_hash` | text | |
 | `name` | text nullable | |
 | `phone` | text nullable | |
 | `document` | text nullable | unique por tenant (NULL permitido repetido) |
@@ -500,7 +521,7 @@ Afiliado (socio). Perfil separado del staff (RN-ROL-005). Email único **por ten
 | `status` | `MemberStatus` | default `ACTIVE` |
 | `created_at` / `updated_at` | timestamptz | |
 
-**Unique:** `(tenant_id, email)`, `(tenant_id, document)`.
+**Unique:** `(tenant_id, email)`, `(tenant_id, document)`, `(tenant_id, identity_id)`.
 
 API Staff: `GET|POST|PATCH /api/members`, `PATCH /api/members/:id/status` (`members.deactivate`, dangerous).
 
@@ -518,6 +539,7 @@ Refresh opaco hasheado (SHA-256). Un token pertenece a **un** perfil (solo una F
 | `super_user_id` | uuid FK nullable | |
 | `staff_user_id` | uuid FK nullable | |
 | `member_id` | uuid FK nullable | |
+| `identity_id` | uuid FK nullable | sesión de persona |
 | `expires_at` | timestamptz | |
 | `revoked_at` | timestamptz nullable | logout / rotación |
 | `created_at` | timestamptz | |
@@ -981,6 +1003,8 @@ Historia incremental (2026-07 / 2026-08) **compactada** en un baseline (`40476fa
 | `20260901120000_debit_mandates` | `DebitMandateStatus` + `debit_mandates` (impl. vieja: tarjeta+job). Diseño 2026-09-15: migrar a preapproval. |
 | `20260917120000_dropin_one_time_pack` | `packs.origin_service_id`; unique `credential_offers (member_id, pack_id)`. |
 | `20260918120000_role_profesor_name_entrenador` | Rol seed: `name` Entrenador, `slug` entrenador; staff demo `entrenador@gymdeprueba.com`. |
+| `20260919180000_identities` | `identities` + `IDENTITY` enum; FK `identity_id` en members/staff/refresh. |
+| `20260919190000_identity_only_password` | Drop `password_hash` de `members` y `staff_users`. |
 
 Comandos y checklist “desde cero”: [13-setup-db-desde-cero.md](./13-setup-db-desde-cero.md).
 

@@ -7,6 +7,18 @@ const DEMO_PASSWORD = 'ChangeMe123!';
 const DEMO_TENANT_ID = '00000000-0000-4000-8000-000000000001';
 const DEMO_SLUG = 'gym-de-prueba';
 
+async function identityFor(
+  email: string,
+  passwordHash: string,
+  name: string,
+) {
+  return prisma.identity.upsert({
+    where: { email },
+    update: { passwordHash, name },
+    create: { email, passwordHash, name },
+  });
+}
+
 const PERMISSIONS: { code: string; description: string; dangerous: boolean }[] =
   [
     {
@@ -250,15 +262,24 @@ async function main(): Promise<void> {
     });
   }
 
+  const adminIdentity = await identityFor(
+    'admin@gymdeprueba.com',
+    passwordHash,
+    'Admin Gym de Prueba',
+  );
   const staff = await prisma.staffUser.upsert({
     where: {
       tenantId_email: { tenantId: tenant.id, email: 'admin@gymdeprueba.com' },
     },
-    update: { passwordHash, active: true, name: 'Admin Gym de Prueba' },
+    update: {
+      identityId: adminIdentity.id,
+      active: true,
+      name: 'Admin Gym de Prueba',
+    },
     create: {
       tenantId: tenant.id,
+      identityId: adminIdentity.id,
       email: 'admin@gymdeprueba.com',
-      passwordHash,
       name: 'Admin Gym de Prueba',
     },
   });
@@ -290,13 +311,17 @@ async function main(): Promise<void> {
       where: { id: oldEntrenadorStaff.id },
       data: {
         email: 'entrenador@gymdeprueba.com',
-        passwordHash,
         active: true,
         name: 'Entrenador Gym de Prueba',
       },
     });
   }
 
+  const entrenadorIdentity = await identityFor(
+    'entrenador@gymdeprueba.com',
+    passwordHash,
+    'Entrenador Gym de Prueba',
+  );
   const entrenadorStaff = await prisma.staffUser.upsert({
     where: {
       tenantId_email: {
@@ -304,11 +329,15 @@ async function main(): Promise<void> {
         email: 'entrenador@gymdeprueba.com',
       },
     },
-    update: { passwordHash, active: true, name: 'Entrenador Gym de Prueba' },
+    update: {
+      identityId: entrenadorIdentity.id,
+      active: true,
+      name: 'Entrenador Gym de Prueba',
+    },
     create: {
       tenantId: tenant.id,
+      identityId: entrenadorIdentity.id,
       email: 'entrenador@gymdeprueba.com',
-      passwordHash,
       name: 'Entrenador Gym de Prueba',
     },
   });
@@ -327,12 +356,17 @@ async function main(): Promise<void> {
     },
   });
 
+  const socioIdentity = await identityFor(
+    'socio@gymdeprueba.com',
+    passwordHash,
+    'Socio Gym de Prueba',
+  );
   const member = await prisma.member.upsert({
     where: {
       tenantId_email: { tenantId: tenant.id, email: 'socio@gymdeprueba.com' },
     },
     update: {
-      passwordHash,
+      identityId: socioIdentity.id,
       name: 'Socio Gym de Prueba',
       status: MemberStatus.ACTIVE,
       phone: null,
@@ -340,8 +374,8 @@ async function main(): Promise<void> {
     },
     create: {
       tenantId: tenant.id,
+      identityId: socioIdentity.id,
       email: 'socio@gymdeprueba.com',
-      passwordHash,
       name: 'Socio Gym de Prueba',
       status: MemberStatus.ACTIVE,
     },

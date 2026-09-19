@@ -1,7 +1,7 @@
 import '../../core/network/api_client.dart';
 import 'session_store.dart';
 
-/// Respuesta de login GymBro (afiliado o staff).
+/// Respuesta de login GymBro (identity o gym).
 class AuthTokensResponse {
   /// Parsea tokens + user.
   AuthTokensResponse({
@@ -10,7 +10,7 @@ class AuthTokensResponse {
     required this.profileType,
     required this.userId,
     required this.email,
-    required this.tenantId,
+    this.tenantId,
     this.name,
   });
 
@@ -19,7 +19,7 @@ class AuthTokensResponse {
   final String profileType;
   final String userId;
   final String email;
-  final String tenantId;
+  final String? tenantId;
   final String? name;
 
   factory AuthTokensResponse.fromJson(Map<String, dynamic> json) {
@@ -31,81 +31,137 @@ class AuthTokensResponse {
       userId: user['id'] as String,
       email: user['email'] as String,
       name: user['name'] as String?,
-      tenantId: user['tenantId'] as String,
+      tenantId: user['tenantId'] as String?,
     );
   }
 }
 
-/// Auth contra Nest (RN-ROL-005).
+/// Fila del picker de gym.
+class MembershipRow {
+  /// Parsea un ítem de `GET /auth/memberships`.
+  MembershipRow({
+    required this.tenantId,
+    required this.tenantSlug,
+    required this.tenantName,
+    required this.profile,
+    this.memberId,
+    this.staffUserId,
+  });
+
+  final String tenantId;
+  final String tenantSlug;
+  final String tenantName;
+  final String profile;
+  final String? memberId;
+  final String? staffUserId;
+
+  factory MembershipRow.fromJson(Map<String, dynamic> json) {
+    return MembershipRow(
+      tenantId: json['tenantId'] as String,
+      tenantSlug: json['tenantSlug'] as String,
+      tenantName: json['tenantName'] as String,
+      profile: json['profile'] as String,
+      memberId: json['memberId'] as String?,
+      staffUserId: json['staffUserId'] as String?,
+    );
+  }
+
+  String get roleLabel => profile == 'STAFF' ? 'Staff' : 'Socio';
+}
+
+/// Auth contra Nest (identity + contexto de gym).
 class AuthRepository {
   /// Crea el repositorio.
   AuthRepository({required ApiClient api, required SessionStore store})
-    : _api = api,
-      _store = store;
+      : _api = api,
+        _store = store;
 
   final ApiClient _api;
   final SessionStore _store;
 
-  /// Login afiliado (`POST /auth/member/login`).
-  Future<AppSession> loginMember({
-    required String tenantSlug,
-    required String email,
-    required String password,
-  }) {
-    return _login(
-      path: '/api/auth/member/login',
-      expectedProfile: 'MEMBER',
-      tenantSlug: tenantSlug,
-      email: email,
-      password: password,
-    );
-  }
-
-  /// Login staff (`POST /auth/staff/login`).
-  Future<AppSession> loginStaff({
-    required String tenantSlug,
-    required String email,
-    required String password,
-  }) {
-    return _login(
-      path: '/api/auth/staff/login',
-      expectedProfile: 'STAFF',
-      tenantSlug: tenantSlug,
-      email: email,
-      password: password,
-    );
-  }
-
-  Future<AppSession> _login({
-    required String path,
-    required String expectedProfile,
-    required String tenantSlug,
+  /// Login de persona (`POST /auth/identity/login`).
+  Future<IdentitySession> loginIdentity({
     required String email,
     required String password,
   }) async {
     final tokens = await _api.postJson<AuthTokensResponse>(
-      path,
+      '/api/auth/identity/login',
       auth: false,
       body: {
-        'tenantSlug': tenantSlug.trim().toLowerCase(),
         'email': email.trim(),
         'password': password,
       },
       parse: (json) =>
           AuthTokensResponse.fromJson(json! as Map<String, dynamic>),
     );
-    if (tokens.profileType != expectedProfile) {
-      throw ApiException(
-        expectedProfile == 'STAFF'
-            ? 'Se requiere perfil staff'
-            : 'Se requiere perfil afiliado',
-      );
+    if (tokens.profileType != 'IDENTITY') {
+      throw ApiException('Se requiere sesión de cuenta');
+    }
+    final identity = IdentitySession(
+      accessToken: tokens.accessToken,
+      refreshToken: tokens.refreshToken,
+      identityId: tokens.userId,
+      email: tokens.email,
+      name: tokens.name,
+    );
+    await _store.writeIdentity(identity);
+    await _store.clearGym();
+    _api.accessToken = identity.accessToken;
+    return identity;
+  }
+
+  /// Gyms de la identity actual.
+  Future<List<MembershipRow>> listMemberships() async {
+    final identity = await _store.readIdentity();
+    if (identity == null) {
+      return const [];
+    }
+    _api.accessToken = identity.accessToken;
+    return _api.getJson<List<MembershipRow>>(
+      '/api/auth/memberships',
+      parse: (json) {
+        if (json is! Map) {
+          return const [];
+        }
+        final items = json['items'];
+        if (items is! List) {
+          return const [];
+        }
+        return [
+          for (final item in items)
+            if (item is Map)
+              MembershipRow.fromJson(Map<String, dynamic>.from(item)),
+        ];
+      },
+    );
+  }
+
+  /// Emite JWT de negocio y lo persiste.
+  Future<AppSession> selectContext(MembershipRow row) async {
+    final identity = await _store.readIdentity();
+    if (identity == null) {
+      throw ApiException('Iniciá sesión');
+    }
+    _api.accessToken = identity.accessToken;
+    final tokens = await _api.postJson<AuthTokensResponse>(
+      '/api/auth/select-context',
+      body: {
+        'tenantId': row.tenantId,
+        'profile': row.profile,
+      },
+      parse: (json) =>
+          AuthTokensResponse.fromJson(json! as Map<String, dynamic>),
+    );
+    final tenantId = tokens.tenantId;
+    if (tenantId == null ||
+        (tokens.profileType != 'MEMBER' && tokens.profileType != 'STAFF')) {
+      throw ApiException('No se pudo entrar al gym');
     }
     final session = AppSession(
       accessToken: tokens.accessToken,
       refreshToken: tokens.refreshToken,
-      tenantId: tokens.tenantId,
-      tenantSlug: tenantSlug.trim().toLowerCase(),
+      tenantId: tenantId,
+      tenantSlug: row.tenantSlug,
       userId: tokens.userId,
       email: tokens.email,
       name: tokens.name,
@@ -133,7 +189,6 @@ class AuthRepository {
     );
   }
 
-  /// Restaura sesión desde storage.
   Future<AppSession?> restore() async {
     final session = await _store.read();
     if (session != null) {
@@ -142,10 +197,15 @@ class AuthRepository {
     return session;
   }
 
+  Future<IdentitySession?> restoreIdentity() async {
+    final identity = await _store.readIdentity();
+    if (identity != null && await _store.read() == null) {
+      _api.accessToken = identity.accessToken;
+    }
+    return identity;
+  }
+
   /// ¿El access token responde en `GET /auth/me`?
-  ///
-  /// Un 401 dispara el refresh del [ApiClient]. Si igual falla, la sesión
-  /// ya se limpió. Error de red: se considera viva para no echar offline.
   Future<bool> sessionIsAlive() async {
     try {
       await _api.getJson<void>('/api/auth/me', parse: (_) {});
@@ -154,16 +214,24 @@ class AuthRepository {
       if (e.statusCode == 401) {
         return false;
       }
-      return await _store.read() != null;
+      return await _store.read() != null || await _store.readIdentity() != null;
     }
   }
 
-  /// Refresca tokens; false si falla.
+  /// Refresca el JWT activo (gym si hay, si no identity).
   Future<bool> refresh() async {
-    final current = await _store.read();
-    if (current == null) {
-      return false;
+    final gym = await _store.read();
+    if (gym != null) {
+      return _refreshGym(gym);
     }
+    final identity = await _store.readIdentity();
+    if (identity != null) {
+      return _refreshIdentity(identity);
+    }
+    return false;
+  }
+
+  Future<bool> _refreshGym(AppSession current) async {
     try {
       final tokens = await _api.postJson<AuthTokensResponse>(
         '/api/auth/refresh',
@@ -180,13 +248,39 @@ class AuthRepository {
       _api.accessToken = next.accessToken;
       return true;
     } catch (_) {
+      await logoutGym();
+      return false;
+    }
+  }
+
+  Future<bool> _refreshIdentity(IdentitySession current) async {
+    try {
+      final tokens = await _api.postJson<AuthTokensResponse>(
+        '/api/auth/refresh',
+        auth: false,
+        body: {'refreshToken': current.refreshToken},
+        parse: (json) =>
+            AuthTokensResponse.fromJson(json! as Map<String, dynamic>),
+      );
+      if (tokens.profileType != 'IDENTITY') {
+        await logout();
+        return false;
+      }
+      final next = current.copyWithTokens(
+        accessToken: tokens.accessToken,
+        refreshToken: tokens.refreshToken,
+      );
+      await _store.writeIdentity(next);
+      _api.accessToken = next.accessToken;
+      return true;
+    } catch (_) {
       await logout();
       return false;
     }
   }
 
-  /// Logout local + revoca refresh si puede.
-  Future<void> logout() async {
+  /// Sale del gym; conserva la identity (picker). No toca la wallet.
+  Future<void> logoutGym() async {
     final current = await _store.read();
     if (current != null) {
       try {
@@ -196,9 +290,29 @@ class AuthRepository {
           body: {'refreshToken': current.refreshToken},
           parse: (_) {},
         );
-      } catch (_) {
-        // Cierre local igual.
+      } catch (_) {}
+    }
+    await _store.clearGym();
+    final identity = await _store.readIdentity();
+    _api.accessToken = identity?.accessToken;
+  }
+
+  /// Cierra identity + gym.
+  Future<void> logout() async {
+    final gym = await _store.read();
+    final identity = await _store.readIdentity();
+    for (final token in [gym?.refreshToken, identity?.refreshToken]) {
+      if (token == null) {
+        continue;
       }
+      try {
+        await _api.postJson<void>(
+          '/api/auth/logout',
+          auth: false,
+          body: {'refreshToken': token},
+          parse: (_) {},
+        );
+      } catch (_) {}
     }
     await _store.clear();
     _api.accessToken = null;

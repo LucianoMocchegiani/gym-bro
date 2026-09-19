@@ -12,9 +12,9 @@ class AuthController extends ChangeNotifier {
     required AuthRepository auth,
     required ApiClient api,
     DeviceWalletService? wallet,
-  }) : _auth = auth,
-       _api = api,
-       _wallet = wallet {
+  })  : _auth = auth,
+        _api = api,
+        _wallet = wallet {
     _api.onUnauthorized = refreshIfNeeded;
   }
 
@@ -23,40 +23,42 @@ class AuthController extends ChangeNotifier {
   final DeviceWalletService? _wallet;
 
   AppSession? _session;
+  IdentitySession? _identity;
+  List<MembershipRow> _memberships = const [];
   List<String> _permissionCodes = const [];
   bool _ready = false;
   String? _error;
   bool _busy = false;
 
-  /// Sesión actual o null.
+  /// Sesión de gym (MEMBER/STAFF) o null.
   AppSession? get session => _session;
 
-  /// Permisos staff (vacío en afiliado).
+  IdentitySession? get identity => _identity;
+
+  List<MembershipRow> get memberships => _memberships;
+
   List<String> get permissionCodes => _permissionCodes;
 
-  /// Caja en Inicio staff (RN-ROL-009 / `cashier.operate`).
   bool get canOperateCashier =>
       _session?.profileType == 'STAFF' &&
       _permissionCodes.contains('cashier.operate');
 
-  /// Calendario / roster (`sessions.write`).
   bool get canWriteSessions =>
       _session?.profileType == 'STAFF' &&
       _permissionCodes.contains('sessions.write');
 
-  /// Hidratación inicial terminada.
   bool get ready => _ready;
 
-  /// Error de login/acción.
   String? get error => _error;
 
-  /// Operación en curso.
   bool get busy => _busy;
 
-  /// ¿Hay sesión?
+  /// Hay JWT de negocio (shell socio/staff).
   bool get isAuthenticated => _session != null;
 
-  /// ¿Perfil staff?
+  /// Identity ok, falta elegir gym.
+  bool get needsGymPicker => _identity != null && _session == null;
+
   bool get isStaff => _session?.profileType == 'STAFF';
 
   Future<bool>? _refreshInFlight;
@@ -64,45 +66,51 @@ class AuthController extends ChangeNotifier {
   /// Carga sesión desde secure storage y valida el token.
   Future<void> bootstrap() async {
     _session = await _auth.restore();
+    _identity = await _auth.restoreIdentity();
     if (_session != null) {
       final alive = await _auth.sessionIsAlive();
       if (!alive) {
-        await _wallet?.lock();
+        await _auth.logoutGym();
         _session = null;
         _permissionCodes = const [];
+        _identity = await _auth.restoreIdentity();
+        if (_identity != null) {
+          _memberships = await _auth.listMemberships();
+        }
       } else {
         await _hydratePermissions();
+      }
+    } else if (_identity != null) {
+      final alive = await _auth.sessionIsAlive();
+      if (!alive) {
+        await _auth.logout();
+        _identity = null;
+        _memberships = const [];
+      } else {
+        _memberships = await _auth.listMemberships();
       }
     }
     _ready = true;
     notifyListeners();
   }
 
-  /// Login afiliado o staff (`MEMBER` / `STAFF`).
+  /// Email + password de la cuenta (sin slug). Google/Apple después.
   Future<bool> login({
-    required String tenantSlug,
     required String email,
     required String password,
-    required String profileType,
   }) async {
     _busy = true;
     _error = null;
     notifyListeners();
     try {
-      if (profileType == 'STAFF') {
-        _session = await _auth.loginStaff(
-          tenantSlug: tenantSlug,
-          email: email,
-          password: password,
-        );
-      } else {
-        _session = await _auth.loginMember(
-          tenantSlug: tenantSlug,
-          email: email,
-          password: password,
-        );
+      _identity = await _auth.loginIdentity(email: email, password: password);
+      _session = null;
+      _permissionCodes = const [];
+      _memberships = await _auth.listMemberships();
+      if (_memberships.length == 1) {
+        _session = await _auth.selectContext(_memberships.first);
+        await _hydratePermissions();
       }
-      await _hydratePermissions();
       return true;
     } on ApiException catch (e) {
       _error = e.message;
@@ -116,8 +124,39 @@ class AuthController extends ChangeNotifier {
     }
   }
 
-  /// Intento de refresh ante 401. Si falla, cierra sesión y el [AuthGate]
-  /// vuelve al login.
+  /// Entra a un gym de la lista. No reinicia la wallet.
+  Future<bool> enterGym(MembershipRow row) async {
+    _busy = true;
+    _error = null;
+    notifyListeners();
+    try {
+      _session = await _auth.selectContext(row);
+      await _hydratePermissions();
+      return true;
+    } on ApiException catch (e) {
+      _error = e.message;
+      return false;
+    } catch (_) {
+      _error = 'No se pudo entrar al gym';
+      return false;
+    } finally {
+      _busy = false;
+      notifyListeners();
+    }
+  }
+
+  /// Vuelve al picker; la wallet de la persona queda.
+  Future<void> switchGym() async {
+    await _auth.logoutGym();
+    _session = null;
+    _permissionCodes = const [];
+    _identity = await _auth.restoreIdentity();
+    if (_identity != null) {
+      _memberships = await _auth.listMemberships();
+    }
+    notifyListeners();
+  }
+
   Future<bool> refreshIfNeeded() async {
     final inFlight = _refreshInFlight;
     if (inFlight != null) {
@@ -136,22 +175,34 @@ class AuthController extends ChangeNotifier {
     final ok = await _auth.refresh();
     if (ok) {
       _session = await _auth.restore();
-      await _hydratePermissions();
+      _identity = await _auth.restoreIdentity();
+      if (_session != null) {
+        await _hydratePermissions();
+      }
       notifyListeners();
       return true;
     }
+    if (_session != null) {
+      _session = null;
+      _permissionCodes = const [];
+      _identity = await _auth.restoreIdentity();
+      notifyListeners();
+      return _identity != null;
+    }
     await _wallet?.lock();
-    _session = null;
-    _permissionCodes = const [];
+    _identity = null;
+    _memberships = const [];
     notifyListeners();
     return false;
   }
 
-  /// Cierra sesión GymBro y bloquea la wallet local.
+  /// Cierra la cuenta Faciliter y bloquea la wallet.
   Future<void> logout() async {
     await _auth.logout();
     await _wallet?.lock();
     _session = null;
+    _identity = null;
+    _memberships = const [];
     _permissionCodes = const [];
     notifyListeners();
   }

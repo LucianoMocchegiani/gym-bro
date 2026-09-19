@@ -115,7 +115,9 @@ class _FaciliterAppState extends State<FaciliterApp> {
       child: Consumer2<ThemeController, AuthController>(
         builder: (context, theme, auth, _) {
           return MaterialApp(
-            key: ValueKey(auth.session?.userId ?? 'guest'),
+            key: ValueKey(
+              '${auth.session?.userId ?? auth.identity?.identityId ?? 'guest'}-${auth.session?.profileType ?? 'none'}',
+            ),
             title: 'Faciliter',
             debugShowCheckedModeBanner: false,
             theme: GymBroTheme.light(),

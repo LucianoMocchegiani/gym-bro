@@ -37,6 +37,18 @@ Leyenda resultado: `P` pass · `F` fail · `B` bloqueado · `-` no aplica
 
 ---
 
+## Identity (app)
+
+| # | Caso | Esperado | RN/CU | R |
+|---|------|----------|-------|---|
+| I1 | App: email+password socio | Lista gyms o entra si hay uno; sin slug | — | |
+| I2 | App: admin seed | Picker o entra como Staff en Gym de Prueba | RN-ROL-005 | |
+| I3 | Cambiar gym | Vuelve al picker; wallet no se borra | — | |
+| I4 | Cerrar sesión | Pide login; wallet lock | — | |
+| I5 | Identity JWT en Caja | 403 select gym | RN-TEN-001 | |
+
+---
+
 ## Servicios / reservas
 
 | # | Caso | Esperado | RN/CU | R |

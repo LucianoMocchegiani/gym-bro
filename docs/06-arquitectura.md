@@ -120,8 +120,8 @@ CORS: la API acepta orígenes de `CORS_ORIGIN` (default `http://localhost:3000`)
 ## 5. Autenticación y autorización
 
 ```text
-Login por perfil → access JWT + refresh (Postgres)
-      → claims: sub, profileType (SUPER|STAFF|MEMBER), tenantId?, email
+Login por perfil o cuenta → access JWT + refresh (Postgres)
+      → claims: sub, profileType (SUPER|STAFF|MEMBER|IDENTITY), tenantId?, email
       → JwtAuthGuard
       → (E1) permisos unión de roles + flags (CU-ROL-006)
 ```
@@ -129,8 +129,11 @@ Login por perfil → access JWT + refresh (Postgres)
 | Perfil | Notas | Endpoint login |
 |--------|-------|----------------|
 | Super Admin | Sin tenant (RN-ROL-001) | `POST /api/auth/super/login` |
-| Staff | `tenantId` obligatorio | `POST /api/auth/staff/login` |
-| Afiliado | Perfil separado (RN-ROL-005) | `POST /api/auth/member/login` |
+| Identity | Persona; **sin** `tenantId` | `POST /api/auth/identity/login` |
+| Staff | `tenantId` obligatorio | `POST /api/auth/staff/login` o identity + `POST /auth/select-context` |
+| Afiliado | Perfil separado (RN-ROL-005) | `POST /api/auth/member/login` o identity + select-context |
+
+Identity: `GET /api/auth/memberships` + `POST /api/auth/select-context` `{ tenantId, profile }`. Google/Apple después. Admin web sigue staff/login por host.
 
 También: `POST /api/auth/refresh`, `POST /api/auth/logout`, `GET /api/auth/me` (incluye `tenantId` para staff/member), `POST /api/auth/change-password` (JWT; verifica la actual con bcrypt y revoca todos los refresh tokens del usuario → obliga a re-login).
 

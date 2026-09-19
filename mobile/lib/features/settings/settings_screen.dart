@@ -92,6 +92,15 @@ class SettingsScreen extends StatelessWidget {
             ),
           ),
         ),
+        const SizedBox(height: 8),
+        Card(
+          child: ListTile(
+            leading: const Icon(Icons.swap_horiz),
+            title: const Text('Cambiar gym'),
+            subtitle: const Text('Elegí otro local o perfil'),
+            onTap: () => auth.switchGym(),
+          ),
+        ),
         const SizedBox(height: 20),
         _sectionTitle(context, 'Wallet SSI'),
         const SizedBox(height: 8),

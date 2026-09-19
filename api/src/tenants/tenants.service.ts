@@ -15,6 +15,7 @@ import {
   resolveOrderField,
   toListResult,
 } from '../common/list';
+import { IdentityService } from '../auth/identity.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { SYSTEM_ROLE_SLUGS } from '../roles/permission-catalog';
 import {
@@ -63,6 +64,7 @@ export class TenantsService {
     private readonly rolesSeed: RolesSeedService,
     private readonly staffService: StaffService,
     private readonly audit: AuditService,
+    private readonly identities: IdentityService,
   ) {}
 
   /**
@@ -134,11 +136,16 @@ export class TenantsService {
           throw new Error('Admin system role missing after seed');
         }
 
+        const identity = await this.identities.ensure(tx, {
+          email: ownerEmail,
+          passwordHash,
+          name: ownerName,
+        });
         const ownerStaff = await tx.staffUser.create({
           data: {
             tenantId: created.id,
+            identityId: identity.id,
             email: ownerEmail,
-            passwordHash,
             name: ownerName,
             active: true,
           },

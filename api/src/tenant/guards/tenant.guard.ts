@@ -27,6 +27,10 @@ export class TenantGuard implements CanActivate {
       throw new UnauthorizedException();
     }
 
+    if (user.profileType === 'IDENTITY') {
+      throw new ForbiddenException('Select a gym before using tenant routes');
+    }
+
     if (user.profileType === 'SUPER' && !user.impersonatedBy) {
       throw new ForbiddenException(
         'Super Admin cannot access tenant-scoped routes without impersonation',
