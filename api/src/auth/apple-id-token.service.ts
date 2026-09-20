@@ -26,8 +26,8 @@ export class AppleIdTokenService {
   private readonly teamId: string;
 
   constructor(config: ConfigService) {
-    this.serviceId = config.getOrThrow<string>('APPLE_SERVICE_ID');
-    this.teamId = config.getOrThrow<string>('APPLE_TEAM_ID');
+    this.serviceId = config.get<string>('APPLE_SERVICE_ID') ?? '';
+    this.teamId = config.get<string>('APPLE_TEAM_ID') ?? '';
   }
 
   /**
