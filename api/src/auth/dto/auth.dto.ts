@@ -147,3 +147,12 @@ export class AppleLoginDto {
   @MinLength(20)
   idToken!: string;
 }
+
+/**
+ * `id_token` de Google Sign-In para staff de un tenant (Admin web).
+ */
+export class StaffGoogleLoginDto {
+  @IsString()
+  @MinLength(20)
+  idToken!: string;
+}

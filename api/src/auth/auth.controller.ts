@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { AuthTokens, MembershipsList, type AuthUser } from './auth.types';
 import { CurrentUser } from './decorators/current-user.decorator';
@@ -7,6 +7,7 @@ import { RequireSuperAuth } from './decorators/require-super-auth.decorator';
 import {
   ChangePasswordDto,
   GoogleLoginDto,
+  StaffGoogleLoginDto,
   AppleLoginDto,
   IdentityLoginDto,
   ImpersonateDto,
@@ -82,6 +83,19 @@ export class AuthController {
   @Post('google')
   loginGoogle(@Body() dto: GoogleLoginDto): Promise<AuthTokens> {
     return this.authService.loginGoogle(dto);
+  }
+
+  /**
+    * Staff de un tenant entra con `id_token` de Google (Admin web).
+    *
+    * @remarks El tenantId viene de la URL. Verifica que la identity sea staff de ese tenant.
+    */
+  @Post('staff/:tenantId/google')
+  loginStaffGoogle(
+    @Param('tenantId') tenantId: string,
+    @Body() dto: StaffGoogleLoginDto,
+  ): Promise<AuthTokens> {
+    return this.authService.loginStaffGoogle(tenantId, dto);
   }
 
   /**

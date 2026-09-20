@@ -10,7 +10,7 @@ import {
   useSyncExternalStore,
   type ReactNode,
 } from 'react';
-import { fetchAuthMe, staffLogin, staffLogout } from '@/lib/api/auth';
+import { fetchAuthMe, staffLogin, staffGoogleLogin, staffLogout } from '@/lib/api/auth';
 import { getMyPermissions } from '@/lib/api/permissions';
 import {
   clearStaffSession,
@@ -33,6 +33,7 @@ type AuthContextValue = {
     email: string;
     password: string;
   }) => Promise<void>;
+  loginWithGoogle: (input: { tenantId: string; idToken: string }) => Promise<void>;
   logout: () => Promise<void>;
   /** Recarga permisos desde API (p. ej. tras cambiar roles). */
   refreshPermissions: () => Promise<void>;
@@ -73,6 +74,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }) => {
       const res = await staffLogin(input);
       writeStaffSession(res, input.tenantSlug ?? null);
+      try {
+        const perms = await getMyPermissions();
+        updateStaffPermissions(perms.permissionCodes);
+      } catch {
+        // Nav queda sin filtrar hasta el próximo intento.
+      }
+    },
+    [],
+  );
+
+  const loginWithGoogle = useCallback(
+    async (input: { tenantId: string; idToken: string }) => {
+      const res = await staffGoogleLogin(input);
+      writeStaffSession(res, null);
       try {
         const perms = await getMyPermissions();
         updateStaffPermissions(perms.permissionCodes);
@@ -145,8 +160,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [session]);
 
   const value = useMemo(
-    () => ({ session, ready, verified, login, logout, refreshPermissions }),
-    [session, ready, verified, login, logout, refreshPermissions],
+    () => ({ session, ready, verified, login, loginWithGoogle, logout, refreshPermissions }),
+    [session, ready, verified, login, loginWithGoogle, logout, refreshPermissions],
   );
 
   return (

@@ -50,6 +50,23 @@ export function superLogin(input: {
 }
 
 /**
+ * Staff de un tenant entra con `id_token` de Google (Admin web).
+ */
+export function staffGoogleLogin(input: {
+  tenantId: string;
+  idToken: string;
+}): Promise<StaffLoginResponse> {
+  return apiRequest<StaffLoginResponse>(
+    `/auth/staff/${input.tenantId}/google`,
+    {
+      method: 'POST',
+      body: { idToken: input.idToken },
+      auth: false,
+    },
+  );
+}
+
+/**
  * Logout: revoca refresh token si hay sesión.
  */
 export async function staffLogout(refreshToken: string): Promise<void> {

@@ -34,6 +34,7 @@ import {
   IdentityLoginDto,
   GoogleLoginDto,
   AppleLoginDto,
+  StaffGoogleLoginDto,
   ImpersonateDto,
   MemberLoginDto,
   SelectContextDto,
@@ -291,6 +292,58 @@ export class AuthService {
       }
       throw error;
     }
+  }
+
+  /**
+    * Staff de un tenant entra con `id_token` de Google.
+    *
+    * @remarks Verifica que la identity sea staff del tenant indicado.
+    */
+  async loginStaffGoogle(tenantId: string, dto: StaffGoogleLoginDto): Promise<AuthTokens> {
+    await this.assertTenantActive(tenantId);
+    const claims = await this.googleTokens.verify(dto.idToken);
+    const bySub = await this.prisma.identity.findUnique({
+      where: { googleSub: claims.sub },
+      include: { staffUsers: { where: { tenantId, active: true } } },
+    });
+    if (bySub?.staffUsers.length) {
+      const staff = bySub.staffUsers[0];
+      return this.issueTokens({
+        profileType: AuthProfileType.STAFF,
+        userId: staff.id,
+        email: staff.email,
+        name: staff.name,
+        tenantId: staff.tenantId,
+      });
+    }
+    const byEmail = await this.prisma.identity.findUnique({
+      where: { email: claims.email },
+      include: { staffUsers: { where: { tenantId, active: true } } },
+    });
+    if (byEmail?.staffUsers.length) {
+      const staffUser = byEmail.staffUsers[0];
+      if (byEmail.googleSub && byEmail.googleSub !== claims.sub) {
+        throw new UnauthorizedException('Invalid credentials');
+      }
+      const linked = await this.prisma.identity.update({
+        where: { id: byEmail.id },
+        data: { googleSub: claims.sub, name: byEmail.name ?? claims.name },
+      });
+      const staff = await this.prisma.staffUser.findUnique({
+        where: { tenantId_identityId: { tenantId, identityId: linked.id } },
+      });
+      if (!staff) {
+        throw new UnauthorizedException('Invalid credentials');
+      }
+      return this.issueTokens({
+        profileType: AuthProfileType.STAFF,
+        userId: staff.id,
+        email: staff.email,
+        name: staff.name,
+        tenantId: staff.tenantId,
+      });
+    }
+    throw new UnauthorizedException('Invalid credentials');
   }
 
   /**
