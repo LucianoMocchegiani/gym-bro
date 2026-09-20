@@ -16,6 +16,7 @@ La creación de registros sigue la skill:
 
 ## Índice
 
+- [2026-09-20 — Login con Google (identity)](./2026-09-20-login-google-identity.md)
 - [2026-09-19 — Identity: cuenta Faciliter y picker de gym](./2026-09-19-identity-picker-gym.md)
 - [2026-09-18 — Vencimientos: cola de recepción (corte 1)](./2026-09-18-vencimientos-cola-recepcion.md)
 - [2026-09-18 — App: checkout MP con QR, + de catálogo y scroll](./2026-09-18-mobile-caja-mp-qr.md)
