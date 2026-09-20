@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/config/google_auth_config.dart';
+import '../../core/config/apple_auth_config.dart';
 import '../auth/auth_controller.dart';
 
-/// Login de cuenta Faciliter (email + password). Sin slug ni switch de perfil.
 class LoginScreen extends StatefulWidget {
   /// Crea la pantalla.
   const LoginScreen({super.key});
@@ -44,6 +44,16 @@ class _LoginScreenState extends State<LoginScreen> {
   Future<void> _google() async {
     final auth = context.read<AuthController>();
     final ok = await auth.loginWithGoogle();
+    if (!ok && mounted && auth.error != null) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(auth.error ?? 'Error de login')));
+    }
+  }
+
+  Future<void> _apple() async {
+    final auth = context.read<AuthController>();
+    final ok = await auth.loginWithApple();
     if (!ok && mounted && auth.error != null) {
       ScaffoldMessenger.of(
         context,
@@ -108,6 +118,13 @@ class _LoginScreenState extends State<LoginScreen> {
                       OutlinedButton(
                         onPressed: auth.busy ? null : _google,
                         child: const Text('Continuar con Google'),
+                      ),
+                    ],
+                    if (AppleAuthConfig.isEnabled) ...[
+                      const SizedBox(height: 12),
+                      OutlinedButton(
+                        onPressed: auth.busy ? null : _apple,
+                        child: const Text('Continuar con Apple'),
                       ),
                     ],
                     const SizedBox(height: 16),

@@ -7,6 +7,7 @@ import { RequireSuperAuth } from './decorators/require-super-auth.decorator';
 import {
   ChangePasswordDto,
   GoogleLoginDto,
+  AppleLoginDto,
   IdentityLoginDto,
   ImpersonateDto,
   LogoutDto,
@@ -73,14 +74,24 @@ export class AuthController {
     return this.authService.loginIdentity(dto);
   }
 
-  /**
-   * Login de persona con `id_token` de Google Sign-In (app).
-   *
-   * @remarks Crea identity si el mail es nuevo; vincula `google_sub` si ya existe.
-   */
+/**
+    * Login de persona con `id_token` de Google Sign-In (app).
+    *
+    * @remarks Crea identity si el mail es nuevo; vincula `google_sub` si ya existe.
+    */
   @Post('google')
   loginGoogle(@Body() dto: GoogleLoginDto): Promise<AuthTokens> {
     return this.authService.loginGoogle(dto);
+  }
+
+  /**
+    * Login de persona con `id_token` de Sign in with Apple (app).
+    *
+    * @remarks Crea identity si el mail es nuevo; vincula `apple_sub` si ya existe.
+    */
+  @Post('apple')
+  loginApple(@Body() dto: AppleLoginDto): Promise<AuthTokens> {
+    return this.authService.loginApple(dto);
   }
 
   /**

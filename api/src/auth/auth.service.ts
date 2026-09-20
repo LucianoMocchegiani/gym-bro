@@ -16,6 +16,7 @@ import {
 import * as bcrypt from 'bcryptjs';
 import { AuditService } from '../audit/audit.service';
 import { GoogleIdTokenService } from './google-id-token.service';
+import { AppleIdTokenService } from './apple-id-token.service';
 import { PrismaService } from '../prisma/prisma.service';
 import {
   assertValidTenantSlug,
@@ -32,6 +33,7 @@ import {
   ChangePasswordDto,
   IdentityLoginDto,
   GoogleLoginDto,
+  AppleLoginDto,
   ImpersonateDto,
   MemberLoginDto,
   SelectContextDto,
@@ -65,6 +67,7 @@ export class AuthService {
     private readonly config: ConfigService,
     private readonly audit: AuditService,
     private readonly googleTokens: GoogleIdTokenService,
+    private readonly appleTokens: AppleIdTokenService,
   ) {
     this.accessTtlSeconds = Number(
       this.config.get<string>('JWT_ACCESS_TTL_SECONDS') ?? 900,
@@ -231,11 +234,70 @@ export class AuthService {
     return this.issueIdentity(identity);
   }
 
+/**
+    * Login de persona con `id_token` de Apple Sign-In. Crea identity si el mail es nuevo.
+    *
+    * @remarks Vincula `apple_sub` a un mail existente (alta del gym).
+    */
+  async loginApple(dto: AppleLoginDto): Promise<AuthTokens> {
+    const claims = await this.appleTokens.verify(dto.idToken);
+    const bySub = await this.prisma.identity.findUnique({
+      where: { appleSub: claims.sub },
+    });
+    if (bySub) {
+      return this.issueIdentity(bySub);
+    }
+    const byEmail = await this.prisma.identity.findUnique({
+      where: { email: claims.email },
+    });
+    if (byEmail) {
+      if (byEmail.appleSub && byEmail.appleSub !== claims.sub) {
+        throw new UnauthorizedException('Invalid credentials');
+      }
+      const linked = await this.prisma.identity.update({
+        where: { id: byEmail.id },
+        data: {
+          appleSub: claims.sub,
+          name: byEmail.name ?? claims.name,
+        },
+      });
+      return this.issueIdentity(linked);
+    }
+    try {
+      const created = await this.prisma.identity.create({
+        data: {
+          email: claims.email,
+          appleSub: claims.sub,
+          name: claims.name,
+          passwordHash: null,
+        },
+      });
+      return this.issueIdentity(created);
+    } catch (error) {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2002'
+      ) {
+        const raced =
+          (await this.prisma.identity.findUnique({
+            where: { appleSub: claims.sub },
+          })) ??
+          (await this.prisma.identity.findUnique({
+            where: { email: claims.email },
+          }));
+        if (raced) {
+          return this.issueIdentity(raced);
+        }
+      }
+      throw error;
+    }
+  }
+
   /**
-   * Login de persona con `id_token` de Google. Crea identity si el mail es nuevo.
-   *
-   * @remarks Vincula `google_sub` a un mail existente (alta del gym).
-   */
+    * Login de persona con `id_token` de Google. Crea identity si el mail es nuevo.
+    *
+    * @remarks Vincula `google_sub` a un mail existente (alta del gym).
+    */
   async loginGoogle(dto: GoogleLoginDto): Promise<AuthTokens> {
     const claims = await this.googleTokens.verify(dto.idToken);
     const bySub = await this.prisma.identity.findUnique({

@@ -109,6 +109,18 @@ class AuthRepository {
     return _persistIdentity(tokens);
   }
 
+  /// Login de persona (`POST /auth/apple`) con `id_token`.
+  Future<IdentitySession> loginApple({required String idToken}) async {
+    final tokens = await _api.postJson<AuthTokensResponse>(
+      '/api/auth/apple',
+      auth: false,
+      body: {'idToken': idToken},
+      parse: (json) =>
+          AuthTokensResponse.fromJson(json! as Map<String, dynamic>),
+    );
+    return _persistIdentity(tokens);
+  }
+
   Future<IdentitySession> _persistIdentity(AuthTokensResponse tokens) async {
     if (tokens.profileType != 'IDENTITY') {
       throw ApiException('Se requiere sesión de cuenta');

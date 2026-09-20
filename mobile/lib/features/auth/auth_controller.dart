@@ -4,6 +4,7 @@ import '../../core/network/api_client.dart';
 import '../credentials/device_wallet_service.dart';
 import 'auth_repository.dart';
 import 'google_id_token.dart';
+import 'apple_id_token.dart';
 import 'session_store.dart';
 
 /// Estado de autenticación de la app para la UI.
@@ -149,6 +150,37 @@ class AuthController extends ChangeNotifier {
       return false;
     } catch (_) {
       _error = 'No se pudo iniciar sesión con Google';
+      return false;
+    } finally {
+      _busy = false;
+      notifyListeners();
+    }
+  }
+
+  /// Apple Sign-In → `POST /auth/apple`. No toca la wallet.
+  Future<bool> loginWithApple() async {
+    _busy = true;
+    _error = null;
+    notifyListeners();
+    try {
+      final idToken = await AppleIdToken.request();
+      if (idToken == null) {
+        return false;
+      }
+      _identity = await _auth.loginApple(idToken: idToken);
+      _session = null;
+      _permissionCodes = const [];
+      _memberships = await _auth.listMemberships();
+      if (_memberships.length == 1) {
+        _session = await _auth.selectContext(_memberships.first);
+        await _hydratePermissions();
+      }
+      return true;
+    } on ApiException catch (e) {
+      _error = e.message;
+      return false;
+    } catch (_) {
+      _error = 'No se pudo iniciar sesión con Apple';
       return false;
     } finally {
       _busy = false;

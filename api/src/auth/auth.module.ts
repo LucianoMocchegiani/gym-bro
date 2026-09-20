@@ -10,6 +10,7 @@ import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { SuperGuard } from './guards/super.guard';
 import { IdentityService } from './identity.service';
 import { GoogleIdTokenService } from './google-id-token.service';
+import { AppleIdTokenService } from './apple-id-token.service';
 import { JwtStrategy } from './strategies/jwt.strategy';
 
 /**
@@ -32,6 +33,7 @@ import { JwtStrategy } from './strategies/jwt.strategy';
     AuthService,
     IdentityService,
     GoogleIdTokenService,
+    AppleIdTokenService,
     JwtStrategy,
     JwtAuthGuard,
     SuperGuard,

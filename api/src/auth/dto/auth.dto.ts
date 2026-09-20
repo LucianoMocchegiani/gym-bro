@@ -138,3 +138,12 @@ export class GoogleLoginDto {
   @MinLength(20)
   idToken!: string;
 }
+
+/**
+ * `id_token` de Sign in with Apple (app).
+ */
+export class AppleLoginDto {
+  @IsString()
+  @MinLength(20)
+  idToken!: string;
+}
