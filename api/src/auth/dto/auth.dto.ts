@@ -129,3 +129,12 @@ export class SelectContextDto {
   @IsIn(['MEMBER', 'STAFF'])
   profile!: 'MEMBER' | 'STAFF';
 }
+
+/**
+ * `id_token` de Google Sign-In (app).
+ */
+export class GoogleLoginDto {
+  @IsString()
+  @MinLength(20)
+  idToken!: string;
+}

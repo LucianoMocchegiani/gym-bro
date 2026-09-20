@@ -6,6 +6,7 @@ import { RequireIdentityAuth } from './decorators/require-identity-auth.decorato
 import { RequireSuperAuth } from './decorators/require-super-auth.decorator';
 import {
   ChangePasswordDto,
+  GoogleLoginDto,
   IdentityLoginDto,
   ImpersonateDto,
   LogoutDto,
@@ -65,11 +66,21 @@ export class AuthController {
   }
 
   /**
-   * Login de persona (sin gym). Google/Apple vienen después.
+   * Login de persona (sin gym). Email + password de `identities`.
    */
   @Post('identity/login')
   loginIdentity(@Body() dto: IdentityLoginDto): Promise<AuthTokens> {
     return this.authService.loginIdentity(dto);
+  }
+
+  /**
+   * Login de persona con `id_token` de Google Sign-In (app).
+   *
+   * @remarks Crea identity si el mail es nuevo; vincula `google_sub` si ya existe.
+   */
+  @Post('google')
+  loginGoogle(@Body() dto: GoogleLoginDto): Promise<AuthTokens> {
+    return this.authService.loginGoogle(dto);
   }
 
   /**

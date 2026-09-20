@@ -94,6 +94,22 @@ class AuthRepository {
       parse: (json) =>
           AuthTokensResponse.fromJson(json! as Map<String, dynamic>),
     );
+    return _persistIdentity(tokens);
+  }
+
+  /// Login de persona (`POST /auth/google`) con `id_token`.
+  Future<IdentitySession> loginGoogle({required String idToken}) async {
+    final tokens = await _api.postJson<AuthTokensResponse>(
+      '/api/auth/google',
+      auth: false,
+      body: {'idToken': idToken},
+      parse: (json) =>
+          AuthTokensResponse.fromJson(json! as Map<String, dynamic>),
+    );
+    return _persistIdentity(tokens);
+  }
+
+  Future<IdentitySession> _persistIdentity(AuthTokensResponse tokens) async {
     if (tokens.profileType != 'IDENTITY') {
       throw ApiException('Se requiere sesión de cuenta');
     }

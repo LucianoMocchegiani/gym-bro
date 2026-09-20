@@ -16,7 +16,7 @@ E7 Rutinas y E8 Notificaciones siguen en el [roadmap MVP](./11-roadmap-mvp.md) (
 
 **Vencimientos:** cola de recepción (lista MONTHLY + débito). Corte 1 en código (`GET /expirations`, Admin `/vencimientos`). Avisos = E8. [admin.md](./99-backlog-post-mvp/admin.md) · wireframe §7.
 
-**Identity / login app:** cuenta Faciliter + picker de gym (corte A en código). Google/Apple después. [app-afiliado.md](./99-backlog-post-mvp/app-afiliado.md).
+**Identity / login app:** cuenta Faciliter + picker de gym (corte A) + Google Sign-In (corte B). Apple después. [app-afiliado.md](./99-backlog-post-mvp/app-afiliado.md).
 
 ---
 

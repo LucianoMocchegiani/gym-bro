@@ -14,6 +14,7 @@
 | `superEmail` / `superPassword` | `super@faciliter.xyz` / `ChangeMe123!` |
 | `staffEmail` / `staffPassword` | `admin@gymdeprueba.com` / `ChangeMe123!` |
 | `memberEmail` / `memberPassword` | `socio@gymdeprueba.com` / `ChangeMe123!` |
+| `googleIdToken` | `id_token` de Google (Login Google) |
 | `tenantSlug` | `gym-de-prueba` (login / `GET /public/tenants/by-slug/:slug`) |
 | `demoPassword` | `ChangeMe123!` (alias común) |
 
@@ -43,7 +44,7 @@ Carpeta **Health**: `GET /health` y `GET /public/tenants/by-slug/{{tenantSlug}}`
 
 ## Manual
 
-Carpeta **Auth (manual)**: Login Super/Staff/Member → **Identity** (`POST /auth/identity/login`) → memberships → select-context → Me → Refresh → Logout. **Super Impersonate Staff**: `POST /auth/super/impersonate` con `{ tenantId, staffUserId }` (token temporal 4h; reg audit).
+Carpeta **Auth (manual)**: Login Super/Staff/Member → **Identity** (`POST /auth/identity/login`) → **Google** (`POST /auth/google` + `googleIdToken`) → memberships → select-context → Me → Refresh → Logout. **Super Impersonate Staff**: `POST /auth/super/impersonate` con `{ tenantId, staffUserId }` (token temporal 4h; reg audit).
 
 Carpeta **Roles** / **Staff roles**: Staff necesita permisos (`roles.write` para list/get/create/patch; `staff.read` list/detail; `staff.write` alta, `PATCH /staff/:id` ficha y asignar roles). Super: `GET /tenants/:tenantId/staff` (impersonate) + `POST /auth/super/impersonate`. El Admin seed los tiene; un rol sin esos códigos → 403. `GET|PATCH /roles/:id` usa `createdRoleId` del POST create (el rol `admin` no se edita).
 

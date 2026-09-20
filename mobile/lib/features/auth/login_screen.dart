@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../core/config/google_auth_config.dart';
 import '../auth/auth_controller.dart';
 
 /// Login de cuenta Faciliter (email + password). Sin slug ni switch de perfil.
@@ -34,6 +35,16 @@ class _LoginScreenState extends State<LoginScreen> {
       password: _password.text,
     );
     if (!ok && mounted) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(auth.error ?? 'Error de login')));
+    }
+  }
+
+  Future<void> _google() async {
+    final auth = context.read<AuthController>();
+    final ok = await auth.loginWithGoogle();
+    if (!ok && mounted && auth.error != null) {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text(auth.error ?? 'Error de login')));
@@ -92,6 +103,13 @@ class _LoginScreenState extends State<LoginScreen> {
                       onPressed: auth.busy ? null : _submit,
                       child: Text(auth.busy ? 'Entrando…' : 'Entrar'),
                     ),
+                    if (GoogleAuthConfig.isEnabled) ...[
+                      const SizedBox(height: 12),
+                      OutlinedButton(
+                        onPressed: auth.busy ? null : _google,
+                        child: const Text('Continuar con Google'),
+                      ),
+                    ],
                     const SizedBox(height: 16),
                     Text(
                       'Demo',

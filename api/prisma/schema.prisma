@@ -297,7 +297,8 @@ model SuperUser {
 model Identity {
   id           String   @id @default(uuid()) @db.Uuid
   email        String   @unique
-  passwordHash String   @map("password_hash")
+  /// Null si la cuenta solo entra con Google/Apple.
+  passwordHash String?  @map("password_hash")
   /// OIDC Google (corte B). Null hasta vincular.
   googleSub    String?  @unique @map("google_sub")
   /// Sign in with Apple (después). Null hasta vincular.

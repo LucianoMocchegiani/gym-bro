@@ -7,9 +7,15 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
-import { AuthProfileType, MemberStatus, TenantStatus } from '@prisma/client';
+import {
+  AuthProfileType,
+  MemberStatus,
+  Prisma,
+  TenantStatus,
+} from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
 import { AuditService } from '../audit/audit.service';
+import { GoogleIdTokenService } from './google-id-token.service';
 import { PrismaService } from '../prisma/prisma.service';
 import {
   assertValidTenantSlug,
@@ -25,6 +31,7 @@ import {
 import {
   ChangePasswordDto,
   IdentityLoginDto,
+  GoogleLoginDto,
   ImpersonateDto,
   MemberLoginDto,
   SelectContextDto,
@@ -57,6 +64,7 @@ export class AuthService {
     private readonly jwt: JwtService,
     private readonly config: ConfigService,
     private readonly audit: AuditService,
+    private readonly googleTokens: GoogleIdTokenService,
   ) {
     this.accessTtlSeconds = Number(
       this.config.get<string>('JWT_ACCESS_TTL_SECONDS') ?? 900,
@@ -152,7 +160,11 @@ export class AuthService {
     if (!user?.active) {
       throw new UnauthorizedException('Invalid credentials');
     }
-    await this.assertPassword(dto.password, user.identity.passwordHash);
+    const staffHash = user.identity.passwordHash;
+    if (!staffHash) {
+      throw new UnauthorizedException('Invalid credentials');
+    }
+    await this.assertPassword(dto.password, staffHash);
     return this.issueTokens({
       profileType: AuthProfileType.STAFF,
       userId: user.id,
@@ -185,7 +197,11 @@ export class AuthService {
     if (!user || user.status !== MemberStatus.ACTIVE) {
       throw new UnauthorizedException('Invalid credentials');
     }
-    await this.assertPassword(dto.password, user.identity.passwordHash);
+    const memberHash = user.identity.passwordHash;
+    if (!memberHash) {
+      throw new UnauthorizedException('Invalid credentials');
+    }
+    await this.assertPassword(dto.password, memberHash);
     return this.issueTokens({
       profileType: AuthProfileType.MEMBER,
       userId: user.id,
@@ -208,7 +224,77 @@ export class AuthService {
     if (!identity) {
       throw new UnauthorizedException('Invalid credentials');
     }
+    if (!identity.passwordHash) {
+      throw new UnauthorizedException('Invalid credentials');
+    }
     await this.assertPassword(dto.password, identity.passwordHash);
+    return this.issueIdentity(identity);
+  }
+
+  /**
+   * Login de persona con `id_token` de Google. Crea identity si el mail es nuevo.
+   *
+   * @remarks Vincula `google_sub` a un mail existente (alta del gym).
+   */
+  async loginGoogle(dto: GoogleLoginDto): Promise<AuthTokens> {
+    const claims = await this.googleTokens.verify(dto.idToken);
+    const bySub = await this.prisma.identity.findUnique({
+      where: { googleSub: claims.sub },
+    });
+    if (bySub) {
+      return this.issueIdentity(bySub);
+    }
+    const byEmail = await this.prisma.identity.findUnique({
+      where: { email: claims.email },
+    });
+    if (byEmail) {
+      if (byEmail.googleSub && byEmail.googleSub !== claims.sub) {
+        throw new UnauthorizedException('Invalid credentials');
+      }
+      const linked = await this.prisma.identity.update({
+        where: { id: byEmail.id },
+        data: {
+          googleSub: claims.sub,
+          name: byEmail.name ?? claims.name,
+        },
+      });
+      return this.issueIdentity(linked);
+    }
+    try {
+      const created = await this.prisma.identity.create({
+        data: {
+          email: claims.email,
+          googleSub: claims.sub,
+          name: claims.name,
+          passwordHash: null,
+        },
+      });
+      return this.issueIdentity(created);
+    } catch (error) {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2002'
+      ) {
+        const raced =
+          (await this.prisma.identity.findUnique({
+            where: { googleSub: claims.sub },
+          })) ??
+          (await this.prisma.identity.findUnique({
+            where: { email: claims.email },
+          }));
+        if (raced) {
+          return this.issueIdentity(raced);
+        }
+      }
+      throw error;
+    }
+  }
+
+  private issueIdentity(identity: {
+    id: string;
+    email: string;
+    name: string | null;
+  }): Promise<AuthTokens> {
     return this.issueTokens({
       profileType: AuthProfileType.IDENTITY,
       userId: identity.id,
@@ -431,7 +517,7 @@ export class AuthService {
         where: { id: user.userId },
         include: { identity: { select: { id: true, passwordHash: true } } },
       });
-      if (!staffUser) {
+      if (!staffUser?.identity.passwordHash) {
         throw new UnauthorizedException('Invalid credentials');
       }
       await this.assertPassword(

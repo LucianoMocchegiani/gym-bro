@@ -142,12 +142,14 @@ Seed y credenciales: [docs/13-setup-db-desde-cero.md](./docs/13-setup-db-desde-c
 | Perfil | Endpoint | Seed |
 |--------|----------|------|
 | Super | `POST /api/auth/super/login` | `super@faciliter.xyz` / `ChangeMe123!` |
-| Staff | `POST /api/auth/staff/login` (+ `tenantId`) | `admin@gymdeprueba.com` / `ChangeMe123!` (también `entrenador@gymdeprueba.com`) |
+| Identity (app) | `POST /api/auth/identity/login` | mismo mail/pass seed, **sin** tenant |
+| Google (app) | `POST /api/auth/google` | `{ "idToken" }` — `GOOGLE_OAUTH_CLIENT_IDS` |
+| Staff (Admin) | `POST /api/auth/staff/login` (+ `tenantId`) | `admin@gymdeprueba.com` / `ChangeMe123!` (también `entrenador@gymdeprueba.com`) |
 | Afiliado | `POST /api/auth/member/login` (+ `tenantId`) | `socio@gymdeprueba.com` / `ChangeMe123!` |
 
 Detalle (bodies, tenant id): [`docs/credenciales-demo.md`](./docs/credenciales-demo.md).
 
-Tenant demo id: `00000000-0000-4000-8000-000000000001`. También: `POST /api/auth/refresh`, `POST /api/auth/logout`, `GET /api/auth/me` (Bearer; staff/member traen `tenantId`).
+Tenant demo id: `00000000-0000-4000-8000-000000000001`. App: `GET /api/auth/memberships` + `POST /api/auth/select-context`. También: `POST /api/auth/refresh`, `POST /api/auth/logout`, `GET /api/auth/me` (Bearer; staff/member traen `tenantId`).
 
 Rutas de negocio: `@RequireTenantAuth()` + `@CurrentTenant()` (tenant solo del JWT). Permisos staff: `@RequirePermission('…')` (Admin seed tiene el catálogo). Super opera el gym impersonando (`POST /api/auth/super/impersonate`); no hay espejos `/api/tenants/:tenantId/...` de negocio (salvo `GET .../staff`).
 
@@ -165,7 +167,7 @@ flutter pub get
 flutter run
 ```
 
-API default del afiliado: `https://api.faciliter.xyz` (override con `--dart-define=API_BASE_URL=...`). Demo: slug `gym-de-prueba` / `socio@gymdeprueba.com` / `ChangeMe123!`.
+API default del afiliado: `https://api.faciliter.xyz`. Local: `--dart-define=API_BASE_URL=http://localhost:3001` + `adb reverse tcp:3001 tcp:3001`. Demo: `socio@gymdeprueba.com` / `ChangeMe123!`.
 ## Sin Docker (apps en el host)
 
 ### API

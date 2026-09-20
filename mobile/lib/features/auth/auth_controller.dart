@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import '../../core/network/api_client.dart';
 import '../credentials/device_wallet_service.dart';
 import 'auth_repository.dart';
+import 'google_id_token.dart';
 import 'session_store.dart';
 
 /// Estado de autenticación de la app para la UI.
@@ -94,7 +95,7 @@ class AuthController extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Email + password de la cuenta (sin slug). Google/Apple después.
+  /// Email + password de la cuenta (sin slug).
   Future<bool> login({
     required String email,
     required String password,
@@ -117,6 +118,37 @@ class AuthController extends ChangeNotifier {
       return false;
     } catch (_) {
       _error = 'No se pudo iniciar sesión';
+      return false;
+    } finally {
+      _busy = false;
+      notifyListeners();
+    }
+  }
+
+  /// Google Sign-In → `POST /auth/google`. No toca la wallet.
+  Future<bool> loginWithGoogle() async {
+    _busy = true;
+    _error = null;
+    notifyListeners();
+    try {
+      final idToken = await GoogleIdToken.request();
+      if (idToken == null) {
+        return false;
+      }
+      _identity = await _auth.loginGoogle(idToken: idToken);
+      _session = null;
+      _permissionCodes = const [];
+      _memberships = await _auth.listMemberships();
+      if (_memberships.length == 1) {
+        _session = await _auth.selectContext(_memberships.first);
+        await _hydratePermissions();
+      }
+      return true;
+    } on ApiException catch (e) {
+      _error = e.message;
+      return false;
+    } catch (_) {
+      _error = 'No se pudo iniciar sesión con Google';
       return false;
     } finally {
       _busy = false;

@@ -474,13 +474,13 @@ Persona Faciliter (login de la app). Membresías = `members` / `staff_users`.
 |---------|------|--------|
 | `id` | uuid PK | |
 | `email` | text UK | minúsculas |
-| `password_hash` | text | Corte A. Google/Apple: `google_sub` / `apple_sub` |
+| `password_hash` | text nullable | Null = solo Google/Apple |
 | `google_sub` | text UK nullable | |
 | `apple_sub` | text UK nullable | |
 | `name` | text nullable | |
 | `created_at` / `updated_at` | timestamptz | |
 
-API app: `POST /auth/identity/login`, `GET /auth/memberships`, `POST /auth/select-context`.
+API app: `POST /auth/identity/login`, `POST /auth/google`, `GET /auth/memberships`, `POST /auth/select-context`.
 
 ---
 
@@ -1005,6 +1005,7 @@ Historia incremental (2026-07 / 2026-08) **compactada** en un baseline (`40476fa
 | `20260918120000_role_profesor_name_entrenador` | Rol seed: `name` Entrenador, `slug` entrenador; staff demo `entrenador@gymdeprueba.com`. |
 | `20260919180000_identities` | `identities` + `IDENTITY` enum; FK `identity_id` en members/staff/refresh. |
 | `20260919190000_identity_only_password` | Drop `password_hash` de `members` y `staff_users`. |
+| `20260919200000_identity_password_optional` | `identities.password_hash` nullable (cuentas solo-Google). |
 
 Comandos y checklist “desde cero”: [13-setup-db-desde-cero.md](./13-setup-db-desde-cero.md).
 

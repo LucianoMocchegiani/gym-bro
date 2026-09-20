@@ -1,4 +1,4 @@
-package com.gymbro.mobile
+package com.faciliter.mobile
 
 import io.flutter.embedding.android.FlutterActivity
 

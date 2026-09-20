@@ -46,6 +46,8 @@ Leyenda resultado: `P` pass · `F` fail · `B` bloqueado · `-` no aplica
 | I3 | Cambiar gym | Vuelve al picker; wallet no se borra | — | |
 | I4 | Cerrar sesión | Pide login; wallet lock | — | |
 | I5 | Identity JWT en Caja | 403 select gym | RN-TEN-001 | |
+| I6 | App: Continuar con Google (cuenta nueva) | Identity + picker vacío o gym si el mail ya es socio/staff | — | |
+| I7 | App: Google con el mismo mail que el seed | Entra a Gym de Prueba; no duplica identity | — | |
 
 ---
 

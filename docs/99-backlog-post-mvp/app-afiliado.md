@@ -16,7 +16,8 @@
 | Paginación de comprobantes | Pendiente | Hoy lista hasta 50 |
 | Productos en Tienda | Pendiente | Misma `CatalogCard`; módulo shop → [producto.md](./producto.md) |
 | Tickets de reclamo (IA) | Pendiente | Abrir un reclamo desde la app; la IA lleva el hilo (estilo ML/MP). Inbox Admin: [admin.md](./admin.md) |
-| Identity + picker de gym | Corte A en código | Cuenta Faciliter (`identities`); login app email+password; lista de gyms; JWT de negocio al elegir. Wallet de la persona. Google/Apple después. Admin web sigue slug+pass. |
+| Identity + picker de gym | Corte A en código | Cuenta Faciliter (`identities`); login app email+password; lista de gyms; JWT de negocio al elegir. Wallet de la persona. |
+| Login con Google | Corte B en código | `POST /auth/google` + `google_sign_in` (id_token). Vincula `google_sub` al mail. Apple y Google en Admin web: después. |
 
 ## Mejoras de UX (charla)
 

@@ -17,10 +17,11 @@ Default:
 https://api.faciliter.xyz
 ```
 
-Override:
+Local (USB):
 
 ```powershell
-flutter run --dart-define=API_BASE_URL=https://api.faciliter.xyz
+adb reverse tcp:3001 tcp:3001
+fvm flutter run -d ZY22K73544 --dart-define=API_BASE_URL=http://localhost:3001
 ```
 
 ## Correr en tu Android (USB)
@@ -36,13 +37,14 @@ flutter run
 
 | Campo | Valor |
 |-------|--------|
-| Gym (slug) | `demo` |
 | Email | `socio@gymdeprueba.com` |
 | Password | `ChangeMe123!` |
 
+Google: el client Web va bakeado en la app (`GoogleAuthConfig`). Nest usa el mismo en `GOOGLE_OAUTH_CLIENT_IDS` (`api/.env`). Package Android `com.faciliter.mobile`. SHA-1 debug: `cd android; .\gradlew.bat signingReport`. Override: `--dart-define=GOOGLE_SERVER_CLIENT_ID=…`.
+
 ## Slice actual
 
-- Login afiliado (`tenantSlug`) o staff
+- Login cuenta (email+password) + Continuar con Google (`GOOGLE_SERVER_CLIENT_ID`)
 - **3 hubs:** Inicio · Acceso · Ajustes
   - **Inicio afiliado:** atajos Sesiones / Tienda
     - **Sesiones:** calendario (el día abre las clases) + Mis clases (misma card). Carrito + ⋮ Historial.

@@ -48,7 +48,7 @@ Acceso → Escanear (default) | Credenciales
 +----------------------------------+
 
 Ajustes → cuenta · cambiar gym · wallet SSI (reiniciar) · tema · Desarrolladores (API) · salir
-Sin sesión / 401 sin refresh → login cuenta (email+password; Google/Apple después).
+Sin sesión / 401 sin refresh → login cuenta (email+password + Continuar con Google; Apple después).
 Identity sin gym → picker de locales (socio/staff). Wallet = de la cuenta, no se borra al cambiar gym.
 ```
 
@@ -59,7 +59,7 @@ Credenciales: expandir card → Eliminar (confirmación). Ajustes: Reiniciar wal
 ## 2b. App staff — hubs (nav)
 
 ```text
-Login: email + password de la cuenta (mismo binario socio/staff)
+Login: email + password o Google (mismo binario socio/staff)
 
 Nav staff: Inicio | Acceso | Ajustes
 Burbuja flotante (arrastrable) → Asistente / chat-api

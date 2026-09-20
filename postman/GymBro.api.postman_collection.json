@@ -63,6 +63,10 @@
             "value": "ChangeMe123!"
         },
         {
+            "key": "googleIdToken",
+            "value": ""
+        },
+        {
             "key": "demoPassword",
             "value": "ChangeMe123!"
         },
@@ -441,6 +445,48 @@
                             "raw": "{\n  \"email\": \"{{memberEmail}}\",\n  \"password\": \"{{memberPassword}}\"\n}"
                         },
                         "url": "{{baseUrl}}/api/auth/identity/login"
+                    }
+                },
+                {
+                    "name": "Login Google",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('status 200', () => pm.response.to.have.status(200));",
+                                    "const body = pm.response.json();",
+                                    "pm.test('profileType IDENTITY', () => pm.expect(body.profileType).to.eql('IDENTITY'));",
+                                    "function setVar(key, value) {",
+                                    "  pm.collectionVariables.set(key, value);",
+                                    "  pm.environment.set(key, value);",
+                                    "}",
+                                    "setVar('accessToken', body.accessToken);",
+                                    "setVar('refreshToken', body.refreshToken);",
+                                    "setVar('profileType', body.profileType);",
+                                    "setVar('userId', body.user.id);",
+                                    "setVar('userEmail', body.user.email);"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "auth": {
+                            "type": "noauth"
+                        },
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"idToken\": \"{{googleIdToken}}\"\n}"
+                        },
+                        "url": "{{baseUrl}}/api/auth/google"
                     }
                 },
                 {
