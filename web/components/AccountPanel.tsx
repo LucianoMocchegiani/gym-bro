@@ -11,13 +11,15 @@ import { Panel } from '@/components/AdminUi';
 type AccountPanelProps = {
   name: string | null;
   email: string;
-  /** Línea descriptiva del perfil (p. ej. “Operador” / “Super Admin”). */
+  /** Línea descriptiva del perfil (p. ej. "Operador" / "Super Admin"). */
   subtitle?: string;
   /** Marca contextual (p. ej. slug del gym). */
   badge?: string | null;
   authMode: 'staff' | 'super';
   onLogout: () => Promise<void>;
   loginHref: string;
+  /** Si false, el botón de cambio de contraseña se muestra deshabilitado (cuenta Google). */
+  hasPassword?: boolean;
 };
 
 function initials(name: string | null, email: string): string {
@@ -46,6 +48,7 @@ export function AccountPanel({
   authMode,
   onLogout,
   loginHref,
+  hasPassword = true,
 }: AccountPanelProps) {
   const router = useRouter();
   const [pwOpen, setPwOpen] = useState(false);
@@ -120,13 +123,15 @@ export function AccountPanel({
 
       <Panel
         title="Cambiar contraseña"
-        description="Se necesita la contraseña actual. Al cambiarla se cierran todas las sesiones activas."
+        description={hasPassword ? "Se necesita la contraseña actual. Al cambiarla se cierran todas las sesiones activas." : "Tu cuenta usa Google. No tenés contraseña para cambiar."}
       >
         <div className="admin-modal-actions">
           <button
             type="button"
             className="btn"
             onClick={() => setPwOpen(true)}
+            disabled={!hasPassword}
+            title={!hasPassword ? "Tu cuenta es con Google — no tenés contraseña" : undefined}
           >
             Cambiar contraseña
           </button>

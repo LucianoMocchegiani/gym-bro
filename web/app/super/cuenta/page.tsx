@@ -29,6 +29,7 @@ function SuperCuentaInner() {
         authMode="super"
         onLogout={logout}
         loginHref="/super/login"
+        hasPassword={session?.hasPassword ?? true}
       />
     </SuperShell>
   );

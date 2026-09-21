@@ -11,6 +11,7 @@ export type StaffLoginResponse = {
   expiresIn: number;
   tokenType: 'Bearer';
   profileType: 'STAFF' | 'SUPER' | 'MEMBER';
+  hasPassword: boolean;
   user: {
     id: string;
     email: string;

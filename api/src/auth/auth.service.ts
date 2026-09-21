@@ -49,6 +49,7 @@ type TokenOwner = {
   name: string | null;
   tenantId?: string;
   impersonatedBy?: string;
+  hasPassword: boolean;
 };
 
 /**
@@ -96,6 +97,7 @@ export class AuthService {
       userId: user.id,
       email: user.email,
       name: user.name,
+      hasPassword: true,
     });
   }
 
@@ -126,6 +128,7 @@ export class AuthService {
       name: staff.name,
       tenantId: staff.tenantId,
       impersonatedBy: superUserId,
+      hasPassword: true,
     });
 
     // Audit: registrar impersonación
@@ -175,6 +178,7 @@ export class AuthService {
       email: user.email,
       name: user.name,
       tenantId: user.tenantId,
+      hasPassword: true,
     });
   }
 
@@ -212,6 +216,7 @@ export class AuthService {
       email: user.email,
       name: user.name,
       tenantId: user.tenantId,
+      hasPassword: true,
     });
   }
 
@@ -232,7 +237,7 @@ export class AuthService {
       throw new UnauthorizedException('Invalid credentials');
     }
     await this.assertPassword(dto.password, identity.passwordHash);
-    return this.issueIdentity(identity);
+    return this.issueIdentity({ ...identity, hasPassword: true });
   }
 
 /**
@@ -246,7 +251,7 @@ export class AuthService {
       where: { appleSub: claims.sub },
     });
     if (bySub) {
-      return this.issueIdentity(bySub);
+      return this.issueIdentity({ ...bySub, hasPassword: false });
     }
     const byEmail = await this.prisma.identity.findUnique({
       where: { email: claims.email },
@@ -262,7 +267,7 @@ export class AuthService {
           name: byEmail.name ?? claims.name,
         },
       });
-      return this.issueIdentity(linked);
+      return this.issueIdentity({ ...linked, hasPassword: false });
     }
     try {
       const created = await this.prisma.identity.create({
@@ -273,7 +278,7 @@ export class AuthService {
           passwordHash: null,
         },
       });
-      return this.issueIdentity(created);
+      return this.issueIdentity({ ...created, hasPassword: false });
     } catch (error) {
       if (
         error instanceof Prisma.PrismaClientKnownRequestError &&
@@ -287,7 +292,7 @@ export class AuthService {
             where: { email: claims.email },
           }));
         if (raced) {
-          return this.issueIdentity(raced);
+          return this.issueIdentity({ ...raced, hasPassword: false });
         }
       }
       throw error;
@@ -314,6 +319,7 @@ export class AuthService {
         email: staff.email,
         name: staff.name,
         tenantId: staff.tenantId,
+        hasPassword: false,
       });
     }
     const byEmail = await this.prisma.identity.findUnique({
@@ -341,6 +347,7 @@ export class AuthService {
         email: staff.email,
         name: staff.name,
         tenantId: staff.tenantId,
+        hasPassword: false,
       });
     }
     throw new UnauthorizedException('Invalid credentials');
@@ -357,7 +364,7 @@ export class AuthService {
       where: { googleSub: claims.sub },
     });
     if (bySub) {
-      return this.issueIdentity(bySub);
+      return this.issueIdentity({ ...bySub, hasPassword: false });
     }
     const byEmail = await this.prisma.identity.findUnique({
       where: { email: claims.email },
@@ -373,7 +380,7 @@ export class AuthService {
           name: byEmail.name ?? claims.name,
         },
       });
-      return this.issueIdentity(linked);
+      return this.issueIdentity({ ...linked, hasPassword: false });
     }
     try {
       const created = await this.prisma.identity.create({
@@ -384,7 +391,7 @@ export class AuthService {
           passwordHash: null,
         },
       });
-      return this.issueIdentity(created);
+      return this.issueIdentity({ ...created, hasPassword: false });
     } catch (error) {
       if (
         error instanceof Prisma.PrismaClientKnownRequestError &&
@@ -398,7 +405,7 @@ export class AuthService {
             where: { email: claims.email },
           }));
         if (raced) {
-          return this.issueIdentity(raced);
+          return this.issueIdentity({ ...raced, hasPassword: false });
         }
       }
       throw error;
@@ -409,12 +416,14 @@ export class AuthService {
     id: string;
     email: string;
     name: string | null;
+    hasPassword: boolean;
   }): Promise<AuthTokens> {
     return this.issueTokens({
       profileType: AuthProfileType.IDENTITY,
       userId: identity.id,
       email: identity.email,
       name: identity.name,
+      hasPassword: identity.hasPassword,
     });
   }
 
@@ -502,6 +511,7 @@ export class AuthService {
         email: user.email,
         name: user.name,
         tenantId: user.tenantId,
+        hasPassword: true,
       });
     }
     const user = await this.prisma.member.findUnique({
@@ -521,6 +531,7 @@ export class AuthService {
       email: user.email,
       name: user.name,
       tenantId: user.tenantId,
+      hasPassword: true,
     });
   }
 
@@ -559,6 +570,7 @@ export class AuthService {
         userId: stored.superUser.id,
         email: stored.superUser.email,
         name: stored.superUser.name,
+        hasPassword: true,
       });
     }
 
@@ -573,6 +585,7 @@ export class AuthService {
         email: stored.staffUser.email,
         name: stored.staffUser.name,
         tenantId: stored.staffUser.tenantId,
+        hasPassword: !!stored.identity?.passwordHash,
       });
     }
 
@@ -587,6 +600,7 @@ export class AuthService {
         email: stored.member.email,
         name: stored.member.name,
         tenantId: stored.member.tenantId,
+        hasPassword: !!stored.identity?.passwordHash,
       });
     }
 
@@ -596,6 +610,7 @@ export class AuthService {
         userId: stored.identity.id,
         email: stored.identity.email,
         name: stored.identity.name,
+        hasPassword: !!stored.identity?.passwordHash,
       });
     }
 
@@ -762,6 +777,7 @@ export class AuthService {
       expiresIn: this.accessTtlSeconds,
       tokenType: 'Bearer',
       profileType: owner.profileType,
+      hasPassword: owner.hasPassword,
       user: {
         id: owner.userId,
         email: owner.email,

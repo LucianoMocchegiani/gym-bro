@@ -8,6 +8,7 @@ export type SuperSession = {
   userId: string;
   email: string;
   name: string | null;
+  hasPassword: boolean;
 };
 
 export type SuperLoginResponse = {
@@ -16,6 +17,7 @@ export type SuperLoginResponse = {
   expiresIn: number;
   tokenType: 'Bearer';
   profileType: 'SUPER';
+  hasPassword: boolean;
   user: {
     id: string;
     email: string;
@@ -96,6 +98,7 @@ export function writeSuperSession(res: SuperLoginResponse): void {
     userId: res.user.id,
     email: res.user.email,
     name: res.user.name,
+    hasPassword: res.hasPassword,
   };
   const raw = JSON.stringify(session);
   window.localStorage.setItem(STORAGE_KEY, raw);
@@ -121,6 +124,7 @@ export function updateSuperTokens(
     expiresIn: 0,
     tokenType: 'Bearer',
     profileType: 'SUPER',
+    hasPassword: current.hasPassword,
     user: {
       id: current.userId,
       email: current.email,

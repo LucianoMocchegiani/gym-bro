@@ -10,17 +10,12 @@ export type StaffSession = {
   accessToken: string;
   refreshToken: string;
   tenantId: string;
-  /** Slug del gym (marca en sidebar); opcional en sesiones viejas. */
   tenantSlug: string | null;
   userId: string;
   email: string;
   name: string | null;
-  /**
-   * Permisos efectivos (`GET /me/permissions`).
-   * `null`/ausente = aún no cargados (nav muestra todo hasta hidratar).
-   */
+  hasPassword: boolean;
   permissionCodes?: string[] | null;
-  /** true cuando la sesión fue creada por impersonación de Super Admin. */
   impersonating?: boolean;
 };
 
@@ -127,6 +122,7 @@ export function writeStaffSession(
     userId: login.user.id,
     email: login.user.email,
     name: login.user.name,
+    hasPassword: login.hasPassword,
     permissionCodes: null,
     impersonating,
   };

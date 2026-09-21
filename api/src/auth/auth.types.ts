@@ -34,6 +34,7 @@ export type AuthTokens = {
   expiresIn: number;
   tokenType: 'Bearer';
   profileType: 'SUPER' | 'STAFF' | 'MEMBER' | 'IDENTITY';
+  hasPassword: boolean;
   user: {
     id: string;
     email: string;

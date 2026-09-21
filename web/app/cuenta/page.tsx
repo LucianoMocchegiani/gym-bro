@@ -37,6 +37,7 @@ function CuentaInner() {
         authMode="staff"
         onLogout={logout}
         loginHref={loginHref}
+        hasPassword={session?.hasPassword ?? true}
       />
     </AdminShell>
   );
