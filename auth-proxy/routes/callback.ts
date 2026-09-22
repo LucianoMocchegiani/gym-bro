@@ -31,6 +31,9 @@ router.get('/callback', async (req: Request, res: Response) => {
 
   try {
     const tokenResponse = await exchangeCodeForTokens(code);
+    if (!tokenResponse.id_token) {
+      throw new Error('No id_token from Google');
+    }
     const payload = await verifyIdToken(tokenResponse.id_token);
 
     if (!payload || !payload.email || !payload.sub) {
