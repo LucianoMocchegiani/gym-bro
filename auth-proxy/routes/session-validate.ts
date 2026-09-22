@@ -30,14 +30,14 @@ function rateLimit(req: Request, res: Response, next: () => void): void {
   next();
 }
 
-router.post('/validate', rateLimit, (_req: Request, res: Response) => {
+router.post('/validate', rateLimit, async (req: Request, res: Response) => {
   const { sessionId } = req.body;
 
   if (!sessionId || typeof sessionId !== 'string') {
     return res.status(401).json({ error: 'sessionId required' });
   }
 
-  const session = getSession(sessionId);
+  const session = await getSession(sessionId);
   if (!session) {
     return res.status(401).json({ error: 'Session not found' });
   }
@@ -49,7 +49,7 @@ router.post('/validate', rateLimit, (_req: Request, res: Response) => {
   });
 });
 
-router.post('/logout', rateLimit, (_req: Request, res: Response) => {
+router.post('/logout', rateLimit, (req: Request, res: Response) => {
   const { sessionId } = req.body;
 
   if (!sessionId || typeof sessionId !== 'string') {

@@ -7,7 +7,7 @@ import { callbackRouter } from './routes/callback';
 import { sessionValidateRouter } from './routes/session-validate';
 
 const app = express();
-const PORT = process.env.PORT || 3003;
+const PORT = Number(process.env.PORT || 3003);
 
 app.use(helmet({ contentSecurityPolicy: false }));
 app.use(cors({ origin: false }));

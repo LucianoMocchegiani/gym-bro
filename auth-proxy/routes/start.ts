@@ -4,7 +4,7 @@ import { validateReturnTo } from '../lib/return-to';
 
 const router = Router();
 
-router.get('/start', (_req: Request, res: Response) => {
+router.get('/start', (req: Request, res: Response) => {
   const returnTo = req.query.return_to as string || '';
 
   if (!validateReturnTo(returnTo)) {
