@@ -1,18 +1,23 @@
 'use client';
 
-import { FormEvent, useEffect, useRef, useState } from 'react';
+import { FormEvent, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ApiClientError } from '@/lib/api/client';
 import { getTenantBySlug } from '@/lib/api/tenants';
 import type { PublicTenantSummary } from '@/lib/api/tenants';
 import { ThemeToggle } from '@/components/ThemeToggle';
+import { fromCookie } from '@/lib/api/auth';
 import { useAuth } from '@/lib/auth/AuthProvider';
 import { platformOrigin, tenantHostLabel, tenantOrigin } from '@/lib/tenant-host';
+import { writeStaffSession } from '@/lib/auth/session';
 
 type LoginClientProps = {
   /** Slug resuelto en el servidor desde el header Host. */
   slug: string | null;
 };
+
+const LOGIN_PROXY_URL =
+  process.env.NEXT_PUBLIC_LOGIN_PROXY_URL ?? 'https://login.faciliter.xyz';
 
 /**
  * Formulario de login Staff (cliente).
@@ -20,7 +25,7 @@ type LoginClientProps = {
  * @remarks El tenant ya viene del Host; no se lee `window` en el render.
  */
 export function LoginClient({ slug }: LoginClientProps) {
-  const { login, loginWithGoogle, session, ready, verified } = useAuth();
+  const { session, ready, verified, login } = useAuth();
   const router = useRouter();
   const [tenant, setTenant] = useState<PublicTenantSummary | null>(null);
   const [tenantError, setTenantError] = useState<string | null>(null);
@@ -28,8 +33,7 @@ export function LoginClient({ slug }: LoginClientProps) {
   const [password, setPassword] = useState('ChangeMe123!');
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
-  const googleBtnRef = useRef<HTMLDivElement>(null);
-  const googleInitRef = useRef(false);
+  const [autoLoginDone, setAutoLoginDone] = useState(false);
 
   useEffect(() => {
     if (!slug) {
@@ -65,57 +69,25 @@ export function LoginClient({ slug }: LoginClientProps) {
   }, [ready, verified, session, router]);
 
   useEffect(() => {
-    if (!tenant || tenantError || googleInitRef.current) {
+    if (autoLoginDone || session || !verified || !slug) {
       return;
     }
-    const script = document.createElement('script');
-    script.src = 'https://accounts.google.com/gsi/client';
-    script.async = true;
-    script.onload = () => {
-      if (!window.google || !googleBtnRef.current) {
-        return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const tokens = await fromCookie();
+        if (!cancelled && tokens.accessToken) {
+          writeStaffSession(tokens, slug);
+          setAutoLoginDone(true);
+        }
+      } catch {
+        // Sin cookie → mostrar formulario normal.
       }
-      window.google.accounts.id.initialize({
-        client_id:
-          process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID ??
-          '382351831666-vtubuvqok9bq2p3s2bdbpe6iifrvue16.apps.googleusercontent.com',
-        callback: async (response: { credential: string }) => {
-          if (!tenant) {
-            return;
-          }
-          setSubmitting(true);
-          try {
-            await loginWithGoogle({
-              tenantId: tenant.id,
-              idToken: response.credential,
-            });
-            router.replace('/');
-          } catch (err) {
-            setError(
-              err instanceof Error ? err.message : 'Error con Google',
-            );
-          } finally {
-            setSubmitting(false);
-          }
-        },
-      });
-      window.google.accounts.id.renderButton(googleBtnRef.current, {
-        theme: 'outline',
-        text: 'Continuar con Google',
-        shape: 'rectangular',
-        width: '100%',
-      });
-      window.google.accounts.id.prompt();
-    };
-    script.onerror = () => {};
-    document.body.appendChild(script);
-    googleInitRef.current = true;
+    })();
     return () => {
-      if (document.body.contains(script)) {
-        document.body.removeChild(script);
-      }
+      cancelled = true;
     };
-  }, [tenant, tenantError, loginWithGoogle, router]);
+  }, [autoLoginDone, session, verified, slug]);
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
@@ -231,7 +203,21 @@ export function LoginClient({ slug }: LoginClientProps) {
           {submitting ? 'Entrando…' : 'Entrar'}
         </button>
 
-        <div ref={googleBtnRef} style={{ marginTop: '12px' }} />
+        <div style={{ marginTop: '12px' }}>
+          <button
+            type="button"
+            className="btn-google"
+            onClick={() => {
+              const returnTo = encodeURIComponent(
+                typeof window !== 'undefined' ? window.location.href : '',
+              );
+              window.location.href = `${LOGIN_PROXY_URL}/start?return_to=${returnTo}`;
+            }}
+            disabled={!!tenantError}
+          >
+            Continuar con Google
+          </button>
+        </div>
 
         <p className="muted small">
           <a href={`${platformOrigin()}/super/login`}>Super Admin</a>

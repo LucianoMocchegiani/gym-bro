@@ -99,6 +99,17 @@ export function fetchAuthMe(
 }
 
 /**
+ * Intercambia cookie central de login proxy por JWT.
+ */
+export function fromCookie(): Promise<StaffLoginResponse> {
+  return apiRequest<StaffLoginResponse>('/auth/from-cookie', {
+    method: 'POST',
+    body: {},
+    auth: false,
+  });
+}
+
+/**
  * Cambia la contraseña del usuario autenticado.
  *
  * @remarks Revoca refresh tokens → obliga a re-login. Usar `auth: 'super'`

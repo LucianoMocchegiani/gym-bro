@@ -105,6 +105,8 @@ services:
         NEXT_PUBLIC_PLATFORM_HOST: ${NEXT_PUBLIC_PLATFORM_HOST:-}
         NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL:-http://localhost:3002}
         NEXT_PUBLIC_CHAT_API_URL: ${NEXT_PUBLIC_CHAT_API_URL:-http://localhost:3010}
+        NEXT_PUBLIC_GOOGLE_CLIENT_ID: ${NEXT_PUBLIC_GOOGLE_CLIENT_ID:-}
+        NEXT_PUBLIC_LOGIN_PROXY_URL: ${NEXT_PUBLIC_LOGIN_PROXY_URL:-https://login.faciliter.xyz}
     container_name: faciliter-web
     restart: unless-stopped
     env_file:
@@ -127,6 +129,32 @@ services:
       timeout: 5s
       retries: 10
       start_period: 20s
+
+  auth-proxy:
+    build:
+      context: ./auth-proxy
+      dockerfile: Dockerfile
+    container_name: faciliter-auth-proxy
+    restart: unless-stopped
+    env_file:
+      - ./auth-proxy/.env
+    environment:
+      NODE_ENV: production
+    ports:
+      - "3003:3003"
+    depends_on:
+      api:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "node -e \"fetch('http://127.0.0.1:3003/').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))\"",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 15s
 
   chat-api:
     build:

@@ -622,6 +622,27 @@ export class AuthService {
    */
   async logout(refreshToken: string): Promise<{ ok: true }> {
     const tokenHash = this.hashToken(refreshToken);
+    const tokenRecord = await this.prisma.refreshToken.findUnique({
+      where: { tokenHash },
+      select: { identityId: true },
+    });
+
+    if (tokenRecord?.identityId) {
+      const sessionId = this.proxySessions.get(tokenRecord.identityId);
+      if (sessionId) {
+        try {
+          await fetch(`${process.env.AUTH_PROXY_URL}/session/logout`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ sessionId }),
+          });
+        } catch {
+          // Proxy unavailable — logout local sigue funcionando
+        }
+        this.proxySessions.delete(tokenRecord.identityId);
+      }
+    }
+
     await this.prisma.refreshToken.updateMany({
       where: { tokenHash, revokedAt: null },
       data: { revokedAt: new Date() },
@@ -690,9 +711,54 @@ export class AuthService {
       return { ok: true };
     }
 
-    throw new BadRequestException(
-      'Cambio de contraseña no disponible para este perfil',
+      throw new BadRequestException(
+        'Cambio de contraseña no disponible para este perfil',
+      );
+    }
+  }
+
+  private proxySessions = new Map<string, string>();
+
+  async loginFromProxy(sessionId: string): Promise<AuthTokens> {
+    const response = await fetch(
+      `${process.env.AUTH_PROXY_URL}/session/validate`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sessionId }),
+      },
     );
+    if (!response.ok) {
+      throw new UnauthorizedException('Session invalid');
+    }
+    const proxyIdentity: {
+      email: string;
+      name: string | null;
+      googleSub: string;
+    } = await response.json();
+
+    const identityRecord = await this.prisma.identity.upsert({
+      where: { googleSub: proxyIdentity.googleSub },
+      update: {
+        email: proxyIdentity.email,
+        name: proxyIdentity.name ?? undefined,
+      },
+      create: {
+        email: proxyIdentity.email,
+        googleSub: proxyIdentity.googleSub,
+        name: proxyIdentity.name,
+        passwordHash: null,
+      },
+    });
+
+    this.proxySessions.set(identityRecord.id, sessionId);
+
+    return this.issueIdentity({
+      id: identityRecord.id,
+      email: identityRecord.email,
+      name: identityRecord.name,
+      hasPassword: false,
+    });
   }
 
   private async resolveTenantId(dto: {

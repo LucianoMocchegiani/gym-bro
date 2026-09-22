@@ -1,4 +1,14 @@
-import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Post,
+  Req,
+  UnauthorizedException,
+  UseGuards,
+} from '@nestjs/common';
+import { Request } from 'express';
 import { AuthService } from './auth.service';
 import { AuthTokens, MembershipsList, type AuthUser } from './auth.types';
 import { CurrentUser } from './decorators/current-user.decorator';
@@ -106,6 +116,19 @@ export class AuthController {
   @Post('apple')
   loginApple(@Body() dto: AppleLoginDto): Promise<AuthTokens> {
     return this.authService.loginApple(dto);
+  }
+
+  /**
+   * Intercambia cookie central de login proxy por JWT.
+   * @remarks Usado tras login con Google via login.faciliter.xyz.
+   */
+  @Post('from-cookie')
+  fromCookie(@Req() req: Request): Promise<AuthTokens> {
+    const sessionId = req.cookies?.central_session;
+    if (!sessionId) {
+      throw new UnauthorizedException('No session');
+    }
+    return this.authService.loginFromProxy(sessionId);
   }
 
   /**
