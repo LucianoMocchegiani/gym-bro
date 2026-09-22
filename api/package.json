@@ -63,7 +63,7 @@
     "@nestjs/schematics": "^11.1.0",
     "@nestjs/testing": "^11.1.28",
     "@types/bcryptjs": "^2.4.6",
-    "@types/cookie-parser": "^1.4.633",
+    "@types/cookie-parser": "^1.4.10",
     "@types/express": "^5.0.0",
     "@types/jest": "^30.0.0",
     "@types/multer": "^2.2.0",
