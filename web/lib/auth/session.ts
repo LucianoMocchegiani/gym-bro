@@ -9,7 +9,7 @@ const SESSION_EVENT = 'gymbro-staff-session';
 export type StaffSession = {
   accessToken: string;
   refreshToken: string;
-  tenantId: string;
+  tenantId: string | null;
   tenantSlug: string | null;
   userId: string;
   email: string;
@@ -48,7 +48,7 @@ export function subscribeStaffSession(onStoreChange: () => void): () => void {
 function parseSession(raw: string): StaffSession | null {
   try {
     const parsed = JSON.parse(raw) as StaffSession;
-    if (!parsed.accessToken || !parsed.tenantId) {
+    if (!parsed.accessToken) {
       return null;
     }
     return {
@@ -110,8 +110,8 @@ export function writeStaffSession(
   tenantSlug?: string | null,
   impersonating = false,
 ): StaffSession {
-  const tenantId = login.user.tenantId;
-  if (!tenantId || login.profileType !== 'STAFF') {
+  const tenantId = login.user.tenantId ?? null;
+  if (!tenantId && login.profileType === 'STAFF') {
     throw new Error('Se requiere login Staff con tenantId');
   }
   const session: StaffSession = {
