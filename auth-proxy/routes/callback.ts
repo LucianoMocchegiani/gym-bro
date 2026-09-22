@@ -9,7 +9,27 @@ import { validateReturnTo } from '../lib/return-to';
 const router = Router();
 
 router.get('/callback', async (req: Request, res: Response) => {
-  const { code, state } = req.query;
+  const { code, state, error } = req.query;
+
+  if (error) {
+    let returnTo = '';
+    try {
+      const verified = verifyState(state as string);
+      if (verified.valid) {
+        returnTo = verified.returnTo;
+      }
+    } catch {
+      // sin estado válido
+    }
+    if (returnTo && validateReturnTo(returnTo)) {
+      const errorUrl = new URL(returnTo);
+      errorUrl.searchParams.set('error', 'access_denied');
+      res.redirect(302, errorUrl.toString());
+      return;
+    }
+    res.status(400).send('Access denied');
+    return;
+  }
 
   if (!code || !state || typeof code !== 'string' || typeof state !== 'string') {
     return res.status(400).send('Missing code or state');

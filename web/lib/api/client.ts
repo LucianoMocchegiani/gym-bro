@@ -100,6 +100,7 @@ export async function apiRequest<T>(
   const res = await fetch(`${apiBaseUrl()}${path}`, {
     method,
     headers,
+    credentials: 'include',
     body: body !== undefined ? JSON.stringify(body) : undefined,
   });
 
