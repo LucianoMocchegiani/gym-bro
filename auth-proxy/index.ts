@@ -19,7 +19,7 @@ app.get('/', (_req, res) => {
 });
 
 app.use('/', startRouter);
-app.use('/', callbackRouter);
+app.use('/auth', callbackRouter);
 app.use('/session', sessionValidateRouter);
 
 app.listen(PORT, '0.0.0.0', () => {
