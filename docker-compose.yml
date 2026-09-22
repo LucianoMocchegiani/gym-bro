@@ -141,7 +141,7 @@ services:
     environment:
       NODE_ENV: production
     ports:
-      - "3003:3003"
+      - "3004:3003"
     depends_on:
       api:
         condition: service_healthy
