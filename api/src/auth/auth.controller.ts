@@ -8,7 +8,7 @@ import {
   UnauthorizedException,
   UseGuards,
 } from '@nestjs/common';
-import { Request } from 'express';
+import type { Request } from 'express';
 import { AuthService } from './auth.service';
 import { AuthTokens, MembershipsList, type AuthUser } from './auth.types';
 import { CurrentUser } from './decorators/current-user.decorator';

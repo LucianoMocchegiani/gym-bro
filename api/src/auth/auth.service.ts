@@ -711,10 +711,9 @@ export class AuthService {
       return { ok: true };
     }
 
-      throw new BadRequestException(
-        'Cambio de contraseña no disponible para este perfil',
-      );
-    }
+    throw new BadRequestException(
+      'Cambio de contraseña no disponible para este perfil',
+    );
   }
 
   private proxySessions = new Map<string, string>();
