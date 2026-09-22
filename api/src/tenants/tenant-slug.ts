@@ -9,6 +9,7 @@ export const RESERVED_TENANT_SLUGS = new Set([
   'api',
   'super',
   'admin',
+  'login',
   'localhost',
   'mail',
   'cdn',
