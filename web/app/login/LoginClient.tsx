@@ -75,7 +75,7 @@ export function LoginClient({ slug }: LoginClientProps) {
     let cancelled = false;
     (async () => {
       try {
-        const tokens = await fromCookie();
+        const tokens = await fromCookie(slug);
         if (!cancelled && tokens.accessToken) {
           writeStaffSession(tokens, slug);
           setAutoLoginDone(true);

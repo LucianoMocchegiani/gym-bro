@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Get,
@@ -128,7 +129,11 @@ export class AuthController {
     if (!sessionId) {
       throw new UnauthorizedException('No session');
     }
-    return this.authService.loginFromProxy(sessionId);
+    const tenantSlug = req.body?.tenantSlug;
+    if (!tenantSlug) {
+      throw new BadRequestException('tenantSlug required');
+    }
+    return this.authService.loginFromProxy(sessionId, tenantSlug);
   }
 
   /**

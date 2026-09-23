@@ -718,7 +718,7 @@ export class AuthService {
 
   private proxySessions = new Map<string, string>();
 
-  async loginFromProxy(sessionId: string): Promise<AuthTokens> {
+  async loginFromProxy(sessionId: string, tenantSlug: string): Promise<AuthTokens> {
     const response = await fetch(
       `${process.env.AUTH_PROXY_URL}/session/validate`,
       {
@@ -752,12 +752,48 @@ export class AuthService {
 
     this.proxySessions.set(identityRecord.id, sessionId);
 
-    return this.issueIdentity({
-      id: identityRecord.id,
-      email: identityRecord.email,
-      name: identityRecord.name,
-      hasPassword: false,
+    const tenantId = await this.resolveTenantId({ tenantSlug });
+    await this.assertTenantActive(tenantId);
+
+    const staffUser = await this.prisma.staffUser.findFirst({
+      where: {
+        tenantId,
+        identityId: identityRecord.id,
+        active: true,
+      },
     });
+
+    if (staffUser) {
+      return this.issueTokens({
+        profileType: AuthProfileType.STAFF,
+        userId: staffUser.id,
+        email: staffUser.email,
+        name: staffUser.name,
+        tenantId: staffUser.tenantId,
+        hasPassword: false,
+      });
+    }
+
+    const member = await this.prisma.member.findFirst({
+      where: {
+        tenantId,
+        identityId: identityRecord.id,
+        status: MemberStatus.ACTIVE,
+      },
+    });
+
+    if (member) {
+      return this.issueTokens({
+        profileType: AuthProfileType.MEMBER,
+        userId: member.id,
+        email: member.email,
+        name: member.name,
+        tenantId: member.tenantId,
+        hasPassword: false,
+      });
+    }
+
+    throw new UnauthorizedException('No eres miembro de este gym');
   }
 
   private async resolveTenantId(dto: {

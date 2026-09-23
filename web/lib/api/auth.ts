@@ -101,10 +101,10 @@ export function fetchAuthMe(
 /**
  * Intercambia cookie central de login proxy por JWT.
  */
-export function fromCookie(): Promise<StaffLoginResponse> {
+export function fromCookie(tenantSlug?: string): Promise<StaffLoginResponse> {
   return apiRequest<StaffLoginResponse>('/auth/from-cookie', {
     method: 'POST',
-    body: {},
+    body: { tenantSlug },
     auth: false,
   });
 }
