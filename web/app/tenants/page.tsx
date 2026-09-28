@@ -108,7 +108,7 @@ function TenantsInner() {
   const impersonateTarget = rows.find((r) => r.id === impersonateId) ?? null;
 
   return (
-    <AdminShell title="Gyms" subtitle="Alta, edición y acceso a cada tenant.">
+    <AdminShell title="Tenants" subtitle="Alta, edición y acceso a cada tenant.">
       <ListToolbar hint="Accedé a un gym para operarlo con su propia sesión.">
         <button
           type="button"

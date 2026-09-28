@@ -239,6 +239,7 @@ const NAV_ICONS: Record<string, () => ReactNode> = {
   '/devoluciones': NavIconRefund,
   '/reportes': NavIconChart,
   '/afiliados': NavIconPeople,
+  '/tenants': NavIconPeople,
   '/staff': NavIconStaff,
   '/roles': NavIconRoles,
   '/servicios': NavIconService,

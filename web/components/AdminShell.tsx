@@ -61,6 +61,7 @@ const NAV_GROUPS: NavGroup[] = [
     label: 'Personas',
     items: [
       { href: '/afiliados', label: 'Afiliados' },
+      { href: '/tenants', label: 'Tenants' },
       { href: '/staff', label: 'Staff' },
       { href: '/roles', label: 'Roles y permisos' },
     ],
@@ -82,22 +83,17 @@ const NAV_GROUPS: NavGroup[] = [
   },
 ];
 
-/** Solo para el slug `admin` (plataforma): gestión de los demás gyms. */
-const PLATFORM_NAV_GROUP: NavGroup = {
-  label: 'Plataforma',
-  items: [{ href: '/tenants', label: 'Gyms' }],
-};
-
 function navGroupsForTenant(slug: string | null): NavGroup[] {
   const isAdmin = slug === 'admin';
-  const groups = isAdmin ? [...NAV_GROUPS, PLATFORM_NAV_GROUP] : NAV_GROUPS;
-  return groups.map((group) => ({
+  return NAV_GROUPS.map((group) => ({
     ...group,
     items: group.items.filter((item) => {
       if (isAdmin) {
         if (item.href === '/puerta') return false;
         if (item.href === '/sesiones') return false;
         if (item.href === '/afiliados') return false;
+      } else if (item.href === '/tenants') {
+        return false;
       }
       return true;
     }),
