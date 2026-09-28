@@ -1,6 +1,6 @@
 'use client';
 
-import { FormEvent, useEffect, useState } from 'react';
+import { FormEvent, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ApiClientError } from '@/lib/api/client';
 import { getTenantBySlug } from '@/lib/api/tenants';
@@ -36,6 +36,9 @@ export function LoginClient({ slug, consumeHandoff = false }: LoginClientProps) 
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [autoLoginDone, setAutoLoginDone] = useState(false);
+  /** Canje de impersonación: no mostrar el form hasta que falle. */
+  const [handoffFailed, setHandoffFailed] = useState(false);
+  const handoffStarted = useRef(false);
 
   useEffect(() => {
     if (!slug) {
@@ -75,25 +78,45 @@ export function LoginClient({ slug, consumeHandoff = false }: LoginClientProps) 
   }, [ready, verified, session, router, consumeHandoff, autoLoginDone]);
 
   useEffect(() => {
-    if (autoLoginDone || !verified) {
+    if (!consumeHandoff || !verified || handoffStarted.current) {
       return;
     }
-    if (!consumeHandoff && session) {
+    handoffStarted.current = true;
+    let cancelled = false;
+    void (async () => {
+      try {
+        const tokens = await fromHandoff();
+        if (cancelled) {
+          return;
+        }
+        if (tokens.accessToken) {
+          writeStaffSession(tokens, slug, true);
+          router.replace('/');
+          return;
+        }
+        setHandoffFailed(true);
+      } catch {
+        if (!cancelled) {
+          setHandoffFailed(true);
+        }
+      } finally {
+        if (!cancelled) {
+          setAutoLoginDone(true);
+        }
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [consumeHandoff, verified, slug, router]);
+
+  useEffect(() => {
+    if (consumeHandoff || autoLoginDone || session || !verified || !slug) {
       return;
     }
     let cancelled = false;
     void (async () => {
       try {
-        if (consumeHandoff) {
-          const tokens = await fromHandoff();
-          if (!cancelled && tokens.accessToken) {
-            writeStaffSession(tokens, slug, true);
-          }
-          return;
-        }
-        if (!slug) {
-          return;
-        }
         const tokens = await fromCookie(slug);
         if (!cancelled && tokens.accessToken) {
           writeStaffSession(tokens, slug);
@@ -101,10 +124,6 @@ export function LoginClient({ slug, consumeHandoff = false }: LoginClientProps) 
         }
       } catch {
         // Sin cookie → formulario.
-      } finally {
-        if (!cancelled && consumeHandoff) {
-          setAutoLoginDone(true);
-        }
       }
     })();
     return () => {
@@ -133,6 +152,29 @@ export function LoginClient({ slug, consumeHandoff = false }: LoginClientProps) 
     } finally {
       setSubmitting(false);
     }
+  }
+
+  const handoffBusy = consumeHandoff && !handoffFailed;
+
+  if (handoffBusy) {
+    return (
+      <div className="login-page">
+        <div className="login-theme-slot">
+          <ThemeToggle />
+        </div>
+        <div className="login-card">
+          <p className="brand">{slug ?? 'Faciliter'}</p>
+          <h1>Entrando al gym</h1>
+          <p className="muted">
+            {tenant ? tenant.name : slug}
+            {slug ? (
+              <span className="small"> · {tenantHostLabel(slug)}</span>
+            ) : null}
+          </p>
+          <p className="muted">Impersonación de plataforma. Un momento…</p>
+        </div>
+      </div>
+    );
   }
 
   if (!slug) {
@@ -174,6 +216,13 @@ export function LoginClient({ slug, consumeHandoff = false }: LoginClientProps) 
           {tenant ? tenant.name : slug}
           <span className="small"> · {tenantHostLabel(slug)}</span>
         </p>
+
+        {handoffFailed ? (
+          <p className="error">
+            No se pudo entrar con la impersonación. Pedila de nuevo desde
+            plataforma.
+          </p>
+        ) : null}
 
         {tenantError ? <p className="error">{tenantError}</p> : null}
 

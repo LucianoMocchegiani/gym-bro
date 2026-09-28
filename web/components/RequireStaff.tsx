@@ -49,7 +49,11 @@ export function RequireStaff({ children }: { children: React.ReactNode }) {
   }, [ready, verified, session, router]);
 
   if (!ready || !verified) {
-    return <p className="muted">Cargando sesión…</p>;
+    return (
+      <p className="muted">
+        {session?.impersonating ? 'Entrando al gym…' : 'Cargando sesión…'}
+      </p>
+    );
   }
   if (!session) {
     return null;

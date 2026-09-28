@@ -11,6 +11,7 @@ admin.{dominio} → POST /auth/super/impersonate
                 → Set-Cookie: impersonation_handoff=<uuid>; Domain=.{dominio}; Max-Age=60
                 → { tenantSlug }  (sin JWT)
                 → location = {slug}.{dominio}/login?handoff=1
+                → UI “Entrando al gym” (no el form de login)
                 → POST /auth/from-handoff  (cookie → JWT Staff 4h, borra cookie)
                 → localStorage en el origen del gym
                 → /
