@@ -16,8 +16,8 @@ type RequestWithUser = Request & { user?: AuthUser };
 /**
  * Exige uno o más códigos de permiso en la unión de roles del staff.
  *
- * @remarks RN-ROL-007 / CU-ROL-006. SUPER no usa este guard en rutas de plataforma
- * (`RequireSuperAuth`). Si aparece SUPER aquí → bypass. MEMBER → 403.
+ * @remarks RN-ROL-007 / CU-ROL-006. La plataforma entra como STAFF del tenant
+ * `admin` (rol `super-admin`), no como un perfil aparte. IDENTITY/MEMBER → 403.
  */
 @Injectable()
 export class PermissionGuard implements CanActivate {
@@ -39,10 +39,6 @@ export class PermissionGuard implements CanActivate {
     const user = request.user;
     if (!user) {
       throw new UnauthorizedException();
-    }
-
-    if (user.profileType === 'SUPER') {
-      return true;
     }
 
     if (user.profileType !== 'STAFF' || !user.tenantId) {

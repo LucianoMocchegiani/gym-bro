@@ -12,7 +12,7 @@ import { RolesService } from './roles.service';
  * Roles y permisos: catálogo global, seed, CRUD y autorización por código.
  */
 @Module({
-  imports: [AuthModule, forwardRef(() => AuditModule)],
+  imports: [forwardRef(() => AuthModule), forwardRef(() => AuditModule)],
   controllers: [RolesController, MePermissionsController],
   providers: [
     RolesSeedService,

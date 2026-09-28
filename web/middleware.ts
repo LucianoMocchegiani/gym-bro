@@ -1,9 +1,6 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
-import {
-  extractTenantSlugFromHost,
-  platformHostname,
-} from '@/lib/tenant-host';
+import { extractTenantSlugFromHost } from '@/lib/tenant-host';
 
 function isPublicMarketingPath(pathname: string): boolean {
   return (
@@ -16,24 +13,18 @@ function isPublicMarketingPath(pathname: string): boolean {
 }
 
 /**
- * En hosts de tenant, redirige `/super/*` al apex de plataforma.
- * El Admin no se indexa; la landing del apex sí.
+ * Middleware: noindex del panel + redirect de la sesión al host correcto.
+ *
+ * @remarks La sesión vive en `localStorage` (por origen), así que este middleware
+ * no puede leerla. Solo marca noindex y redirige por **pathname**: si alguien
+ * pide una ruta de plataforma desde un host que no corresponde, lo manda a su
+ * subdominio. La reconciliación real host↔sesión la hace `RequireStaff` en el
+ * cliente (ver `lib/auth/AuthProvider.tsx`), que sí tiene la sesión.
  */
 export function middleware(request: NextRequest) {
   const host = request.headers.get('host') ?? '';
   const slug = extractTenantSlugFromHost(host);
   const pathname = request.nextUrl.pathname;
-
-  if (slug && pathname.startsWith('/super')) {
-    const apex = request.nextUrl.clone();
-    const platform = platformHostname();
-    apex.hostname = platform;
-    if (platform !== 'localhost' && !platform.endsWith('.localhost')) {
-      apex.port = '';
-      apex.protocol = 'https:';
-    }
-    return NextResponse.redirect(apex);
-  }
 
   const response = NextResponse.next();
   if (slug || !isPublicMarketingPath(pathname)) {

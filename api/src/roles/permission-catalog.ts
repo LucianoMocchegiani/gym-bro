@@ -13,6 +13,7 @@ export type PermissionDefinition = {
 /** Slugs de roles sistema creados al alta de tenant (RN-ROL-002). */
 export const SYSTEM_ROLE_SLUGS = {
   admin: 'admin',
+  superAdmin: 'super-admin',
   entrenador: 'entrenador',
 } as const;
 
@@ -116,6 +117,21 @@ export const PERMISSION_CATALOG: readonly PermissionDefinition[] = [
   {
     code: 'mp.connect',
     description: 'Conectar o cambiar cuenta Mercado Pago',
+    dangerous: true,
+  },
+  {
+    code: 'platform.tenants.read',
+    description: 'Listar gyms de la plataforma',
+    dangerous: false,
+  },
+  {
+    code: 'platform.tenants.write',
+    description: 'CRUD gyms de la plataforma',
+    dangerous: true,
+  },
+  {
+    code: 'platform.impersonate',
+    description: 'Impersonar staff de cualquier gym',
     dangerous: true,
   },
 ] as const;

@@ -121,11 +121,7 @@ export class CredentialOffersController {
     if (user.profileType !== 'STAFF') {
       throw new ForbiddenException('Staff profile required');
     }
-    return this.staffOffers.markAcceptedByStaff(
-      tenantId,
-      user.userId,
-      offerId,
-    );
+    return this.staffOffers.markAcceptedByStaff(tenantId, user.userId, offerId);
   }
 
   /**

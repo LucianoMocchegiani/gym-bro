@@ -216,7 +216,9 @@ export class KuatiaStaffOfferService {
       where: { id: offerId, tenantId, staffUserId },
     });
     if (!row) {
-      throw new NotFoundException(`Staff credential offer ${offerId} not found`);
+      throw new NotFoundException(
+        `Staff credential offer ${offerId} not found`,
+      );
     }
     if (row.status === CredentialOfferStatus.ACCEPTED) {
       return this.toListItem(row, staff);
@@ -247,7 +249,9 @@ export class KuatiaStaffOfferService {
       where: { id: offerId, tenantId, staffUserId },
     });
     if (!row) {
-      throw new NotFoundException(`Staff credential offer ${offerId} not found`);
+      throw new NotFoundException(
+        `Staff credential offer ${offerId} not found`,
+      );
     }
     if (row.status === CredentialOfferStatus.FAILED) {
       return this.toListItem(row, staff);

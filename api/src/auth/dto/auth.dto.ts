@@ -8,18 +8,6 @@ import {
 } from 'class-validator';
 
 /**
- * Credenciales de Super Admin (sin tenant).
- */
-export class SuperLoginDto {
-  @IsEmail()
-  email!: string;
-
-  @IsString()
-  @MinLength(8)
-  password!: string;
-}
-
-/**
  * Credenciales de staff.
  *
  * @remarks Requiere `tenantId` **o** `tenantSlug` (email único por gym).

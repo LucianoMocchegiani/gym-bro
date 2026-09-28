@@ -60,7 +60,7 @@ Servicios:
 
 | Servicio | URL / puerto |
 |----------|----------------|
-| Web | http://localhost:3002 — landing; http://demo.localhost:3002 — Admin Staff; http://localhost:3002/super — Super Admin |
+| Web | http://localhost:3002 — landing; http://demo.localhost:3002 — Admin Staff; http://admin.localhost:3002 — plataforma (tenant `admin`) |
 | API health | http://localhost:3001/api/health |
 | chat-api health | http://localhost:3010/health |
 | chat-api hilos | `GET/POST /v1/conversations` (JWT Staff; C2) |
@@ -112,8 +112,10 @@ cd api
 npm run prisma:migrate
 docker compose up --build -d api
 
-# Seed (Super + demo); no corre al arrancar:
-docker compose exec api npm run prisma:seed
+# Seed (plataforma `admin` + demo); no corre al arrancar.
+# Necesita Node 24: el del host no soporta --experimental-strip-types.
+docker cp api/prisma/seed.ts facilitation-api:/app/prisma/seed.ts
+docker exec facilitation-api sh -c "cd /app && npx prisma db seed"
 ```
 
 Health con DB: `GET /api/health` → `{ status, database, checkedAt }`.
@@ -127,7 +129,7 @@ docker compose exec chat-api npx prisma migrate deploy
 
 Health: `GET http://localhost:3010/health` → `{ status, database, checkedAt }` (`200` ok / `503` DB down).
 
-Hilos (C2): `Authorization: Bearer` Staff. Introspecta `AUTH_INTROSPECT_URL` (`GET /api/auth/me`). `GET/POST /v1/conversations`, `GET/PATCH/DELETE /v1/conversations/:id` (DELETE archiva). Member/Super → 403.
+Hilos (C2): `Authorization: Bearer` Staff. Introspecta `AUTH_INTROSPECT_URL` (`GET /api/auth/me`). `GET/POST /v1/conversations`, `GET/PATCH/DELETE /v1/conversations/:id` (DELETE archiva). Member → 403.
 
 Mensajes (C4/C7): `POST /v1/conversations/:id/messages` body `{ "text" }` → UI Message Stream (OpenRouter + MCP con el mismo Bearer). `GET …/messages` lista user/assistant/tool. Clave real en `OPENROUTER_API_KEY`. Título automático + abort.
 
@@ -141,19 +143,21 @@ Seed y credenciales: [docs/13-setup-db-desde-cero.md](./docs/13-setup-db-desde-c
 
 | Perfil | Endpoint | Seed |
 |--------|----------|------|
-| Super | `POST /api/auth/super/login` | `super@faciliter.xyz` / `ChangeMe123!` |
+| Plataforma | `POST /api/auth/staff/login` (+ `tenantSlug: "admin"`) | `admin@faciliter.xyz` / `ChangeMe123!` |
 | Identity (app) | `POST /api/auth/identity/login` | mismo mail/pass seed, **sin** tenant |
 | Google (app) | `POST /api/auth/google` | `{ "idToken" }` — `GOOGLE_OAUTH_CLIENT_IDS` |
 | Staff (Admin) | `POST /api/auth/staff/login` (+ `tenantId`) | `admin@gymdeprueba.com` / `ChangeMe123!` (también `entrenador@gymdeprueba.com`) |
+
+No existe un perfil `SUPER` ni `POST /api/auth/super/login`: la plataforma es el tenant `admin` (rol `super-admin`) y entra por el login de staff. La ruta `POST /api/auth/super/impersonate` conserva el nombre histórico pero exige un token del tenant `admin`.
 | Afiliado | `POST /api/auth/member/login` (+ `tenantId`) | `socio@gymdeprueba.com` / `ChangeMe123!` |
 
 Detalle (bodies, tenant id): [`docs/credenciales-demo.md`](./docs/credenciales-demo.md).
 
 Tenant demo id: `00000000-0000-4000-8000-000000000001`. App: `GET /api/auth/memberships` + `POST /api/auth/select-context`. También: `POST /api/auth/refresh`, `POST /api/auth/logout`, `GET /api/auth/me` (Bearer; staff/member traen `tenantId`).
 
-Rutas de negocio: `@RequireTenantAuth()` + `@CurrentTenant()` (tenant solo del JWT). Permisos staff: `@RequirePermission('…')` (Admin seed tiene el catálogo). Super opera el gym impersonando (`POST /api/auth/super/impersonate`); no hay espejos `/api/tenants/:tenantId/...` de negocio (salvo `GET .../staff`).
+Rutas de negocio: `@RequireTenantAuth()` + `@CurrentTenant()` (tenant solo del JWT). Permisos staff: `@RequirePermission('…')` (Admin seed tiene el catálogo). La plataforma opera un gym impersonando (`POST /api/auth/super/impersonate` + cookie, canje `POST /api/auth/from-handoff` en el subdominio del gym); no hay espejos `/api/tenants/:tenantId/...` de negocio (salvo `GET .../staff`).
 
-Super Admin — tenants: `POST /api/tenants` requiere `ownerEmail` / `ownerPassword` (+ `ownerName` opcional); crea branch, roles y owner con rol Admin. Roles del gym: `GET|POST|PATCH /api/roles` (Staff, `roles.write`). Asignar roles: `PUT /api/staff/:staffId/roles`. Super lista staff con `GET /api/tenants/:tenantId/staff` e impersona. Afiliados: `GET|POST|PATCH /api/members` (Staff: `members.read` / `members.write`; status con `members.deactivate`); estado de cuenta `GET /api/members/:memberId/account` y `GET /api/me/account`. Sesiones: `GET|POST|PATCH /api/sessions`, `PATCH /api/sessions/:id/capacity` (ampliar cupo, CU-SER-005) y reglas semanales `GET|POST|PATCH /api/session-recurrence-rules` (`sessions.write`). Reservas con crédito: Member `POST|GET /api/me/reservations`, `PATCH /api/me/reservations/:id/status` (cancelar en ventana); Staff `POST /api/members/:memberId/reservations` (crédito), `PATCH /api/reservations/:id/status` (`reservations.write`). Lista de espera: Member `POST|GET /api/me/waitlist`, `PATCH .../status`; Staff `POST /api/members/:id/waitlist`, `GET /api/sessions/:id/waitlist` (`reservations.write`; promoción AUTO al cancelar/ampliar). Settings gym: `GET|PATCH /api/tenant-settings` (`tenant.settings.read/write`; `reservationCancellationHours`, `waitlistMode`, `allowLateSessionEntry`). Caja del día: `GET /api/cash-register/day` y arqueo `POST /api/cash-register/day/reconcile` (`cashier.operate`; timezone BA). Cuenta MP: `GET|PUT|DELETE /api/mercadopago/account` + `POST .../test` (`mp.connect`; token cifrado). Checkout MP: Member `POST /api/me/transaction-items/mp/cart`; Staff `POST /api/members/:id/transaction-items/mp/cart` (`members.write`; `items[]` PACK|DROP_IN → 1 Preference). Caja cash: `POST .../cash/cart`. Webhook `POST /api/webhooks/payment?tenantId=` (+ `/simulate` en stub). Devoluciones: Member `POST /api/me/transaction-items/:id/refund-requests`; Staff `POST /api/transactions/:id/refunds` (lote) y `POST /api/transaction-items/:id/refunds` (`transaction_items.refund`). Acceso puerta OID4VP: Staff `POST /api/access/oid4vp/request` + `GET /api/access/oid4vp/session/:id` + `GET /api/access-attempts` (`access.verify`); pase manual `POST /api/members/:id/access/manual-pass` (`access.manual_pass`). Settings: tolerancia deuda y multi-ingreso en `GET|PATCH /api/tenant-settings`. Comprobantes: Member `GET /api/me/receipts`; Staff `GET /api/transactions/:transactionId/receipt` (`members.read`). Servicios: `GET|POST|PATCH /api/services` (Staff, `catalog.write`). Packs: `GET|POST|PATCH /api/packs` … Contrataciones: alta de pack por Caja o MP; `POST /api/members/:memberId/contracts` con STUB → 400; re-oferta `POST /api/members/:memberId/credential-offers` (contrato vigente hoy, sin cobro); `PATCH /api/contracts/:contractId/status` → `CANCELLED` (pierde acceso/créditos); Member `GET /api/me/contracts`. Auditoría: `GET /api/audit-events`.
+Plataforma (tenant `admin`): `POST /api/tenants` requiere `ownerEmail` / `ownerPassword` (+ `ownerName` opcional); crea branch, roles y owner con rol Admin. Roles del gym: `GET|POST|PATCH /api/roles` (Staff, `roles.write`). Asignar roles: `PUT /api/staff/:staffId/roles`. La plataforma lista el staff de un gym con `GET /api/tenants/:billingTenantId/staff` e impersona. Caja de plataforma: `POST /api/tenants/:billingTenantId/transaction-items/{cash,mp}/cart` (solo `PACK`; la transacción va con `memberId: null` → `ContractType.TENANT`). Resumen para el dashboard: `GET /api/tenants/platform`. Afiliados: `GET|POST|PATCH /api/members` (Staff: `members.read` / `members.write`; status con `members.deactivate`); estado de cuenta `GET /api/members/:memberId/account` y `GET /api/me/account`. Sesiones: `GET|POST|PATCH /api/sessions`, `PATCH /api/sessions/:id/capacity` (ampliar cupo, CU-SER-005) y reglas semanales `GET|POST|PATCH /api/session-recurrence-rules` (`sessions.write`). Reservas con crédito: Member `POST|GET /api/me/reservations`, `PATCH /api/me/reservations/:id/status` (cancelar en ventana); Staff `POST /api/members/:memberId/reservations` (crédito), `PATCH /api/reservations/:id/status` (`reservations.write`). Lista de espera: Member `POST|GET /api/me/waitlist`, `PATCH .../status`; Staff `POST /api/members/:id/waitlist`, `GET /api/sessions/:id/waitlist` (`reservations.write`; promoción AUTO al cancelar/ampliar). Settings gym: `GET|PATCH /api/tenant-settings` (`tenant.settings.read/write`; `reservationCancellationHours`, `waitlistMode`, `allowLateSessionEntry`). Caja del día: `GET /api/cash-register/day` y arqueo `POST /api/cash-register/day/reconcile` (`cashier.operate`; timezone BA). Cuenta MP: `GET|PUT|DELETE /api/mercadopago/account` + `POST .../test` (`mp.connect`; token cifrado). Checkout MP: Member `POST /api/me/transaction-items/mp/cart`; Staff `POST /api/members/:id/transaction-items/mp/cart` (`members.write`; `items[]` PACK|DROP_IN → 1 Preference). Caja cash: `POST .../cash/cart`. Webhook `POST /api/webhooks/payment?tenantId=` (+ `/simulate` en stub). Devoluciones: Member `POST /api/me/transaction-items/:id/refund-requests`; Staff `POST /api/transactions/:id/refunds` (lote) y `POST /api/transaction-items/:id/refunds` (`transaction_items.refund`). Acceso puerta OID4VP: Staff `POST /api/access/oid4vp/request` + `GET /api/access/oid4vp/session/:id` + `GET /api/access-attempts` (`access.verify`); pase manual `POST /api/members/:id/access/manual-pass` (`access.manual_pass`). Settings: tolerancia deuda y multi-ingreso en `GET|PATCH /api/tenant-settings`. Comprobantes: Member `GET /api/me/receipts`; Staff `GET /api/transactions/:transactionId/receipt` (`members.read`). Servicios: `GET|POST|PATCH /api/services` (Staff, `catalog.write`). Packs: `GET|POST|PATCH /api/packs` … Contrataciones: alta de pack por Caja o MP; `POST /api/members/:memberId/contracts` con STUB → 400; re-oferta `POST /api/members/:memberId/credential-offers` (contrato vigente hoy, sin cobro); `PATCH /api/contracts/:contractId/status` → `CANCELLED` (pierde acceso/créditos); Member `GET /api/me/contracts`. Auditoría: `GET /api/audit-events`.
 
 Probar con Postman: importá [`postman/`](./postman/) (colección Nest + `chat-api` + `mcp` + environment local). Los logins de la **API** guardan `accessToken` / `refreshToken`; **chat-api** y **mcp** reusan ese token.
 

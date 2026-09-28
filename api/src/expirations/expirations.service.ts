@@ -23,11 +23,11 @@ const OPEN_MANDATE: DebitMandateStatus[] = [
 
 type ContractHit = {
   id: string;
-  memberId: string;
+  memberId: string | null;
   packId: string;
   status: ContractStatus;
   endsAt: Date | null;
-  member: { name: string | null; email: string };
+  member: { name: string | null; email: string } | null;
   pack: { name: string };
 };
 
@@ -102,11 +102,13 @@ export class ExpirationsService {
       if (!bucket) {
         continue;
       }
+      if (c.memberId === null) continue;
       const mandateStatus = mandateByMember.get(c.memberId) ?? null;
+      if (!mandateStatus) continue;
       worklist.push({
         memberId: c.memberId,
-        memberName: c.member.name,
-        memberEmail: c.member.email,
+        memberName: c.member?.name ?? null,
+        memberEmail: c.member?.email ?? '',
         contractId: c.id,
         packId: c.packId,
         packName: c.pack.name,
@@ -118,7 +120,10 @@ export class ExpirationsService {
       });
     }
 
-    worklist.sort((a, b) => a.daysUntil - b.daysUntil || a.memberEmail.localeCompare(b.memberEmail));
+    worklist.sort(
+      (a, b) =>
+        a.daysUntil - b.daysUntil || a.memberEmail.localeCompare(b.memberEmail),
+    );
 
     const counts = {
       total: worklist.length,
@@ -159,6 +164,7 @@ export class ExpirationsService {
   private pickLatestMonthly(rows: ContractHit[]): Map<string, ContractHit> {
     const map = new Map<string, ContractHit>();
     for (const row of rows) {
+      if (row.memberId === null) continue;
       const prev = map.get(row.memberId);
       if (!prev) {
         map.set(row.memberId, row);

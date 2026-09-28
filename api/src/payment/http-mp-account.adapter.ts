@@ -331,7 +331,9 @@ export class HttpMpAccountAdapter extends MpAccountPort {
       this.logger.warn(
         `MP save card failed status=${response.status} body=${body.slice(0, 300)}`,
       );
-      throw new Error(`Mercado Pago save card failed (HTTP ${response.status})`);
+      throw new Error(
+        `Mercado Pago save card failed (HTTP ${response.status})`,
+      );
     }
     return this.parseSavedCard(await response.json());
   }
@@ -453,7 +455,8 @@ export class HttpMpAccountAdapter extends MpAccountPort {
     return {
       id: String(data.id),
       lastFour: data.last_four_digits ?? null,
-      paymentMethodId: data.payment_method?.id ?? data.payment_method_id ?? null,
+      paymentMethodId:
+        data.payment_method?.id ?? data.payment_method_id ?? null,
     };
   }
 

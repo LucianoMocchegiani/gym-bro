@@ -1,4 +1,8 @@
-import { Injectable, ServiceUnavailableException, UnauthorizedException } from '@nestjs/common';
+import {
+  Injectable,
+  ServiceUnavailableException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { createRemoteJWKSet, jwtVerify, type JWTPayload } from 'jose';
 
@@ -53,7 +57,8 @@ export class AppleIdTokenService {
         throw new UnauthorizedException('Apple email is not verified');
       }
 
-      const name = typeof payload.name === 'string' ? payload.name.trim() : null;
+      const name =
+        typeof payload.name === 'string' ? payload.name.trim() : null;
 
       return {
         sub,

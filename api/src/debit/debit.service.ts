@@ -19,11 +19,7 @@ import {
 import { randomBytes } from 'node:crypto';
 import { AUDIT_ACTIONS, AuditActor } from '../audit/audit.types';
 import { AuditService } from '../audit/audit.service';
-import {
-  ListResult,
-  normalizeListQuery,
-  toListResult,
-} from '../common/list';
+import { ListResult, normalizeListQuery, toListResult } from '../common/list';
 import { mpCopyForPack } from '../payment/mp-item-copy';
 import { MercadoPagoAccountService } from '../payment/mercadopago-account.service';
 import { MP_ACCOUNT_PORT, MpAccountPort } from '../payment/mp-account.port';
@@ -45,7 +41,7 @@ const OPEN_STATUSES: DebitMandateStatus[] = [
 ];
 
 type MandateRow = DebitMandate & {
-  member: { name: string | null; email: string };
+  member: { name: string | null; email: string } | null;
   pack: { name: string; price: number };
 };
 
@@ -107,7 +103,12 @@ export class DebitService {
       }),
       this.prisma.debitMandate.count({ where }),
     ]);
-    return toListResult(rows.map((r) => this.toDetail(r)), total, page, pageSize);
+    return toListResult(
+      rows.map((r) => this.toDetail(r)),
+      total,
+      page,
+      pageSize,
+    );
   }
 
   /**
@@ -166,10 +167,7 @@ export class DebitService {
     const accessToken = await this.accounts.getDecryptedAccessToken(tenantId);
     let customer;
     try {
-      customer = await this.mp.findOrCreateCustomer(
-        accessToken,
-        member.email,
-      );
+      customer = await this.mp.findOrCreateCustomer(accessToken, member.email);
     } catch (err) {
       throw new BadRequestException(this.describeMpEnrollError(err));
     }
@@ -325,7 +323,8 @@ export class DebitService {
     if (mandate.status === DebitMandateStatus.CANCELLED) {
       return this.toDetail(mandate);
     }
-    const staffId = actor.profileType === 'STAFF' ? actor.userId : mandate.enrolledByStaffId;
+    const staffId =
+      actor.profileType === 'STAFF' ? actor.userId : mandate.enrolledByStaffId;
     const row = await this.prisma.debitMandate.update({
       where: { id: mandate.id },
       data: {
@@ -433,7 +432,10 @@ export class DebitService {
       include: { transactionItems: true },
     });
     if (existingTx?.status === PaymentStatus.APPROVED) {
-      await this.markChargeSuccess(mandate.id, existingTx.transactionItems[0]?.id);
+      await this.markChargeSuccess(
+        mandate.id,
+        existingTx.transactionItems[0]?.id,
+      );
       const refreshed = await this.requireMandate(tenantId, mandate.id);
       return {
         mandate: this.toDetail(refreshed),
@@ -504,7 +506,8 @@ export class DebitService {
         receiptReady: true,
       };
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Debit charge failed';
+      const message =
+        err instanceof Error ? err.message : 'Debit charge failed';
       await this.markChargeFailure(mandate, message);
       throw new BadRequestException(message);
     }
@@ -513,7 +516,11 @@ export class DebitService {
   /**
    * Job: cobra mandatos con `nextChargeOn` ≤ hoy (timezone BA).
    */
-  async chargeDue(): Promise<{ attempted: number; ok: number; failed: number }> {
+  async chargeDue(): Promise<{
+    attempted: number;
+    ok: number;
+    failed: number;
+  }> {
     const today = this.businessDate(new Date());
     const due = await this.prisma.debitMandate.findMany({
       where: {
@@ -633,9 +640,11 @@ export class DebitService {
       description: copy.title,
       externalReference: cart.id,
       notificationUrl: this.buildNotificationUrl(input.tenantId),
-      payerEmail: (await this.prisma.member.findUniqueOrThrow({
-        where: { id: input.memberId },
-      })).email,
+      payerEmail: (
+        await this.prisma.member.findUniqueOrThrow({
+          where: { id: input.memberId },
+        })
+      ).email,
       paymentMethodId: input.paymentMethodId,
       installments: input.installments,
       issuerId: input.issuerId,
@@ -763,7 +772,9 @@ export class DebitService {
       throw new BadRequestException('Pack is inactive');
     }
     if (pack.billingPeriod !== BillingPeriod.MONTHLY) {
-      throw new BadRequestException('Automatic debit is only for MONTHLY packs');
+      throw new BadRequestException(
+        'Automatic debit is only for MONTHLY packs',
+      );
     }
     if (pack.price < 1) {
       throw new BadRequestException('Pack price must be at least 1');
@@ -807,8 +818,8 @@ export class DebitService {
     return {
       id: row.id,
       memberId: row.memberId,
-      memberName: row.member.name,
-      memberEmail: row.member.email,
+      memberName: row.member?.name ?? null,
+      memberEmail: row.member?.email ?? '',
       packId: row.packId,
       packName: row.pack.name,
       packPrice: row.pack.price,

@@ -273,7 +273,7 @@ Detalle: [14-auditoria…](./14-auditoria-roadmap-vs-codigo-2026-08-13.md).
   - `/reportes` + historial puerta en `/puerta`
 - [x] Panel Super Admin (tenants) — mínimo
   - `/super/tenants` CRUD/suspend + bind Kuatia (`…/quark/provision`) + link al gym
-  - Impersonate (`POST /auth/super/impersonate`) + `GET /tenants/:id/staff`
+  - Impersonate (`POST /auth/super/impersonate` → cookie; `POST /auth/from-handoff` en el gym) + `GET /tenants/:id/staff`
   - Sin nested ops: el gym se opera impersonando (rutas Staff)
 
 ### Pendiente — thin gaps (API ya existe)

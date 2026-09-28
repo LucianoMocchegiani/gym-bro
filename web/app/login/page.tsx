@@ -14,9 +14,16 @@ export const metadata: Metadata = {
  * @remarks El tenant se deduce del header Host (`demo.localhost:3002`)
  * en el servidor, para que SSR y cliente rendericen el mismo árbol.
  */
-export default async function LoginPage() {
+export default async function LoginPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ handoff?: string }>;
+}) {
   const h = await headers();
   const host = h.get('x-forwarded-host') ?? h.get('host') ?? '';
   const slug = extractTenantSlugFromHost(host);
-  return <LoginClient slug={slug} />;
+  const query = await searchParams;
+  return (
+    <LoginClient slug={slug} consumeHandoff={query.handoff === '1'} />
+  );
 }

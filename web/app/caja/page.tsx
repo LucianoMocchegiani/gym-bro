@@ -7,6 +7,7 @@ import { ListToolbar } from '@/components/AdminList';
 import { AdminShell } from '@/components/AdminShell';
 import { Panel } from '@/components/AdminUi';
 import { MemberPicker } from '@/components/MemberPicker';
+import { TenantPicker } from '@/components/TenantPicker';
 import { MpCardPaymentBrick } from '@/components/MpCardPaymentBrick';
 import type { MpCardTokenResult } from '@/components/MpCardPaymentBrick';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
@@ -25,6 +26,11 @@ import {
   startStaffMpCartCheckout,
 } from '@/lib/api/mercadopago';
 import { getMember } from '@/lib/api/members';
+import {
+  startPlatformCashCart,
+  startPlatformMpCartCheckout,
+} from '@/lib/api/tenants';
+import { extractTenantSlugFromHost } from '@/lib/tenant-host';
 import { listActivePacks } from '@/lib/api/packs';
 import type { PackSummary } from '@/lib/api/packs';
 import { startCashCart } from '@/lib/api/reservations';
@@ -67,12 +73,21 @@ export default function CajaPage() {
 
 function CajaInner() {
   const searchParams = useSearchParams();
+  // El host decide si esta es la Caja de plataforma (RequireStaff ya.validó la
+  // sesión contra el host, así que `session.tenantSlug` sería redundante).
+  const isPlatform =
+    typeof window !== 'undefined' &&
+    extractTenantSlugFromHost(window.location.host) === 'admin';
   const initialMemberId = searchParams.get('memberId')?.trim() ?? '';
+  const initialBillingTenantId =
+    searchParams.get('billingTenantId')?.trim() ?? '';
   const initialVista =
     searchParams.get('vista') === 'debitos' ? 'debitos' : 'cobro';
 
   const [vista, setVista] = useState<CajaVista>(initialVista);
-  const [catalogTab, setCatalogTab] = useState<CatalogTab>('SERVICIOS');
+  const [catalogTab, setCatalogTab] = useState<CatalogTab>(
+    isPlatform ? 'PACKS' : 'SERVICIOS',
+  );
   const [packs, setPacks] = useState<PackSummary[]>([]);
   const [sessions, setSessions] = useState<SessionSummary[]>([]);
   const [services, setServices] = useState<
@@ -81,6 +96,10 @@ function CajaInner() {
   const [catalogLoading, setCatalogLoading] = useState(true);
   const [catalogError, setCatalogError] = useState<string | null>(null);
 
+  /** Tenant facturado en la Caja de plataforma (solo `slug === 'admin'`). */
+  const [billingTenantId, setBillingTenantId] = useState(initialBillingTenantId);
+  const [billingTenantLabel, setBillingTenantLabel] = useState('');
+  /** Afiliado cobrador (solo tenants con `slug !== 'admin'`). */
   const [memberId, setMemberId] = useState(initialMemberId);
   const [memberLabel, setMemberLabel] = useState('');
   const [cart, setCart] = useState<CartItem[]>([]);
@@ -105,13 +124,13 @@ function CajaInner() {
   const itemSeq = useRef(0);
 
   useEffect(() => {
-    if (!initialMemberId) {
+    if (isPlatform || !initialMemberId) {
       return;
     }
     void getMember(initialMemberId)
       .then((m) => setMemberLabel(m.name?.trim() || m.email))
       .catch(() => undefined);
-  }, [initialMemberId]);
+  }, [initialMemberId, isPlatform]);
 
   useEffect(() => {
     void getMpPublicKey()
@@ -123,6 +142,18 @@ function CajaInner() {
     let cancelled = false;
     void (async () => {
       try {
+        if (isPlatform) {
+          // La Caja de plataforma vende packs: sin sesiones ni drop-in.
+          const packsResult = await listActivePacks();
+          if (cancelled) {
+            return;
+          }
+          setPacks(packsResult.items);
+          setSessions([]);
+          setServices([]);
+          setCatalogError(null);
+          return;
+        }
         const from = new Date();
         const to = new Date();
         to.setDate(to.getDate() + 14);
@@ -166,7 +197,7 @@ function CajaInner() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [isPlatform]);
 
   useEffect(() => {
     if (!receipt) {
@@ -213,12 +244,16 @@ function CajaInner() {
   );
 
   const debitEligible = useMemo(() => {
+    // El débito es un mandato por afiliado; no aplica a la venta de plataforma.
+    if (isPlatform) {
+      return false;
+    }
     if (cobroMedio !== 'MP' || cart.length !== 1 || cart[0].kind !== 'PACK') {
       return false;
     }
     const pack = packs.find((p) => p.id === cart[0].refId);
     return pack?.billingPeriod === 'MONTHLY';
-  }, [cart, cobroMedio, packs]);
+  }, [cart, cobroMedio, isPlatform, packs]);
 
   useEffect(() => {
     if (!debitEligible) {
@@ -371,12 +406,16 @@ function CajaInner() {
 
   async function onCobro(e: FormEvent) {
     e.preventDefault();
-    if (!memberId) {
-      setCobroError('Elegí un afiliado');
+    if (isPlatform ? !billingTenantId : !memberId) {
+      setCobroError(isPlatform ? 'Elegí un gimnasio' : 'Elegí un afiliado');
       return;
     }
     if (cart.length === 0) {
       setCobroError('Agregá al menos un ítem al carrito');
+      return;
+    }
+    if (isPlatform && cart.some((item) => item.kind !== 'PACK')) {
+      setCobroError('La venta de plataforma solo admite packs');
       return;
     }
     setCobroBusy(true);
@@ -391,13 +430,21 @@ function CajaInner() {
     setReceipt(null);
     try {
       if (cobroMedio === 'MP') {
-        const result = await startStaffMpCartCheckout(memberId, {
-          items: cart.map((item) => ({
-            kind: item.kind,
-            id: item.refId,
-          })),
-          idempotencyKey: newIdempotencyKey('mp-cart'),
-        });
+        const result = isPlatform
+          ? await startPlatformMpCartCheckout(billingTenantId, {
+              items: cart.map((item) => ({
+                kind: 'PACK' as const,
+                id: item.refId,
+              })),
+              idempotencyKey: newIdempotencyKey('mp-cart'),
+            })
+          : await startStaffMpCartCheckout(memberId, {
+              items: cart.map((item) => ({
+                kind: item.kind,
+                id: item.refId,
+              })),
+              idempotencyKey: newIdempotencyKey('mp-cart'),
+            });
         const url = pickMpCartCheckoutUrl(result);
         if (!url) {
           throw new Error(
@@ -413,14 +460,20 @@ function CajaInner() {
         return;
       }
 
-      const result = await startCashCart(
-        memberId,
-        cart.map((item) => ({
-          kind: item.kind,
-          id: item.refId,
-        })),
-        newIdempotencyKey('cash-cart'),
-      );
+      const result = isPlatform
+        ? await startPlatformCashCart(
+            billingTenantId,
+            cart.map((item) => ({ kind: 'PACK' as const, id: item.refId })),
+            newIdempotencyKey('cash-cart'),
+          )
+        : await startCashCart(
+            memberId,
+            cart.map((item) => ({
+              kind: item.kind,
+              id: item.refId,
+            })),
+            newIdempotencyKey('cash-cart'),
+          );
       const labels = cart.map((item) => item.label);
       setCart([]);
       setCobroOk(
@@ -452,20 +505,42 @@ function CajaInner() {
   return (
     <AdminShell
       title="Caja"
-      subtitle="Cobros con carrito: packs y drop-in en efectivo o Mercado Pago."
+      subtitle={
+        isPlatform
+          ? 'Venta de packs de plataforma a otros tenants.'
+          : 'Cobros con carrito: packs y drop-in en efectivo o Mercado Pago.'
+      }
     >
       <ListToolbar hint="El cierre del día se ve en Cierre.">
-        <MemberPicker
-          label="Afiliado"
-          value={memberId}
-          displayLabel={memberLabel || undefined}
-          onChange={(id) => {
-            setMemberId(id);
-            setMemberLabel('');
-          }}
-          placeholder="Buscar por nombre o email…"
-          autoFocus
-        />
+        {isPlatform ? (
+          <TenantPicker
+            label="Gimnasio"
+            value={billingTenantId}
+            displayLabel={billingTenantLabel || undefined}
+            onChange={(id) => {
+              setBillingTenantId(id);
+              setBillingTenantLabel('');
+            }}
+            onSelect={(t) => {
+              setBillingTenantId(t.id);
+              setBillingTenantLabel(t.name);
+            }}
+            placeholder="Buscar gimnasio por nombre o slug…"
+            autoFocus
+          />
+        ) : (
+          <MemberPicker
+            label="Afiliado"
+            value={memberId}
+            displayLabel={memberLabel || undefined}
+            onChange={(id) => {
+              setMemberId(id);
+              setMemberLabel('');
+            }}
+            placeholder="Buscar por nombre o email…"
+            autoFocus
+          />
+        )}
       </ListToolbar>
 
       <div className="cash-tabs" role="tablist">
@@ -478,15 +553,17 @@ function CajaInner() {
         >
           Cobro
         </button>
-        <button
-          type="button"
-          role="tab"
-          aria-selected={vista === 'debitos'}
-          className={vista === 'debitos' ? 'active' : undefined}
-          onClick={() => setVista('debitos')}
-        >
-          Débitos
-        </button>
+        {isPlatform ? null : (
+          <button
+            type="button"
+            role="tab"
+            aria-selected={vista === 'debitos'}
+            className={vista === 'debitos' ? 'active' : undefined}
+            onClick={() => setVista('debitos')}
+          >
+            Débitos
+          </button>
+        )}
       </div>
 
       {receiptError ? <p className="error">{receiptError}</p> : null}
@@ -501,7 +578,7 @@ function CajaInner() {
         </div>
       ) : null}
 
-      {vista === 'debitos' ? (
+      {vista === 'debitos' && !isPlatform ? (
         <CajaDebitPanel
           memberId={memberId}
           onNeedReceipt={(id) => {
@@ -518,15 +595,17 @@ function CajaInner() {
           description="Agregá ítems al carrito con el botón +."
         >
           <div className="cash-tabs" role="tablist">
-            <button
-              type="button"
-              role="tab"
-              aria-selected={catalogTab === 'SERVICIOS'}
-              className={catalogTab === 'SERVICIOS' ? 'active' : undefined}
-              onClick={() => setCatalogTab('SERVICIOS')}
-            >
-              Servicios
-            </button>
+            {isPlatform ? null : (
+              <button
+                type="button"
+                role="tab"
+                aria-selected={catalogTab === 'SERVICIOS'}
+                className={catalogTab === 'SERVICIOS' ? 'active' : undefined}
+                onClick={() => setCatalogTab('SERVICIOS')}
+              >
+                Servicios
+              </button>
+            )}
             <button
               type="button"
               role="tab"
@@ -795,13 +874,23 @@ function CajaInner() {
                 <button
                   type="submit"
                   className="primary"
-                  disabled={cobroBusy || cart.length === 0 || !memberId}
+                  disabled={
+                    cobroBusy ||
+                    cart.length === 0 ||
+                    (isPlatform ? !billingTenantId : !memberId)
+                  }
                   title={
-                    !memberId
-                      ? 'Elegí el afiliado de la lista de búsqueda'
-                      : cart.length === 0
-                        ? 'Agregá al menos un ítem al carrito'
-                        : undefined
+                    isPlatform
+                      ? !billingTenantId
+                        ? 'Elegí el gimnasio de la lista de búsqueda'
+                        : cart.length === 0
+                          ? 'Agregá al menos un ítem al carrito'
+                          : undefined
+                      : !memberId
+                        ? 'Elegí el afiliado de la lista de búsqueda'
+                        : cart.length === 0
+                          ? 'Agregá al menos un ítem al carrito'
+                          : undefined
                   }
                 >
                   {cobroBusy

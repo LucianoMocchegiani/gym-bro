@@ -55,3 +55,21 @@ export type PublicTenantSummary = {
   slug: string;
   status: TenantStatus;
 };
+
+/**
+ * Resumen de tenant para el dashboard de plataforma (staff del tenant `admin`).
+ *
+ * @remarks No incluye roles ni owner: la lista de gyms es un selector, no una
+ * ficha. `memberCount` alimenta el estado de la fila en la grilla.
+ *
+ * No expone plan ni suscripción: no hay modelo `Subscription` todavía. Cuando
+ * exista, agregar `planName` / `subscriptionStatus` acá y en
+ * `web/lib/api/tenants.ts` (tipo `PlatformTenantSummary`).
+ */
+export type PlatformTenantSummary = {
+  id: string;
+  name: string;
+  slug: string;
+  status: TenantStatus;
+  memberCount: number;
+};

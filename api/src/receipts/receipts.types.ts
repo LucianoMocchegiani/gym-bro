@@ -8,7 +8,7 @@ export type ReceiptDetail = {
   tenantId: string;
   transactionItemId: string | null;
   transactionId: string | null;
-  memberId: string;
+  memberId: string | null;
   number: number;
   /** Código legible, ej. `GB-000001`. */
   code: string;

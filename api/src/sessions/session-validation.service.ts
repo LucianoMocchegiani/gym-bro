@@ -16,7 +16,13 @@ type SessionWithService = {
   capacity: number;
   bookedCount: number;
   serviceId: string;
-  service: { id: string; name: string; active: boolean; dropInPrice: number | null; type: string };
+  service: {
+    id: string;
+    name: string;
+    active: boolean;
+    dropInPrice: number | null;
+    type: string;
+  };
   branch: { name: string };
 };
 
@@ -46,7 +52,13 @@ export class SessionValidationService {
         bookedCount: true,
         serviceId: true,
         service: {
-          select: { id: true, name: true, active: true, dropInPrice: true, type: true },
+          select: {
+            id: true,
+            name: true,
+            active: true,
+            dropInPrice: true,
+            type: true,
+          },
         },
         branch: { select: { name: true } },
       },

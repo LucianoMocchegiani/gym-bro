@@ -13,10 +13,7 @@ import { AUDIT_ACTIONS, AuditActor } from '../audit/audit.types';
 import { AuditService } from '../audit/audit.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { ReconcileCashDayDto } from './dto/reconcile-cash-day.dto';
-import {
-  CashDayDetail,
-  CashReconciliationDetail,
-} from './register.types';
+import { CashDayDetail, CashReconciliationDetail } from './register.types';
 import {
   LEDGER_MOVEMENT_INCLUDE,
   buildLedgerRows,
@@ -57,7 +54,7 @@ export class PaymentRegisterService {
     input: {
       tenantId: string;
       transactionItemId: string;
-      memberId: string;
+      memberId: string | null;
       amount: number;
       method: PaymentMethod;
       concept: CashMovementConcept;
@@ -93,7 +90,7 @@ export class PaymentRegisterService {
         tenantId: input.tenantId,
         businessDate: this.businessDate(input.at ?? new Date()),
         transactionItemId: input.transactionItemId,
-        memberId: input.memberId,
+        memberId: input.memberId ?? undefined,
         recordedByStaffId: input.recordedByStaffId,
         amount: input.amount,
         kind: CashMovementKind.INCOME,
@@ -113,7 +110,7 @@ export class PaymentRegisterService {
     input: {
       tenantId: string;
       transactionItemId: string;
-      memberId: string;
+      memberId: string | null;
       amount: number;
       concept: CashMovementConcept;
       recordedByStaffId: string | null;
@@ -131,7 +128,7 @@ export class PaymentRegisterService {
         tenantId: input.tenantId,
         businessDate: this.businessDate(at),
         transactionItemId: input.transactionItemId,
-        memberId: input.memberId,
+        memberId: input.memberId ?? undefined,
         recordedByStaffId: input.recordedByStaffId,
         receiptId: input.receiptId ?? null,
         amount: input.amount,

@@ -3,14 +3,13 @@
  */
 
 import { apiRequest } from '@/lib/api/client';
-import type { SuperLoginResponse } from '@/lib/auth/super-session';
 
 export type StaffLoginResponse = {
   accessToken: string;
   refreshToken: string;
   expiresIn: number;
   tokenType: 'Bearer';
-  profileType: 'STAFF' | 'SUPER' | 'MEMBER';
+  profileType: 'STAFF' | 'MEMBER';
   hasPassword: boolean;
   user: {
     id: string;
@@ -22,6 +21,8 @@ export type StaffLoginResponse = {
 
 /**
  * Login Staff por `tenantSlug` (preferido) o `tenantId` (compat).
+ *
+ * @remarks La plataforma entra con `tenantSlug: 'admin'`.
  */
 export function staffLogin(input: {
   tenantSlug?: string;
@@ -30,20 +31,6 @@ export function staffLogin(input: {
   password: string;
 }): Promise<StaffLoginResponse> {
   return apiRequest<StaffLoginResponse>('/auth/staff/login', {
-    method: 'POST',
-    body: input,
-    auth: false,
-  });
-}
-
-/**
- * Login Super Admin (sin tenant).
- */
-export function superLogin(input: {
-  email: string;
-  password: string;
-}): Promise<SuperLoginResponse> {
-  return apiRequest<SuperLoginResponse>('/auth/super/login', {
     method: 'POST',
     body: input,
     auth: false,
@@ -83,19 +70,10 @@ export async function staffLogout(refreshToken: string): Promise<void> {
 }
 
 /**
- * Logout Super (mismo endpoint de revocación).
- */
-export async function superLogout(refreshToken: string): Promise<void> {
-  return staffLogout(refreshToken);
-}
-
-/**
  * Smoke de sesión (`GET /auth/me`). 401 limpia tokens en el cliente HTTP.
  */
-export function fetchAuthMe(
-  auth: 'staff' | 'super' = 'staff',
-): Promise<unknown> {
-  return apiRequest('/auth/me', { auth });
+export function fetchAuthMe(): Promise<unknown> {
+  return apiRequest('/auth/me');
 }
 
 /**
@@ -110,32 +88,40 @@ export function fromCookie(tenantSlug?: string): Promise<StaffLoginResponse> {
 }
 
 /**
- * Cambia la contraseña del usuario autenticado.
- *
- * @remarks Revoca refresh tokens → obliga a re-login. Usar `auth: 'super'`
- * desde el contexto super admin.
+ * Canjea cookie de impersonación por JWT del staff destino.
  */
-export function changePassword(
-  input: { currentPassword: string; newPassword: string },
-  auth: 'staff' | 'super' = 'staff',
-): Promise<{ ok: true }> {
-  return apiRequest<{ ok: true }>('/auth/change-password', {
+export function fromHandoff(): Promise<StaffLoginResponse> {
+  return apiRequest<StaffLoginResponse>('/auth/from-handoff', {
     method: 'POST',
-    body: input,
-    auth,
+    body: {},
+    auth: false,
   });
 }
 
 /**
- * Super Admin impersona a un staff member (token temporal 4h).
+ * Cambia la contraseña del usuario autenticado.
+ *
+ * @remarks Revoca refresh tokens → obliga a re-login.
+ */
+export function changePassword(input: {
+  currentPassword: string;
+  newPassword: string;
+}): Promise<{ ok: true }> {
+  return apiRequest<{ ok: true }>('/auth/change-password', {
+    method: 'POST',
+    body: input,
+  });
+}
+
+/**
+ * Empieza impersonación: cookie de handoff en el API, sin JWT en el body.
  */
 export function impersonateStaff(
   tenantId: string,
   staffUserId: string,
-): Promise<StaffLoginResponse> {
-  return apiRequest<StaffLoginResponse>('/auth/super/impersonate', {
+): Promise<{ tenantSlug: string }> {
+  return apiRequest<{ tenantSlug: string }>('/auth/super/impersonate', {
     method: 'POST',
     body: { tenantId, staffUserId },
-    auth: 'super',
   });
 }

@@ -51,8 +51,9 @@ Reglas relacionadas
 | [17-roadmap-chat-mcp.md](./17-roadmap-chat-mcp.md) | Tareas ordenadas del asistente (C0–C7); post-MVP | Borrador |
 | [18-prioridades-cierre-mvp.md](./18-prioridades-cierre-mvp.md) | Prioridades para un MVP vendible (molinetes, débito QA, landing/SEO, tokens, migración) | Viva |
 | [19-puerta-molinete-hw-sw.md](./19-puerta-molinete-hw-sw.md) | Molinete: BOM hardware + software (relé, agente, Kuatia nativo, DNI/huella opcionales) | Borrador |
+| [20-handoff-impersonacion-entre-subdominios.md](./20-handoff-impersonacion-entre-subdominios.md) | Impersonación plataforma→gym: cookie `impersonation_handoff` + `POST /auth/from-handoff`. QA con HTTPS | Hecho |
 | [mobile/isar-wallet.md](./mobile/isar-wallet.md) | Wallet local (Isar): VCs en el device, secreto, workaround AGP 8 | Viva |
-| [credenciales-demo.md](./credenciales-demo.md) | Cuentas seed locales (Super / Staff / Member) | Viva |
+| [credenciales-demo.md](./credenciales-demo.md) | Cuentas seed locales (Plataforma `admin` / Staff / Member) | Viva |
 | [99-backlog-post-mvp.md](./99-backlog-post-mvp.md) | Índice de diferidos; detalle en [99-backlog-post-mvp/](./99-backlog-post-mvp/) | Viva |
 | [ideas/](./ideas/) | Ideas crudas (charlas, notas) antes de definir módulo | Viva |
 | [tareas-terminadas/](./tareas-terminadas/) | Registro cronológico de tareas implementadas | Viva |

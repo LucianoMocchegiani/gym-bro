@@ -33,6 +33,7 @@ import { assertValidTenantSlug, normalizeTenantSlug } from './tenant-slug';
 import {
   BranchSummary,
   OwnerSummary,
+  PlatformTenantSummary,
   PublicTenantSummary,
   RoleSummary,
   TenantResponse,
@@ -230,6 +231,55 @@ export class TenantsService {
       n.page,
       n.pageSize,
     );
+  }
+
+  /**
+   * Lista de tenants para el dashboard de plataforma (staff del tenant `admin`).
+   *
+   * @remarks Vista resumen (`PlatformTenantSummary`), no `TenantResponse`: el
+   * selector de gyms no necesita roles ni owner. Paginada y con `q` por
+   * name/slug para el TenantPicker.
+   */
+  async platformList(
+    query: ListTenantsQueryDto,
+  ): Promise<ListResult<PlatformTenantSummary>> {
+    const normalized = normalizeListQuery(query);
+    const where: Prisma.TenantWhereInput = {};
+    if (normalized.q) {
+      where.OR = [
+        { name: { contains: normalized.q, mode: 'insensitive' } },
+        { slug: { contains: normalized.q, mode: 'insensitive' } },
+      ];
+    }
+    const orderBy = resolveOrderField(
+      normalized.orderBy,
+      ['name', 'slug', 'createdAt'] as const,
+      'name',
+    );
+    const [items, total] = await Promise.all([
+      this.prisma.tenant.findMany({
+        where,
+        orderBy: { [orderBy]: normalized.order },
+        skip: normalized.skip,
+        take: normalized.take,
+        select: {
+          id: true,
+          name: true,
+          slug: true,
+          status: true,
+          _count: { select: { members: true } },
+        },
+      }),
+      this.prisma.tenant.count({ where }),
+    ]);
+    const results = items.map((t) => ({
+      id: t.id,
+      name: t.name,
+      slug: t.slug,
+      status: t.status,
+      memberCount: t._count.members,
+    }));
+    return toListResult(results, total, normalized.page, normalized.pageSize);
   }
 
   /**

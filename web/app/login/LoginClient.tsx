@@ -6,14 +6,16 @@ import { ApiClientError } from '@/lib/api/client';
 import { getTenantBySlug } from '@/lib/api/tenants';
 import type { PublicTenantSummary } from '@/lib/api/tenants';
 import { ThemeToggle } from '@/components/ThemeToggle';
-import { fromCookie } from '@/lib/api/auth';
+import { fromCookie, fromHandoff } from '@/lib/api/auth';
 import { useAuth } from '@/lib/auth/AuthProvider';
-import { platformOrigin, tenantHostLabel, tenantOrigin } from '@/lib/tenant-host';
+import { tenantHostLabel, tenantOrigin } from '@/lib/tenant-host';
 import { writeStaffSession } from '@/lib/auth/session';
 
 type LoginClientProps = {
   /** Slug resuelto en el servidor desde el header Host. */
   slug: string | null;
+  /** `?handoff=1`: canjea cookie de impersonación en este origen. */
+  consumeHandoff?: boolean;
 };
 
 const LOGIN_PROXY_URL =
@@ -24,7 +26,7 @@ const LOGIN_PROXY_URL =
  *
  * @remarks El tenant ya viene del Host; no se lee `window` en el render.
  */
-export function LoginClient({ slug }: LoginClientProps) {
+export function LoginClient({ slug, consumeHandoff = false }: LoginClientProps) {
   const { session, ready, verified, login } = useAuth();
   const router = useRouter();
   const [tenant, setTenant] = useState<PublicTenantSummary | null>(null);
@@ -63,31 +65,52 @@ export function LoginClient({ slug }: LoginClientProps) {
   }, [slug]);
 
   useEffect(() => {
-    if (ready && verified && session) {
-      router.replace('/');
+    if (!ready || !verified || !session) {
+      return;
     }
-  }, [ready, verified, session, router]);
+    if (consumeHandoff && !autoLoginDone) {
+      return;
+    }
+    router.replace('/');
+  }, [ready, verified, session, router, consumeHandoff, autoLoginDone]);
 
   useEffect(() => {
-    if (autoLoginDone || session || !verified || !slug) {
+    if (autoLoginDone || !verified) {
+      return;
+    }
+    if (!consumeHandoff && session) {
       return;
     }
     let cancelled = false;
-    (async () => {
+    void (async () => {
       try {
+        if (consumeHandoff) {
+          const tokens = await fromHandoff();
+          if (!cancelled && tokens.accessToken) {
+            writeStaffSession(tokens, slug, true);
+          }
+          return;
+        }
+        if (!slug) {
+          return;
+        }
         const tokens = await fromCookie(slug);
         if (!cancelled && tokens.accessToken) {
           writeStaffSession(tokens, slug);
           setAutoLoginDone(true);
         }
       } catch {
-        // Sin cookie → mostrar formulario normal.
+        // Sin cookie → formulario.
+      } finally {
+        if (!cancelled && consumeHandoff) {
+          setAutoLoginDone(true);
+        }
       }
     })();
     return () => {
       cancelled = true;
     };
-  }, [autoLoginDone, session, verified, slug]);
+  }, [autoLoginDone, session, verified, slug, consumeHandoff]);
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
@@ -129,9 +152,9 @@ export function LoginClient({ slug }: LoginClientProps) {
             .
           </p>
           <p className="muted small">
-            Super Admin:{' '}
-            <a href={`${platformOrigin()}/super/login`}>
-              {platformOrigin().replace(/^https?:\/\//, '')}/super/login
+            Plataforma:{' '}
+            <a href={`${tenantOrigin('admin')}/login`}>
+              {tenantHostLabel('admin')}/login
             </a>
           </p>
         </div>
@@ -218,10 +241,6 @@ export function LoginClient({ slug }: LoginClientProps) {
             Continuar con Google
           </button>
         </div>
-
-        <p className="muted small">
-          <a href={`${platformOrigin()}/super/login`}>Super Admin</a>
-        </p>
       </form>
     </div>
   );

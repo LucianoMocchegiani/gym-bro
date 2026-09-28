@@ -45,7 +45,7 @@ E7 Rutinas y E8 Notificaciones siguen en el [roadmap MVP](./11-roadmap-mvp.md) (
 | Comprar pack / drop-in desde la app (carrito MP) | 2026-08-31 E9 |
 | Calendario y reservar (crédito / waitlist / drop-in al carrito) | 2026-08-31 E9 |
 | Historial de comprobantes + solicitar devolución | 2026-08-31 E9 |
-| Super impersonate | E10 / Super |
+| Impersonación plataforma→gym | E10 / tenant `admin` |
 
 El **historial de packs de otros períodos** (`coverage=all`) sigue pendiente: [app-afiliado.md](./99-backlog-post-mvp/app-afiliado.md).
 

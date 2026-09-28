@@ -4,19 +4,30 @@
 
 1. **Import** → `GymBro.api.postman_collection.json` + `GymBro.local.postman_environment.json`. chat-api: `GymBro.chat-api.postman_collection.json` (incluye `POST /v1/public/session` sin JWT). mcp: `GymBro.mcp.postman_collection.json` (colecciones aparte).
 2. Arriba a la derecha elegí environment **GymBro Local** (si no, `{{accessToken}}` no se reemplaza).
-3. Si ya habías importado antes: borrá la colección/env viejos e importá de nuevo, o Sync variables del environment.
+3. Si ya habías importado antes: borrá la colección/env viejos e importá de nuevo, o Sync variables del environment (quedaron vars nuevas de plataforma).
+4. **Seed**: necesita Node 24 (el del contenedor), no el Node del host.
+
+   ```
+   docker cp api\prisma\seed.ts facilitation-api:/app/prisma/seed.ts
+   docker exec facilitation-api sh -c "cd /app && npx prisma db seed"
+   ```
 
 ## Credenciales seed (en el environment **GymBro Local**)
 
 | Variable | Valor default |
 |----------|----------------|
 | `tenantId` | `00000000-0000-4000-8000-000000000001` |
-| `superEmail` / `superPassword` | `super@faciliter.xyz` / `ChangeMe123!` |
 | `staffEmail` / `staffPassword` | `admin@gymdeprueba.com` / `ChangeMe123!` |
 | `memberEmail` / `memberPassword` | `socio@gymdeprueba.com` / `ChangeMe123!` |
 | `googleIdToken` | `id_token` de Google (Login Google) |
 | `tenantSlug` | `gym-de-prueba` (login / `GET /public/tenants/by-slug/:slug`) |
 | `demoPassword` | `ChangeMe123!` (alias común) |
+| `billingTenantId` | `00000000-0000-4000-8000-000000000001` (gym facturado en la Caja de plataforma) |
+| `adminTenantId` | `00000000-0000-4000-8000-000000000002` (tenant `admin` / plataforma) |
+| `adminEmail` / `adminPassword` | `admin@faciliter.xyz` / `ChangeMe123!` (staff del tenant `admin`) |
+| `impersonateStaffUserId` | lo llena **Admin GET platform staff** (id del staff a impersonar) |
+
+Ya no existen `superEmail` / `superPassword`: **no hay perfil `SUPER`**. La plataforma es el tenant `admin` y entra con `adminEmail` + `tenantSlug: admin`.
 
 Los logins usan `{{tenantId}}`, `{{staffEmail}}`, etc. Reimportá el environment si no los ves.
 
@@ -44,13 +55,15 @@ Carpeta **Health**: `GET /health` y `GET /public/tenants/by-slug/{{tenantSlug}}`
 
 ## Manual
 
-Carpeta **Auth (manual)**: Login Super/Staff/Member → **Identity** (`POST /auth/identity/login`) → **Google** (`POST /auth/google` + `googleIdToken`) → memberships → select-context → Me → Refresh → Logout. **Super Impersonate Staff**: `POST /auth/super/impersonate` con `{ tenantId, staffUserId }` (token temporal 4h; reg audit).
+Carpeta **Auth (manual)**: Login plataforma/Staff/Member → **Identity** (`POST /auth/identity/login`) → **Google** (`POST /auth/google` + `googleIdToken`) → memberships → select-context → Me → Refresh → Logout. **Impersonación**: `POST /auth/super/impersonate` con `{ tenantId, staffUserId }` (token temporal 4h; reg audit). El nombre de la ruta conserva el `super` histórico, pero el perfil SUPER ya no existe: el token tiene que ser el de un staff del tenant `admin`.
 
-Carpeta **Roles** / **Staff roles**: Staff necesita permisos (`roles.write` para list/get/create/patch; `staff.read` list/detail; `staff.write` alta, `PATCH /staff/:id` ficha y asignar roles). Super: `GET /tenants/:tenantId/staff` (impersonate) + `POST /auth/super/impersonate`. El Admin seed los tiene; un rol sin esos códigos → 403. `GET|PATCH /roles/:id` usa `createdRoleId` del POST create (el rol `admin` no se edita).
+Carpeta **Roles** / **Staff roles**: Staff necesita permisos (`roles.write` para list/get/create/patch; `staff.read` list/detail; `staff.write` alta, `PATCH /staff/:id` ficha y asignar roles). Plataforma: `GET /tenants/:billingTenantId/staff` (para impersonar) + `POST /auth/super/impersonate`. El Admin seed los tiene; un rol sin esos códigos → 403. `GET|PATCH /roles/:id` usa `createdRoleId` del POST create (el rol `admin` no se edita).
 
-Carpeta **Audit**: `GET /audit-events` (Staff, `audit.read`). Super no tiene nested: impersoná. Generá eventos con mutaciones de tenant/roles/staff roles.
+Carpeta **Tenants (plataforma)**: CRUD completo desde el tenant `admin` (crear, editar, suspender, activar, eliminar). Es el reemplazo de la antigua carpeta `/super` del web. Requiere `PlatformTenantGuard` (el token del slug `admin`); un staff de gym normal da 403.
 
-Carpeta **Members**: Staff `members.read` / `members.write` / `members.deactivate` (status). Ficha `GET /members/:id`. Estado de cuenta: `GET /members/:id/account` y `GET /me/account` (default `coverage=current`; `coverage=all` para historial completo). Admin seed los tiene.
+Carpeta **Audit**: `GET /audit-events` (Staff, `audit.read`). La plataforma ve solo los eventos de su propio tenant: para auditar un gym, impersonalo. Generá eventos con mutaciones de tenant/roles/staff roles.
+
+Carpeta **Members**: Staff `members.read` / `members.write` / `members.deactivate` (status). Ficha `GET /members/:id`. Estado de cuenta: `GET /members/:id/account` y `GET /me/account` (default `coverage=current`; `coverage=all` para historial completo). Admin seed los tiene. La plataforma no expone este módulo (impersoná).
 
 Carpeta **Sessions**: Staff `sessions.write`. Servicio `POR_SESIONES` + `instructorId` opcional (`userId` del Staff). Ampliar cupo: `PATCH .../sessions/:id/capacity`. Incluye reglas semanales con hora local y timezone.
 
@@ -66,13 +79,42 @@ Carpeta **Payment register**: `GET /payment-register/day` + `POST /payment-regis
 
 Carpeta **Mercado Pago**: cuenta `GET|PUT|DELETE /mercadopago/account` + test (`mp.connect`) + `GET /mercadopago/account/public-key` (Brick, `cashier.operate`). Débito MONTHLY: `GET /debit-mandates`, `GET /members/:id/debit-mandate`, `POST /members/:id/debit-mandates`, `POST /debit-mandates/:id/charge` y `.../cancel`. Caja: Staff `POST /members/:id/transaction-items/mp/cart` (`items[]` → 1 link) y `POST .../cash/cart`. Afiliado: `POST /me/transaction-items/mp/cart`. Webhook `POST /webhooks/payment?tenantId=`.
 
+### Caja de plataforma (tenant `admin` → gym)
+
+El tenant `admin` vende packs propios a otros tenants. Logueate con `adminEmail`/`adminPassword` (staff del tenant `admin` con rol `super-admin`).
+
+| Request | Qué hace |
+|---------|----------|
+| `GET /tenants/platform` | Lista paginada para el dashboard y el `TenantPicker` (`q` busca por `name`/`slug`, default `order=asc`). Devuelve `{ id, name, slug, status, memberCount }`. |
+| `POST /tenants/:billingTenantId/transaction-items/cash/cart` | Cobro en efectivo. `memberId` queda `null`. |
+| `POST /tenants/:billingTenantId/transaction-items/mp/cart` | Genera el link de MP para que el gym pague. `payerEmail` = staff activo más antiguo del gym. |
+
+Reglas:
+
+- Requiere `platform.tenants.write` + `PlatformTenantGuard` (staff del tenant `admin`).
+- **Solo `PACK`**: un `DROP_IN` devuelve 400 (`Platform sales only support PACK items`). El drop-in es por sesiones de un gym.
+- `{{billingTenantId}}` es el gym **pagador** y no puede ser el propio `admin` (400).
+- El pack (`{{createdPackId}}`) debe pertenecer al tenant `admin` — el catálogo es tenant-scoped (`@RequireTenantAuth()`).
+- La transacción se emite con `tenantId = billingTenantId` y `memberId = null`. Ese `null` es lo que marca `ContractType.TENANT` en vez de `MEMBER` (`contracts.service.ts`), así que **no hay columna `targetTenantId`**: si `memberId` es null, el pagador es el propio `tenantId`.
+- CASH: `APPROVED` inmediato + comprobante, sin contrato ni reserva. MP: `PENDING` + `checkoutUrl`, y el contrato `TENANT` se emite al aprobarse el webhook.
+- La versión MP exige MP conectado en el **tenant admin** (la plataforma), no en el gym.
+
+**Prerrequisito:** el catálogo es tenant-scoped, así que el pack tiene que existir en el tenant `admin`. El seed ya lo crea:
+
+| Recurso | Nombre | Id fijo |
+|---------|--------|---------|
+| Service | `Faciliter Brain` | `00000000-0000-4000-8000-000000000010` |
+| Pack | `Faciliter Brain (mensual)` — 30000 ARS, `MONTHLY` | `00000000-0000-4000-8000-000000000011` |
+
+Si querés tus propios valores, poné el id del pack de admin en `{{createdPackId}}` o usá el fijo en el body. El `PackComponent` también es obligatorio: sin él el cobro devuelve *"Pack has no components"*.
+
 Carpeta **Refunds**: Member `POST /me/transaction-items/:transactionItemId/refund-requests` + `GET /me/refund-requests`. Staff `GET /refund-requests`, `POST /transactions/:transactionId/refunds` (lote) y `POST /transaction-items/:transactionItemId/refunds` (wrapper; `transaction_items.refund`; `motiveCode=doble_cobro` opcional).
 
 Carpeta **Receipts**: Member `GET /me/receipts` y `GET /me/receipts/:id`. Staff `GET /receipts/:id` y `GET /transactions/:transactionId/receipt` (`members.read`). Código `GB-000001`. El cash cart guarda `createdReceiptId`.
 
 Carpeta **Member catalog**: Catálogo del afiliado (E9 mobile). Member `GET /me/sessions` (sesiones publicadas + `serviceImageUrl`), `GET /me/packs` (packs activos + `imageUrl`), `GET /me/mp-status` (`{ connected }`).
 
-Carpeta **Services**: Staff `catalog.write`. Tipos `ACCESO_LIBRE` y `POR_SESIONES`; `dropInPrice` (ARS) habilita drop-in; desactivar con `active: false`. Soporta `imageUrl` (opcional).
+Carpeta **Services**: Staff `catalog.write`. Tipos `ACCESO_LIBRE` y `POR_SESIONES`; `dropInPrice` (ARS) habilita drop-in; desactivar con `active: false`. Soporta `imageUrl` (opcional). El catálogo es tenant-scoped: el del tenant `admin` es el **catálogo de plataforma** (el pack Brain que se vende a los gyms).
 
 Carpeta **Packs**: mismos permiso. Requests **MONTHLY** y **ONE_TIME** (como Sesiones con casos). Body con `components` (serviceIds de Services). `price` pesos enteros; `kind` en respuesta. Soporta `imageUrl` (opcional).
 
@@ -101,9 +143,50 @@ Archivo [`GymBro.mcp.postman_collection.json`](./GymBro.mcp.postman_collection.j
 3. Health (`{{mcpUrl}}` = `http://localhost:3011`) + initialize JSON-RPC. Sin Bearer → 401.
 4. Tools A–D: `cd mcp; npm run smoke` (login Admin + Entrenador si no hay `ACCESS_TOKEN`). README: [`mcp/README.md`](../mcp/README.md).
 
+## Impersonación
+
+La plataforma entra como **staff del tenant `admin`** (rol `super-admin`). No hay perfil `SUPER` ni ruta `/super`.
+
+Para impersonar hace falta un `staffUserId` **del gym destino**, no el propio:
+
+1. `GET /tenants/{{billingTenantId}}/staff` — lista el staff del gym (llena `{{impersonateStaffUserId}}`).
+2. `POST /auth/super/impersonate` — cookie `impersonation_handoff` + `{ tenantSlug }`.
+3. `POST /auth/from-handoff` — JWT del staff (cookie de un uso). En el web: salto a `{slug}/login?handoff=1`.
+
+Un staff de un gym normal da 403 en estos endpoints (`PlatformTenantGuard` exige `tenant.slug === 'admin'`).
+
+El flujo web completo pide **HTTPS** (`SameSite=None; Secure`). En `http://*.localhost` la cookie no cruza subdominios (igual que Google). `COOKIE_PARENT_DOMAIN` o `CORS_APP_DOMAIN` arma el `Domain` de la cookie.
+
+## ⚠️ Orden de decorators en controllers (bug ya corregido)
+
+`@RequirePermission()` hace internamente `UseGuards(PermissionGuard)`, y `UseGuards` **agrega** al array mientras que los decorators se aplican **de abajo hacia arriba**. Si en un mismo handler aparecen ambos, el orden final queda invertido y `PermissionGuard` corre **antes** de `JwtAuthGuard`, ve `request.user === undefined` y responde **401 con token válido**.
+
+Regla: cuando declares `@UseGuards(...)` con auth guards en el mismo target, **`@RequirePermission` va arriba**:
+
+```ts
+@RequirePermission('platform.impersonate')      // arriba
+@UseGuards(JwtAuthGuard, PlatformTenantGuard)   // abajo
+```
+
+Si el controller ya tiene `@RequireTenantAuth()` a nivel clase, el orden se resuelve solo (los guards de clase corren antes) y da igual. Ver `api/src/roles/decorators/require-permission.decorator.ts`.
+
+Síntoma para detectarlo: 401 con token válido en un endpoint con `@RequirePermission` + `@UseGuards` en el mismo target.
+
 ## Multi-tenant
 
 - `GET /auth/me` → `tenantId` para staff/member (del JWT).
-- Rutas de negocio futuras: `@RequireTenantAuth()` (Super → 403).
-- Rutas plataforma: `@RequireSuperAuth()` — `/api/tenants` (CRUD), `GET /api/tenants/:id/staff`, `POST /api/tenants/:id/quark/provision`. Operar el gym: impersonate + rutas Staff.
+- Rutas de negocio: `@RequireTenantAuth()` (sin `tenantId` → 403).
+- Rutas de plataforma: `JwtAuthGuard + PlatformTenantGuard + PermissionGuard`. Exigen un staff del tenant `admin` con los códigos `platform.*`:
+  - `POST /api/tenants`, `GET /api/tenants`, `GET|PATCH|DELETE /api/tenants/:id`
+  - `GET /api/tenants/platform` (resumen para el dashboard y el `TenantPicker`)
+  - `GET /api/tenants/:billingTenantId/staff` (elegir a quién impersonar)
+  - `POST /api/tenants/:billingTenantId/transaction-items/{cash,mp}/cart` (Caja de plataforma)
+  - `POST /api/auth/super/impersonate` (`platform.impersonate`)
+- Operar un gym: impersonate + rutas Staff.
 - Tenant suspendido: se corta en login/refresh, no en cada request.
+
+### El host manda, no la sesión
+
+En el web, la sesión está en `localStorage` (por origen) y el subdominio es la identidad del gym. `RequireStaff` descarta la sesión si `session.tenantSlug` no coincide con el slug del host, y `AdminShell` / `DashboardInner` / `Caja` eligen vista y navegación por **host**. Consecuencia: entrar a `admin.localhost` con un token de `gym-de-prueba` en el mismo navegador no muestra datos del gym — se limpia la sesión y se manda a `/login`.
+
+`NEXT_PUBLIC_WEB_PORT` (default `3002`) es el puerto público del web para armar los links de tenant: el compose mapea `3002:3000`, así que usar 3000 daría URLs que no existen.

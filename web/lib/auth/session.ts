@@ -103,7 +103,7 @@ function persist(session: StaffSession | null): void {
  * Persiste tokens y datos de usuario tras login Staff.
  *
  * @param tenantSlug Slug usado en el login (Host / form); se guarda para la marca UI.
- * @param impersonating Si es true, la sesión fue creada por impersonación de Super Admin.
+ * @param impersonating Si es true, la sesión nació de impersonación de plataforma.
  */
 export function writeStaffSession(
   login: StaffLoginResponse,

@@ -26,7 +26,7 @@ import { MpWebhookProcessResult } from './payment.types';
 type CartWithItems = Transaction & {
   transactionItems: Array<{
     id: string;
-    memberId: string;
+    memberId: string | null;
     status: PaymentStatus;
     sessionId: string | null;
     packId: string | null;
@@ -220,7 +220,9 @@ export class WebhookPaymentService {
           remoteStatus,
         );
       }
-      throw new NotFoundException(`TransactionItem ${transactionItemId} not found in tenant`);
+      throw new NotFoundException(
+        `TransactionItem ${transactionItemId} not found in tenant`,
+      );
     }
     if (transactionItem.method !== PaymentMethod.MP) {
       throw new BadRequestException('TransactionItem is not an MP checkout');
@@ -274,42 +276,46 @@ export class WebhookPaymentService {
       };
     }
 
-    await this.prisma.$transaction(async (tx) => {
-      await tx.transactionItem.update({
-        where: { id: transactionItem.id },
-        data: {
-          status: mapped,
-          mpPaymentId,
-        },
-      });
-
-      if (mapped === PaymentStatus.APPROVED) {
-        if (transactionItem.transactionId) {
-          await tx.transaction.update({
-            where: { id: transactionItem.transactionId },
-            data: { status: PaymentStatus.APPROVED, mpPaymentId },
-          });
-        }
-        await this.registerService.recordIncome(tx, {
-          tenantId,
-          transactionItemId: transactionItem.id,
-          memberId: transactionItem.memberId,
-          amount: transactionItem.amount,
-          method: PaymentMethod.MP,
-          concept: transactionItem.packId
-            ? CashMovementConcept.PACK_CONTRACT
-            : CashMovementConcept.DROP_IN,
-          recordedByStaffId: transactionItem.transaction?.recordedByStaffId ?? null,
+    await this.prisma.$transaction(
+      async (tx) => {
+        await tx.transactionItem.update({
+          where: { id: transactionItem.id },
+          data: {
+            status: mapped,
+            mpPaymentId,
+          },
         });
-        if (transactionItem.transactionId) {
-          const confirmed = await tx.transaction.findFirstOrThrow({
-            where: { id: transactionItem.transactionId },
-            include: { transactionItems: true },
+
+        if (mapped === PaymentStatus.APPROVED) {
+          if (transactionItem.transactionId) {
+            await tx.transaction.update({
+              where: { id: transactionItem.transactionId },
+              data: { status: PaymentStatus.APPROVED, mpPaymentId },
+            });
+          }
+          await this.registerService.recordIncome(tx, {
+            tenantId,
+            transactionItemId: transactionItem.id,
+            memberId: transactionItem.memberId,
+            amount: transactionItem.amount,
+            method: PaymentMethod.MP,
+            concept: transactionItem.packId
+              ? CashMovementConcept.PACK_CONTRACT
+              : CashMovementConcept.DROP_IN,
+            recordedByStaffId:
+              transactionItem.transaction?.recordedByStaffId ?? null,
           });
-          await this.issueMpTransactionReceipt(tx, tenantId, confirmed);
+          if (transactionItem.transactionId) {
+            const confirmed = await tx.transaction.findFirstOrThrow({
+              where: { id: transactionItem.transactionId },
+              include: { transactionItems: true },
+            });
+            await this.issueMpTransactionReceipt(tx, tenantId, confirmed);
+          }
         }
-      }
-    }, { timeout: 15000 });
+      },
+      { timeout: 15000 },
+    );
 
     const refreshed = await this.prisma.transactionItem.findFirstOrThrow({
       where: { id: transactionItem.id, tenantId },
@@ -367,7 +373,9 @@ export class WebhookPaymentService {
       },
     });
     if (!transaction) {
-      throw new NotFoundException(`Transaction ${transactionId} not found in tenant`);
+      throw new NotFoundException(
+        `Transaction ${transactionId} not found in tenant`,
+      );
     }
 
     if (
@@ -406,7 +414,11 @@ export class WebhookPaymentService {
       transaction.status === PaymentStatus.REFUNDED
     ) {
       if (transaction.status === PaymentStatus.APPROVED) {
-        await this.persistApprovedCartEffects(tenantId, transaction, mpPaymentId);
+        await this.persistApprovedCartEffects(
+          tenantId,
+          transaction,
+          mpPaymentId,
+        );
         const refreshed = await this.loadCart(tenantId, transaction.id);
         return this.ensureCartRights(tenantId, refreshed);
       }
@@ -457,7 +469,10 @@ export class WebhookPaymentService {
     };
   }
 
-  private async loadCart(tenantId: string, transactionId: string): Promise<CartWithItems> {
+  private async loadCart(
+    tenantId: string,
+    transactionId: string,
+  ): Promise<CartWithItems> {
     return this.prisma.transaction.findFirstOrThrow({
       where: { id: transactionId, tenantId },
       include: {
@@ -498,11 +513,11 @@ export class WebhookPaymentService {
     tenantId: string,
     transaction: {
       id: string;
-      memberId: string;
+      memberId: string | null;
       recordedByStaffId: string | null;
       transactionItems: Array<{
         id: string;
-        memberId: string;
+        memberId: string | null;
         packId: string | null;
         amount: number;
       }>;
@@ -529,7 +544,7 @@ export class WebhookPaymentService {
     transaction: Transaction & {
       transactionItems: Array<{
         id: string;
-        memberId: string;
+        memberId: string | null;
         status: PaymentStatus;
         sessionId: string | null;
         packId: string | null;
@@ -542,7 +557,10 @@ export class WebhookPaymentService {
     let reservationId: string | null = null;
 
     for (const transactionItem of transaction.transactionItems) {
-      const fulfilled = await this.fulfillApprovedItem(tenantId, transactionItem);
+      const fulfilled = await this.fulfillApprovedItem(
+        tenantId,
+        transactionItem,
+      );
       if (fulfilled.contractId) {
         contractId = fulfilled.contractId;
       }
@@ -565,7 +583,7 @@ export class WebhookPaymentService {
     tenantId: string,
     transactionItem: {
       id: string;
-      memberId: string;
+      memberId: string | null;
       status: PaymentStatus;
       sessionId: string | null;
       packId: string | null;
@@ -583,7 +601,7 @@ export class WebhookPaymentService {
     tenantId: string,
     transactionItem: {
       id: string;
-      memberId: string;
+      memberId: string | null;
       status: PaymentStatus;
       sessionId: string | null;
       packId: string | null;
@@ -593,7 +611,7 @@ export class WebhookPaymentService {
   ): Promise<MpWebhookProcessResult> {
     const actor = {
       profileType: 'MEMBER' as const,
-      userId: transactionItem.memberId,
+      userId: transactionItem.memberId ?? '',
     };
 
     let contractId = transactionItem.contract?.id ?? null;
@@ -613,6 +631,16 @@ export class WebhookPaymentService {
         throw new BadRequestException(
           'Drop-in payment is missing pack contract',
         );
+      }
+      if (!transactionItem.memberId) {
+        return {
+          handled: true,
+          transactionItemId: transactionItem.id,
+          transactionId: null,
+          status: null,
+          contractId,
+          reservationId: null,
+        };
       }
       const reservation = await this.reservationsService.createForMember(
         tenantId,
@@ -647,7 +675,7 @@ export class WebhookPaymentService {
     tenantId: string,
     confirmed: {
       id: string;
-      memberId: string;
+      memberId: string | null;
       transactionItems: Array<{ packId: string | null; amount: number }>;
     },
   ): Promise<void> {

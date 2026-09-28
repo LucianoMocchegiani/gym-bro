@@ -27,7 +27,8 @@ export type ContractTransactionItemDetail = {
 export type ContractDetail = {
   id: string;
   tenantId: string;
-  memberId: string;
+  memberId: string | null;
+  contractType: 'MEMBER' | 'TENANT';
   packId: string;
   packName: string;
   status: 'ACTIVE' | 'EXPIRED' | 'CANCELLED' | 'REFUNDED';

@@ -24,7 +24,11 @@ import { SessionValidationService } from './session-validation.service';
     ReservationsModule,
   ],
   controllers: [SessionsController, RecurrenceRulesController],
-  providers: [SessionsService, RecurrenceRulesService, SessionValidationService],
+  providers: [
+    SessionsService,
+    RecurrenceRulesService,
+    SessionValidationService,
+  ],
   exports: [SessionsService, RecurrenceRulesService, SessionValidationService],
 })
 export class SessionsModule {}

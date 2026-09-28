@@ -2,7 +2,7 @@
     "info": {
         "_postman_id": "gymbro-api-collection",
         "name": "GymBro API",
-        "description": "Health + auth (SUPER / STAFF / MEMBER) + tenants CRUD (Super).\n\n**Setup**\n1. ImportÃ¡ esta colecciÃ³n y `GymBro.local.postman_environment.json`.\n2. Arriba a la derecha: environment **GymBro Local** (obligatorio).\n3. Seed: `docker compose exec api npm run prisma:seed`.\n\n**Auth**\nCarpeta `Auth (manual)`: Login Super/Staff/Member â†’ Me â†’ Refresh â†’ Logout.\n\n**Tenants**\nLogin Super (manual) â†’ carpeta `Tenants (Super)`.\n\n**Credenciales seed (tambiÃ©n en el environment)**\n- Super: `super@faciliter.xyz` / `ChangeMe123!`\n- Staff: `admin@gymdeprueba.com` / `ChangeMe123!` + tenantId\n- Member: `socio@gymdeprueba.com` / `ChangeMe123!` + tenantId\n\n**Listados paginados**\nTodos los `GET` de listado devuelven `{ items, page, pageSize, total, hasMore }` (ver `postman/README.md`).",
+        "description": "Health + auth (STAFF / MEMBER / IDENTITY) + tenants CRUD (plataforma).\n\n**Setup**\n1. Importá esta colección y `GymBro.local.postman_environment.json`.\n2. Arriba a la derecha: environment **GymBro Local** (obligatorio).\n3. Seed: `docker cp api\\prisma\\seed.ts facilitation-api:/app/prisma/seed.ts` + `docker exec facilitation-api sh -c \"cd /app && npx prisma db seed\"` (necesita Node 24 del contenedor).\n\n**Auth**\nCarpeta `Auth (manual)`: Login plataforma/Staff/Member → Me → Refresh → Logout.\n\n**Plataforma**\nNo existe un perfil SUPER ni la ruta `/super`. La plataforma es el **tenant `admin`**: logueate con `adminEmail` (Login plataforma) para habilitar la carpeta `Tenants (plataforma)`, el listado `/tenants/platform` y la impersonación.\n\n**Credenciales seed (también en el environment)**\n- Plataforma: `admin@faciliter.xyz` / `ChangeMe123!` + `tenantSlug: admin`\n- Staff: `admin@gymdeprueba.com` / `ChangeMe123!` + tenantId\n- Member: `socio@gymdeprueba.com` / `ChangeMe123!` + tenantId\n\n**Listados paginados**\nTodos los `GET` de listado devuelven `{ items, page, pageSize, total, hasMore }` (ver `postman/README.md`).",
         "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
     },
     "auth": {
@@ -37,14 +37,6 @@
         {
             "key": "tenantId",
             "value": "00000000-0000-4000-8000-000000000001"
-        },
-        {
-            "key": "superEmail",
-            "value": "super@faciliter.xyz"
-        },
-        {
-            "key": "superPassword",
-            "value": "ChangeMe123!"
         },
         {
             "key": "staffEmail",
@@ -239,7 +231,7 @@
             "name": "Auth (manual)",
             "item": [
                 {
-                    "name": "Login Super",
+                    "name": "Login plataforma (tenant admin)",
                     "event": [
                         {
                             "listen": "test",
@@ -274,13 +266,14 @@
                         ],
                         "body": {
                             "mode": "raw",
-                            "raw": "{\n  \"email\": \"{{superEmail}}\",\n  \"password\": \"{{superPassword}}\"\n}"
+                            "raw": "{\n  \"email\": \"{{adminEmail}}\",\n  \"password\": \"{{adminPassword}}\",\n  \"tenantSlug\": \"admin\"\n}"
                         },
-                        "url": "{{baseUrl}}/api/auth/super/login"
+                        "url": "{{baseUrl}}/api/auth/staff/login",
+                        "description": "Entra a la plataforma. Ya no existe `POST /auth/super/login` ni el perfil SUPER: la plataforma es el tenant `admin` con el rol `super-admin`. Este token habilita `GET /tenants/platform`, `GET /tenants`, `GET /tenants/:id/staff`, el CRUD de tenants y la impersonación."
                     }
                 },
                 {
-                    "name": "Super Impersonate Staff",
+                    "name": "Admin GET platform staff (elegir a quien impersonar)",
                     "event": [
                         {
                             "listen": "test",
@@ -289,9 +282,63 @@
                                 "exec": [
                                     "pm.test('status 200', () => pm.response.to.have.status(200));",
                                     "const body = pm.response.json();",
-                                    "pm.test('profileType STAFF', () => pm.expect(body.profileType).to.eql('STAFF'));",
-                                    "pm.environment.set('impersonateAccessToken', body.accessToken);",
-                                    "pm.environment.set('impersonateRefreshToken', body.refreshToken);"
+                                    "pm.test('paginated list', () => {",
+                                    "  pm.expect(body.items).to.be.an('array');",
+                                    "  pm.expect(body.total).to.be.a('number');",
+                                    "});",
+                                    "if (body.items && body.items[0]) { pm.environment.set('impersonateStaffUserId', body.items[0].id); }"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/tenants/{{billingTenantId}}/staff?page=1&pageSize=100&order=asc",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "tenants",
+                                "{{billingTenantId}}",
+                                "staff"
+                            ],
+                            "query": [
+                                {
+                                    "key": "page",
+                                    "value": "1"
+                                },
+                                {
+                                    "key": "pageSize",
+                                    "value": "100"
+                                },
+                                {
+                                    "key": "q",
+                                    "value": "",
+                                    "disabled": true
+                                },
+                                {
+                                    "key": "order",
+                                    "value": "asc"
+                                }
+                            ]
+                        },
+                        "description": "Staff del gym DESTINO (`{{billingTenantId}}`), para elegir a quién impersonar. Requiere JWT Staff del tenant `admin` con `platform.impersonate` (PlatformTenantGuard). El staff de un gym normal da 403. Guarda el 1er id en `{{impersonateStaffUserId}}` para el request de impersonación."
+                    }
+                },
+                {
+                    "name": "Plataforma impersona staff (entrar a un gym)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('status 200', () => pm.response.to.have.status(200));",
+                                    "const body = pm.response.json();",
+                                    "pm.test('tenantSlug', () => pm.expect(body.tenantSlug).to.be.a('string'));"
                                 ]
                             }
                         }
@@ -319,7 +366,43 @@
                             "raw": "{\n  \"tenantId\": \"{{tenantId}}\",\n  \"staffUserId\": \"{{staffUserId}}\"\n}"
                         },
                         "url": "{{baseUrl}}/api/auth/super/impersonate",
-                        "description": "Super Admin impersona a un staff member (token temporal 4h). Requiere auth de Super."
+                        "description": "Setea cookie `impersonation_handoff` (~60 s, un uso) y responde `{ tenantSlug }`. No trae JWT. Requiere staff del tenant `admin` + `platform.impersonate`. El gym canjea con **from-handoff** (credentials + cookie)."
+                    }
+                },
+                {
+                    "name": "from-handoff (cookie impersonación)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('status 200', () => pm.response.to.have.status(200));",
+                                    "const body = pm.response.json();",
+                                    "pm.test('profileType STAFF', () => pm.expect(body.profileType).to.eql('STAFF'));",
+                                    "pm.environment.set('impersonateAccessToken', body.accessToken);",
+                                    "pm.environment.set('impersonateRefreshToken', body.refreshToken);"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "auth": {
+                            "type": "noauth"
+                        },
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{}"
+                        },
+                        "url": "{{baseUrl}}/api/auth/from-handoff",
+                        "description": "Lee cookie `impersonation_handoff` (tras impersonate), emite JWT Staff 4h y borra la cookie. En Postman hay que reenviar la cookie del impersonate (mismo dominio API)."
                     }
                 },
                 {
@@ -630,7 +713,7 @@
                             }
                         },
                         "url": "{{baseUrl}}/api/auth/change-password",
-                        "description": "Cambia contraseÃ±a del staff/super autenticado (JWT). Revoca todos los refresh tokens â†’ obliga a re-login. AjustÃ¡ newPassword antes de correrlo."
+                        "description": "Cambia la contraseña del staff autenticado (JWT). Revoca todos los refresh tokens → obliga a re-login. Ajustá newPassword antes de correrlo."
                     }
                 },
                 {
@@ -710,8 +793,8 @@
             ]
         },
         {
-            "name": "Tenants (Super)",
-            "description": "CRUD tenants. Primero Login Super (manual) para llenar accessToken. Staff/Member â†’ 403.",
+            "name": "Tenants (plataforma)",
+            "description": "CRUD de gyms desde el tenant `admin`. Primero Login plataforma (tenant admin) para llenar accessToken. Requiere PlatformTenantGuard (tenant slug = admin); un staff de gym normal da 403. Ya no hay perfil SUPER ni ruta /super.",
             "item": [
                 {
                     "name": "POST create tenant",
@@ -821,6 +904,65 @@
                                 }
                             ]
                         }
+                    }
+                },
+                {
+                    "name": "GET list platform tenants (admin tenant)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('status 200', () => pm.response.to.have.status(200));",
+                                    "const body = pm.response.json();",
+                                    "pm.test('paginated list', () => {",
+                                    "  pm.expect(body.items).to.be.an('array');",
+                                    "  pm.expect(body.total).to.be.a('number');",
+                                    "});"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/tenants/platform?page=1&pageSize=20&order=asc",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "tenants",
+                                "platform"
+                            ],
+                            "query": [
+                                {
+                                    "key": "page",
+                                    "value": "1"
+                                },
+                                {
+                                    "key": "pageSize",
+                                    "value": "20"
+                                },
+                                {
+                                    "key": "q",
+                                    "value": "",
+                                    "disabled": true
+                                },
+                                {
+                                    "key": "orderBy",
+                                    "value": "",
+                                    "disabled": true
+                                },
+                                {
+                                    "key": "order",
+                                    "value": "asc"
+                                }
+                            ]
+                        },
+                        "description": "Dashboard de plataforma. Requiere JWT Staff del tenant `admin` (PlatformTenantGuard). Items[] = PlatformTenantSummary (id, name, slug, status, memberCount): sin plan ni suscripción, porque no hay modelo Subscription. Alimenta el TenantPicker de la Caja de plataforma."
                     }
                 },
                 {
@@ -975,7 +1117,7 @@
         },
         {
             "name": "Roles",
-            "description": "Staff: /roles (JWT tenant). GET list/detail + POST/PATCH. Admin system role → 403 on PATCH. Staff requiere roles.write. Super no tiene nested: impersoná y usá estas rutas.",
+            "description": "Staff: /roles (JWT tenant). GET list/detail + POST/PATCH. Admin system role → 403 on PATCH. Staff requiere roles.write. La plataforma (tenant `admin`) gestiona los roles de cada gym impersonando.",
             "item": [
                 {
                     "name": "Staff GET list roles",
@@ -1153,7 +1295,7 @@
         },
         {
             "name": "Staff roles",
-            "description": "Staff: /staff (staff.read / staff.write). Super: solo GET /tenants/:tenantId/staff (para impersonate). Alta, ficha, roles y baja: impersoná. Variables: createdStaffId, createdOwnerId, createdRoleId.",
+            "description": "Staff: /staff (staff.read / staff.write). Plataforma (tenant `admin`): solo GET /tenants/:billingTenantId/staff, para elegir a quién impersonar. Alta, ficha, roles y baja: impersoná y usá estas rutas. Variables: createdStaffId, createdOwnerId, createdRoleId.",
             "item": [
                 {
                     "name": "Staff GET list",
@@ -1314,7 +1456,7 @@
                     }
                 },
                 {
-                    "name": "Super GET list staff",
+                    "name": "Plataforma GET list staff (gym destino)",
                     "event": [
                         {
                             "listen": "test",
@@ -1334,7 +1476,7 @@
                     "request": {
                         "method": "GET",
                         "header": [],
-                        "description": "Unico nested Super de negocio: listar staff para impersonate. Default tenantId del env (demo). Si creaste un gym, cambiá a createdTenantId.",
+                        "description": "Staff del gym indicado, para elegir a quién impersonar. Usa `{{billingTenantId}}` (el gym destino) en lugar del `{{tenantId}}` del env, así que no choca con la request homónima de Auth (manual). Default `{{tenantId}}` = gym demo.",
                         "url": {
                             "raw": "{{baseUrl}}/api/tenants/{{tenantId}}/staff?page=1&pageSize=20&order=desc",
                             "host": [
@@ -1413,7 +1555,7 @@
         },
         {
             "name": "Audit",
-            "description": "GET /audit-events (Staff, audit.read). Super no tiene nested: impersoná. Generá eventos con PATCH tenant, POST/PATCH roles o PUT staff roles.",
+            "description": "GET /audit-events (Staff, audit.read). La plataforma (tenant `admin`) ve solo los eventos de su propio tenant: para auditar un gym, impersonalo. Generá eventos con PATCH tenant, POST/PATCH roles o PUT staff roles.",
             "item": [
                 {
                     "name": "Staff GET audit events",
@@ -1618,7 +1760,7 @@
         },
         {
             "name": "Members",
-            "description": "Staff: /members (members.read/write; status → members.deactivate). Estado de cuenta: GET /members/:id/account y GET /me/account (CU-AFI-004/005). Super no tiene nested: impersoná. Login member solo si ACTIVE.",
+            "description": "Staff: /members (members.read/write; status → members.deactivate). Estado de cuenta: GET /members/:id/account y GET /me/account (CU-AFI-004/005). La plataforma (tenant `admin`) no expone este módulo: impersoná para ver o editar afiliados. Login member solo si el tenant está ACTIVE.",
             "item": [
                 {
                     "name": "Staff GET list members",
@@ -1886,7 +2028,7 @@
         },
         {
             "name": "Services",
-            "description": "Catálogo E3. Staff: /services (catalog.write). Super no tiene nested: impersoná. type inmutable; baja = active false.",
+            "description": "Catálogo E3. Staff: /services (catalog.write). El catálogo es tenant-scoped: el del tenant `admin` es el catálogo de plataforma (el pack Brain que se vende a los gyms). type inmutable; baja = active false.",
             "item": [
                 {
                     "name": "Staff POST ACCESO_LIBRE",
@@ -4132,6 +4274,72 @@
                                     "if (body.transactionId) { pm.collectionVariables.set('mpCartId', body.transactionId); pm.environment.set('mpCartId', body.transactionId); }",
                                     "if (body.receipt && body.receipt.id) { pm.collectionVariables.set('createdReceiptId', body.receipt.id); pm.environment.set('createdReceiptId', body.receipt.id); }",
                                     "if (body.transactionItems && body.transactionItems[0]) { pm.collectionVariables.set('createdPaymentId', body.transactionItems[0].id); }"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "Admin POST platform CASH cart (facturar a tenant)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": "{{baseUrl}}/api/tenants/{{billingTenantId}}/transaction-items/cash/cart",
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"items\": [\n    {\n      \"kind\": \"PACK\",\n      \"id\": \"{{createdPackId}}\"\n    }\n  ],\n  \"idempotencyKey\": \"platform-cash-cart-{{$timestamp}}\"\n}"
+                        },
+                        "description": "Caja de plataforma (Caja del tenant `admin`). Requiere JWT Staff del tenant `admin` + `platform.tenants.write`; el staff de un gym normal da 403. Solo PACK: el drop-in es por sesiones de un gym. `{{billingTenantId}}` = gym que paga (NO puede ser el propio admin). El pack debe pertenecer al tenant admin. La transacción se emite con tenantId=billingTenantId y memberId=null (=> ContractType TENANT). No genera contrato ni reserva."
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('status 201', () => pm.response.to.have.status(201));",
+                                    "const body = pm.response.json();",
+                                    "pm.test('APPROVED', () => pm.expect(body.status).to.eql('APPROVED'));",
+                                    "if (body.transactionId) { pm.collectionVariables.set('platformCartId', body.transactionId); pm.environment.set('platformCartId', body.transactionId); }",
+                                    "if (body.receipt && body.receipt.id) { pm.collectionVariables.set('platformReceiptId', body.receipt.id); pm.environment.set('platformReceiptId', body.receipt.id); }"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "Admin POST platform MP cart (link de pago a tenant)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": "{{baseUrl}}/api/tenants/{{billingTenantId}}/transaction-items/mp/cart",
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"items\": [\n    {\n      \"kind\": \"PACK\",\n      \"id\": \"{{createdPackId}}\"\n    }\n  ],\n  \"idempotencyKey\": \"platform-mp-cart-{{$timestamp}}\"\n}"
+                        },
+                        "description": "Genera el link de Mercado Pago para que el gym pague. Mismos guards que la versión CASH (`platform.tenants.write` + tenant admin). Requiere MP conectado en el tenant admin (el de la plataforma), no en el gym. payerEmail = staff activo más antiguo del gym facturado. Devuelve PENDING + checkoutUrl; el contrato TENANT se emite al aprobarse el webhook."
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('status 201', () => pm.response.to.have.status(201));",
+                                    "const body = pm.response.json();",
+                                    "pm.test('PENDING', () => pm.expect(body.status).to.eql('PENDING'));",
+                                    "pm.test('checkout url', () => pm.expect(body.checkoutUrl || body.sandboxCheckoutUrl).to.be.a('string'));",
+                                    "if (body.transactionId) { pm.collectionVariables.set('platformMpCartId', body.transactionId); pm.environment.set('platformMpCartId', body.transactionId); }"
                                 ]
                             }
                         }

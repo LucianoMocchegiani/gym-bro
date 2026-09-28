@@ -112,11 +112,6 @@ export class DebitController {
     @Param('mandateId', ParseUUIDPipe) mandateId: string,
     @CurrentUser() user: AuthUser,
   ): Promise<DebitEnrollResult> {
-    return this.debit.charge(
-      tenantId,
-      mandateId,
-      toAuditActor(user),
-      'staff',
-    );
+    return this.debit.charge(tenantId, mandateId, toAuditActor(user), 'staff');
   }
 }

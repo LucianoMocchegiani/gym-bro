@@ -47,7 +47,7 @@ export class ReceiptsService {
       tenantId: string;
       transactionItemId?: string;
       transactionId?: string;
-      memberId: string;
+      memberId: string | null;
       amount: number;
       method: PaymentMethod;
       concept: ReceiptConcept;
@@ -70,7 +70,9 @@ export class ReceiptsService {
       });
       if (existing) return;
     } else {
-      throw new BadRequestException('Must provide either transactionItemId or transactionId');
+      throw new BadRequestException(
+        'Must provide either transactionItemId or transactionId',
+      );
     }
 
     const number = await this.nextNumber(tx, input.tenantId);
@@ -79,7 +81,7 @@ export class ReceiptsService {
         tenantId: input.tenantId,
         transactionItemId: input.transactionItemId ?? null,
         transactionId: input.transactionId ?? null,
-        memberId: input.memberId,
+        memberId: input.memberId ?? undefined,
         number,
         amount: input.amount,
         method: input.method,
@@ -100,7 +102,7 @@ export class ReceiptsService {
     input: {
       tenantId: string;
       transactionId: string;
-      memberId: string;
+      memberId: string | null;
       amount: number;
       method: PaymentMethod;
       description?: string | null;
@@ -190,10 +192,14 @@ export class ReceiptsService {
       select: { id: true, status: true },
     });
     if (!transaction) {
-      throw new NotFoundException(`Transaction ${transactionId} not found in tenant`);
+      throw new NotFoundException(
+        `Transaction ${transactionId} not found in tenant`,
+      );
     }
-    if (transaction.status !== PaymentStatus.APPROVED &&
-      transaction.status !== PaymentStatus.REFUNDED) {
+    if (
+      transaction.status !== PaymentStatus.APPROVED &&
+      transaction.status !== PaymentStatus.REFUNDED
+    ) {
       throw new ForbiddenException(
         'Receipt is only available for APPROVED or REFUNDED transactions',
       );
@@ -272,7 +278,7 @@ export class ReceiptsService {
       tenantId: string;
       transactionItemId: string | null;
       transactionId: string | null;
-      memberId: string;
+      memberId: string | null;
       number: number;
       amount: number;
       method: PaymentMethod;

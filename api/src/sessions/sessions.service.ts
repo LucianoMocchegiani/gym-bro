@@ -4,7 +4,13 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { Prisma, ServiceType, Session, SessionStatus, WaitlistStatus } from '@prisma/client';
+import {
+  Prisma,
+  ServiceType,
+  Session,
+  SessionStatus,
+  WaitlistStatus,
+} from '@prisma/client';
 import { AUDIT_ACTIONS, AuditActor } from '../audit/audit.types';
 import { AuditService } from '../audit/audit.service';
 import {

@@ -69,9 +69,14 @@ export class RefundsService {
     dto: CreateRefundRequestDto,
     actor: AuditActor,
   ): Promise<RefundRequestDetail> {
-    const transactionItem = await this.loadPaymentForRefund(tenantId, transactionItemId);
+    const transactionItem = await this.loadPaymentForRefund(
+      tenantId,
+      transactionItemId,
+    );
     if (transactionItem.memberId !== memberId) {
-      throw new ForbiddenException('TransactionItem does not belong to this member');
+      throw new ForbiddenException(
+        'TransactionItem does not belong to this member',
+      );
     }
     if (transactionItem.status === PaymentStatus.REFUNDED) {
       throw new BadRequestException('TransactionItem is already refunded');
@@ -239,8 +244,8 @@ export class RefundsService {
     dto: ExecuteTransactionRefundDto,
     actor: AuditActor,
   ): Promise<RefundBatchExecutionDetail> {
-    if (actor.profileType !== 'STAFF' && actor.profileType !== 'SUPER') {
-      throw new ForbiddenException('Staff or Super required to execute refund');
+    if (actor.profileType !== 'STAFF') {
+      throw new ForbiddenException('Staff required to execute refund');
     }
 
     const itemIds = [...new Set(dto.transactionItemIds)];
@@ -298,9 +303,7 @@ export class RefundsService {
       });
     }
     if (already.length > 0) {
-      throw new BadRequestException(
-        'Some selected items are already refunded',
-      );
+      throw new BadRequestException('Some selected items are already refunded');
     }
     if (toRefund.some((i) => i.status !== PaymentStatus.APPROVED)) {
       throw new BadRequestException('Only APPROVED items can be refunded');
@@ -315,7 +318,7 @@ export class RefundsService {
     }
 
     const method = toRefund[0]?.method ?? PaymentMethod.CASH;
-    let refundRequestId: string | null = dto.refundRequestId ?? null;
+    const refundRequestId: string | null = dto.refundRequestId ?? null;
     if (refundRequestId) {
       const req = await this.prisma.refundRequest.findFirst({
         where: {
@@ -444,7 +447,7 @@ export class RefundsService {
           await this.cashRegister.recordOutcome(tx, {
             tenantId,
             transactionItemId: pay.id,
-            memberId: pay.memberId,
+            memberId: pay.memberId ?? null,
             amount: pay.amount,
             concept: CashMovementConcept.REFUND,
             recordedByStaffId: staffId,
@@ -619,7 +622,10 @@ export class RefundsService {
     return { allowed: true, reason: null };
   }
 
-  private async loadPaymentForRefund(tenantId: string, transactionItemId: string) {
+  private async loadPaymentForRefund(
+    tenantId: string,
+    transactionItemId: string,
+  ) {
     const transactionItem = await this.prisma.transactionItem.findFirst({
       where: { id: transactionItemId, tenantId },
       include: {
@@ -637,7 +643,9 @@ export class RefundsService {
       },
     });
     if (!transactionItem) {
-      throw new NotFoundException(`TransactionItem ${transactionItemId} not found in tenant`);
+      throw new NotFoundException(
+        `TransactionItem ${transactionItemId} not found in tenant`,
+      );
     }
     return transactionItem;
   }

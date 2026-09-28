@@ -2,7 +2,7 @@ import type { MetadataRoute } from 'next';
 import { publicSiteUrl } from '@/lib/site-url';
 
 /**
- * robots.txt del apex. El panel Staff/Super se marca noindex por host/ruta.
+ * robots.txt del apex. El panel Staff se marca noindex por host/ruta.
  */
 export default function robots(): MetadataRoute.Robots {
   const site = publicSiteUrl();
@@ -12,7 +12,6 @@ export default function robots(): MetadataRoute.Robots {
       allow: ['/', '/legal/', '/docs', '/docs/'],
       disallow: [
         '/login',
-        '/super/',
         '/caja',
         '/vencimientos',
         '/afiliados',
@@ -25,6 +24,7 @@ export default function robots(): MetadataRoute.Robots {
         '/devoluciones',
         '/reportes',
         '/puerta',
+        '/tenants',
       ],
     },
     sitemap: `${site}/sitemap.xml`,

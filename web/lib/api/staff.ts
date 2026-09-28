@@ -160,6 +160,5 @@ export function listStaffByTenant(
   const qs = toSearchParams(input);
   return apiRequest<ListResult<StaffUserDetail>>(
     `/tenants/${tenantId}/staff${qs ? `?${qs}` : ''}`,
-    { auth: 'super' },
   );
 }

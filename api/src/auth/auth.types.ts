@@ -1,15 +1,15 @@
 /**
  * Claims del access JWT emitido por GymBro.
  *
- * @remarks `tenantId` es obligatorio para STAFF y MEMBER; ausente para SUPER
- * e IDENTITY (persona, picker de gym). El tenant nunca se toma del body.
+ * @remarks `tenantId` es obligatorio para STAFF y MEMBER; ausente para
+ * IDENTITY (persona, picker de gym). El tenant nunca se toma del body.
  */
 export type JwtAccessPayload = {
   sub: string;
   email: string;
-  profileType: 'SUPER' | 'STAFF' | 'MEMBER' | 'IDENTITY';
+  profileType: 'STAFF' | 'MEMBER' | 'IDENTITY';
   tenantId?: string;
-  /** ID del Super Admin que está impersonando. */
+  /** ID del staff de plataforma que impersona. */
   impersonatedBy?: string;
 };
 
@@ -19,9 +19,9 @@ export type JwtAccessPayload = {
 export type AuthUser = {
   userId: string;
   email: string;
-  profileType: 'SUPER' | 'STAFF' | 'MEMBER' | 'IDENTITY';
+  profileType: 'STAFF' | 'MEMBER' | 'IDENTITY';
   tenantId?: string;
-  /** ID del Super Admin que está impersonando. */
+  /** ID del staff de plataforma que impersona. */
   impersonatedBy?: string;
 };
 
@@ -33,7 +33,7 @@ export type AuthTokens = {
   refreshToken: string;
   expiresIn: number;
   tokenType: 'Bearer';
-  profileType: 'SUPER' | 'STAFF' | 'MEMBER' | 'IDENTITY';
+  profileType: 'STAFF' | 'MEMBER' | 'IDENTITY';
   hasPassword: boolean;
   user: {
     id: string;
@@ -59,4 +59,8 @@ export type MembershipRow = {
 
 export type MembershipsList = {
   items: MembershipRow[];
+};
+
+export type ImpersonateHandoffResult = {
+  tenantSlug: string;
 };

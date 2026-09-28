@@ -11,8 +11,10 @@ export interface TransactionItemInput {
 }
 
 export interface InitiatePaymentParams {
+  /** Tenant que abona: el dueño del cobro o el gym facturado por la plataforma. */
   tenantId: string;
-  memberId: string;
+  /** Afiliado cobrador. Null cuando el tenant mismo abona. */
+  memberId: string | null;
   method: PaymentMethod;
   items: TransactionItemInput[];
   recordedByStaffId?: string | null;
@@ -45,8 +47,19 @@ export class TransactionService {
    */
   async initiateTransaction(
     params: InitiatePaymentParams,
-  ): Promise<Prisma.TransactionGetPayload<{ include: { transactionItems: true } }>> {
-    const { tenantId, memberId, method, items, recordedByStaffId, mpPreferenceId, mpInitPoint, mpSandboxInitPoint } = params;
+  ): Promise<
+    Prisma.TransactionGetPayload<{ include: { transactionItems: true } }>
+  > {
+    const {
+      tenantId,
+      memberId,
+      method,
+      items,
+      recordedByStaffId,
+      mpPreferenceId,
+      mpInitPoint,
+      mpSandboxInitPoint,
+    } = params;
 
     const totalAmount = items.reduce((sum, item) => sum + item.amount, 0);
     const firstItem = items[0];
@@ -101,7 +114,9 @@ export class TransactionService {
   async confirmTransaction(
     transactionId: string,
     actor: { userId: string; profileType: string },
-  ): Promise<Prisma.TransactionGetPayload<{ include: { transactionItems: true } }>> {
+  ): Promise<
+    Prisma.TransactionGetPayload<{ include: { transactionItems: true } }>
+  > {
     const transaction = await this.prisma.transaction.findUniqueOrThrow({
       where: { id: transactionId },
       include: { transactionItems: true },
@@ -129,7 +144,9 @@ export class TransactionService {
    */
   async getTransaction(
     transactionId: string,
-  ): Promise<Prisma.TransactionGetPayload<{ include: { transactionItems: true } }> | null> {
+  ): Promise<Prisma.TransactionGetPayload<{
+    include: { transactionItems: true };
+  }> | null> {
     return this.prisma.transaction.findUnique({
       where: { id: transactionId },
       include: { transactionItems: true },

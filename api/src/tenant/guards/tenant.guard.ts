@@ -14,7 +14,6 @@ type RequestWithUser = Request & { user?: AuthUser };
  * Exige un usuario autenticado con `tenantId` (STAFF / MEMBER).
  *
  * @remarks Aplica RN-TEN-001: el tenant sale del JWT, no del body.
- * SUPER puede usar rutas tenant-scoped solo con impersonación (impersonatedBy presente).
  * El estado ACTIVE del tenant se valida en login/refresh, no en cada request.
  */
 @Injectable()
@@ -29,12 +28,6 @@ export class TenantGuard implements CanActivate {
 
     if (user.profileType === 'IDENTITY') {
       throw new ForbiddenException('Select a gym before using tenant routes');
-    }
-
-    if (user.profileType === 'SUPER' && !user.impersonatedBy) {
-      throw new ForbiddenException(
-        'Super Admin cannot access tenant-scoped routes without impersonation',
-      );
     }
 
     if (!user.tenantId) {

@@ -1,4 +1,4 @@
-import { createHash, randomBytes } from 'node:crypto';
+import { createHash, randomBytes, randomUUID } from 'node:crypto';
 import {
   BadRequestException,
   Injectable,
@@ -17,6 +17,7 @@ import * as bcrypt from 'bcryptjs';
 import { AuditService } from '../audit/audit.service';
 import { GoogleIdTokenService } from './google-id-token.service';
 import { AppleIdTokenService } from './apple-id-token.service';
+import { ImpersonationHandoffStore } from './impersonation-handoff.store';
 import { PrismaService } from '../prisma/prisma.service';
 import {
   assertValidTenantSlug,
@@ -24,6 +25,7 @@ import {
 } from '../tenants/tenant-slug';
 import {
   AuthTokens,
+  ImpersonateHandoffResult,
   JwtAccessPayload,
   MembershipRow,
   MembershipsList,
@@ -39,7 +41,6 @@ import {
   MemberLoginDto,
   SelectContextDto,
   StaffLoginDto,
-  SuperLoginDto,
 } from './dto/auth.dto';
 
 type TokenOwner = {
@@ -53,7 +54,7 @@ type TokenOwner = {
 };
 
 /**
- * Autenticación JWT + refresh para Super, Staff y Afiliado.
+ * Autenticación JWT + refresh para Staff y Afiliado (plataforma = tenant admin).
  *
  * @remarks Perfiles separados (RN-ROL-005). Staff/Member exigen tenant activo.
  * Refresh tokens se persisten hasheados en Postgres.
@@ -70,6 +71,7 @@ export class AuthService {
     private readonly audit: AuditService,
     private readonly googleTokens: GoogleIdTokenService,
     private readonly appleTokens: AppleIdTokenService,
+    private readonly handoffs: ImpersonationHandoffStore,
   ) {
     this.accessTtlSeconds = Number(
       this.config.get<string>('JWT_ACCESS_TTL_SECONDS') ?? 900,
@@ -80,40 +82,21 @@ export class AuthService {
   }
 
   /**
-   * Login de Super Admin (sin tenant).
+   * El staff del tenant `admin` impersona a un staff de otro gym.
    *
-   * @throws {UnauthorizedException} Credenciales inválidas o usuario inactivo.
-   */
-  async loginSuper(dto: SuperLoginDto): Promise<AuthTokens> {
-    const user = await this.prisma.superUser.findUnique({
-      where: { email: dto.email.toLowerCase() },
-    });
-    if (!user?.active) {
-      throw new UnauthorizedException('Invalid credentials');
-    }
-    await this.assertPassword(dto.password, user.passwordHash);
-    return this.issueTokens({
-      profileType: AuthProfileType.SUPER,
-      userId: user.id,
-      email: user.email,
-      name: user.name,
-      hasPassword: true,
-    });
-  }
-
-  /**
-   * Super Admin impersona a un staff member (token temporal 4h).
-   *
-   * @remarks Emite un JWT con los datos del staff pero incluye `impersonatedBy`
-   * con el ID del Super Admin. Solo para soporte/debug.
+   * @remarks No emite JWT acá: deja un handoff en memoria (~60 s, un uso) y
+   * el gym destino lo canjea con `POST /auth/from-handoff`.
    */
   async impersonate(
-    superUserId: string,
+    platformStaffId: string,
     dto: ImpersonateDto,
-  ): Promise<AuthTokens> {
+  ): Promise<ImpersonateHandoffResult & { handoffId: string }> {
     await this.assertTenantActive(dto.tenantId);
     const staff = await this.prisma.staffUser.findUnique({
       where: { id: dto.staffUserId },
+      include: {
+        tenant: { select: { slug: true } },
+      },
     });
     if (!staff || staff.tenantId !== dto.tenantId || !staff.active) {
       throw new BadRequestException(
@@ -121,27 +104,55 @@ export class AuthService {
       );
     }
 
-    const tokens = await this.issueTokens({
-      profileType: AuthProfileType.STAFF,
-      userId: staff.id,
-      email: staff.email,
-      name: staff.name,
+    const handoffId = randomUUID();
+    this.handoffs.put(handoffId, {
+      staffUserId: staff.id,
       tenantId: staff.tenantId,
-      impersonatedBy: superUserId,
-      hasPassword: true,
+      tenantSlug: staff.tenant.slug,
+      platformStaffId,
     });
 
-    // Audit: registrar impersonación
     await this.audit.record({
       tenantId: dto.tenantId,
-      actor: { profileType: 'SUPER', userId: superUserId },
+      actor: { profileType: 'STAFF', userId: platformStaffId },
       action: 'super.impersonate',
       entityType: 'staff_user',
       entityId: staff.id,
       after: { staffEmail: staff.email, staffName: staff.name },
     });
 
-    return tokens;
+    return { tenantSlug: staff.tenant.slug, handoffId };
+  }
+
+  /**
+   * Canjea la cookie de handoff por JWT del staff destino (un solo uso).
+   */
+  async exchangeHandoff(handoffId: string): Promise<AuthTokens> {
+    const row = this.handoffs.consume(handoffId);
+    if (!row) {
+      throw new UnauthorizedException('Invalid credentials');
+    }
+    await this.assertTenantActive(row.tenantId);
+    const staff = await this.prisma.staffUser.findUnique({
+      where: { id: row.staffUserId },
+      include: { identity: { select: { passwordHash: true } } },
+    });
+    if (!staff?.active || staff.tenantId !== row.tenantId) {
+      throw new UnauthorizedException('Invalid credentials');
+    }
+    return this.issueTokens({
+      profileType: AuthProfileType.STAFF,
+      userId: staff.id,
+      email: staff.email,
+      name: staff.name,
+      tenantId: staff.tenantId,
+      impersonatedBy: row.platformStaffId,
+      hasPassword: !!staff.identity.passwordHash,
+    });
+  }
+
+  discardHandoff(handoffId: string): void {
+    this.handoffs.discard(handoffId);
   }
 
   /**
@@ -240,11 +251,11 @@ export class AuthService {
     return this.issueIdentity({ ...identity, hasPassword: true });
   }
 
-/**
-    * Login de persona con `id_token` de Apple Sign-In. Crea identity si el mail es nuevo.
-    *
-    * @remarks Vincula `apple_sub` a un mail existente (alta del gym).
-    */
+  /**
+   * Login de persona con `id_token` de Apple Sign-In. Crea identity si el mail es nuevo.
+   *
+   * @remarks Vincula `apple_sub` a un mail existente (alta del gym).
+   */
   async loginApple(dto: AppleLoginDto): Promise<AuthTokens> {
     const claims = await this.appleTokens.verify(dto.idToken);
     const bySub = await this.prisma.identity.findUnique({
@@ -300,11 +311,14 @@ export class AuthService {
   }
 
   /**
-    * Staff de un tenant entra con `id_token` de Google.
-    *
-    * @remarks Verifica que la identity sea staff del tenant indicado.
-    */
-  async loginStaffGoogle(tenantId: string, dto: StaffGoogleLoginDto): Promise<AuthTokens> {
+   * Staff de un tenant entra con `id_token` de Google.
+   *
+   * @remarks Verifica que la identity sea staff del tenant indicado.
+   */
+  async loginStaffGoogle(
+    tenantId: string,
+    dto: StaffGoogleLoginDto,
+  ): Promise<AuthTokens> {
     await this.assertTenantActive(tenantId);
     const claims = await this.googleTokens.verify(dto.idToken);
     const bySub = await this.prisma.identity.findUnique({
@@ -354,10 +368,10 @@ export class AuthService {
   }
 
   /**
-    * Login de persona con `id_token` de Google. Crea identity si el mail es nuevo.
-    *
-    * @remarks Vincula `google_sub` a un mail existente (alta del gym).
-    */
+   * Login de persona con `id_token` de Google. Crea identity si el mail es nuevo.
+   *
+   * @remarks Vincula `google_sub` a un mail existente (alta del gym).
+   */
   async loginGoogle(dto: GoogleLoginDto): Promise<AuthTokens> {
     const claims = await this.googleTokens.verify(dto.idToken);
     const bySub = await this.prisma.identity.findUnique({
@@ -545,7 +559,6 @@ export class AuthService {
     const stored = await this.prisma.refreshToken.findUnique({
       where: { tokenHash },
       include: {
-        superUser: true,
         staffUser: true,
         member: true,
         identity: true,
@@ -560,19 +573,6 @@ export class AuthService {
       where: { id: stored.id },
       data: { revokedAt: new Date() },
     });
-
-    if (stored.profileType === AuthProfileType.SUPER && stored.superUser) {
-      if (!stored.superUser.active) {
-        throw new UnauthorizedException('Invalid refresh token');
-      }
-      return this.issueTokens({
-        profileType: AuthProfileType.SUPER,
-        userId: stored.superUser.id,
-        email: stored.superUser.email,
-        name: stored.superUser.name,
-        hasPassword: true,
-      });
-    }
 
     if (stored.profileType === AuthProfileType.STAFF && stored.staffUser) {
       if (!stored.staffUser.active) {
@@ -651,7 +651,7 @@ export class AuthService {
   }
 
   /**
-   * Cambia la contraseña del usuario autenticado (STAFF o SUPER).
+   * Cambia la contraseña del usuario autenticado (STAFF o MEMBER).
    *
    * @remarks Cambia el hash de `identities` (misma pass en todos los gyms).
    * Revoca refresh de ese staff y de la identity.
@@ -692,25 +692,6 @@ export class AuthService {
       return { ok: true };
     }
 
-    if (user.profileType === AuthProfileType.SUPER) {
-      const superUser = await this.prisma.superUser.findUnique({
-        where: { id: user.userId },
-      });
-      if (!superUser) {
-        throw new UnauthorizedException('Invalid credentials');
-      }
-      await this.assertPassword(dto.currentPassword, superUser.passwordHash);
-      await this.prisma.superUser.update({
-        where: { id: user.userId },
-        data: { passwordHash: newHash },
-      });
-      await this.prisma.refreshToken.updateMany({
-        where: { superUserId: user.userId, revokedAt: null },
-        data: { revokedAt: new Date() },
-      });
-      return { ok: true };
-    }
-
     throw new BadRequestException(
       'Cambio de contraseña no disponible para este perfil',
     );
@@ -718,7 +699,10 @@ export class AuthService {
 
   private proxySessions = new Map<string, string>();
 
-  async loginFromProxy(sessionId: string, tenantSlug: string): Promise<AuthTokens> {
+  async loginFromProxy(
+    sessionId: string,
+    tenantSlug: string,
+  ): Promise<AuthTokens> {
     const response = await fetch(
       `${process.env.AUTH_PROXY_URL}/session/validate`,
       {
@@ -861,8 +845,6 @@ export class AuthService {
         tokenHash,
         profileType: owner.profileType,
         expiresAt,
-        superUserId:
-          owner.profileType === AuthProfileType.SUPER ? owner.userId : null,
         staffUserId:
           owner.profileType === AuthProfileType.STAFF ? owner.userId : null,
         memberId:

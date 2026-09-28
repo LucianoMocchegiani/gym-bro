@@ -49,10 +49,16 @@ export class RefundsController {
     if (user.profileType !== 'MEMBER') {
       throw new ForbiddenException('Member profile required');
     }
-    return this.refunds.requestByMember(tenantId, user.userId, transactionItemId, dto, {
-      profileType: 'MEMBER',
-      userId: user.userId,
-    });
+    return this.refunds.requestByMember(
+      tenantId,
+      user.userId,
+      transactionItemId,
+      dto,
+      {
+        profileType: 'MEMBER',
+        userId: user.userId,
+      },
+    );
   }
 
   @Get('me/refund-requests')
@@ -102,6 +108,11 @@ export class RefundsController {
     @Param('transactionItemId', ParseUUIDPipe) transactionItemId: string,
     @Body() dto: ExecuteRefundDto,
   ): Promise<RefundExecutionDetail> {
-    return this.refunds.execute(tenantId, transactionItemId, dto, toAuditActor(user));
+    return this.refunds.execute(
+      tenantId,
+      transactionItemId,
+      dto,
+      toAuditActor(user),
+    );
   }
 }

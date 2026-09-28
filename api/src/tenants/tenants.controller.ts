@@ -11,8 +11,10 @@ import {
   Post,
   Query,
 } from '@nestjs/common';
-import { RequireSuperAuth } from '../auth/decorators/require-super-auth.decorator';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { PlatformTenantGuard } from '../auth/guards/platform-tenant.guard';
+import { UseGuards } from '@nestjs/common';
 import type { AuthUser } from '../auth/auth.types';
 import { toAuditActor } from '../audit/to-audit-actor';
 import { ListResult } from '../common/list';
@@ -23,7 +25,7 @@ import {
   UpdateTenantDto,
 } from './dto/tenant.dto';
 import { TenantsService } from './tenants.service';
-import { TenantResponse } from './tenants.types';
+import { PlatformTenantSummary, TenantResponse } from './tenants.types';
 
 /**
  * CRUD de tenants para Super Admin (plataforma).
@@ -32,15 +34,13 @@ import { TenantResponse } from './tenants.types';
  * Al crear: seed de sucursal default (RN-TEN-003 / S2) y roles Admin/Entrenador (RN-ROL-002).
  */
 @Controller('tenants')
-@RequireSuperAuth()
 export class TenantsController {
   constructor(private readonly tenantsService: TenantsService) {}
 
   /**
-   * Crea un tenant ACTIVE + sucursal + roles + owner Admin.
-   *
-   * @see CU-ROL-001
+   * Alta de tenant + owner Admin, con branch default y roles sistema (CU-ROL-001).
    */
+  @UseGuards(JwtAuthGuard, PlatformTenantGuard)
   @Post()
   @HttpCode(HttpStatus.CREATED)
   create(
@@ -51,8 +51,9 @@ export class TenantsController {
   }
 
   /**
-   * Lista tenants (paginado).
+   * Lista de tenants con membresía (para Super Admin).
    */
+  @UseGuards(JwtAuthGuard, PlatformTenantGuard)
   @Get()
   findAll(
     @Query() query: ListTenantsQueryDto,
@@ -61,8 +62,23 @@ export class TenantsController {
   }
 
   /**
+   * Lista de tenants para el dashboard de plataforma (staff del tenant `admin`).
+   *
+   * @remarks Vista resumen paginada (`PlatformTenantSummary`) con `q` por
+   * name/slug; alimenta el grilla del dashboard y el `TenantPicker` de Caja.
+   */
+  @UseGuards(JwtAuthGuard, PlatformTenantGuard)
+  @Get('platform')
+  platformList(
+    @Query() query: ListTenantsQueryDto,
+  ): Promise<ListResult<PlatformTenantSummary>> {
+    return this.tenantsService.platformList(query);
+  }
+
+  /**
    * Detalle de un tenant.
    */
+  @UseGuards(JwtAuthGuard, PlatformTenantGuard)
   @Get(':id')
   findOne(@Param('id', ParseUUIDPipe) id: string): Promise<TenantResponse> {
     return this.tenantsService.findOne(id);
@@ -73,6 +89,7 @@ export class TenantsController {
    *
    * @see CU-ROL-002
    */
+  @UseGuards(JwtAuthGuard, PlatformTenantGuard)
   @Patch(':id')
   update(
     @Param('id', ParseUUIDPipe) id: string,
@@ -85,6 +102,7 @@ export class TenantsController {
   /**
    * Elimina un tenant (cascada total). Requiere `ELIMINAR` + slug.
    */
+  @UseGuards(JwtAuthGuard, PlatformTenantGuard)
   @Delete(':id')
   remove(
     @Param('id', ParseUUIDPipe) id: string,

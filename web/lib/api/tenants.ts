@@ -5,6 +5,8 @@
 import { apiRequest } from '@/lib/api/client';
 import { toSearchParams } from '@/lib/api/list';
 import type { ListParams, ListResult } from '@/lib/api/list';
+import type { MpCartCheckoutResult } from '@/lib/api/mercadopago';
+import type { CashCartResult } from '@/lib/api/reservations';
 
 export type TenantStatus = 'ACTIVE' | 'SUSPENDED';
 
@@ -50,6 +52,27 @@ export type UpdateTenantInput = {
 };
 
 /**
+ * Resumen de tenant para el dashboard de plataforma (slug `admin`).
+ *
+ * @remarks Espeja `PlatformTenantSummary` del API (`api/src/tenants/tenants.types.ts`).
+ * No expone plan ni suscripción: no hay modelo `Subscription` todavía.
+ */
+export type PlatformTenantSummary = {
+  id: string;
+  name: string;
+  slug: string;
+  status: string;
+  memberCount: number;
+};
+
+/** Ítem de carrito en venta de plataforma (solo packs). */
+export type PlatformCartItem = {
+  kind: 'PACK';
+  id: string;
+  quantity?: number;
+};
+
+/**
  * Resuelve gym por slug (público, sin auth).
  */
 export function getTenantBySlug(slug: string): Promise<PublicTenantSummary> {
@@ -60,22 +83,20 @@ export function getTenantBySlug(slug: string): Promise<PublicTenantSummary> {
 }
 
 /**
- * Lista tenants (Super), paginado.
+ * Lista todos los tenants (plataforma), paginado.
+ *
+ * @remarks Staff del tenant `admin` (`PlatformTenantGuard`).
  */
 export function listTenants(
   input?: ListParams,
 ): Promise<ListResult<TenantDetail>> {
   const qs = toSearchParams(input);
-  return apiRequest<ListResult<TenantDetail>>(`/tenants${qs ? `?${qs}` : ''}`, {
-    auth: 'super',
-  });
+  return apiRequest<ListResult<TenantDetail>>(`/tenants${qs ? `?${qs}` : ''}`);
 }
 
-/**
- * Detalle de tenant (Super).
- */
+/** Detalle de tenant (plataforma). */
 export function getTenant(id: string): Promise<TenantDetail> {
-  return apiRequest<TenantDetail>(`/tenants/${id}`, { auth: 'super' });
+  return apiRequest<TenantDetail>(`/tenants/${id}`);
 }
 
 /**
@@ -87,7 +108,6 @@ export function createTenant(
   return apiRequest<TenantDetail>('/tenants', {
     method: 'POST',
     body: input,
-    auth: 'super',
   });
 }
 
@@ -101,7 +121,6 @@ export function updateTenant(
   return apiRequest<TenantDetail>(`/tenants/${id}`, {
     method: 'PATCH',
     body: input,
-    auth: 'super',
   });
 }
 
@@ -116,6 +135,48 @@ export function deleteTenant(
   return apiRequest<{ deleted: true }>(`/tenants/${id}`, {
     method: 'DELETE',
     body: { confirmWord, slug },
-    auth: 'super',
   });
+}
+
+/**
+ * Lista tenants para el dashboard de plataforma (staff del tenant `admin`).
+ */
+export function listPlatformTenants(
+  input?: ListParams,
+): Promise<ListResult<PlatformTenantSummary>> {
+  const qs = toSearchParams(input);
+  return apiRequest<ListResult<PlatformTenantSummary>>(
+    `/tenants/platform${qs ? `?${qs}` : ''}`,
+  );
+}
+
+/**
+ * Cobro en efectivo de plataforma: el tenant `admin` le factura un pack propio
+ * a `billingTenantId` (el gym pagador).
+ *
+ * @remarks Solo packs; el drop-in es por sesiones de un gym.
+ */
+export function startPlatformCashCart(
+  billingTenantId: string,
+  items: PlatformCartItem[],
+  idempotencyKey: string,
+): Promise<CashCartResult> {
+  return apiRequest<CashCartResult>(
+    `/tenants/${billingTenantId}/transaction-items/cash/cart`,
+    { method: 'POST', body: { items, idempotencyKey } },
+  );
+}
+
+/**
+ * Checkout MP de plataforma: el tenant `admin` le factura un pack propio a
+ * `billingTenantId` (el gym pagador).
+ */
+export function startPlatformMpCartCheckout(
+  billingTenantId: string,
+  input: { items: PlatformCartItem[]; idempotencyKey?: string },
+): Promise<MpCartCheckoutResult> {
+  return apiRequest<MpCartCheckoutResult>(
+    `/tenants/${billingTenantId}/transaction-items/mp/cart`,
+    { method: 'POST', body: input },
+  );
 }

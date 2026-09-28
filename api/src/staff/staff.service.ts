@@ -17,7 +17,11 @@ import {
 } from '../common/list';
 import { IdentityService } from '../auth/identity.service';
 import { PrismaService } from '../prisma/prisma.service';
-import { CreateStaffDto, SetStaffRolesDto, UpdateStaffDto } from './dto/staff.dto';
+import {
+  CreateStaffDto,
+  SetStaffRolesDto,
+  UpdateStaffDto,
+} from './dto/staff.dto';
 import { StaffUserDetail } from './staff.types';
 
 /** Whitelist de orden para {@link StaffService.list}. */
@@ -223,7 +227,11 @@ export class StaffService {
     dto: UpdateStaffDto,
     actor: AuditActor,
   ): Promise<StaffUserDetail> {
-    if (dto.name === undefined && dto.email === undefined && dto.imageUrl === undefined) {
+    if (
+      dto.name === undefined &&
+      dto.email === undefined &&
+      dto.imageUrl === undefined
+    ) {
       throw new BadRequestException('Provide name, email and/or imageUrl');
     }
 
@@ -266,7 +274,11 @@ export class StaffService {
       action: AUDIT_ACTIONS.staffUpdate,
       entityType: 'staff_user',
       entityId: staffUserId,
-      before: { name: before.name, email: before.email, imageUrl: before.imageUrl },
+      before: {
+        name: before.name,
+        email: before.email,
+        imageUrl: before.imageUrl,
+      },
       after: { name: after.name, email: after.email, imageUrl: after.imageUrl },
     });
     return after;

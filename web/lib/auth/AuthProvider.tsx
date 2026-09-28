@@ -126,7 +126,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setVerified(false);
     void (async () => {
       try {
-        await fetchAuthMe('staff');
+        await fetchAuthMe();
       } catch {
         // 401: apiRequest ya limpió la sesión → RequireStaff va a /login.
       }

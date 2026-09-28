@@ -28,10 +28,9 @@ enum CredentialOfferStatus {
 
 /// Tipo de perfil autenticado. Staff y afiliado nunca comparten sesión (RN-ROL-005).
 enum AuthProfileType {
-  SUPER
   STAFF
   MEMBER
-  /// Sesión de persona (picker de gym). Sin tenantId en el JWT.
+  /// Sesi�n de persona (picker de gym). Sin tenantId en el JWT.
   IDENTITY
 }
 
@@ -278,21 +277,6 @@ model Branch {
   @@map("branches")
 }
 
-/// Super Admin de la plataforma GymBro (RN-ROL-001). Sin tenant.
-model SuperUser {
-  id           String   @id @default(uuid()) @db.Uuid
-  email        String   @unique
-  passwordHash String   @map("password_hash")
-  name         String?
-  active       Boolean  @default(true)
-  createdAt    DateTime @default(now()) @map("created_at")
-  updatedAt    DateTime @updatedAt @map("updated_at")
-
-  refreshTokens RefreshToken[]
-
-  @@map("super_users")
-}
-
 /// Persona Faciliter (login Google/Apple/password). Las membresías son `members` / `staff_users`.
 model Identity {
   id           String   @id @default(uuid()) @db.Uuid
@@ -395,7 +379,6 @@ model RefreshToken {
   id          String          @id @default(uuid()) @db.Uuid
   tokenHash   String          @unique @map("token_hash")
   profileType AuthProfileType @map("profile_type")
-  superUserId String?         @map("super_user_id") @db.Uuid
   staffUserId String?         @map("staff_user_id") @db.Uuid
   memberId    String?         @map("member_id") @db.Uuid
   identityId  String?         @map("identity_id") @db.Uuid
@@ -403,12 +386,10 @@ model RefreshToken {
   revokedAt   DateTime?       @map("revoked_at")
   createdAt   DateTime        @default(now()) @map("created_at")
 
-  superUser SuperUser? @relation(fields: [superUserId], references: [id], onDelete: Cascade)
   staffUser StaffUser? @relation(fields: [staffUserId], references: [id], onDelete: Cascade)
   member    Member?    @relation(fields: [memberId], references: [id], onDelete: Cascade)
   identity  Identity?  @relation(fields: [identityId], references: [id], onDelete: Cascade)
 
-  @@index([superUserId])
   @@index([staffUserId])
   @@index([memberId])
   @@index([identityId])
@@ -643,7 +624,7 @@ model Session {
 model TransactionItem {
   id               String        @id @default(uuid()) @db.Uuid
   tenantId         String        @map("tenant_id") @db.Uuid
-  memberId         String        @map("member_id") @db.Uuid
+  memberId         String?       @map("member_id") @db.Uuid
   packId           String?       @map("pack_id") @db.Uuid
   /// Sesión objetivo del checkout drop-in MP (null en pack/caja stub).
   sessionId        String?       @map("session_id") @db.Uuid
@@ -668,8 +649,8 @@ model TransactionItem {
   updatedAt        DateTime      @updatedAt @map("updated_at")
 
   tenant   Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  member   Member    @relation(fields: [memberId], references: [id], onDelete: Cascade)
-  pack     Pack?         @relation(fields: [packId], references: [id], onDelete: SetNull)
+  member   Member?   @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  pack     Pack?     @relation(fields: [packId], references: [id], onDelete: SetNull)
   session  Session?      @relation(fields: [sessionId], references: [id], onDelete: SetNull)
   transaction Transaction? @relation(fields: [transactionId], references: [id], onDelete: SetNull)
   contract Contract?
@@ -696,7 +677,8 @@ model TransactionItem {
 model Transaction {
   id                 String        @id @default(uuid()) @db.Uuid
   tenantId           String        @map("tenant_id") @db.Uuid
-  memberId           String        @map("member_id") @db.Uuid
+  /// Afiliado cobrador. Null cuando el tenant mismo abona (venta de plataforma).
+  memberId           String?       @map("member_id") @db.Uuid
   /// Total de la transacción (suma de los ítems).
   amount             Int
   status             PaymentStatus
@@ -715,7 +697,7 @@ model Transaction {
   updatedAt          DateTime      @updatedAt @map("updated_at")
 
   tenant   Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  member   Member    @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  member   Member?   @relation(fields: [memberId], references: [id], onDelete: Cascade)
   recordedByStaff StaffUser? @relation("TransactionRecorder", fields: [recordedByStaffId], references: [id], onDelete: SetNull)
   transactionItems TransactionItem[]
   receipts Receipt[]
@@ -755,7 +737,7 @@ model DebitMandate {
   updatedAt                  DateTime           @updatedAt @map("updated_at")
 
   tenant                 Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  member                 Member          @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  member   Member?   @relation(fields: [memberId], references: [id], onDelete: Cascade)
   pack                   Pack            @relation(fields: [packId], references: [id], onDelete: Restrict)
   enrolledTransactionItem TransactionItem? @relation(fields: [enrolledTransactionItemId], references: [id], onDelete: SetNull)
   enrolledByStaff        StaffUser       @relation("DebitMandateEnrolledBy", fields: [enrolledByStaffId], references: [id], onDelete: Restrict)
@@ -766,13 +748,20 @@ model DebitMandate {
   @@map("debit_mandates")
 }
 
-/// Contratación de pack tras pago aprobado (CU-CON-001 / RN-PAG-004).
+/// Tipo de contrato. MEMBER = afiliado del gym. TENANT = suscripción de gym a plataforma.
+enum ContractType {
+  MEMBER
+  TENANT
+}
+
+/// Contratación de un pack por un afiliado o tenant.
 model Contract {
   id             String         @id @default(uuid()) @db.Uuid
   tenantId       String         @map("tenant_id") @db.Uuid
-  memberId       String         @map("member_id") @db.Uuid
+  memberId       String?        @map("member_id") @db.Uuid
   packId         String         @map("pack_id") @db.Uuid
   transactionItemId String       @unique @map("transaction_item_id") @db.Uuid
+  contractType   ContractType   @default(MEMBER) @map("contract_type")
   status         ContractStatus @default(ACTIVE)
   startsAt       DateTime       @map("starts_at")
   endsAt         DateTime?      @map("ends_at")
@@ -780,9 +769,9 @@ model Contract {
   createdAt      DateTime       @default(now()) @map("created_at")
   updatedAt      DateTime       @updatedAt @map("updated_at")
 
-  tenant       Tenant                  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  member       Member                  @relation(fields: [memberId], references: [id], onDelete: Cascade)
-  pack         Pack                    @relation(fields: [packId], references: [id], onDelete: Restrict)
+  tenant         Tenant                  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  member         Member?                 @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  pack           Pack                    @relation(fields: [packId], references: [id], onDelete: Restrict)
   transactionItem TransactionItem       @relation(fields: [transactionItemId], references: [id], onDelete: Restrict)
   balances     ContractCreditBalance[]
   reservations Reservation[]
@@ -832,7 +821,7 @@ model CredentialOffer {
   updatedAt  DateTime              @updatedAt @map("updated_at")
 
   tenant   Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  member   Member   @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  member   Member?   @relation(fields: [memberId], references: [id], onDelete: Cascade)
   pack     Pack     @relation(fields: [packId], references: [id], onDelete: Restrict)
   contract Contract @relation(fields: [contractId], references: [id], onDelete: Cascade)
 
@@ -906,25 +895,25 @@ model WaitlistEntry {
 /// Movimiento de caja del día (CU-PAG-002 / RN-PAG-007 / CU-PAG-005).
 ///
 /// @remarks CASH: ingreso al cobrar; egreso al devolver. Unique `(transaction_item_id, kind)`.
-model CashMovement {
-  id                 String              @id @default(uuid()) @db.Uuid
-  tenantId           String              @map("tenant_id") @db.Uuid
-  businessDate       DateTime            @map("business_date") @db.Date
-  transactionItemId  String              @map("transaction_item_id") @db.Uuid
-  memberId           String              @map("member_id") @db.Uuid
-  recordedByStaffId  String?             @map("recorded_by_staff_id") @db.Uuid
-  /// Comprobante de la ejecución (cobro no lo usa; devolución = 1 recibo del lote).
-  receiptId          String?             @map("receipt_id") @db.Uuid
-  amount             Int
-  kind               CashMovementKind    @default(INCOME)
-  concept            CashMovementConcept
-  createdAt          DateTime            @default(now()) @map("created_at")
+ model CashMovement {
+   id                 String              @id @default(uuid()) @db.Uuid
+   tenantId           String              @map("tenant_id") @db.Uuid
+   businessDate       DateTime            @map("business_date") @db.Date
+   transactionItemId  String              @map("transaction_item_id") @db.Uuid
+   memberId           String?             @map("member_id") @db.Uuid
+   recordedByStaffId  String?             @map("recorded_by_staff_id") @db.Uuid
+   /// Comprobante de la ejecución (cobro no lo usa; devolución = 1 recibo del lote).
+   receiptId          String?             @map("receipt_id") @db.Uuid
+   amount             Int
+   kind               CashMovementKind    @default(INCOME)
+   concept            CashMovementConcept
+   createdAt          DateTime            @default(now()) @map("created_at")
 
-  tenant          Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  transactionItem TransactionItem @relation(fields: [transactionItemId], references: [id], onDelete: Restrict)
-  member          Member     @relation(fields: [memberId], references: [id], onDelete: Cascade)
-  recordedByStaff StaffUser? @relation("CashMovementRecorder", fields: [recordedByStaffId], references: [id], onDelete: SetNull)
-  receipt         Receipt?   @relation(fields: [receiptId], references: [id], onDelete: Restrict)
+   tenant          Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+   transactionItem TransactionItem @relation(fields: [transactionItemId], references: [id], onDelete: Restrict)
+   member          Member?     @relation(fields: [memberId], references: [id], onDelete: Cascade)
+   recordedByStaff StaffUser? @relation("CashMovementRecorder", fields: [recordedByStaffId], references: [id], onDelete: SetNull)
+   receipt         Receipt?   @relation(fields: [receiptId], references: [id], onDelete: Restrict)
 
   @@unique([transactionItemId, kind])
   @@index([tenantId, businessDate])
@@ -1056,25 +1045,25 @@ model ReceiptSequence {
 ///
 /// @remarks Cobro: 1 por cart (`concept` PACK_CONTRACT/DROP_IN). Devolución: 1 por
 /// ejecución (`concept` REFUND), no por ítem. Unique parcial SQL: un cobro por `transaction_id`.
-model Receipt {
-  id          String           @id @default(uuid()) @db.Uuid
-  tenantId    String           @map("tenant_id") @db.Uuid
-  transactionItemId String?     @unique @map("transaction_item_id") @db.Uuid
-  /// Cart. Unique parcial SQL: a lo sumo un cobro (`concept <> REFUND`) por transacción.
-  transactionId    String?     @map("transaction_id") @db.Uuid
-  memberId    String           @map("member_id") @db.Uuid
-  number      Int
-  amount      Int
-  method      PaymentMethod
-  concept     ReceiptConcept
-  description String?
-  createdAt   DateTime         @default(now()) @map("created_at")
+ model Receipt {
+   id          String           @id @default(uuid()) @db.Uuid
+   tenantId    String           @map("tenant_id") @db.Uuid
+   transactionItemId String?     @unique @map("transaction_item_id") @db.Uuid
+   /// Cart. Unique parcial SQL: a lo sumo un cobro (`concept <> REFUND`) por transacción.
+   transactionId    String?     @map("transaction_id") @db.Uuid
+   memberId    String?         @map("member_id") @db.Uuid
+   number      Int
+   amount      Int
+   method      PaymentMethod
+   concept     ReceiptConcept
+   description String?
+   createdAt   DateTime         @default(now()) @map("created_at")
 
-  tenant  Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  transactionItem TransactionItem? @relation(fields: [transactionItemId], references: [id], onDelete: Restrict)
-  transaction    Transaction?   @relation(fields: [transactionId], references: [id], onDelete: Restrict)
-  member  Member  @relation(fields: [memberId], references: [id], onDelete: Cascade)
-  cashMovements CashMovement[]
+   tenant  Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+   transactionItem TransactionItem? @relation(fields: [transactionItemId], references: [id], onDelete: Restrict)
+   transaction    Transaction?   @relation(fields: [transactionId], references: [id], onDelete: Restrict)
+   member  Member?   @relation(fields: [memberId], references: [id], onDelete: Cascade)
+   cashMovements CashMovement[]
 
   @@unique([tenantId, number])
   @@index([tenantId])

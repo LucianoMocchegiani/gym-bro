@@ -36,7 +36,8 @@ export class UploadController {
     }),
   )
   async upload(
-    @UploadedFile() file: { mimetype: string; size: number; buffer: Buffer } | undefined,
+    @UploadedFile()
+    file: { mimetype: string; size: number; buffer: Buffer } | undefined,
     @Body() dto: UploadDto,
   ) {
     if (!file) {

@@ -1,5 +1,11 @@
 import * as bcrypt from 'bcryptjs';
-import { PrismaClient, TenantStatus, MemberStatus } from '@prisma/client';
+import {
+  PrismaClient,
+  TenantStatus,
+  MemberStatus,
+  ServiceType,
+  BillingPeriod,
+} from '@prisma/client';
 
 const prisma = new PrismaClient();
 
@@ -116,6 +122,21 @@ const PERMISSIONS: { code: string; description: string; dangerous: boolean }[] =
       description: 'Conectar o cambiar cuenta Mercado Pago',
       dangerous: true,
     },
+    {
+      code: 'platform.tenants.read',
+      description: 'Listar gyms de la plataforma',
+      dangerous: false,
+    },
+    {
+      code: 'platform.tenants.write',
+      description: 'CRUD gyms de la plataforma',
+      dangerous: true,
+    },
+    {
+      code: 'platform.impersonate',
+      description: 'Impersonar staff de cualquier gym',
+      dangerous: true,
+    },
   ];
 
 const ENTRENADOR_CODES = [
@@ -127,23 +148,14 @@ const ENTRENADOR_CODES = [
 ];
 
 /**
- * Seed de desarrollo: Super + tenant demo completo (branch, roles, staff Admin y Entrenador, member).
+ * Seed de desarrollo: tenant `admin` (plataforma) + tenant demo completo.
  *
- * @remarks Credenciales solo para entornos locales. Kuatia: wallets compartidos
- * vía `KUATIA_*` en env (consola Kuatia); el seed no bindea por tenant.
+ * @remarks La plataforma entra como Staff del tenant `admin` (rol `super-admin`);
+ * ya no existe un perfil `SUPER` aparte. Credenciales solo para entornos
+ * locales. Kuatia: wallets compartidos vía `KUATIA_*` en env.
  */
 async function main(): Promise<void> {
   const passwordHash = await bcrypt.hash(DEMO_PASSWORD, 12);
-
-  const superUser = await prisma.superUser.upsert({
-    where: { email: 'super@faciliter.xyz' },
-    update: { passwordHash, active: true, name: 'Super Admin' },
-    create: {
-      email: 'super@faciliter.xyz',
-      passwordHash,
-      name: 'Super Admin',
-    },
-  });
 
   const tenant = await prisma.tenant.upsert({
     where: { id: DEMO_TENANT_ID },
@@ -390,14 +402,134 @@ async function main(): Promise<void> {
     },
   });
 
-  console.log('Seed OK');
+  // Tenant admin (plataforma)
+  const ADMIN_TENANT_ID = '00000000-0000-4000-8000-000000000002';
+  const ADMIN_TENANT = await prisma.tenant.upsert({
+    where: { id: ADMIN_TENANT_ID },
+    update: { name: 'Faciliter Admin', slug: 'admin', status: TenantStatus.ACTIVE },
+    create: {
+      id: ADMIN_TENANT_ID,
+      name: 'Faciliter Admin',
+      slug: 'admin',
+      status: TenantStatus.ACTIVE,
+    },
+  });
+
+  const platformAdminIdentity = await identityFor(
+    'admin@faciliter.xyz',
+    passwordHash,
+    'Admin Faciliter',
+  );
+  const platformAdminStaff = await prisma.staffUser.upsert({
+    where: {
+      tenantId_email: { tenantId: ADMIN_TENANT.id, email: 'admin@faciliter.xyz' },
+    },
+    update: { identityId: platformAdminIdentity.id, active: true, name: 'Admin Faciliter' },
+    create: {
+      tenantId: ADMIN_TENANT.id,
+      identityId: platformAdminIdentity.id,
+      email: 'admin@faciliter.xyz',
+      name: 'Admin Faciliter',
+    },
+  });
+
+   let platformAdminRole = await prisma.role.findUnique({
+     where: {
+       tenantId_slug: { tenantId: ADMIN_TENANT.id, slug: 'super-admin' },
+     },
+   });
+   if (!platformAdminRole) {
+     platformAdminRole = await prisma.role.create({
+       data: {
+         tenantId: ADMIN_TENANT.id,
+         name: 'Super Admin',
+         slug: 'super-admin',
+         isSystem: true,
+         rolePermissions: {
+           create: permissionRows.map((p) => ({ permissionId: p.id })),
+         },
+       },
+     });
+   }
+   await prisma.staffUserRole.upsert({
+     where: {
+       staffUserId_roleId: {
+         staffUserId: platformAdminStaff.id,
+         roleId: platformAdminRole!.id,
+       },
+     },
+     update: {},
+     create: {
+       staffUserId: platformAdminStaff.id,
+       roleId: platformAdminRole!.id,
+     },
+   });
+
+    // Catálogo de plataforma: el tenant `admin` vende estos packs a los gyms.
+    //
+    // @remarks El catálogo es tenant-scoped (`@RequireTenantAuth()`), así que sin
+    // esto la Caja de plataforma arranca vacía. UUIDs fijos para que el seed sea
+    // idempotente (Service y Pack no tienen unique por nombre).
+    const BRAIN_SERVICE_ID = '00000000-0000-4000-8000-000000000010';
+    const brainService = await prisma.service.upsert({
+      where: { id: BRAIN_SERVICE_ID },
+      update: { active: true },
+      create: {
+        id: BRAIN_SERVICE_ID,
+        tenantId: ADMIN_TENANT.id,
+        type: ServiceType.ACCESO_LIBRE,
+        name: 'Faciliter Brain',
+        description: 'Asistente de inteligencia artificial del gimnasio.',
+        active: true,
+      },
+    });
+
+    const BRAIN_PACK_ID = '00000000-0000-4000-8000-000000000011';
+    const brainPack = await prisma.pack.upsert({
+      where: { id: BRAIN_PACK_ID },
+      update: { active: true },
+      create: {
+        id: BRAIN_PACK_ID,
+        tenantId: ADMIN_TENANT.id,
+        name: 'Faciliter Brain (mensual)',
+        description: 'Suscripción mensual al asistente Brain para el gym.',
+        price: 30000,
+        billingPeriod: BillingPeriod.MONTHLY,
+        active: true,
+      },
+    });
+
+    // Componente del pack: sin esto el cobro lo rechaza
+    // ("Pack {name} has no components").
+    await prisma.packComponent.upsert({
+      where: {
+        packId_serviceId: { packId: brainPack.id, serviceId: brainService.id },
+      },
+      update: { creditAmount: 1 },
+      create: {
+        packId: brainPack.id,
+        serviceId: brainService.id,
+        creditAmount: 1,
+      },
+    });
+
+    console.log('Seed OK');
   console.log({
-    superUser: { id: superUser.id, email: superUser.email },
     tenant: { id: tenant.id, name: tenant.name, slug: DEMO_SLUG },
+    adminTenant: { id: ADMIN_TENANT.id, name: ADMIN_TENANT.name, slug: 'admin' },
+    platformCatalog: {
+      service: { id: brainService.id, name: brainService.name },
+      pack: { id: brainPack.id, name: brainPack.name, price: brainPack.price },
+    },
     branch: { id: branch.id, name: branch.name },
     staff: {
       id: staff.id,
       email: staff.email,
+      roles: ['admin'],
+    },
+    platformAdminStaff: {
+      id: platformAdminStaff.id,
+      email: platformAdminStaff.email,
       roles: ['admin'],
     },
     entrenadorStaff: {

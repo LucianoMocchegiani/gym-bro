@@ -82,6 +82,28 @@ const NAV_GROUPS: NavGroup[] = [
   },
 ];
 
+/** Solo para el slug `admin` (plataforma): gestión de los demás gyms. */
+const PLATFORM_NAV_GROUP: NavGroup = {
+  label: 'Plataforma',
+  items: [{ href: '/tenants', label: 'Gyms' }],
+};
+
+function navGroupsForTenant(slug: string | null): NavGroup[] {
+  const isAdmin = slug === 'admin';
+  const groups = isAdmin ? [...NAV_GROUPS, PLATFORM_NAV_GROUP] : NAV_GROUPS;
+  return groups.map((group) => ({
+    ...group,
+    items: group.items.filter((item) => {
+      if (isAdmin) {
+        if (item.href === '/puerta') return false;
+        if (item.href === '/sesiones') return false;
+        if (item.href === '/afiliados') return false;
+      }
+      return true;
+    }),
+  })).filter((group) => group.items.length > 0);
+}
+
 function subscribeHost(): () => void {
   return () => undefined;
 }
@@ -119,13 +141,18 @@ export function AdminShell({
   const permissionCodes = session?.permissionCodes ?? null;
 
   const visibleGroups = useMemo(() => {
-    return NAV_GROUPS.map((group) => ({
-      ...group,
-      items: group.items.filter((item) =>
-        canAccessNavHref(item.href, permissionCodes),
-      ),
-    })).filter((group) => group.items.length > 0);
-  }, [permissionCodes]);
+    // El host manda: la nav del host es la que se muestra. La sesión ya fue
+    // reconciliada contra el host en `RequireStaff`.
+    const groups = navGroupsForTenant(hostSlug);
+    return groups
+      .map((group) => ({
+        ...group,
+        items: group.items.filter((item) =>
+          canAccessNavHref(item.href, permissionCodes),
+        ),
+      }))
+      .filter((group) => group.items.length > 0);
+  }, [permissionCodes, hostSlug]);
 
   function navClass(href: string): string {
     const active =

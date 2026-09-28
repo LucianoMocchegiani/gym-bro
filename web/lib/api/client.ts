@@ -7,11 +7,6 @@ import {
   readStaffSession,
   updateStaffTokens,
 } from '@/lib/auth/session';
-import {
-  clearSuperSession,
-  readSuperSession,
-  updateSuperTokens,
-} from '@/lib/auth/super-session';
 
 export type ApiErrorBody = {
   message?: string | string[];
@@ -47,23 +42,20 @@ function apiBaseUrl(): string {
   return `${base}/api`;
 }
 
-type AuthMode = false | 'staff' | 'super';
+type AuthMode = false | 'staff';
 
 type RequestOptions = {
   method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
   body?: unknown;
-  /** `true`/`'staff'` (default), `'super'`, o `false` sin Bearer. */
-  auth?: boolean | 'staff' | 'super';
+  /** `true`/`'staff'` (default), o `false` sin Bearer. */
+  auth?: boolean | 'staff';
   /** Evita loop infinito en refresh. */
   _retried?: boolean;
 };
 
-function resolveAuthMode(auth: boolean | 'staff' | 'super' | undefined): AuthMode {
+function resolveAuthMode(auth: boolean | 'staff' | undefined): AuthMode {
   if (auth === false) {
     return false;
-  }
-  if (auth === 'super') {
-    return 'super';
   }
   return 'staff';
 }
@@ -90,11 +82,6 @@ export async function apiRequest<T>(
     if (session?.accessToken) {
       headers.Authorization = `Bearer ${session.accessToken}`;
     }
-  } else if (authMode === 'super') {
-    const session = readSuperSession();
-    if (session?.accessToken) {
-      headers.Authorization = `Bearer ${session.accessToken}`;
-    }
   }
 
   const res = await fetch(`${apiBaseUrl()}${path}`, {
@@ -105,13 +92,11 @@ export async function apiRequest<T>(
   });
 
   if (res.status === 401 && authMode && !_retried) {
-    const refreshed = await tryRefresh(authMode);
+    const refreshed = await tryRefresh();
     if (refreshed) {
       return apiRequest<T>(path, { ...options, _retried: true });
     }
-    if (authMode === 'super') {
-      clearSuperSession();
-    } else {
+    if (authMode === 'staff') {
       clearStaffSession();
     }
   }
@@ -156,14 +141,11 @@ export function newIdempotencyKey(prefix: string): string {
  * Renueva el access Staff (mismo flujo que `apiRequest`). El drawer de chat lo reusa.
  */
 export async function refreshStaffAccess(): Promise<boolean> {
-  return tryRefresh('staff');
+  return tryRefresh();
 }
 
-async function tryRefresh(mode: 'staff' | 'super'): Promise<boolean> {
-  const refreshToken =
-    mode === 'super'
-      ? readSuperSession()?.refreshToken
-      : readStaffSession()?.refreshToken;
+async function tryRefresh(): Promise<boolean> {
+  const refreshToken = readStaffSession()?.refreshToken;
   if (!refreshToken) {
     return false;
   }
@@ -183,11 +165,7 @@ async function tryRefresh(mode: 'staff' | 'super'): Promise<boolean> {
       accessToken: string;
       refreshToken: string;
     };
-    if (mode === 'super') {
-      updateSuperTokens(data.accessToken, data.refreshToken);
-    } else {
-      updateStaffTokens(data.accessToken, data.refreshToken);
-    }
+    updateStaffTokens(data.accessToken, data.refreshToken);
     return true;
   } catch {
     return false;

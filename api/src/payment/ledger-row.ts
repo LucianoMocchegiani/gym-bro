@@ -1,4 +1,9 @@
-import { CashMovementKind, PaymentMethod, Prisma, ReceiptConcept } from '@prisma/client';
+import {
+  CashMovementKind,
+  PaymentMethod,
+  Prisma,
+  ReceiptConcept,
+} from '@prisma/client';
 import {
   PAYMENT_LINE_INCLUDE,
   toPaymentLine,
@@ -56,7 +61,7 @@ export type LedgerMovementSource = {
   kind: CashMovementKind;
   createdAt: Date;
   receiptId: string | null;
-  member: { id: string; name: string | null; email: string };
+  member: { id: string; name: string | null; email: string } | null;
   recordedByStaff: { name: string | null } | null;
   transactionItem: LedgerItemSource;
 };
@@ -85,7 +90,7 @@ export type LedgerMovementRow = {
   kind: 'INCOME' | 'OUTCOME';
   category: LedgerCategory;
   createdAt: Date;
-  memberId: string;
+  memberId: string | null;
   memberName: string | null;
   memberEmail: string;
   recordedByStaffName: string | null;
@@ -118,8 +123,7 @@ export function buildLedgerRows(
       row.kind === CashMovementKind.OUTCOME ? 'OUTCOME' : 'INCOME';
     const category = categoryFromKind(row.kind);
     const chargeReceiptId = item.transaction?.receipts[0]?.id ?? null;
-    const outcomeReceiptId =
-      row.receiptId ?? item.receipt?.id ?? null;
+    const outcomeReceiptId = row.receiptId ?? item.receipt?.id ?? null;
     const key =
       kind === 'INCOME'
         ? `in:${item.transactionId}`
@@ -127,7 +131,9 @@ export function buildLedgerRows(
     const existing = byKey.get(key);
     const line = toPaymentLine(item);
     const receiptId =
-      kind === 'INCOME' ? chargeReceiptId ?? item.receipt?.id ?? null : outcomeReceiptId;
+      kind === 'INCOME'
+        ? (chargeReceiptId ?? item.receipt?.id ?? null)
+        : outcomeReceiptId;
 
     if (existing) {
       existing.amount += row.amount;
@@ -157,9 +163,9 @@ export function buildLedgerRows(
       kind,
       category,
       createdAt: row.createdAt,
-      memberId: row.member.id,
-      memberName: row.member.name,
-      memberEmail: row.member.email,
+      memberId: row.member?.id ?? null,
+      memberName: row.member?.name ?? null,
+      memberEmail: row.member?.email ?? '',
       recordedByStaffName: row.recordedByStaff?.name ?? null,
       mpPaymentId: item.transaction?.mpPaymentId ?? item.mpPaymentId,
       items: [line],

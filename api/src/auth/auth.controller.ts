@@ -6,15 +6,24 @@ import {
   Param,
   Post,
   Req,
+  Res,
   UnauthorizedException,
   UseGuards,
 } from '@nestjs/common';
-import type { Request } from 'express';
+import { ConfigService } from '@nestjs/config';
+import type { Request, Response } from 'express';
 import { AuthService } from './auth.service';
-import { AuthTokens, MembershipsList, type AuthUser } from './auth.types';
+import {
+  AuthTokens,
+  ImpersonateHandoffResult,
+  MembershipsList,
+  type AuthUser,
+} from './auth.types';
 import { CurrentUser } from './decorators/current-user.decorator';
 import { RequireIdentityAuth } from './decorators/require-identity-auth.decorator';
-import { RequireSuperAuth } from './decorators/require-super-auth.decorator';
+import { PlatformTenantGuard } from './guards/platform-tenant.guard';
+import { PermissionGuard } from '../roles/guards/permission.guard';
+import { RequirePermission } from '../roles/decorators/require-permission.decorator';
 import {
   ChangePasswordDto,
   GoogleLoginDto,
@@ -27,9 +36,13 @@ import {
   RefreshTokenDto,
   SelectContextDto,
   StaffLoginDto,
-  SuperLoginDto,
 } from './dto/auth.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
+import {
+  IMPERSONATION_HANDOFF_COOKIE,
+  clearHandoffCookie,
+  setHandoffCookie,
+} from './handoff-cookie';
 
 /**
  * Endpoints de autenticación por perfil (RN-ROL-005).
@@ -38,28 +51,52 @@ import { JwtAuthGuard } from './guards/jwt-auth.guard';
  */
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(
+    private readonly authService: AuthService,
+    private readonly config: ConfigService,
+  ) {}
 
   /**
-   * Login Super Admin.
+   * Impersona a un staff de otro gym desde el tenant `admin`.
+   *
+   * @remarks Setea cookie `impersonation_handoff` (un uso, ~60 s). El gym
+   * destino llama `POST /auth/from-handoff`. No devuelve JWT (el origen
+   * plataforma no debe persistir la sesión del gym).
    */
-  @Post('super/login')
-  loginSuper(@Body() dto: SuperLoginDto): Promise<AuthTokens> {
-    return this.authService.loginSuper(dto);
+  // Orden: `@RequirePermission` arriba de `@UseGuards` (PermissionGuard después del JWT).
+  @RequirePermission('platform.impersonate')
+  @UseGuards(JwtAuthGuard, PlatformTenantGuard, PermissionGuard)
+  @Post('super/impersonate')
+  async impersonate(
+    @CurrentUser() user: AuthUser,
+    @Body() dto: ImpersonateDto,
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<ImpersonateHandoffResult> {
+    const { tenantSlug, handoffId } = await this.authService.impersonate(
+      user.userId,
+      dto,
+    );
+    setHandoffCookie(res, this.config, handoffId);
+    return { tenantSlug };
   }
 
   /**
-   * Super Admin impersona a un staff member (token temporal 4h).
-   *
-   * @remarks Requiere permisos de Super. Registra en audit log.
+   * Canjea la cookie de impersonación por JWT del staff destino.
    */
-  @RequireSuperAuth()
-  @Post('super/impersonate')
-  impersonate(
-    @CurrentUser() user: AuthUser,
-    @Body() dto: ImpersonateDto,
+  @Post('from-handoff')
+  async fromHandoff(
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
   ): Promise<AuthTokens> {
-    return this.authService.impersonate(user.userId, dto);
+    const handoffId = req.cookies?.[IMPERSONATION_HANDOFF_COOKIE];
+    if (typeof handoffId !== 'string' || !handoffId) {
+      throw new UnauthorizedException('No session');
+    }
+    try {
+      return await this.authService.exchangeHandoff(handoffId);
+    } finally {
+      clearHandoffCookie(res, this.config);
+    }
   }
 
   /**
@@ -86,21 +123,21 @@ export class AuthController {
     return this.authService.loginIdentity(dto);
   }
 
-/**
-    * Login de persona con `id_token` de Google Sign-In (app).
-    *
-    * @remarks Crea identity si el mail es nuevo; vincula `google_sub` si ya existe.
-    */
+  /**
+   * Login de persona con `id_token` de Google Sign-In (app).
+   *
+   * @remarks Crea identity si el mail es nuevo; vincula `google_sub` si ya existe.
+   */
   @Post('google')
   loginGoogle(@Body() dto: GoogleLoginDto): Promise<AuthTokens> {
     return this.authService.loginGoogle(dto);
   }
 
   /**
-    * Staff de un tenant entra con `id_token` de Google (Admin web).
-    *
-    * @remarks El tenantId viene de la URL. Verifica que la identity sea staff de ese tenant.
-    */
+   * Staff de un tenant entra con `id_token` de Google (Admin web).
+   *
+   * @remarks El tenantId viene de la URL. Verifica que la identity sea staff de ese tenant.
+   */
   @Post('staff/:tenantId/google')
   loginStaffGoogle(
     @Param('tenantId') tenantId: string,
@@ -110,10 +147,10 @@ export class AuthController {
   }
 
   /**
-    * Login de persona con `id_token` de Sign in with Apple (app).
-    *
-    * @remarks Crea identity si el mail es nuevo; vincula `apple_sub` si ya existe.
-    */
+   * Login de persona con `id_token` de Sign in with Apple (app).
+   *
+   * @remarks Crea identity si el mail es nuevo; vincula `apple_sub` si ya existe.
+   */
   @Post('apple')
   loginApple(@Body() dto: AppleLoginDto): Promise<AuthTokens> {
     return this.authService.loginApple(dto);
@@ -141,9 +178,7 @@ export class AuthController {
    */
   @Get('memberships')
   @RequireIdentityAuth()
-  listMemberships(
-    @CurrentUser() user: AuthUser,
-  ): Promise<MembershipsList> {
+  listMemberships(@CurrentUser() user: AuthUser): Promise<MembershipsList> {
     return this.authService.listMemberships(user.userId);
   }
 
@@ -168,10 +203,19 @@ export class AuthController {
   }
 
   /**
-   * Revoca el refresh token actual.
+   * Revoca el refresh token actual. Si hay cookie de handoff pendiente, la tira.
    */
   @Post('logout')
-  logout(@Body() dto: LogoutDto): Promise<{ ok: true }> {
+  async logout(
+    @Body() dto: LogoutDto,
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<{ ok: true }> {
+    const handoffId = req.cookies?.[IMPERSONATION_HANDOFF_COOKIE];
+    if (typeof handoffId === 'string' && handoffId) {
+      this.authService.discardHandoff(handoffId);
+      clearHandoffCookie(res, this.config);
+    }
     return this.authService.logout(dto.refreshToken);
   }
 

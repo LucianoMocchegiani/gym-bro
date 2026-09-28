@@ -100,7 +100,7 @@ CORS: la API acepta orígenes de `CORS_ORIGIN` (default `http://localhost:3000`)
 ### 4.1 Modelo
 
 - **Tenant = Gimnasio** (row-level isolation con `tenant_id` en todas las tablas de negocio).
-- Super Admin opera fuera del scope de un gym (CRUD de tenants). Para operar un gym: `POST /auth/super/impersonate` (token Staff temporal) + rutas Staff.
+- Super Admin opera fuera del scope de un gym (CRUD de tenants). Para operar un gym: `POST /auth/super/impersonate` (cookie `impersonation_handoff` ~60 s) + `POST /auth/from-handoff` en el origen del gym (JWT Staff 4h) + rutas Staff. QA web con HTTPS.
 - Staff/afiliado: `tenantId` del **JWT** (`TenantGuard` + `@CurrentTenant()` / `@RequireTenantAuth()`). Nunca confiar en body (RN-TEN-001).
 - Tenant **suspendido**: se corta en **login/refresh**; el access JWT puede vivir hasta su TTL (~15 min).
 
@@ -138,7 +138,7 @@ Identity: `GET /api/auth/memberships` + `POST /api/auth/select-context` `{ tenan
 También: `POST /api/auth/refresh`, `POST /api/auth/logout`, `GET /api/auth/me` (incluye `tenantId` para staff/member), `POST /api/auth/change-password` (JWT; verifica la actual con bcrypt y revoca todos los refresh tokens del usuario → obliga a re-login).
 
 Rutas de negocio del gym: `@RequireTenantAuth()` + `@CurrentTenant()` (módulo `tenant/`).
-Rutas de plataforma (Super): `@RequireSuperAuth()` — CRUD `/api/tenants`, `GET /api/tenants/:id/staff`, `POST /api/tenants/:id/quark/provision`. Operar un gym = `POST /api/auth/super/impersonate` + rutas Staff (no hay espejos nested).
+Rutas de plataforma: tenant `admin` + `platform.*`. Operar un gym = `POST /api/auth/super/impersonate` (cookie) → `{slug}/login?handoff=1` → `POST /api/auth/from-handoff` + rutas Staff (no hay espejos nested).
 Autorización fina staff: `@RequirePermission('code')` (unión de roles; permisos `dangerous` = flags RN-ROL-007).
 
 Afiliado y staff **nunca** comparten el mismo perfil de sesión (RN-ROL-005).
@@ -332,7 +332,7 @@ Prefijo sugerido: `/api/v1`.
 | Área | Endpoints / CU relacionados |
 |------|------------------------------|
 | Auth | `POST /auth/login`, refresh |
-| Super | CRUD `/tenants`, `GET /tenants/:id/staff`, `POST /auth/super/impersonate`, `POST /tenants/:id/quark/provision`. Operar el gym = impersonar (rutas Staff). |
+| Super | CRUD `/tenants`, `GET /tenants/:id/staff`, `POST /auth/super/impersonate` + `POST /auth/from-handoff`, `POST /tenants/:id/quark/provision`. Operar el gym = impersonar (rutas Staff). |
 | Afiliados | CRUD `/members` (Staff JWT) |
 | Catálogo | `/services`, `/packs`, `/sessions`, `/recurrence-rules` |
 | Reservas | `/sessions/:id/reservations`, waitlist |

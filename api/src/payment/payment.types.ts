@@ -27,7 +27,8 @@ export type MpCartLine = {
  */
 export type MpCartCheckoutResult = {
   transactionId: string;
-  memberId: string;
+  /** Null en ventas de plataforma (Caja del tenant `admin`). */
+  memberId: string | null;
   status: MpCheckoutStatus;
   amount: number;
   idempotencyKey: string;

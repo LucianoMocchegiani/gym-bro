@@ -332,7 +332,6 @@ export class ReservationsService {
     }
   }
 
-
   /**
    * Cancela reservas CONFIRMED de una sesión que el gym acaba de cancelar.
    *
@@ -396,7 +395,6 @@ export class ReservationsService {
       });
     }
   }
-
 
   /**
    * Cancela una reserva confirmada (CU-RES-003 / RN-RES-003 / RN-TEN-005).

@@ -15,7 +15,10 @@ import { PrismaService } from '../prisma/prisma.service';
 import { KuatiaHttpError } from './http-kuatia-admin.adapter';
 import { KuatiaAdminPort } from './kuatia-admin.port';
 import { KuatiaEnvService } from './kuatia-env.service';
-import { KuatiaPackSyncService, packKuatiaIds } from './kuatia-pack-sync.service';
+import {
+  KuatiaPackSyncService,
+  packKuatiaIds,
+} from './kuatia-pack-sync.service';
 
 const MAX_ERROR_LEN = 500;
 
@@ -410,8 +413,8 @@ export class KuatiaOfferService {
       return null;
     }
     return {
-      memberId: contract.memberId,
-      memberName: contract.member.name,
+      memberId: contract.memberId ?? '',
+      memberName: contract.member?.name ?? null,
       packId: contract.packId,
       packName: contract.pack.name,
       startsAt: contract.startsAt,

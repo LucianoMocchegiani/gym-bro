@@ -5,15 +5,21 @@ Origen: seed [`api/prisma/seed.ts`](../api/prisma/seed.ts).
 Arranque desde cero (migraciones + seed): [13-setup-db-desde-cero.md](./13-setup-db-desde-cero.md).
 
 ```powershell
-docker compose exec api npm run prisma:seed
+# El seed necesita Node 24 (el del contenedor); el Node del host no soporta
+# --experimental-strip-types.
+docker cp api/prisma/seed.ts facilitation-api:/app/prisma/seed.ts
+docker exec facilitation-api sh -c "cd /app && npx prisma db seed"
 ```
 
 Password común a todos: **`ChangeMe123!`**
 
-Tenant demo: slug **`demo`** · id **`00000000-0000-4000-8000-000000000001`** (`Demo Gym`)
+Tenant demo: slug **`gym-de-prueba`** · id **`00000000-0000-4000-8000-000000000001`** (`Gym de Prueba`)  
+Tenant plataforma: slug **`admin`** · id **`00000000-0000-4000-8000-000000000002`** (`Faciliter Admin`)
 
-Admin web Staff: **http://demo.localhost:3002/login** (sin pegar tenantId)  
-Super Admin: **http://localhost:3002/super/login**
+Admin web Staff: **http://gym-de-prueba.localhost:3002/login** (sin pegar tenantId)  
+Plataforma: **http://admin.localhost:3002/login**
+
+> No existe un perfil `SUPER` ni `POST /api/auth/super/login`. La plataforma es el tenant `admin` y entra por el login de staff normal.
 
 ---
 
@@ -21,7 +27,7 @@ Super Admin: **http://localhost:3002/super/login**
 
 | Perfil | Email | Password | Extra |
 |--------|--------|----------|--------|
-| Super Admin | `super@faciliter.xyz` | `ChangeMe123!` | Sin tenant · `/super/login` |
+| Plataforma (tenant `admin`) | `admin@faciliter.xyz` | `ChangeMe123!` | `tenantSlug: admin` · rol `super-admin` · `admin.localhost:3002` |
 | Staff (Admin del gym) | `admin@gymdeprueba.com` | `ChangeMe123!` | slug `gym-de-prueba` · `gym-de-prueba.localhost:3002` |
 | Staff (Entrenador) | `entrenador@gymdeprueba.com` | `ChangeMe123!` | Sin caja ni débitos; sí reportes, puerta, sesiones, afiliados lectura |
 | Afiliado (Member) | `socio@gymdeprueba.com` | `ChangeMe123!` | slug `gym-de-prueba` · app Flutter / API |
@@ -37,14 +43,15 @@ Kuatia del demo: `tenants.quark_*` = `KUATIA_ISSUER_WALLET_ID` / `KUATIA_VERIFIE
 
 Base: `http://localhost:3001`
 
-### Super
+### Plataforma (tenant `admin`)
 
 ```http
-POST /api/auth/super/login
+POST /api/auth/staff/login
 Content-Type: application/json
 
 {
-  "email": "super@faciliter.xyz",
+  "tenantSlug": "admin",
+  "email": "admin@faciliter.xyz",
   "password": "ChangeMe123!"
 }
 ```
@@ -81,10 +88,21 @@ Content-Type: application/json
 
 ---
 
-## Owner al crear tenant (Super)
+## Owner al crear tenant (plataforma)
 
 `POST /api/tenants` crea además un staff owner (email/password que indiques en el body) con rol Admin. Eso **no** es la cuenta seed de arriba; es por gym nuevo.
 
 ---
 
-[Índice](./00-indice.md) · [Postman](../postman/README.md) · [README](../README.md)
+## Catálogo de plataforma
+
+El seed crea en el tenant `admin` lo que la Caja de plataforma vende:
+
+| Recurso | Nombre | Id |
+|---------|--------|-----|
+| Service | `Faciliter Brain` | `00000000-0000-4000-8000-000000000010` |
+| Pack | `Faciliter Brain (mensual)` — 30000 ARS, `MONTHLY` | `00000000-0000-4000-8000-000000000011` |
+
+---
+
+[Índice](./00-indice.md) · [Postman](../postman/README.md) · [README](../README.md) · [Handoff impersonación](./20-handoff-impersonacion-entre-subdominios.md)

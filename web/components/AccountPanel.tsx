@@ -15,10 +15,10 @@ type AccountPanelProps = {
   subtitle?: string;
   /** Marca contextual (p. ej. slug del gym). */
   badge?: string | null;
-  authMode: 'staff' | 'super';
   onLogout: () => Promise<void>;
   loginHref: string;
-  /** Si false, el botón de cambio de contraseña se muestra deshabilitado (cuenta Google). */
+  /** Impersonación: vuelve al tenant `admin` (sesión de plataforma sigue en ese origen). */
+  onReturnToPlatform?: () => void;
   hasPassword?: boolean;
 };
 
@@ -36,7 +36,7 @@ function initials(name: string | null, email: string): string {
 /**
  * Pantalla de cuenta (avatar → datos, cerrar sesión y cambio de contraseña).
  *
- * @remarks Usado en el panel Staff (`/cuenta`) y Super (`/super/cuenta`).
+ * @remarks Usado en el panel Staff (`/cuenta`).
  * El cambio de contraseña abre un modal; al cambiarla el server revoca todos
  * los refresh tokens → se invita a re-login.
  */
@@ -45,9 +45,9 @@ export function AccountPanel({
   email,
   subtitle,
   badge,
-  authMode,
   onLogout,
   loginHref,
+  onReturnToPlatform,
   hasPassword = true,
 }: AccountPanelProps) {
   const router = useRouter();
@@ -80,7 +80,7 @@ export function AccountPanel({
     }
     setBusy(true);
     try {
-      await changePassword({ currentPassword, newPassword }, authMode);
+      await changePassword({ currentPassword, newPassword });
       setDone(true);
     } catch (err) {
       setError(
@@ -143,6 +143,11 @@ export function AccountPanel({
         description="Cerrar la sesión actual en este dispositivo."
       >
         <div className="admin-modal-actions">
+          {onReturnToPlatform ? (
+            <button type="button" className="btn" onClick={onReturnToPlatform}>
+              Volver a plataforma
+            </button>
+          ) : null}
           <button
             type="button"
             className="btn danger"

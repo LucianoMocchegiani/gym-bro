@@ -1,6 +1,16 @@
-import { BadRequestException, Inject, Injectable, Logger, forwardRef, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Inject,
+  Injectable,
+  Logger,
+  forwardRef,
+  NotFoundException,
+} from '@nestjs/common';
 import { PaymentMethod } from '@prisma/client';
-import { TransactionService, TransactionItemInput } from './transaction.service';
+import {
+  TransactionService,
+  TransactionItemInput,
+} from './transaction.service';
 import { PaymentRegisterService } from '../payment-register/register.service';
 import { CashMovementConcept, ReceiptConcept } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
@@ -18,8 +28,10 @@ import { Prisma } from '@prisma/client';
 type Tx = Prisma.TransactionClient;
 
 export interface ProcessPaymentParams {
+  /** Tenant que abona: el dueño del cobro o el gym facturado por la plataforma. */
   tenantId: string;
-  memberId: string;
+  /** Afiliado cobrador. Null cuando el tenant mismo abona. */
+  memberId: string | null;
   items: TransactionItemInput[];
   idempotencyKey: string;
   method: PaymentMethod;
@@ -67,8 +79,20 @@ export class CashPaymentService {
   async processPayment(
     tx: Tx,
     params: ProcessPaymentParams,
-  ): Promise<{ transaction: Awaited<ReturnType<TransactionService['initiateTransaction']>> }> {
-    const { tenantId, memberId, items, idempotencyKey, method, cashConcept, receiptConcept, description, recordedByStaffId } = params;
+  ): Promise<{
+    transaction: Awaited<ReturnType<TransactionService['initiateTransaction']>>;
+  }> {
+    const {
+      tenantId,
+      memberId,
+      items,
+      idempotencyKey,
+      method,
+      cashConcept,
+      receiptConcept,
+      description,
+      recordedByStaffId,
+    } = params;
 
     if (method === PaymentMethod.STUB) {
       throw new BadRequestException(
@@ -102,7 +126,10 @@ export class CashPaymentService {
         });
       }
 
-      const total = confirmed.transactionItems.reduce((sum, item) => sum + item.amount, 0);
+      const total = confirmed.transactionItems.reduce(
+        (sum, item) => sum + item.amount,
+        0,
+      );
       await this.receiptsService.issueForApprovedPayment(tx, {
         tenantId,
         transactionId: confirmed.id,
@@ -240,7 +267,9 @@ export class CashPaymentService {
         ? CashMovementConcept.DROP_IN
         : CashMovementConcept.PACK_CONTRACT;
     const receiptConcept =
-      sessions.length > 0 ? ReceiptConcept.DROP_IN : ReceiptConcept.PACK_CONTRACT;
+      sessions.length > 0
+        ? ReceiptConcept.DROP_IN
+        : ReceiptConcept.PACK_CONTRACT;
 
     const { transaction } = await this.prisma.$transaction(async (tx) => {
       return this.processPayment(tx, {
@@ -287,8 +316,139 @@ export class CashPaymentService {
         transaction.id,
       );
     } catch {
+      this.logger.warn(`CASH cart ${transaction.id} committed without receipt`);
+    }
+
+    return {
+      transactionId: transaction.id,
+      amount: transaction.amount,
+      status: transaction.status,
+      transactionItems: transaction.transactionItems.map((item) => ({
+        id: item.id,
+        sessionId: item.sessionId,
+        packId: item.packId,
+        amount: item.amount,
+      })),
+      receipt,
+    };
+  }
+
+  /**
+   * Checkout en efectivo de la Caja de plataforma: el tenant `admin` le factura
+   * un pack propio a otro gym.
+   *
+   * @description
+   * Reusa {@link processPayment} con `memberId: null`: el pagador es el propio
+   * `tenantId` de la transacción (`billingTenantId`). No genera contratos ni
+   * reservas porque no hay afiliado detrás del pago.
+   *
+   * @remarks
+   * `catalogTenantId` es el tenant dueño del pack (la plataforma); la
+   * transacción se emite contra `billingTenantId` (el gym que paga).
+   * Solo packs: el drop-in es por sesiones de un gym, no aplica a plataforma.
+   */
+  async startTenantCashCart(
+    catalogTenantId: string,
+    billingTenantId: string,
+    actor: AuditActor,
+    dto: CreateCashCartDto,
+  ): Promise<CashCartResult> {
+    const idempotencyKey =
+      dto.idempotencyKey?.trim() || `tenant-cash-cart-${Date.now()}`;
+
+    if (dto.items.length === 0) {
+      throw new BadRequestException('Cart must have at least one item');
+    }
+    if (dto.items.some((i) => i.kind !== 'PACK')) {
+      throw new BadRequestException('Platform sales only support PACK items');
+    }
+
+    const target = await this.prisma.tenant.findUnique({
+      where: { id: billingTenantId },
+      select: { id: true, name: true, slug: true, status: true },
+    });
+    if (!target) {
+      throw new NotFoundException(`Tenant ${billingTenantId} not found`);
+    }
+    if (target.id === catalogTenantId) {
+      throw new BadRequestException('A tenant cannot be billed for itself');
+    }
+
+    const packs: Array<{
+      packId: string;
+      amount: number;
+      name: string;
+      quantity: number;
+    }> = [];
+
+    for (const item of dto.items) {
+      const pack = await this.prisma.pack.findFirst({
+        where: {
+          id: item.id,
+          tenantId: catalogTenantId,
+          active: true,
+          originServiceId: null,
+        },
+        select: { id: true, name: true, price: true, components: true },
+      });
+      if (!pack) {
+        throw new NotFoundException(`Pack ${item.id} not found or inactive`);
+      }
+      if (pack.components.length === 0) {
+        throw new BadRequestException(`Pack ${pack.name} has no components`);
+      }
+      if (pack.price < 1) {
+        throw new BadRequestException('Pack price must be at least 1');
+      }
+      packs.push({
+        packId: pack.id,
+        amount: pack.price,
+        name: pack.name,
+        quantity: item.quantity ?? 1,
+      });
+    }
+
+    const allItems: TransactionItemInput[] = [];
+    let idx = 0;
+    for (const p of packs) {
+      for (let q = 0; q < p.quantity; q++) {
+        allItems.push({
+          packId: p.packId,
+          amount: p.amount,
+          idempotencyKey: `${idempotencyKey}-${idx++}`,
+        });
+      }
+    }
+
+    const totalItems = packs.reduce((sum, p) => sum + p.quantity, 0);
+    const label =
+      totalItems === 1
+        ? `${packs[0]?.name ?? 'Cart'} — ${target.name}`
+        : `${totalItems} items — ${target.name}`;
+
+    const { transaction } = await this.prisma.$transaction(async (tx) => {
+      return this.processPayment(tx, {
+        tenantId: billingTenantId,
+        memberId: null,
+        items: allItems,
+        idempotencyKey,
+        method: PaymentMethod.CASH,
+        cashConcept: CashMovementConcept.PACK_CONTRACT,
+        receiptConcept: ReceiptConcept.PACK_CONTRACT,
+        description: label,
+        recordedByStaffId: actor.profileType === 'STAFF' ? actor.userId : null,
+      });
+    });
+
+    let receipt: ReceiptDetail | null = null;
+    try {
+      receipt = await this.receiptsService.findByTransactionId(
+        billingTenantId,
+        transaction.id,
+      );
+    } catch {
       this.logger.warn(
-        `CASH cart ${transaction.id} committed without receipt`,
+        `platform CASH cart ${transaction.id} committed without receipt`,
       );
     }
 

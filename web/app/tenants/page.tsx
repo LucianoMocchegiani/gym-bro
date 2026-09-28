@@ -6,19 +6,21 @@ import {
   DataTable,
   listCountDescription,
 } from '@/components/AdminList';
+import { AdminShell } from '@/components/AdminShell';
 import { AdminModal } from '@/components/AdminModal';
-import { RequireSuper } from '@/components/RequireSuper';
+import { RequireStaff } from '@/components/RequireStaff';
 import { PageSkeleton } from '@/components/Skeleton';
 import { StatusPill, activeTone } from '@/components/StatusPill';
-import { SuperShell } from '@/components/SuperShell';
+import { ListToolbar } from '@/components/AdminList';
 import {
   IconEdit,
+  IconView,
   RowActions,
   RowIconButton,
 } from '@/components/RowActions';
 import { TenantCreateForm } from '@/components/TenantCreateForm';
 import { TenantEditPanel } from '@/components/TenantEditPanel';
-import { TenantStaffPanel } from '@/components/TenantStaffPanel';
+import { ImpersonateTenantPanel } from '@/components/ImpersonateTenantPanel';
 import { ApiClientError } from '@/lib/api/client';
 import { listTenants } from '@/lib/api/tenants';
 import type { TenantDetail } from '@/lib/api/tenants';
@@ -27,17 +29,19 @@ import { tenantHostLabel, tenantOrigin } from '@/lib/tenant-host';
 const PAGE_SIZE = 20;
 
 /**
- * Listado de tenants (CU-ROL-001/002).
+ * Gestión de gyms del tenant `admin` (plataforma).
  *
- * @remarks `+ Crear` abre modal; `/super/tenants/nuevo` → `?nuevo=1`.
+ * @remarks Reemplaza el antiguo `/super/tenants`. Solo accesible con el slug
+ * `admin`: un gym normal no tiene este módulo en la nav ni permisos de
+ * plataforma, así que la API responde 403.
  */
-export default function SuperTenantsPage() {
+export default function AdminTenantsPage() {
   return (
-    <RequireSuper>
+    <RequireStaff>
       <Suspense fallback={<PageSkeleton />}>
         <TenantsInner />
       </Suspense>
-    </RequireSuper>
+    </RequireStaff>
   );
 }
 
@@ -54,7 +58,8 @@ function TenantsInner() {
     searchParams.get('nuevo') === '1',
   );
   const editarId = searchParams.get('editar')?.trim() || null;
-  const staffTenantId = searchParams.get('staff')?.trim() || null;
+  const impersonateId = searchParams.get('impersonate')?.trim() || null;
+  const detalleId = searchParams.get('detalle')?.trim() || null;
   const [flashOk, setFlashOk] = useState<string | null>(null);
 
   const load = useCallback(async () => {
@@ -87,48 +92,45 @@ function TenantsInner() {
     };
   }, [load]);
 
-  function openModal() {
-    setFlashOk(null);
-    setModalOpen(true);
-    router.replace('/super/tenants?nuevo=1', { scroll: false });
-  }
-
   function closeModal() {
     setModalOpen(false);
-    router.replace('/super/tenants', { scroll: false });
+    router.replace('/tenants', { scroll: false });
   }
 
-  function openEdit(id: string) {
+  function navigate(param: string, id: string) {
     setFlashOk(null);
-    router.replace(`/super/tenants?editar=${encodeURIComponent(id)}`, {
+    router.replace(`/tenants?${param}=${encodeURIComponent(id)}`, {
       scroll: false,
     });
   }
 
-  function openStaff(id: string) {
-    setFlashOk(null);
-    router.replace(`/super/tenants?staff=${encodeURIComponent(id)}`, {
-      scroll: false,
-    });
-  }
+  const detalle = rows.find((r) => r.id === detalleId) ?? null;
+  const impersonateTarget = rows.find((r) => r.id === impersonateId) ?? null;
 
   return (
-    <SuperShell
-      title="Tenants"
-      actions={
-        <button type="button" className="btn" onClick={openModal}>
+    <AdminShell title="Gyms" subtitle="Alta, edición y acceso a cada tenant.">
+      <ListToolbar hint="Accedé a un gym para operarlo con su propia sesión.">
+        <button
+          type="button"
+          className="btn"
+          onClick={() => {
+            setFlashOk(null);
+            setModalOpen(true);
+            router.replace('/tenants?nuevo=1', { scroll: false });
+          }}
+        >
           + Crear
         </button>
-      }
-    >
+      </ListToolbar>
       {flashOk ? <p className="ok-msg">{flashOk}</p> : null}
 
       <DataTable
+        title="Tenants"
         description={listCountDescription(total, page, 'gym', 'gyms')}
         loading={loading}
         error={error}
         isEmpty={rows.length === 0}
-        emptyText="No hay tenants."
+        emptyText="No hay gyms."
         page={page}
         hasMore={hasMore}
         onPageChange={setPage}
@@ -165,14 +167,20 @@ function TenantsInner() {
             <td>
               <RowActions>
                 <RowIconButton
-                  label="Staff"
-                  onClick={() => openStaff(t.id)}
+                  label="Ver detalle"
+                  onClick={() => navigate('detalle', t.id)}
+                >
+                  <IconView />
+                </RowIconButton>
+                <RowIconButton
+                  label="Entrar como gym"
+                  onClick={() => navigate('impersonate', t.id)}
                 >
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
                 </RowIconButton>
                 <RowIconButton
                   label="Editar"
-                  onClick={() => openEdit(t.id)}
+                  onClick={() => navigate('editar', t.id)}
                 >
                   <IconEdit />
                 </RowIconButton>
@@ -185,13 +193,13 @@ function TenantsInner() {
       <AdminModal
         open={modalOpen}
         onClose={closeModal}
-        title="Nuevo tenant"
+        title="Nuevo gym"
         description="Gym + owner Admin inicial."
       >
         <TenantCreateForm
           onCancel={closeModal}
           onSuccess={(created) => {
-            setFlashOk(`Tenant creado: ${created.name}`);
+            setFlashOk(`Gym creado: ${created.name}`);
             closeModal();
             if (page === 1) {
               void load();
@@ -205,8 +213,8 @@ function TenantsInner() {
       <AdminModal
         open={Boolean(editarId)}
         onClose={closeModal}
-        title="Editar tenant"
-        description="Datos del gym, slug y estado."
+        title="Editar gym"
+        description="Datos, slug y estado."
       >
         {editarId ? (
           <TenantEditPanel
@@ -214,12 +222,12 @@ function TenantsInner() {
             tenantId={editarId}
             onCancel={closeModal}
             onSaved={(updated) => {
-              setFlashOk(`Tenant guardado: ${updated.name}`);
+              setFlashOk(`Gym guardado: ${updated.name}`);
               closeModal();
               void load();
             }}
             onDeleted={() => {
-              setFlashOk('Tenant eliminado (cascada total).');
+              setFlashOk('Gym eliminado (cascada total).');
               closeModal();
               void load();
             }}
@@ -228,22 +236,46 @@ function TenantsInner() {
       </AdminModal>
 
       <AdminModal
-        open={Boolean(staffTenantId)}
+        open={Boolean(detalle)}
         onClose={closeModal}
-        title="Staff del tenant"
-        description="Impersonar un staff member para soporte."
+        title={detalle?.name ?? ''}
+        description={detalle ? `${detalle.slug} · ${detalle.status}` : ''}
       >
-        {staffTenantId ? (
-          <TenantStaffPanel
-            key={staffTenantId}
-            tenantId={staffTenantId}
-            tenantName={
-              rows.find((r) => r.id === staffTenantId)?.name ?? ''
-            }
-            onClose={closeModal}
-          />
+        {detalle ? (
+          <ul className="plain-list">
+            <li>
+              <strong>Slug:</strong> <code>{detalle.slug}</code>
+            </li>
+            <li>
+              <strong>Estado:</strong> {detalle.status}
+            </li>
+            <li>
+              <strong>Sede:</strong> {detalle.defaultBranch?.name ?? '—'}
+            </li>
+            <li>
+              <strong>Owner:</strong> {detalle.owner?.email ?? '—'}
+            </li>
+            <li>
+              <strong>Alta:</strong>{' '}
+              {new Date(detalle.createdAt).toLocaleDateString('es-AR')}
+            </li>
+          </ul>
         ) : null}
       </AdminModal>
-    </SuperShell>
+
+      {impersonateTarget ? (
+        <ImpersonateTenantPanel
+          key={impersonateTarget.id}
+          tenant={{
+            id: impersonateTarget.id,
+            name: impersonateTarget.name,
+            slug: impersonateTarget.slug,
+            status: impersonateTarget.status,
+            memberCount: 0,
+          }}
+          onClose={closeModal}
+        />
+      ) : null}
+    </AdminShell>
   );
 }

@@ -17,12 +17,12 @@ import { PrismaService } from '../prisma/prisma.service';
 import { MercadoPagoAccountService } from './mercadopago-account.service';
 import { PacksService } from '../packs/packs.service';
 import { SessionValidationService } from '../sessions/session-validation.service';
-import { CreateMpCartCheckoutDto, MpCartItemDto } from './dto/create-mp-cart-checkout.dto';
-import { TransactionService } from './transaction.service';
 import {
-  MpCartLine,
-  MpCartCheckoutResult,
-} from './payment.types';
+  CreateMpCartCheckoutDto,
+  MpCartItemDto,
+} from './dto/create-mp-cart-checkout.dto';
+import { TransactionService } from './transaction.service';
+import { MpCartLine, MpCartCheckoutResult } from './payment.types';
 import { MP_ACCOUNT_PORT, MpAccountPort } from './mp-account.port';
 import { mpCopyForDropIn, mpCopyForPack } from './mp-item-copy';
 
@@ -82,11 +82,7 @@ export class OnlinePaymentService {
       );
     }
 
-    if (
-      existing &&
-      recordedByStaffId &&
-      !existing.recordedByStaffId
-    ) {
+    if (existing && recordedByStaffId && !existing.recordedByStaffId) {
       await this.prisma.transaction.update({
         where: { id: existing.id },
         data: { recordedByStaffId },
@@ -101,7 +97,7 @@ export class OnlinePaymentService {
       return this.toCartResult(existing, existing.transactionItems);
     }
 
-    const lines = await this.resolveCartLines(tenantId, memberId, dto.items);
+    const lines = await this.resolveCartLines(tenantId, dto.items, memberId);
     const total = lines.reduce(
       (sum, line) => sum + line.amount * line.quantity,
       0,
@@ -134,8 +130,7 @@ export class OnlinePaymentService {
             data: {
               tenantId,
               memberId,
-              packId:
-                line.kind === 'PACK' ? line.refId : (line.packId ?? null),
+              packId: line.kind === 'PACK' ? line.refId : (line.packId ?? null),
               sessionId: line.kind === 'DROP_IN' ? line.refId : null,
               amount: line.amount,
               status: PaymentStatus.PENDING,
@@ -213,10 +208,204 @@ export class OnlinePaymentService {
     }
   }
 
+  /**
+   * Checkout MP de la Caja de plataforma: el tenant `admin` le factura un pack
+   * propio a otro gym.
+   *
+   * @description
+   * Reusa el mismo flujo que {@link startCartCheckout} con `memberId: null`: el
+   * pagador es el propio `tenantId` de la transacción (`billingTenantId`). El
+   * pagador en MP es el staff más antiguo del gym facturado.
+   *
+   * @remarks
+   * `catalogTenantId` es el tenant dueño del pack (la plataforma).
+   * Solo packs: el drop-in es por sesiones de un gym y no aplica a plataforma.
+   */
+  async startTenantCartCheckout(
+    catalogTenantId: string,
+    billingTenantId: string,
+    dto: CreateMpCartCheckoutDto,
+    recordedByStaffId: string | null,
+  ): Promise<MpCartCheckoutResult> {
+    await this.requireMpConnected(catalogTenantId);
+
+    if (dto.items.length === 0) {
+      throw new BadRequestException('Cart must have at least one item');
+    }
+    if (dto.items.some((i) => i.kind !== 'PACK')) {
+      throw new BadRequestException('Platform sales only support PACK items');
+    }
+
+    const target = await this.prisma.tenant.findUnique({
+      where: { id: billingTenantId },
+      select: { id: true, name: true, status: true },
+    });
+    if (!target) {
+      throw new NotFoundException(`Tenant ${billingTenantId} not found`);
+    }
+    if (target.id === catalogTenantId) {
+      throw new BadRequestException('A tenant cannot be billed for itself');
+    }
+
+    const payer = await this.prisma.staffUser.findFirst({
+      where: { tenantId: billingTenantId, active: true },
+      orderBy: { createdAt: 'asc' },
+      select: { email: true },
+    });
+    if (!payer) {
+      throw new BadRequestException(
+        'Target tenant has no active staff to bill',
+      );
+    }
+
+    const idempotencyKey =
+      dto.idempotencyKey?.trim() ||
+      `tenant-mp-cart-${randomBytes(16).toString('hex')}`;
+
+    const existing = await this.prisma.transaction.findUnique({
+      where: {
+        tenantId_idempotencyKey: {
+          tenantId: billingTenantId,
+          idempotencyKey,
+        },
+      },
+      include: { transactionItems: { orderBy: { createdAt: 'asc' } } },
+    });
+
+    if (existing && existing.memberId !== null) {
+      throw new BadRequestException(
+        'Idempotency key already used for a different checkout',
+      );
+    }
+
+    if (existing && recordedByStaffId && !existing.recordedByStaffId) {
+      await this.prisma.transaction.update({
+        where: { id: existing.id },
+        data: { recordedByStaffId },
+      });
+      existing.recordedByStaffId = recordedByStaffId;
+    }
+
+    if (
+      existing &&
+      (this.isTerminal(existing.status) || existing.mpPreferenceId)
+    ) {
+      return this.toCartResult(existing, existing.transactionItems);
+    }
+
+    const lines = await this.resolveCartLines(catalogTenantId, dto.items);
+    const total = lines.reduce(
+      (sum, line) => sum + line.amount * line.quantity,
+      0,
+    );
+
+    let cart: Transaction | null = existing;
+    const transactionItems: {
+      id: string;
+      sessionId: string | null;
+      packId: string | null;
+      amount: number;
+    }[] = existing?.transactionItems ?? [];
+
+    if (!cart) {
+      cart = await this.prisma.transaction.create({
+        data: {
+          tenantId: billingTenantId,
+          memberId: null,
+          amount: total,
+          status: PaymentStatus.PENDING,
+          idempotencyKey,
+          recordedByStaffId,
+        },
+      });
+
+      let itemIndex = 0;
+      for (const line of lines) {
+        for (let n = 0; n < line.quantity; n++) {
+          const transactionItem = await this.prisma.transactionItem.create({
+            data: {
+              tenantId: billingTenantId,
+              memberId: null,
+              packId: line.kind === 'PACK' ? line.refId : null,
+              sessionId: null,
+              amount: line.amount,
+              status: PaymentStatus.PENDING,
+              method: PaymentMethod.MP,
+              idempotencyKey: `${idempotencyKey}:${itemIndex++}`,
+              transactionId: cart.id,
+            },
+          });
+          transactionItems.push(transactionItem);
+        }
+      }
+    }
+
+    const accessToken =
+      await this.accounts.getDecryptedAccessToken(catalogTenantId);
+    const notificationUrl = this.buildNotificationUrl(billingTenantId);
+
+    try {
+      const preference = await this.mp.createPreference({
+        accessToken,
+        items: lines.map((line) => ({
+          title: line.title ?? '',
+          description: line.description,
+          quantity: line.quantity,
+          unit_price: line.amount,
+        })),
+        externalReference: cart.id,
+        notificationUrl,
+        payerEmail: payer.email,
+      });
+
+      const updated = await this.prisma.transaction.update({
+        where: { id: cart.id },
+        data: {
+          mpPreferenceId: preference.preferenceId,
+          mpInitPoint: preference.initPoint,
+          mpSandboxInitPoint: preference.sandboxInitPoint,
+        },
+      });
+
+      await this.prisma.transactionItem.updateMany({
+        where: { transactionId: cart.id },
+        data: {
+          mpPreferenceId: preference.preferenceId,
+          mpInitPoint: preference.initPoint,
+          mpSandboxInitPoint: preference.sandboxInitPoint,
+        },
+      });
+
+      return this.toCartResult(updated, transactionItems);
+    } catch (error: unknown) {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2002'
+      ) {
+        const again = await this.prisma.transaction.findUnique({
+          where: {
+            tenantId_idempotencyKey: {
+              tenantId: billingTenantId,
+              idempotencyKey,
+            },
+          },
+          include: { transactionItems: { orderBy: { createdAt: 'asc' } } },
+        });
+        if (again) {
+          return this.toCartResult(again, again.transactionItems);
+        }
+      }
+      if (error instanceof Error && error.message.includes('Mercado Pago')) {
+        throw new BadRequestException(error.message);
+      }
+      throw error;
+    }
+  }
+
   private async resolveCartLines(
     tenantId: string,
-    memberId: string,
     items: CreateMpCartCheckoutDto['items'],
+    memberId?: string,
   ): Promise<MpCartLine[]> {
     const lines: MpCartLine[] = [];
     for (const item of items) {
@@ -259,6 +448,10 @@ export class OnlinePaymentService {
           transactionItemIds: [],
         });
         continue;
+      }
+
+      if (!memberId) {
+        throw new BadRequestException('Drop-in checkout requires a member');
       }
 
       const session = await this.sessionValidation.validateSessionForDropIn(
@@ -307,7 +500,7 @@ export class OnlinePaymentService {
   private toCartResult(
     cart: {
       id: string;
-      memberId: string;
+      memberId: string | null;
       status: PaymentStatus;
       amount: number;
       idempotencyKey: string;

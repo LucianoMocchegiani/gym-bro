@@ -2,11 +2,12 @@
  * Host / slug de tenant (local `*.localhost` o dominio de prueba/prod).
  *
  * @remarks
- * - `NEXT_PUBLIC_APP_DOMAIN` — base de tenants (ej. `pruebasaproduccunon.uno`).
- *   Vacío → modo local (`demo.localhost`).
- * - `NEXT_PUBLIC_PLATFORM_HOST` — apex Super sin slug (ej. `gymbro.pruebasaproduccunon.uno`
- *   o `localhost`). Si falta: `localhost` en local, o el propio `APP_DOMAIN`.
- * - Tenants: `{slug}.{APP_DOMAIN}` — **nunca** `{slug}.{PLATFORM_HOST}`.
+ * - `NEXT_PUBLIC_APP_DOMAIN` — base de tenants (ej. `faciliter.xyz`).
+ *   Vacío → modo local (`{slug}.localhost`).
+ * - `NEXT_PUBLIC_WEB_PORT` — puerto del web en modo local (default `3002`).
+ *   El compose mapea `3002:3000`, así que el puerto **público** no es el 3000.
+ * - El tenant `admin` es la plataforma (sin apex separado): vive en
+ *   `{slug}.{APP_DOMAIN}` como cualquier otro.
  * - Sin leer `window` al armar origins (evita hydration mismatch SSR/cliente).
  */
 
@@ -15,8 +16,6 @@ const RESERVED_HOST_LABELS = new Set([
   'app',
   'api',
   'api-gymbro',
-  'super',
-  'admin',
   'localhost',
   'mail',
   'cdn',
@@ -24,6 +23,17 @@ const RESERVED_HOST_LABELS = new Set([
 
 function stripPort(host: string): string {
   return host.split(':')[0]?.toLowerCase() ?? '';
+}
+
+/**
+ * Puerto público del web en modo local.
+ *
+ * @remarks El compose mapea `3002:3000` (host 3002 → contenedor 3000), así que
+ * acá va el del host. Se hornea en build vía `NEXT_PUBLIC_WEB_PORT`.
+ */
+function localWebPort(): string {
+  const raw = process.env.NEXT_PUBLIC_WEB_PORT?.trim();
+  return raw && /^\d+$/.test(raw) ? raw : '3002';
 }
 
 /**
@@ -35,32 +45,24 @@ export function appDomain(): string | null {
 }
 
 /**
- * Hostname del apex de plataforma (Super Admin).
- */
-export function platformHostname(): string {
-  const fromEnv = process.env.NEXT_PUBLIC_PLATFORM_HOST?.trim().toLowerCase();
-  if (fromEnv) {
-    return stripPort(fromEnv);
-  }
-  return appDomain() ?? 'localhost';
-}
-
-/**
  * ¿Este host es el apex de plataforma (sin tenant)?
+ *
+ * @remarks La plataforma es el tenant `admin`, no un host aparte: el apex real
+ * es el que no tiene slug (`localhost` en local, `APP_DOMAIN` en prod).
  */
 export function isPlatformHost(host: string): boolean {
   const hostname = stripPort(host);
   if (hostname === 'localhost' || hostname === '127.0.0.1') {
     return true;
   }
-  return hostname === platformHostname();
+  const domain = appDomain();
+  return domain !== null && hostname === domain;
 }
 
 /**
  * Apex a partir del Host actual (saca el slug si viene en un tenant host).
  *
- * @remarks Si el host es el apex Super (`PLATFORM_HOST`), el apex de tenants
- * es `APP_DOMAIN` (no el hostname de plataforma).
+ * @remarks Si el host es el apex (sin slug), el apex de tenants es `APP_DOMAIN`.
  */
 export function apexHostnameFromHost(host: string): string {
   const hostname = stripPort(host);
@@ -163,28 +165,28 @@ export function tenantHostLabel(slug: string, fromHost?: string): string {
 
 /**
  * Origin absoluto estable (mismo en SSR y cliente; sin `window`).
+ *
+ * @remarks En local el puerto sale de `NEXT_PUBLIC_WEB_PORT` (no 3000: el
+ * compose mapea `3002:3000`).
  */
-function originForHostname(hostname: string, port?: string): string {
+function originForHostname(hostname: string): string {
   const isLocal =
     hostname === 'localhost' ||
     hostname === '127.0.0.1' ||
     hostname.endsWith('.localhost');
   const protocol = isLocal ? 'http:' : 'https:';
-  let portPart = '';
-  if (port) {
-    portPart = `:${port}`;
-  } else if (isLocal) {
-    portPart = ':3000';
-  }
+  const portPart = isLocal ? `:${localWebPort()}` : '';
   return `${protocol}//${hostname}${portPart}`;
 }
 
 /**
- * URL absoluta al apex de plataforma (Super Admin).
+ * Hostname del apex de plataforma (el host sin slug).
+ *
+ * @remarks La plataforma **es** el tenant `admin`; este helper devuelve el host
+ * raíz, usado para links de marketing y metadata del sitio.
  */
-export function platformOrigin(): string {
-  const host = platformHostname();
-  return originForHostname(host);
+export function platformHostname(): string {
+  return appDomain() ?? 'localhost';
 }
 
 /**

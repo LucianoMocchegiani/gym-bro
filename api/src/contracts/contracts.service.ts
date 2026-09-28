@@ -8,6 +8,7 @@ import {
   BillingPeriod,
   Contract,
   ContractStatus,
+  ContractType,
   MemberStatus,
   PaymentMethod,
   PaymentStatus,
@@ -333,6 +334,9 @@ export class ContractsService {
     if (pack.components.length === 0) {
       throw new BadRequestException('Pack has no components');
     }
+    const contractType = transactionItem.memberId
+      ? ContractType.MEMBER
+      : ContractType.TENANT;
     const plan = await this.resolveContractPlan(
       tenantId,
       transactionItem.memberId,
@@ -343,10 +347,11 @@ export class ContractsService {
       const contract = await this.prisma.$transaction(async (tx) => {
         return this.createContractInTx(tx, {
           tenantId,
-          memberId: transactionItem.memberId,
+          memberId: transactionItem.memberId ?? undefined,
           packId: pack.id,
           transactionItemId: transactionItem.id,
           plan,
+          contractType,
         });
       });
 
@@ -433,6 +438,9 @@ export class ContractsService {
       throw new BadRequestException('Pack has no components');
     }
 
+    const contractType = transactionItem.memberId
+      ? ContractType.MEMBER
+      : ContractType.TENANT;
     const plan = await this.resolveContractPlan(
       tenantId,
       transactionItem.memberId,
@@ -442,10 +450,11 @@ export class ContractsService {
     const contract = await this.prisma.$transaction(async (tx) => {
       return this.createContractInTx(tx, {
         tenantId,
-        memberId: transactionItem.memberId,
+        memberId: transactionItem.memberId ?? undefined,
         packId: pack.id,
         transactionItemId: transactionItem.id,
         plan,
+        contractType,
       });
     });
 
@@ -500,7 +509,7 @@ export class ContractsService {
    */
   private async resolveContractPlan(
     tenantId: string,
-    memberId: string,
+    memberId: string | null,
     pack: PackForContract,
     override?: { startsAt?: Date; endsAt?: Date },
   ): Promise<ContractPlan> {
@@ -549,7 +558,7 @@ export class ContractsService {
         where: {
           AND: [
             { tenantId },
-            { memberId },
+            memberId ? { memberId } : {},
             { status: ContractStatus.ACTIVE },
             { pack: { billingPeriod: BillingPeriod.MONTHLY } },
             {
@@ -639,7 +648,7 @@ export class ContractsService {
    */
   private async assertNoMonthlyOverlap(
     tenantId: string,
-    memberId: string,
+    memberId: string | null,
     packId: string,
     startsAt: Date,
     endsAt: Date,
@@ -647,10 +656,10 @@ export class ContractsService {
     const samePack = await this.prisma.contract.findMany({
       where: {
         tenantId,
-        memberId,
+        memberId: memberId ?? null,
         packId,
         status: ContractStatus.ACTIVE,
-        endsAt: { not: null },
+        OR: [{ endsAt: null }, { endsAt: { gt: startsAt } }],
       },
       select: { id: true, startsAt: true, endsAt: true },
     });
@@ -672,18 +681,20 @@ export class ContractsService {
     tx: Prisma.TransactionClient,
     input: {
       tenantId: string;
-      memberId: string;
+      memberId?: string;
       packId: string;
       transactionItemId: string;
       plan: ContractPlan;
+      contractType?: ContractType;
     },
   ) {
     return tx.contract.create({
       data: {
         tenantId: input.tenantId,
-        memberId: input.memberId,
+        memberId: input.memberId ?? null,
         packId: input.packId,
         transactionItemId: input.transactionItemId,
+        contractType: input.contractType ?? ContractType.MEMBER,
         status: ContractStatus.ACTIVE,
         startsAt: input.plan.startsAt,
         endsAt: input.plan.endsAt,
@@ -710,14 +721,14 @@ export class ContractsService {
    */
   private async resolveMonthlyRenewalStartsAt(
     tenantId: string,
-    memberId: string,
+    memberId: string | null,
     packId: string,
     now: Date,
   ): Promise<Date> {
     const lastSamePack = await this.prisma.contract.findFirst({
       where: {
         tenantId,
-        memberId,
+        memberId: memberId ?? null,
         packId,
         status: ContractStatus.ACTIVE,
         endsAt: { not: null },
@@ -817,6 +828,7 @@ export class ContractsService {
       id: contract.id,
       tenantId: contract.tenantId,
       memberId: contract.memberId,
+      contractType: contract.contractType,
       packId: contract.packId,
       packName: contract.pack.name,
       status: contract.status,
