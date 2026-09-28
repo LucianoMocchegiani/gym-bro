@@ -21,7 +21,7 @@ import {
 } from '@/components/RowActions';
 import { StatusPill } from '@/components/StatusPill';
 import { ApiClientError } from '@/lib/api/client';
-import { deleteRole, listRoles } from '@/lib/api/roles';
+import { deleteRole, isProtectedRoleSlug, listRoles } from '@/lib/api/roles';
 import type { RoleDetail } from '@/lib/api/roles';
 
 const PAGE_SIZE = 20;
@@ -152,13 +152,15 @@ function RolesInner() {
             <td>
               <RowActions>
                 <RowIconButton
-                  label={r.slug === 'admin' ? 'Ver' : 'Editar permisos'}
+                  label={
+                    isProtectedRoleSlug(r.slug) ? 'Ver' : 'Editar permisos'
+                  }
                   onClick={() => openEdit(r.id)}
                 >
-                  {r.slug === 'admin' ? <IconView /> : <IconEdit />}
+                  {isProtectedRoleSlug(r.slug) ? <IconView /> : <IconEdit />}
                 </RowIconButton>
                 <DeleteRowButton
-                  hidden={r.slug === 'admin'}
+                  hidden={isProtectedRoleSlug(r.slug)}
                   dialogTitle={`Eliminar rol ${r.name}?`}
                   description="Se elimina aunque tenga staff asignado."
                   onDelete={() => deleteRole(r.id)}

@@ -416,7 +416,7 @@ Se hace upsert al crear un tenant (`RolesSeedService.ensurePermissionCatalog`).
 
 ### 4.4 `roles`
 
-Rol de staff **por tenant** (RN-ROL-002). Seed: `Admin` (`slug=admin`) y `Entrenador` (`slug=entrenador`), `is_system=true`. Solo `admin` no se edita ni se elimina.
+Rol de staff **por tenant** (RN-ROL-002). Seed gym: `Admin` (`slug=admin`) y `Entrenador` (`slug=entrenador`), `is_system=true`. Plataforma: `super-admin`. Solo `admin` y `super-admin` no se editan ni se eliminan.
 
 | Columna | Tipo | Notas |
 |---------|------|--------|
@@ -424,7 +424,7 @@ Rol de staff **por tenant** (RN-ROL-002). Seed: `Admin` (`slug=admin`) y `Entren
 | `tenant_id` | uuid FK → `tenants` | ON DELETE CASCADE |
 | `name` | text | unique por tenant |
 | `slug` | text | unique por tenant |
-| `is_system` | boolean | seed (Admin/Entrenador); solo Admin no se puede borrar |
+| `is_system` | boolean | seed (Admin/Entrenador/Super Admin); solo `admin` y `super-admin` no se pueden borrar |
 | `created_at` / `updated_at` | timestamptz | |
 
 ---

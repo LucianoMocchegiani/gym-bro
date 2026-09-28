@@ -41,6 +41,8 @@
 3. Define alcance de alumnos para roles tipo profesor (todos vs restringido) si aplica.
 4. Guarda.
 
+**Excepciones:** `admin` (gym) y `super-admin` (plataforma) no se editan ni se eliminan; Entrenador sí.
+
 **Reglas relacionadas:** RN-ROL-002, RN-ROL-003, RN-ROL-007, RN-TEN-008
 
 ---

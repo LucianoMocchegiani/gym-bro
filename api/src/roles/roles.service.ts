@@ -15,7 +15,7 @@ import {
   toListResult,
 } from '../common/list';
 import { PrismaService } from '../prisma/prisma.service';
-import { SYSTEM_ROLE_SLUGS } from './permission-catalog';
+import { SYSTEM_ROLE_SLUGS, isProtectedRoleSlug } from './permission-catalog';
 import { CreateRoleDto, UpdateRoleDto } from './dto/role.dto';
 import { RolesSeedService } from './roles-seed.service';
 import { RoleDetail } from './roles.types';
@@ -30,8 +30,8 @@ type RoleWithPermissions = Role & {
 /**
  * CRUD de roles por tenant (custom + edición/baja de Entrenador).
  *
- * @remarks CU-ROL-003 / RN-ROL-002. El rol `admin` no se edita ni se elimina.
- * Super opera con `tenantId` de path; staff con tenant del JWT.
+ * @remarks CU-ROL-003 / RN-ROL-002. Los roles `admin` y `super-admin` no se
+ * editan ni se eliminan.
  */
 @Injectable()
 export class RolesService {
@@ -157,7 +157,7 @@ export class RolesService {
   /**
    * Actualiza nombre y/o permisos de un rol (no Admin).
    *
-   * @throws {ForbiddenException} Si el rol es `admin`.
+   * @throws {ForbiddenException} Si el rol es `admin` o `super-admin`.
    * @throws {NotFoundException} Rol inexistente o de otro tenant.
    */
   async update(
@@ -172,8 +172,10 @@ export class RolesService {
 
     const role = await this.findRoleInTenant(tenantId, roleId);
 
-    if (role.slug === SYSTEM_ROLE_SLUGS.admin) {
-      throw new ForbiddenException('The Admin system role cannot be modified');
+    if (isProtectedRoleSlug(role.slug)) {
+      throw new ForbiddenException(
+        'The system role cannot be modified',
+      );
     }
 
     const before = await this.getRoleDetail(tenantId, roleId);
@@ -230,11 +232,11 @@ export class RolesService {
   }
 
   /**
-   * Eliminación de un rol (no Admin).
+   * Eliminación de un rol (no Admin / Super Admin).
    *
-   * @remarks Solo el rol sistema `admin` está bloqueado. Entrenador y custom
+   * @remarks `admin` y `super-admin` están bloqueados. Entrenador y custom
    * se eliminan aunque estén asignados a staff (pierden el rol).
-   * @throws {ForbiddenException} Si el rol es Admin (`ROLE_IS_SYSTEM`).
+   * @throws {ForbiddenException} Rol protegido (`ROLE_IS_SYSTEM`).
    */
   async remove(
     tenantId: string,
@@ -242,10 +244,10 @@ export class RolesService {
     actor: AuditActor,
   ): Promise<{ deleted: true }> {
     const role = await this.findRoleInTenant(tenantId, roleId);
-    if (role.slug === SYSTEM_ROLE_SLUGS.admin) {
+    if (isProtectedRoleSlug(role.slug)) {
       throw new ForbiddenException({
         statusCode: 403,
-        message: 'El rol Admin no se puede eliminar.',
+        message: 'Ese rol de sistema no se puede eliminar.',
         code: 'ROLE_IS_SYSTEM',
       });
     }
@@ -339,6 +341,7 @@ export class RolesService {
 
     if (
       base === SYSTEM_ROLE_SLUGS.admin ||
+      base === SYSTEM_ROLE_SLUGS.superAdmin ||
       base === SYSTEM_ROLE_SLUGS.entrenador ||
       base === 'profesor'
     ) {

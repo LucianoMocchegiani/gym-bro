@@ -5,11 +5,11 @@ import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { SkeletonForm } from '@/components/Skeleton';
 import { PermissionsChecklist } from '@/components/PermissionsChecklist';
 import { ApiClientError } from '@/lib/api/client';
-import { getRole, updateRole } from '@/lib/api/roles';
+import { getRole, isProtectedRoleSlug, updateRole } from '@/lib/api/roles';
 import type { RoleDetail } from '@/lib/api/roles';
 
 /**
- * Formulario de edición de rol (Admin sistema solo lectura).
+ * Formulario de edición de rol (Admin / Super Admin: solo lectura).
  */
 export function RoleEditForm({
   roleId,
@@ -56,7 +56,7 @@ export function RoleEditForm({
     };
   }, [roleId]);
 
-  const locked = role?.slug === 'admin';
+  const locked = isProtectedRoleSlug(role?.slug ?? '');
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();

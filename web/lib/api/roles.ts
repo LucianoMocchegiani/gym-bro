@@ -17,6 +17,11 @@ export type RoleDetail = {
   updatedAt: string;
 };
 
+/** Admin de gym y Super Admin de plataforma: solo lectura. */
+export function isProtectedRoleSlug(slug: string): boolean {
+  return slug === 'admin' || slug === 'super-admin';
+}
+
 export type CreateRoleInput = {
   name: string;
   permissionCodes: string[];

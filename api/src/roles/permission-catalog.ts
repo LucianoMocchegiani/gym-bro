@@ -21,6 +21,15 @@ export type SystemRoleSlug =
   (typeof SYSTEM_ROLE_SLUGS)[keyof typeof SYSTEM_ROLE_SLUGS];
 
 /**
+ * Roles que no se editan ni se eliminan (Admin de gym y Super Admin de plataforma).
+ */
+export function isProtectedRoleSlug(slug: string): boolean {
+  return (
+    slug === SYSTEM_ROLE_SLUGS.admin || slug === SYSTEM_ROLE_SLUGS.superAdmin
+  );
+}
+
+/**
  * Permisos MVP. Ampliar aquí cuando aparezcan módulos nuevos.
  */
 export const PERMISSION_CATALOG: readonly PermissionDefinition[] = [

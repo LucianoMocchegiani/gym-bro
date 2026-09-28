@@ -143,7 +143,7 @@ Formato: **RN-MODULO-NNN** — enunciado — excepciones.
 | ID | Regla |
 |----|--------|
 | RN-ROL-001 | Super Admin es exclusivo del equipo GymBro. |
-| RN-ROL-002 | Al crear un gym se generan roles seed (Admin, Entrenador; slug `entrenador`). El gym puede crear, editar y **eliminar** roles; el **Admin** de sistema no se edita ni se elimina. Entrenador es seed (permisos default) y sí se puede editar o borrar. |
+| RN-ROL-002 | Al crear un gym se generan roles seed (Admin, Entrenador; slug `entrenador`). El gym puede crear, editar y **eliminar** roles; el **Admin** de sistema no se edita ni se elimina. En el tenant plataforma, **Super Admin** (`super-admin`) igual: no se edita ni se elimina. Entrenador es seed (permisos default) y sí se puede editar o borrar. |
 | RN-ROL-003 | Los permisos tienen scope de **tenant**. |
 | RN-ROL-004 | Un usuario staff puede tener **múltiples roles**. |
 | RN-ROL-005 | Afiliado y staff son **perfiles distintos**. |

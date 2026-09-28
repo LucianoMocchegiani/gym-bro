@@ -1288,7 +1288,7 @@
                                 "{{createdRoleId}}"
                             ]
                         },
-                        "description": "Se elimina aunque tenga staff asignado. Solo Admin (slug admin) \u2192 403 ROLE_IS_SYSTEM. Entrenador se puede borrar."
+                        "description": "Se elimina aunque tenga staff asignado. Admin (`admin`) y Super Admin (`super-admin`) \u2192 403 ROLE_IS_SYSTEM. Entrenador se puede borrar."
                     }
                 }
             ]

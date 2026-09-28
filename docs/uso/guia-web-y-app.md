@@ -327,7 +327,7 @@ El socio **no** es un rol de staff. Si la misma persona es profesor y socio, son
 
 ### Roles
 
-El rol **Admin** viene **de sistema**: no se edita ni se elimina (en la lista solo el ojo: ver). Es el que usa el dueño al arrancar.
+El rol **Admin** viene **de sistema**: no se edita ni se elimina (en la lista solo el ojo: ver). Es el que usa el dueño al arrancar. En plataforma, **Super Admin** (`super-admin`) igual.
 
 **Entrenador** también es seed (permisos default), **sí se le pueden cambiar los permisos** y **sí se puede eliminar**. En la demo: ve afiliados y sesiones; no opera Caja.
 
