@@ -5,7 +5,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { Branch, Prisma, Role, Tenant, TenantStatus } from '@prisma/client';
+import { Branch, ContractStatus, ContractType, Prisma, Role, Tenant, TenantStatus } from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
 import { AUDIT_ACTIONS, AuditActor } from '../audit/audit.types';
 import { AuditService } from '../audit/audit.service';
@@ -33,6 +33,7 @@ import { assertValidTenantSlug, normalizeTenantSlug } from './tenant-slug';
 import {
   BranchSummary,
   OwnerSummary,
+  PlatformDashboardKpis,
   PlatformTenantSummary,
   PublicTenantSummary,
   RoleSummary,
@@ -244,7 +245,12 @@ export class TenantsService {
     query: ListTenantsQueryDto,
   ): Promise<ListResult<PlatformTenantSummary>> {
     const normalized = normalizeListQuery(query);
-    const where: Prisma.TenantWhereInput = {};
+    const where: Prisma.TenantWhereInput = {
+      slug: { not: 'admin' },
+    };
+    if (query.status) {
+      where.status = query.status;
+    }
     if (normalized.q) {
       where.OR = [
         { name: { contains: normalized.q, mode: 'insensitive' } },
@@ -280,6 +286,34 @@ export class TenantsService {
       memberCount: t._count.members,
     }));
     return toListResult(results, total, normalized.page, normalized.pageSize);
+  }
+
+  /**
+   * Conteos del inicio de plataforma (gyms, sin el tenant `admin`).
+   *
+   * @remarks `withoutActiveTenantContract` = tenants ACTIVE sin contrato
+   * `TENANT` vigente (equivalente a “sin pack” del gym).
+   */
+  async platformKpis(): Promise<PlatformDashboardKpis> {
+    const gyms = { slug: { not: 'admin' } };
+    const [activeGyms, withoutActiveTenantContract] = await Promise.all([
+      this.prisma.tenant.count({
+        where: { ...gyms, status: TenantStatus.ACTIVE },
+      }),
+      this.prisma.tenant.count({
+        where: {
+          ...gyms,
+          status: TenantStatus.ACTIVE,
+          contracts: {
+            none: {
+              contractType: ContractType.TENANT,
+              status: ContractStatus.ACTIVE,
+            },
+          },
+        },
+      }),
+    ]);
+    return { activeGyms, withoutActiveTenantContract };
   }
 
   /**

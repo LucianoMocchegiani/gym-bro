@@ -2,10 +2,7 @@
 
 ## Arquitectura
 
-El tenant `admin` es un tenant más. Su dashboard muestra:
-- Caja, vencimientos, cierre, devoluciones, reportes (igual que cualquier tenant)
-- Lista de tenants (gyms) con estado de subscripción
-- Oculta: Puertas, Sesiones
+El tenant `admin` es un tenant más. Su **inicio** muestra KPIs (tenants activos, caja del día, tenants sin pack Faciliter). Lista e impersonar: `/tenants`. Caja, vencimientos, cierre, devoluciones, reportes: igual que cualquier tenant. Oculta: Puertas, Sesiones.
 
 ## Flujo de pago de tenant
 

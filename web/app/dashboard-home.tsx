@@ -1,17 +1,9 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import {
-  DataTable,
-  ListPagination,
-  ListToolbar,
-  listCountDescription,
-} from '@/components/AdminList';
-import { AdminModal } from '@/components/AdminModal';
 import { AdminShell } from '@/components/AdminShell';
 import { DashboardKpis, type KpiCardData } from '@/components/DashboardKpis';
 import { RequireStaff } from '@/components/RequireStaff';
-import { ImpersonateTenantPanel } from '@/components/ImpersonateTenantPanel';
 import {
   KpiIconCash,
   KpiIconDoor,
@@ -19,12 +11,6 @@ import {
   KpiIconPeople,
   KpiIconSession,
 } from '@/components/AdminNavIcons';
-import {
-  IconEdit,
-  IconView,
-  RowActions,
-  RowIconButton,
-} from '@/components/RowActions';
 import { listAccessAttempts } from '@/lib/api/access';
 import { ApiClientError } from '@/lib/api/client';
 import {
@@ -32,8 +18,7 @@ import {
   todayBusinessDate,
 } from '@/lib/api/payment-register';
 import { listMembers } from '@/lib/api/members';
-import { listPlatformTenants } from '@/lib/api/tenants';
-import type { PlatformTenantSummary } from '@/lib/api/tenants';
+import { getPlatformDashboardKpis } from '@/lib/api/tenants';
 import { getReportsSummary } from '@/lib/api/reports';
 import { listSessions } from '@/lib/api/sessions';
 import { useAuth } from '@/lib/auth/AuthProvider';
@@ -265,7 +250,7 @@ function TenantDashboard() {
           key: 'nopack',
           label: 'Sin pack activo',
           value: kpi.withoutPack != null ? String(kpi.withoutPack) : '—',
-          hint: 'Proxy deuda · Reportes',
+          hint: 'Afiliados activos sin pack',
           icon: <KpiIconPack />,
         }
       : null,
@@ -294,8 +279,7 @@ function TenantDashboard() {
       }
       subtitle={
         <p className="dash-hero-sub">
-          Tenés el <span className="accent-text">control total</span> de tu
-          gimnasio.
+          Tenés el <span className="accent-text">control total</span>.
         </p>
       }
       actions={<p className="muted small toolbar-hint">Hoy · {today}</p>}
@@ -307,131 +291,128 @@ function TenantDashboard() {
   );
 }
 
-const PAGE_SIZE = 20;
-
 /**
- * Dashboard para tenant 'admin' (plataforma).
+ * Inicio del tenant `admin`: mismos KPIs visuales que un gym, métricas de plataforma.
  *
- * @remarks Lista los gyms y permite impersonar a un staff de cada uno. Al
- * impersonar se guarda la sesión del gym destino y se redirige a su subdominio
- * (`tenantOrigin`), porque el host actual es el de la plataforma.
+ * @remarks Sin puerta ni sesiones. El analog de afiliados es tenants activos.
  */
 function AdminDashboard() {
-  const [tenants, setTenants] = useState<PlatformTenantSummary[]>([]);
+  const { session } = useAuth();
+  const permissionCodes = session?.permissionCodes ?? null;
+  const permissionsReady = permissionCodes !== null;
+  const canCaja = canAccessNavHref('/caja', permissionCodes);
+  const canTenants = canAccessNavHref('/tenants', permissionCodes);
+  const today = todayBusinessDate();
+
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [page, setPage] = useState(1);
-  const [hasMore, setHasMore] = useState(false);
-  const [modalTenant, setModalTenant] = useState<PlatformTenantSummary | null>(null);
-  const [impersonateTenant, setImpersonateTenant] =
-    useState<PlatformTenantSummary | null>(null);
+  const [income, setIncome] = useState<number | null>(null);
+  const [activeGyms, setActiveGyms] = useState<number | null>(null);
+  const [withoutPack, setWithoutPack] = useState<number | null>(null);
+  const [errors, setErrors] = useState<string[]>([]);
 
   useEffect(() => {
+    if (!permissionsReady) {
+      return;
+    }
     let cancelled = false;
-    async function load() {
-      try {
-        const data = await listPlatformTenants({ page, pageSize: PAGE_SIZE });
-        if (cancelled) {
-          return;
-        }
-        setTenants(data.items);
-        setHasMore(data.hasMore);
-      } catch (e) {
-        if (!cancelled) {
-          setError(e instanceof Error ? e.message : 'Error');
-        }
-      } finally {
-        if (!cancelled) {
-          setLoading(false);
+    void (async () => {
+      setLoading(true);
+      const nextErrors: string[] = [];
+      let nextIncome: number | null = null;
+      let nextGyms: number | null = null;
+      let nextWithout: number | null = null;
+
+      if (canTenants) {
+        try {
+          const kpis = await getPlatformDashboardKpis();
+          nextGyms = kpis.activeGyms;
+          nextWithout = kpis.withoutActiveTenantContract;
+        } catch (err) {
+          nextErrors.push(
+            err instanceof ApiClientError
+              ? `Gyms: ${err.message}`
+              : 'Gyms: no disponible',
+          );
         }
       }
-    }
-    void load();
+
+      if (canCaja) {
+        try {
+          const day = await getCashDay(today);
+          nextIncome = day.totals.income;
+        } catch (err) {
+          nextErrors.push(
+            err instanceof ApiClientError
+              ? `Caja: ${err.message}`
+              : 'Caja: no disponible',
+          );
+        }
+      }
+
+      if (!cancelled) {
+        setIncome(nextIncome);
+        setActiveGyms(nextGyms);
+        setWithoutPack(nextWithout);
+        setErrors(nextErrors);
+        setLoading(false);
+      }
+    })();
     return () => {
       cancelled = true;
     };
-  }, [page]);
+  }, [permissionsReady, canTenants, canCaja, today]);
 
-  const total = tenants.length;
+  const kpiCards = [
+    canTenants
+      ? {
+          key: 'gyms',
+          label: 'Tenants activos',
+          value: activeGyms != null ? String(activeGyms) : '—',
+          hint: 'Estado activo',
+          icon: <KpiIconPeople />,
+        }
+      : null,
+    canCaja
+      ? {
+          key: 'income',
+          label: 'Ingresos del día',
+          value: income != null ? formatMoney(income) : '—',
+          hint: 'Caja · hoy',
+          icon: <KpiIconCash />,
+        }
+      : null,
+    canTenants
+      ? {
+          key: 'nopack',
+          label: 'Sin pack Faciliter',
+          value: withoutPack != null ? String(withoutPack) : '—',
+          hint: 'Tenants activos sin contrato',
+          icon: <KpiIconPack />,
+        }
+      : null,
+  ].filter((c) => c !== null) as KpiCardData[];
+
+  const greetName =
+    session?.name?.trim() || session?.email?.split('@')[0] || 'Admin';
 
   return (
-    <AdminShell title="Plataforma — Faciliter Brain">
-      <div className="admin-dashboard">
-        <ListToolbar>
-          <h1>Gyms</h1>
-          <p className="muted small">
-            {listCountDescription(total, page, 'gym', 'gyms')}
-          </p>
-        </ListToolbar>
-        {loading && <p>Cargando gyms...</p>}
-        {error && <p className="error">{error}</p>}
-        <DataTable
-          title="Tenants"
-          description={listCountDescription(total, page, 'gym', 'gyms')}
-          loading={loading}
-          error={error}
-          isEmpty={tenants.length === 0}
-          emptyText="No hay gyms registrados."
-          header={
-            <tr>
-              <th>Nombre</th>
-              <th>Slug</th>
-              <th>Estado</th>
-            <th>Miembros</th>
-            <th>Acciones</th>
-            </tr>
-          }
-          paginate={false}
-        >
-          {tenants.map((t) => (
-            <tr key={t.id}>
-              <td>{t.name}</td>
-              <td>{t.slug}</td>
-              <td>{t.status}</td>
-              <td>{t.memberCount}</td>
-              <td>
-                <RowActions>
-                  <RowIconButton
-                    label="Ver detalles"
-                    onClick={() => setModalTenant(t)}
-                  >
-                    <IconView />
-                  </RowIconButton>
-                  <RowIconButton
-                    label="Entrar como gym"
-                    onClick={() => setImpersonateTenant(t)}
-                  >
-                    <IconEdit />
-                  </RowIconButton>
-                </RowActions>
-              </td>
-            </tr>
-          ))}
-        </DataTable>
-        {hasMore ? (
-          <ListPagination
-            page={page}
-            hasMore={hasMore}
-            onPageChange={setPage}
-          />
-        ) : null}
-        {modalTenant ? (
-          <AdminModal
-            open={!!modalTenant}
-            onClose={() => setModalTenant(null)}
-            title={modalTenant.name}
-            description={`${modalTenant.slug} · ${modalTenant.status}`}
-          >
-            <p>Miembros: {modalTenant.memberCount}</p>
-          </AdminModal>
-        ) : null}
-        {impersonateTenant ? (
-          <ImpersonateTenantPanel
-            tenant={impersonateTenant}
-            onClose={() => setImpersonateTenant(null)}
-          />
-        ) : null}
-      </div>
+    <AdminShell
+      variant="home"
+      title={
+        <span className="dash-hero-title">
+          Hola, <span className="dash-hero-accent">{greetName}</span>
+        </span>
+      }
+      subtitle={
+        <p className="dash-hero-sub">
+          Tenés el <span className="accent-text">control total</span>.
+        </p>
+      }
+      actions={<p className="muted small toolbar-hint">Hoy · {today}</p>}
+    >
+      {permissionsReady ? (
+        <DashboardKpis loading={loading} cards={kpiCards} errors={errors} />
+      ) : null}
     </AdminShell>
   );
 }

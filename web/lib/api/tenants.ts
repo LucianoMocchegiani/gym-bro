@@ -65,6 +65,11 @@ export type PlatformTenantSummary = {
   memberCount: number;
 };
 
+export type PlatformDashboardKpis = {
+  activeGyms: number;
+  withoutActiveTenantContract: number;
+};
+
 /** Ítem de carrito en venta de plataforma (solo packs). */
 export type PlatformCartItem = {
   kind: 'PACK';
@@ -142,12 +147,19 @@ export function deleteTenant(
  * Lista tenants para el dashboard de plataforma (staff del tenant `admin`).
  */
 export function listPlatformTenants(
-  input?: ListParams,
+  input?: ListParams & { status?: TenantStatus },
 ): Promise<ListResult<PlatformTenantSummary>> {
   const qs = toSearchParams(input);
   return apiRequest<ListResult<PlatformTenantSummary>>(
     `/tenants/platform${qs ? `?${qs}` : ''}`,
   );
+}
+
+/**
+ * KPIs del inicio de plataforma (gyms, no el tenant `admin`).
+ */
+export function getPlatformDashboardKpis(): Promise<PlatformDashboardKpis> {
+  return apiRequest<PlatformDashboardKpis>('/tenants/platform/kpis');
 }
 
 /**

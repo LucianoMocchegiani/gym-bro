@@ -25,7 +25,7 @@ import {
   UpdateTenantDto,
 } from './dto/tenant.dto';
 import { TenantsService } from './tenants.service';
-import { PlatformTenantSummary, TenantResponse } from './tenants.types';
+import { PlatformDashboardKpis, PlatformTenantSummary, TenantResponse } from './tenants.types';
 
 /**
  * CRUD de tenants para Super Admin (plataforma).
@@ -73,6 +73,15 @@ export class TenantsController {
     @Query() query: ListTenantsQueryDto,
   ): Promise<ListResult<PlatformTenantSummary>> {
     return this.tenantsService.platformList(query);
+  }
+
+  /**
+   * KPIs del inicio de plataforma (gyms activos y sin pack Faciliter).
+   */
+  @UseGuards(JwtAuthGuard, PlatformTenantGuard)
+  @Get('platform/kpis')
+  platformKpis(): Promise<PlatformDashboardKpis> {
+    return this.tenantsService.platformKpis();
   }
 
   /**

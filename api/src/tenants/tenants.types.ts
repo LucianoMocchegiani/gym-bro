@@ -73,3 +73,11 @@ export type PlatformTenantSummary = {
   status: TenantStatus;
   memberCount: number;
 };
+
+/**
+ * KPIs del inicio de plataforma (no incluye el tenant `admin`).
+ */
+export type PlatformDashboardKpis = {
+  activeGyms: number;
+  withoutActiveTenantContract: number;
+};

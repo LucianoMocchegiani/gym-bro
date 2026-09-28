@@ -85,7 +85,8 @@ El tenant `admin` vende packs propios a otros tenants. Logueate con `adminEmail`
 
 | Request | Qué hace |
 |---------|----------|
-| `GET /tenants/platform` | Lista paginada para el dashboard y el `TenantPicker` (`q` busca por `name`/`slug`, default `order=asc`). Devuelve `{ id, name, slug, status, memberCount }`. |
+| `GET /tenants/platform` | Gyms paginados (sin `admin`; `status`, `q`). TenantPicker de Caja. |
+| `GET /tenants/platform/kpis` | Inicio plataforma: `activeGyms` y `withoutActiveTenantContract`. |
 | `POST /tenants/:billingTenantId/transaction-items/cash/cart` | Cobro en efectivo. `memberId` queda `null`. |
 | `POST /tenants/:billingTenantId/transaction-items/mp/cart` | Genera el link de MP para que el gym pague. `payerEmail` = staff activo más antiguo del gym. |
 
@@ -178,7 +179,8 @@ Síntoma para detectarlo: 401 con token válido en un endpoint con `@RequirePerm
 - Rutas de negocio: `@RequireTenantAuth()` (sin `tenantId` → 403).
 - Rutas de plataforma: `JwtAuthGuard + PlatformTenantGuard + PermissionGuard`. Exigen un staff del tenant `admin` con los códigos `platform.*`:
   - `POST /api/tenants`, `GET /api/tenants`, `GET|PATCH|DELETE /api/tenants/:id`
-  - `GET /api/tenants/platform` (resumen para el dashboard y el `TenantPicker`)
+  - `GET /api/tenants/platform` (gyms para el `TenantPicker`)
+  - `GET /api/tenants/platform/kpis` (inicio de plataforma)
   - `GET /api/tenants/:billingTenantId/staff` (elegir a quién impersonar)
   - `POST /api/tenants/:billingTenantId/transaction-items/{cash,mp}/cart` (Caja de plataforma)
   - `POST /api/auth/super/impersonate` (`platform.impersonate`)

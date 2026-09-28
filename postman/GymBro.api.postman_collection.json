@@ -962,7 +962,32 @@
                                 }
                             ]
                         },
-                        "description": "Dashboard de plataforma. Requiere JWT Staff del tenant `admin` (PlatformTenantGuard). Items[] = PlatformTenantSummary (id, name, slug, status, memberCount): sin plan ni suscripción, porque no hay modelo Subscription. Alimenta el TenantPicker de la Caja de plataforma."
+                        "description": "Gyms (sin el tenant `admin`). Filtro `status`. Requiere JWT Staff del tenant `admin`. Alimenta el TenantPicker de Caja."
+                    }
+                },
+                {
+                    "name": "GET platform dashboard kpis",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('status 200', () => pm.response.to.have.status(200));",
+                                    "const body = pm.response.json();",
+                                    "pm.test('kpis', () => {",
+                                    "  pm.expect(body.activeGyms).to.be.a('number');",
+                                    "  pm.expect(body.withoutActiveTenantContract).to.be.a('number');",
+                                    "});"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": "{{baseUrl}}/api/tenants/platform/kpis",
+                        "description": "Inicio de plataforma: tenants ACTIVE (sin `admin`) y tenants ACTIVE sin contrato TENANT vigente."
                     }
                 },
                 {
