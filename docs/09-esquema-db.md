@@ -28,7 +28,9 @@ Documento **implementado** (tablas reales), no el modelo conceptual de [03-model
 erDiagram
   identities ||--o{ members : memberships
   identities ||--o{ staff_users : staff
-  identities ||--o{ tenants : owns
+identities ||--o{ platform_signups : self_serve
+  packs ||--o{ platform_signups : offer
+  tenants ||--o| platform_signups : born
   identities ||--o{ refresh_tokens : sessions
   tenants ||--o{ staff_users : has
   tenants ||--o{ members : has
@@ -720,6 +722,23 @@ Unique parcial SQL: a lo sumo un cobro (`concept <> REFUND`) por `transaction_id
 
 API: Member `GET /api/me/receipts`; Staff `GET /api/receipts/:id`, `GET /api/transactions/:transactionId/receipt` (solo cobro) (`members.read`).
 
+### 4.15h3 `platform_signups`
+
+Alta self-serve de gym (Identity en apex). El tenant no existe hasta el webhook de MP (`subscription_preapproval` / cobro).
+
+| Columna | Tipo | Notas |
+|---------|------|--------|
+| `id` | uuid PK | `external_reference` del preapproval |
+| `identity_id` / `pack_id` | uuid FK | pack del tenant `admin` |
+| `gym_name` / `slug` | text | unique parcial de slug en intentos abiertos |
+| `apply_trial` | boolean | |
+| `status` | `PENDING` \| `AWAITING_PAYMENT` \| `COMPLETED` \| `FAILED` | |
+| `mp_preapproval_id` | text UK nullable | |
+| `tenant_id` | uuid UK nullable | gym nacido |
+| `init_point` | text nullable | |
+
+API Identity: `POST /auth/identity/register`, `POST /identity/signups`, `GET /identity/signups/:id`, `GET /identity/tenants`, `GET /identity/tenants/:id/plan`.
+
 ### 4.15e `mercadopago_accounts`
 
 Cuenta Mercado Pago del gym (CU-PAG-006 / RN-PAG-001). 1:1 con tenant.
@@ -1016,6 +1035,7 @@ Historia incremental (2026-07 / 2026-08) **compactada** en un baseline (`40476fa
 | `20260925120000_platform_tenant_contracts` | `ContractType`; `member_id` nullable en cobros/contratos. |
 | `20260927020000_drop_super_profile` | Drop perfil SUPER. |
 | `20260929120000_platform_plan_trial` | `tenants.owner_identity_id`, `platform_trial_used_at`; `identities.platform_trial_used_at`; `contracts.is_platform_trial`. |
+| `20260929140000_platform_self_serve_signup` | `platform_signups` (alta Identity + preapproval MP; gym nace en webhook). |
 
 Comandos y checklist “desde cero”: [13-setup-db-desde-cero.md](./13-setup-db-desde-cero.md).
 

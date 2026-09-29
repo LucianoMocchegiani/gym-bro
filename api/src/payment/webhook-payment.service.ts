@@ -5,6 +5,7 @@ import {
   Logger,
   NotFoundException,
   ServiceUnavailableException,
+  forwardRef,
 } from '@nestjs/common';
 import {
   CashMovementConcept,
@@ -22,6 +23,7 @@ import { ReceiptsService } from '../receipts/receipts.service';
 import { ContractsService } from '../contracts/contracts.service';
 import { ReservationsService } from '../reservations/reservations.service';
 import { MpWebhookProcessResult } from './payment.types';
+import { PlatformSignupService } from '../tenants/platform-signup.service';
 
 type CartWithItems = Transaction & {
   transactionItems: Array<{
@@ -58,6 +60,8 @@ export class WebhookPaymentService {
     private readonly contractsService: ContractsService,
     private readonly reservationsService: ReservationsService,
     @Inject(MP_ACCOUNT_PORT) private readonly mp: MpAccountPort,
+    @Inject(forwardRef(() => PlatformSignupService))
+    private readonly platformSignups: PlatformSignupService,
   ) {}
 
   /**
@@ -74,12 +78,19 @@ export class WebhookPaymentService {
     },
     query: { topic?: string; id?: string },
   ): Promise<MpWebhookProcessResult> {
-    const type = payload.type ?? query.topic;
-    const dataId = payload.data?.id ?? query.id;
+    const type = payload.type ?? query.topic ?? payload.topic;
+    const dataId = payload.data?.id ?? query.id ?? payload.id;
 
     this.logger.log(
       `Webhook tenant=${tenantId} type=${type} action=${payload.action} dataId=${dataId}`,
     );
+
+    if (type === 'subscription_preapproval' && dataId) {
+      return this.platformSignups.handlePreapproval(tenantId, String(dataId));
+    }
+    if (type === 'subscription_authorized_payment' && dataId) {
+      return this.handleAuthorizedPayment(tenantId, String(dataId));
+    }
 
     if (type === 'merchant_order' && dataId) {
       return this.handleMerchantOrder(tenantId, String(dataId));
@@ -124,7 +135,70 @@ export class WebhookPaymentService {
       };
     }
 
+    const signup = await this.prisma.platformSignup.findUnique({
+      where: { id: refId },
+      select: { id: true },
+    });
+    if (signup && remote.status === 'approved') {
+      return this.platformSignups.handlePaidSignup(tenantId, signup.id);
+    }
+
     return this.applyRemoteStatus(tenantId, refId, mpPaymentId, remote.status);
+  }
+
+  /**
+   * Ciclo de suscripción MP → nace el gym si el alta no era de prueba.
+   */
+  private async handleAuthorizedPayment(
+    tenantId: string,
+    authorizedPaymentId: string,
+  ): Promise<MpWebhookProcessResult> {
+    const accessToken = await this.accounts.getDecryptedAccessToken(tenantId);
+    let remote;
+    try {
+      remote = await this.mp.getAuthorizedPayment(
+        accessToken,
+        authorizedPaymentId,
+      );
+    } catch (err) {
+      this.logger.warn(
+        `authorized_payment fetch failed: ${err instanceof Error ? err.message : String(err)}`,
+      );
+      throw new ServiceUnavailableException(
+        'Could not fetch Mercado Pago authorized_payment',
+      );
+    }
+    const paid =
+      remote.status === 'approved' || remote.status === 'processed';
+    if (!paid) {
+      return {
+        handled: false,
+        transactionItemId: null,
+        transactionId: null,
+        status: remote.status,
+        contractId: null,
+        reservationId: null,
+      };
+    }
+    let signupId = remote.externalReference;
+    if (!signupId && remote.preapprovalId) {
+      const signup = await this.prisma.platformSignup.findUnique({
+        where: { mpPreapprovalId: remote.preapprovalId },
+        select: { id: true },
+      });
+      signupId = signup?.id ?? null;
+    }
+    if (!signupId) {
+      return {
+        handled: false,
+        transactionItemId: null,
+        transactionId: null,
+        status: remote.status,
+        contractId: null,
+        reservationId: null,
+      };
+    }
+    return this.platformSignups.handlePaidSignup(tenantId, signupId);
   }
 
   /**

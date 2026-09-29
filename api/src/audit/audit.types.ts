@@ -4,7 +4,7 @@ import { AuthProfileType, Prisma } from '@prisma/client';
  * Actor que dispara un evento de auditoría (SUPER o STAFF).
  */
 export type AuditActor = {
-  profileType: 'STAFF' | 'MEMBER';
+  profileType: 'STAFF' | 'MEMBER' | 'IDENTITY';
   userId: string;
 };
 

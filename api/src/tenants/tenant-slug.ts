@@ -4,6 +4,7 @@ import { BadRequestException } from '@nestjs/common';
  * Slugs reservados (no usables como tenant).
  */
 export const RESERVED_TENANT_SLUGS = new Set([
+  'admin',
   'www',
   'app',
   'api',

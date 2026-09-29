@@ -38,6 +38,7 @@ export function MarketingShell({ children }: MarketingShellProps) {
             <Link href="/docs">Guía</Link>
             <Link href="/#asistente">Asistente</Link>
             <Link href="/#precio">Precio</Link>
+            <Link href="/login">Entrar</Link>
           </nav>
           <div className="mkt-header-actions">
             <ThemeToggle />

@@ -160,6 +160,8 @@ Un staff de un gym normal da 403 en estos endpoints (`PlatformTenantGuard` exige
 
 El flujo web completo pide **HTTPS** (`SameSite=None; Secure`). En `http://*.localhost` la cookie no cruza subdominios (igual que Google). `COOKIE_PARENT_DOMAIN` o `CORS_APP_DOMAIN` arma el `Domain` de la cookie.
 
+Self-serve apex: `POST /auth/identity/register`, `POST /identity/signups` (JWT Identity), `GET /identity/tenants`.
+
 ## ⚠️ Orden de decorators en controllers (bug ya corregido)
 
 `@RequirePermission()` hace internamente `UseGuards(PermissionGuard)`, y `UseGuards` **agrega** al array mientras que los decorators se aplican **de abajo hacia arriba**. Si en un mismo handler aparecen ambos, el orden final queda invertido y `PermissionGuard` corre **antes** de `JwtAuthGuard`, ve `request.user === undefined` y responde **401 con token válido**.

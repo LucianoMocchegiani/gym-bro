@@ -1,14 +1,19 @@
 import { Injectable, Logger } from '@nestjs/common';
 import {
   CreateMpCardPaymentInput,
+  CreateMpPreapprovalInput,
+  CreateMpPreapprovalPlanInput,
   CreateMpPreferenceInput,
   MpAccountPort,
   MpAccountValidation,
   MpCardPaymentResult,
   MpCustomer,
+  MpPreapprovalResult,
   MpPreferenceResult,
+  MpRemoteAuthorizedPayment,
   MpRemoteMerchantOrder,
   MpRemotePayment,
+  MpRemotePreapproval,
   MpSavedCard,
 } from './mp-account.port';
 
@@ -17,6 +22,10 @@ const MP_PREFERENCES = 'https://api.mercadopago.com/checkout/preferences';
 const MP_PAYMENTS = 'https://api.mercadopago.com/v1/payments';
 const MP_CUSTOMERS = 'https://api.mercadopago.com/v1/customers';
 const MP_CARD_TOKENS = 'https://api.mercadopago.com/v1/card_tokens';
+const MP_PREAPPROVAL_PLANS = 'https://api.mercadopago.com/preapproval_plan';
+const MP_PREAPPROVALS = 'https://api.mercadopago.com/preapproval';
+const MP_AUTHORIZED_PAYMENTS =
+  'https://api.mercadopago.com/authorized_payments';
 
 /**
  * Adapter HTTP Mercado Pago (cuenta + Preference + pago).
@@ -439,6 +448,172 @@ export class HttpMpAccountAdapter extends MpAccountPort {
       lastFour: data.card?.last_four_digits ?? null,
       paymentMethodId: data.payment_method_id ?? null,
       statusDetail: data.status_detail ?? null,
+    };
+  }
+
+  /**
+   * @inheritdoc
+   */
+  async createPreapprovalPlan(
+    input: CreateMpPreapprovalPlanInput,
+  ): Promise<{ id: string }> {
+    const response = await fetch(MP_PREAPPROVAL_PLANS, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${input.accessToken}`,
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+      },
+      body: JSON.stringify({
+        reason: input.reason,
+        auto_recurring: {
+          frequency: 1,
+          frequency_type: 'months',
+          transaction_amount: input.amount,
+          currency_id: 'ARS',
+        },
+        back_url: input.backUrl,
+      }),
+    });
+    if (!response.ok) {
+      const body = await response.text().catch(() => '');
+      this.throwMpFailure('preapproval_plan', response.status, body);
+    }
+    const data = (await response.json()) as { id?: string };
+    if (!data.id) {
+      throw new Error('Mercado Pago preapproval_plan missing id');
+    }
+    return { id: data.id };
+  }
+
+  /**
+   * @inheritdoc
+   */
+  async createPreapproval(
+    input: CreateMpPreapprovalInput,
+  ): Promise<MpPreapprovalResult> {
+    const autoRecurring: Record<string, unknown> = {
+      frequency: 1,
+      frequency_type: 'months',
+      transaction_amount: input.amount,
+      currency_id: 'ARS',
+    };
+    if (input.startDate) {
+      autoRecurring.start_date = input.startDate;
+    }
+    const response = await fetch(MP_PREAPPROVALS, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${input.accessToken}`,
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+      },
+      body: JSON.stringify({
+        preapproval_plan_id: input.planId,
+        reason: input.reason,
+        external_reference: input.externalReference,
+        payer_email: input.payerEmail,
+        back_url: input.backUrl,
+        status: 'pending',
+        notification_url: input.notificationUrl,
+        auto_recurring: autoRecurring,
+      }),
+    });
+    if (!response.ok) {
+      const body = await response.text().catch(() => '');
+      this.throwMpFailure('preapproval', response.status, body);
+    }
+    const data = (await response.json()) as {
+      id?: string;
+      init_point?: string;
+      status?: string;
+    };
+    if (!data.id || !data.init_point) {
+      throw new Error('Mercado Pago preapproval missing id/init_point');
+    }
+    return {
+      id: data.id,
+      initPoint: data.init_point,
+      status: data.status ?? 'pending',
+    };
+  }
+
+  /**
+   * @inheritdoc
+   */
+  async getPreapproval(
+    accessToken: string,
+    preapprovalId: string,
+  ): Promise<MpRemotePreapproval> {
+    const response = await fetch(
+      `${MP_PREAPPROVALS}/${encodeURIComponent(preapprovalId)}`,
+      {
+        method: 'GET',
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          Accept: 'application/json',
+        },
+      },
+    );
+    if (!response.ok) {
+      const body = await response.text().catch(() => '');
+      this.throwMpFailure('get preapproval', response.status, body);
+    }
+    const data = (await response.json()) as {
+      id?: string;
+      status?: string;
+      external_reference?: string;
+    };
+    if (!data.id || !data.status) {
+      throw new Error('Mercado Pago preapproval missing id/status');
+    }
+    return {
+      id: data.id,
+      status: data.status,
+      externalReference: data.external_reference ?? null,
+    };
+  }
+
+  /**
+   * @inheritdoc
+   */
+  async getAuthorizedPayment(
+    accessToken: string,
+    authorizedPaymentId: string,
+  ): Promise<MpRemoteAuthorizedPayment> {
+    const response = await fetch(
+      `${MP_AUTHORIZED_PAYMENTS}/${encodeURIComponent(authorizedPaymentId)}`,
+      {
+        method: 'GET',
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          Accept: 'application/json',
+        },
+      },
+    );
+    if (!response.ok) {
+      const body = await response.text().catch(() => '');
+      this.throwMpFailure('get authorized_payment', response.status, body);
+    }
+    const data = (await response.json()) as {
+      id?: string | number;
+      status?: string;
+      preapproval_id?: string;
+      external_reference?: string;
+      payment?: { id?: string | number };
+    };
+    if (data.id === undefined || data.id === null || !data.status) {
+      throw new Error('Mercado Pago authorized_payment missing id/status');
+    }
+    return {
+      id: String(data.id),
+      status: data.status,
+      preapprovalId: data.preapproval_id ?? null,
+      externalReference: data.external_reference ?? null,
+      paymentId:
+        data.payment?.id !== undefined && data.payment?.id !== null
+          ? String(data.payment.id)
+          : null,
     };
   }
 

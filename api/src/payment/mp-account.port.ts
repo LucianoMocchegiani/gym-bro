@@ -150,6 +150,36 @@ export abstract class MpAccountPort {
   abstract createCardPayment(
     input: CreateMpCardPaymentInput,
   ): Promise<MpCardPaymentResult>;
+
+  /**
+   * Plan de suscripción MP (preapproval_plan).
+   */
+  abstract createPreapprovalPlan(
+    input: CreateMpPreapprovalPlanInput,
+  ): Promise<{ id: string }>;
+
+  /**
+   * Checkout de suscripción (`init_point`).
+   */
+  abstract createPreapproval(
+    input: CreateMpPreapprovalInput,
+  ): Promise<MpPreapprovalResult>;
+
+  /**
+   * Consulta un preapproval por id (webhook).
+   */
+  abstract getPreapproval(
+    accessToken: string,
+    preapprovalId: string,
+  ): Promise<MpRemotePreapproval>;
+
+  /**
+   * Cobro de un ciclo de suscripción (webhook authorized_payment).
+   */
+  abstract getAuthorizedPayment(
+    accessToken: string,
+    authorizedPaymentId: string,
+  ): Promise<MpRemoteAuthorizedPayment>;
 }
 
 /** Customer MP del gym. */
@@ -191,6 +221,48 @@ export type MpCardPaymentResult = {
   lastFour: string | null;
   paymentMethodId: string | null;
   statusDetail: string | null;
+};
+
+/** Alta de plan de suscripción MP. */
+export type CreateMpPreapprovalPlanInput = {
+  accessToken: string;
+  reason: string;
+  amount: number;
+  backUrl: string;
+};
+
+/** Alta de preapproval (link de autorización). */
+export type CreateMpPreapprovalInput = {
+  accessToken: string;
+  planId: string;
+  reason: string;
+  externalReference: string;
+  payerEmail: string;
+  backUrl: string;
+  notificationUrl: string;
+  amount: number;
+  /** ISO-8601; si hay prueba, primer cobro = fin de los 30 días. */
+  startDate?: string;
+};
+
+export type MpPreapprovalResult = {
+  id: string;
+  initPoint: string;
+  status: string;
+};
+
+export type MpRemotePreapproval = {
+  id: string;
+  status: string;
+  externalReference: string | null;
+};
+
+export type MpRemoteAuthorizedPayment = {
+  id: string;
+  status: string;
+  preapprovalId: string | null;
+  externalReference: string | null;
+  paymentId: string | null;
 };
 
 /** Token de inyección Nest para el adapter concreto. */

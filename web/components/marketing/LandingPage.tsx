@@ -241,8 +241,12 @@ export async function LandingPage() {
       <section id="precio" className="mkt-inner mkt-section">
         <h2 className="mkt-h2">Plan</h2>
         <p className="mkt-section-lead">
-          Lo que ves son los packs del catálogo Faciliter. El alta del gym y el
-          cobro se hacen con el equipo, no desde esta página.
+          Elegí un pack para dar de alta tu gym. Si preferís que te acompañemos,
+          también podés{' '}
+          <a href={BOOKING_URL} target="_blank" rel="noreferrer">
+            agendar una reunión
+          </a>
+          .
         </p>
         {packs.length === 0 ? (
           <p className="muted">El catálogo no está disponible ahora.</p>
@@ -265,11 +269,9 @@ export async function LandingPage() {
                 <CheckList items={pack.services.map((s) => s.name)} />
                 <a
                   className="mkt-btn-primary"
-                  href={BOOKING_URL}
-                  target="_blank"
-                  rel="noreferrer"
+                  href={`/empezar?pack=${encodeURIComponent(pack.id)}`}
                 >
-                  Agendá una reunión
+                  Contratar
                 </a>
               </div>
             ))}

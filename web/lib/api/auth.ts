@@ -11,7 +11,7 @@ export type StaffLoginResponse = {
   refreshToken: string;
   expiresIn: number;
   tokenType: 'Bearer';
-  profileType: 'STAFF' | 'MEMBER';
+  profileType: 'STAFF' | 'MEMBER' | 'IDENTITY';
   hasPassword: boolean;
   user: {
     id: string;
@@ -85,6 +85,29 @@ export type AuthMeResponse = {
 
 export function fetchAuthMe(): Promise<AuthMeResponse> {
   return apiRequest<AuthMeResponse>('/auth/me');
+}
+
+export function identityLogin(input: {
+  email: string;
+  password: string;
+}): Promise<StaffLoginResponse> {
+  return apiRequest<StaffLoginResponse>('/auth/identity/login', {
+    method: 'POST',
+    body: input,
+    auth: false,
+  });
+}
+
+export function identityRegister(input: {
+  email: string;
+  password: string;
+  name?: string;
+}): Promise<StaffLoginResponse> {
+  return apiRequest<StaffLoginResponse>('/auth/identity/register', {
+    method: 'POST',
+    body: input,
+    auth: false,
+  });
 }
 
 /**

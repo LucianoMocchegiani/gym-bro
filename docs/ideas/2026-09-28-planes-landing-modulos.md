@@ -1,10 +1,11 @@
 # Planes en landing, alta self-serve y módulos por tenant
 
 **Fecha:** 2026-09-28  
-**Estado:** corte 3 en código (modo limitado RN-PAG-018) — self-serve apex y débito MP de plataforma pendientes  
-**Hecho (corte 1):** `GET /public/platform/packs` + landing lista packs/servicios del tenant `admin`.  
-**Hecho (corte 2):** `ownerIdentityId`, candados de prueba, `GET /plan`, Caja `admin` tilde 30 días (efectivo) + contrato TENANT.  
-**Hecho (corte 3):** `PlatformAccessGuard` en `@RequireTenantAuth`, `GET /auth/me.platformAccess`, nav/banner/popup Admin.
+**Estado:** corte 4 en código (self-serve alta gym) — renovar/cambiar/baja de mandato pendientes  
+**Hecho (corte 1):** `GET /public/platform/packs` + landing lista packs.  
+**Hecho (corte 2):** Plan/Uso + prueba Caja.  
+**Hecho (corte 3):** modo limitado RN-PAG-018.  
+**Hecho (corte 4):** landing Contratar → Identity → wizard slug → preapproval MP de `admin`; gym nace en webhook. `/cuenta` apex lista gyms + PlanPanel lectura.
 
 Cerrado (sesión 2026-09-28): Identity 1:N tenants; primer pago = primer gym; MP de cobro = MP de `admin`; slug lo elige el comprador **antes** de la Preference.
 

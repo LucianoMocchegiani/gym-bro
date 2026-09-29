@@ -212,6 +212,7 @@ model Tenant {
   staffCredentialOffers StaffCredentialOffer[]
   transactions    Transaction[]
   debitMandates   DebitMandate[]
+  platformSignups PlatformSignup[]
 
   @@index([ownerIdentityId])
   @@map("tenants")
@@ -304,6 +305,7 @@ model Identity {
   staffUsers    StaffUser[]
   refreshTokens RefreshToken[]
   ownedTenants  Tenant[] @relation("TenantOwner")
+  platformSignups PlatformSignup[]
 
   @@map("identities")
 }
@@ -535,6 +537,7 @@ model Pack {
   contracts  Contract[]
   credentialOffers CredentialOffer[]
   debitMandates DebitMandate[]
+  platformSignups PlatformSignup[]
 
   @@index([tenantId])
   @@map("packs")
@@ -762,6 +765,40 @@ model DebitMandate {
 enum ContractType {
   MEMBER
   TENANT
+}
+
+/// Alta self-serve de gym (Identity + checkout MP, nace en webhook).
+enum PlatformSignupStatus {
+  PENDING
+  AWAITING_PAYMENT
+  COMPLETED
+  FAILED
+}
+
+/// Intento de contratar Faciliter desde el apex (el gym aún no existe).
+model PlatformSignup {
+  id                  String               @id @default(uuid()) @db.Uuid
+  identityId          String               @map("identity_id") @db.Uuid
+  gymName             String               @map("gym_name")
+  slug                String
+  packId              String               @map("pack_id") @db.Uuid
+  applyTrial          Boolean              @map("apply_trial")
+  status              PlatformSignupStatus
+  mpPreapprovalId     String?              @unique @map("mp_preapproval_id")
+  mpPreapprovalPlanId String?              @map("mp_preapproval_plan_id")
+  initPoint           String?              @map("init_point")
+  tenantId            String?              @unique @map("tenant_id") @db.Uuid
+  lastError           String?              @map("last_error")
+  createdAt           DateTime             @default(now()) @map("created_at")
+  updatedAt           DateTime             @updatedAt @map("updated_at")
+
+  identity Identity @relation(fields: [identityId], references: [id], onDelete: Cascade)
+  pack     Pack     @relation(fields: [packId], references: [id], onDelete: Restrict)
+  tenant   Tenant?  @relation(fields: [tenantId], references: [id], onDelete: SetNull)
+
+  @@index([identityId, status])
+  @@index([slug])
+  @@map("platform_signups")
 }
 
 /// Contratación de un pack por un afiliado o tenant.

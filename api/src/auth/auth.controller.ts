@@ -31,6 +31,7 @@ import {
   StaffGoogleLoginDto,
   AppleLoginDto,
   IdentityLoginDto,
+  IdentityRegisterDto,
   ImpersonateDto,
   LogoutDto,
   MemberLoginDto,
@@ -124,6 +125,14 @@ export class AuthController {
   @Post('identity/login')
   loginIdentity(@Body() dto: IdentityLoginDto): Promise<AuthTokens> {
     return this.authService.loginIdentity(dto);
+  }
+
+  /**
+   * Crea una cuenta Faciliter (email + password) para contratar un gym.
+   */
+  @Post('identity/register')
+  registerIdentity(@Body() dto: IdentityRegisterDto): Promise<AuthTokens> {
+    return this.authService.registerIdentity(dto);
   }
 
   /**

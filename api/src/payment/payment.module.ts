@@ -29,7 +29,7 @@ import { TenantsModule } from '../tenants/tenants.module';
     SessionsModule,
     PacksModule,
     RolesModule,
-    TenantsModule,
+    forwardRef(() => TenantsModule),
   ],
   controllers: [
     PaymentController,

@@ -133,7 +133,7 @@ Login por perfil o cuenta → access JWT + refresh (Postgres)
 | Staff | `tenantId` obligatorio | `POST /api/auth/staff/login` o identity + `POST /auth/select-context` |
 | Afiliado | Perfil separado (RN-ROL-005) | `POST /api/auth/member/login` o identity + select-context |
 
-Identity: `GET /api/auth/memberships` + `POST /api/auth/select-context` `{ tenantId, profile }`. Google: `id_token` → `POST /api/auth/google` (audiences `GOOGLE_OAUTH_CLIENT_IDS`). Apple después. Admin web sigue staff/login por host (password de identity; Google-only no entra al panel).
+Identity: `GET /api/auth/memberships` + `POST /api/auth/select-context`. Alta web: `POST /api/auth/identity/register`, `POST /api/identity/signups` (preapproval en MP de `admin`; gym nace en webhook). Apex `/cuenta` lista gyms. Google: `POST /api/auth/google`.
 
 También: `POST /api/auth/refresh`, `POST /api/auth/logout`, `GET /api/auth/me` (incluye `tenantId` y `platformAccess` `ok`|`limited` para recorte de plan Faciliter), `POST /api/auth/change-password` (JWT; verifica la actual con bcrypt y revoca todos los refresh tokens del usuario → obliga a re-login).
 

@@ -4,6 +4,7 @@ import {
   IsOptional,
   IsString,
   IsUUID,
+  MaxLength,
   MinLength,
 } from 'class-validator';
 
@@ -105,6 +106,24 @@ export class IdentityLoginDto {
   @IsString()
   @MinLength(8)
   password!: string;
+}
+
+/**
+ * Alta de cuenta Faciliter (apex / self-serve).
+ */
+export class IdentityRegisterDto {
+  @IsEmail()
+  email!: string;
+
+  @IsString()
+  @MinLength(8)
+  password!: string;
+
+  @IsOptional()
+  @IsString()
+  @MinLength(2)
+  @MaxLength(120)
+  name?: string;
 }
 
 /**

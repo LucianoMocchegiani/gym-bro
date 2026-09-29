@@ -556,6 +556,40 @@
                     }
                 },
                 {
+                    "name": "Identity register",
+                    "request": {
+                        "method": "POST",
+                        "header": [{ "key": "Content-Type", "value": "application/json" }],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"email\": \"dueño@example.com\",\n  \"password\": \"ChangeMe123!\",\n  \"name\": \"Dueño\"\n}"
+                        },
+                        "url": "{{baseUrl}}/api/auth/identity/register",
+                        "description": "Alta de cuenta Faciliter (apex)."
+                    }
+                },
+                {
+                    "name": "Identity POST signup",
+                    "request": {
+                        "method": "POST",
+                        "header": [{ "key": "Content-Type", "value": "application/json" }],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"packId\": \"{{packId}}\",\n  \"slug\": \"mi-gym\",\n  \"gymName\": \"Mi Gym\"\n}"
+                        },
+                        "url": "{{baseUrl}}/api/identity/signups",
+                        "description": "Checkout preapproval MP (JWT Identity). El gym nace en el webhook."
+                    }
+                },
+                {
+                    "name": "Identity GET tenants",
+                    "request": {
+                        "method": "GET",
+                        "url": "{{baseUrl}}/api/identity/tenants",
+                        "description": "Gyms cuyo ownerIdentityId es la cuenta."
+                    }
+                },
+                {
                     "name": "Login Google",
                     "event": [
                         {

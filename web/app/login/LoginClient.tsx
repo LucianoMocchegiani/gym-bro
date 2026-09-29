@@ -10,12 +10,15 @@ import { fromCookie, fromHandoff } from '@/lib/api/auth';
 import { useAuth } from '@/lib/auth/AuthProvider';
 import { tenantHostLabel, tenantOrigin } from '@/lib/tenant-host';
 import { writeStaffSession } from '@/lib/auth/session';
+import { IdentityLoginCard } from '@/components/IdentityLoginCard';
 
 type LoginClientProps = {
   /** Slug resuelto en el servidor desde el header Host. */
   slug: string | null;
   /** `?handoff=1`: canjea cookie de impersonación en este origen. */
   consumeHandoff?: boolean;
+  /** Tras login Identity en apex. */
+  nextPath?: string;
 };
 
 const LOGIN_PROXY_URL =
@@ -26,7 +29,11 @@ const LOGIN_PROXY_URL =
  *
  * @remarks El tenant ya viene del Host; no se lee `window` en el render.
  */
-export function LoginClient({ slug, consumeHandoff = false }: LoginClientProps) {
+export function LoginClient({
+  slug,
+  consumeHandoff = false,
+  nextPath = '/cuenta',
+}: LoginClientProps) {
   const { session, ready, verified, login } = useAuth();
   const router = useRouter();
   const [tenant, setTenant] = useState<PublicTenantSummary | null>(null);
@@ -178,30 +185,7 @@ export function LoginClient({ slug, consumeHandoff = false }: LoginClientProps) 
   }
 
   if (!slug) {
-    return (
-      <div className="login-page">
-        <div className="login-theme-slot">
-          <ThemeToggle />
-        </div>
-        <div className="login-card">
-          <p className="brand">Faciliter</p>
-          <h1>Elegí tu gym</h1>
-          <p className="muted">
-            Entrá por el subdominio del gym, por ejemplo{' '}
-            <a href={`${tenantOrigin('demo')}/login`}>
-              {tenantHostLabel('demo')}/login
-            </a>
-            .
-          </p>
-          <p className="muted small">
-            Plataforma:{' '}
-            <a href={`${tenantOrigin('admin')}/login`}>
-              {tenantHostLabel('admin')}/login
-            </a>
-          </p>
-        </div>
-      </div>
-    );
+    return <IdentityLoginCard nextPath={nextPath} />;
   }
 
   return (

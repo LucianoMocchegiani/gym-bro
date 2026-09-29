@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { Barlow_Condensed, IBM_Plex_Sans } from 'next/font/google';
 import { AuthProvider } from '@/lib/auth/AuthProvider';
+import { IdentityAuthProvider } from '@/lib/auth/IdentityAuthProvider';
 import { NavigationProgress } from '@/components/NavigationProgress';
 import { ThemeProvider } from '@/lib/theme/ThemeProvider';
 import { publicSiteUrl } from '@/lib/site-url';
@@ -76,7 +77,9 @@ export default function RootLayout({
       <body className={`${display.variable} ${body.variable}`}>
         <ThemeProvider>
           <NavigationProgress />
-          <AuthProvider>{children}</AuthProvider>
+          <AuthProvider>
+            <IdentityAuthProvider>{children}</IdentityAuthProvider>
+          </AuthProvider>
         </ThemeProvider>
       </body>
     </html>

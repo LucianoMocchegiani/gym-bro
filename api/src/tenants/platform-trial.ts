@@ -13,6 +13,9 @@ export const PLATFORM_UNLIMITED_TENANT_IDS: ReadonlySet<string> = new Set([
   '00000000-0000-4000-8000-000000000002',
 ]);
 
+/** Slug del tenant de plataforma (Caja / catálogo de packs Faciliter). */
+export const PLATFORM_ADMIN_SLUG = 'admin';
+
 /**
  * Suma días calendario a una fecha (prueba de plataforma, no `addOneMonth`).
  */

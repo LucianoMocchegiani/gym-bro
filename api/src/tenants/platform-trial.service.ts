@@ -57,6 +57,30 @@ export class PlatformTrialService {
   }
 
   /**
+   * Prueba para un gym que todavía no existe (self-serve).
+   *
+   * @remarks Solo candado de cuenta: el tenant se marca al nacer.
+   */
+  async evaluateForIdentity(
+    identityId: string,
+  ): Promise<PlatformTrialEligibility> {
+    const identity = await this.prisma.identity.findUnique({
+      where: { id: identityId },
+      select: { platformTrialUsedAt: true },
+    });
+    if (!identity) {
+      throw new NotFoundException(`Identity ${identityId} not found`);
+    }
+    if (identity.platformTrialUsedAt) {
+      return {
+        eligible: false,
+        reason: 'Esta cuenta ya usó el mes de prueba en otro gym',
+      };
+    }
+    return { eligible: true, reason: null };
+  }
+
+  /**
    * Exige elegibilidad o lanza 400.
    *
    * @throws {BadRequestException} Candado de tenant o de cuenta.

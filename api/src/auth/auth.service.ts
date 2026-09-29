@@ -1,6 +1,7 @@
 import { createHash, randomBytes, randomUUID } from 'node:crypto';
 import {
   BadRequestException,
+  ConflictException,
   Injectable,
   UnauthorizedException,
   ForbiddenException,
@@ -34,6 +35,7 @@ import {
 import {
   ChangePasswordDto,
   IdentityLoginDto,
+  IdentityRegisterDto,
   GoogleLoginDto,
   AppleLoginDto,
   StaffGoogleLoginDto,
@@ -249,6 +251,31 @@ export class AuthService {
     }
     await this.assertPassword(dto.password, identity.passwordHash);
     return this.issueIdentity({ ...identity, hasPassword: true });
+  }
+
+  /**
+   * Alta de persona Faciliter (apex).
+   *
+   * @throws {ConflictException} Email ya registrado.
+   */
+  async registerIdentity(dto: IdentityRegisterDto): Promise<AuthTokens> {
+    const email = dto.email.toLowerCase();
+    const existing = await this.prisma.identity.findUnique({
+      where: { email },
+      select: { id: true },
+    });
+    if (existing) {
+      throw new ConflictException('Ese email ya tiene una cuenta Faciliter');
+    }
+    const passwordHash = await bcrypt.hash(dto.password, 12);
+    const created = await this.prisma.identity.create({
+      data: {
+        email,
+        passwordHash,
+        name: dto.name?.trim() || null,
+      },
+    });
+    return this.issueIdentity({ ...created, hasPassword: true });
   }
 
   /**

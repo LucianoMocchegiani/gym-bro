@@ -198,6 +198,91 @@ export class TenantsService {
   }
 
   /**
+   * Alta de gym cuyo dueño ya es una Identity (self-serve).
+   *
+   * @remarks Sin password nuevo: el staff Admin usa la misma cuenta.
+   */
+  async provisionFromIdentity(
+    identityId: string,
+    input: { name: string; slug: string },
+  ): Promise<{ tenantId: string; slug: string }> {
+    const slug = normalizeTenantSlug(input.slug);
+    assertValidTenantSlug(slug);
+    const identity = await this.prisma.identity.findUnique({
+      where: { id: identityId },
+      select: { id: true, email: true, name: true },
+    });
+    if (!identity) {
+      throw new NotFoundException(`Identity ${identityId} not found`);
+    }
+    const permissions = await this.rolesSeed.ensurePermissionCatalog();
+    try {
+      const tenant = await this.prisma.$transaction(async (tx) => {
+        const created = await tx.tenant.create({
+          data: {
+            name: input.name.trim(),
+            slug,
+            ownerIdentityId: identity.id,
+          },
+        });
+        await tx.branch.create({
+          data: {
+            tenantId: created.id,
+            name: DEFAULT_BRANCH_NAME,
+            active: true,
+            isDefault: true,
+          },
+        });
+        await tx.tenantSettings.create({
+          data: {
+            tenantId: created.id,
+            reservationCancellationHours: 6,
+          },
+        });
+        const roles = await this.rolesSeed.seedSystemRolesForTenant(
+          tx,
+          created.id,
+          permissions,
+        );
+        const adminRole = roles.find((r) => r.slug === SYSTEM_ROLE_SLUGS.admin);
+        if (!adminRole) {
+          throw new Error('Admin system role missing after seed');
+        }
+        const ownerStaff = await tx.staffUser.create({
+          data: {
+            tenantId: created.id,
+            identityId: identity.id,
+            email: identity.email,
+            name: identity.name,
+            active: true,
+          },
+        });
+        await this.staffService.assignRolesInTx(tx, ownerStaff.id, [
+          adminRole.id,
+        ]);
+        return created;
+      });
+      await this.audit.record({
+        tenantId: tenant.id,
+        actor: { profileType: 'IDENTITY', userId: identityId },
+        action: AUDIT_ACTIONS.tenantCreate,
+        entityType: 'tenant',
+        entityId: tenant.id,
+        before: null,
+        after: {
+          name: tenant.name,
+          slug: tenant.slug,
+          via: 'platform-signup',
+        },
+      });
+      return { tenantId: tenant.id, slug: tenant.slug };
+    } catch (error: unknown) {
+      this.rethrowSlugConflict(error);
+      throw error;
+    }
+  }
+
+  /**
    * Lista tenants (paginado; más recientes primero por defecto).
    *
    * @remarks `q` busca en name y slug.

@@ -87,6 +87,7 @@ Leyenda resultado: `P` pass · `F` fail · `B` bloqueado · `-` no aplica
 | P3g | Caja `admin`: tilde 30 días, un pack, efectivo, gym sin prueba | Contrato TENANT 30 días $0; Plan / Uso en el gym muestra Prueba | RN-PAG-017 | |
 | P3h | Misma cuenta o mismo gym: segundo tilde de prueba | Tilde deshabilitado / 400 | RN-PAG-017 | |
 | P3i | Gym (no demo/admin) sin plan + 3 días | Banner + popup; nav solo Plan / Uso; Caja 403; Plan 200 | RN-PAG-018, CU-PAG-011 | |
+| P3j | Apex: pack → cuenta → slug → MP autoriza (prueba) | Nace el gym; Plan prueba; staff entra en el slug | RN-PAG-017 | |
 | P4 | Comprobante tras pago | Visible app + email E1; en reportes y cierres, “Ver comprobante” abre el panel (pack incluye servicios) | RN-PAG-009 | |
 | P5 | Devolución afiliado dentro de política | Solicitud OK | CU-PAG-004 | |
 | P6 | Devolución afiliado fuera de política | Rechazo; admin aún puede | RN-PAG-012/011 | |

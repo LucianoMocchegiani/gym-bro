@@ -1,8 +1,11 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { AuditModule } from '../audit/audit.module';
 import { AuthModule } from '../auth/auth.module';
+import { PaymentModule } from '../payment/payment.module';
 import { RolesModule } from '../roles/roles.module';
 import { StaffModule } from '../staff/staff.module';
+import { IdentityPlatformController } from './identity-platform.controller';
+import { PlatformSignupService } from './platform-signup.service';
 import { PlatformTrialService } from './platform-trial.service';
 import { TenantsController } from './tenants.controller';
 import { PublicTenantsController } from './public-tenants.controller';
@@ -13,9 +16,20 @@ import { TenantsService } from './tenants.service';
  * Módulo de CRUD de tenants (Super Admin / plataforma) + resolución pública por slug.
  */
 @Module({
-  imports: [AuthModule, RolesModule, StaffModule, AuditModule],
-  controllers: [TenantsController, PublicTenantsController, PlanController],
-  providers: [TenantsService, PlatformTrialService],
-  exports: [TenantsService, PlatformTrialService],
+  imports: [
+    AuthModule,
+    RolesModule,
+    StaffModule,
+    AuditModule,
+    forwardRef(() => PaymentModule),
+  ],
+  controllers: [
+    TenantsController,
+    PublicTenantsController,
+    PlanController,
+    IdentityPlatformController,
+  ],
+  providers: [TenantsService, PlatformTrialService, PlatformSignupService],
+  exports: [TenantsService, PlatformTrialService, PlatformSignupService],
 })
 export class TenantsModule {}
