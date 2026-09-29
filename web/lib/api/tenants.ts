@@ -172,10 +172,14 @@ export function startPlatformCashCart(
   billingTenantId: string,
   items: PlatformCartItem[],
   idempotencyKey: string,
+  applyTrial?: boolean,
 ): Promise<CashCartResult> {
   return apiRequest<CashCartResult>(
     `/tenants/${billingTenantId}/transaction-items/cash/cart`,
-    { method: 'POST', body: { items, idempotencyKey } },
+    {
+      method: 'POST',
+      body: { items, idempotencyKey, applyTrial: applyTrial === true },
+    },
   );
 }
 

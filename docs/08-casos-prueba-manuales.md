@@ -84,6 +84,8 @@ Leyenda resultado: `P` pass · `F` fail · `B` bloqueado · `-` no aplica
 | P3d2 | Cancelar y limpiar con link pendiente (web y app staff) | Confirma; saca link/carrito/afiliado de Caja. No anula MP: un pago posterior igual puede aprobar | CU-PAG-001 | |
 | P3e | Staff cobra carrito en efectivo en Caja | APPROVED inmediato; panel con líneas (pack → contrato/vigencia + servicios del pack; drop-in → reserva/horario) | CU-PAG-002 | |
 | P3f | Afiliado paga carrito MP desde la app (pack y/o drop-in) | `POST /me/transaction-items/mp/cart` → 1 Preference; mismos derechos al APPROVED que Caja; sin cash en el celular | CU-PAG-001 | |
+| P3g | Caja `admin`: tilde 30 días, un pack, efectivo, gym sin prueba | Contrato TENANT 30 días $0; Plan / Uso en el gym muestra Prueba | RN-PAG-017 | |
+| P3h | Misma cuenta o mismo gym: segundo tilde de prueba | Tilde deshabilitado / 400 | RN-PAG-017 | |
 | P4 | Comprobante tras pago | Visible app + email E1; en reportes y cierres, “Ver comprobante” abre el panel (pack incluye servicios) | RN-PAG-009 | |
 | P5 | Devolución afiliado dentro de política | Solicitud OK | CU-PAG-004 | |
 | P6 | Devolución afiliado fuera de política | Rechazo; admin aún puede | RN-PAG-012/011 | |

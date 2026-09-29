@@ -25,7 +25,7 @@ import {
   UpdateTenantDto,
 } from './dto/tenant.dto';
 import { TenantsService } from './tenants.service';
-import { PlatformDashboardKpis, PlatformTenantSummary, TenantResponse } from './tenants.types';
+import { PlatformDashboardKpis, PlatformTenantSummary, PlatformTrialEligibility, TenantResponse } from './tenants.types';
 
 /**
  * CRUD de tenants para Super Admin (plataforma).
@@ -82,6 +82,17 @@ export class TenantsController {
   @Get('platform/kpis')
   platformKpis(): Promise<PlatformDashboardKpis> {
     return this.tenantsService.platformKpis();
+  }
+
+  /**
+   * Elegibilidad de 30 días de prueba para Caja de plataforma.
+   */
+  @UseGuards(JwtAuthGuard, PlatformTenantGuard)
+  @Get(':id/platform-trial')
+  platformTrial(
+    @Param('id', ParseUUIDPipe) id: string,
+  ): Promise<PlatformTrialEligibility> {
+    return this.tenantsService.getPlatformTrialEligibility(id);
   }
 
   /**

@@ -1,7 +1,8 @@
-import { Type } from 'class-transformer';
+import { Type, Transform } from 'class-transformer';
 import {
   ArrayMinSize,
   IsArray,
+  IsBoolean,
   IsOptional,
   IsString,
   MaxLength,
@@ -25,4 +26,12 @@ export class CreateCashCartDto {
   @MinLength(8)
   @MaxLength(128)
   idempotencyKey?: string;
+
+  /**
+   * Caja plataforma: 30 días de prueba ($0). Ignorado / rechazado en cobro de afiliado.
+   */
+  @IsOptional()
+  @Transform(({ value }) => value === true || value === 'true')
+  @IsBoolean()
+  applyTrial?: boolean;
 }

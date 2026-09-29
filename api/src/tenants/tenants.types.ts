@@ -81,3 +81,29 @@ export type PlatformDashboardKpis = {
   activeGyms: number;
   withoutActiveTenantContract: number;
 };
+
+/** Si Caja puede tildar 30 días de prueba para este gym. */
+export type PlatformTrialEligibility = {
+  eligible: boolean;
+  reason: string | null;
+};
+
+export type GymPlanStatus = 'trial' | 'active' | 'expired' | 'none';
+
+/**
+ * Plan Faciliter del gym (contrato TENANT vigente o el último vencido).
+ */
+export type GymPlanView = {
+  tenantId: string;
+  tenantName: string;
+  tenantSlug: string;
+  status: GymPlanStatus;
+  packId: string | null;
+  packName: string | null;
+  serviceNames: string[];
+  startsAt: string | null;
+  endsAt: string | null;
+  isPlatformTrial: boolean;
+  isOwner: boolean;
+  platformTrialEligible: boolean;
+};

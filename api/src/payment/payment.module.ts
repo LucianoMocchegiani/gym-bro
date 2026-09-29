@@ -17,6 +17,7 @@ import { HttpMpAccountAdapter } from './http-mp-account.adapter';
 import { PaymentController } from './payment.controller';
 import { PaymentWebhookController } from './payment-webhook.controller';
 import { MercadoPagoAccountController } from './mercadopago-account.controller';
+import { TenantsModule } from '../tenants/tenants.module';
 
 @Module({
   imports: [
@@ -28,6 +29,7 @@ import { MercadoPagoAccountController } from './mercadopago-account.controller';
     SessionsModule,
     PacksModule,
     RolesModule,
+    TenantsModule,
   ],
   controllers: [
     PaymentController,

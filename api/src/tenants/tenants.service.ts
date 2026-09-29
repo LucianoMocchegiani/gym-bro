@@ -29,15 +29,18 @@ import {
   ListTenantsQueryDto,
   UpdateTenantDto,
 } from './dto/tenant.dto';
+import { PlatformTrialService } from './platform-trial.service';
 import { assertValidTenantSlug, normalizeTenantSlug } from './tenant-slug';
 import {
   BranchSummary,
   OwnerSummary,
   PlatformDashboardKpis,
   PlatformTenantSummary,
+  PlatformTrialEligibility,
   PublicTenantSummary,
   RoleSummary,
   TenantResponse,
+  GymPlanView,
 } from './tenants.types';
 
 const DEFAULT_BRANCH_NAME = 'Sede principal';
@@ -67,6 +70,7 @@ export class TenantsService {
     private readonly staffService: StaffService,
     private readonly audit: AuditService,
     private readonly identities: IdentityService,
+    private readonly platformTrial: PlatformTrialService,
   ) {}
 
   /**
@@ -142,6 +146,10 @@ export class TenantsService {
           email: ownerEmail,
           passwordHash,
           name: ownerName,
+        });
+        await tx.tenant.update({
+          where: { id: created.id },
+          data: { ownerIdentityId: identity.id },
         });
         const ownerStaff = await tx.staffUser.create({
           data: {
@@ -314,6 +322,116 @@ export class TenantsService {
       }),
     ]);
     return { activeGyms, withoutActiveTenantContract };
+  }
+
+  /**
+   * Si Caja puede otorgar 30 días de prueba a este gym.
+   */
+  getPlatformTrialEligibility(
+    billingTenantId: string,
+  ): Promise<PlatformTrialEligibility> {
+    return this.platformTrial.evaluate(billingTenantId);
+  }
+
+  /**
+   * Plan Faciliter del gym (staff del propio tenant).
+   *
+   * @throws {BadRequestException} Tenant `admin`.
+   */
+  async getGymPlan(tenantId: string, staffUserId: string): Promise<GymPlanView> {
+    const tenant = await this.prisma.tenant.findUnique({
+      where: { id: tenantId },
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        ownerIdentityId: true,
+      },
+    });
+    if (!tenant) {
+      throw new NotFoundException(`Tenant ${tenantId} not found`);
+    }
+    if (tenant.slug === 'admin') {
+      throw new BadRequestException(
+        'El tenant de plataforma no tiene un plan Faciliter',
+      );
+    }
+
+    const staff = await this.prisma.staffUser.findFirst({
+      where: { id: staffUserId, tenantId },
+      select: { identityId: true },
+    });
+    const isOwner = Boolean(
+      tenant.ownerIdentityId &&
+        staff &&
+        staff.identityId === tenant.ownerIdentityId,
+    );
+
+    const now = new Date();
+    const current = await this.prisma.contract.findFirst({
+      where: {
+        tenantId,
+        contractType: ContractType.TENANT,
+        status: ContractStatus.ACTIVE,
+        startsAt: { lte: now },
+        OR: [{ endsAt: null }, { endsAt: { gt: now } }],
+      },
+      include: {
+        pack: {
+          select: {
+            id: true,
+            name: true,
+            components: { include: { service: { select: { name: true } } } },
+          },
+        },
+      },
+      orderBy: { endsAt: 'desc' },
+    });
+
+    const latest =
+      current ??
+      (await this.prisma.contract.findFirst({
+        where: {
+          tenantId,
+          contractType: ContractType.TENANT,
+        },
+        include: {
+          pack: {
+            select: {
+              id: true,
+              name: true,
+              components: { include: { service: { select: { name: true } } } },
+            },
+          },
+        },
+        orderBy: { createdAt: 'desc' },
+      }));
+
+    const eligibility = await this.platformTrial.evaluate(tenantId);
+    const serviceNames =
+      latest?.pack.components.map((c) => c.service.name) ?? [];
+
+    let status: GymPlanView['status'] = 'none';
+    if (current) {
+      status = current.isPlatformTrial ? 'trial' : 'active';
+    } else if (latest) {
+      status = 'expired';
+    }
+
+    return {
+      tenantId: tenant.id,
+      tenantName: tenant.name,
+      tenantSlug: tenant.slug,
+      status,
+      packId: latest?.pack.id ?? null,
+      packName: latest?.pack.name ?? null,
+      serviceNames,
+      startsAt: latest?.startsAt.toISOString() ?? null,
+      endsAt: latest?.endsAt?.toISOString() ?? null,
+      isPlatformTrial: current?.isPlatformTrial ?? false,
+      isOwner,
+      platformTrialEligible: eligibility.eligible,
+    };
   }
 
   /**

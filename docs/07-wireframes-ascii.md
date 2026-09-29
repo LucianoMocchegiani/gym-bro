@@ -314,6 +314,8 @@ Devolver un cobro (picker de ítems del cart) vive en **Cierre** (`/arqueo`), no
 +----------------------------------+
 ```
 
+Caja **plataforma** (`admin`): picker de gym; packs del catálogo Faciliter. Tilde **30 días de prueba** (efectivo, un pack) si el gym y el dueño no usaron la prueba (RN-PAG-017). MP + prueba: no en este corte.
+
 Con tilde débito: el botón es **Generar link de suscripción** (`init_point` del preapproval), no Preference de carrito ni Brick.
 
 Pestaña **Débitos** (CU-PAG-008..010). Ficha: `/caja?memberId=&vista=debitos`.
@@ -414,6 +416,7 @@ Efectivo no muestra el tilde. “Generar link” sin cobro solo si hay MONTHLY v
 | Puerta / pase | CU-ACC-001/004 |
 | Super | CU-ROL-001/002 |
 | Config | CU-ACC-006/007, CU-PAG-006 |
+| Plan / Uso | Contrato TENANT del gym (`GET /plan`) |
 | Asistente (drawer) | post-MVP C5; sin CU de producto |
 
 ---

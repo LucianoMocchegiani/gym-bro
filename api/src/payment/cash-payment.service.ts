@@ -19,6 +19,7 @@ import type { ReceiptDetail } from '../receipts/receipts.types';
 import { SessionValidationService } from '../sessions/session-validation.service';
 import { ContractsService } from '../contracts/contracts.service';
 import { PacksService } from '../packs/packs.service';
+import { PlatformTrialService } from '../tenants/platform-trial.service';
 import { ReservationsService } from '../reservations/reservations.service';
 import { AuditActor } from '../audit/audit.types';
 import { CreateCashCartDto } from './dto/create-cash-cart.dto';
@@ -67,6 +68,7 @@ export class CashPaymentService {
     @Inject(forwardRef(() => ReservationsService))
     private readonly reservations: ReservationsService,
     private readonly packs: PacksService,
+    private readonly platformTrial: PlatformTrialService,
   ) {}
 
   /**
@@ -114,7 +116,10 @@ export class CashPaymentService {
     );
 
     if (method === PaymentMethod.CASH) {
-      for (const item of confirmed.transactionItems) {
+      const billedItems = confirmed.transactionItems.filter(
+        (item) => item.amount >= 1,
+      );
+      for (const item of billedItems) {
         await this.registerService.recordIncome(tx, {
           tenantId,
           transactionItemId: item.id,
@@ -126,19 +131,18 @@ export class CashPaymentService {
         });
       }
 
-      const total = confirmed.transactionItems.reduce(
-        (sum, item) => sum + item.amount,
-        0,
-      );
-      await this.receiptsService.issueForApprovedPayment(tx, {
-        tenantId,
-        transactionId: confirmed.id,
-        memberId,
-        amount: total,
-        method: PaymentMethod.CASH,
-        concept: receiptConcept,
-        description,
-      });
+      const total = billedItems.reduce((sum, item) => sum + item.amount, 0);
+      if (total >= 1) {
+        await this.receiptsService.issueForApprovedPayment(tx, {
+          tenantId,
+          transactionId: confirmed.id,
+          memberId,
+          amount: total,
+          method: PaymentMethod.CASH,
+          concept: receiptConcept,
+          description,
+        });
+      }
     }
 
     return { transaction: confirmed };
@@ -161,6 +165,11 @@ export class CashPaymentService {
     actor: AuditActor,
     dto: CreateCashCartDto,
   ): Promise<CashCartResult> {
+    if (dto.applyTrial) {
+      throw new BadRequestException(
+        'Platform trial is only available on platform Caja',
+      );
+    }
     const idempotencyKey =
       dto.idempotencyKey?.trim() || `cash-cart-${Date.now()}`;
 
@@ -339,8 +348,8 @@ export class CashPaymentService {
    *
    * @description
    * Reusa {@link processPayment} con `memberId: null`: el pagador es el propio
-   * `tenantId` de la transacción (`billingTenantId`). No genera contratos ni
-   * reservas porque no hay afiliado detrás del pago.
+   * `tenantId` de la transacción (`billingTenantId`). Crea contrato `TENANT`.
+   * `applyTrial`: 30 días, $0, candados por gym y por cuenta dueña.
    *
    * @remarks
    * `catalogTenantId` es el tenant dueño del pack (la plataforma); la
@@ -353,6 +362,15 @@ export class CashPaymentService {
     actor: AuditActor,
     dto: CreateCashCartDto,
   ): Promise<CashCartResult> {
+    if (dto.applyTrial) {
+      if (dto.items.length !== 1 || (dto.items[0]?.quantity ?? 1) !== 1) {
+        throw new BadRequestException(
+          'Platform trial requires a single pack in the cart',
+        );
+      }
+      await this.platformTrial.assertCanApplyTrial(billingTenantId);
+    }
+
     const idempotencyKey =
       dto.idempotencyKey?.trim() || `tenant-cash-cart-${Date.now()}`;
 
@@ -397,12 +415,12 @@ export class CashPaymentService {
       if (pack.components.length === 0) {
         throw new BadRequestException(`Pack ${pack.name} has no components`);
       }
-      if (pack.price < 1) {
+      if (!dto.applyTrial && pack.price < 1) {
         throw new BadRequestException('Pack price must be at least 1');
       }
       packs.push({
         packId: pack.id,
-        amount: pack.price,
+        amount: dto.applyTrial ? 0 : pack.price,
         name: pack.name,
         quantity: item.quantity ?? 1,
       });
@@ -421,8 +439,9 @@ export class CashPaymentService {
     }
 
     const totalItems = packs.reduce((sum, p) => sum + p.quantity, 0);
-    const label =
-      totalItems === 1
+    const label = dto.applyTrial
+      ? `Prueba Faciliter 30 días — ${target.name}`
+      : totalItems === 1
         ? `${packs[0]?.name ?? 'Cart'} — ${target.name}`
         : `${totalItems} items — ${target.name}`;
 
@@ -439,6 +458,23 @@ export class CashPaymentService {
         recordedByStaffId: actor.profileType === 'STAFF' ? actor.userId : null,
       });
     });
+
+    const usedItemIds = new Set<string>();
+    for (const item of transaction.transactionItems) {
+      if (item.status !== 'APPROVED' || !item.packId) {
+        continue;
+      }
+      if (usedItemIds.has(item.id)) {
+        continue;
+      }
+      usedItemIds.add(item.id);
+      await this.contracts.createFromTransactionItem(
+        billingTenantId,
+        item.id,
+        actor,
+        { applyTrial: Boolean(dto.applyTrial) },
+      );
+    }
 
     let receipt: ReceiptDetail | null = null;
     try {

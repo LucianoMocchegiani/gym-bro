@@ -1,7 +1,7 @@
-import { Type } from 'class-transformer';
 import {
   ArrayMinSize,
   IsArray,
+  IsBoolean,
   IsIn,
   IsInt,
   IsOptional,
@@ -12,6 +12,7 @@ import {
   MinLength,
   ValidateNested,
 } from 'class-validator';
+import { Transform, Type } from 'class-transformer';
 
 /**
  * Ítem del carrito MP: pack o drop-in de una sesión.
@@ -49,4 +50,12 @@ export class CreateMpCartCheckoutDto {
   @MinLength(8)
   @MaxLength(128)
   idempotencyKey?: string;
+
+  /**
+   * Caja plataforma: no soportado en MP todavía (usar efectivo + prueba).
+   */
+  @IsOptional()
+  @Transform(({ value }) => value === true || value === 'true')
+  @IsBoolean()
+  applyTrial?: boolean;
 }

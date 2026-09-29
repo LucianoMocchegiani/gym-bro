@@ -37,6 +37,7 @@ export type ContractDetail = {
   hasAccessLibre: boolean;
   transactionItem: ContractTransactionItemDetail;
   creditBalances: ContractCreditBalanceDetail[];
+  isPlatformTrial: boolean;
   createdAt: Date;
   updatedAt: Date;
 };

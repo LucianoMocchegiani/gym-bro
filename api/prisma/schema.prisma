@@ -180,6 +180,12 @@ model Tenant {
   createdAt DateTime     @default(now()) @map("created_at")
   updatedAt DateTime     @updatedAt @map("updated_at")
 
+  /// Identity dueña del gym (alta / self-serve). Null en tenants viejos hasta backfill.
+  ownerIdentityId String?   @map("owner_identity_id") @db.Uuid
+  /// Cuándo este gym usó (o agotó) el mes de prueba Faciliter.
+  platformTrialUsedAt DateTime? @map("platform_trial_used_at")
+
+  ownerIdentity   Identity?  @relation("TenantOwner", fields: [ownerIdentityId], references: [id], onDelete: SetNull)
   staffUsers      StaffUser[]
   members         Member[]
   branches        Branch[]
@@ -207,6 +213,7 @@ model Tenant {
   transactions    Transaction[]
   debitMandates   DebitMandate[]
 
+  @@index([ownerIdentityId])
   @@map("tenants")
 }
 
@@ -288,12 +295,15 @@ model Identity {
   /// Sign in with Apple (después). Null hasta vincular.
   appleSub     String?  @unique @map("apple_sub")
   name         String?
+  /// Cuándo esta persona usó el mes de prueba Faciliter (un gym).
+  platformTrialUsedAt DateTime? @map("platform_trial_used_at")
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")
 
   members       Member[]
   staffUsers    StaffUser[]
   refreshTokens RefreshToken[]
+  ownedTenants  Tenant[] @relation("TenantOwner")
 
   @@map("identities")
 }
@@ -766,6 +776,8 @@ model Contract {
   startsAt       DateTime       @map("starts_at")
   endsAt         DateTime?      @map("ends_at")
   hasAccessLibre Boolean        @default(false) @map("has_access_libre")
+  /// Contrato TENANT nacido como mes de prueba (30 días, $0).
+  isPlatformTrial Boolean       @default(false) @map("is_platform_trial")
   createdAt      DateTime       @default(now()) @map("created_at")
   updatedAt      DateTime       @updatedAt @map("updated_at")
 

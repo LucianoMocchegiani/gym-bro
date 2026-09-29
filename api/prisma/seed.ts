@@ -296,6 +296,11 @@ async function main(): Promise<void> {
     },
   });
 
+  await prisma.tenant.update({
+    where: { id: tenant.id },
+    data: { ownerIdentityId: adminIdentity.id },
+  });
+
   await prisma.staffUserRole.upsert({
     where: {
       staffUserId_roleId: {
@@ -431,6 +436,11 @@ async function main(): Promise<void> {
       email: 'admin@faciliter.xyz',
       name: 'Admin Faciliter',
     },
+  });
+
+  await prisma.tenant.update({
+    where: { id: ADMIN_TENANT.id },
+    data: { ownerIdentityId: platformAdminIdentity.id },
   });
 
    let platformAdminRole = await prisma.role.findUnique({

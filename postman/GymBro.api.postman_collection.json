@@ -1016,6 +1016,24 @@
                     }
                 },
                 {
+                    "name": "GET platform trial eligibility",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": "{{baseUrl}}/api/tenants/{{billingTenantId}}/platform-trial",
+                        "description": "JWT Staff `admin`. Si el gym y el dueño pueden usar 30 días de prueba (RN-PAG-017)."
+                    }
+                },
+                {
+                    "name": "GET gym plan",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": "{{baseUrl}}/api/plan",
+                        "description": "JWT Staff del gym (`tenant.settings.read`). 400 en tenant `admin`."
+                    }
+                },
+                {
                     "name": "GET tenant by id",
                     "event": [
                         {
@@ -4342,9 +4360,9 @@
                         "url": "{{baseUrl}}/api/tenants/{{billingTenantId}}/transaction-items/cash/cart",
                         "body": {
                             "mode": "raw",
-                            "raw": "{\n  \"items\": [\n    {\n      \"kind\": \"PACK\",\n      \"id\": \"{{createdPackId}}\"\n    }\n  ],\n  \"idempotencyKey\": \"platform-cash-cart-{{$timestamp}}\"\n}"
+                            "raw": "{\n  \"items\": [\n    {\n      \"kind\": \"PACK\",\n      \"id\": \"{{createdPackId}}\"\n    }\n  ],\n  \"idempotencyKey\": \"platform-cash-cart-{{$timestamp}}\",\n  \"applyTrial\": false\n}"
                         },
-                        "description": "Caja de plataforma (Caja del tenant `admin`). Requiere JWT Staff del tenant `admin` + `platform.tenants.write`; el staff de un gym normal da 403. Solo PACK: el drop-in es por sesiones de un gym. `{{billingTenantId}}` = gym que paga (NO puede ser el propio admin). El pack debe pertenecer al tenant admin. La transacción se emite con tenantId=billingTenantId y memberId=null (=> ContractType TENANT). No genera contrato ni reserva."
+                        "description": "Caja de plataforma (Caja del tenant `admin`). Requiere JWT Staff del tenant `admin` + `platform.tenants.write`. Solo PACK. `applyTrial: true` = 30 días $0 si el gym y el dueño no usaron la prueba (RN-PAG-017); crea Contract TENANT. Sin prueba: cobro + contrato TENANT. `{{billingTenantId}}` = gym que paga (NO admin). Pack del tenant admin."
                     },
                     "event": [
                         {

@@ -28,6 +28,7 @@ Documento **implementado** (tablas reales), no el modelo conceptual de [03-model
 erDiagram
   identities ||--o{ members : memberships
   identities ||--o{ staff_users : staff
+  identities ||--o{ tenants : owns
   identities ||--o{ refresh_tokens : sessions
   tenants ||--o{ staff_users : has
   tenants ||--o{ members : has
@@ -103,6 +104,8 @@ erDiagram
     text name
     text slug UK
     enum status
+    uuid owner_identity_id FK
+    timestamptz platform_trial_used_at
     timestamptz created_at
     timestamptz updated_at
   }
@@ -368,6 +371,8 @@ Gimnasio / estudio = tenant SaaS.
 | `name` | text | |
 | `slug` | text UNIQUE | subdominio (`demo.localhost` / `{slug}.gymbro.app`) |
 | `status` | `TenantStatus` | default `ACTIVE` |
+| `owner_identity_id` | uuid FK nullable → `identities` | Dueño del gym; SET NULL |
+| `platform_trial_used_at` | timestamptz nullable | Cupo de prueba del gym (RN-PAG-017) |
 | `created_at` | timestamptz | |
 | `updated_at` | timestamptz | |
 
@@ -478,6 +483,7 @@ Persona Faciliter (login de la app). Membresías = `members` / `staff_users`.
 | `google_sub` | text UK nullable | |
 | `apple_sub` | text UK nullable | |
 | `name` | text nullable | |
+| `platform_trial_used_at` | timestamptz nullable | Mes de prueba Faciliter (una vez por cuenta) |
 | `created_at` / `updated_at` | timestamptz | |
 
 API app: `POST /auth/identity/login`, `POST /auth/google`, `GET /auth/memberships`, `POST /auth/select-context`.
@@ -852,8 +858,9 @@ Contratación tras pago aprobado (CU-CON-001).
 | `tenant_id` / `member_id` / `pack_id` | uuid FK | |
 | `transaction_item_id` | uuid FK UK | 1:1 con transaction_item |
 | `status` | `ContractStatus` | |
-| `starts_at` / `ends_at` | timestamptz | MONTHLY → +1 mes; renovación: día siguiente a `endsAt` (o día de pago si hueco sin ingresos); ONE_TIME → `creditsExpireAt` futuro o +1 mes |
+| `starts_at` / `ends_at` | timestamptz | MONTHLY → +1 mes; prueba plataforma → +30 días; renovación: día siguiente a `endsAt` (o día de pago si hueco sin ingresos); ONE_TIME → `creditsExpireAt` futuro o +1 mes |
 | `has_access_libre` | boolean | |
+| `is_platform_trial` | boolean | default false |
 
 ### 4.17 `contract_credit_balances`
 
@@ -1006,6 +1013,9 @@ Historia incremental (2026-07 / 2026-08) **compactada** en un baseline (`40476fa
 | `20260919180000_identities` | `identities` + `IDENTITY` enum; FK `identity_id` en members/staff/refresh. |
 | `20260919190000_identity_only_password` | Drop `password_hash` de `members` y `staff_users`. |
 | `20260919200000_identity_password_optional` | `identities.password_hash` nullable (cuentas solo-Google). |
+| `20260925120000_platform_tenant_contracts` | `ContractType`; `member_id` nullable en cobros/contratos. |
+| `20260927020000_drop_super_profile` | Drop perfil SUPER. |
+| `20260929120000_platform_plan_trial` | `tenants.owner_identity_id`, `platform_trial_used_at`; `identities.platform_trial_used_at`; `contracts.is_platform_trial`. |
 
 Comandos y checklist “desde cero”: [13-setup-db-desde-cero.md](./13-setup-db-desde-cero.md).
 

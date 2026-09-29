@@ -60,6 +60,11 @@ export class OnlinePaymentService {
     dto: CreateMpCartCheckoutDto,
     recordedByStaffId: string | null,
   ): Promise<MpCartCheckoutResult> {
+    if (dto.applyTrial) {
+      throw new BadRequestException(
+        'Platform trial with Mercado Pago is not available yet. Use cash trial in Caja.',
+      );
+    }
     await this.requireActiveMember(tenantId, memberId);
     await this.requireMpConnected(tenantId);
 
@@ -227,6 +232,11 @@ export class OnlinePaymentService {
     dto: CreateMpCartCheckoutDto,
     recordedByStaffId: string | null,
   ): Promise<MpCartCheckoutResult> {
+    if (dto.applyTrial) {
+      throw new BadRequestException(
+        'Platform trial with Mercado Pago is not available yet. Use cash trial in Caja.',
+      );
+    }
     await this.requireMpConnected(catalogTenantId);
 
     if (dto.items.length === 0) {

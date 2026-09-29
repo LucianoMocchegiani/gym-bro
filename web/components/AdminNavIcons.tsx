@@ -246,6 +246,7 @@ const NAV_ICONS: Record<string, () => ReactNode> = {
   '/packs': NavIconPack,
   '/sesiones': NavIconSession,
   '/config': NavIconConfig,
+  '/plan': NavIconPack,
   '/auditoria': NavIconAudit,
 };
 

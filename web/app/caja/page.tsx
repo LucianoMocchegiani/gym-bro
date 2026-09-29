@@ -34,6 +34,7 @@ import { extractTenantSlugFromHost } from '@/lib/tenant-host';
 import { listActivePacks } from '@/lib/api/packs';
 import type { PackSummary } from '@/lib/api/packs';
 import { startCashCart } from '@/lib/api/reservations';
+import { getPlatformTrialEligibility } from '@/lib/api/plan';
 import { getReceiptByTransaction } from '@/lib/api/receipts';
 import type { ReceiptDetail } from '@/lib/api/receipts';
 import { listSessions } from '@/lib/api/sessions';
@@ -105,6 +106,9 @@ function CajaInner() {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [cobroMedio, setCobroMedio] = useState<'CASH' | 'MP'>('CASH');
   const [debitWanted, setDebitWanted] = useState(false);
+  const [applyTrial, setApplyTrial] = useState(false);
+  const [trialEligible, setTrialEligible] = useState(false);
+  const [trialHint, setTrialHint] = useState<string | null>(null);
   const [mpPublicKey, setMpPublicKey] = useState<string | null>(null);
   const [cobroBusy, setCobroBusy] = useState(false);
   const [cobroError, setCobroError] = useState<string | null>(null);
@@ -200,6 +204,38 @@ function CajaInner() {
   }, [isPlatform]);
 
   useEffect(() => {
+    if (!isPlatform || !billingTenantId) {
+      setTrialEligible(false);
+      setTrialHint(null);
+      setApplyTrial(false);
+      return;
+    }
+    let cancelled = false;
+    void getPlatformTrialEligibility(billingTenantId)
+      .then((r) => {
+        if (cancelled) {
+          return;
+        }
+        setTrialEligible(r.eligible);
+        setTrialHint(r.reason);
+        if (!r.eligible) {
+          setApplyTrial(false);
+        }
+      })
+      .catch(() => {
+        if (cancelled) {
+          return;
+        }
+        setTrialEligible(false);
+        setTrialHint('No se pudo consultar la prueba');
+        setApplyTrial(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [isPlatform, billingTenantId]);
+
+  useEffect(() => {
     if (!receipt) {
       return;
     }
@@ -243,6 +279,16 @@ function CajaInner() {
     [cart],
   );
 
+  const trialCanApply = Boolean(
+    isPlatform &&
+      cobroMedio === 'CASH' &&
+      trialEligible &&
+      cart.length === 1 &&
+      cart[0]?.kind === 'PACK',
+  );
+
+  const chargeTotal = applyTrial && trialCanApply ? 0 : total;
+
   const debitEligible = useMemo(() => {
     // El débito es un mandato por afiliado; no aplica a la venta de plataforma.
     if (isPlatform) {
@@ -254,6 +300,12 @@ function CajaInner() {
     const pack = packs.find((p) => p.id === cart[0].refId);
     return pack?.billingPeriod === 'MONTHLY';
   }, [cart, cobroMedio, isPlatform, packs]);
+
+  useEffect(() => {
+    if (!trialCanApply) {
+      setApplyTrial(false);
+    }
+  }, [trialCanApply]);
 
   useEffect(() => {
     if (!debitEligible) {
@@ -331,6 +383,7 @@ function CajaInner() {
     setReceipt(null);
     setReceiptError(null);
     setDebitWanted(false);
+    setApplyTrial(false);
     setMpClearConfirm(false);
     setCopyKey(null);
   }
@@ -465,6 +518,7 @@ function CajaInner() {
             billingTenantId,
             cart.map((item) => ({ kind: 'PACK' as const, id: item.refId })),
             newIdempotencyKey('cash-cart'),
+            applyTrial && trialCanApply,
           )
         : await startCashCart(
             memberId,
@@ -474,15 +528,19 @@ function CajaInner() {
             })),
             newIdempotencyKey('cash-cart'),
           );
+      const grantedTrial = Boolean(isPlatform && applyTrial && trialCanApply);
       const labels = cart.map((item) => item.label);
       setCart([]);
+      setApplyTrial(false);
       setCobroOk(
-        `${labels.length} cobro${labels.length === 1 ? '' : 's'} en efectivo: ${labels.join(' · ')}`,
+        grantedTrial
+          ? 'Prueba de 30 días activada (sin cobro). El gym ve el plan en Sistema → Plan / Uso.'
+          : `${labels.length} cobro${labels.length === 1 ? '' : 's'} en efectivo: ${labels.join(' · ')}`,
       );
       setCashTransactionId(result.transactionId);
       if (result.receipt) {
         setReceipt(result.receipt);
-      } else {
+      } else if (!grantedTrial) {
         try {
           setReceipt(await getReceiptByTransaction(result.transactionId));
         } catch {
@@ -751,7 +809,7 @@ function CajaInner() {
               </ul>
               <div className="cart-total">
                 <span>Total</span>
-                <strong>{formatMoney(total)}</strong>
+                <strong>{formatMoney(chargeTotal)}</strong>
               </div>
             </>
           )}
@@ -778,6 +836,29 @@ function CajaInner() {
                 Mercado Pago (link único)
               </label>
             </fieldset>
+
+            {isPlatform && billingTenantId && cobroMedio === 'CASH' ? (
+              <fieldset className="mode-toggle">
+                <legend>Prueba Faciliter</legend>
+                <label>
+                  <input
+                    type="checkbox"
+                    checked={applyTrial}
+                    disabled={!trialCanApply}
+                    onChange={(e) => setApplyTrial(e.target.checked)}
+                  />
+                  30 días de prueba (no cobra ahora)
+                </label>
+                {!trialEligible && trialHint ? (
+                  <p className="muted small">{trialHint}</p>
+                ) : null}
+                {trialEligible && !trialCanApply ? (
+                  <p className="muted small">
+                    La prueba es un solo pack, en efectivo.
+                  </p>
+                ) : null}
+              </fieldset>
+            ) : null}
 
             {cobroMedio === 'MP' ? (
               <p className="muted small">

@@ -87,7 +87,9 @@ El tenant `admin` vende packs propios a otros tenants. Logueate con `adminEmail`
 |---------|----------|
 | `GET /tenants/platform` | Gyms paginados (sin `admin`; `status`, `q`). TenantPicker de Caja. |
 | `GET /tenants/platform/kpis` | Inicio plataforma: `activeGyms` y `withoutActiveTenantContract`. |
-| `POST /tenants/:billingTenantId/transaction-items/cash/cart` | Cobro en efectivo. `memberId` queda `null`. |
+| `GET /tenants/:id/platform-trial` | Si Caja puede tildar 30 días de prueba. |
+| `GET /plan` | Plan Faciliter del gym (JWT del gym, no `admin`). |
+| `POST /tenants/:billingTenantId/transaction-items/cash/cart` | Cobro en efectivo o `applyTrial` (30 días). Crea contrato TENANT. `memberId` null. |
 | `POST /tenants/:billingTenantId/transaction-items/mp/cart` | Genera el link de MP para que el gym pague. `payerEmail` = staff activo más antiguo del gym. |
 
 Reglas:

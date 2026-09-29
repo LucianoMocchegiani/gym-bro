@@ -26,6 +26,10 @@ import {
 } from '../common/list';
 import { PrismaService } from '../prisma/prisma.service';
 import { KuatiaOfferService } from '../kuatia/kuatia-offer.service';
+import {
+  PLATFORM_TRIAL_DAYS,
+  addCalendarDays,
+} from '../tenants/platform-trial';
 import { CreateContractDto, UpdateContractStatusDto } from './dto/contract.dto';
 import { ContractDetail } from './contracts.types';
 
@@ -291,6 +295,7 @@ export class ContractsService {
     tenantId: string,
     transactionItemId: string,
     actor: AuditActor,
+    options?: { applyTrial?: boolean },
   ): Promise<ContractDetail> {
     const transactionItem = await this.prisma.transactionItem.findFirst({
       where: { id: transactionItemId, tenantId },
@@ -309,11 +314,13 @@ export class ContractsService {
       );
     }
     if (transactionItem.contract) {
-      await this.kuatiaOffers.ensureOfferForContract(
-        tenantId,
-        transactionItem.contract.id,
-        { force: true },
-      );
+      if (transactionItem.memberId) {
+        await this.kuatiaOffers.ensureOfferForContract(
+          tenantId,
+          transactionItem.contract.id,
+          { force: true },
+        );
+      }
       return this.toDetail(transactionItem.contract);
     }
     if (transactionItem.status !== PaymentStatus.APPROVED) {
@@ -341,18 +348,26 @@ export class ContractsService {
       tenantId,
       transactionItem.memberId,
       pack,
+      options?.applyTrial ? { applyTrial: true } : undefined,
     );
 
     try {
       const contract = await this.prisma.$transaction(async (tx) => {
-        return this.createContractInTx(tx, {
+        const created = await this.createContractInTx(tx, {
           tenantId,
           memberId: transactionItem.memberId ?? undefined,
           packId: pack.id,
           transactionItemId: transactionItem.id,
           plan,
           contractType,
+          isPlatformTrial: Boolean(options?.applyTrial),
         });
+        if (contractType === ContractType.TENANT) {
+          await this.markPlatformPlanUsageInTx(tx, tenantId, {
+            applyTrial: Boolean(options?.applyTrial),
+          });
+        }
+        return created;
       });
 
       const detail = this.toDetail(contract);
@@ -365,7 +380,9 @@ export class ContractsService {
         before: null,
         after: this.auditSnapshot(detail),
       });
-      await this.kuatiaOffers.ensureOfferForContract(tenantId, contract.id);
+      if (transactionItem.memberId) {
+        await this.kuatiaOffers.ensureOfferForContract(tenantId, contract.id);
+      }
       return detail;
     } catch (error: unknown) {
       if (
@@ -379,10 +396,12 @@ export class ContractsService {
           },
         });
         if (again?.contract) {
-          await this.kuatiaOffers.ensureOfferForContract(
-            tenantId,
-            again.contract.id,
-          );
+          if (again.memberId) {
+            await this.kuatiaOffers.ensureOfferForContract(
+              tenantId,
+              again.contract.id,
+            );
+          }
           return this.toDetail(again.contract);
         }
       }
@@ -400,6 +419,7 @@ export class ContractsService {
     tenantId: string,
     transactionItemId: string,
     actor: AuditActor,
+    options?: { applyTrial?: boolean },
   ): Promise<ContractDetail> {
     const transactionItem = await this.prisma.transactionItem.findFirst({
       where: { id: transactionItemId, tenantId },
@@ -445,17 +465,25 @@ export class ContractsService {
       tenantId,
       transactionItem.memberId,
       pack,
+      options?.applyTrial ? { applyTrial: true } : undefined,
     );
 
     const contract = await this.prisma.$transaction(async (tx) => {
-      return this.createContractInTx(tx, {
+      const created = await this.createContractInTx(tx, {
         tenantId,
         memberId: transactionItem.memberId ?? undefined,
         packId: pack.id,
         transactionItemId: transactionItem.id,
         plan,
         contractType,
+        isPlatformTrial: Boolean(options?.applyTrial),
       });
+      if (contractType === ContractType.TENANT) {
+        await this.markPlatformPlanUsageInTx(tx, tenantId, {
+          applyTrial: Boolean(options?.applyTrial),
+        });
+      }
+      return created;
     });
 
     const detail = this.toDetail(contract);
@@ -468,8 +496,64 @@ export class ContractsService {
       before: null,
       after: this.auditSnapshot(detail),
     });
-    await this.kuatiaOffers.ensureOfferForContract(tenantId, contract.id);
+    if (transactionItem.memberId) {
+      await this.kuatiaOffers.ensureOfferForContract(tenantId, contract.id);
+    }
     return detail;
+  }
+
+  /**
+   * Marca que el gym (y, si aplica, la Identity dueña) ya no puede repetir la prueba.
+   *
+   * @remarks Cualquier contrato TENANT agota el cupo del gym. La Identity
+   * solo se marca cuando `applyTrial` es true.
+   */
+  private async markPlatformPlanUsageInTx(
+    tx: Prisma.TransactionClient,
+    tenantId: string,
+    input: { applyTrial: boolean },
+  ): Promise<void> {
+    const now = new Date();
+    const tenant = await tx.tenant.findUnique({
+      where: { id: tenantId },
+      select: {
+        ownerIdentityId: true,
+        platformTrialUsedAt: true,
+      },
+    });
+    if (!tenant) {
+      throw new NotFoundException(`Tenant ${tenantId} not found`);
+    }
+    if (!tenant.platformTrialUsedAt) {
+      await tx.tenant.update({
+        where: { id: tenantId },
+        data: { platformTrialUsedAt: now },
+      });
+    }
+    if (!input.applyTrial) {
+      return;
+    }
+    if (!tenant.ownerIdentityId) {
+      throw new BadRequestException(
+        'Gym has no owner Identity to consume the platform trial',
+      );
+    }
+    const identity = await tx.identity.findUnique({
+      where: { id: tenant.ownerIdentityId },
+      select: { platformTrialUsedAt: true },
+    });
+    if (!identity) {
+      throw new BadRequestException('Owner Identity not found');
+    }
+    if (identity.platformTrialUsedAt) {
+      throw new BadRequestException(
+        'This account already used the platform trial',
+      );
+    }
+    await tx.identity.update({
+      where: { id: tenant.ownerIdentityId },
+      data: { platformTrialUsedAt: now },
+    });
   }
 
   private async loadActivePackForContract(
@@ -511,7 +595,7 @@ export class ContractsService {
     tenantId: string,
     memberId: string | null,
     pack: PackForContract,
-    override?: { startsAt?: Date; endsAt?: Date },
+    override?: { startsAt?: Date; endsAt?: Date; applyTrial?: boolean },
   ): Promise<ContractPlan> {
     const creditComponents = pack.components.filter(
       (c) => c.service.type === ServiceType.POR_SESIONES,
@@ -548,7 +632,7 @@ export class ContractsService {
     }
 
     if (pack.billingPeriod === BillingPeriod.MONTHLY) {
-      if (overrideEnd) {
+      if (overrideEnd && !override?.applyTrial) {
         throw new BadRequestException(
           'endsAt is not allowed for MONTHLY packs (duration is always +1 month)',
         );
@@ -558,7 +642,9 @@ export class ContractsService {
         where: {
           AND: [
             { tenantId },
-            memberId ? { memberId } : {},
+            memberId
+              ? { memberId, contractType: ContractType.MEMBER }
+              : { memberId: null, contractType: ContractType.TENANT },
             { status: ContractStatus.ACTIVE },
             { pack: { billingPeriod: BillingPeriod.MONTHLY } },
             {
@@ -574,9 +660,25 @@ export class ContractsService {
       const otherPlan = monthlyLive.find((c) => c.packId !== pack.id);
       if (otherPlan) {
         throw new BadRequestException(
-          `Member already has an active MONTHLY plan (${otherPlan.pack.name}). ` +
-            'Renew that pack or use a ONE_TIME pack for extras.',
+          memberId
+            ? `Member already has an active MONTHLY plan (${otherPlan.pack.name}). ` +
+              'Renew that pack or use a ONE_TIME pack for extras.'
+            : `Gym already has an active Faciliter plan (${otherPlan.pack.name}).`,
         );
+      }
+
+      if (override?.applyTrial) {
+        if (monthlyLive.length > 0) {
+          throw new BadRequestException(
+            'Gym already has an active Faciliter plan.',
+          );
+        }
+        return {
+          startsAt: now,
+          endsAt: addCalendarDays(now, PLATFORM_TRIAL_DAYS),
+          hasAccessLibre,
+          creditComponents: mappedCredits,
+        };
       }
 
       let startsAt: Date;
@@ -686,6 +788,7 @@ export class ContractsService {
       transactionItemId: string;
       plan: ContractPlan;
       contractType?: ContractType;
+      isPlatformTrial?: boolean;
     },
   ) {
     return tx.contract.create({
@@ -699,6 +802,7 @@ export class ContractsService {
         startsAt: input.plan.startsAt,
         endsAt: input.plan.endsAt,
         hasAccessLibre: input.plan.hasAccessLibre,
+        isPlatformTrial: Boolean(input.isPlatformTrial),
         balances: {
           create: input.plan.creditComponents.map((c) => ({
             serviceId: c.serviceId,
@@ -725,6 +829,26 @@ export class ContractsService {
     packId: string,
     now: Date,
   ): Promise<Date> {
+    if (!memberId) {
+      const lastSamePack = await this.prisma.contract.findFirst({
+        where: {
+          tenantId,
+          memberId: null,
+          packId,
+          contractType: ContractType.TENANT,
+          status: ContractStatus.ACTIVE,
+          endsAt: { not: null },
+        },
+        orderBy: { endsAt: 'desc' },
+        select: { endsAt: true },
+      });
+      if (!lastSamePack?.endsAt) {
+        return now;
+      }
+      const prevEnd = lastSamePack.endsAt;
+      return prevEnd > now ? this.dayAfter(prevEnd) : now;
+    }
+
     const lastSamePack = await this.prisma.contract.findFirst({
       where: {
         tenantId,
@@ -835,6 +959,7 @@ export class ContractsService {
       startsAt: contract.startsAt,
       endsAt: contract.endsAt,
       hasAccessLibre: contract.hasAccessLibre,
+      isPlatformTrial: contract.isPlatformTrial,
       transactionItem: {
         id: contract.transactionItem.id,
         amount: contract.transactionItem.amount,
