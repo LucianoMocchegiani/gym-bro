@@ -50,6 +50,8 @@ Leyenda resultado: `P` pass · `F` fail · `B` bloqueado · `-` no aplica
 | I7 | App: Google con el mismo mail que el seed | Entra a Gym de Prueba; no duplica identity | — | |
 | I8 | Apex `/login`: Continuar con Google (cuenta nueva) | Proxy + cookie; JWT Identity; va a `/cuenta` o `next` | — | |
 | I9 | Apex `/login`: Google con mail ya registrado (password) | Vincula `googleSub`; misma identity; no duplica | — | |
+| I10 | Apex logueado abre `/login` o Entrar | “Cargando sesión…” y va a `/cuenta`; no se ve el formulario | — | |
+| I11 | Apex `/cuenta` | `AccountPanel` (logout + pass) + Mis tenants + Plan del seleccionado | — | |
 
 ---
 

@@ -77,7 +77,7 @@ export function EmpezarClient({
   if (!ready || !session) {
     return (
       <MarketingShell>
-        <p className="muted">Cargando…</p>
+        <p className="muted">Cargando sesión…</p>
       </MarketingShell>
     );
   }

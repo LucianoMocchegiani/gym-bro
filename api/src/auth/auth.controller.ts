@@ -234,7 +234,7 @@ export class AuthController {
   }
 
   /**
-   * Cambia la contraseña del usuario autenticado (staff / super).
+   * Cambia la contraseña del usuario autenticado (staff o Identity).
    *
    * @remarks Revoca todos los refresh tokens → obliga a re-login.
    */

@@ -809,7 +809,7 @@
                             }
                         },
                         "url": "{{baseUrl}}/api/auth/change-password",
-                        "description": "Cambia la contraseña del staff autenticado (JWT). Revoca todos los refresh tokens → obliga a re-login. Ajustá newPassword antes de correrlo."
+                        "description": "Cambia la contraseña del JWT Staff o Identity. Revoca refresh → re-login. Ajustá newPassword antes de correrlo."
                     }
                 },
                 {

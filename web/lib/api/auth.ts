@@ -137,13 +137,17 @@ export function fromHandoff(): Promise<StaffLoginResponse> {
  *
  * @remarks Revoca refresh tokens → obliga a re-login.
  */
-export function changePassword(input: {
-  currentPassword: string;
-  newPassword: string;
-}): Promise<{ ok: true }> {
+export function changePassword(
+  input: {
+    currentPassword: string;
+    newPassword: string;
+  },
+  auth: 'staff' | 'identity' = 'staff',
+): Promise<{ ok: true }> {
   return apiRequest<{ ok: true }>('/auth/change-password', {
     method: 'POST',
     body: input,
+    auth,
   });
 }
 

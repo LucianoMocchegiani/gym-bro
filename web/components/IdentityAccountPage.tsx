@@ -3,6 +3,8 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { AccountPanel } from '@/components/AccountPanel';
+import { Panel } from '@/components/AdminUi';
 import { MarketingShell } from '@/components/marketing/MarketingShell';
 import { PlanPanel } from '@/components/PlanPanel';
 import { ApiClientError } from '@/lib/api/client';
@@ -16,7 +18,9 @@ import { useIdentityAuth } from '@/lib/auth/IdentityAuthProvider';
 import { tenantOrigin } from '@/lib/tenant-host';
 
 /**
- * Apex /cuenta: lista de gyms del dueño + plan de solo lectura.
+ * Apex `/cuenta`: misma ficha que el gym (`AccountPanel`) + tenants y plan.
+ *
+ * @remarks Sin sesión redirige a `/login` (mismo patrón que el staff).
  */
 export function IdentityAccountPage() {
   const { session, ready, logout } = useIdentityAuth();
@@ -53,7 +57,7 @@ export function IdentityAccountPage() {
           setError(
             err instanceof ApiClientError
               ? err.message
-              : 'No se pudieron cargar los gyms',
+              : 'No se pudieron cargar los tenants',
           );
         }
       });
@@ -77,7 +81,9 @@ export function IdentityAccountPage() {
       .catch((err: unknown) => {
         if (!cancelled) {
           setError(
-            err instanceof ApiClientError ? err.message : 'No se pudo cargar el plan',
+            err instanceof ApiClientError
+              ? err.message
+              : 'No se pudo cargar el plan',
           );
         }
       });
@@ -89,7 +95,9 @@ export function IdentityAccountPage() {
   if (!ready || !session) {
     return (
       <MarketingShell>
-        <p className="muted">Cargando…</p>
+        <section className="mkt-inner mkt-section">
+          <p className="muted">Cargando sesión…</p>
+        </section>
       </MarketingShell>
     );
   }
@@ -97,41 +105,56 @@ export function IdentityAccountPage() {
   return (
     <MarketingShell>
       <section className="mkt-inner mkt-section">
-        <h1 className="mkt-h2">Tus gyms</h1>
-        <p className="muted">
-          {session.email}{' '}
-          <button type="button" className="linkish" onClick={() => void logout()}>
-            Salir
-          </button>
-        </p>
+        <h1 className="mkt-h2">Mi cuenta</h1>
         {error ? <p className="error">{error}</p> : null}
-        <p>
-          <Link className="btn primary" href="/empezar">
-            + Nuevo gym
-          </Link>
-        </p>
-        {gyms && gyms.length === 0 ? (
-          <p className="muted">Todavía no tenés un gym. Contratá un plan.</p>
-        ) : null}
-        {gyms && gyms.length > 0 ? (
-          <ul className="plain-list">
-            {gyms.map((gym) => (
-              <li key={gym.tenantId}>
-                <label>
-                  <input
-                    type="radio"
-                    name="gym"
-                    checked={selected === gym.tenantId}
-                    onChange={() => setSelected(gym.tenantId)}
-                  />{' '}
-                  {gym.name} ({gym.slug}){' '}
-                  <a href={tenantOrigin(gym.slug)}>Abrir panel</a>
-                </label>
-              </li>
-            ))}
-          </ul>
-        ) : null}
-        {plan ? <PlanPanel plan={plan} /> : null}
+        <div className="admin-stack">
+          <AccountPanel
+            name={session.name}
+            email={session.email}
+            subtitle="Cuenta Faciliter"
+            onLogout={logout}
+            loginHref="/login"
+            hasPassword={session.hasPassword}
+            passwordAuth="identity"
+          />
+          <Panel
+            title="Mis tenants"
+            description="Gyms, clubes o estudios de esta cuenta."
+          >
+            <p>
+              <Link className="btn" href="/empezar">
+                + Nuevo tenant
+              </Link>
+            </p>
+            {gyms === null ? (
+              <p className="muted">Cargando tenants…</p>
+            ) : null}
+            {gyms && gyms.length === 0 ? (
+              <p className="muted">
+                Todavía no tenés un tenant. Contratá un plan.
+              </p>
+            ) : null}
+            {gyms && gyms.length > 0 ? (
+              <ul className="plain-list">
+                {gyms.map((gym) => (
+                  <li key={gym.tenantId}>
+                    <label>
+                      <input
+                        type="radio"
+                        name="tenant"
+                        checked={selected === gym.tenantId}
+                        onChange={() => setSelected(gym.tenantId)}
+                      />{' '}
+                      {gym.name} ({gym.slug}){' '}
+                      <a href={tenantOrigin(gym.slug)}>Abrir panel</a>
+                    </label>
+                  </li>
+                ))}
+              </ul>
+            ) : null}
+          </Panel>
+          {plan ? <PlanPanel plan={plan} /> : null}
+        </div>
       </section>
     </MarketingShell>
   );

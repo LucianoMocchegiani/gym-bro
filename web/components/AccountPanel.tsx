@@ -20,6 +20,8 @@ type AccountPanelProps = {
   /** Impersonación: vuelve al tenant `admin` (sesión de plataforma sigue en ese origen). */
   onReturnToPlatform?: () => void;
   hasPassword?: boolean;
+  /** Apex Identity usa Bearer de cuenta, no staff. */
+  passwordAuth?: 'staff' | 'identity';
 };
 
 function initials(name: string | null, email: string): string {
@@ -36,9 +38,9 @@ function initials(name: string | null, email: string): string {
 /**
  * Pantalla de cuenta (avatar → datos, cerrar sesión y cambio de contraseña).
  *
- * @remarks Usado en el panel Staff (`/cuenta`).
+ * @remarks Usado en el panel Staff (`/cuenta`) y en el apex Identity.
  * El cambio de contraseña abre un modal; al cambiarla el server revoca todos
- * los refresh tokens → se invita a re-login.
+ * los refresh tokens → se invita a re-login. En apex Identity, `passwordAuth`.
  */
 export function AccountPanel({
   name,
@@ -49,6 +51,7 @@ export function AccountPanel({
   loginHref,
   onReturnToPlatform,
   hasPassword = true,
+  passwordAuth = 'staff',
 }: AccountPanelProps) {
   const router = useRouter();
   const [pwOpen, setPwOpen] = useState(false);
@@ -80,7 +83,7 @@ export function AccountPanel({
     }
     setBusy(true);
     try {
-      await changePassword({ currentPassword, newPassword });
+      await changePassword({ currentPassword, newPassword }, passwordAuth);
       setDone(true);
     } catch (err) {
       setError(

@@ -4,12 +4,13 @@ import { FormEvent, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ApiClientError } from '@/lib/api/client';
 import { ContinueWithGoogleButton } from '@/components/ContinueWithGoogleButton';
+import { LoginPending } from '@/components/LoginPending';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { useIdentityAuth } from '@/lib/auth/IdentityAuthProvider';
 import { tenantHostLabel, tenantOrigin } from '@/lib/tenant-host';
 
 /**
- * Login / alta Identity en el apex (contratar gym).
+ * Login / alta Identity en el apex.
  */
 export function IdentityLoginCard({
   nextPath,
@@ -80,6 +81,10 @@ export function IdentityLoginCard({
     }
   }
 
+  if (!ready || session || !cookieTried) {
+    return <LoginPending message="Cargando sesión…" />;
+  }
+
   return (
     <div className="login-page">
       <div className="login-theme-slot">
@@ -89,7 +94,7 @@ export function IdentityLoginCard({
         <p className="brand">Faciliter</p>
         <h1>{mode === 'register' ? 'Crear cuenta' : 'Tu cuenta'}</h1>
         <p className="muted">
-          Para contratar un gym o ver los que ya tenés.
+          Para contratar un tenant o ver los que ya tenés.
         </p>
         {error ? <p className="error">{error}</p> : null}
         {mode === 'register' ? (

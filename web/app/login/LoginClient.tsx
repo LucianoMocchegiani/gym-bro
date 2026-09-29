@@ -12,6 +12,7 @@ import { tenantHostLabel, tenantOrigin } from '@/lib/tenant-host';
 import { writeStaffSession } from '@/lib/auth/session';
 import { ContinueWithGoogleButton } from '@/components/ContinueWithGoogleButton';
 import { IdentityLoginCard } from '@/components/IdentityLoginCard';
+import { LoginPending } from '@/components/LoginPending';
 
 type LoginClientProps = {
   /** Slug resuelto en el servidor desde el header Host. */
@@ -125,10 +126,13 @@ export function LoginClient({
         const tokens = await fromCookie(slug);
         if (!cancelled && tokens.accessToken) {
           writeStaffSession(tokens, slug);
-          setAutoLoginDone(true);
         }
       } catch {
         // Sin cookie → formulario.
+      } finally {
+        if (!cancelled) {
+          setAutoLoginDone(true);
+        }
       }
     })();
     return () => {
@@ -184,6 +188,10 @@ export function LoginClient({
 
   if (!slug) {
     return <IdentityLoginCard nextPath={nextPath} />;
+  }
+
+  if (!ready || !verified || session || !autoLoginDone) {
+    return <LoginPending message="Cargando sesión…" />;
   }
 
   return (

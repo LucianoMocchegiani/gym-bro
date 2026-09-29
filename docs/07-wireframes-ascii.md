@@ -467,6 +467,19 @@ Misma composición que Kuatia (`identity-kuatia` marketing): contenedor ancho, h
 
 Apex = marketing. `{slug}.localhost` = Admin (wireframe §7).
 
+Apex `/login` sin Identity (carga, no flash de form). Apex `/cuenta` logueado:
+
+```text
++------------------------------------------------------------------+
+| Faciliter    Producto  Guía  Asistente  Precio  [Mi cuenta] [tema]
++------------------------------------------------------------------+
+| Mi cuenta                                                        |
+| [Panel Mi cuenta]  avatar, mail, cambiar pass, Cerrar sesión     |
+| [Mis tenants]      radio + Abrir panel + Nuevo tenant            |
+| [Plan Faciliter]   del tenant seleccionado                       |
++------------------------------------------------------------------+
+```
+
 ---
 
 [Índice](./00-indice.md) · [Siguiente: Casos de prueba manuales →](./08-casos-prueba-manuales.md)

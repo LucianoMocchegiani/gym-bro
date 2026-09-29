@@ -4,6 +4,7 @@ import { NavIconFaciliterMark } from '@/components/AdminNavIcons';
 import { AssistantLauncher } from '@/components/assistant/AssistantDrawer';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { MktShell } from '@/components/marketing/MktShell';
+import { MarketingAccountLink } from '@/components/marketing/MarketingAccountLink';
 import { MARKETING_MAIL } from '@/lib/site-url';
 
 type MarketingShellProps = {
@@ -38,7 +39,7 @@ export function MarketingShell({ children }: MarketingShellProps) {
             <Link href="/docs">Guía</Link>
             <Link href="/#asistente">Asistente</Link>
             <Link href="/#precio">Precio</Link>
-            <Link href="/login">Entrar</Link>
+            <MarketingAccountLink variant="nav" />
           </nav>
           <div className="mkt-header-actions">
             <ThemeToggle />
@@ -70,7 +71,7 @@ export function MarketingShell({ children }: MarketingShellProps) {
                   <Link href="/#precio">Precio</Link>
                 </li>
                 <li>
-                  <Link href="/login">Acceder</Link>
+                  <MarketingAccountLink variant="footer" />
                 </li>
               </ul>
             </div>

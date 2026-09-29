@@ -5,7 +5,7 @@
 **Hecho (corte 1):** `GET /public/platform/packs` + landing lista packs.  
 **Hecho (corte 2):** Plan/Uso + prueba Caja.  
 **Hecho (corte 3):** modo limitado RN-PAG-018.  
-**Hecho (corte 4):** landing Contratar → Identity → wizard slug → preapproval MP de `admin`; gym nace en webhook. `/cuenta` apex lista gyms + PlanPanel lectura.
+**Hecho (corte 4):** landing Contratar → Identity → wizard slug → preapproval MP de `admin`; gym nace en webhook. Apex `/cuenta`: `AccountPanel` + Mis tenants + PlanPanel lectura.
 
 Cerrado (sesión 2026-09-28): Identity 1:N tenants; primer pago = primer gym; MP de cobro = MP de `admin`; slug lo elige el comprador **antes** de la Preference.
 

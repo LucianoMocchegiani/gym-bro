@@ -637,7 +637,7 @@ export class AuthService {
   }
 
   /**
-   * Cambia la contraseña del usuario autenticado (STAFF o MEMBER).
+   * Cambia la contraseña del usuario autenticado (STAFF o IDENTITY).
    *
    * @remarks Cambia el hash de `identities` (misma pass en todos los gyms).
    * Revoca refresh de ese staff y de la identity.
@@ -648,6 +648,25 @@ export class AuthService {
     dto: ChangePasswordDto,
   ): Promise<{ ok: true }> {
     const newHash = await bcrypt.hash(dto.newPassword, 12);
+
+    if (user.profileType === AuthProfileType.IDENTITY) {
+      const identity = await this.prisma.identity.findUnique({
+        where: { id: user.userId },
+      });
+      if (!identity?.passwordHash) {
+        throw new UnauthorizedException('Invalid credentials');
+      }
+      await this.assertPassword(dto.currentPassword, identity.passwordHash);
+      await this.prisma.identity.update({
+        where: { id: identity.id },
+        data: { passwordHash: newHash },
+      });
+      await this.prisma.refreshToken.updateMany({
+        where: { revokedAt: null, identityId: identity.id },
+        data: { revokedAt: new Date() },
+      });
+      return { ok: true };
+    }
 
     if (user.profileType === AuthProfileType.STAFF) {
       const staffUser = await this.prisma.staffUser.findUnique({

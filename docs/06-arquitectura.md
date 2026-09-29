@@ -133,9 +133,9 @@ Login por perfil o cuenta → access JWT + refresh (Postgres)
 | Staff | `tenantId` obligatorio | `POST /api/auth/staff/login` o identity + `POST /auth/select-context` |
 | Afiliado | Perfil separado (RN-ROL-005) | `POST /api/auth/member/login` o identity + select-context |
 
-Identity: `GET /api/auth/memberships` + `POST /api/auth/select-context`. Alta web: `POST /api/auth/identity/register`, `POST /api/identity/signups` (preapproval en MP de `admin`; gym nace en webhook). Apex `/cuenta` lista gyms. Google app: `POST /api/auth/google`. Google web (staff e Identity): proxy `login.faciliter.xyz` → `POST /api/auth/from-cookie` (sin `tenantSlug` = JWT Identity; con slug = STAFF/MEMBER del gym).
+Identity: `GET /api/auth/memberships` + `POST /api/auth/select-context`. Alta web: `POST /api/auth/identity/register`, `POST /api/identity/signups` (preapproval en MP de `admin`; gym nace en webhook). Apex: `/login` sin sesión (carga hasta cookie/JWT); `/cuenta` autenticado = mismo `AccountPanel` que el gym + Mis tenants + plan. Google app: `POST /api/auth/google`. Google web: proxy `login.faciliter.xyz` → `POST /api/auth/from-cookie`.
 
-También: `POST /api/auth/refresh`, `POST /api/auth/logout`, `GET /api/auth/me` (incluye `tenantId` y `platformAccess` `ok`|`limited` para recorte de plan Faciliter), `POST /api/auth/change-password` (JWT; verifica la actual con bcrypt y revoca todos los refresh tokens del usuario → obliga a re-login).
+También: `POST /api/auth/refresh`, `POST /api/auth/logout`, `GET /api/auth/me` (incluye `tenantId` y `platformAccess` `ok`|`limited` para recorte de plan Faciliter), `POST /api/auth/change-password` (JWT STAFF o IDENTITY; verifica la actual con bcrypt y revoca refresh → re-login).
 
 Rutas de negocio del gym: `@RequireTenantAuth()` = JWT + `TenantGuard` + `PlatformAccessGuard` (RN-PAG-018). Staff limitado: 403 salvo `@AllowWhenLimited()` (`GET /plan`, `GET /me/permissions`). Impersonación y MEMBER no se recortan.
 Rutas de plataforma: tenant `admin` + `platform.*`. Operar un gym = `POST /api/auth/super/impersonate` (cookie) → `{slug}/login?handoff=1` → `POST /api/auth/from-handoff` + rutas Staff (no hay espejos nested).
