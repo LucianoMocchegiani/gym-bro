@@ -48,6 +48,8 @@ Leyenda resultado: `P` pass · `F` fail · `B` bloqueado · `-` no aplica
 | I5 | Identity JWT en Caja | 403 select gym | RN-TEN-001 | |
 | I6 | App: Continuar con Google (cuenta nueva) | Identity + picker vacío o gym si el mail ya es socio/staff | — | |
 | I7 | App: Google con el mismo mail que el seed | Entra a Gym de Prueba; no duplica identity | — | |
+| I8 | Apex `/login`: Continuar con Google (cuenta nueva) | Proxy + cookie; JWT Identity; va a `/cuenta` o `next` | — | |
+| I9 | Apex `/login`: Google con mail ya registrado (password) | Vincula `googleSub`; misma identity; no duplica | — | |
 
 ---
 

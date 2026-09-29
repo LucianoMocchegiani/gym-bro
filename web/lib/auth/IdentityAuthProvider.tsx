@@ -8,7 +8,12 @@ import {
   useSyncExternalStore,
   type ReactNode,
 } from 'react';
-import { identityLogin, identityRegister, staffLogout } from '@/lib/api/auth';
+import {
+  fromCookie,
+  identityLogin,
+  identityRegister,
+  staffLogout,
+} from '@/lib/api/auth';
 import {
   clearIdentitySession,
   getIdentitySessionServerSnapshot,
@@ -27,6 +32,8 @@ type IdentityAuthValue = {
     password: string;
     name?: string;
   }) => Promise<void>;
+  /** Canjea cookie del proxy Google (sin slug) por JWT Identity. */
+  loginFromCookie: () => Promise<void>;
   logout: () => Promise<void>;
 };
 
@@ -64,6 +71,14 @@ export function IdentityAuthProvider({ children }: { children: ReactNode }) {
     [],
   );
 
+  const loginFromCookie = useCallback(async () => {
+    const res = await fromCookie();
+    if (res.profileType !== 'IDENTITY') {
+      throw new Error('Sesión de gym, no de cuenta Faciliter');
+    }
+    writeIdentitySession(res);
+  }, []);
+
   const logout = useCallback(async () => {
     const current = readIdentitySession();
     if (current?.refreshToken) {
@@ -73,8 +88,8 @@ export function IdentityAuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const value = useMemo(
-    () => ({ session, ready, login, register, logout }),
-    [session, ready, login, register, logout],
+    () => ({ session, ready, login, register, loginFromCookie, logout }),
+    [session, ready, login, register, loginFromCookie, logout],
   );
 
   return (

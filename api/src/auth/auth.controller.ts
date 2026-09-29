@@ -30,6 +30,7 @@ import {
   GoogleLoginDto,
   StaffGoogleLoginDto,
   AppleLoginDto,
+  FromCookieDto,
   IdentityLoginDto,
   IdentityRegisterDto,
   ImpersonateDto,
@@ -170,19 +171,20 @@ export class AuthController {
 
   /**
    * Intercambia cookie central de login proxy por JWT.
-   * @remarks Usado tras login con Google via login.faciliter.xyz.
+   *
+   * @remarks Tras Google en `login.faciliter.xyz`. Sin `tenantSlug` → Identity
+   * (alta o sesión en el apex). Con slug → staff o socio de ese gym.
    */
   @Post('from-cookie')
-  fromCookie(@Req() req: Request): Promise<AuthTokens> {
+  fromCookie(
+    @Req() req: Request,
+    @Body() dto: FromCookieDto,
+  ): Promise<AuthTokens> {
     const sessionId = req.cookies?.central_session;
     if (!sessionId) {
       throw new UnauthorizedException('No session');
     }
-    const tenantSlug = req.body?.tenantSlug;
-    if (!tenantSlug) {
-      throw new BadRequestException('tenantSlug required');
-    }
-    return this.authService.loginFromProxy(sessionId, tenantSlug);
+    return this.authService.loginFromProxy(sessionId, dto.tenantSlug);
   }
 
   /**

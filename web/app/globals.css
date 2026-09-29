@@ -190,6 +190,13 @@ code {
   opacity: 0.5;
 }
 
+.login-card .btn-google {
+  width: 100%;
+  background: var(--bg-elevated);
+  color: var(--ink);
+  border: 1px solid var(--line);
+}
+
 .login-theme-slot {
   position: absolute;
   top: 1rem;

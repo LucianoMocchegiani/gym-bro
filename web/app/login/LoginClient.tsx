@@ -10,6 +10,7 @@ import { fromCookie, fromHandoff } from '@/lib/api/auth';
 import { useAuth } from '@/lib/auth/AuthProvider';
 import { tenantHostLabel, tenantOrigin } from '@/lib/tenant-host';
 import { writeStaffSession } from '@/lib/auth/session';
+import { ContinueWithGoogleButton } from '@/components/ContinueWithGoogleButton';
 import { IdentityLoginCard } from '@/components/IdentityLoginCard';
 
 type LoginClientProps = {
@@ -20,9 +21,6 @@ type LoginClientProps = {
   /** Tras login Identity en apex. */
   nextPath?: string;
 };
-
-const LOGIN_PROXY_URL =
-  process.env.NEXT_PUBLIC_LOGIN_PROXY_URL ?? 'https://login.faciliter.xyz';
 
 /**
  * Formulario de login Staff (cliente).
@@ -260,19 +258,7 @@ export function LoginClient({
         </button>
 
         <div style={{ marginTop: '12px' }}>
-          <button
-            type="button"
-            className="btn-google"
-            onClick={() => {
-              const returnTo = encodeURIComponent(
-                typeof window !== 'undefined' ? window.location.href : '',
-              );
-              window.location.href = `${LOGIN_PROXY_URL}/start?return_to=${returnTo}`;
-            }}
-            disabled={!!tenantError}
-          >
-            Continuar con Google
-          </button>
+          <ContinueWithGoogleButton disabled={!!tenantError} />
         </div>
       </form>
     </div>

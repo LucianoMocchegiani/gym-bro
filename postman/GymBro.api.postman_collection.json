@@ -569,6 +569,38 @@
                     }
                 },
                 {
+                    "name": "From-cookie Identity",
+                    "request": {
+                        "auth": { "type": "noauth" },
+                        "method": "POST",
+                        "header": [
+                            { "key": "Content-Type", "value": "application/json" }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{}"
+                        },
+                        "url": "{{baseUrl}}/api/auth/from-cookie",
+                        "description": "Cookie HttpOnly `central_session` del proxy Google. Sin tenantSlug → JWT Identity."
+                    }
+                },
+                {
+                    "name": "From-cookie Staff",
+                    "request": {
+                        "auth": { "type": "noauth" },
+                        "method": "POST",
+                        "header": [
+                            { "key": "Content-Type", "value": "application/json" }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"tenantSlug\": \"{{tenantSlug}}\"\n}"
+                        },
+                        "url": "{{baseUrl}}/api/auth/from-cookie",
+                        "description": "Mismo proxy; con slug → STAFF o MEMBER del gym."
+                    }
+                },
+                {
                     "name": "Identity POST signup",
                     "request": {
                         "method": "POST",

@@ -163,3 +163,15 @@ export class StaffGoogleLoginDto {
   @MinLength(20)
   idToken!: string;
 }
+
+/**
+ * Canje de cookie `central_session` del login proxy.
+ *
+ * @remarks Sin `tenantSlug` emite JWT Identity (apex). Con slug, STAFF o MEMBER del gym.
+ */
+export class FromCookieDto {
+  @IsOptional()
+  @IsString()
+  @MinLength(2)
+  tenantSlug?: string;
+}

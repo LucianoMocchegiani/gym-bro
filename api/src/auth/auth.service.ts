@@ -401,56 +401,15 @@ export class AuthService {
    */
   async loginGoogle(dto: GoogleLoginDto): Promise<AuthTokens> {
     const claims = await this.googleTokens.verify(dto.idToken);
-    const bySub = await this.prisma.identity.findUnique({
-      where: { googleSub: claims.sub },
+    const identity = await this.ensureIdentityFromGoogle({
+      email: claims.email,
+      googleSub: claims.sub,
+      name: claims.name,
     });
-    if (bySub) {
-      return this.issueIdentity({ ...bySub, hasPassword: false });
-    }
-    const byEmail = await this.prisma.identity.findUnique({
-      where: { email: claims.email },
+    return this.issueIdentity({
+      ...identity,
+      hasPassword: Boolean(identity.passwordHash),
     });
-    if (byEmail) {
-      if (byEmail.googleSub && byEmail.googleSub !== claims.sub) {
-        throw new UnauthorizedException('Invalid credentials');
-      }
-      const linked = await this.prisma.identity.update({
-        where: { id: byEmail.id },
-        data: {
-          googleSub: claims.sub,
-          name: byEmail.name ?? claims.name,
-        },
-      });
-      return this.issueIdentity({ ...linked, hasPassword: false });
-    }
-    try {
-      const created = await this.prisma.identity.create({
-        data: {
-          email: claims.email,
-          googleSub: claims.sub,
-          name: claims.name,
-          passwordHash: null,
-        },
-      });
-      return this.issueIdentity({ ...created, hasPassword: false });
-    } catch (error) {
-      if (
-        error instanceof Prisma.PrismaClientKnownRequestError &&
-        error.code === 'P2002'
-      ) {
-        const raced =
-          (await this.prisma.identity.findUnique({
-            where: { googleSub: claims.sub },
-          })) ??
-          (await this.prisma.identity.findUnique({
-            where: { email: claims.email },
-          }));
-        if (raced) {
-          return this.issueIdentity({ ...raced, hasPassword: false });
-        }
-      }
-      throw error;
-    }
   }
 
   private issueIdentity(identity: {
@@ -726,9 +685,97 @@ export class AuthService {
 
   private proxySessions = new Map<string, string>();
 
+  /**
+   * Crea o vincula Identity a partir de Google (`sub` + email).
+   *
+   * @remarks Compartido por `POST /auth/google` y el login proxy.
+   * @throws {UnauthorizedException} El mail ya está ligado a otro `googleSub`.
+   */
+  private async ensureIdentityFromGoogle(params: {
+    email: string;
+    googleSub: string;
+    name: string | null;
+  }) {
+    const bySub = await this.prisma.identity.findUnique({
+      where: { googleSub: params.googleSub },
+    });
+    if (bySub) {
+      if (
+        bySub.email === params.email &&
+        (params.name === null || bySub.name === params.name)
+      ) {
+        return bySub;
+      }
+      try {
+        return await this.prisma.identity.update({
+          where: { id: bySub.id },
+          data: {
+            email: params.email,
+            name: params.name ?? bySub.name,
+          },
+        });
+      } catch (error) {
+        if (
+          error instanceof Prisma.PrismaClientKnownRequestError &&
+          error.code === 'P2002'
+        ) {
+          throw new UnauthorizedException('Invalid credentials');
+        }
+        throw error;
+      }
+    }
+    const byEmail = await this.prisma.identity.findUnique({
+      where: { email: params.email },
+    });
+    if (byEmail) {
+      if (byEmail.googleSub && byEmail.googleSub !== params.googleSub) {
+        throw new UnauthorizedException('Invalid credentials');
+      }
+      return this.prisma.identity.update({
+        where: { id: byEmail.id },
+        data: {
+          googleSub: params.googleSub,
+          name: byEmail.name ?? params.name,
+        },
+      });
+    }
+    try {
+      return await this.prisma.identity.create({
+        data: {
+          email: params.email,
+          googleSub: params.googleSub,
+          name: params.name,
+          passwordHash: null,
+        },
+      });
+    } catch (error) {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2002'
+      ) {
+        const raced =
+          (await this.prisma.identity.findUnique({
+            where: { googleSub: params.googleSub },
+          })) ??
+          (await this.prisma.identity.findUnique({
+            where: { email: params.email },
+          }));
+        if (raced) {
+          return raced;
+        }
+      }
+      throw error;
+    }
+  }
+
+  /**
+   * Canjea cookie del proxy Google por JWT.
+   *
+   * @param tenantSlug Si falta, JWT Identity (apex). Si hay, staff o socio de ese gym.
+   */
   async loginFromProxy(
     sessionId: string,
-    tenantSlug: string,
+    tenantSlug?: string,
   ): Promise<AuthTokens> {
     const response = await fetch(
       `${process.env.AUTH_PROXY_URL}/session/validate`,
@@ -747,23 +794,25 @@ export class AuthService {
       googleSub: string;
     } = await response.json();
 
-    const identityRecord = await this.prisma.identity.upsert({
-      where: { googleSub: proxyIdentity.googleSub },
-      update: {
-        email: proxyIdentity.email,
-        name: proxyIdentity.name ?? undefined,
-      },
-      create: {
-        email: proxyIdentity.email,
-        googleSub: proxyIdentity.googleSub,
-        name: proxyIdentity.name,
-        passwordHash: null,
-      },
+    const identityRecord = await this.ensureIdentityFromGoogle({
+      email: proxyIdentity.email,
+      googleSub: proxyIdentity.googleSub,
+      name: proxyIdentity.name,
     });
 
     this.proxySessions.set(identityRecord.id, sessionId);
 
-    const tenantId = await this.resolveTenantId({ tenantSlug });
+    const slug = tenantSlug?.trim();
+    if (!slug) {
+      return this.issueIdentity({
+        id: identityRecord.id,
+        email: identityRecord.email,
+        name: identityRecord.name,
+        hasPassword: Boolean(identityRecord.passwordHash),
+      });
+    }
+
+    const tenantId = await this.resolveTenantId({ tenantSlug: slug });
     await this.assertTenantActive(tenantId);
 
     const staffUser = await this.prisma.staffUser.findFirst({

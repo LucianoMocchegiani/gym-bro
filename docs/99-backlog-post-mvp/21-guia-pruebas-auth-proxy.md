@@ -65,6 +65,16 @@ docker compose logs auth-proxy --tail 20
    - Petición `POST /api/auth/from-cookie` con respuesta 200 y JWT
    - Cookie `central_session` enviada automáticamente
 
+### 2e. Apex Identity (contratar / cuenta)
+
+Mismo proxy y cookie; el canje **no** manda `tenantSlug`.
+
+1. Abrir `https://faciliter.xyz/login` (o `http://localhost:3000/login` en apex) sin sesión Identity
+2. Clic en **Continuar con Google** (también sirve para crear cuenta)
+3. **Esperado:** `return_to` apunta al apex `/login` (no a un slug de gym)
+4. Tras Google, `POST /api/auth/from-cookie` con body `{}` → `profileType` **IDENTITY**
+5. **Esperado:** redirige a `/cuenta` (o `?next=`)
+
 ## 3. Verificación con curl
 
 ### 3a. Simular sin cookie (debería fallar)

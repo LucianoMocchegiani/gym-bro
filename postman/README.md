@@ -55,7 +55,7 @@ Carpeta **Health**: `GET /health`, `GET /public/platform/packs` (landing) y `GET
 
 ## Manual
 
-Carpeta **Auth (manual)**: Login plataforma/Staff/Member → **Identity** (`POST /auth/identity/login`) → **Google** (`POST /auth/google` + `googleIdToken`) → memberships → select-context → Me → Refresh → Logout. **Impersonación**: `POST /auth/super/impersonate` con `{ tenantId, staffUserId }` (token temporal 4h; reg audit). El nombre de la ruta conserva el `super` histórico, pero el perfil SUPER ya no existe: el token tiene que ser el de un staff del tenant `admin`.
+Carpeta **Auth (manual)**: Login plataforma/Staff/Member → **Identity** (`POST /auth/identity/login`) → **Google** (`POST /auth/google` + `googleIdToken`) → **From-cookie Identity** (`POST /auth/from-cookie` sin slug, cookie `central_session`) / **From-cookie Staff** (con `tenantSlug`) → memberships → select-context → Me → Refresh → Logout. **Impersonación**: `POST /auth/super/impersonate` con `{ tenantId, staffUserId }` (token temporal 4h; reg audit). El nombre de la ruta conserva el `super` histórico, pero el perfil SUPER ya no existe: el token tiene que ser el de un staff del tenant `admin`.
 
 Carpeta **Roles** / **Staff roles**: Staff necesita permisos (`roles.write` para list/get/create/patch; `staff.read` list/detail; `staff.write` alta, `PATCH /staff/:id` ficha y asignar roles). Plataforma: `GET /tenants/:billingTenantId/staff` (para impersonar) + `POST /auth/super/impersonate`. El Admin seed los tiene; un rol sin esos códigos → 403. `GET|PATCH /roles/:id` usa `createdRoleId` del POST create (el rol `admin` no se edita).
 

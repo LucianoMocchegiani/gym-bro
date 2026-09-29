@@ -116,7 +116,7 @@ export function identityRegister(input: {
 export function fromCookie(tenantSlug?: string): Promise<StaffLoginResponse> {
   return apiRequest<StaffLoginResponse>('/auth/from-cookie', {
     method: 'POST',
-    body: { tenantSlug },
+    body: tenantSlug ? { tenantSlug } : {},
     auth: false,
   });
 }

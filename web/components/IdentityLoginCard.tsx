@@ -3,6 +3,7 @@
 import { FormEvent, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ApiClientError } from '@/lib/api/client';
+import { ContinueWithGoogleButton } from '@/components/ContinueWithGoogleButton';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { useIdentityAuth } from '@/lib/auth/IdentityAuthProvider';
 import { tenantHostLabel, tenantOrigin } from '@/lib/tenant-host';
@@ -15,20 +16,43 @@ export function IdentityLoginCard({
 }: {
   nextPath: string;
 }) {
-  const { session, login, register } = useIdentityAuth();
+  const { session, ready, login, register, loginFromCookie } =
+    useIdentityAuth();
   const router = useRouter();
-
-  useEffect(() => {
-    if (session) {
-      router.replace(nextPath);
-    }
-  }, [session, nextPath, router]);
+  const [cookieTried, setCookieTried] = useState(false);
   const [mode, setMode] = useState<'login' | 'register'>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (session) {
+      router.replace(nextPath);
+    }
+  }, [session, nextPath, router]);
+
+  useEffect(() => {
+    if (!ready || session || cookieTried) {
+      return;
+    }
+    let cancelled = false;
+    void (async () => {
+      try {
+        await loginFromCookie();
+      } catch {
+        // Sin cookie o sesión proxy inválida → formulario.
+      } finally {
+        if (!cancelled) {
+          setCookieTried(true);
+        }
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [ready, session, cookieTried, loginFromCookie]);
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
@@ -109,6 +133,9 @@ export function IdentityLoginCard({
               ? 'Crear cuenta'
               : 'Entrar'}
         </button>
+        <div style={{ marginTop: '4px' }}>
+          <ContinueWithGoogleButton disabled={submitting} />
+        </div>
         <p className="muted small">
           {mode === 'login' ? (
             <button
