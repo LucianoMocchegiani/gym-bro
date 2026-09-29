@@ -1024,7 +1024,8 @@ Historia incremental (2026-07 / 2026-08) **compactada** en un baseline (`40476fa
 | `20260830223000_refund_cart_receipt` | `ReceiptConcept.REFUND`; `receipts.transaction_id` deja de ser UK; `cash_movements.receipt_id`. |
 | `20260830223100_receipts_charge_unique` | Unique parcial: un cobro (`concept <> REFUND`) por `transaction_id`. |
 | `20260901120000_debit_mandates` | `DebitMandateStatus` + `debit_mandates` (impl. vieja: tarjeta+job) |
-| `20260929220000_debit_mp_preapproval` | Preapproval + `PENDING_CHECKOUT`; baja mandatos tarjeta; drop customer/card |
+| `20260929220000_debit_mp_preapproval` | Enum `PENDING_CHECKOUT` (solo ADD VALUE; Postgres no lo usa en la misma tx) |
+| `20260929221000_debit_mp_preapproval_columns` | Preapproval + baja mandatos tarjeta; drop customer/card |
 | `20260917120000_dropin_one_time_pack` | `packs.origin_service_id`; unique `credential_offers (member_id, pack_id)`. |
 | `20260918120000_role_profesor_name_entrenador` | Rol seed: `name` Entrenador, `slug` entrenador; staff demo `entrenador@gymdeprueba.com`. |
 | `20260919180000_identities` | `identities` + `IDENTITY` enum; FK `identity_id` en members/staff/refresh. |
