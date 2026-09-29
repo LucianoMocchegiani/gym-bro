@@ -39,10 +39,10 @@ export function MarketingShell({ children }: MarketingShellProps) {
             <Link href="/docs">Guía</Link>
             <Link href="/#asistente">Asistente</Link>
             <Link href="/#precio">Precio</Link>
-            <MarketingAccountLink variant="nav" />
           </nav>
           <div className="mkt-header-actions">
             <ThemeToggle />
+            <MarketingAccountLink variant="header" />
           </div>
         </MktShell>
         {children}

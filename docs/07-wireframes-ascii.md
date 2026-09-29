@@ -471,7 +471,7 @@ Apex `/login` sin Identity (carga, no flash de form). Apex `/cuenta` logueado:
 
 ```text
 +------------------------------------------------------------------+
-| Faciliter    Producto  Guía  Asistente  Precio  [Mi cuenta] [tema]
+| Faciliter    Producto  Guía  Asistente  Precio     [tema] [AF]
 +------------------------------------------------------------------+
 | Mi cuenta                                                        |
 | [Panel Mi cuenta]  avatar, mail, cambiar pass, Cerrar sesión     |
