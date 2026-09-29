@@ -7,7 +7,6 @@ import { ContinueWithGoogleButton } from '@/components/ContinueWithGoogleButton'
 import { LoginPending } from '@/components/LoginPending';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { useIdentityAuth } from '@/lib/auth/IdentityAuthProvider';
-import { tenantHostLabel, tenantOrigin } from '@/lib/tenant-host';
 
 /**
  * Login / alta Identity en el apex.
@@ -159,12 +158,6 @@ export function IdentityLoginCard({
               Ya tengo cuenta
             </button>
           )}
-        </p>
-        <p className="muted small">
-          Staff del gym:{' '}
-          <a href={`${tenantOrigin('gym-de-prueba')}/login`}>
-            {tenantHostLabel('gym-de-prueba')}/login
-          </a>
         </p>
       </form>
     </div>
