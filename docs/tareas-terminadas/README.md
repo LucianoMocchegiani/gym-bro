@@ -16,6 +16,7 @@ La creación de registros sigue la skill:
 
 ## Índice
 
+- [2026-09-29 — Cuenta Identity en apex (AccountPanel)](./2026-09-29-cuenta-identity-apex.md)
 - [2026-09-29 — Google Identity en apex (mismo login proxy)](./2026-09-29-google-identity-apex-proxy.md)
 - [2026-09-29 — Alta self-serve de gym desde la landing](./2026-09-29-self-serve-landing-gym.md)
 - [2026-09-29 — Modo limitado tras gracia de plan Faciliter](./2026-09-29-modo-limitado-plan-faciliter.md)
