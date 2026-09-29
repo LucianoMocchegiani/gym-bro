@@ -17,6 +17,8 @@ export type StaffSession = {
   hasPassword: boolean;
   permissionCodes?: string[] | null;
   impersonating?: boolean;
+  /** Recorte de plan Faciliter (`GET /auth/me`). */
+  platformAccess?: 'ok' | 'limited';
 };
 
 /** Snapshot cacheado: misma referencia si el JSON no cambió (useSyncExternalStore). */
@@ -125,9 +127,25 @@ export function writeStaffSession(
     hasPassword: login.hasPassword,
     permissionCodes: null,
     impersonating,
+    platformAccess: undefined,
   };
   persist(session);
   return session;
+}
+
+/**
+ * Actualiza el recorte de plan Faciliter (tras `GET /auth/me`).
+ */
+export function updateStaffPlatformAccess(
+  platformAccess: 'ok' | 'limited',
+): StaffSession | null {
+  const current = readStaffSession();
+  if (!current) {
+    return null;
+  }
+  const next: StaffSession = { ...current, platformAccess };
+  persist(next);
+  return next;
 }
 
 /**

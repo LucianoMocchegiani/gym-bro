@@ -68,10 +68,11 @@ export function PlanPanel({ plan }: { plan: GymPlanView }) {
           cobra en Caja de Faciliter.
         </p>
       ) : null}
-      {plan.status === 'none' ? (
+      {plan.status === 'none' || plan.status === 'expired' ? (
         <p className="muted small">
-          El gym sigue operativo. Para contratar o dar 30 días de prueba, Caja
-          del tenant admin (tilde de prueba, efectivo).
+          Sin plan vigente: hay 3 días de gracia y después el gym queda
+          limitado (solo Plan / Uso). Para contratar, Caja del tenant admin
+          (tilde de prueba, efectivo).
         </p>
       ) : null}
       <p className="muted small">

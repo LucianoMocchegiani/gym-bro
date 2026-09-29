@@ -520,8 +520,8 @@ button.linkish:hover {
 
 .app-main {
   min-width: 0;
-  display: grid;
-  grid-template-rows: auto 1fr;
+  display: flex;
+  flex-direction: column;
   min-height: 100vh;
 }
 
@@ -554,6 +554,19 @@ button.linkish:hover {
   align-items: center;
   gap: 0.55rem;
   flex-shrink: 0;
+}
+
+.app-plan-banner {
+  padding: 0.55rem clamp(1rem, 2.5vw, 1.5rem);
+  border-top: 1px solid var(--danger-line);
+  background: var(--danger-soft);
+  color: var(--text);
+  font-size: 0.9rem;
+}
+
+.app-plan-banner a {
+  font-weight: 600;
+  text-decoration: underline;
 }
 
 .account-avatar-btn {
@@ -629,7 +642,8 @@ button.linkish:hover {
   width: min(1100px, 100%);
   max-width: 100%;
   min-width: 0;
-  min-height: 100vh;
+  flex: 1;
+  min-height: 0;
   margin: 0 auto;
   padding: 1.25rem clamp(1rem, 3vw, 1.5rem) 2.5rem;
   gap: 1.1rem;

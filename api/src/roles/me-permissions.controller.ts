@@ -2,6 +2,7 @@ import { Controller, ForbiddenException, Get } from '@nestjs/common';
 import type { AuthUser } from '../auth/auth.types';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { CurrentTenant } from '../tenant/decorators/current-tenant.decorator';
+import { AllowWhenLimited } from '../tenant/decorators/allow-when-limited.decorator';
 import { RequireTenantAuth } from '../tenant/decorators/require-tenant-auth.decorator';
 import { PermissionsService } from './permissions.service';
 
@@ -20,6 +21,7 @@ export class MePermissionsController {
   constructor(private readonly permissions: PermissionsService) {}
 
   @Get('me/permissions')
+  @AllowWhenLimited()
   async listMine(
     @CurrentTenant() tenantId: string,
     @CurrentUser() user: AuthUser,

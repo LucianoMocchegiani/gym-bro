@@ -101,6 +101,10 @@ function TenantDashboard() {
     if (!permissionsReady) {
       return;
     }
+    if (session?.platformAccess === 'limited') {
+      setLoading(false);
+      return;
+    }
 
     let cancelled = false;
     void (async () => {
@@ -213,6 +217,7 @@ function TenantDashboard() {
     canMembers,
     canDoor,
     canSessions,
+    session?.platformAccess,
   ]);
 
   const kpiCards = [

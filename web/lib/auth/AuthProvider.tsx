@@ -19,6 +19,7 @@ import {
   subscribeStaffSession,
   updateStaffPermissions,
   writeStaffSession,
+  updateStaffPlatformAccess,
   type StaffSession,
 } from '@/lib/auth/session';
 
@@ -80,6 +81,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       } catch {
         // Nav queda sin filtrar hasta el próximo intento.
       }
+      try {
+        const me = await fetchAuthMe();
+        updateStaffPlatformAccess(me.platformAccess);
+      } catch {
+        // Recorte de plan se hidrata en el efecto de sesión.
+      }
     },
     [],
   );
@@ -93,6 +100,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         updateStaffPermissions(perms.permissionCodes);
       } catch {
         // Nav queda sin filtrar hasta el próximo intento.
+      }
+      try {
+        const me = await fetchAuthMe();
+        updateStaffPlatformAccess(me.platformAccess);
+      } catch {
+        // Recorte de plan se hidrata en el efecto de sesión.
       }
     },
     [],
@@ -126,7 +139,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setVerified(false);
     void (async () => {
       try {
-        await fetchAuthMe();
+        const me = await fetchAuthMe();
+        if (!cancelled && me.platformAccess) {
+          updateStaffPlatformAccess(me.platformAccess);
+        }
       } catch {
         // 401: apiRequest ya limpió la sesión → RequireStaff va a /login.
       }

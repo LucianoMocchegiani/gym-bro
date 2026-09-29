@@ -43,7 +43,11 @@ export const ADMIN_NAV_PERMISSIONS: readonly NavPermissionRule[] = [
 export function canAccessNavHref(
   href: string,
   permissionCodes: string[] | null | undefined,
+  platformAccess?: 'ok' | 'limited' | null,
 ): boolean {
+  if (platformAccess === 'limited') {
+    return href === '/plan';
+  }
   if (permissionCodes === null || permissionCodes === undefined) {
     return true;
   }

@@ -4,6 +4,8 @@
 
 import { apiRequest } from '@/lib/api/client';
 
+export type PlatformAccessState = 'ok' | 'limited';
+
 export type StaffLoginResponse = {
   accessToken: string;
   refreshToken: string;
@@ -72,8 +74,17 @@ export async function staffLogout(refreshToken: string): Promise<void> {
 /**
  * Smoke de sesión (`GET /auth/me`). 401 limpia tokens en el cliente HTTP.
  */
-export function fetchAuthMe(): Promise<unknown> {
-  return apiRequest('/auth/me');
+export type AuthMeResponse = {
+  userId: string;
+  email: string;
+  profileType: 'STAFF' | 'MEMBER' | 'IDENTITY';
+  tenantId?: string;
+  impersonatedBy?: string;
+  platformAccess: PlatformAccessState;
+};
+
+export function fetchAuthMe(): Promise<AuthMeResponse> {
+  return apiRequest<AuthMeResponse>('/auth/me');
 }
 
 /**

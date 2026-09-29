@@ -13,6 +13,7 @@ import { GoogleIdTokenService } from './google-id-token.service';
 import { AppleIdTokenService } from './apple-id-token.service';
 import { ImpersonationHandoffStore } from './impersonation-handoff.store';
 import { JwtStrategy } from './strategies/jwt.strategy';
+import { TenantModule } from '../tenant/tenant.module';
 
 /**
  * Módulo de autenticación JWT + refresh (Super / Staff / Member).
@@ -32,6 +33,7 @@ import { JwtStrategy } from './strategies/jwt.strategy';
     }),
     forwardRef(() => AuditModule),
     forwardRef(() => RolesModule),
+    TenantModule,
   ],
   controllers: [AuthController],
   providers: [

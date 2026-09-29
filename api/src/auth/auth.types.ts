@@ -26,6 +26,13 @@ export type AuthUser = {
 };
 
 /**
+ * `GET /auth/me`: usuario del JWT + recorte de plan Faciliter (staff).
+ */
+export type AuthMeResponse = AuthUser & {
+  platformAccess: 'ok' | 'limited';
+};
+
+/**
  * Par de tokens devuelto por login / refresh.
  */
 export type AuthTokens = {

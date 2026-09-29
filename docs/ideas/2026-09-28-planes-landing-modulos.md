@@ -1,9 +1,10 @@
 # Planes en landing, alta self-serve y módulos por tenant
 
 **Fecha:** 2026-09-28  
-**Estado:** corte 2 en código (Plan/Uso + prueba en Caja) — self-serve apex y débito MP de plataforma pendientes  
+**Estado:** corte 3 en código (modo limitado RN-PAG-018) — self-serve apex y débito MP de plataforma pendientes  
 **Hecho (corte 1):** `GET /public/platform/packs` + landing lista packs/servicios del tenant `admin`.  
-**Hecho (corte 2):** `ownerIdentityId`, candados de prueba, `GET /plan`, Caja `admin` tilde 30 días (efectivo) + contrato TENANT.
+**Hecho (corte 2):** `ownerIdentityId`, candados de prueba, `GET /plan`, Caja `admin` tilde 30 días (efectivo) + contrato TENANT.  
+**Hecho (corte 3):** `PlatformAccessGuard` en `@RequireTenantAuth`, `GET /auth/me.platformAccess`, nav/banner/popup Admin.
 
 Cerrado (sesión 2026-09-28): Identity 1:N tenants; primer pago = primer gym; MP de cobro = MP de `admin`; slug lo elige el comprador **antes** de la Preference.
 
@@ -103,7 +104,7 @@ No es un tercer producto: es el **mismo mandato MONTHLY** con `start_date` del c
 | Webhook cobro approved (sin prueba) | **Ahí nace el gym** (2.º gym de la misma cuenta, o tenant que ya usó la prueba). |
 | Durante la prueba | Gym usable. Baja = cancelar `preapproval`; el gym sigue hasta `endsAt` y queda sin pack. |
 | Pasa la fecha | MP debita. Webhook → ciclo pago del `TENANT`. |
-| Falla el débito | Mandato fallido; qué pasa con el gym en plataforma = a definir. |
+| Falla el débito | Reintentos de MP. Si el mandato queda **fallido**: gracia **3 días**, después **modo limitado** (§7). |
 
 **Una sola prueba, dos candados (los dos):**
 
@@ -125,6 +126,21 @@ Modelo: flags `identity.platformTrialUsedAt` y `tenant.platformTrialUsedAt` (nom
 
 ---
 
+## 7. Modo limitado (plan caído)
+
+**Excepción fija (allowlist por id, no por “nunca tuvo plan”):**
+
+- Demo seed: `00000000-0000-4000-8000-000000000001` (`gym-de-prueba`)
+- Plataforma: `00000000-0000-4000-8000-000000000002` (`admin`)
+
+Esos dos **nunca** entran en modo limitado. `admin` no es un gym cliente: es Caja/Tenants de Faciliter; no tiene (ni debe tener) un `TENANT` pagándose a sí mismo.
+
+Cualquier **otro** gym: si no hay `TENANT` vigente y pasaron **3 días** desde el vencimiento **o**, si nunca tuvo plan, desde el **alta del tenant**, queda limitado.
+
+**Modo limitado:** login **sí**. Operación **no** (API + nav). Permitido: Plan / Uso (renovar), Mi cuenta, salir. Popup **una vez por sesión**; **barra fija** bajo el topbar. Impersonación `admin`: gym completo (soporte).
+
+---
+
 ## Decisiones
 
 | Decisión | Valor |
@@ -138,6 +154,7 @@ Modelo: flags `identity.platformTrialUsedAt` y `tenant.platformTrialUsedAt` (nom
 | UI Plan | Un `PlanPanel` en apex y en `{slug}` (estado, próximo cobro, cambiar, baja) |
 | Pagar / baja en el gym | Solo dueño (`ownerIdentityId`), no Admin genérico |
 | TENANT vigente | Uno por gym. Cambio de pack = mandato A→B al próximo cobro (RN-PAG-016) |
+| Plan caído | Gracia **3 días**. Después: entrar sí, operar no; solo Plan / renovar + banner + popup 1× sesión. Allowlist por id: demo `…0001` y plataforma `admin` `…0002`. El resto se limita |
 
 ---
 

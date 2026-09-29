@@ -2,13 +2,15 @@
 
 import Link from 'next/link';
 import {
+  useEffect,
   useMemo,
   useState,
   useSyncExternalStore,
   type ReactNode,
 } from 'react';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { AssistantLauncher } from '@/components/assistant/AssistantDrawer';
+import { PlanLimitedNotice } from '@/components/PlanLimitedNotice';
 import {
   NavIconDumbbell,
   NavIconForHref,
@@ -137,6 +139,19 @@ export function AdminShell({
   );
   const brandSlug = hostSlug ?? session?.tenantSlug?.trim() ?? '…';
   const permissionCodes = session?.permissionCodes ?? null;
+  const platformAccess = session?.platformAccess ?? 'ok';
+  const limited = platformAccess === 'limited';
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!limited) {
+      return;
+    }
+    if (pathname === '/plan' || pathname === '/cuenta') {
+      return;
+    }
+    router.replace('/plan');
+  }, [limited, pathname, router]);
 
   const visibleGroups = useMemo(() => {
     // El host manda: la nav del host es la que se muestra. La sesión ya fue
@@ -146,11 +161,11 @@ export function AdminShell({
       .map((group) => ({
         ...group,
         items: group.items.filter((item) =>
-          canAccessNavHref(item.href, permissionCodes),
+          canAccessNavHref(item.href, permissionCodes, platformAccess),
         ),
       }))
       .filter((group) => group.items.length > 0);
-  }, [permissionCodes, hostSlug]);
+  }, [permissionCodes, hostSlug, platformAccess]);
 
   function navClass(href: string): string {
     const active =
@@ -243,6 +258,9 @@ export function AdminShell({
               </Link>
             </div>
           </div>
+          {limited ? (
+            <PlanLimitedNotice tenantId={session?.tenantId ?? null} />
+          ) : null}
         </header>
 
         <div className="app-content">
@@ -258,7 +276,7 @@ export function AdminShell({
           {children}
         </div>
       </div>
-      <AssistantLauncher />
+      {limited ? null : <AssistantLauncher />}
     </div>
   );
 }

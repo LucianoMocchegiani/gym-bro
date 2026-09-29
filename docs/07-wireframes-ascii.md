@@ -416,7 +416,7 @@ Efectivo no muestra el tilde. “Generar link” sin cobro solo si hay MONTHLY v
 | Puerta / pase | CU-ACC-001/004 |
 | Super | CU-ROL-001/002 |
 | Config | CU-ACC-006/007, CU-PAG-006 |
-| Plan / Uso | Contrato TENANT del gym (`GET /plan`) |
+| Plan / Uso | Contrato TENANT del gym (`GET /plan`); CU-PAG-011 / RN-PAG-018 |
 | Asistente (drawer) | post-MVP C5; sin CU de producto |
 
 ---

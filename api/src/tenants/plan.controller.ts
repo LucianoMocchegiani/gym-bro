@@ -1,8 +1,8 @@
 import { BadRequestException, Controller, Get } from '@nestjs/common';
 import type { AuthUser } from '../auth/auth.types';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
-import { RequirePermission } from '../roles/decorators/require-permission.decorator';
 import { CurrentTenant } from '../tenant/decorators/current-tenant.decorator';
+import { AllowWhenLimited } from '../tenant/decorators/allow-when-limited.decorator';
 import { RequireTenantAuth } from '../tenant/decorators/require-tenant-auth.decorator';
 import { TenantsService } from './tenants.service';
 import { GymPlanView } from './tenants.types';
@@ -18,10 +18,12 @@ export class PlanController {
   /**
    * Contrato TENANT vigente (o el último) + si el staff es el dueño.
    *
-   * @throws {BadRequestException} Tenant `admin` (no tiene plan Faciliter).
+   * @remarks Sin `tenant.settings.read`: en modo limitado todo el staff debe
+   * poder abrir Plan / Uso.
+   * @throws {BadRequestException} Tenant `admin` o perfil no staff.
    */
   @Get()
-  @RequirePermission('tenant.settings.read')
+  @AllowWhenLimited()
   get(
     @CurrentTenant() tenantId: string,
     @CurrentUser() user: AuthUser,

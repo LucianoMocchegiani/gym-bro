@@ -203,4 +203,21 @@
 
 ---
 
+## CU-PAG-011 Modo limitado (plan Faciliter caído)
+
+**Actor:** Staff de un gym cliente (no demo `…0001`, no plataforma `…0002`)
+
+**Precondiciones:** No hay `Contract` TENANT vigente y pasaron más de 3 días desde el `endsAt` (o desde el alta del tenant si nunca hubo plan).
+
+**Flujo principal:**
+1. Staff inicia sesión (login OK).
+2. `GET /auth/me` devuelve `platformAccess: "limited"`.
+3. El panel muestra banner fijo y un popup una vez por pestaña; la nav queda en Plan / Uso; el resto redirige a `/plan`.
+4. APIs de operación (`@RequireTenantAuth` sin `@AllowWhenLimited`) responden 403. `GET /plan` y `GET /me/permissions` responden 200.
+5. Impersonación desde `admin`: el gym se usa completo (sin recorte). El afiliado (MEMBER) no entra en este recorte.
+
+**Reglas relacionadas:** RN-PAG-018
+
+---
+
 [Índice](../00-indice.md) · [Siguiente: Acceso / QR →](./acceso-qr.md)

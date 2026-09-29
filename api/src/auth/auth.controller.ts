@@ -17,6 +17,7 @@ import {
   AuthTokens,
   ImpersonateHandoffResult,
   MembershipsList,
+  type AuthMeResponse,
   type AuthUser,
 } from './auth.types';
 import { CurrentUser } from './decorators/current-user.decorator';
@@ -38,6 +39,7 @@ import {
   StaffLoginDto,
 } from './dto/auth.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
+import { PlatformAccessService } from '../tenant/platform-access.service';
 import {
   IMPERSONATION_HANDOFF_COOKIE,
   clearHandoffCookie,
@@ -54,6 +56,7 @@ export class AuthController {
   constructor(
     private readonly authService: AuthService,
     private readonly config: ConfigService,
+    private readonly platformAccess: PlatformAccessService,
   ) {}
 
   /**
@@ -234,11 +237,21 @@ export class AuthController {
   }
 
   /**
-   * Devuelve el usuario del access token (smoke de guards).
+   * Usuario del access token + si el gym puede operar (plan Faciliter).
    */
   @UseGuards(JwtAuthGuard)
   @Get('me')
-  me(@CurrentUser() user: AuthUser): AuthUser {
-    return user;
+  async me(@CurrentUser() user: AuthUser): Promise<AuthMeResponse> {
+    const platformAccess = await this.resolvePlatformAccess(user);
+    return { ...user, platformAccess };
+  }
+
+  private async resolvePlatformAccess(
+    user: AuthUser,
+  ): Promise<AuthMeResponse['platformAccess']> {
+    if (user.profileType !== 'STAFF' || !user.tenantId || user.impersonatedBy) {
+      return 'ok';
+    }
+    return this.platformAccess.evaluate(user.tenantId);
   }
 }

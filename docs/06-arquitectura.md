@@ -135,9 +135,9 @@ Login por perfil o cuenta → access JWT + refresh (Postgres)
 
 Identity: `GET /api/auth/memberships` + `POST /api/auth/select-context` `{ tenantId, profile }`. Google: `id_token` → `POST /api/auth/google` (audiences `GOOGLE_OAUTH_CLIENT_IDS`). Apple después. Admin web sigue staff/login por host (password de identity; Google-only no entra al panel).
 
-También: `POST /api/auth/refresh`, `POST /api/auth/logout`, `GET /api/auth/me` (incluye `tenantId` para staff/member), `POST /api/auth/change-password` (JWT; verifica la actual con bcrypt y revoca todos los refresh tokens del usuario → obliga a re-login).
+También: `POST /api/auth/refresh`, `POST /api/auth/logout`, `GET /api/auth/me` (incluye `tenantId` y `platformAccess` `ok`|`limited` para recorte de plan Faciliter), `POST /api/auth/change-password` (JWT; verifica la actual con bcrypt y revoca todos los refresh tokens del usuario → obliga a re-login).
 
-Rutas de negocio del gym: `@RequireTenantAuth()` + `@CurrentTenant()` (módulo `tenant/`).
+Rutas de negocio del gym: `@RequireTenantAuth()` = JWT + `TenantGuard` + `PlatformAccessGuard` (RN-PAG-018). Staff limitado: 403 salvo `@AllowWhenLimited()` (`GET /plan`, `GET /me/permissions`). Impersonación y MEMBER no se recortan.
 Rutas de plataforma: tenant `admin` + `platform.*`. Operar un gym = `POST /api/auth/super/impersonate` (cookie) → `{slug}/login?handoff=1` → `POST /api/auth/from-handoff` + rutas Staff (no hay espejos nested).
 Autorización fina staff: `@RequirePermission('code')` (unión de roles; permisos `dangerous` = flags RN-ROL-007).
 
