@@ -16,6 +16,7 @@ La creación de registros sigue la skill:
 
 ## Índice
 
+- [2026-09-29 — Plan del gym y prueba de 30 días en Caja](./2026-09-29-plan-uso-prueba-caja.md)
 - [2026-09-28 — Plataforma tenant admin y handoff de impersonación](./2026-09-28-plataforma-tenant-admin-handoff.md)
 - [2026-09-20 — Login con Google (identity)](./2026-09-20-login-google-identity.md)
 - [2026-09-19 — Identity: cuenta Faciliter y picker de gym](./2026-09-19-identity-picker-gym.md)
