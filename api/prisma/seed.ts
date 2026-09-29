@@ -473,53 +473,112 @@ async function main(): Promise<void> {
     const BRAIN_SERVICE_ID = '00000000-0000-4000-8000-000000000010';
     const brainService = await prisma.service.upsert({
       where: { id: BRAIN_SERVICE_ID },
-      update: { active: true },
+      update: {
+        name: 'Plataforma Brain',
+        description: 'Núcleo de Faciliter Brain (obligatorio en cada pack).',
+        active: true,
+      },
       create: {
         id: BRAIN_SERVICE_ID,
         tenantId: ADMIN_TENANT.id,
         type: ServiceType.ACCESO_LIBRE,
-        name: 'Faciliter Brain',
-        description: 'Asistente de inteligencia artificial del gimnasio.',
+        name: 'Plataforma Brain',
+        description: 'Núcleo de Faciliter Brain (obligatorio en cada pack).',
         active: true,
       },
     });
 
+    const platformCatalogServices: {
+      id: string;
+      name: string;
+      description: string;
+    }[] = [
+      {
+        id: '00000000-0000-4000-8000-000000000012',
+        name: 'Agente de IA',
+        description: 'Asistente de consulta en el panel.',
+      },
+      {
+        id: '00000000-0000-4000-8000-000000000013',
+        name: 'Calendario y sesiones',
+        description: 'Clases, cupos y reservas.',
+      },
+      {
+        id: '00000000-0000-4000-8000-000000000014',
+        name: 'Integración con Mercado Pago',
+        description: 'Cobros en línea con la cuenta del gym.',
+      },
+      {
+        id: '00000000-0000-4000-8000-000000000015',
+        name: 'Sistema de accesos',
+        description: 'Puerta, QR y registro de ingresos.',
+      },
+    ];
+    const extraServices = [];
+    for (const row of platformCatalogServices) {
+      extraServices.push(
+        await prisma.service.upsert({
+          where: { id: row.id },
+          update: {
+            name: row.name,
+            description: row.description,
+            active: true,
+          },
+          create: {
+            id: row.id,
+            tenantId: ADMIN_TENANT.id,
+            type: ServiceType.ACCESO_LIBRE,
+            name: row.name,
+            description: row.description,
+            active: true,
+          },
+        }),
+      );
+    }
+
     const BRAIN_PACK_ID = '00000000-0000-4000-8000-000000000011';
     const brainPack = await prisma.pack.upsert({
       where: { id: BRAIN_PACK_ID },
-      update: { active: true },
+      update: {
+        name: 'Faciliter Brain Basic',
+        description: 'Pack de plataforma: Brain más operación del gym.',
+        price: 30000,
+        billingPeriod: BillingPeriod.MONTHLY,
+        active: true,
+      },
       create: {
         id: BRAIN_PACK_ID,
         tenantId: ADMIN_TENANT.id,
-        name: 'Faciliter Brain (mensual)',
-        description: 'Suscripción mensual al asistente Brain para el gym.',
+        name: 'Faciliter Brain Basic',
+        description: 'Pack de plataforma: Brain más operación del gym.',
         price: 30000,
         billingPeriod: BillingPeriod.MONTHLY,
         active: true,
       },
     });
 
-    // Componente del pack: sin esto el cobro lo rechaza
-    // ("Pack {name} has no components").
-    await prisma.packComponent.upsert({
-      where: {
-        packId_serviceId: { packId: brainPack.id, serviceId: brainService.id },
-      },
-      update: { creditAmount: 1 },
-      create: {
-        packId: brainPack.id,
-        serviceId: brainService.id,
-        creditAmount: 1,
-      },
-    });
+    const catalogServiceIds = [brainService.id, ...extraServices.map((s) => s.id)];
+    for (const serviceId of catalogServiceIds) {
+      await prisma.packComponent.upsert({
+        where: {
+          packId_serviceId: { packId: brainPack.id, serviceId },
+        },
+        update: { creditAmount: 1 },
+        create: {
+          packId: brainPack.id,
+          serviceId,
+          creditAmount: 1,
+        },
+      });
+    }
 
     console.log('Seed OK');
   console.log({
     tenant: { id: tenant.id, name: tenant.name, slug: DEMO_SLUG },
     adminTenant: { id: ADMIN_TENANT.id, name: ADMIN_TENANT.name, slug: 'admin' },
     platformCatalog: {
-      service: { id: brainService.id, name: brainService.name },
       pack: { id: brainPack.id, name: brainPack.name, price: brainPack.price },
+      services: catalogServiceIds.length,
     },
     branch: { id: branch.id, name: branch.name },
     staff: {

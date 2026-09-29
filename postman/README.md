@@ -51,7 +51,7 @@ Query params comunes (ya incluidos en cada request, algunos deshabilitados por d
 
 Los filtros de dominio existentes (`status`, `active`, `type`, `from`, `to`, `memberId`, `result`, etc.) se mantienen sin cambios. Se quitó `limit` de `audit-events` y `access-attempts`: usá `pageSize`.
 
-Carpeta **Health**: `GET /health` y `GET /public/tenants/by-slug/{{tenantSlug}}` (sin auth).
+Carpeta **Health**: `GET /health`, `GET /public/platform/packs` (landing) y `GET /public/tenants/by-slug/{{tenantSlug}}` (sin auth).
 
 ## Manual
 

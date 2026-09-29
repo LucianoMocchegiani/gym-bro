@@ -8,6 +8,8 @@ import { CheckList } from '@/components/marketing/CheckList';
 import { MarketingShell } from '@/components/marketing/MarketingShell';
 import { MktShell } from '@/components/marketing/MktShell';
 import { ProductPreviewCard } from '@/components/marketing/ProductPreviewCard';
+import { fetchPublicPlatformPacks } from '@/lib/api/public-platform';
+import { formatMoney } from '@/lib/cash-labels';
 import { BOOKING_URL, publicSiteUrl } from '@/lib/site-url';
 
 const PILLARS: {
@@ -81,10 +83,11 @@ function PillarIcon({ name }: { name: (typeof PILLARS)[number]['icon'] }) {
 }
 
 /**
- * Landing Faciliter: hero, pilares, producto explicado, plan y prueba del asistente.
+ * Landing Faciliter: hero, pilares, producto explicado, packs del catálogo y asistente.
  */
-export function LandingPage() {
+export async function LandingPage() {
   const site = publicSiteUrl();
+  const packs = await fetchPublicPlatformPacks();
   const jsonLd = {
     '@context': 'https://schema.org',
     '@type': 'SoftwareApplication',
@@ -238,36 +241,40 @@ export function LandingPage() {
       <section id="precio" className="mkt-inner mkt-section">
         <h2 className="mkt-h2">Plan</h2>
         <p className="mkt-section-lead">
-          Un plan, a convenir según el tamaño del gym, club o estudio. Lo que
-          paga el socio va a tu Mercado Pago o lo registrás en caja si cobrás
-          en el mostrador. Cursos a distancia y tienda de productos no están
-          en este corte: van después.
+          Lo que ves son los packs del catálogo Faciliter. El alta del gym y el
+          cobro se hacen con el equipo, no desde esta página.
         </p>
-        <div className="mkt-plan">
-          <p className="eyebrow">Incluye</p>
-          <h3>Faciliter Brain</h3>
-          <p className="mkt-price">A convenir</p>
-          <p className="muted">
-            Packs de servicios mensuales y de una vez. Tienda de productos y
-            noticias del local, más adelante.
-          </p>
-          <CheckList
-            items={[
-              'Panel para tu equipo: socios, ofertas (packs), caja del día, clases y puerta',
-              'App para que el socio vea su cuenta, reserve y entre',
-              'Mercado Pago del negocio y efectivo, con cierre de caja',
-              'Asistente de consulta en el panel: lee la operación; no cobra ni cambia datos solo',
-            ]}
-          />
-          <a
-            className="mkt-btn-primary"
-            href={BOOKING_URL}
-            target="_blank"
-            rel="noreferrer"
-          >
-            Agendá una reunión
-          </a>
-        </div>
+        {packs.length === 0 ? (
+          <p className="muted">El catálogo no está disponible ahora.</p>
+        ) : (
+          <div className="mkt-plans">
+            {packs.map((pack) => (
+              <div key={pack.id} className="mkt-plan">
+                <p className="eyebrow">Incluye</p>
+                <h3>{pack.name}</h3>
+                <p className="mkt-price">
+                  {pack.price < 1
+                    ? 'A convenir'
+                    : `${formatMoney(pack.price)}${
+                        pack.billingPeriod === 'MONTHLY' ? ' / mes' : ''
+                      }`}
+                </p>
+                {pack.description ? (
+                  <p className="muted">{pack.description}</p>
+                ) : null}
+                <CheckList items={pack.services.map((s) => s.name)} />
+                <a
+                  className="mkt-btn-primary"
+                  href={BOOKING_URL}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  Agendá una reunión
+                </a>
+              </div>
+            ))}
+          </div>
+        )}
       </section>
 
       <section className="mkt-inner mkt-section-tight">

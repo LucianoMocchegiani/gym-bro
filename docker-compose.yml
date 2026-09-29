@@ -113,6 +113,7 @@ services:
       - ./web/.env
     environment:
       NODE_ENV: production
+      API_INTERNAL_URL: http://api:3001
     ports:
       # Host 3002: convive con otro Next (p. ej. Kuatia en 3000).
       - "3002:3000"

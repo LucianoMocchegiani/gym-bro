@@ -334,7 +334,7 @@ Prefijo sugerido: `/api/v1`.
 | Auth | `POST /auth/login`, refresh |
 | Super | CRUD `/tenants`, `GET /tenants/:id/staff`, `POST /auth/super/impersonate` + `POST /auth/from-handoff`, `POST /tenants/:id/quark/provision`. Operar el gym = impersonar (rutas Staff). |
 | Afiliados | CRUD `/members` (Staff JWT) |
-| Catálogo | `/services`, `/packs`, `/sessions`, `/recurrence-rules` |
+| Catálogo | `/services`, `/packs`, `/sessions`; landing `GET /public/platform/packs` |
 | Reservas | `/sessions/:id/reservations`, waitlist |
 | Billing | cart MP `/me|members/:id/transaction-items/mp/cart`, cash cart Staff, webhook `/webhooks/payment` |
 | Access | `/access/oid4vp/request`, `/access/oid4vp/session/:id`, `/access-attempts`, `GET /members/:id/access-preview`, manual-pass |

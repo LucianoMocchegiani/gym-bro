@@ -18,6 +18,8 @@ E7 Rutinas y E8 Notificaciones siguen en el [roadmap MVP](./11-roadmap-mvp.md) (
 
 **Identity / login app:** cuenta Faciliter + picker de gym (corte A) + Google Sign-In (corte B) + Apple Sign-In (corte C). [app-afiliado.md](./99-backlog-post-mvp/app-afiliado.md).
 
+**Landing / planes:** el apex muestra packs del catálogo `admin`. Quedan post-MVP: compra self-serve del dueño y módulos que se prenden por plan. [ideas/2026-09-28-planes-landing-modulos.md](./ideas/2026-09-28-planes-landing-modulos.md) · [producto.md](./99-backlog-post-mvp/producto.md).
+
 ---
 
 ## Módulos

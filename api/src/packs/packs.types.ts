@@ -39,3 +39,15 @@ export type PackDetail = {
   createdAt: Date;
   updatedAt: Date;
 };
+
+/**
+ * Pack de plataforma en la landing (tenant `admin`, sin auth).
+ */
+export type PublicPlatformPack = {
+  id: string;
+  name: string;
+  description: string | null;
+  price: number;
+  billingPeriod: 'MONTHLY' | 'ONE_TIME';
+  services: { id: string; name: string }[];
+};

@@ -28,7 +28,7 @@ import {
   PackComponentInputDto,
   UpdatePackDto,
 } from './dto/pack.dto';
-import { PackComponentDetail, PackDetail, PackKind } from './packs.types';
+import { PackComponentDetail, PackDetail, PackKind, PublicPlatformPack } from './packs.types';
 import { MemberPackDetail } from '../member-catalog/member-catalog.types';
 
 /** Whitelist de orden para {@link PacksService.list}. */
@@ -96,6 +96,62 @@ export class PacksService {
       n.page,
       n.pageSize,
     );
+  }
+
+  /**
+   * Packs activos del tenant `admin` para la landing (sin auth).
+   *
+   * @remarks Solo catálogo comercial de plataforma. No es checkout ni
+   * gating de módulos. Vacío si no existe el tenant `admin`.
+   */
+  async listPublicPlatformPacks(): Promise<PublicPlatformPack[]> {
+    const admin = await this.prisma.tenant.findUnique({
+      where: { slug: 'admin' },
+      select: { id: true },
+    });
+    if (!admin) {
+      return [];
+    }
+    const packs = await this.prisma.pack.findMany({
+      where: {
+        tenantId: admin.id,
+        active: true,
+        originServiceId: null,
+      },
+      orderBy: { price: 'asc' },
+      include: {
+        components: {
+          include: {
+            service: {
+              select: { id: true, name: true, active: true },
+            },
+          },
+        },
+      },
+    });
+    return packs
+      .map((pack) => {
+        const services = pack.components
+          .filter((c) => c.service.active)
+          .map((c) => ({ id: c.service.id, name: c.service.name }))
+          .sort((a, b) => {
+            const ra = /plataforma brain/i.test(a.name) ? 0 : 1;
+            const rb = /plataforma brain/i.test(b.name) ? 0 : 1;
+            if (ra !== rb) {
+              return ra - rb;
+            }
+            return a.name.localeCompare(b.name, 'es');
+          });
+        return {
+          id: pack.id,
+          name: pack.name,
+          description: pack.description,
+          price: pack.price,
+          billingPeriod: pack.billingPeriod,
+          services,
+        };
+      })
+      .filter((p) => p.services.length > 0);
   }
 
   /**

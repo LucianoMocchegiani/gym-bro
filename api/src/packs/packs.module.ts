@@ -4,13 +4,14 @@ import { AuthModule } from '../auth/auth.module';
 import { KuatiaModule } from '../kuatia/kuatia.module';
 import { RolesModule } from '../roles/roles.module';
 import { PacksController } from './packs.controller';
+import { PublicPlatformController } from './public-platform.controller';
 import { PacksService } from './packs.service';
 /**
  * Catálogo de packs (componentes + sync Quark OID4VCI).
  */
 @Module({
   imports: [AuthModule, RolesModule, AuditModule, KuatiaModule],
-  controllers: [PacksController],
+  controllers: [PacksController, PublicPlatformController],
   providers: [PacksService],
   exports: [PacksService],
 })

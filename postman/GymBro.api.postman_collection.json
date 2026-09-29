@@ -200,6 +200,31 @@
                     }
                 },
                 {
+                    "name": "Public GET platform packs",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": "{{baseUrl}}/api/public/platform/packs",
+                        "description": "Sin auth. Packs activos del tenant `admin` + servicios (landing). No es checkout.",
+                        "auth": {
+                            "type": "noauth"
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('status 200', () => pm.response.to.have.status(200));",
+                                    "const body = pm.response.json();",
+                                    "pm.test('array', () => pm.expect(body).to.be.an('array'));"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
                     "name": "Public GET tenant by slug",
                     "request": {
                         "method": "GET",
