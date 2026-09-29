@@ -1,5 +1,5 @@
 /**
- * Débito automático MONTHLY (Caja).
+ * Débito automático MONTHLY (Caja) — suscripción MP, sin tarjeta en Faciliter.
  */
 
 import { apiRequest } from '@/lib/api/client';
@@ -7,6 +7,7 @@ import { toSearchParams } from '@/lib/api/list';
 import type { ListParams, ListResult } from '@/lib/api/list';
 
 export type DebitMandateStatus =
+  | 'PENDING_CHECKOUT'
   | 'ACTIVE'
   | 'RETRYING'
   | 'FAILED'
@@ -24,8 +25,8 @@ export type DebitMandateDetail = {
   attemptCount: number;
   lastError: string | null;
   lastChargedAt: string | null;
-  nextChargeOn: string;
-  cardLastFour: string | null;
+  nextChargeOn: string | null;
+  initPoint: string | null;
   enrolledTransactionItemId: string | null;
   createdAt: string;
   updatedAt: string;
@@ -45,31 +46,19 @@ export type DebitEnrollResult = {
   mandate: DebitMandateDetail;
   transactionId: string | null;
   receiptReady: boolean;
+  checkoutUrl: string | null;
 };
 
 export type EnrollDebitInput = {
   packId: string;
-  cardToken: string;
-  paymentMethodId?: string;
-  issuerId?: string;
-  installments?: number;
-  identificationType?: string;
-  identificationNumber?: string;
   chargeNow: boolean;
   idempotencyKey?: string;
 };
 
 export type ListDebitParams = ListParams & {
-  bucket?: 'due' | 'retrying' | 'failed' | 'all';
+  bucket?: 'due' | 'pending' | 'retrying' | 'failed' | 'all';
   memberId?: string;
 };
-
-/**
- * Public key MP para Card Payment Brick (`cashier.operate`).
- */
-export function getMpPublicKey(): Promise<{ publicKey: string }> {
-  return apiRequest<{ publicKey: string }>('/mercadopago/account/public-key');
-}
 
 /**
  * Cola de mandatos.
@@ -93,7 +82,7 @@ export function getMemberDebitView(
 }
 
 /**
- * Alta de mandato (cobro o solo tarjeta).
+ * Alta de mandato: crea preapproval y devuelve `checkoutUrl`.
  */
 export function enrollDebitMandate(
   memberId: string,
@@ -106,7 +95,7 @@ export function enrollDebitMandate(
 }
 
 /**
- * Baja el mandato.
+ * Baja el mandato (cancela preapproval en MP).
  */
 export function cancelDebitMandate(
   mandateId: string,
@@ -118,7 +107,7 @@ export function cancelDebitMandate(
 }
 
 /**
- * Cambia el pack del próximo cobro.
+ * Cambia el pack del próximo cobro (nuevo link de autorización).
  */
 export function updateDebitMandatePack(
   mandateId: string,
@@ -128,16 +117,4 @@ export function updateDebitMandatePack(
     method: 'PATCH',
     body: { packId },
   });
-}
-
-/**
- * Dispara el cobro del periodo (mismo que el job).
- */
-export function chargeDebitMandateNow(
-  mandateId: string,
-): Promise<DebitEnrollResult> {
-  return apiRequest<DebitEnrollResult>(
-    `/debit-mandates/${mandateId}/charge`,
-    { method: 'POST' },
-  );
 }

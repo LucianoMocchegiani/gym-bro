@@ -119,39 +119,6 @@ export abstract class MpAccountPort {
   ): Promise<{ ok: boolean; manualPending: boolean }>;
 
   /**
-   * Busca o crea un Customer MP por email (guardar tarjeta).
-   */
-  abstract findOrCreateCustomer(
-    accessToken: string,
-    email: string,
-  ): Promise<MpCustomer>;
-
-  /**
-   * Asocia un card token al Customer.
-   */
-  abstract saveCard(
-    accessToken: string,
-    customerId: string,
-    cardToken: string,
-  ): Promise<MpSavedCard>;
-
-  /**
-   * Token de cobro a partir de una tarjeta ya guardada (sin CVV).
-   */
-  abstract createCardTokenFromSavedCard(
-    accessToken: string,
-    customerId: string,
-    cardId: string,
-  ): Promise<string>;
-
-  /**
-   * Cobra con Payments API (token de Brick o de tarjeta guardada).
-   */
-  abstract createCardPayment(
-    input: CreateMpCardPaymentInput,
-  ): Promise<MpCardPaymentResult>;
-
-  /**
    * Plan de suscripción MP (preapproval_plan).
    */
   abstract createPreapprovalPlan(
@@ -174,6 +141,14 @@ export abstract class MpAccountPort {
   ): Promise<MpRemotePreapproval>;
 
   /**
+   * Baja la suscripción en MP (`cancelled`).
+   */
+  abstract cancelPreapproval(
+    accessToken: string,
+    preapprovalId: string,
+  ): Promise<void>;
+
+  /**
    * Cobro de un ciclo de suscripción (webhook authorized_payment).
    */
   abstract getAuthorizedPayment(
@@ -181,47 +156,6 @@ export abstract class MpAccountPort {
     authorizedPaymentId: string,
   ): Promise<MpRemoteAuthorizedPayment>;
 }
-
-/** Customer MP del gym. */
-export type MpCustomer = {
-  id: string;
-  email: string | null;
-};
-
-/** Tarjeta guardada en un Customer. */
-export type MpSavedCard = {
-  id: string;
-  lastFour: string | null;
-  paymentMethodId: string | null;
-};
-
-/** Input de un pago con tarjeta (Checkout API). */
-export type CreateMpCardPaymentInput = {
-  accessToken: string;
-  amount: number;
-  token: string;
-  description: string;
-  externalReference: string;
-  notificationUrl: string;
-  payerEmail: string;
-  paymentMethodId: string;
-  installments: number;
-  issuerId?: string;
-  customerId?: string;
-  identificationType?: string;
-  identificationNumber?: string;
-  idempotencyKey: string;
-};
-
-/** Resultado de POST /v1/payments. */
-export type MpCardPaymentResult = {
-  id: string;
-  status: string;
-  cardId: string | null;
-  lastFour: string | null;
-  paymentMethodId: string | null;
-  statusDetail: string | null;
-};
 
 /** Alta de plan de suscripción MP. */
 export type CreateMpPreapprovalPlanInput = {

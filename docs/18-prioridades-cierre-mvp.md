@@ -13,7 +13,7 @@ Roadmap de épicas históricas: [11-roadmap-mvp.md](./11-roadmap-mvp.md). Diferi
 | # | Prioridad | Tipo | Estado hoy |
 |---|-----------|------|------------|
 | P1 | Molinetes / hardware de puerta | Diseño + adapters | En backlog acceso; sin spike de marcas |
-| P2 | Débito automático MONTHLY | Diseño + código | **Diseño 2026-09-15:** suscripción MP + link. Código viejo (tarjeta+job) a reemplazar; QA P9 del diseño anterior no aplica |
+| P2 | Débito automático MONTHLY | Código + QA | **En código:** suscripción MP + `init_point`. QA P9…P9j en live |
 | P3 | Landing + pricing + SEO | Comercial / web pública | Landing + SEO en el apex; precio a convenir; legales borrador |
 | P4 | Tokens y costo OpenRouter | Tope C7 + insumo de pricing | Tope C7 pendiente; no hay costo por gym |
 | P5 | Migración de datos (Excel + IA) | Ops / onboarding | El **último**; puede no existir en el primer piloto |
@@ -48,7 +48,7 @@ Necesidades HW/SW: [19-puerta-molinete-hw-sw.md](./19-puerta-molinete-hw-sw.md).
 
 Diseño reabierto **2026-09-15** (RN-PAG-013..016, CU-PAG-008..010): Mercado Pago cobra con **plan + preapproval**; Caja genera `init_point`; contrato al webhook. UI `/caja?memberId=&vista=debitos`.
 
-El código en repo **todavía** es tarjeta guardada + job. Hay que **reemplazarlo**, no solo “probar P9 del diseño 2026-09-01”.
+El código usa **plan + preapproval**; Caja genera `init_point`; contrato al webhook. UI `/caja?memberId=&vista=debitos`. No hay Brick ni job de cobro.
 
 Dependencia: producto Suscripciones + webhooks en la app MP del gym; [E5 MP live](./11-roadmap-mvp.md).
 

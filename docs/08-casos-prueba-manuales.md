@@ -98,7 +98,9 @@ Leyenda resultado: `P` pass · `F` fail · `B` bloqueado · `-` no aplica
 | P7 | Admin devolución cart (parcial o todo) | Derechos de los ítems elegidos caen; un egreso + un comprobante REFUND; se puede devolver el resto después | CU-PAG-005 | |
 | P8 | Arqueo con diferencia | Se registra diff; la grilla de Cierre es la misma que Reportes (categoría + tipo + staff + comprobante) | CU-PAG-003 | |
 
-### Débito automático (post-MVP — diseño 2026-09-15; no correr contra el código viejo)
+### Débito automático (suscripción MP — comprobar en live)
+
+Pasos de VPS: [uso/probar-debito-suscripcion-mp.md](./uso/probar-debito-suscripcion-mp.md).
 
 | # | Caso | Esperado | RN/CU | R |
 |---|------|----------|-------|---|

@@ -203,7 +203,7 @@ Detalle: [14-auditoria-roadmap-vs-codigo-2026-08-13.md](./14-auditoria-roadmap-v
   - Burbuja del asistente (arrastrable) → chat-api
   - Bandeja `GET /me/staff-credential-offers` (+ accept/fail)
   - Sesiones: `MonthCalendar` → día → roster (`GET /sessions`, reservas crédito)
-  - Caja (`cashier.operate`): picker + catálogo/carrito; CASH + link MP; panel de comprobante + Compartir; débitos ver/baja.
+  - Caja (`cashier.operate`): picker + catálogo/carrito; CASH + link MP; débitos = suscripción MP (`init_point`), ver/baja.
 - [x] Home / estado de cuenta
   - `GET /me/account?coverage=current`; Inicio agrupa por pack (créditos sumados; oculta drop-in en 0), deuda, próximas reservas
   - Nav real: **Inicio · Acceso · Ajustes** (tema claro/oscuro)

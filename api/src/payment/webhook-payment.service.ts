@@ -24,6 +24,7 @@ import { ContractsService } from '../contracts/contracts.service';
 import { ReservationsService } from '../reservations/reservations.service';
 import { MpWebhookProcessResult } from './payment.types';
 import { PlatformSignupService } from '../tenants/platform-signup.service';
+import { DebitService } from '../debit/debit.service';
 
 type CartWithItems = Transaction & {
   transactionItems: Array<{
@@ -62,6 +63,8 @@ export class WebhookPaymentService {
     @Inject(MP_ACCOUNT_PORT) private readonly mp: MpAccountPort,
     @Inject(forwardRef(() => PlatformSignupService))
     private readonly platformSignups: PlatformSignupService,
+    @Inject(forwardRef(() => DebitService))
+    private readonly debit: DebitService,
   ) {}
 
   /**
@@ -86,7 +89,14 @@ export class WebhookPaymentService {
     );
 
     if (type === 'subscription_preapproval' && dataId) {
-      return this.platformSignups.handlePreapproval(tenantId, String(dataId));
+      const platform = await this.platformSignups.handlePreapproval(
+        tenantId,
+        String(dataId),
+      );
+      if (platform.handled) {
+        return platform;
+      }
+      return this.debit.handlePreapproval(tenantId, String(dataId));
     }
     if (type === 'subscription_authorized_payment' && dataId) {
       return this.handleAuthorizedPayment(tenantId, String(dataId));
@@ -143,6 +153,19 @@ export class WebhookPaymentService {
       return this.platformSignups.handlePaidSignup(tenantId, signup.id);
     }
 
+    const mandate = await this.prisma.debitMandate.findFirst({
+      where: { id: refId, tenantId },
+      select: { id: true },
+    });
+    if (mandate) {
+      return this.debit.applyMpPayment(
+        tenantId,
+        mandate.id,
+        mpPaymentId,
+        remote.status,
+      );
+    }
+
     return this.applyRemoteStatus(tenantId, refId, mpPaymentId, remote.status);
   }
 
@@ -180,23 +203,27 @@ export class WebhookPaymentService {
         reservationId: null,
       };
     }
-    let signupId = remote.externalReference;
-    if (!signupId && remote.preapprovalId) {
-      const signup = await this.prisma.platformSignup.findUnique({
-        where: { mpPreapprovalId: remote.preapprovalId },
-        select: { id: true },
-      });
-      signupId = signup?.id ?? null;
-    }
+    const signupById = remote.externalReference
+      ? await this.prisma.platformSignup.findUnique({
+          where: { id: remote.externalReference },
+          select: { id: true },
+        })
+      : null;
+    const signupByPre =
+      !signupById && remote.preapprovalId
+        ? await this.prisma.platformSignup.findUnique({
+            where: { mpPreapprovalId: remote.preapprovalId },
+            select: { id: true },
+          })
+        : null;
+    const signupId = signupById?.id ?? signupByPre?.id ?? null;
     if (!signupId) {
-      return {
-        handled: false,
-        transactionItemId: null,
-        transactionId: null,
+      return this.debit.applyAuthorizedPayment(tenantId, {
+        preapprovalId: remote.preapprovalId,
+        externalReference: remote.externalReference,
+        paymentId: remote.paymentId,
         status: remote.status,
-        contractId: null,
-        reservationId: null,
-      };
+      });
     }
     return this.platformSignups.handlePaidSignup(tenantId, signupId);
   }

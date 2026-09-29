@@ -77,7 +77,7 @@ Carpeta **Expirations**: Staff `GET /expirations` (`members.read`). Query `view`
 
 Carpeta **Payment register**: `GET /payment-register/day` + `POST /payment-register/day/reconcile` (`cashier.operate`). `movements[]` = 1 fila por cobro o devolución de cart (misma grilla que reportes); arqueo 1/día; día en timezone BA.
 
-Carpeta **Mercado Pago**: cuenta `GET|PUT|DELETE /mercadopago/account` + test (`mp.connect`) + `GET /mercadopago/account/public-key` (Brick, `cashier.operate`). Débito MONTHLY: `GET /debit-mandates`, `GET /members/:id/debit-mandate`, `POST /members/:id/debit-mandates`, `POST /debit-mandates/:id/charge` y `.../cancel`. Caja: Staff `POST /members/:id/transaction-items/mp/cart` (`items[]` → 1 link) y `POST .../cash/cart`. Afiliado: `POST /me/transaction-items/mp/cart`. Webhook `POST /webhooks/payment?tenantId=`.
+Carpeta **Mercado Pago**: cuenta `GET|PUT|DELETE /mercadopago/account` + test (`mp.connect`) + `GET /mercadopago/account/public-key` (`cashier.operate`, Checkout Pro). Débito MONTHLY: `GET /debit-mandates`, `GET /members/:id/debit-mandate`, `POST /members/:id/debit-mandates` (`packId` + `chargeNow` → `checkoutUrl`), `PATCH` pack, `POST .../cancel`. **No** hay `POST .../charge`. Caja: Staff `POST /members/:id/transaction-items/mp/cart` (`items[]` → 1 link) y `POST .../cash/cart`. Afiliado: `POST /me/transaction-items/mp/cart`. Webhook `POST /webhooks/payment?tenantId=` (`payment`, `subscription_preapproval`, `subscription_authorized_payment`).
 
 ### Caja de plataforma (tenant `admin` → gym)
 

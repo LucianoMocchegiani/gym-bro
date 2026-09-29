@@ -4,6 +4,7 @@ import {
   Injectable,
   Logger,
   NotFoundException,
+  forwardRef,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import {
@@ -16,13 +17,12 @@ import {
   PaymentStatus,
   Prisma,
 } from '@prisma/client';
-import { randomBytes } from 'node:crypto';
 import { AUDIT_ACTIONS, AuditActor } from '../audit/audit.types';
 import { AuditService } from '../audit/audit.service';
 import { ListResult, normalizeListQuery, toListResult } from '../common/list';
-import { mpCopyForPack } from '../payment/mp-item-copy';
 import { MercadoPagoAccountService } from '../payment/mercadopago-account.service';
 import { MP_ACCOUNT_PORT, MpAccountPort } from '../payment/mp-account.port';
+import { MpWebhookProcessResult } from '../payment/payment.types';
 import { WebhookPaymentService } from '../payment/webhook-payment.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { EnrollDebitMandateDto } from './dto/enroll-debit-mandate.dto';
@@ -35,6 +35,7 @@ import {
 
 const TZ = 'America/Argentina/Buenos_Aires';
 const OPEN_STATUSES: DebitMandateStatus[] = [
+  DebitMandateStatus.PENDING_CHECKOUT,
   DebitMandateStatus.ACTIVE,
   DebitMandateStatus.RETRYING,
   DebitMandateStatus.FAILED,
@@ -46,9 +47,9 @@ type MandateRow = DebitMandate & {
 };
 
 /**
- * Mandatos de débito MONTHLY (tarjeta guardada + job GymBro).
+ * Mandatos MONTHLY = suscripción Mercado Pago (`preapproval`).
  *
- * @remarks RN-PAG-013..016 / CU-PAG-008..010. Tenant siempre del JWT.
+ * @remarks RN-PAG-013..016 / CU-PAG-008..010. Sin PAN ni job de cobro.
  */
 @Injectable()
 export class DebitService {
@@ -59,6 +60,7 @@ export class DebitService {
     private readonly accounts: MercadoPagoAccountService,
     private readonly audit: AuditService,
     private readonly config: ConfigService,
+    @Inject(forwardRef(() => WebhookPaymentService))
     private readonly webhook: WebhookPaymentService,
     @Inject(MP_ACCOUNT_PORT) private readonly mp: MpAccountPort,
   ) {}
@@ -71,17 +73,13 @@ export class DebitService {
     query: ListDebitMandatesDto,
   ): Promise<ListResult<DebitMandateDetail>> {
     const { skip, take, page, pageSize } = normalizeListQuery(query);
-    const today = this.businessDate(new Date());
     const where: Prisma.DebitMandateWhereInput = { tenantId };
     if (query.memberId) {
       where.memberId = query.memberId;
     }
     const bucket = query.bucket ?? 'all';
-    if (bucket === 'due') {
-      where.status = {
-        in: [DebitMandateStatus.ACTIVE, DebitMandateStatus.RETRYING],
-      };
-      where.nextChargeOn = { lte: today };
+    if (bucket === 'due' || bucket === 'pending') {
+      where.status = DebitMandateStatus.PENDING_CHECKOUT;
     } else if (bucket === 'retrying') {
       where.status = DebitMandateStatus.RETRYING;
     } else if (bucket === 'failed') {
@@ -112,7 +110,7 @@ export class DebitService {
   }
 
   /**
-   * Mandato abierto del afiliado + MONTHLY vigente (autorizar sin cobro).
+   * Mandato abierto + MONTHLY vigente (autorizar sin cobro ahora).
    */
   async getMemberView(
     tenantId: string,
@@ -146,7 +144,10 @@ export class DebitService {
   }
 
   /**
-   * Alta: cobra el mes y/o guarda la tarjeta (CU-PAG-008).
+   * Alta: crea `preapproval` pending y devuelve `init_point` (CU-PAG-008).
+   *
+   * @remarks `chargeNow` true = primer cobro al autorizar. false = `start_date`
+   * = `endsAt` del MONTHLY vigente.
    */
   async enroll(
     tenantId: string,
@@ -158,137 +159,103 @@ export class DebitService {
     const member = await this.requireActiveMember(tenantId, memberId);
     const pack = await this.requireMonthlyPack(tenantId, dto.packId);
     const existing = await this.findOpen(tenantId, memberId);
-    if (existing && existing.status !== DebitMandateStatus.FAILED) {
+    if (
+      existing &&
+      existing.status !== DebitMandateStatus.FAILED &&
+      existing.status !== DebitMandateStatus.PENDING_CHECKOUT
+    ) {
       throw new BadRequestException(
         'Member already has an automatic debit mandate',
       );
     }
 
-    const accessToken = await this.accounts.getDecryptedAccessToken(tenantId);
-    let customer;
-    try {
-      customer = await this.mp.findOrCreateCustomer(accessToken, member.email);
-    } catch (err) {
-      throw new BadRequestException(this.describeMpEnrollError(err));
-    }
-
-    let cardId: string | null = null;
-    let lastFour: string | null = null;
-    let paymentMethodId = dto.paymentMethodId?.trim() || null;
-    try {
-      const saved = await this.mp.saveCard(
-        accessToken,
-        customer.id,
-        dto.cardToken,
-      );
-      cardId = saved.id;
-      lastFour = saved.lastFour;
-      paymentMethodId = saved.paymentMethodId ?? paymentMethodId;
-    } catch (err) {
-      this.logger.warn(
-        `saveCard failed member=${memberId}: ${err instanceof Error ? err.message : String(err)}`,
-      );
-      if (!dto.chargeNow) {
-        throw new BadRequestException(
-          'Could not save the card. Use a credit/debit card in the Brick.',
-        );
-      }
-    }
-
-    let payToken = dto.cardToken;
-    if (cardId) {
-      try {
-        payToken = await this.mp.createCardTokenFromSavedCard(
-          accessToken,
-          customer.id,
-          cardId,
-        );
-      } catch {
-        payToken = dto.cardToken;
-      }
-    }
-
-    let transactionId: string | null = null;
-    let enrolledItemId: string | null = null;
-    let nextChargeOn: Date;
-
+    let startDate: string | undefined;
+    let nextChargeOn: Date | null = null;
     if (dto.chargeNow) {
-      const charged = await this.chargePackWithToken({
-        tenantId,
-        memberId,
-        staffId,
-        packId: pack.id,
-        packName: pack.name,
-        amount: pack.price,
-        accessToken,
-        token: payToken,
-        customerId: cardId ? customer.id : undefined,
-        paymentMethodId: paymentMethodId ?? 'visa',
-        installments: dto.installments ?? 1,
-        issuerId: dto.issuerId,
-        identificationType: dto.identificationType,
-        identificationNumber: dto.identificationNumber,
-        idempotencyKey:
-          dto.idempotencyKey?.trim() ||
-          `debit-enroll-${randomBytes(12).toString('hex')}`,
-      });
-      transactionId = charged.transactionId;
-      enrolledItemId = charged.transactionItemId;
-      if (charged.cardId) {
-        cardId = charged.cardId;
-      }
-      if (charged.lastFour) {
-        lastFour = charged.lastFour;
-      }
-      if (charged.paymentMethodId) {
-        paymentMethodId = charged.paymentMethodId;
-      }
-      nextChargeOn = charged.nextChargeOn;
+      nextChargeOn = this.businessDate(new Date());
     } else {
       const current = await this.requireCurrentMonthly(tenantId, memberId);
+      startDate = current.endsAt.toISOString();
       nextChargeOn = this.businessDate(current.endsAt);
     }
 
-    if (!cardId) {
-      throw new BadRequestException(
-        'Card could not be stored for later debit (payment had no card id)',
-      );
+    const accessToken = await this.accounts.getDecryptedAccessToken(tenantId);
+    const backUrl = this.webBackUrl();
+    const notificationUrl = this.buildNotificationUrl(tenantId);
+
+    if (existing?.mpPreapprovalId) {
+      await this.tryCancelRemote(accessToken, existing.mpPreapprovalId);
     }
 
-    const data = {
+    const seed = {
       tenantId,
       memberId,
       packId: pack.id,
-      enrolledTransactionItemId: enrolledItemId,
-      mpCustomerId: customer.id,
-      mpCardId: cardId,
-      cardLastFour: lastFour,
-      cardPaymentMethodId: paymentMethodId,
-      status: DebitMandateStatus.ACTIVE,
+      status: DebitMandateStatus.PENDING_CHECKOUT,
       attemptCount: 0,
       lastError: null as string | null,
       nextChargeOn,
       enrolledByStaffId: staffId,
       cancelledAt: null,
       cancelledByStaffId: null,
+      mpPreapprovalId: null as string | null,
+      mpPreapprovalPlanId: null as string | null,
+      initPoint: null as string | null,
     };
 
-    const row = existing
+    const seeded = existing
       ? await this.prisma.debitMandate.update({
           where: { id: existing.id },
-          data,
+          data: seed,
           include: {
             member: { select: { name: true, email: true } },
             pack: { select: { name: true, price: true } },
           },
         })
       : await this.prisma.debitMandate.create({
-          data,
+          data: seed,
           include: {
             member: { select: { name: true, email: true } },
             pack: { select: { name: true, price: true } },
           },
         });
+
+    let plan;
+    let sub;
+    try {
+      plan = await this.mp.createPreapprovalPlan({
+        accessToken,
+        reason: pack.name,
+        amount: pack.price,
+        backUrl,
+      });
+      sub = await this.mp.createPreapproval({
+        accessToken,
+        planId: plan.id,
+        reason: `${pack.name} · ${member.email}`,
+        externalReference: seeded.id,
+        payerEmail: member.email,
+        backUrl,
+        notificationUrl,
+        amount: pack.price,
+        startDate,
+      });
+    } catch (err) {
+      throw new BadRequestException(this.describeMpEnrollError(err));
+    }
+
+    const row = await this.prisma.debitMandate.update({
+      where: { id: seeded.id },
+      data: {
+        mpPreapprovalId: sub.id,
+        mpPreapprovalPlanId: plan.id,
+        initPoint: sub.initPoint,
+      },
+      include: {
+        member: { select: { name: true, email: true } },
+        pack: { select: { name: true, price: true } },
+      },
+    });
 
     await this.audit.record({
       tenantId,
@@ -300,19 +267,181 @@ export class DebitService {
         memberId,
         packId: pack.id,
         chargeNow: dto.chargeNow,
-        transactionId,
+        mpPreapprovalId: sub.id,
       },
     });
 
     return {
       mandate: this.toDetail(row),
-      transactionId,
-      receiptReady: Boolean(transactionId),
+      transactionId: null,
+      receiptReady: false,
+      checkoutUrl: sub.initPoint,
     };
   }
 
   /**
-   * Baja el mandato; el contrato vigente no se toca (RN-PAG-016).
+   * Webhook `subscription_preapproval` de un mandato de gym (no plataforma).
+   */
+  async handlePreapproval(
+    tenantId: string,
+    preapprovalId: string,
+  ): Promise<MpWebhookProcessResult> {
+    const accessToken = await this.accounts.getDecryptedAccessToken(tenantId);
+    const remote = await this.mp.getPreapproval(accessToken, preapprovalId);
+    const mandate = await this.findByPreapproval(
+      tenantId,
+      remote.externalReference,
+      remote.id,
+    );
+    if (!mandate) {
+      return this.emptyWebhook(false, remote.status);
+    }
+    const authorized =
+      remote.status === 'authorized' || remote.status === 'active';
+    const failed =
+      remote.status === 'cancelled' ||
+      remote.status === 'paused' ||
+      remote.status === 'rejected';
+    if (authorized && mandate.status === DebitMandateStatus.PENDING_CHECKOUT) {
+      await this.prisma.debitMandate.update({
+        where: { id: mandate.id },
+        data: { status: DebitMandateStatus.ACTIVE, lastError: null },
+      });
+    }
+    if (failed && OPEN_STATUSES.includes(mandate.status)) {
+      await this.prisma.debitMandate.update({
+        where: { id: mandate.id },
+        data: {
+          status: DebitMandateStatus.FAILED,
+          lastError: `MP preapproval ${remote.status}`,
+        },
+      });
+    }
+    return this.emptyWebhook(true, remote.status);
+  }
+
+  /**
+   * Ciclo cobrado por MP → Transaction PACK + contrato (CU-PAG-009).
+   */
+  async applyAuthorizedPayment(
+    tenantId: string,
+    input: {
+      preapprovalId: string | null;
+      externalReference: string | null;
+      paymentId: string | null;
+      status: string;
+    },
+  ): Promise<MpWebhookProcessResult> {
+    const mandate = await this.findByPreapproval(
+      tenantId,
+      input.externalReference,
+      input.preapprovalId,
+    );
+    if (!mandate || mandate.tenantId !== tenantId) {
+      return this.emptyWebhook(false, input.status);
+    }
+    if (!input.paymentId) {
+      await this.prisma.debitMandate.update({
+        where: { id: mandate.id },
+        data: { status: DebitMandateStatus.ACTIVE },
+      });
+      return this.emptyWebhook(true, input.status);
+    }
+    return this.applyMpPayment(
+      tenantId,
+      mandate.id,
+      input.paymentId,
+      input.status,
+    );
+  }
+
+  /**
+   * Pago MP cuyo `external_reference` es el id del mandato.
+   */
+  async applyMpPayment(
+    tenantId: string,
+    mandateId: string,
+    mpPaymentId: string,
+    remoteStatus: string,
+  ): Promise<MpWebhookProcessResult> {
+    const mandate = await this.requireMandate(tenantId, mandateId);
+    const mapped = remoteStatus.toLowerCase();
+    if (mapped !== 'approved' && mapped !== 'processed') {
+      if (mapped === 'rejected' || mapped === 'cancelled') {
+        await this.prisma.debitMandate.update({
+          where: { id: mandate.id },
+          data: {
+            lastError: `MP payment ${remoteStatus}`,
+            status: DebitMandateStatus.FAILED,
+          },
+        });
+      }
+      return this.emptyWebhook(true, remoteStatus);
+    }
+
+    const pack = await this.requireMonthlyPack(tenantId, mandate.packId);
+    const idempotencyKey = `debit-mp:${mpPaymentId}`;
+    let cart = await this.prisma.transaction.findUnique({
+      where: {
+        tenantId_idempotencyKey: { tenantId, idempotencyKey },
+      },
+      include: { transactionItems: true },
+    });
+    if (!cart) {
+      cart = await this.prisma.transaction.create({
+        data: {
+          tenantId,
+          memberId: mandate.memberId,
+          amount: pack.price,
+          status: PaymentStatus.PENDING,
+          idempotencyKey,
+          recordedByStaffId: mandate.enrolledByStaffId,
+          transactionItems: {
+            create: {
+              tenantId,
+              memberId: mandate.memberId,
+              packId: pack.id,
+              amount: pack.price,
+              status: PaymentStatus.PENDING,
+              method: PaymentMethod.MP,
+              idempotencyKey: `${idempotencyKey}:0`,
+            },
+          },
+        },
+        include: { transactionItems: true },
+      });
+    }
+
+    const result = await this.webhook.applyMpPaymentToCart(
+      tenantId,
+      cart.id,
+      mpPaymentId,
+      remoteStatus,
+    );
+    const itemId = cart.transactionItems[0]?.id;
+    const contract = itemId
+      ? await this.prisma.contract.findUnique({
+          where: { transactionItemId: itemId },
+        })
+      : null;
+    await this.prisma.debitMandate.update({
+      where: { id: mandate.id },
+      data: {
+        status: DebitMandateStatus.ACTIVE,
+        lastError: null,
+        lastChargedAt: new Date(),
+        enrolledTransactionItemId:
+          mandate.enrolledTransactionItemId ?? itemId ?? undefined,
+        nextChargeOn: contract?.endsAt
+          ? this.businessDate(contract.endsAt)
+          : mandate.nextChargeOn,
+      },
+    });
+    return result;
+  }
+
+  /**
+   * Baja el mandato y cancela el preapproval (RN-PAG-016).
    */
   async cancel(
     tenantId: string,
@@ -322,6 +451,11 @@ export class DebitService {
     const mandate = await this.requireMandate(tenantId, mandateId);
     if (mandate.status === DebitMandateStatus.CANCELLED) {
       return this.toDetail(mandate);
+    }
+    if (mandate.mpPreapprovalId) {
+      const accessToken =
+        await this.accounts.getDecryptedAccessToken(tenantId);
+      await this.tryCancelRemote(accessToken, mandate.mpPreapprovalId);
     }
     const staffId =
       actor.profileType === 'STAFF' ? actor.userId : mandate.enrolledByStaffId;
@@ -357,12 +491,24 @@ export class DebitService {
     if (transactionItemIds.length === 0) {
       return;
     }
-    await this.prisma.debitMandate.updateMany({
+    const rows = await this.prisma.debitMandate.findMany({
       where: {
         tenantId,
         enrolledTransactionItemId: { in: transactionItemIds },
         status: { in: OPEN_STATUSES },
       },
+    });
+    if (rows.length === 0) {
+      return;
+    }
+    const accessToken = await this.accounts.getDecryptedAccessToken(tenantId);
+    for (const row of rows) {
+      if (row.mpPreapprovalId) {
+        await this.tryCancelRemote(accessToken, row.mpPreapprovalId);
+      }
+    }
+    await this.prisma.debitMandate.updateMany({
+      where: { id: { in: rows.map((r) => r.id) } },
       data: {
         status: DebitMandateStatus.CANCELLED,
         cancelledAt: new Date(),
@@ -371,7 +517,7 @@ export class DebitService {
   }
 
   /**
-   * Cambia el pack del próximo cobro (sin solapar contratos).
+   * Cancela preapproval A y alta B para el próximo cobro (RN-PAG-016).
    */
   async updatePack(
     tenantId: string,
@@ -383,10 +529,44 @@ export class DebitService {
     if (mandate.status === DebitMandateStatus.CANCELLED) {
       throw new BadRequestException('Mandate is cancelled');
     }
-    await this.requireMonthlyPack(tenantId, packId);
+    const pack = await this.requireMonthlyPack(tenantId, packId);
+    const accessToken = await this.accounts.getDecryptedAccessToken(tenantId);
+    if (mandate.mpPreapprovalId) {
+      await this.tryCancelRemote(accessToken, mandate.mpPreapprovalId);
+    }
+    const member = await this.requireActiveMember(tenantId, mandate.memberId);
+    const startDate = mandate.nextChargeOn
+      ? mandate.nextChargeOn.toISOString()
+      : undefined;
+    const backUrl = this.webBackUrl();
+    const notificationUrl = this.buildNotificationUrl(tenantId);
+    const plan = await this.mp.createPreapprovalPlan({
+      accessToken,
+      reason: pack.name,
+      amount: pack.price,
+      backUrl,
+    });
+    const sub = await this.mp.createPreapproval({
+      accessToken,
+      planId: plan.id,
+      reason: `${pack.name} · ${member.email}`,
+      externalReference: mandate.id,
+      payerEmail: member.email,
+      backUrl,
+      notificationUrl,
+      amount: pack.price,
+      startDate,
+    });
     const row = await this.prisma.debitMandate.update({
       where: { id: mandate.id },
-      data: { packId },
+      data: {
+        packId,
+        mpPreapprovalId: sub.id,
+        mpPreapprovalPlanId: plan.id,
+        initPoint: sub.initPoint,
+        status: DebitMandateStatus.PENDING_CHECKOUT,
+        lastError: null,
+      },
       include: {
         member: { select: { name: true, email: true } },
         pack: { select: { name: true, price: true } },
@@ -398,337 +578,67 @@ export class DebitService {
       action: AUDIT_ACTIONS.debitUpdatePack,
       entityType: 'DebitMandate',
       entityId: row.id,
-      after: { packId },
+      after: { packId, mpPreapprovalId: sub.id },
     });
     return this.toDetail(row);
   }
 
-  /**
-   * Cobra el pack del mandato (job o “Cobrar ahora”).
-   *
-   * @remarks Idempotente por periodo `endsAt` (RN-PAG-015).
-   */
-  async charge(
-    tenantId: string,
-    mandateId: string,
-    actor: AuditActor,
-    source: 'job' | 'staff',
-  ): Promise<DebitEnrollResult> {
-    const mandate = await this.requireMandate(tenantId, mandateId);
-    if (mandate.status === DebitMandateStatus.CANCELLED) {
-      throw new BadRequestException('Mandate is cancelled');
-    }
-    const pack = await this.requireMonthlyPack(tenantId, mandate.packId);
-    const period = this.formatYmd(mandate.nextChargeOn);
-    const prefix = `debit:${mandate.id}:${period}`;
-
-    const existingTx = await this.prisma.transaction.findFirst({
-      where: {
-        tenantId,
-        memberId: mandate.memberId,
-        idempotencyKey: { startsWith: prefix },
-        status: { in: [PaymentStatus.PENDING, PaymentStatus.APPROVED] },
-      },
-      include: { transactionItems: true },
-    });
-    if (existingTx?.status === PaymentStatus.APPROVED) {
-      await this.markChargeSuccess(
-        mandate.id,
-        existingTx.transactionItems[0]?.id,
-      );
-      const refreshed = await this.requireMandate(tenantId, mandate.id);
-      return {
-        mandate: this.toDetail(refreshed),
-        transactionId: existingTx.id,
-        receiptReady: true,
-      };
-    }
-    if (existingTx?.status === PaymentStatus.PENDING) {
-      throw new BadRequestException(
-        'A debit payment for this period is already pending',
-      );
-    }
-
-    const accessToken = await this.accounts.getDecryptedAccessToken(tenantId);
-    let token: string;
+  private async tryCancelRemote(
+    accessToken: string,
+    preapprovalId: string,
+  ): Promise<void> {
     try {
-      token = await this.mp.createCardTokenFromSavedCard(
-        accessToken,
-        mandate.mpCustomerId,
-        mandate.mpCardId,
+      await this.mp.cancelPreapproval(accessToken, preapprovalId);
+    } catch (err) {
+      this.logger.warn(
+        `cancel preapproval ${preapprovalId}: ${
+          err instanceof Error ? err.message : String(err)
+        }`,
       );
-    } catch (err) {
-      const message =
-        err instanceof Error ? err.message : 'Could not tokenize saved card';
-      await this.markChargeFailure(mandate, message);
-      throw new BadRequestException(message);
-    }
-
-    const staffId =
-      actor.profileType === 'STAFF' ? actor.userId : mandate.enrolledByStaffId;
-    try {
-      const charged = await this.chargePackWithToken({
-        tenantId,
-        memberId: mandate.memberId,
-        staffId,
-        packId: pack.id,
-        packName: pack.name,
-        amount: pack.price,
-        accessToken,
-        token,
-        customerId: mandate.mpCustomerId,
-        paymentMethodId: mandate.cardPaymentMethodId ?? 'visa',
-        installments: 1,
-        idempotencyKey: `${prefix}:${mandate.attemptCount}`,
-      });
-      await this.prisma.debitMandate.update({
-        where: { id: mandate.id },
-        data: {
-          status: DebitMandateStatus.ACTIVE,
-          attemptCount: 0,
-          lastError: null,
-          lastChargedAt: new Date(),
-          nextChargeOn: charged.nextChargeOn,
-        },
-      });
-      await this.audit.record({
-        tenantId,
-        actor,
-        action: AUDIT_ACTIONS.debitCharge,
-        entityType: 'DebitMandate',
-        entityId: mandate.id,
-        after: { source, transactionId: charged.transactionId },
-      });
-      const refreshed = await this.requireMandate(tenantId, mandate.id);
-      return {
-        mandate: this.toDetail(refreshed),
-        transactionId: charged.transactionId,
-        receiptReady: true,
-      };
-    } catch (err) {
-      const message =
-        err instanceof Error ? err.message : 'Debit charge failed';
-      await this.markChargeFailure(mandate, message);
-      throw new BadRequestException(message);
     }
   }
 
-  /**
-   * Job: cobra mandatos con `nextChargeOn` ≤ hoy (timezone BA).
-   */
-  async chargeDue(): Promise<{
-    attempted: number;
-    ok: number;
-    failed: number;
-  }> {
-    const today = this.businessDate(new Date());
-    const due = await this.prisma.debitMandate.findMany({
-      where: {
-        status: {
-          in: [DebitMandateStatus.ACTIVE, DebitMandateStatus.RETRYING],
+  private async findByPreapproval(
+    tenantId: string,
+    externalReference: string | null,
+    preapprovalId: string | null,
+  ): Promise<MandateRow | null> {
+    if (externalReference) {
+      const byId = await this.prisma.debitMandate.findFirst({
+        where: { id: externalReference, tenantId },
+        include: {
+          member: { select: { name: true, email: true } },
+          pack: { select: { name: true, price: true } },
         },
-        nextChargeOn: { lte: today },
-        attemptCount: { lt: 3 },
-      },
-    });
-    let ok = 0;
-    let failed = 0;
-    for (const mandate of due) {
-      try {
-        await this.charge(
-          mandate.tenantId,
-          mandate.id,
-          {
-            profileType: 'STAFF',
-            userId: mandate.enrolledByStaffId,
-          },
-          'job',
-        );
-        ok += 1;
-      } catch (err) {
-        failed += 1;
-        this.logger.warn(
-          `debit job mandate=${mandate.id}: ${err instanceof Error ? err.message : String(err)}`,
-        );
+      });
+      if (byId) {
+        return byId;
       }
     }
-    return { attempted: due.length, ok, failed };
-  }
-
-  private async chargePackWithToken(input: {
-    tenantId: string;
-    memberId: string;
-    staffId: string;
-    packId: string;
-    packName: string;
-    amount: number;
-    accessToken: string;
-    token: string;
-    customerId?: string;
-    paymentMethodId: string;
-    installments: number;
-    issuerId?: string;
-    identificationType?: string;
-    identificationNumber?: string;
-    idempotencyKey: string;
-  }): Promise<{
-    transactionId: string;
-    transactionItemId: string;
-    nextChargeOn: Date;
-    cardId: string | null;
-    lastFour: string | null;
-    paymentMethodId: string | null;
-  }> {
-    const pack = await this.prisma.pack.findFirstOrThrow({
-      where: { id: input.packId, tenantId: input.tenantId },
+    if (!preapprovalId) {
+      return null;
+    }
+    return this.prisma.debitMandate.findFirst({
+      where: { tenantId, mpPreapprovalId: preapprovalId },
       include: {
-        components: { include: { service: { select: { name: true } } } },
+        member: { select: { name: true, email: true } },
+        pack: { select: { name: true, price: true } },
       },
     });
-    const copy = mpCopyForPack(
-      pack.name,
-      pack.components.map((c) => ({
-        name: c.service.name,
-        credits: c.creditAmount,
-      })),
-    );
+  }
 
-    const existing = await this.prisma.transaction.findUnique({
-      where: {
-        tenantId_idempotencyKey: {
-          tenantId: input.tenantId,
-          idempotencyKey: input.idempotencyKey,
-        },
-      },
-      include: { transactionItems: true },
-    });
-    let cart = existing;
-    if (!cart) {
-      cart = await this.prisma.transaction.create({
-        data: {
-          tenantId: input.tenantId,
-          memberId: input.memberId,
-          amount: input.amount,
-          status: PaymentStatus.PENDING,
-          idempotencyKey: input.idempotencyKey,
-          recordedByStaffId: input.staffId,
-          transactionItems: {
-            create: {
-              tenantId: input.tenantId,
-              memberId: input.memberId,
-              packId: input.packId,
-              amount: input.amount,
-              status: PaymentStatus.PENDING,
-              method: PaymentMethod.MP,
-              idempotencyKey: `${input.idempotencyKey}:0`,
-            },
-          },
-        },
-        include: { transactionItems: true },
-      });
-    }
-
-    const item = cart.transactionItems[0];
-    if (!item) {
-      throw new BadRequestException('Debit cart missing transaction item');
-    }
-
-    const payment = await this.mp.createCardPayment({
-      accessToken: input.accessToken,
-      amount: input.amount,
-      token: input.token,
-      description: copy.title,
-      externalReference: cart.id,
-      notificationUrl: this.buildNotificationUrl(input.tenantId),
-      payerEmail: (
-        await this.prisma.member.findUniqueOrThrow({
-          where: { id: input.memberId },
-        })
-      ).email,
-      paymentMethodId: input.paymentMethodId,
-      installments: input.installments,
-      issuerId: input.issuerId,
-      customerId: input.customerId,
-      identificationType: input.identificationType,
-      identificationNumber: input.identificationNumber,
-      idempotencyKey: input.idempotencyKey,
-    });
-
-    const mapped = payment.status.toLowerCase();
-    if (mapped !== 'approved') {
-      throw new BadRequestException(
-        payment.statusDetail
-          ? `Mercado Pago ${payment.status}: ${payment.statusDetail}`
-          : `Mercado Pago payment ${payment.status}`,
-      );
-    }
-
-    await this.webhook.applyMpPaymentToCart(
-      input.tenantId,
-      cart.id,
-      payment.id,
-      payment.status,
-    );
-
-    const contract = await this.prisma.contract.findUnique({
-      where: { transactionItemId: item.id },
-    });
-    const nextChargeOn = contract?.endsAt
-      ? this.businessDate(contract.endsAt)
-      : this.addDays(this.businessDate(new Date()), 30);
-
+  private emptyWebhook(
+    handled: boolean,
+    status: string | null,
+  ): MpWebhookProcessResult {
     return {
-      transactionId: cart.id,
-      transactionItemId: item.id,
-      nextChargeOn,
-      cardId: payment.cardId,
-      lastFour: payment.lastFour,
-      paymentMethodId: payment.paymentMethodId,
+      handled,
+      transactionItemId: null,
+      transactionId: null,
+      status,
+      contractId: null,
+      reservationId: null,
     };
-  }
-
-  private async markChargeSuccess(
-    mandateId: string,
-    transactionItemId: string | undefined,
-  ): Promise<void> {
-    const contract = transactionItemId
-      ? await this.prisma.contract.findUnique({
-          where: { transactionItemId },
-        })
-      : null;
-    await this.prisma.debitMandate.update({
-      where: { id: mandateId },
-      data: {
-        status: DebitMandateStatus.ACTIVE,
-        attemptCount: 0,
-        lastError: null,
-        lastChargedAt: new Date(),
-        ...(contract?.endsAt
-          ? { nextChargeOn: this.businessDate(contract.endsAt) }
-          : {}),
-      },
-    });
-  }
-
-  private async markChargeFailure(
-    mandate: DebitMandate,
-    message: string,
-  ): Promise<void> {
-    const attempts = mandate.attemptCount + 1;
-    const failed = attempts >= 3;
-    await this.prisma.debitMandate.update({
-      where: { id: mandate.id },
-      data: {
-        attemptCount: attempts,
-        lastError: message.slice(0, 500),
-        status: failed
-          ? DebitMandateStatus.FAILED
-          : DebitMandateStatus.RETRYING,
-        nextChargeOn: failed
-          ? mandate.nextChargeOn
-          : this.addDays(mandate.nextChargeOn, 1),
-      },
-    });
   }
 
   private async findOpen(
@@ -827,8 +737,8 @@ export class DebitService {
       attemptCount: row.attemptCount,
       lastError: row.lastError,
       lastChargedAt: row.lastChargedAt?.toISOString() ?? null,
-      nextChargeOn: this.formatYmd(row.nextChargeOn),
-      cardLastFour: row.cardLastFour,
+      nextChargeOn: row.nextChargeOn ? this.formatYmd(row.nextChargeOn) : null,
+      initPoint: row.initPoint,
       enrolledTransactionItemId: row.enrolledTransactionItemId,
       createdAt: row.createdAt.toISOString(),
       updatedAt: row.updatedAt.toISOString(),
@@ -853,23 +763,14 @@ export class DebitService {
     return new Date(Date.UTC(year, month - 1, day));
   }
 
-  private addDays(date: Date, days: number): Date {
-    const next = new Date(date);
-    next.setUTCDate(next.getUTCDate() + days);
-    return next;
-  }
-
-  /**
-   * Mensaje de Caja cuando MP rechaza Customer/Card (p. ej. sin scope payments).
-   */
   private describeMpEnrollError(err: unknown): string {
     const raw = err instanceof Error ? err.message : String(err);
     if (/live credentials/i.test(raw) || /HTTP 401/.test(raw)) {
-      return 'Mercado Pago rechazó guardar la tarjeta (el token no tiene permiso Customers/Payments). En Config volvé a pegar Public Key y Access Token de credenciales de prueba, con la app en API Pagos.';
+      return 'Mercado Pago rechazó la suscripción. En Config revisá el token y que la app tenga Suscripciones.';
     }
     return raw.startsWith('Mercado Pago')
       ? raw
-      : 'No se pudo inscribir el débito en Mercado Pago';
+      : 'No se pudo crear el link de débito en Mercado Pago';
   }
 
   private buildNotificationUrl(tenantId: string): string {
@@ -877,5 +778,12 @@ export class DebitService {
       this.config.get<string>('PUBLIC_API_BASE_URL')?.replace(/\/$/, '') ||
       'http://localhost:3001';
     return `${publicBase}/api/webhooks/payment?tenantId=${tenantId}`;
+  }
+
+  private webBackUrl(): string {
+    const web =
+      this.config.get<string>('PUBLIC_WEB_BASE_URL')?.replace(/\/$/, '') ||
+      'http://localhost:3002';
+    return `${web}/caja`;
   }
 }

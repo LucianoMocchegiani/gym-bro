@@ -4179,7 +4179,7 @@
         },
         {
             "name": "Mercado Pago",
-            "description": "CU-PAG-001/006/008. Cuenta `GET|PUT|DELETE /api/mercadopago/account` + test (`mp.connect`) + `GET .../public-key` (Brick, `cashier.operate`). Débito MONTHLY: `GET /debit-mandates`, `POST /members/:id/debit-mandates`, `POST .../charge` y `.../cancel`. Caja cart MP/CASH igual que antes. Webhook `POST /webhooks/payment?tenantId=`.",
+            "description": "CU-PAG-001/006/008. Cuenta `GET|PUT|DELETE /api/mercadopago/account` + test (`mp.connect`) + `GET .../public-key`. Débito MONTHLY: `GET /debit-mandates`, `POST /members/:id/debit-mandates` (packId + chargeNow), `PATCH`, `POST .../cancel`. Sin `.../charge`. Caja cart MP/CASH. Webhook `POST /webhooks/payment?tenantId=` (payment + subscription_*).",
             "item": [
                 {
                     "name": "Staff GET MP account status",
@@ -4202,7 +4202,7 @@
                     }
                 },
                 {
-                    "name": "Staff GET MP public key (Brick)",
+                    "name": "Staff GET MP public key",
                     "request": {
                         "method": "GET",
                         "header": [],
@@ -4237,17 +4237,26 @@
                         ],
                         "body": {
                             "mode": "raw",
-                            "raw": "{\n  \"packId\": \"{{createdPackId}}\",\n  \"cardToken\": \"REPLACE_BRICK_TOKEN\",\n  \"chargeNow\": true\n}"
+                            "raw": "{\n  \"packId\": \"{{createdPackId}}\",\n  \"chargeNow\": true\n}"
                         },
                         "url": "{{baseUrl}}/api/members/{{createdMemberId}}/debit-mandates"
                     }
                 },
                 {
-                    "name": "Staff POST charge debit now",
+                    "name": "Staff PATCH debit mandate pack",
                     "request": {
-                        "method": "POST",
-                        "header": [],
-                        "url": "{{baseUrl}}/api/debit-mandates/{{debitMandateId}}/charge"
+                        "method": "PATCH",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"packId\": \"{{createdPackId}}\"\n}"
+                        },
+                        "url": "{{baseUrl}}/api/debit-mandates/{{debitMandateId}}"
                     }
                 },
                 {

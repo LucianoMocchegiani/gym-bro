@@ -61,6 +61,7 @@ enum BillingPeriod {
 
 /// Estado de un mandato de débito automático MONTHLY (RN-PAG-013..016).
 enum DebitMandateStatus {
+  PENDING_CHECKOUT
   ACTIVE
   RETRYING
   FAILED
@@ -724,8 +725,8 @@ model Transaction {
 
 /// Mandato de débito automático de un pack MONTHLY (CU-PAG-008..010).
 ///
-/// @remarks Una fila “abierta” (ACTIVE/RETRYING/FAILED) por afiliado (índice
-/// parcial SQL). El cobro lo dispara GymBro (tarjeta guardada), no un plan MP.
+/// @remarks Espejo de `preapproval` MP. Una fila abierta por afiliado (índice
+/// parcial SQL). El cobro lo dispara Mercado Pago (webhook), no un job.
 model DebitMandate {
   id                         String             @id @default(uuid()) @db.Uuid
   tenantId                   String             @map("tenant_id") @db.Uuid
@@ -733,16 +734,15 @@ model DebitMandate {
   /// Pack que se debitará en el próximo cobro (puede diferir del vigente).
   packId                     String             @map("pack_id") @db.Uuid
   enrolledTransactionItemId  String?            @unique @map("enrolled_transaction_item_id") @db.Uuid
-  mpCustomerId               String             @map("mp_customer_id")
-  mpCardId                   String             @map("mp_card_id")
-  cardLastFour               String?            @map("card_last_four")
-  cardPaymentMethodId        String?            @map("card_payment_method_id")
+  mpPreapprovalId            String?            @unique @map("mp_preapproval_id")
+  mpPreapprovalPlanId        String?            @map("mp_preapproval_plan_id")
+  initPoint                  String?            @map("init_point")
   status                     DebitMandateStatus
   attemptCount               Int                @default(0) @map("attempt_count")
   lastError                  String?            @map("last_error")
   lastChargedAt              DateTime?          @map("last_charged_at")
-  /// Día de negocio BA del próximo cobro (`endsAt` del contrato).
-  nextChargeOn               DateTime           @map("next_charge_on") @db.Date
+  /// Día de negocio BA del próximo cobro (espejo; nullable si aún no hay ciclo).
+  nextChargeOn               DateTime?          @map("next_charge_on") @db.Date
   enrolledByStaffId          String             @map("enrolled_by_staff_id") @db.Uuid
   cancelledAt                DateTime?          @map("cancelled_at")
   cancelledByStaffId         String?            @map("cancelled_by_staff_id") @db.Uuid

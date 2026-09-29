@@ -342,7 +342,7 @@ identities ||--o{ platform_signups : self_serve
 | `MemberStatus` | `ACTIVE`, `SUSPENDED`, `INACTIVE` | Estado del afiliado (CU-AFI-003) |
 | `ServiceType` | `ACCESO_LIBRE`, `POR_SESIONES` | Tipo de servicio (RN-SER-001) |
 | `BillingPeriod` | `MONTHLY`, `ONE_TIME` | Periodicidad de cobro del pack |
-| `DebitMandateStatus` | `ACTIVE`, `RETRYING`, `FAILED`, `CANCELLED` (hoy). Objetivo: `PENDING_CHECKOUT`, `ACTIVE`, `FAILED`, `CANCELLED` | Mandato / suscripción MP |
+| `DebitMandateStatus` | `PENDING_CHECKOUT`, `ACTIVE`, `RETRYING`, `FAILED`, `CANCELLED` | Mandato / suscripción MP |
 | `PaymentStatus` | `PENDING`, `APPROVED`, `REJECTED`, `REFUNDED` | Estado de pago (RN-PAG-003) |
 | `PaymentMethod` | `STUB`, `CASH`, `MP` | Medio de cobro. `STUB` es legado: no se crean cobros nuevos. |
 | `ContractStatus` | `ACTIVE`, `EXPIRED`, `CANCELLED`, `REFUNDED` | Estado de contratación |
@@ -783,31 +783,28 @@ API: Member `POST /api/me/transaction-items/mp/cart` (JWT Member); Staff `POST /
 
 ### 4.15h2 `debit_mandates`
 
-Mandato MONTHLY = espejo de **suscripción MP** (RN-PAG-013..016 / CU-PAG-008..010). Plan + preapproval en la cuenta del gym; cobro por webhook. No es Customer+Card+job.
-
-**Hoy en Postgres (hasta migrar):** `mp_customer_id` / `mp_card_id`, `RETRYING`, `POST .../charge`, cron. **Objetivo:**
+Mandato MONTHLY = espejo de **suscripción MP** (RN-PAG-013..016 / CU-PAG-008..010). Plan + preapproval en la cuenta del gym; cobro por webhook. Faciliter no guarda tarjeta ni corre cron de cobro.
 
 | Columna | Tipo | Notas |
 |---------|------|--------|
-| `id` | uuid PK | |
+| `id` | uuid PK | `external_reference` del preapproval |
 | `tenant_id` / `member_id` | uuid FK | CASCADE |
 | `pack_id` | uuid FK | pack del próximo cobro; RESTRICT |
 | `enrolled_transaction_item_id` | uuid FK nullable unique | primer cobro que inscribió; SET NULL; devolverlo → baja MP |
-| `mp_preapproval_id` | text | id `/preapproval` |
-| `mp_preapproval_plan_id` | text nullable | plan del pack (también puede vivir en `packs`) |
-| `mp_init_point` | text nullable | link de checkout mientras `PENDIENTE_CHECKOUT` |
-| `status` | `DebitMandateStatus` | `PENDING_CHECKOUT` \| `ACTIVE` \| `FAILED` \| `CANCELLED` (sacar `RETRYING` como máquina nuestra) |
-| `last_error` / `last_charged_at` | text / timestamptz nullable | error MP |
-| `next_charge_on` | date nullable | espejo de `next_payment_date` MP |
+| `mp_preapproval_id` | text unique nullable | id `/preapproval` |
+| `mp_preapproval_plan_id` | text nullable | plan del pack |
+| `init_point` | text nullable | link de checkout mientras `PENDING_CHECKOUT` |
+| `status` | `DebitMandateStatus` | `PENDING_CHECKOUT` \| `ACTIVE` \| `RETRYING` \| `FAILED` \| `CANCELLED` (`RETRYING` legado) |
+| `attempt_count` | int | legado (el cobro lo hace MP) |
+| `last_error` / `last_charged_at` | text / timestamptz nullable | |
+| `next_charge_on` | date nullable | espejo de ciclo MP |
 | `enrolled_by_staff_id` | uuid FK | RESTRICT |
 | `cancelled_at` / `cancelled_by_staff_id` | timestamptz / uuid nullable | |
 | `created_at` / `updated_at` | timestamptz | |
 
-Unique parcial: un mandato abierto (`PENDING_CHECKOUT`/`ACTIVE`/`FAILED`) por `(tenant_id, member_id)`.
+Unique parcial: un mandato abierto (`PENDING_CHECKOUT`/`ACTIVE`/`RETRYING`/`FAILED`) por `(tenant_id, member_id)`.
 
-API Staff (`cashier.operate`): `GET /api/debit-mandates`, `GET /api/members/:id/debit-mandate`, `POST /api/members/:id/debit-mandates` (crea preapproval + init_point), `PATCH` (pack B), `POST .../cancel`. **Sin** `POST .../charge`. Webhooks: `subscription_preapproval`, `subscription_authorized_payment` (+ `payment` actual).
-
-Pack MONTHLY: `mp_preapproval_plan_id` (o equivalente) al crear/editar precio.
+API Staff (`cashier.operate`): `GET /api/debit-mandates`, `GET /api/members/:id/debit-mandate`, `POST /api/members/:id/debit-mandates` (crea preapproval + `init_point`), `PATCH` (pack B + nuevo link), `POST .../cancel`. **Sin** `POST .../charge`. Webhooks: `subscription_preapproval`, `subscription_authorized_payment` (+ `payment` con `external_reference` = id del mandato).
 
 ### 4.15h `refund_requests` + refund en `transaction_items`
 
@@ -1026,7 +1023,8 @@ Historia incremental (2026-07 / 2026-08) **compactada** en un baseline (`40476fa
 | `20260830220000_transaction_recorded_by_staff` | `transactions.recorded_by_staff_id` (staff que inició el cobro; el webhook MP lo copia a `cash_movements`). |
 | `20260830223000_refund_cart_receipt` | `ReceiptConcept.REFUND`; `receipts.transaction_id` deja de ser UK; `cash_movements.receipt_id`. |
 | `20260830223100_receipts_charge_unique` | Unique parcial: un cobro (`concept <> REFUND`) por `transaction_id`. |
-| `20260901120000_debit_mandates` | `DebitMandateStatus` + `debit_mandates` (impl. vieja: tarjeta+job). Diseño 2026-09-15: migrar a preapproval. |
+| `20260901120000_debit_mandates` | `DebitMandateStatus` + `debit_mandates` (impl. vieja: tarjeta+job) |
+| `20260929220000_debit_mp_preapproval` | Preapproval + `PENDING_CHECKOUT`; baja mandatos tarjeta; drop customer/card |
 | `20260917120000_dropin_one_time_pack` | `packs.origin_service_id`; unique `credential_offers (member_id, pack_id)`. |
 | `20260918120000_role_profesor_name_entrenador` | Rol seed: `name` Entrenador, `slug` entrenador; staff demo `entrenador@gymdeprueba.com`. |
 | `20260919180000_identities` | `identities` + `IDENTITY` enum; FK `identity_id` en members/staff/refresh. |

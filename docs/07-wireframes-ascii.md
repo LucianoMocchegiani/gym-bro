@@ -74,7 +74,7 @@ Inicio
   Caja: picker afiliado (20 + Cargar más); Cobro | Débitos;
   catálogo (**+** al carrito) y carrito en dos recuadros; CASH + link MP
   (QR, copiar, abrir, cancelar y limpiar); panel de comprobante + Compartir;
-  débitos ver/baja (alta Card Brick en web).
+  débitos ver/baja (link de suscripción MP, no Brick).
 
 Acceso → igual que afiliado (wallet + QR puerta)
   Bandeja: GET /me/staff-credential-offers (no packs)

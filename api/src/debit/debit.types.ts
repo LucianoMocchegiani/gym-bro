@@ -15,8 +15,8 @@ export type DebitMandateDetail = {
   attemptCount: number;
   lastError: string | null;
   lastChargedAt: string | null;
-  nextChargeOn: string;
-  cardLastFour: string | null;
+  nextChargeOn: string | null;
+  initPoint: string | null;
   enrolledTransactionItemId: string | null;
   createdAt: string;
   updatedAt: string;
@@ -27,7 +27,7 @@ export type DebitMandateDetail = {
  */
 export type MemberDebitView = {
   mandate: DebitMandateDetail | null;
-  /** Contrato MONTHLY vigente (para autorizar tarjeta sin cobro). */
+  /** Contrato MONTHLY vigente (para `start_date` = vencimiento). */
   currentMonthly: {
     contractId: string;
     packId: string;
@@ -37,10 +37,11 @@ export type MemberDebitView = {
 };
 
 /**
- * Resultado de alta / cobro de mandato.
+ * Resultado de alta: `checkoutUrl` = `init_point` MP.
  */
 export type DebitEnrollResult = {
   mandate: DebitMandateDetail;
   transactionId: string | null;
   receiptReady: boolean;
+  checkoutUrl: string | null;
 };

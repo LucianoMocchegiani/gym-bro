@@ -1,34 +1,28 @@
 import { Injectable, Logger } from '@nestjs/common';
 import {
-  CreateMpCardPaymentInput,
   CreateMpPreapprovalInput,
   CreateMpPreapprovalPlanInput,
   CreateMpPreferenceInput,
   MpAccountPort,
   MpAccountValidation,
-  MpCardPaymentResult,
-  MpCustomer,
   MpPreapprovalResult,
   MpPreferenceResult,
   MpRemoteAuthorizedPayment,
   MpRemoteMerchantOrder,
   MpRemotePayment,
   MpRemotePreapproval,
-  MpSavedCard,
 } from './mp-account.port';
 
 const MP_USERS_ME = 'https://api.mercadopago.com/users/me';
 const MP_PREFERENCES = 'https://api.mercadopago.com/checkout/preferences';
 const MP_PAYMENTS = 'https://api.mercadopago.com/v1/payments';
-const MP_CUSTOMERS = 'https://api.mercadopago.com/v1/customers';
-const MP_CARD_TOKENS = 'https://api.mercadopago.com/v1/card_tokens';
 const MP_PREAPPROVAL_PLANS = 'https://api.mercadopago.com/preapproval_plan';
 const MP_PREAPPROVALS = 'https://api.mercadopago.com/preapproval';
 const MP_AUTHORIZED_PAYMENTS =
   'https://api.mercadopago.com/authorized_payments';
 
 /**
- * Adapter HTTP Mercado Pago (cuenta + Preference + pago).
+ * Adapter HTTP Mercado Pago (cuenta, Preference, suscripciones, pagos).
  */
 @Injectable()
 export class HttpMpAccountAdapter extends MpAccountPort {
@@ -268,192 +262,6 @@ export class HttpMpAccountAdapter extends MpAccountPort {
   /**
    * @inheritdoc
    */
-  async findOrCreateCustomer(
-    accessToken: string,
-    email: string,
-  ): Promise<MpCustomer> {
-    const search = await fetch(
-      `${MP_CUSTOMERS}/search?email=${encodeURIComponent(email)}`,
-      {
-        method: 'GET',
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-          Accept: 'application/json',
-        },
-      },
-    );
-    if (search.ok) {
-      const data = (await search.json()) as {
-        results?: Array<{ id?: string; email?: string }>;
-      };
-      const found = data.results?.[0];
-      if (found?.id) {
-        return { id: found.id, email: found.email ?? email };
-      }
-    } else {
-      const body = await search.text().catch(() => '');
-      this.throwMpFailure('customer search', search.status, body);
-    }
-
-    const created = await fetch(MP_CUSTOMERS, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-        'Content-Type': 'application/json',
-        Accept: 'application/json',
-      },
-      body: JSON.stringify({ email }),
-    });
-    if (!created.ok) {
-      const body = await created.text().catch(() => '');
-      this.throwMpFailure('customer create', created.status, body);
-    }
-    const data = (await created.json()) as { id?: string; email?: string };
-    if (!data.id) {
-      throw new Error('Mercado Pago customer response missing id');
-    }
-    return { id: data.id, email: data.email ?? email };
-  }
-
-  /**
-   * @inheritdoc
-   */
-  async saveCard(
-    accessToken: string,
-    customerId: string,
-    cardToken: string,
-  ): Promise<MpSavedCard> {
-    const response = await fetch(
-      `${MP_CUSTOMERS}/${encodeURIComponent(customerId)}/cards`,
-      {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-          'Content-Type': 'application/json',
-          Accept: 'application/json',
-        },
-        body: JSON.stringify({ token: cardToken }),
-      },
-    );
-    if (!response.ok) {
-      const body = await response.text().catch(() => '');
-      this.logger.warn(
-        `MP save card failed status=${response.status} body=${body.slice(0, 300)}`,
-      );
-      throw new Error(
-        `Mercado Pago save card failed (HTTP ${response.status})`,
-      );
-    }
-    return this.parseSavedCard(await response.json());
-  }
-
-  /**
-   * @inheritdoc
-   */
-  async createCardTokenFromSavedCard(
-    accessToken: string,
-    customerId: string,
-    cardId: string,
-  ): Promise<string> {
-    const response = await fetch(MP_CARD_TOKENS, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-        'Content-Type': 'application/json',
-        Accept: 'application/json',
-      },
-      body: JSON.stringify({ customer_id: customerId, card_id: cardId }),
-    });
-    if (!response.ok) {
-      const body = await response.text().catch(() => '');
-      this.logger.warn(
-        `MP card token failed status=${response.status} body=${body.slice(0, 300)}`,
-      );
-      throw new Error(
-        `Mercado Pago card token failed (HTTP ${response.status})`,
-      );
-    }
-    const data = (await response.json()) as { id?: string };
-    if (!data.id) {
-      throw new Error('Mercado Pago card token response missing id');
-    }
-    return data.id;
-  }
-
-  /**
-   * @inheritdoc
-   */
-  async createCardPayment(
-    input: CreateMpCardPaymentInput,
-  ): Promise<MpCardPaymentResult> {
-    const payer: Record<string, unknown> = {
-      email: input.payerEmail,
-    };
-    if (input.customerId) {
-      payer.type = 'customer';
-      payer.id = input.customerId;
-    }
-    if (input.identificationType && input.identificationNumber) {
-      payer.identification = {
-        type: input.identificationType,
-        number: input.identificationNumber,
-      };
-    }
-
-    const response = await fetch(MP_PAYMENTS, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${input.accessToken}`,
-        'Content-Type': 'application/json',
-        Accept: 'application/json',
-        'X-Idempotency-Key': input.idempotencyKey,
-      },
-      body: JSON.stringify({
-        transaction_amount: input.amount,
-        token: input.token,
-        description: input.description,
-        installments: input.installments,
-        payment_method_id: input.paymentMethodId,
-        ...(input.issuerId ? { issuer_id: input.issuerId } : {}),
-        binary_mode: true,
-        external_reference: input.externalReference,
-        notification_url: input.notificationUrl,
-        payer,
-      }),
-    });
-    if (!response.ok) {
-      const body = await response.text().catch(() => '');
-      this.logger.warn(
-        `MP card payment failed status=${response.status} body=${body.slice(0, 400)}`,
-      );
-      throw new Error(`Mercado Pago payment failed (HTTP ${response.status})`);
-    }
-    const data = (await response.json()) as {
-      id?: number | string;
-      status?: string;
-      status_detail?: string;
-      payment_method_id?: string;
-      card?: { id?: string | number; last_four_digits?: string };
-    };
-    if (data.id === undefined || data.id === null || !data.status) {
-      throw new Error('Mercado Pago payment response missing id/status');
-    }
-    return {
-      id: String(data.id),
-      status: data.status,
-      cardId:
-        data.card?.id !== undefined && data.card?.id !== null
-          ? String(data.card.id)
-          : null,
-      lastFour: data.card?.last_four_digits ?? null,
-      paymentMethodId: data.payment_method_id ?? null,
-      statusDetail: data.status_detail ?? null,
-    };
-  }
-
-  /**
-   * @inheritdoc
-   */
   async createPreapprovalPlan(
     input: CreateMpPreapprovalPlanInput,
   ): Promise<{ id: string }> {
@@ -577,6 +385,31 @@ export class HttpMpAccountAdapter extends MpAccountPort {
   /**
    * @inheritdoc
    */
+  async cancelPreapproval(
+    accessToken: string,
+    preapprovalId: string,
+  ): Promise<void> {
+    const response = await fetch(
+      `${MP_PREAPPROVALS}/${encodeURIComponent(preapprovalId)}`,
+      {
+        method: 'PUT',
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+        },
+        body: JSON.stringify({ status: 'cancelled' }),
+      },
+    );
+    if (!response.ok) {
+      const body = await response.text().catch(() => '');
+      this.throwMpFailure('cancel preapproval', response.status, body);
+    }
+  }
+
+  /**
+   * @inheritdoc
+   */
   async getAuthorizedPayment(
     accessToken: string,
     authorizedPaymentId: string,
@@ -617,23 +450,6 @@ export class HttpMpAccountAdapter extends MpAccountPort {
     };
   }
 
-  private parseSavedCard(raw: unknown): MpSavedCard {
-    const data = raw as {
-      id?: string | number;
-      last_four_digits?: string;
-      payment_method?: { id?: string };
-      payment_method_id?: string;
-    };
-    if (data.id === undefined || data.id === null) {
-      throw new Error('Mercado Pago card response missing id');
-    }
-    return {
-      id: String(data.id),
-      lastFour: data.last_four_digits ?? null,
-      paymentMethodId:
-        data.payment_method?.id ?? data.payment_method_id ?? null,
-    };
-  }
 
   /**
    * Falla una llamada MP con el detalle de `cause` (sin secretos).

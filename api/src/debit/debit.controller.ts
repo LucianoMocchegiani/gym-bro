@@ -103,15 +103,4 @@ export class DebitController {
       toAuditActor(user),
     );
   }
-
-  @Post('debit-mandates/:mandateId/charge')
-  @HttpCode(HttpStatus.OK)
-  @RequirePermission('cashier.operate')
-  charge(
-    @CurrentTenant() tenantId: string,
-    @Param('mandateId', ParseUUIDPipe) mandateId: string,
-    @CurrentUser() user: AuthUser,
-  ): Promise<DebitEnrollResult> {
-    return this.debit.charge(tenantId, mandateId, toAuditActor(user), 'staff');
-  }
 }

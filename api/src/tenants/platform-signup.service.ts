@@ -274,7 +274,14 @@ export class PlatformSignupService {
     const remote = await this.mp.getPreapproval(accessToken, preapprovalId);
     const signup = await this.findSignup(remote.externalReference, remote.id);
     if (!signup) {
-      return this.emptyWebhook(remote.status);
+      return {
+        handled: false,
+        transactionItemId: null,
+        transactionId: null,
+        status: remote.status,
+        contractId: null,
+        reservationId: null,
+      };
     }
     const authorized =
       remote.status === 'authorized' || remote.status === 'active';

@@ -8,8 +8,6 @@ import { AdminShell } from '@/components/AdminShell';
 import { Panel } from '@/components/AdminUi';
 import { MemberPicker } from '@/components/MemberPicker';
 import { TenantPicker } from '@/components/TenantPicker';
-import { MpCardPaymentBrick } from '@/components/MpCardPaymentBrick';
-import type { MpCardTokenResult } from '@/components/MpCardPaymentBrick';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { MpCheckoutShare } from '@/components/MpCheckoutShare';
 import { ReceiptPanel } from '@/components/ReceiptPanel';
@@ -17,10 +15,7 @@ import { IconReceipt } from '@/components/RowActions';
 import { RequireStaff } from '@/components/RequireStaff';
 import { SkeletonPanel } from '@/components/Skeleton';
 import { ApiClientError, newIdempotencyKey } from '@/lib/api/client';
-import {
-  enrollDebitMandate,
-  getMpPublicKey,
-} from '@/lib/api/debit';
+import { enrollDebitMandate } from '@/lib/api/debit';
 import {
   pickMpCartCheckoutUrl,
   startStaffMpCartCheckout,
@@ -109,7 +104,6 @@ function CajaInner() {
   const [applyTrial, setApplyTrial] = useState(false);
   const [trialEligible, setTrialEligible] = useState(false);
   const [trialHint, setTrialHint] = useState<string | null>(null);
-  const [mpPublicKey, setMpPublicKey] = useState<string | null>(null);
   const [cobroBusy, setCobroBusy] = useState(false);
   const [cobroError, setCobroError] = useState<string | null>(null);
   const [cobroOk, setCobroOk] = useState<string | null>(null);
@@ -135,12 +129,6 @@ function CajaInner() {
       .then((m) => setMemberLabel(m.name?.trim() || m.email))
       .catch(() => undefined);
   }, [initialMemberId, isPlatform]);
-
-  useEffect(() => {
-    void getMpPublicKey()
-      .then((r) => setMpPublicKey(r.publicKey))
-      .catch(() => setMpPublicKey(null));
-  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -413,50 +401,6 @@ function CajaInner() {
       });
   }
 
-  async function onDebitToken(token: MpCardTokenResult) {
-    if (!memberId || cart.length !== 1 || cart[0].kind !== 'PACK') {
-      setCobroError('Débito solo con un pack MONTHLY');
-      return;
-    }
-    setCobroBusy(true);
-    setCobroError(null);
-    setCobroOk(null);
-    setReceipt(null);
-    try {
-      const result = await enrollDebitMandate(memberId, {
-        packId: cart[0].refId,
-        cardToken: token.token,
-        paymentMethodId: token.paymentMethodId,
-        issuerId: token.issuerId,
-        installments: token.installments,
-        identificationType: token.identificationType,
-        identificationNumber: token.identificationNumber,
-        chargeNow: true,
-        idempotencyKey: newIdempotencyKey('debit-enroll'),
-      });
-      setCart([]);
-      setDebitWanted(false);
-      setCobroOk('Cobro + débito automático activado.');
-      if (result.transactionId) {
-        setCashTransactionId(result.transactionId);
-        try {
-          setReceipt(await getReceiptByTransaction(result.transactionId));
-        } catch {
-          setReceiptError('No se pudo cargar el comprobante');
-        }
-      }
-    } catch (err) {
-      const message =
-        err instanceof ApiClientError
-          ? err.message
-          : 'No se pudo inscribir el débito';
-      setCobroError(message);
-      throw new Error(message);
-    } finally {
-      setCobroBusy(false);
-    }
-  }
-
   async function onCobro(e: FormEvent) {
     e.preventDefault();
     if (isPlatform ? !billingTenantId : !memberId) {
@@ -482,6 +426,25 @@ function CajaInner() {
     setReceiptError(null);
     setReceipt(null);
     try {
+      if (debitWanted && debitEligible && memberId && cart[0]?.kind === 'PACK') {
+        const result = await enrollDebitMandate(memberId, {
+          packId: cart[0].refId,
+          chargeNow: true,
+          idempotencyKey: newIdempotencyKey('debit-enroll'),
+        });
+        const url = result.checkoutUrl;
+        if (!url) {
+          throw new Error('Suscripción creada sin URL (revisá cuenta MP)');
+        }
+        setMpCheckoutUrl(url);
+        setMpTransactionId(null);
+        setCobroOk(
+          'Link de suscripción MP. El socio autoriza ahí; el contrato y el mandato entran por webhook.',
+        );
+        setCart([]);
+        setDebitWanted(false);
+        return;
+      }
       if (cobroMedio === 'MP') {
         const result = isPlatform
           ? await startPlatformMpCartCheckout(billingTenantId, {
@@ -637,15 +600,7 @@ function CajaInner() {
       ) : null}
 
       {vista === 'debitos' && !isPlatform ? (
-        <CajaDebitPanel
-          memberId={memberId}
-          onNeedReceipt={(id) => {
-            setVista('cobro');
-            void getReceiptByTransaction(id)
-              .then(setReceipt)
-              .catch(() => setReceiptError('No se pudo cargar el comprobante'));
-          }}
-        />
+        <CajaDebitPanel memberId={memberId} />
       ) : (
       <div className="cash-layout">
         <Panel
@@ -882,23 +837,10 @@ function CajaInner() {
               </fieldset>
             ) : null}
 
-            {debitWanted && debitEligible && mpPublicKey ? (
-              <div>
-                <p className="muted small">
-                  Completá la tarjeta. Se cobra este mes y queda el débito para
-                  el vencimiento.
-                </p>
-                <MpCardPaymentBrick
-                  publicKey={mpPublicKey}
-                  amount={total}
-                  onToken={onDebitToken}
-                />
-              </div>
-            ) : null}
-
-            {debitWanted && debitEligible && !mpPublicKey ? (
-              <p className="error">
-                Conectá Mercado Pago en Config para tokenizar la tarjeta.
+            {debitWanted && debitEligible ? (
+              <p className="muted small">
+                Se genera un link de suscripción Mercado Pago (no se guarda la
+                tarjeta en Faciliter). El primer cobro es al autorizar.
               </p>
             ) : null}
 
@@ -951,38 +893,40 @@ function CajaInner() {
               ) : (
                 <span />
               )}
-              {debitWanted ? null : (
-                <button
-                  type="submit"
-                  className="primary"
-                  disabled={
-                    cobroBusy ||
-                    cart.length === 0 ||
-                    (isPlatform ? !billingTenantId : !memberId)
-                  }
-                  title={
-                    isPlatform
-                      ? !billingTenantId
-                        ? 'Elegí el gimnasio de la lista de búsqueda'
-                        : cart.length === 0
-                          ? 'Agregá al menos un ítem al carrito'
-                          : undefined
-                      : !memberId
-                        ? 'Elegí el afiliado de la lista de búsqueda'
-                        : cart.length === 0
-                          ? 'Agregá al menos un ítem al carrito'
-                          : undefined
-                  }
-                >
-                  {cobroBusy
-                    ? cobroMedio === 'MP'
+              <button
+                type="submit"
+                className="primary"
+                disabled={
+                  cobroBusy ||
+                  cart.length === 0 ||
+                  (isPlatform ? !billingTenantId : !memberId)
+                }
+                title={
+                  isPlatform
+                    ? !billingTenantId
+                      ? 'Elegí el gimnasio de la lista de búsqueda'
+                      : cart.length === 0
+                        ? 'Agregá al menos un ítem al carrito'
+                        : undefined
+                    : !memberId
+                      ? 'Elegí el afiliado de la lista de búsqueda'
+                      : cart.length === 0
+                        ? 'Agregá al menos un ítem al carrito'
+                        : undefined
+                }
+              >
+                {cobroBusy
+                  ? debitWanted
+                    ? 'Generando link de débito…'
+                    : cobroMedio === 'MP'
                       ? 'Generando link…'
                       : 'Cobrando…'
+                  : debitWanted
+                    ? 'Generar link de débito'
                     : cobroMedio === 'MP'
                       ? 'Generar link MP'
                       : `Cobrar en efectivo${cart.length > 1 ? ` (${cart.length})` : ''}`}
-                </button>
-              )}
+              </button>
             </div>
           </form>
         </Panel>

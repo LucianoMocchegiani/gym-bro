@@ -6,8 +6,8 @@ import { ListQueryDto } from '../../common/list';
  */
 export class ListDebitMandatesDto extends ListQueryDto {
   @IsOptional()
-  @IsIn(['due', 'retrying', 'failed', 'all'])
-  bucket?: 'due' | 'retrying' | 'failed' | 'all';
+  @IsIn(['due', 'pending', 'retrying', 'failed', 'all'])
+  bucket?: 'due' | 'pending' | 'retrying' | 'failed' | 'all';
 
   @IsOptional()
   @IsUUID()

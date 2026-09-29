@@ -2,17 +2,13 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
-import { MpCardPaymentBrick } from '@/components/MpCardPaymentBrick';
-import type { MpCardTokenResult } from '@/components/MpCardPaymentBrick';
 import { Panel } from '@/components/AdminUi';
 import { SkeletonPanel } from '@/components/Skeleton';
 import { ApiClientError, newIdempotencyKey } from '@/lib/api/client';
 import {
   cancelDebitMandate,
-  chargeDebitMandateNow,
   enrollDebitMandate,
   getMemberDebitView,
-  getMpPublicKey,
   listDebitMandates,
   updateDebitMandatePack,
 } from '@/lib/api/debit';
@@ -27,14 +23,12 @@ import { formatMoney } from '@/lib/cash-labels';
 type Bucket = 'due' | 'retrying' | 'failed' | 'all';
 
 /**
- * Pestaña Débitos de Caja: cola + panel del afiliado (CU-PAG-010).
+ * Pestaña Débitos de Caja: cola + link de suscripción MP (CU-PAG-010).
  */
 export function CajaDebitPanel({
   memberId,
-  onNeedReceipt,
 }: {
   memberId: string;
-  onNeedReceipt: (transactionId: string) => void;
 }) {
   const [bucket, setBucket] = useState<Bucket>('due');
   const [queue, setQueue] = useState<DebitMandateDetail[]>([]);
@@ -46,12 +40,12 @@ export function CajaDebitPanel({
   const [viewLoading, setViewLoading] = useState(false);
 
   const [packs, setPacks] = useState<PackSummary[]>([]);
-  const [publicKey, setPublicKey] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [confirmCancel, setConfirmCancel] = useState(false);
   const [nextPackId, setNextPackId] = useState('');
+  const [copyKey, setCopyKey] = useState<string | null>(null);
 
   const loadQueue = useCallback(async () => {
     setQueueLoading(true);
@@ -103,26 +97,28 @@ export function CajaDebitPanel({
 
   useEffect(() => {
     void listActivePacks().then((r) => setPacks(r.items));
-    void getMpPublicKey()
-      .then((r) => setPublicKey(r.publicKey))
-      .catch(() => setPublicKey(null));
   }, []);
 
   const monthlyPacks = packs.filter((p) => p.billingPeriod === 'MONTHLY');
   const mandate = view?.mandate ?? null;
-  const authorizePackId =
+  const enrollPackId =
     nextPackId || view?.currentMonthly?.packId || monthlyPacks[0]?.id || '';
-  const authorizeAmount =
-    monthlyPacks.find((p) => p.id === authorizePackId)?.price ??
-    view?.mandate?.packPrice ??
-    1000;
 
   async function refreshAll() {
     await Promise.all([loadQueue(), loadView()]);
   }
 
-  async function onAuthorize(token: MpCardTokenResult) {
-    if (!memberId || !authorizePackId) {
+  async function copyUrl(url: string) {
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopyKey(url);
+    } catch {
+      setError('No se pudo copiar el link');
+    }
+  }
+
+  async function onGenerateLink(chargeNow: boolean) {
+    if (!memberId || !enrollPackId) {
       setError('Elegí afiliado y pack MONTHLY');
       return;
     }
@@ -130,48 +126,22 @@ export function CajaDebitPanel({
     setError(null);
     setMessage(null);
     try {
-      await enrollDebitMandate(memberId, {
-        packId: authorizePackId,
-        cardToken: token.token,
-        paymentMethodId: token.paymentMethodId,
-        issuerId: token.issuerId,
-        installments: token.installments,
-        identificationType: token.identificationType,
-        identificationNumber: token.identificationNumber,
-        chargeNow: false,
-        idempotencyKey: newIdempotencyKey('debit-auth'),
+      const result = await enrollDebitMandate(memberId, {
+        packId: enrollPackId,
+        chargeNow,
+        idempotencyKey: newIdempotencyKey('debit-enroll'),
       });
-      setMessage('Tarjeta autorizada. El débito corre el día de vencimiento.');
-      await refreshAll();
-    } catch (err) {
-      const message =
-        err instanceof ApiClientError
-          ? err.message
-          : 'No se pudo autorizar la tarjeta';
-      setError(message);
-      throw new Error(message);
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function onChargeNow() {
-    if (!mandate) {
-      return;
-    }
-    setBusy(true);
-    setError(null);
-    setMessage(null);
-    try {
-      const result = await chargeDebitMandateNow(mandate.id);
-      setMessage('Cobro enviado.');
-      if (result.transactionId) {
-        onNeedReceipt(result.transactionId);
-      }
+      setMessage(
+        result.checkoutUrl
+          ? 'Link de suscripción listo. El socio autoriza en Mercado Pago.'
+          : 'Mandato creado.',
+      );
       await refreshAll();
     } catch (err) {
       setError(
-        err instanceof ApiClientError ? err.message : 'No se pudo cobrar',
+        err instanceof ApiClientError
+          ? err.message
+          : 'No se pudo generar el link',
       );
     } finally {
       setBusy(false);
@@ -206,7 +176,7 @@ export function CajaDebitPanel({
     setError(null);
     try {
       await updateDebitMandatePack(mandate.id, nextPackId);
-      setMessage('Próximo débito actualizado.');
+      setMessage('Nuevo link para el próximo pack. El socio tiene que autorizar de nuevo.');
       await refreshAll();
     } catch (err) {
       setError(
@@ -219,13 +189,15 @@ export function CajaDebitPanel({
     }
   }
 
+  const shareUrl = mandate?.initPoint ?? null;
+
   return (
     <div className="cash-layout">
-      <Panel title="Cola" description="A debitar, reintentos y fallidos.">
+      <Panel title="Cola" description="Pendientes de autorizar, activos y fallidos.">
         <div className="cash-tabs" role="tablist">
           {(
             [
-              ['due', 'Hoy / vencidos'],
+              ['due', 'Pendiente / link'],
               ['retrying', 'Reintentando'],
               ['failed', 'Fallidos'],
               ['all', 'Todos'],
@@ -257,8 +229,9 @@ export function CajaDebitPanel({
                     {row.memberName || row.memberEmail}
                   </p>
                   <p className="muted small">
-                    {row.packName} · vence {row.nextChargeOn} · {row.status}
-                    {row.attemptCount > 0 ? ` (${row.attemptCount}/3)` : ''}
+                    {row.packName}
+                    {row.nextChargeOn ? ` · próximo ${row.nextChargeOn}` : ''} ·{' '}
+                    {row.status}
                   </p>
                 </div>
               </li>
@@ -271,7 +244,7 @@ export function CajaDebitPanel({
         title="Afiliado"
         description={
           memberId
-            ? 'Estado del mandato, cobrar ahora o autorizar tarjeta.'
+            ? 'Link de suscripción Mercado Pago, baja o cambio de pack.'
             : 'Elegí un afiliado arriba.'
         }
       >
@@ -287,13 +260,35 @@ export function CajaDebitPanel({
           <div className="admin-form">
             <p>
               Mandato: <strong>{mandate.status}</strong>
-              {mandate.cardLastFour ? ` · ****${mandate.cardLastFour}` : ''}
             </p>
             <p className="muted small">
-              Próximo cobro: {mandate.nextChargeOn} · {formatMoney(mandate.packPrice)}
+              {mandate.nextChargeOn
+                ? `Próximo cobro (espejo): ${mandate.nextChargeOn} · `
+                : ''}
+              {formatMoney(mandate.packPrice)}
             </p>
             {mandate.lastError ? (
               <p className="error small">{mandate.lastError}</p>
+            ) : null}
+            {shareUrl && mandate.status === 'PENDING_CHECKOUT' ? (
+              <div className="row-actions">
+                <button
+                  type="button"
+                  className="btn primary"
+                  onClick={() =>
+                    window.open(shareUrl, '_blank', 'noopener,noreferrer')
+                  }
+                >
+                  Abrir checkout MP
+                </button>
+                <button
+                  type="button"
+                  className="btn ghost"
+                  onClick={() => void copyUrl(shareUrl)}
+                >
+                  {copyKey === shareUrl ? 'Copiado' : 'Copiar link'}
+                </button>
+              </div>
             ) : null}
             <label>
               Próximo pack
@@ -319,14 +314,19 @@ export function CajaDebitPanel({
                   Guardar pack
                 </button>
               ) : null}
-              <button
-                type="button"
-                className="btn primary"
-                disabled={busy}
-                onClick={() => void onChargeNow()}
-              >
-                Cobrar ahora
-              </button>
+              {mandate.status === 'PENDING_CHECKOUT' ||
+              mandate.status === 'FAILED' ? (
+                <button
+                  type="button"
+                  className="btn primary"
+                  disabled={busy}
+                  onClick={() =>
+                    void onGenerateLink(!view?.currentMonthly)
+                  }
+                >
+                  Regenerar link
+                </button>
+              ) : null}
               <button
                 type="button"
                 className="btn ghost"
@@ -340,38 +340,71 @@ export function CajaDebitPanel({
         ) : null}
 
         {memberId && !viewLoading && !mandate && view?.currentMonthly ? (
-          <div>
+          <div className="admin-form">
             <p className="small">
               Pack vigente: {view.currentMonthly.packName} (vence{' '}
               {new Date(view.currentMonthly.endsAt).toLocaleDateString('es-AR')}
-              ). Autorizá una tarjeta; no se cobra ahora.
+              ). Generá el link; el primer cobro MP es en el vencimiento.
             </p>
-            {publicKey && authorizePackId ? (
-              <MpCardPaymentBrick
-                publicKey={publicKey}
-                amount={authorizeAmount}
-                onToken={onAuthorize}
-              />
-            ) : (
-              <p className="muted small">
-                Conectá Mercado Pago en Config para tokenizar la tarjeta.
-              </p>
-            )}
+            <label>
+              Pack a debitar
+              <select
+                value={enrollPackId}
+                onChange={(e) => setNextPackId(e.target.value)}
+              >
+                {monthlyPacks.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.name} ({formatMoney(p.price)})
+                  </option>
+                ))}
+              </select>
+            </label>
+            <button
+              type="button"
+              className="btn primary"
+              disabled={busy || !enrollPackId}
+              onClick={() => void onGenerateLink(false)}
+            >
+              Generar link de débito
+            </button>
           </div>
         ) : null}
 
         {memberId && !viewLoading && !mandate && !view?.currentMonthly ? (
-          <p className="muted small">
-            Sin mandato y sin pack MONTHLY vigente. Cobra un MONTHLY con
-            Mercado Pago y tildá débito en la pestaña Cobro.
-          </p>
+          <div className="admin-form">
+            <p className="muted small">
+              Sin pack MONTHLY vigente. El link cobra el primer mes al autorizar
+              en Mercado Pago (mismo flujo que Caja con tilde débito).
+            </p>
+            <label>
+              Pack MONTHLY
+              <select
+                value={enrollPackId}
+                onChange={(e) => setNextPackId(e.target.value)}
+              >
+                {monthlyPacks.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.name} ({formatMoney(p.price)})
+                  </option>
+                ))}
+              </select>
+            </label>
+            <button
+              type="button"
+              className="btn primary"
+              disabled={busy || !enrollPackId}
+              onClick={() => void onGenerateLink(true)}
+            >
+              Generar link (cobrar al autorizar)
+            </button>
+          </div>
         ) : null}
       </Panel>
 
       <ConfirmDialog
         open={confirmCancel}
         title="Dar de baja el débito"
-        description="No se volverá a cobrar solo. El mes ya pagado sigue hasta su vencimiento."
+        description="Se cancela la suscripción en Mercado Pago. El mes ya pagado sigue hasta su vencimiento."
         confirmLabel="Dar de baja"
         tone="danger"
         busy={busy}

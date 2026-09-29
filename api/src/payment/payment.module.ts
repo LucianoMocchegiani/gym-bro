@@ -18,6 +18,7 @@ import { PaymentController } from './payment.controller';
 import { PaymentWebhookController } from './payment-webhook.controller';
 import { MercadoPagoAccountController } from './mercadopago-account.controller';
 import { TenantsModule } from '../tenants/tenants.module';
+import { DebitModule } from '../debit/debit.module';
 
 @Module({
   imports: [
@@ -30,6 +31,7 @@ import { TenantsModule } from '../tenants/tenants.module';
     PacksModule,
     RolesModule,
     forwardRef(() => TenantsModule),
+    forwardRef(() => DebitModule),
   ],
   controllers: [
     PaymentController,
