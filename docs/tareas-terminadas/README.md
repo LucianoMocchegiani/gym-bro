@@ -16,6 +16,7 @@ La creación de registros sigue la skill:
 
 ## Índice
 
+- [2026-09-29 — Alta self-serve de gym desde la landing](./2026-09-29-self-serve-landing-gym.md)
 - [2026-09-29 — Modo limitado tras gracia de plan Faciliter](./2026-09-29-modo-limitado-plan-faciliter.md)
 - [2026-09-29 — Plan del gym y prueba de 30 días en Caja](./2026-09-29-plan-uso-prueba-caja.md)
 - [2026-09-28 — Plataforma tenant admin y handoff de impersonación](./2026-09-28-plataforma-tenant-admin-handoff.md)
