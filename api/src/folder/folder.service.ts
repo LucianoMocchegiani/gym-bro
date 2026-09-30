@@ -12,6 +12,10 @@ import { FILE_STORAGE_PORT } from '../file-storage/file-storage.port';
 import type { FileStoragePort } from '../file-storage/file-storage.port';
 import { PrismaService } from '../prisma/prisma.service';
 import { PermissionsService } from '../roles/permissions.service';
+import {
+  FOLDER_MAX_FILE_BYTES,
+  FOLDER_MAX_ITEMS,
+} from './folder.constants';
 import type {
   FolderFileBytes,
   FolderItemDetail,
@@ -26,15 +30,14 @@ const IMAGE_TYPES = new Set([
   'image/gif',
 ]);
 const FOLDER_TYPES = new Set([...IMAGE_TYPES, 'application/pdf']);
-const MAX_SIZE = 10 * 1024 * 1024;
 
 type OwnerRef = { kind: FolderOwnerKind; id: string };
 
 /**
  * Carpeta de notas y files de un socio o un staff.
  *
- * @remarks RN-FOL-001..004. Alta solo staff (web). Lectura: staff con permiso
- * o el dueño (`/me`). Files vía R2 sin URL pública.
+ * @remarks RN-FOL-001..006. Alta solo staff (web). Lectura: staff con permiso
+ * o el dueño (`/me`). Files vía R2 sin URL pública. Topes: 10 ítems, 5 MB.
  */
 @Injectable()
 export class FolderService {
@@ -144,6 +147,7 @@ export class FolderService {
   ): Promise<FolderItemDetail> {
     await this.assertWrite(user, tenantId, owner.kind);
     await this.assertOwnerExists(tenantId, owner);
+    await this.assertItemQuota(tenantId, owner);
     const labelId = await this.resolveLabelId(tenantId, input.labelId);
     const row = await this.prisma.folderItem.create({
       data: {
@@ -173,13 +177,14 @@ export class FolderService {
   ): Promise<FolderItemDetail> {
     await this.assertWrite(user, tenantId, owner.kind);
     await this.assertOwnerExists(tenantId, owner);
+    await this.assertItemQuota(tenantId, owner);
     if (!FOLDER_TYPES.has(file.mimetype)) {
       throw new BadRequestException(
         'Tipo no permitido. Usá PDF, JPG, PNG, WebP o GIF.',
       );
     }
-    if (file.size > MAX_SIZE) {
-      throw new BadRequestException('El archivo supera 10 MB.');
+    if (file.size > FOLDER_MAX_FILE_BYTES) {
+      throw new BadRequestException('El archivo supera 5 MB.');
     }
     const labelId = await this.resolveLabelId(tenantId, input.labelId);
     const ext = this.extFromMime(file.mimetype);
@@ -280,6 +285,26 @@ export class FolderService {
       contentType: row.mime ?? obj.contentType,
       filename: row.originalFilename ?? 'archivo',
     };
+  }
+
+  /**
+   * Máximo 10 ítems (nota + file) por dueño. RN-FOL-006.
+   */
+  private async assertItemQuota(
+    tenantId: string,
+    owner: OwnerRef,
+  ): Promise<void> {
+    const count = await this.prisma.folderItem.count({
+      where:
+        owner.kind === 'member'
+          ? { tenantId, memberId: owner.id }
+          : { tenantId, staffUserId: owner.id },
+    });
+    if (count >= FOLDER_MAX_ITEMS) {
+      throw new BadRequestException(
+        `La carpeta admite hasta ${FOLDER_MAX_ITEMS} ítems. Eliminá uno para cargar otro.`,
+      );
+    }
   }
 
   private async listItems(

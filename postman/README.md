@@ -39,7 +39,7 @@ Todos los `GET` que devuelven colecciones (Tenants, Roles, Staff, Audit, Members
 { "items": [...], "page": 1, "pageSize": 20, "total": 0, "hasMore": false }
 ```
 
-Carpeta **Folder**: etiquetas, notas/files, `GET /me/folder`. La carpeta es un **array** (no paginado). Files con GET autenticado.
+Carpeta **Folder**: etiquetas, notas/files, `GET /me/folder`. Array (no paginado). Máx. **10 ítems** por dueño; file **5 MB**; nota 20.000 caracteres. Files con GET autenticado.
 
 Query params comunes (ya incluidos en cada request, algunos deshabilitados por default):
 

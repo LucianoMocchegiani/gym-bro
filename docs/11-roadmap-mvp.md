@@ -208,7 +208,7 @@ Detalle: [14-auditoria-roadmap-vs-codigo-2026-08-13.md](./14-auditoria-roadmap-v
   - `GET /me/account?coverage=current`; Inicio agrupa por pack (créditos sumados; oculta drop-in en 0), deuda, próximas reservas
   - Nav real: **Inicio · Acceso · Ajustes** (tema claro/oscuro)
 - [x] Documentos (carpeta, lectura)
-  - Inicio → Documentos; visor Markdown; `GET /me/folder` (socio y staff)
+  - Inicio → Documentos; visor Markdown; 10 ítems / 5 MB; `GET /me/folder`
 - [x] Acceso + Credenciales (SSI)
   - Escanear OID4VCI/VP + bandeja offers (`accept`/`fail`) + `identity_core_dart`
   - Kuatia: defaults `issuer.kuatia.xyz` / `verifier.kuatia.xyz` (`KUATIA_*_PUBLIC_URL`)

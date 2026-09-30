@@ -1,4 +1,8 @@
 import { IsOptional, IsString, IsUUID, MaxLength, MinLength } from 'class-validator';
+import {
+  FOLDER_NOTE_BODY_MAX,
+  FOLDER_NOTE_TITLE_MAX,
+} from '../folder.constants';
 
 /** Alta de etiqueta del gym. */
 export class CreateFolderLabelDto {
@@ -12,12 +16,12 @@ export class CreateFolderLabelDto {
 export class CreateFolderNoteDto {
   @IsOptional()
   @IsString()
-  @MaxLength(200)
+  @MaxLength(FOLDER_NOTE_TITLE_MAX)
   title?: string;
 
   @IsString()
   @MinLength(1)
-  @MaxLength(20000)
+  @MaxLength(FOLDER_NOTE_BODY_MAX)
   body!: string;
 
   @IsOptional()

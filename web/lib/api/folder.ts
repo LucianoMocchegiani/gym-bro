@@ -1,9 +1,16 @@
 /**
  * Carpeta de notas y files (socio o staff).
+ *
+ * Topes alineados con `api/src/folder/folder.constants.ts` (RN-FOL-006).
  */
 
 import { apiRequest } from '@/lib/api/client';
 import { readStaffSession } from '@/lib/auth/session';
+
+export const FOLDER_MAX_ITEMS = 10;
+export const FOLDER_MAX_FILE_BYTES = 5 * 1024 * 1024;
+export const FOLDER_NOTE_TITLE_MAX = 200;
+export const FOLDER_NOTE_BODY_MAX = 20_000;
 
 export type FolderOwnerKind = 'member' | 'staff';
 

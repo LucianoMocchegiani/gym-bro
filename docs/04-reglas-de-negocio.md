@@ -120,6 +120,7 @@ Formato: **RN-MODULO-NNN** — enunciado — excepciones.
 | RN-FOL-003 | Las **etiquetas** las define el gym (lista por tenant); Faciliter no impone categorías. |
 | RN-FOL-004 | Los files de carpeta **no** se sirven por URL pública de R2; se bajan con JWT. Las fotos de ficha siguen en `POST /upload`. |
 | RN-FOL-005 | El cuerpo de la nota se guarda como **Markdown** y se muestra en un visor (Admin y app). El HTML crudo no se ejecuta. |
+| RN-FOL-006 | Por carpeta (socio o staff): máx. **10 ítems** (nota + PDF + imagen). File máx. **5 MB**. Nota: título 200, cuerpo 20.000 caracteres. |
 
 ---
 

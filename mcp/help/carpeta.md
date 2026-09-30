@@ -6,7 +6,7 @@ El asistente **explica**. **No sube archivos ni escribe notas.** Eso es en el pa
 
 ## Qué es
 
-Cada **afiliado** y cada **staff** tiene una carpeta: lista de **notas** (Markdown) y **archivos** (PDF o imagen: JPG, PNG, WebP, GIF, máx. 10 MB).
+Cada **afiliado** y cada **staff** tiene una carpeta: hasta **10 ítems** (notas Markdown + PDF o imagen). File máx. **5 MB**. Nota: 20.000 caracteres. Tipos: JPG, PNG, WebP, GIF, PDF.
 
 Las **etiquetas** (Médico, Rutina, etc.) las arma **el gym**: no hay categorías fijas de Faciliter. En el modal: lista + “Crear etiqueta”.
 

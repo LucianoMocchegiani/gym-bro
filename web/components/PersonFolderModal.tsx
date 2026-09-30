@@ -20,6 +20,10 @@ import {
   downloadFolderFile,
   listFolderItems,
   listFolderLabels,
+  FOLDER_MAX_FILE_BYTES,
+  FOLDER_MAX_ITEMS,
+  FOLDER_NOTE_BODY_MAX,
+  FOLDER_NOTE_TITLE_MAX,
   type FolderItemDetail,
   type FolderLabelDetail,
   type FolderOwnerKind,
@@ -34,10 +38,12 @@ const FOLDER_FILE_ACCEPT =
 function FolderFileUpload({
   file,
   onFileSelect,
+  onReject,
   disabled,
 }: {
   file: File | null;
   onFileSelect: (file: File | null) => void;
+  onReject?: (message: string) => void;
   disabled?: boolean;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
@@ -61,6 +67,11 @@ function FolderFileUpload({
   function handleChange(e: ChangeEvent<HTMLInputElement>) {
     const next = e.target.files?.[0];
     if (!next) {
+      return;
+    }
+    if (next.size > FOLDER_MAX_FILE_BYTES) {
+      onReject?.('El archivo supera 5 MB.');
+      e.target.value = '';
       return;
     }
     onFileSelect(next);
@@ -129,7 +140,7 @@ function FolderFileUpload({
 
   return (
     <div className="image-upload">
-      <span className="muted small">PDF o imagen (máx. 10 MB)</span>
+      <span className="muted small">PDF o imagen (máx. 5 MB)</span>
       {previewUrl ? (
         <div
           className="image-upload-preview"
@@ -215,6 +226,7 @@ export function PersonFolderModal({
   const [file, setFile] = useState<File | null>(null);
   const [busy, setBusy] = useState(false);
   const [viewNote, setViewNote] = useState<FolderItemDetail | null>(null);
+  const atCapacity = items.length >= FOLDER_MAX_ITEMS;
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -239,7 +251,7 @@ export function PersonFolderModal({
 
   async function addNote() {
     const body = noteBody.trim();
-    if (!body) {
+    if (!body || items.length >= FOLDER_MAX_ITEMS) {
       return;
     }
     setBusy(true);
@@ -280,7 +292,7 @@ export function PersonFolderModal({
   }
 
   async function addFile() {
-    if (!file) {
+    if (!file || items.length >= FOLDER_MAX_ITEMS) {
       return;
     }
     setBusy(true);
@@ -326,6 +338,15 @@ export function PersonFolderModal({
     <div className="admin-stack">
       {error ? <p className="error">{error}</p> : null}
       {loading ? <p className="muted">Cargando…</p> : null}
+      <p className="muted small">
+        {items.length} / {FOLDER_MAX_ITEMS} ítems (nota o archivo). Máx. 5 MB
+        por file.
+      </p>
+      {atCapacity ? (
+        <p className="warn">
+          Carpeta llena. Eliminá un ítem para cargar otro.
+        </p>
+      ) : null}
 
       <Panel title="Etiqueta">
         <div className="admin-form">
@@ -371,7 +392,8 @@ export function PersonFolderModal({
             <input
               value={noteTitle}
               onChange={(e) => setNoteTitle(e.target.value)}
-              disabled={busy}
+              disabled={busy || atCapacity}
+              maxLength={FOLDER_NOTE_TITLE_MAX}
             />
           </label>
           <label>
@@ -380,7 +402,8 @@ export function PersonFolderModal({
               value={noteBody}
               onChange={(e) => setNoteBody(e.target.value)}
               rows={8}
-              disabled={busy}
+              disabled={busy || atCapacity}
+              maxLength={FOLDER_NOTE_BODY_MAX}
               placeholder={'# Título\n\n- Lunes: pecho\n- Miércoles: piernas'}
             />
           </label>
@@ -392,7 +415,7 @@ export function PersonFolderModal({
             type="button"
             className="primary"
             onClick={() => void addNote()}
-            disabled={busy || !noteBody.trim()}
+            disabled={busy || atCapacity || !noteBody.trim()}
           >
             Guardar nota
           </button>
@@ -404,13 +427,14 @@ export function PersonFolderModal({
           <FolderFileUpload
             file={file}
             onFileSelect={setFile}
-            disabled={busy}
+            onReject={setError}
+            disabled={busy || atCapacity}
           />
           <button
             type="button"
             className="primary"
             onClick={() => void addFile()}
-            disabled={busy || !file}
+            disabled={busy || atCapacity || !file}
           >
             Subir archivo
           </button>

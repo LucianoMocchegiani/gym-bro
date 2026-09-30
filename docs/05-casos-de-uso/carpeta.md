@@ -11,11 +11,13 @@
 
 1. En la grilla, abre **Carpeta**.
 2. Crea etiqueta si hace falta, o elige una existente.
-3. Guarda una **nota** (**Markdown**: títulos `#`, listas `-`) o sube **PDF/imagen**.
+3. Guarda una **nota** (**Markdown**: títulos `#`, listas `-`; máx. 20.000 caracteres) o sube **PDF/imagen** (máx. 5 MB).
 4. El file queda en R2 con key privada; no usa `POST /upload`.
 5. En **Contenido** solo se listan título/nombre y fecha; **Abrir** muestra el visor (nota) o el file.
+6. Si ya hay **10 ítems**, hay que borrar uno para cargar otro.
 
 **Postcondición:** Ítem visible en Admin y en **Documentos** del dueño (app).
+**Errores:** 400 si se supera cupo o peso.
 
 ## CU-FOL-002 Ver / borrar carpeta ajena (staff)
 

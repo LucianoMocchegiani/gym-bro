@@ -20,6 +20,7 @@ import { RequirePermission } from '../roles/decorators/require-permission.decora
 import { CurrentTenant } from '../tenant/decorators/current-tenant.decorator';
 import { RequireTenantAuth } from '../tenant/decorators/require-tenant-auth.decorator';
 import { CreateFolderLabelDto, CreateFolderNoteDto } from './dto/folder.dto';
+import { FOLDER_MAX_FILE_BYTES } from './folder.constants';
 import { FolderService } from './folder.service';
 import type { FolderItemDetail, FolderLabelDetail } from './folder.types';
 
@@ -92,7 +93,7 @@ export class FolderController {
   @Post('members/:memberId/folder/files')
   @RequirePermission('members.write')
   @UseInterceptors(
-    FileInterceptor('file', { limits: { fileSize: 10 * 1024 * 1024 } }),
+    FileInterceptor('file', { limits: { fileSize: FOLDER_MAX_FILE_BYTES } }),
   )
   createMemberFile(
     @CurrentTenant() tenantId: string,
@@ -178,7 +179,7 @@ export class FolderController {
   @Post('staff/:staffId/folder/files')
   @RequirePermission('staff.write')
   @UseInterceptors(
-    FileInterceptor('file', { limits: { fileSize: 10 * 1024 * 1024 } }),
+    FileInterceptor('file', { limits: { fileSize: FOLDER_MAX_FILE_BYTES } }),
   )
   createStaffFile(
     @CurrentTenant() tenantId: string,

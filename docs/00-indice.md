@@ -56,6 +56,8 @@ Reglas relacionadas
 | [20-handoff-impersonacion-entre-subdominios.md](./20-handoff-impersonacion-entre-subdominios.md) | Impersonación plataforma→gym: cookie `impersonation_handoff` + `POST /auth/from-handoff`. QA con HTTPS | Hecho |
 | [mobile/isar-wallet.md](./mobile/isar-wallet.md) | Wallet local (Isar): VCs en el device, secreto, workaround AGP 8 | Viva |
 | [credenciales-demo.md](./credenciales-demo.md) | Cuentas seed locales (Plataforma `admin` / Staff / Member) | Viva |
+| [costos/r2-cloudflare.md](./costos/r2-cloudflare.md) | Precios Cloudflare R2 (free tier y post-free) | Viva |
+| [costos/carpeta-documentos.md](./costos/carpeta-documentos.md) | Límites y costo de carpeta (notas/files, escenario 200 socios) | Viva |
 | [99-backlog-post-mvp.md](./99-backlog-post-mvp.md) | Índice de diferidos; detalle en [99-backlog-post-mvp/](./99-backlog-post-mvp/) | Viva |
 | [ideas/](./ideas/) | Ideas crudas (charlas, notas) antes de definir módulo | Viva |
 | [tareas-terminadas/](./tareas-terminadas/) | Registro cronológico de tareas implementadas | Viva |

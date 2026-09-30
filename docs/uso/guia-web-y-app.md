@@ -386,7 +386,7 @@ Todavía puede no tener pack: lo cobrás en Caja (§11) o él compra en la Tiend
 
 Estados: **Activo / Suspendido / Inactivo**. Suspender corta el acceso; no es borrar la cuenta.
 
-**Carpeta** (ícono en la grilla): notas y PDF/imagen del socio. Las etiquetas las arma el gym. El socio las ve en la app → Inicio → **Documentos**. Lo mismo existe en Staff.
+**Carpeta** (ícono en la grilla): notas y PDF/imagen del socio (máx. 10 ítems, 5 MB por file). Las etiquetas las arma el gym. El socio las ve en la app → Inicio → **Documentos**. Lo mismo existe en Staff.
 
 **Estado de cuenta** (otro modal): contratos, acceso libre, créditos, deuda, próximas reservas (si la clase se pagó con crédito o drop-in). Es la contrapantalla de Inicio en la app.
 

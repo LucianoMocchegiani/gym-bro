@@ -53,3 +53,4 @@
 - El free tier solo aplica a Standard storage (no Infrequent Access)
 - Las lecturas de imágenes en la web admin son Class B (barato)
 - Las subidas de imágenes son Class A (más caro pero gratis hasta 1M/mes)
+- Carpeta de socios/staff (notas + PDF, no foto de ficha): [carpeta-documentos.md](./carpeta-documentos.md)
