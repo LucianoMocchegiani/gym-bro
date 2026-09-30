@@ -16,6 +16,7 @@ La creación de registros sigue la skill:
 
 ## Índice
 
+- [2026-09-30 — Borrar en R2 fotos de ficha al cambiar o quitar](./2026-09-30-r2-delete-fotos-ficha.md)
 - [2026-09-30 — Carpeta de notas y files (socio y staff)](./2026-09-30-carpeta-socio-staff.md)
 - [2026-09-29 — Guía MP completa en el asistente (get_help)](./2026-09-29-mcp-guia-mp-completa.md)
 - [2026-09-29 — Catálogo Brain (60k / 100), guía MP y pulido Admin](./2026-09-29-catalogo-basic-prueba-mp.md)
