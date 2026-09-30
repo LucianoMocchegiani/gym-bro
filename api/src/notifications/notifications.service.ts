@@ -48,19 +48,66 @@ export class NotificationDispatcher {
   ): Promise<void> {
     const tx = await this.prisma.transaction.findFirst({
       where: { id: transactionId, tenantId },
-      select: { memberId: true, amount: true },
+      select: {
+        memberId: true,
+        amount: true,
+        tenant: { select: { name: true, ownerIdentityId: true } },
+        transactionItems: {
+          take: 1,
+          select: { pack: { select: { name: true } } },
+        },
+      },
     });
-    if (!tx?.memberId) {
+    if (!tx) {
       return;
     }
-    await this.notifyMember({
+    if (tx.memberId) {
+      await this.notifyMember({
+        tenantId,
+        memberId: tx.memberId,
+        event: NotificationEventCode.PAYMENT_APPROVED,
+        idempotencyKey: `PAYMENT_APPROVED:${transactionId}`,
+        extraVars: { monto: formatAmountArs(tx.amount) },
+        payload: { transactionId },
+      });
+      return;
+    }
+    if (!tx.tenant.ownerIdentityId) {
+      return;
+    }
+    await this.notifyPlatformOwner({
       tenantId,
-      memberId: tx.memberId,
-      event: NotificationEventCode.PAYMENT_APPROVED,
-      idempotencyKey: `PAYMENT_APPROVED:${transactionId}`,
-      extraVars: { monto: formatAmountArs(tx.amount) },
+      identityId: tx.tenant.ownerIdentityId,
+      event: NotificationEventCode.PLATFORM_PLAN_PAID,
+      idempotencyKey: `PLATFORM_PLAN_PAID:${transactionId}`,
+      extraVars: {
+        pack: tx.transactionItems[0]?.pack?.name ?? 'Faciliter',
+        monto: formatAmountArs(tx.amount),
+      },
       payload: { transactionId },
     });
+  }
+
+  /**
+   * Aviso al dueño del gym (Identity). Mail + fila in-app; sin bandeja staff aún.
+   *
+   * @remarks Plantillas fijas de Faciliter (no `/avisos` del gym). RN-NOT-006.
+   */
+  async notifyPlatformOwner(input: {
+    tenantId: string;
+    identityId: string;
+    event: NotificationEventCode;
+    idempotencyKey: string;
+    extraVars?: Record<string, string>;
+    payload?: Prisma.InputJsonValue;
+  }): Promise<void> {
+    try {
+      await this.dispatchPlatform(input);
+    } catch (err) {
+      this.logger.warn(
+        `notify platform ${input.event} failed: ${err instanceof Error ? err.message : err}`,
+      );
+    }
   }
 
   /**
@@ -166,6 +213,87 @@ export class NotificationDispatcher {
         `email failed ${input.idempotencyKey}: ${err instanceof Error ? err.message : err}`,
       );
       emailStatus = NotificationEmailStatus.FAILED;
+    }
+
+    await this.prisma.notification.update({
+      where: {
+        tenantId_idempotencyKey: {
+          tenantId: input.tenantId,
+          idempotencyKey: input.idempotencyKey,
+        },
+      },
+      data: { emailStatus },
+    });
+  }
+
+  private async dispatchPlatform(input: {
+    tenantId: string;
+    identityId: string;
+    event: NotificationEventCode;
+    idempotencyKey: string;
+    extraVars?: Record<string, string>;
+    payload?: Prisma.InputJsonValue;
+  }): Promise<void> {
+    const [identity, tenant] = await Promise.all([
+      this.prisma.identity.findUnique({
+        where: { id: input.identityId },
+        select: { email: true, name: true },
+      }),
+      this.prisma.tenant.findFirst({
+        where: { id: input.tenantId },
+        select: { name: true },
+      }),
+    ]);
+    if (!identity || !tenant) {
+      return;
+    }
+
+    const tpl = defaultTemplate(input.event);
+    const vars: Record<string, string> = {
+      gym: tenant.name,
+      nombre: identity.name?.trim() || identity.email,
+      ...input.extraVars,
+    };
+    const title = renderTemplate(tpl.subject, vars);
+    const body = renderTemplate(tpl.body, vars);
+
+    try {
+      await this.prisma.notification.create({
+        data: {
+          tenantId: input.tenantId,
+          identityId: input.identityId,
+          eventCode: input.event,
+          title,
+          body,
+          payload: input.payload,
+          inAppRead: false,
+          emailStatus: NotificationEmailStatus.SKIPPED,
+          idempotencyKey: input.idempotencyKey,
+        },
+      });
+    } catch (err) {
+      if (
+        err instanceof Prisma.PrismaClientKnownRequestError &&
+        err.code === 'P2002'
+      ) {
+        return;
+      }
+      throw err;
+    }
+
+    const to = identity.email.trim();
+    if (!to) {
+      return;
+    }
+
+    let emailStatus: NotificationEmailStatus = NotificationEmailStatus.FAILED;
+    try {
+      await this.mail.send({ to, subject: title, text: body });
+      emailStatus = NotificationEmailStatus.SENT;
+    } catch (err) {
+      this.logger.warn(
+        `email failed ${input.idempotencyKey}: ${err instanceof Error ? err.message : err}`,
+      );
     }
 
     await this.prisma.notification.update({

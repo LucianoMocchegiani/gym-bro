@@ -9,8 +9,10 @@ import {
 } from '@nestjs/common';
 import {
   CashMovementConcept,
+  NotificationEventCode,
   PaymentMethod,
   PaymentStatus,
+  PlatformSignupStatus,
   Prisma,
   ReceiptConcept,
   Transaction,
@@ -149,10 +151,60 @@ export class WebhookPaymentService {
 
     const signup = await this.prisma.platformSignup.findUnique({
       where: { id: refId },
-      select: { id: true },
+      select: {
+        id: true,
+        status: true,
+        identityId: true,
+        tenantId: true,
+        gymName: true,
+        pack: { select: { name: true } },
+      },
     });
     if (signup && remote.status === 'approved') {
-      return this.platformSignups.handlePaidSignup(tenantId, signup.id);
+      const wasComplete = signup.status === PlatformSignupStatus.COMPLETED;
+      const result = await this.platformSignups.handlePaidSignup(
+        tenantId,
+        signup.id,
+      );
+      if (wasComplete && signup.tenantId) {
+        await this.notifications.notifyPlatformOwner({
+          tenantId: signup.tenantId,
+          identityId: signup.identityId,
+          event: NotificationEventCode.PLATFORM_PLAN_PAID,
+          idempotencyKey: `PLATFORM_PLAN_PAID:${mpPaymentId}`,
+          extraVars: {
+            pack: signup.pack.name,
+            monto: 'Mercado Pago',
+          },
+          payload: { signupId: signup.id, mpPaymentId },
+        });
+      }
+      return result;
+    }
+    if (
+      signup &&
+      (remote.status === 'rejected' || remote.status === 'cancelled')
+    ) {
+      await this.notifications.notifyPlatformOwner({
+        tenantId: signup.tenantId ?? tenantId,
+        identityId: signup.identityId,
+        event: NotificationEventCode.PLATFORM_DEBIT_CHARGE_FAILED,
+        idempotencyKey: `PLATFORM_DEBIT_CHARGE_FAILED:${signup.id}:${mpPaymentId}`,
+        extraVars: {
+          pack: signup.pack.name,
+          motivo: remote.status,
+          gym: signup.gymName,
+        },
+        payload: { signupId: signup.id, mpPaymentId },
+      });
+      return {
+        handled: true,
+        transactionItemId: null,
+        transactionId: null,
+        status: remote.status,
+        contractId: null,
+        reservationId: null,
+      };
     }
 
     const mandate = await this.prisma.debitMandate.findFirst({
@@ -195,6 +247,78 @@ export class WebhookPaymentService {
     }
     const paid =
       remote.status === 'approved' || remote.status === 'processed';
+    const signupRow = remote.externalReference
+      ? await this.prisma.platformSignup.findUnique({
+          where: { id: remote.externalReference },
+          select: {
+            id: true,
+            status: true,
+            identityId: true,
+            tenantId: true,
+            gymName: true,
+            pack: { select: { name: true } },
+          },
+        })
+      : null;
+    const signupByPre =
+      !signupRow && remote.preapprovalId
+        ? await this.prisma.platformSignup.findUnique({
+            where: { mpPreapprovalId: remote.preapprovalId },
+            select: {
+              id: true,
+              status: true,
+              identityId: true,
+              tenantId: true,
+              gymName: true,
+              pack: { select: { name: true } },
+            },
+          })
+        : null;
+    const signup = signupRow ?? signupByPre;
+    if (signup) {
+      if (paid) {
+        const wasComplete = signup.status === PlatformSignupStatus.COMPLETED;
+        const result = await this.platformSignups.handlePaidSignup(
+          tenantId,
+          signup.id,
+        );
+        if (wasComplete && signup.tenantId && remote.paymentId) {
+          await this.notifications.notifyPlatformOwner({
+            tenantId: signup.tenantId,
+            identityId: signup.identityId,
+            event: NotificationEventCode.PLATFORM_PLAN_PAID,
+            idempotencyKey: `PLATFORM_PLAN_PAID:${remote.paymentId}`,
+            extraVars: {
+              pack: signup.pack.name,
+              monto: 'débito Mercado Pago',
+            },
+            payload: { signupId: signup.id, paymentId: remote.paymentId },
+          });
+        }
+        return result;
+      }
+      await this.notifications.notifyPlatformOwner({
+        tenantId: signup.tenantId ?? tenantId,
+        identityId: signup.identityId,
+        event: NotificationEventCode.PLATFORM_DEBIT_CHARGE_FAILED,
+        idempotencyKey: `PLATFORM_DEBIT_CHARGE_FAILED:${signup.id}:${remote.paymentId ?? remote.status}`,
+        extraVars: {
+          pack: signup.pack.name,
+          motivo: remote.status,
+          gym: signup.gymName,
+        },
+        payload: { signupId: signup.id, status: remote.status },
+      });
+      return {
+        handled: true,
+        transactionItemId: null,
+        transactionId: null,
+        status: remote.status,
+        contractId: null,
+        reservationId: null,
+      };
+    }
+
     if (!paid) {
       return {
         handled: false,
@@ -205,29 +329,13 @@ export class WebhookPaymentService {
         reservationId: null,
       };
     }
-    const signupById = remote.externalReference
-      ? await this.prisma.platformSignup.findUnique({
-          where: { id: remote.externalReference },
-          select: { id: true },
-        })
-      : null;
-    const signupByPre =
-      !signupById && remote.preapprovalId
-        ? await this.prisma.platformSignup.findUnique({
-            where: { mpPreapprovalId: remote.preapprovalId },
-            select: { id: true },
-          })
-        : null;
-    const signupId = signupById?.id ?? signupByPre?.id ?? null;
-    if (!signupId) {
-      return this.debit.applyAuthorizedPayment(tenantId, {
-        preapprovalId: remote.preapprovalId,
-        externalReference: remote.externalReference,
-        paymentId: remote.paymentId,
-        status: remote.status,
-      });
-    }
-    return this.platformSignups.handlePaidSignup(tenantId, signupId);
+
+    return this.debit.applyAuthorizedPayment(tenantId, {
+      preapprovalId: remote.preapprovalId,
+      externalReference: remote.externalReference,
+      paymentId: remote.paymentId,
+      status: remote.status,
+    });
   }
 
   /**

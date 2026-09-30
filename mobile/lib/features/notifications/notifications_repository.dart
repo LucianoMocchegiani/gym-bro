@@ -63,9 +63,15 @@ class NotificationEmailPref {
       case 'REFUND_EXECUTED':
         return 'Devolución';
       case 'CONTRACT_EXPIRING':
-        return 'Pack por vencer';
+        return 'Pack por vencer (caja)';
+      case 'CONTRACT_EXPIRING_DEBIT':
+        return 'Pack por vencer (débito)';
       case 'CONTRACT_IN_TOLERANCE':
         return 'Pack vencido (tolerancia)';
+      case 'DEBIT_CHARGE_FAILED':
+        return 'Débito: cobro no acreditado';
+      case 'DEBIT_MANDATE_FAILED':
+        return 'Débito: mandato fallido';
       default:
         return eventCode;
     }

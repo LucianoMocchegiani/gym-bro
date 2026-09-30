@@ -492,6 +492,11 @@ export class CashPaymentService {
       );
     }
 
+    await this.notifications.notifyPaymentApproved(
+      billingTenantId,
+      transaction.id,
+    );
+
     return {
       transactionId: transaction.id,
       amount: transaction.amount,

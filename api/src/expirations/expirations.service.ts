@@ -2,10 +2,16 @@ import { Injectable } from '@nestjs/common';
 import {
   BillingPeriod,
   ContractStatus,
+  ContractType,
   DebitMandateStatus,
   MemberStatus,
 } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import {
+  PLATFORM_ACCESS_GRACE_DAYS,
+  PLATFORM_ADMIN_SLUG,
+  PLATFORM_UNLIMITED_TENANT_IDS,
+} from '../tenants/platform-trial';
 import { ExpirationsQueryDto } from './dto/expirations-query.dto';
 import {
   ExpirationPayKind,
@@ -164,7 +170,7 @@ export class ExpirationsService {
   /**
    * Candidatos a aviso E2/E3: MONTHLY en ventana 7 días o tolerancia.
    *
-   * @remarks No filtra por mandato (la cola Admin sí). Un mail por contrato
+   * @remarks E2: caja vs débito (`payKind`). Un mail por contrato
    * (idempotencia en el dispatcher).
    */
   async listNotifyRows(tenantId: string): Promise<
@@ -175,6 +181,7 @@ export class ExpirationsService {
       endsOn: string;
       daysUntil: number;
       bucket: 'upcoming' | 'tolerance';
+      payKind: ExpirationPayKind;
     }>
   > {
     const today = this.businessYmd(new Date());
@@ -184,26 +191,39 @@ export class ExpirationsService {
     });
     const debtToleranceDays = settings?.debtToleranceDays ?? 15;
 
-    const contracts = await this.prisma.contract.findMany({
-      where: {
-        tenantId,
-        status: { in: [ContractStatus.ACTIVE, ContractStatus.EXPIRED] },
-        endsAt: { not: null },
-        member: { status: MemberStatus.ACTIVE },
-        pack: { billingPeriod: BillingPeriod.MONTHLY },
-      },
-      select: {
-        id: true,
-        memberId: true,
-        packId: true,
-        status: true,
-        endsAt: true,
-        member: { select: { name: true, email: true } },
-        pack: { select: { name: true } },
-      },
-    });
+    const [contracts, mandates] = await Promise.all([
+      this.prisma.contract.findMany({
+        where: {
+          tenantId,
+          status: { in: [ContractStatus.ACTIVE, ContractStatus.EXPIRED] },
+          endsAt: { not: null },
+          member: { status: MemberStatus.ACTIVE },
+          pack: { billingPeriod: BillingPeriod.MONTHLY },
+        },
+        select: {
+          id: true,
+          memberId: true,
+          packId: true,
+          status: true,
+          endsAt: true,
+          member: { select: { name: true, email: true } },
+          pack: { select: { name: true } },
+        },
+      }),
+      this.prisma.debitMandate.findMany({
+        where: { tenantId, status: { in: OPEN_MANDATE } },
+        select: { memberId: true, status: true },
+      }),
+    ]);
 
     const chosen = this.pickLatestMonthly(contracts);
+    const mandateByMember = new Map<string, DebitMandateStatus>();
+    for (const m of mandates) {
+      const prev = mandateByMember.get(m.memberId);
+      if (!prev || this.mandateRank(m.status) > this.mandateRank(prev)) {
+        mandateByMember.set(m.memberId, m.status);
+      }
+    }
     const out: Array<{
       memberId: string;
       contractId: string;
@@ -211,6 +231,7 @@ export class ExpirationsService {
       endsOn: string;
       daysUntil: number;
       bucket: 'upcoming' | 'tolerance';
+      payKind: ExpirationPayKind;
     }> = [];
 
     for (const c of chosen.values()) {
@@ -235,9 +256,114 @@ export class ExpirationsService {
         endsOn,
         daysUntil,
         bucket,
+        payKind: this.payKind(mandateByMember.get(c.memberId) ?? null),
       });
     }
     return out;
+  }
+
+  /**
+   * Plan Faciliter (`TENANT`) por vencer o en gracia de 3 días.
+   */
+  async listNotifyPlatformRows(tenantId: string): Promise<
+    Array<{
+      identityId: string;
+      contractId: string;
+      packName: string;
+      endsOn: string;
+      daysUntil: number;
+      bucket: 'upcoming' | 'tolerance';
+      debit: boolean;
+    }>
+  > {
+    if (PLATFORM_UNLIMITED_TENANT_IDS.has(tenantId)) {
+      return [];
+    }
+    const tenant = await this.prisma.tenant.findUnique({
+      where: { id: tenantId },
+      select: {
+        slug: true,
+        ownerIdentityId: true,
+      },
+    });
+    if (
+      !tenant?.ownerIdentityId ||
+      tenant.slug === PLATFORM_ADMIN_SLUG
+    ) {
+      return [];
+    }
+
+    const [contracts, signup] = await Promise.all([
+      this.prisma.contract.findMany({
+        where: {
+          tenantId,
+          contractType: ContractType.TENANT,
+          status: { in: [ContractStatus.ACTIVE, ContractStatus.EXPIRED] },
+          endsAt: { not: null },
+        },
+        select: {
+          id: true,
+          status: true,
+          endsAt: true,
+          pack: { select: { name: true } },
+        },
+      }),
+      this.prisma.platformSignup.findFirst({
+        where: { tenantId, mpPreapprovalId: { not: null } },
+        select: { mpPreapprovalId: true },
+        orderBy: { createdAt: 'desc' },
+      }),
+    ]);
+
+    let chosen: (typeof contracts)[0] | null = null;
+    for (const row of contracts) {
+      if (!chosen) {
+        chosen = row;
+        continue;
+      }
+      const prevActive = chosen.status === ContractStatus.ACTIVE;
+      const nextActive = row.status === ContractStatus.ACTIVE;
+      if (nextActive && !prevActive) {
+        chosen = row;
+        continue;
+      }
+      if (prevActive && !nextActive) {
+        continue;
+      }
+      const prevEnd = chosen.endsAt?.getTime() ?? 0;
+      const nextEnd = row.endsAt?.getTime() ?? 0;
+      if (nextEnd >= prevEnd) {
+        chosen = row;
+      }
+    }
+    if (!chosen?.endsAt) {
+      return [];
+    }
+
+    const today = this.businessYmd(new Date());
+    const endsOn = this.businessYmd(chosen.endsAt);
+    const daysUntil = this.diffDays(today, endsOn);
+    const bucket =
+      daysUntil >= 0 && daysUntil <= WINDOW_DAYS
+        ? ('upcoming' as const)
+        : daysUntil < 0 && -daysUntil <= PLATFORM_ACCESS_GRACE_DAYS
+          ? ('tolerance' as const)
+          : null;
+    if (!bucket) {
+      return [];
+    }
+
+    return [
+      {
+        identityId: tenant.ownerIdentityId,
+        contractId: chosen.id,
+        packName: chosen.pack.name,
+        endsOn,
+        daysUntil,
+        bucket,
+        debit: Boolean(signup?.mpPreapprovalId),
+      },
+    ];
   }
 
   private pickLatestMonthly(rows: ContractHit[]): Map<string, ContractHit> {

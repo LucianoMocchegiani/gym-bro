@@ -179,7 +179,7 @@ Reemplaza el corte de **rutinas estructuradas** (plantillas/cumplimiento → [ba
 
 - [x] Modelo plantilla + preferencias (tablas; default en código; Admin `/avisos`)
 - [x] Dispatcher dominio → in-app + email (`MailPort` stub/Resend)
-- [~] Eventos E1–E9 — cableados: pago, reserva±, waitlist, devolución, vencimiento/tolerancia. Sin puerta ni rutina
+- [~] Eventos E1–E9 — socio: pago, reserva±, waitlist, devolución, vencimiento caja/débito, tolerancia, fallo débito. Plan Faciliter (`TENANT`): cobro, renovación, gracia, fallo débito. Sin puerta ni rutina
 - [x] Gym activa/desactiva eventos (Admin Avisos)
 - [x] Afiliado opt-out de email (app Avisos, por evento)
 - [x] Plantillas editables (Admin `/avisos`)

@@ -11,7 +11,10 @@ export type NotificationEventCode =
   | 'WAITLIST_PROMOTED'
   | 'REFUND_EXECUTED'
   | 'CONTRACT_EXPIRING'
-  | 'CONTRACT_IN_TOLERANCE';
+  | 'CONTRACT_EXPIRING_DEBIT'
+  | 'CONTRACT_IN_TOLERANCE'
+  | 'DEBIT_CHARGE_FAILED'
+  | 'DEBIT_MANDATE_FAILED';
 
 export type NotificationTemplateDetail = {
   eventCode: NotificationEventCode;

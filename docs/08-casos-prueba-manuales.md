@@ -236,7 +236,11 @@ Pasos de VPS: [uso/probar-debito-suscripcion-mp.md](./uso/probar-debito-suscripc
 | N7 | Reserva confirmada / cancelada | Aviso in-app (y mail si ON) | E4 E5 | |
 | N8 | Waitlist AUTO_ASSIGN | Aviso “hay un lugar” | E6 | |
 | N9 | Staff ejecuta devolución | Aviso al socio | E9 | |
-| N10 | Cron 12:00 ART, pack MONTHLY en ventana | Un aviso por vencer o tolerancia (no se duplica) | E2 E3 | |
+| N10 | Cron 12:00 ART, pack MONTHLY en ventana | Caja: aviso “por vencer”; débito: “próximo débito / saldo”; tolerancia: E3. Un aviso por contrato | E2 E3 | |
+| N11 | Débito MP rejected | Mandato `RETRYING` + aviso in-app | débito socio | |
+| N13 | Cron plan Faciliter por vencer | Mail al dueño (Identity); débito vs caja | TENANT | |
+| N14 | Caja admin cobra pack a un gym | Aviso `PLATFORM_PLAN_PAID` al dueño | TENANT | |
+| N15 | Débito Faciliter rejected / preapproval cancelled | Aviso cobro o mandato fallido al dueño | TENANT | |
 
 ---
 

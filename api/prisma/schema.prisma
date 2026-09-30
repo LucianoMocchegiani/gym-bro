@@ -312,6 +312,7 @@ model Identity {
   refreshTokens RefreshToken[]
   ownedTenants  Tenant[] @relation("TenantOwner")
   platformSignups PlatformSignup[]
+  notifications   Notification[]
 
   @@map("identities")
 }
@@ -1238,7 +1239,16 @@ enum NotificationEventCode {
   WAITLIST_PROMOTED
   REFUND_EXECUTED
   CONTRACT_EXPIRING
+  CONTRACT_EXPIRING_DEBIT
   CONTRACT_IN_TOLERANCE
+  DEBIT_CHARGE_FAILED
+  DEBIT_MANDATE_FAILED
+  PLATFORM_PLAN_PAID
+  PLATFORM_PLAN_EXPIRING
+  PLATFORM_PLAN_EXPIRING_DEBIT
+  PLATFORM_PLAN_IN_TOLERANCE
+  PLATFORM_DEBIT_CHARGE_FAILED
+  PLATFORM_DEBIT_MANDATE_FAILED
 }
 
 /// Resultado del canal email (el in-app siempre se inserta si el evento corre).
@@ -1285,10 +1295,13 @@ model NotificationPreference {
 }
 
 /// Registro in-app + estado de email (CU-NOT-001 / CU-NOT-005).
+///
+/// @remarks Socio: `memberId`. Dueño de gym (plan Faciliter): `identityId`.
 model Notification {
   id              String                   @id @default(uuid()) @db.Uuid
   tenantId        String                   @map("tenant_id") @db.Uuid
-  memberId        String                   @map("member_id") @db.Uuid
+  memberId        String?                  @map("member_id") @db.Uuid
+  identityId      String?                  @map("identity_id") @db.Uuid
   eventCode       NotificationEventCode    @map("event_code")
   title           String
   body            String
@@ -1298,10 +1311,12 @@ model Notification {
   idempotencyKey  String                   @map("idempotency_key")
   createdAt       DateTime                 @default(now()) @map("created_at")
 
-  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  member Member @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  tenant   Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  member   Member?   @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  identity Identity? @relation(fields: [identityId], references: [id], onDelete: Cascade)
 
   @@unique([tenantId, idempotencyKey])
   @@index([tenantId, memberId, createdAt])
+  @@index([tenantId, identityId, createdAt])
   @@map("notifications")
 }

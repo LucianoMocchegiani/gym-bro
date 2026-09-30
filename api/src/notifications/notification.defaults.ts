@@ -7,7 +7,10 @@ export const CABLED_NOTIFICATION_EVENTS: NotificationEventCode[] = [
   NotificationEventCode.WAITLIST_PROMOTED,
   NotificationEventCode.REFUND_EXECUTED,
   NotificationEventCode.CONTRACT_EXPIRING,
+  NotificationEventCode.CONTRACT_EXPIRING_DEBIT,
   NotificationEventCode.CONTRACT_IN_TOLERANCE,
+  NotificationEventCode.DEBIT_CHARGE_FAILED,
+  NotificationEventCode.DEBIT_MANDATE_FAILED,
 ];
 
 type TemplateDefault = {
@@ -49,9 +52,15 @@ const DEFAULTS: Record<NotificationEventCode, TemplateDefault> = {
     placeholders: ['gym', 'nombre', 'monto'],
   },
   CONTRACT_EXPIRING: {
-    label: 'Pack por vencer',
+    label: 'Pack por vencer (caja)',
     subject: 'Tu pack vence pronto — {{gym}}',
-    body: 'Hola {{nombre}}, {{pack}} vence el {{vence}} ({{dias}} día(s)).',
+    body: 'Hola {{nombre}}, {{pack}} vence el {{vence}} ({{dias}} día(s)). Renová en el gym o en la app.',
+    placeholders: ['gym', 'nombre', 'pack', 'vence', 'dias'],
+  },
+  CONTRACT_EXPIRING_DEBIT: {
+    label: 'Pack por vencer (débito)',
+    subject: 'Próximo débito — {{gym}}',
+    body: 'Hola {{nombre}}, {{pack}} se renueva el {{vence}} ({{dias}} día(s)). Asegurate de tener saldo en Mercado Pago.',
     placeholders: ['gym', 'nombre', 'pack', 'vence', 'dias'],
   },
   CONTRACT_IN_TOLERANCE: {
@@ -59,6 +68,54 @@ const DEFAULTS: Record<NotificationEventCode, TemplateDefault> = {
     subject: 'Pack vencido (tolerancia) — {{gym}}',
     body: 'Hola {{nombre}}, {{pack}} venció el {{vence}}. Estás en período de tolerancia.',
     placeholders: ['gym', 'nombre', 'pack', 'vence'],
+  },
+  DEBIT_CHARGE_FAILED: {
+    label: 'Débito: cobro no acreditado',
+    subject: 'No se pudo debitar — {{gym}}',
+    body: 'Hola {{nombre}}, Mercado Pago no pudo cobrar {{pack}} ({{motivo}}). Reintentará; revisá el saldo de tu medio de pago.',
+    placeholders: ['gym', 'nombre', 'pack', 'motivo'],
+  },
+  DEBIT_MANDATE_FAILED: {
+    label: 'Débito: mandato fallido',
+    subject: 'Débito automático detenido — {{gym}}',
+    body: 'Hola {{nombre}}, el débito de {{pack}} quedó fallido. Pasá por el gym para renovar o volver a autorizar.',
+    placeholders: ['gym', 'nombre', 'pack'],
+  },
+  PLATFORM_PLAN_PAID: {
+    label: 'Plan Faciliter acreditado',
+    subject: 'Pago de Faciliter — {{gym}}',
+    body: 'Hola {{nombre}}, acreditamos el plan {{pack}} de {{gym}} ({{monto}}).',
+    placeholders: ['gym', 'nombre', 'pack', 'monto'],
+  },
+  PLATFORM_PLAN_EXPIRING: {
+    label: 'Plan Faciliter por vencer (caja)',
+    subject: 'Renovación Faciliter — {{gym}}',
+    body: 'Hola {{nombre}}, el plan {{pack}} de {{gym}} vence el {{vence}} ({{dias}} día(s)). Renová desde Plan / Uso o con el equipo Faciliter.',
+    placeholders: ['gym', 'nombre', 'pack', 'vence', 'dias'],
+  },
+  PLATFORM_PLAN_EXPIRING_DEBIT: {
+    label: 'Plan Faciliter por vencer (débito)',
+    subject: 'Próximo débito Faciliter — {{gym}}',
+    body: 'Hola {{nombre}}, el plan {{pack}} de {{gym}} se renueva el {{vence}} ({{dias}} día(s)). Asegurate de tener saldo en Mercado Pago.',
+    placeholders: ['gym', 'nombre', 'pack', 'vence', 'dias'],
+  },
+  PLATFORM_PLAN_IN_TOLERANCE: {
+    label: 'Plan Faciliter en gracia',
+    subject: 'Plan Faciliter vencido — {{gym}}',
+    body: 'Hola {{nombre}}, el plan {{pack}} de {{gym}} venció el {{vence}}. Estás en días de gracia; después el panel queda limitado.',
+    placeholders: ['gym', 'nombre', 'pack', 'vence'],
+  },
+  PLATFORM_DEBIT_CHARGE_FAILED: {
+    label: 'Plan Faciliter: cobro no acreditado',
+    subject: 'No se pudo debitar Faciliter — {{gym}}',
+    body: 'Hola {{nombre}}, Mercado Pago no pudo cobrar el plan {{pack}} de {{gym}} ({{motivo}}). Reintentará; revisá el saldo.',
+    placeholders: ['gym', 'nombre', 'pack', 'motivo'],
+  },
+  PLATFORM_DEBIT_MANDATE_FAILED: {
+    label: 'Plan Faciliter: débito detenido',
+    subject: 'Débito Faciliter detenido — {{gym}}',
+    body: 'Hola {{nombre}}, el débito del plan {{pack}} de {{gym}} quedó fallido. Renová desde la cuenta o contactá a Faciliter.',
+    placeholders: ['gym', 'nombre', 'pack'],
   },
 };
 

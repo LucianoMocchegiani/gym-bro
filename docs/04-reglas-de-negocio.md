@@ -146,7 +146,7 @@ Formato: **RN-MODULO-NNN** — enunciado — excepciones.
 | ID | Regla |
 |----|--------|
 | RN-NOT-001 | Canal N1 MVP: **email**; además siempre hay registro **in-app**. |
-| RN-NOT-002 | Eventos: E1 pago; E2 por vencer; E3 tolerancia; E4 reserva OK; E5 reserva cancelada; E6 waitlist cupo; E7 rutina **no**; E8 puerta/deuda **no**; E9 devolución. **Cableados:** E1–E6 y E9 (sin puerta). |
+| RN-NOT-002 | Eventos socio: E1 pago; E2 por vencer (caja vs débito); E3 tolerancia; E4–E6 reserva/waitlist; E9 devolución; débito MP rechazado / mandato fallido. Plan Faciliter (`TENANT`): cobro, por vencer caja/débito, gracia 3 días, cobro/mandato débito fallido. Sin puerta ni rutina. |
 | RN-NOT-003 | El gym puede activar/desactivar eventos uno a uno. |
 | RN-NOT-004 | El branding/remitente visible usa el **nombre del gym**. |
 | RN-NOT-005 | El afiliado puede desactivar las notificaciones que quiera (preferencia de no perder al usuario). |

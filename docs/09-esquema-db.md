@@ -557,7 +557,7 @@ API: `/api/folder-labels`; `/api/members/:id/folder*`; `/api/staff/:id/folder*`;
 
 ### 4.9c `notification_templates` / `notification_preferences` / `notifications`
 
-N1 (CU-NOT). Unique `(tenant_id, event_code)` en plantillas; `(tenant_id, member_id, event_code)` en preferencias; `(tenant_id, idempotency_key)` en avisos. Eventos: `PAYMENT_APPROVED`, `RESERVATION_CONFIRMED`, `RESERVATION_CANCELLED`, `WAITLIST_PROMOTED`, `REFUND_EXECUTED`, `CONTRACT_EXPIRING`, `CONTRACT_IN_TOLERANCE`. Email: `SKIPPED` \| `SENT` \| `FAILED`. Cron E2/E3 12:00 `America/Argentina/Buenos_Aires`.
+N1 (CU-NOT). Unique `(tenant_id, idempotency_key)`. Socio: `member_id`. Dueño plan Faciliter: `identity_id` (XOR). Eventos socio: `PAYMENT_APPROVED`, `RESERVATION_*`, `WAITLIST_PROMOTED`, `REFUND_EXECUTED`, `CONTRACT_EXPIRING`, `CONTRACT_EXPIRING_DEBIT`, `CONTRACT_IN_TOLERANCE`, `DEBIT_CHARGE_FAILED`, `DEBIT_MANDATE_FAILED`. Eventos plan (no aparecen en Admin `/avisos` del gym): `PLATFORM_PLAN_PAID`, `PLATFORM_PLAN_EXPIRING`, `PLATFORM_PLAN_EXPIRING_DEBIT`, `PLATFORM_PLAN_IN_TOLERANCE`, `PLATFORM_DEBIT_CHARGE_FAILED`, `PLATFORM_DEBIT_MANDATE_FAILED`. Cron 12:00 ART. Débito socio: cobro rechazado → `RETRYING`; preapproval caído → `FAILED`.
 
 | Tabla | Notas |
 |-------|--------|
@@ -1070,7 +1070,9 @@ Historia incremental (2026-07 / 2026-08) **compactada** en un baseline (`40476fa
 | `20260929120000_platform_plan_trial` | `tenants.owner_identity_id`, `platform_trial_used_at`; `identities.platform_trial_used_at`; `contracts.is_platform_trial`. |
 | `20260930120000_member_staff_folder` | `folder_labels`, `folder_items`, enum `FolderItemKind`; XOR dueño socio/staff |
 | `20260930180000_notifications_n1` | Plantillas, preferencias, avisos; enum `PAYMENT_APPROVED` |
-| `20260930190000_notification_events_n1` | Enum: reserva, waitlist, devolución, pack por vencer / tolerancia |
+| `20260930200000_notification_debit_renewal` | Enum: `CONTRACT_EXPIRING_DEBIT`, `DEBIT_CHARGE_FAILED`, `DEBIT_MANDATE_FAILED` |
+| `20260930210000_platform_plan_notification_events` | Enum plan Faciliter (`PLATFORM_*`) |
+| `20260930211000_notification_identity_audience` | `notifications.identity_id`; `member_id` nullable |
 
 Comandos y checklist “desde cero”: [13-setup-db-desde-cero.md](./13-setup-db-desde-cero.md).
 

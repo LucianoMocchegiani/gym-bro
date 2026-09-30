@@ -13,12 +13,14 @@ import {
   DebitMandate,
   DebitMandateStatus,
   MemberStatus,
+  NotificationEventCode,
   PaymentMethod,
   PaymentStatus,
   Prisma,
 } from '@prisma/client';
 import { AUDIT_ACTIONS, AuditActor } from '../audit/audit.types';
 import { AuditService } from '../audit/audit.service';
+import { NotificationDispatcher } from '../notifications/notifications.service';
 import { ListResult, normalizeListQuery, toListResult } from '../common/list';
 import { MercadoPagoAccountService } from '../payment/mercadopago-account.service';
 import { MP_ACCOUNT_PORT, MpAccountPort } from '../payment/mp-account.port';
@@ -59,6 +61,7 @@ export class DebitService {
     private readonly prisma: PrismaService,
     private readonly accounts: MercadoPagoAccountService,
     private readonly audit: AuditService,
+    private readonly notifications: NotificationDispatcher,
     private readonly config: ConfigService,
     @Inject(forwardRef(() => WebhookPaymentService))
     private readonly webhook: WebhookPaymentService,
@@ -316,6 +319,7 @@ export class DebitService {
           lastError: `MP preapproval ${remote.status}`,
         },
       });
+      await this.notifyMandateFailed(mandate);
     }
     return this.emptyWebhook(true, remote.status);
   }
@@ -367,14 +371,23 @@ export class DebitService {
     const mandate = await this.requireMandate(tenantId, mandateId);
     const mapped = remoteStatus.toLowerCase();
     if (mapped !== 'approved' && mapped !== 'processed') {
-      if (mapped === 'rejected' || mapped === 'cancelled') {
+      const chargeFailed =
+        mapped === 'rejected' || mapped === 'cancelled';
+      const waiting = mapped === 'pending' || mapped === 'in_process';
+      if (
+        (chargeFailed || waiting) &&
+        mandate.status !== DebitMandateStatus.CANCELLED
+      ) {
         await this.prisma.debitMandate.update({
           where: { id: mandate.id },
           data: {
             lastError: `MP payment ${remoteStatus}`,
-            status: DebitMandateStatus.FAILED,
+            status: DebitMandateStatus.RETRYING,
           },
         });
+      }
+      if (chargeFailed) {
+        await this.notifyChargeFailed(mandate, remoteStatus, mpPaymentId);
       }
       return this.emptyWebhook(true, remoteStatus);
     }
@@ -479,6 +492,41 @@ export class DebitService {
       entityId: row.id,
     });
     return this.toDetail(row);
+  }
+
+  private async notifyChargeFailed(
+    mandate: MandateRow,
+    remoteStatus: string,
+    mpPaymentId: string,
+  ): Promise<void> {
+    if (!mandate.memberId) {
+      return;
+    }
+    await this.notifications.notifyMember({
+      tenantId: mandate.tenantId,
+      memberId: mandate.memberId,
+      event: NotificationEventCode.DEBIT_CHARGE_FAILED,
+      idempotencyKey: `DEBIT_CHARGE_FAILED:${mandate.id}:${mpPaymentId}`,
+      extraVars: {
+        pack: mandate.pack.name,
+        motivo: remoteStatus,
+      },
+      payload: { mandateId: mandate.id, mpPaymentId, remoteStatus },
+    });
+  }
+
+  private async notifyMandateFailed(mandate: MandateRow): Promise<void> {
+    if (!mandate.memberId) {
+      return;
+    }
+    await this.notifications.notifyMember({
+      tenantId: mandate.tenantId,
+      memberId: mandate.memberId,
+      event: NotificationEventCode.DEBIT_MANDATE_FAILED,
+      idempotencyKey: `DEBIT_MANDATE_FAILED:${mandate.id}`,
+      extraVars: { pack: mandate.pack.name },
+      payload: { mandateId: mandate.id },
+    });
   }
 
   /**

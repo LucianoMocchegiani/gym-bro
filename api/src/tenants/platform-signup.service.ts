@@ -10,6 +10,7 @@ import {
 import { ConfigService } from '@nestjs/config';
 import {
   BillingPeriod,
+  NotificationEventCode,
   PlatformSignupStatus,
   TenantStatus,
 } from '@prisma/client';
@@ -18,6 +19,7 @@ import { MercadoPagoAccountService } from '../payment/mercadopago-account.servic
 import { MP_ACCOUNT_PORT, MpAccountPort } from '../payment/mp-account.port';
 import { CashPaymentService } from '../payment/cash-payment.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { NotificationDispatcher } from '../notifications/notifications.service';
 import { addCalendarDays, PLATFORM_ADMIN_SLUG, PLATFORM_TRIAL_DAYS } from './platform-trial';
 import { PlatformTrialService } from './platform-trial.service';
 import { TenantsService } from './tenants.service';
@@ -63,6 +65,7 @@ export class PlatformSignupService {
     private readonly accounts: MercadoPagoAccountService,
     private readonly config: ConfigService,
     @Inject(MP_ACCOUNT_PORT) private readonly mp: MpAccountPort,
+    private readonly notifications: NotificationDispatcher,
   ) {}
 
   /**
@@ -286,6 +289,27 @@ export class PlatformSignupService {
     const authorized =
       remote.status === 'authorized' || remote.status === 'active';
     if (!authorized) {
+      const failed =
+        remote.status === 'cancelled' ||
+        remote.status === 'paused' ||
+        remote.status === 'rejected';
+      if (failed) {
+        const pack = await this.prisma.pack.findUnique({
+          where: { id: signup.packId },
+          select: { name: true },
+        });
+        await this.notifications.notifyPlatformOwner({
+          tenantId: signup.tenantId ?? admin.id,
+          identityId: signup.identityId,
+          event: NotificationEventCode.PLATFORM_DEBIT_MANDATE_FAILED,
+          idempotencyKey: `PLATFORM_DEBIT_MANDATE_FAILED:${signup.id}`,
+          extraVars: {
+            pack: pack?.name ?? 'Faciliter',
+            gym: signup.gymName,
+          },
+          payload: { signupId: signup.id, status: remote.status },
+        });
+      }
       return this.emptyWebhook(remote.status);
     }
     if (signup.applyTrial) {
