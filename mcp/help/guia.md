@@ -85,11 +85,13 @@ App → **Acceso:** primero Aceptar la credencial (oferta del pack); después pr
 
 Pestañas: **Inicio | Acceso | Ajustes**.
 
-- Inicio: cuenta, pack vigente (ej. Gym + Funcional: acceso libre + créditos), atajos Sesiones y Tienda, próxima clase.
+- Inicio: cuenta, pack vigente (ej. Gym + Funcional: acceso libre + créditos), atajos Sesiones, Tienda y Documentos, próxima clase.
 - Sesiones: calendario, día, mis clases.
 - Tienda: Packs y Sesiones (drop-in), carrito, Pagar con Mercado Pago, Historial.
 - Acceso: credencial / QR.
-- Ajustes: cuenta, **Mis documentos** (carpeta que cargó el gym), tema, salir.
+- Ajustes: cuenta, tema, salir.
+
+Staff (mismo binario): Inicio con Sesiones, Caja (si tiene permiso) y **Documentos**.
 
 La **carpeta** (notas/PDF) sí está; un módulo de rutinas por días **no**. Avisos automáticos todavía no.
 

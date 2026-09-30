@@ -8,7 +8,7 @@ import 'package:share_plus/share_plus.dart';
 import '../../core/network/api_client.dart';
 import 'folder_repository.dart';
 
-/// Mis documentos: notas y files de la carpeta (solo lectura).
+/// Documentos: notas y files de la carpeta (solo lectura).
 ///
 /// CU-FOL-003. Socio y staff usan el mismo `GET /me/folder`.
 class DocumentsScreen extends StatefulWidget {
@@ -98,7 +98,7 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
   Widget build(BuildContext context) {
     final items = _items;
     return Scaffold(
-      appBar: AppBar(title: const Text('Mis documentos')),
+      appBar: AppBar(title: const Text('Documentos')),
       body: items == null && _error == null
           ? const Center(child: CircularProgressIndicator())
           : _error != null

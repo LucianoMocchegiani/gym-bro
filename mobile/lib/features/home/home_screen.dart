@@ -4,10 +4,11 @@ import 'package:provider/provider.dart';
 import '../../core/network/api_client.dart';
 import '../account/account_repository.dart';
 import '../auth/auth_controller.dart';
+import '../folder/documents_screen.dart';
 import '../sessions/sessions_screen.dart';
 import '../store/store_screen.dart';
 
-/// Hub Inicio: saludo, estado breve y atajos (Sesiones / Tienda).
+/// Hub Inicio: saludo, estado breve y atajos (Sesiones / Tienda / Documentos).
 class HomeScreen extends StatefulWidget {
   /// Crea la pantalla.
   const HomeScreen({super.key});
@@ -120,6 +121,21 @@ class _HomeScreenState extends State<HomeScreen> {
                             onTap: () => _open(const StoreScreen()),
                           ),
                         ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _HubTile(
+                            icon: Icons.folder_outlined,
+                            label: 'Documentos',
+                            subtitle: 'Notas y archivos',
+                            onTap: () => _open(const DocumentsScreen()),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        const Expanded(child: SizedBox.shrink()),
                       ],
                     ),
                     if (account.reservations.isNotEmpty) ...[

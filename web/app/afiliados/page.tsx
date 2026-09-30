@@ -334,7 +334,7 @@ function AfiliadosInner() {
         onClose={closeModals}
         title="Carpeta"
         description="Notas y archivos (PDF o imagen). Las etiquetas las define el gym."
-        size="wide"
+        size="comfortable"
       >
         {carpetaId ? (
           <PersonFolderModal key={carpetaId} kind="member" ownerId={carpetaId} />

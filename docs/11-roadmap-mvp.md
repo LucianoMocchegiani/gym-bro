@@ -170,7 +170,7 @@ Reemplaza el corte de **rutinas estructuradas** (plantillas/cumplimiento → [ba
 - [x] Etiquetas por tenant
 - [x] Notas y files (PDF/imagen) de socio y staff
 - [x] Admin: modal en grillas `/afiliados` y `/staff`
-- [x] App: Mis documentos (lectura)
+- [x] App: Documentos (lectura, Inicio)
 - [x] Files por JWT (no URL pública R2)
 
 ---
@@ -207,8 +207,8 @@ Detalle: [14-auditoria-roadmap-vs-codigo-2026-08-13.md](./14-auditoria-roadmap-v
 - [x] Home / estado de cuenta
   - `GET /me/account?coverage=current`; Inicio agrupa por pack (créditos sumados; oculta drop-in en 0), deuda, próximas reservas
   - Nav real: **Inicio · Acceso · Ajustes** (tema claro/oscuro)
-- [x] Mis documentos (carpeta, lectura)
-  - Ajustes → Mis documentos; `GET /me/folder` (socio y staff)
+- [x] Documentos (carpeta, lectura)
+  - Inicio → Documentos; `GET /me/folder` (socio y staff)
 - [x] Acceso + Credenciales (SSI)
   - Escanear OID4VCI/VP + bandeja offers (`accept`/`fail`) + `identity_core_dart`
   - Kuatia: defaults `issuer.kuatia.xyz` / `verifier.kuatia.xyz` (`KUATIA_*_PUBLIC_URL`)

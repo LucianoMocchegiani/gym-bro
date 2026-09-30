@@ -14,7 +14,7 @@
 3. Guarda una **nota** (texto) o sube **PDF/imagen**.
 4. El file queda en R2 con key privada; no usa `POST /upload`.
 
-**Postcondición:** Ítem visible en Admin y en **Mis documentos** del dueño.
+**Postcondición:** Ítem visible en Admin y en **Documentos** del dueño (app).
 
 ## CU-FOL-002 Ver / borrar carpeta ajena (staff)
 
@@ -24,7 +24,7 @@
 
 **Actor:** Afiliado o staff autenticado.
 
-**Flujo:** Ajustes → Mis documentos. Solo lectura. Files por `GET /me/folder/:id/file`.
+**Flujo:** Inicio → Documentos. Solo lectura. Files por `GET /me/folder/:id/file`.
 
 ---
 

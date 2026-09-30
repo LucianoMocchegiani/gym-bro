@@ -2,10 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../auth/auth_controller.dart';
+import '../folder/documents_screen.dart';
 import '../staff_caja/staff_caja_screen.dart';
 import '../staff_sessions/staff_calendar_screen.dart';
 
-/// Hub Inicio staff: saludo y atajos Sesiones / Caja.
+/// Hub Inicio staff: saludo y atajos Sesiones / Caja / Documentos.
 class StaffHomeScreen extends StatelessWidget {
   /// Crea la pantalla.
   const StaffHomeScreen({super.key});
@@ -14,6 +15,31 @@ class StaffHomeScreen extends StatelessWidget {
     Navigator.of(context).push(
       MaterialPageRoute<void>(builder: (_) => page),
     );
+  }
+
+  /// Filas de a dos tiles (Documentos queda a la izquierda si hay impar).
+  List<Widget> _hubRows(List<Widget> tiles) {
+    final out = <Widget>[];
+    for (var i = 0; i < tiles.length; i += 2) {
+      if (out.isNotEmpty) {
+        out.add(const SizedBox(height: 12));
+      }
+      out.add(
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(child: tiles[i]),
+            const SizedBox(width: 12),
+            Expanded(
+              child: i + 1 < tiles.length
+                  ? tiles[i + 1]
+                  : const SizedBox.shrink(),
+            ),
+          ],
+        ),
+      );
+    }
+    return out;
   }
 
   @override
@@ -48,34 +74,35 @@ class StaffHomeScreen extends StatelessWidget {
           style: Theme.of(context).textTheme.titleMedium,
         ),
         const SizedBox(height: 12),
-        Row(
-          children: [
-            if (sesiones)
-              Expanded(
-                child: _HubTile(
-                  icon: Icons.calendar_today_outlined,
-                  label: 'Sesiones',
-                  subtitle: 'Clases',
-                  onTap: () => _open(context, const StaffCalendarScreen()),
-                ),
-              ),
-            if (sesiones && caja) const SizedBox(width: 12),
-            if (caja)
-              Expanded(
-                child: _HubTile(
-                  icon: Icons.point_of_sale_outlined,
-                  label: 'Caja',
-                  subtitle: 'Cobros',
-                  onTap: () => _open(context, const StaffCajaScreen()),
-                ),
-              ),
-          ],
-        ),
-        if (!sesiones && !caja)
+        ..._hubRows([
+          if (sesiones)
+            _HubTile(
+              icon: Icons.calendar_today_outlined,
+              label: 'Sesiones',
+              subtitle: 'Clases',
+              onTap: () => _open(context, const StaffCalendarScreen()),
+            ),
+          if (caja)
+            _HubTile(
+              icon: Icons.point_of_sale_outlined,
+              label: 'Caja',
+              subtitle: 'Cobros',
+              onTap: () => _open(context, const StaffCajaScreen()),
+            ),
+          _HubTile(
+            icon: Icons.folder_outlined,
+            label: 'Documentos',
+            subtitle: 'Notas y archivos',
+            onTap: () => _open(context, const DocumentsScreen()),
+          ),
+        ]),
+        if (!sesiones && !caja) ...[
+          const SizedBox(height: 16),
           Text(
             'Tu rol no tiene Sesiones ni Caja. Pedile al admin que te asigne permisos.',
             style: Theme.of(context).textTheme.bodyMedium,
           ),
+        ],
       ],
     );
   }

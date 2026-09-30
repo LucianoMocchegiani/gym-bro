@@ -36,6 +36,7 @@ Inicio
 | Hola, {nombre}                   |
 | [ pack · créditos sumados ]      |
 | (Sesiones)  (Tienda)             |
+| (Documentos)                     |
 +----------------------------------+
 
 Acceso → Escanear (default) | Credenciales
@@ -68,6 +69,7 @@ Inicio
 +----------------------------------+
 | Hola, {nombre}                   |
 | (Sesiones)  (Caja)*              |
+| (Documentos)                     |
 +----------------------------------+
 * Caja solo con permiso cashier.operate.
   Sesiones: calendario del socio → día → roster (crédito).

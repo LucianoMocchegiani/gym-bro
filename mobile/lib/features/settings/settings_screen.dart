@@ -8,7 +8,6 @@ import '../../core/widgets/confirm_dialog.dart';
 import '../../core/widgets/loading_dialog.dart';
 import '../auth/auth_controller.dart';
 import '../credentials/device_wallet_service.dart';
-import '../folder/documents_screen.dart';
 
 /// Hub Ajustes: cuenta, wallet SSI, sistema, desarrolladores y sesión.
 class SettingsScreen extends StatelessWidget {
@@ -100,21 +99,6 @@ class SettingsScreen extends StatelessWidget {
             title: const Text('Cambiar gym'),
             subtitle: const Text('Elegí otro local o perfil'),
             onTap: () => auth.switchGym(),
-          ),
-        ),
-        const SizedBox(height: 8),
-        Card(
-          child: ListTile(
-            leading: const Icon(Icons.folder_outlined),
-            title: const Text('Mis documentos'),
-            subtitle: const Text('Notas y archivos que cargó el gym'),
-            onTap: () {
-              Navigator.of(context).push(
-                MaterialPageRoute<void>(
-                  builder: (_) => const DocumentsScreen(),
-                ),
-              );
-            },
           ),
         ),
         const SizedBox(height: 20),

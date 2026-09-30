@@ -104,7 +104,7 @@ Vocabulario que conviene fijar acá (el resto de la guía lo usa):
 
 **Captura:** `app-inicio-con-pack.png` — lista.  
 **Dónde:** App → Inicio, socio con pack al día.  
-**Qué se ve:** el mismo local, del otro lado. Pack **Gym + Funcional**: acceso libre (sin límite de sesiones) + Funcional con créditos. Atajos Sesiones y Tienda. Abajo, una clase próxima. El socio **no** ve el listado de Servicios del panel.
+**Qué se ve:** el mismo local, del otro lado. Pack **Gym + Funcional**: acceso libre (sin límite de sesiones) + Funcional con créditos. Atajos Sesiones, Tienda y Documentos. Abajo, una clase próxima. El socio **no** ve el listado de Servicios del panel.
 
 En estas dos fotos se entiende el modelo: el staff arma **Gym** y **Funcional**; el socio no ve esos ítems sueltos, ve **un pack** que los junta.
 
@@ -386,7 +386,7 @@ Todavía puede no tener pack: lo cobrás en Caja (§11) o él compra en la Tiend
 
 Estados: **Activo / Suspendido / Inactivo**. Suspender corta el acceso; no es borrar la cuenta.
 
-**Carpeta** (ícono en la grilla): notas y PDF/imagen del socio. Las etiquetas las arma el gym. El socio las ve en la app → Ajustes → **Mis documentos**. Lo mismo existe en Staff.
+**Carpeta** (ícono en la grilla): notas y PDF/imagen del socio. Las etiquetas las arma el gym. El socio las ve en la app → Inicio → **Documentos**. Lo mismo existe en Staff.
 
 **Estado de cuenta** (otro modal): contratos, acceso libre, créditos, deuda, próximas reservas (si la clase se pagó con crédito o drop-in). Es la contrapantalla de Inicio en la app.
 
@@ -588,7 +588,7 @@ Pase manual: el personal con permiso deja pasar a alguien que la regla no dejar�
 
 Pestañas: **Inicio | Acceso | Ajustes**.
 
-- Inicio: cuenta, pack (créditos agrupados; clase suelta usada no se lista), atajos Sesiones / Tienda.
+- Inicio: cuenta, pack (créditos agrupados; clase suelta usada no se lista), atajos Sesiones / Tienda / Documentos.
 - Sesiones: calendario, día, mis clases.
 - Tienda: pestaña Packs y pestaña Sesiones (drop-in), carrito, historial.
 - Acceso: credencial / QR.
