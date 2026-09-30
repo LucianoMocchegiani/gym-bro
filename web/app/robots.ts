@@ -21,6 +21,7 @@ export default function robots(): MetadataRoute.Robots {
         '/roles',
         '/staff',
         '/config',
+        '/avisos',
         '/devoluciones',
         '/reportes',
         '/puerta',

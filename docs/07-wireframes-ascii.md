@@ -200,14 +200,20 @@ Carrito
 
 ```text
 +----------------------------------+
-| Avisos                    (Conf) |
-| * Pago aprobado  $...            |
-| * Reserva confirmada GAP...      |
-|   Cuota por vencer               |
+| Avisos                           |
+| Correo por tipo  [switches]      |
+|                                  |
+| Nuevos                           |
+| * Pago acreditado  30/09 16:02   |
+| Anteriores                       |
+|   Reserva confirmada  29/09 …    |
 +----------------------------------+
-| Conf: [x] E1 [x] E2 [ ] E7 ...   |
+| Vacío: icono + “Todavía no hay   |
+| avisos” + qué va a aparecer      |
 +----------------------------------+
 ```
+
+Inicio: atajo Avisos con conteo de no leídos.
 
 ---
 
@@ -225,6 +231,8 @@ Carrito
 ```
 
 Sin sesión / 401 sin refresh → `/login` (RequireStaff + `GET /auth/me`). Super: `/super/login`.
+
+**Avisos** (Sistema): plantillas por evento (`GET|PATCH /notification-templates`). Apagar evento = no in-app ni mail.
 
 **Vencimientos** (Operación, corte 1): cola sobre contratos MONTHLY + mandato; no es módulo de dominio ni reporte. Lista + ficha/Caja/Débitos. Avisos automáticos = E8.
 

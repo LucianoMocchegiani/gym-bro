@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -5,6 +7,7 @@ import '../../core/network/api_client.dart';
 import '../account/account_repository.dart';
 import '../auth/auth_controller.dart';
 import '../folder/documents_screen.dart';
+import '../notifications/notifications_repository.dart';
 import '../notifications/notifications_screen.dart';
 import '../sessions/sessions_screen.dart';
 import '../store/store_screen.dart';
@@ -21,6 +24,7 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   Future<MemberAccount>? _future;
   bool _started = false;
+  int? _unreadCount;
 
   @override
   void didChangeDependencies() {
@@ -28,20 +32,62 @@ class _HomeScreenState extends State<HomeScreen> {
     if (!_started) {
       _started = true;
       _future = context.read<AccountRepository>().fetchMine();
+      unawaited(_loadUnread());
     }
   }
 
   Future<void> _reload() async {
+    final next = context.read<AccountRepository>().fetchMine();
     setState(() {
-      _future = context.read<AccountRepository>().fetchMine();
+      _future = next;
     });
-    await _future;
+    await Future.wait<void>([next.then((_) {}), _loadUnread()]);
+  }
+
+  Future<void> _loadUnread() async {
+    try {
+      final items = await context.read<NotificationsRepository>().listMine();
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _unreadCount = items.where((n) => !n.inAppRead).length;
+      });
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _unreadCount = null;
+      });
+    }
+  }
+
+  String _avisosSubtitle() {
+    final n = _unreadCount;
+    if (n == null) {
+      return 'Bandeja';
+    }
+    if (n == 0) {
+      return 'Al día';
+    }
+    if (n == 1) {
+      return '1 nuevo';
+    }
+    return '$n nuevos';
+  }
+
+  Future<void> _openAvisos() async {
+    await Navigator.of(context).push(
+      MaterialPageRoute<void>(builder: (_) => const NotificationsScreen()),
+    );
+    if (mounted) {
+      await _loadUnread();
+    }
   }
 
   void _open(Widget page) {
-    Navigator.of(context).push(
-      MaterialPageRoute<void>(builder: (_) => page),
-    );
+    Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => page));
   }
 
   @override
@@ -61,14 +107,14 @@ class _HomeScreenState extends State<HomeScreen> {
           Text(
             'Hola,',
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  color: scheme.onSurface.withValues(alpha: 0.55),
-                ),
+              color: scheme.onSurface.withValues(alpha: 0.55),
+            ),
           ),
           Text(
             hello,
-            style: Theme.of(context).textTheme.headlineLarge?.copyWith(
-                  letterSpacing: 0.2,
-                ),
+            style: Theme.of(
+              context,
+            ).textTheme.headlineLarge?.copyWith(letterSpacing: 0.2),
           ),
           const SizedBox(height: 20),
           if (future == null)
@@ -140,8 +186,9 @@ class _HomeScreenState extends State<HomeScreen> {
                           child: _HubTile(
                             icon: Icons.notifications_outlined,
                             label: 'Avisos',
-                            subtitle: 'Bandeja',
-                            onTap: () => _open(const NotificationsScreen()),
+                            subtitle: _avisosSubtitle(),
+                            badgeCount: _unreadCount,
+                            onTap: _openAvisos,
                           ),
                         ),
                       ],
@@ -153,7 +200,9 @@ class _HomeScreenState extends State<HomeScreen> {
                         style: Theme.of(context).textTheme.titleMedium,
                       ),
                       const SizedBox(height: 8),
-                      ...account.reservations.take(3).map(
+                      ...account.reservations
+                          .take(3)
+                          .map(
                             (r) => Padding(
                               padding: const EdgeInsets.only(bottom: 8),
                               child: ListTile(
@@ -164,10 +213,10 @@ class _HomeScreenState extends State<HomeScreen> {
                                 ),
                                 title: Text(r.serviceName),
                                 subtitle: Text(
-                                  r.startsAt
-                                      .toLocal()
-                                      .toString()
-                                      .substring(0, 16),
+                                  r.startsAt.toLocal().toString().substring(
+                                    0,
+                                    16,
+                                  ),
                                 ),
                                 trailing: Text(
                                   r.status,
@@ -201,18 +250,15 @@ class _ContractedPacks extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Text(
-          'Packs vigentes',
-          style: Theme.of(context).textTheme.titleMedium,
-        ),
+        Text('Packs vigentes', style: Theme.of(context).textTheme.titleMedium),
         if (!alDia) ...[
           const SizedBox(height: 6),
           Text(
             'Deuda: \$${account.debtAmount}',
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: scheme.error,
-                  fontWeight: FontWeight.w600,
-                ),
+              color: scheme.error,
+              fontWeight: FontWeight.w600,
+            ),
           ),
         ],
         const SizedBox(height: 12),
@@ -259,27 +305,21 @@ class _PackCard extends StatelessWidget {
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [
-            scheme.primary.withValues(alpha: 0.16),
-            scheme.surface,
-          ],
+          colors: [scheme.primary.withValues(alpha: 0.16), scheme.surface],
         ),
         border: Border.all(color: scheme.outline.withValues(alpha: 0.45)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            pack.packName,
-            style: Theme.of(context).textTheme.titleLarge,
-          ),
+          Text(pack.packName, style: Theme.of(context).textTheme.titleLarge),
           if (endsLabel != null) ...[
             const SizedBox(height: 4),
             Text(
               endsLabel,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: scheme.onSurface.withValues(alpha: 0.55),
-                  ),
+                color: scheme.onSurface.withValues(alpha: 0.55),
+              ),
             ),
           ],
           const SizedBox(height: 12),
@@ -349,15 +389,12 @@ class _ServiceRow extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                title,
-                style: Theme.of(context).textTheme.titleSmall,
-              ),
+              Text(title, style: Theme.of(context).textTheme.titleSmall),
               Text(
                 detail,
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: scheme.onSurface.withValues(alpha: 0.6),
-                    ),
+                  color: scheme.onSurface.withValues(alpha: 0.6),
+                ),
               ),
             ],
           ),
@@ -373,12 +410,14 @@ class _HubTile extends StatelessWidget {
     required this.label,
     required this.subtitle,
     required this.onTap,
+    this.badgeCount,
   });
 
   final IconData icon;
   final String label;
   final String subtitle;
   final VoidCallback onTap;
+  final int? badgeCount;
 
   @override
   Widget build(BuildContext context) {
@@ -399,17 +438,20 @@ class _HubTile extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Icon(icon, size: 28, color: scheme.primary),
-                const SizedBox(height: 12),
-                Text(
-                  label,
-                  style: Theme.of(context).textTheme.titleMedium,
+                Badge(
+                  isLabelVisible: (badgeCount ?? 0) > 0,
+                  label: Text(
+                    (badgeCount ?? 0) > 9 ? '9+' : '${badgeCount ?? 0}',
+                  ),
+                  child: Icon(icon, size: 28, color: scheme.primary),
                 ),
+                const SizedBox(height: 12),
+                Text(label, style: Theme.of(context).textTheme.titleMedium),
                 Text(
                   subtitle,
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: scheme.onSurface.withValues(alpha: 0.55),
-                      ),
+                    color: scheme.onSurface.withValues(alpha: 0.55),
+                  ),
                 ),
               ],
             ),

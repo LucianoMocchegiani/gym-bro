@@ -57,9 +57,9 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         if (!mounted) {
           return;
         }
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(e.message)),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(e.message)));
         return;
       }
     }
@@ -84,9 +84,10 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
 
   Future<void> _toggleEmail(String eventCode, bool value) async {
     try {
-      final pref = await context
-          .read<NotificationsRepository>()
-          .setEmailPref(eventCode, value);
+      final pref = await context.read<NotificationsRepository>().setEmailPref(
+        eventCode,
+        value,
+      );
       if (!mounted) {
         return;
       }
@@ -100,16 +101,24 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       if (!mounted) {
         return;
       }
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.message)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(e.message)));
     }
+  }
+
+  String _when(DateTime at) {
+    final l = at.toLocal();
+    String two(int n) => n.toString().padLeft(2, '0');
+    return '${two(l.day)}/${two(l.month)} ${two(l.hour)}:${two(l.minute)}';
   }
 
   @override
   Widget build(BuildContext context) {
     final items = _items;
     final err = _error;
+    final unread = items?.where((n) => !n.inAppRead).toList() ?? [];
+    final read = items?.where((n) => n.inAppRead).toList() ?? [];
 
     return Scaffold(
       appBar: AppBar(title: const Text('Avisos')),
@@ -147,39 +156,116 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                 child: Center(child: CircularProgressIndicator()),
               )
             else if (items.isEmpty)
-              const Padding(
-                padding: EdgeInsets.symmetric(vertical: 40),
-                child: Text(
-                  'No hay avisos todavía',
-                  textAlign: TextAlign.center,
+              const _EmptyInbox()
+            else ...[
+              if (unread.isNotEmpty) ...[
+                _SectionLabel(text: 'Nuevos'),
+                ...unread.map(
+                  (n) => _NoticeTile(
+                    notice: n,
+                    when: _when(n.createdAt),
+                    onTap: () => _open(n),
+                  ),
                 ),
-              )
-            else
-              ...items.map(
-                (n) => ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  leading: Icon(
-                    n.inAppRead
-                        ? Icons.mark_email_read_outlined
-                        : Icons.mark_email_unread_outlined,
+              ],
+              if (read.isNotEmpty) ...[
+                _SectionLabel(text: unread.isEmpty ? 'Bandeja' : 'Anteriores'),
+                ...read.map(
+                  (n) => _NoticeTile(
+                    notice: n,
+                    when: _when(n.createdAt),
+                    onTap: () => _open(n),
                   ),
-                  title: Text(
-                    n.title,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontWeight:
-                          n.inAppRead ? FontWeight.normal : FontWeight.w600,
-                    ),
-                  ),
-                  subtitle: Text(
-                    n.createdAt.toLocal().toString().split('.').first,
-                  ),
-                  onTap: () => _open(n),
                 ),
-              ),
+              ],
+            ],
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _SectionLabel extends StatelessWidget {
+  const _SectionLabel({required this.text});
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 12, bottom: 4),
+      child: Text(text, style: Theme.of(context).textTheme.titleSmall),
+    );
+  }
+}
+
+class _NoticeTile extends StatelessWidget {
+  const _NoticeTile({
+    required this.notice,
+    required this.when,
+    required this.onTap,
+  });
+
+  final AppNotification notice;
+  final String when;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final unread = !notice.inAppRead;
+    return ListTile(
+      contentPadding: EdgeInsets.zero,
+      leading: Icon(
+        unread
+            ? Icons.mark_email_unread_outlined
+            : Icons.mark_email_read_outlined,
+      ),
+      title: Text(
+        notice.title,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: TextStyle(
+          fontWeight: unread ? FontWeight.w600 : FontWeight.normal,
+        ),
+      ),
+      subtitle: Text(when, maxLines: 1, overflow: TextOverflow.ellipsis),
+      onTap: onTap,
+    );
+  }
+}
+
+/// Vacío: aún no hubo envíos para este socio.
+class _EmptyInbox extends StatelessWidget {
+  const _EmptyInbox();
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 36, horizontal: 12),
+      child: Column(
+        children: [
+          Icon(
+            Icons.notifications_none_outlined,
+            size: 48,
+            color: scheme.primary,
+          ),
+          const SizedBox(height: 12),
+          Text(
+            'Todavía no hay avisos',
+            textAlign: TextAlign.center,
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
+          const SizedBox(height: 6),
+          Text(
+            'Cuando se acredite un pago, se confirme una reserva o venza un pack, va a aparecer acá. El mail se puede apagar arriba, evento por evento.',
+            textAlign: TextAlign.center,
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: scheme.onSurface.withValues(alpha: 0.6),
+            ),
+          ),
+        ],
       ),
     );
   }

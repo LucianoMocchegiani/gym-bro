@@ -33,7 +33,7 @@
 
 **Flujo principal:**
 1. Elige código de evento.
-2. Edita asunto/cuerpo (variables documentadas: `{{nombre}}`, `{{monto}}`, etc.).
+2. Edita asunto/cuerpo (variables documentadas: `{{nombre}}`, `{{monto}}`, etc.). Admin: **Avisos**.
 3. Activa/desactiva evento.
 4. Guarda.
 

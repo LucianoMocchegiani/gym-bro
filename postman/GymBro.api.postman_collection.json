@@ -4935,7 +4935,7 @@
         },
         {
             "name": "Notifications N1",
-            "description": "Bandeja in-app del socio y opt-out de email. Disparo: pago APPROVED (caja/MP). MAIL_DRIVER stub|resend.",
+            "description": "Bandeja in-app del socio, opt-out de email y plantillas Staff. Disparo: eventos de negocio (pago, reserva, waitlist, devolución, cron vencimiento). MAIL_DRIVER stub|resend.",
             "item": [
                 {
                     "name": "Me GET notifications",
@@ -4971,6 +4971,28 @@
                             "raw": "{\n  \"eventCode\": \"PAYMENT_APPROVED\",\n  \"emailEnabled\": false\n}"
                         },
                         "url": "{{baseUrl}}/api/me/notification-preferences"
+                    }
+                },
+                {
+                    "name": "Staff GET notification templates",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": "{{baseUrl}}/api/notification-templates",
+                        "description": "Plantillas cableadas + default. JWT Staff `tenant.settings.read`."
+                    }
+                },
+                {
+                    "name": "Staff PATCH notification template",
+                    "request": {
+                        "method": "PATCH",
+                        "header": [{"key": "Content-Type", "value": "application/json"}],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"subject\": \"Pago acreditado — {{gym}}\",\n  \"body\": \"Hola {{nombre}}, acreditamos un pago de {{monto}} en {{gym}}.\",\n  \"active\": true\n}"
+                        },
+                        "url": "{{baseUrl}}/api/notification-templates/PAYMENT_APPROVED",
+                        "description": "Upsert asunto/cuerpo/activo. JWT Staff `tenant.settings.write`."
                     }
                 }
             ]

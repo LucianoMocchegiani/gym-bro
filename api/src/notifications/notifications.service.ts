@@ -9,13 +9,16 @@ import {
   CABLED_NOTIFICATION_EVENTS,
   defaultTemplate,
   formatAmountArs,
+  notificationEventLabel,
   renderTemplate,
+  templatePlaceholders,
 } from './notification.defaults';
 import { MAIL_PORT } from './mail.port';
 import type { MailPort } from './mail.port';
 import type {
   NotificationDetail,
   NotificationPreferenceDetail,
+  NotificationTemplateDetail,
 } from './notifications.types';
 
 export type NotifyMemberInput = {
@@ -268,5 +271,73 @@ export class NotificationsService {
       update: { emailEnabled },
     });
     return { eventCode, emailEnabled };
+  }
+
+  /**
+   * Lista eventos cableados con default o fila del tenant (RN-NOT-003 / RN-NOT-007).
+   */
+  async listTemplates(tenantId: string): Promise<NotificationTemplateDetail[]> {
+    const rows = await this.prisma.notificationTemplate.findMany({
+      where: { tenantId },
+    });
+    const byEvent = new Map(rows.map((r) => [r.eventCode, r]));
+    return CABLED_NOTIFICATION_EVENTS.map((eventCode) =>
+      this.toTemplateDetail(eventCode, byEvent.get(eventCode) ?? null),
+    );
+  }
+
+  /**
+   * Upsert de asunto/cuerpo y activo. Evento no cableado → 404.
+   */
+  async upsertTemplate(
+    tenantId: string,
+    eventCode: NotificationEventCode,
+    input: { subject: string; body: string; active: boolean },
+  ): Promise<NotificationTemplateDetail> {
+    this.assertCabled(eventCode);
+    const row = await this.prisma.notificationTemplate.upsert({
+      where: {
+        tenantId_eventCode: { tenantId, eventCode },
+      },
+      create: {
+        tenantId,
+        eventCode,
+        subject: input.subject,
+        body: input.body,
+        active: input.active,
+      },
+      update: {
+        subject: input.subject,
+        body: input.body,
+        active: input.active,
+      },
+    });
+    return this.toTemplateDetail(eventCode, row);
+  }
+
+  private assertCabled(eventCode: NotificationEventCode): void {
+    if (!CABLED_NOTIFICATION_EVENTS.includes(eventCode)) {
+      throw new NotFoundException('Unknown notification event');
+    }
+  }
+
+  private toTemplateDetail(
+    eventCode: NotificationEventCode,
+    row: {
+      subject: string;
+      body: string;
+      active: boolean;
+    } | null,
+  ): NotificationTemplateDetail {
+    const fallback = defaultTemplate(eventCode);
+    return {
+      eventCode,
+      label: notificationEventLabel(eventCode),
+      subject: row?.subject ?? fallback.subject,
+      body: row?.body ?? fallback.body,
+      active: row?.active ?? true,
+      customized: row !== null,
+      placeholders: templatePlaceholders(eventCode),
+    };
   }
 }

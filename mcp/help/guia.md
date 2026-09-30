@@ -2,7 +2,7 @@
 
 Texto de cómo **se ven y se usan** las pantallas. Las fotos están en el sitio: `/docs` (Qué es, Primeros pasos, Módulos). **No tenés las imágenes:** si piden una captura o “mostrame la pantalla”, mandalos a `/docs`. En el Admin, para abrir una ruta, usá `suggest_nav`.
 
-Fuera de esta guía: Super Admin, rutinas, avisos, tienda de productos físicos.
+Fuera de esta guía: Super Admin, rutinas, bandeja operativa de staff, push, tienda de productos físicos.
 
 ## Dos caras
 
@@ -22,7 +22,7 @@ A la izquierda, agrupado:
 - **Operación:** Inicio, Puerta, Caja, Vencimientos, Cierre, solicitudes de devolución, Reportes.
 - **Personas:** Afiliados, Staff, Roles y permisos.
 - **Catálogo:** Servicios, Packs, Sesiones.
-- **Sistema:** Config (y el resto de sistema).
+- **Sistema:** Config, Avisos (plantillas), Plan / Uso, Auditoría.
 
 Abajo a la derecha: burbuja del **asistente** (en el panel consulta datos del gym; puede equivocarse; no cobra).
 
@@ -38,6 +38,10 @@ Saludo, tarjetas del día (afiliados activos, ingresos, accesos, socios sin pack
 ## Config
 
 Una pantalla, dos bloques: **Operación** (horas de cancelación, lista de espera, ingreso tardío, tolerancia de deuda, multi-ingreso) y **Mercado Pago** (cuenta del negocio). Cómo crear la app, pegar token y cargar webhooks: `get_help` topic `mercadopago`. El socio no ve Config; nota el efecto (pagar online, cancelar, entrar con deuda).
+
+## Avisos (plantillas)
+
+Sistema → **Avisos**. Un recuadro por evento (pago, reserva, waitlist, devolución, pack por vencer / tolerancia). Se edita asunto y cuerpo (`{{nombre}}`, `{{gym}}`, etc.) y se puede apagar el evento. Permiso de config. No es la bandeja del socio: eso está en la app, Inicio → Avisos.
 
 ## Servicios
 
@@ -85,7 +89,7 @@ App → **Acceso:** primero Aceptar la credencial (oferta del pack); después pr
 
 Pestañas: **Inicio | Acceso | Ajustes**.
 
-- Inicio: cuenta, pack vigente (ej. Gym + Funcional: acceso libre + créditos), atajos Sesiones, Tienda y Documentos, próxima clase.
+- Inicio: cuenta, pack vigente (ej. Gym + Funcional: acceso libre + créditos), atajos Sesiones, Tienda, Documentos y Avisos, próxima clase.
 - Sesiones: calendario, día, mis clases.
 - Tienda: Packs y Sesiones (drop-in), carrito, Pagar con Mercado Pago, Historial.
 - Acceso: credencial / QR.
@@ -93,7 +97,7 @@ Pestañas: **Inicio | Acceso | Ajustes**.
 
 Staff (mismo binario): Inicio con Sesiones, Caja (si tiene permiso) y **Documentos**.
 
-La **carpeta** (notas/PDF) sí está; un módulo de rutinas por días **no**. Avisos automáticos todavía no.
+La **carpeta** (notas/PDF) sí está; un módulo de rutinas por días **no**. Avisos al socio: bandeja in-app + email; el gym edita textos en Admin → Avisos. Push no.
 
 ## Cómo arrancar un local (orden)
 

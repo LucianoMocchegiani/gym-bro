@@ -91,6 +91,12 @@ export const NAV_MAP: readonly NavEntry[] = [
     keywords: ['config', 'ajustes', 'mercadopago', 'mp'],
   },
   {
+    href: '/avisos',
+    label: 'Avisos',
+    anyOf: ['tenant.settings.read', 'tenant.settings.write'],
+    keywords: ['aviso', 'avisos', 'plantilla', 'notificacion', 'email'],
+  },
+  {
     href: '/auditoria',
     label: 'Auditoría',
     anyOf: ['audit.read'],

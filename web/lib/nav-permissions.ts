@@ -29,6 +29,10 @@ export const ADMIN_NAV_PERMISSIONS: readonly NavPermissionRule[] = [
     href: '/config',
     anyOf: ['tenant.settings.read', 'tenant.settings.write', 'mp.connect'],
   },
+  {
+    href: '/avisos',
+    anyOf: ['tenant.settings.read', 'tenant.settings.write'],
+  },
   { href: '/plan', anyOf: ['tenant.settings.read'] },
   { href: '/auditoria', anyOf: ['audit.read'] },
   // Gestión de gyms: solo el tenant `admin` (además la API exige el slug).

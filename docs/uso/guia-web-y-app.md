@@ -3,7 +3,7 @@
 **Estado:** Publicada en `/docs` (se refina).  
 **Sitio:** `web/content/docs/guia.md` + capturas en `web/public/docs/`.  
 **Para quién:** dueño y staff del local. El socio no lee esto: lo vive en la app.  
-**Fuera de esta guía:** Super Admin, rutinas, plantillas de aviso en Admin, push, tienda de productos físicos, noticias del local.
+**Fuera de esta guía:** Super Admin, rutinas, bandeja de avisos del staff, push, tienda de productos físicos, noticias del local.
 
 Este archivo es el **playbook de capturas** (qué foto falta, dónde sacarla). El texto que ve el lector está en el sitio.
 

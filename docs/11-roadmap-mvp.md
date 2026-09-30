@@ -177,12 +177,12 @@ Reemplaza el corte de **rutinas estructuradas** (plantillas/cumplimiento → [ba
 
 ## E8 — Notificaciones N1
 
-- [x] Modelo plantilla + preferencias (tablas; plantilla default en código; UI Admin plantillas **no**)
+- [x] Modelo plantilla + preferencias (tablas; default en código; Admin `/avisos`)
 - [x] Dispatcher dominio → in-app + email (`MailPort` stub/Resend)
 - [~] Eventos E1–E9 — cableados: pago, reserva±, waitlist, devolución, vencimiento/tolerancia. Sin puerta ni rutina
-- [ ] Gym activa/desactiva eventos (Admin)
+- [x] Gym activa/desactiva eventos (Admin Avisos)
 - [x] Afiliado opt-out de email (app Avisos, por evento)
-- [ ] Plantillas editables (Admin)
+- [x] Plantillas editables (Admin `/avisos`)
 - [ ] Bandeja admin / avisos operativos
 - [x] Job avisos por vencer / vencida (cron 12:00 ART, una vez por contrato)
 - [ ] Push (N2) → [backlog](./99-backlog-post-mvp/notificaciones.md)
@@ -210,8 +210,8 @@ Detalle: [14-auditoria-roadmap-vs-codigo-2026-08-13.md](./14-auditoria-roadmap-v
   - Nav real: **Inicio · Acceso · Ajustes** (tema claro/oscuro)
 - [x] Documentos (carpeta, lectura)
   - Inicio → Documentos; visor Markdown; 10 ítems / 5 MB; `GET /me/folder`
-- [x] Avisos N1 (bandeja in-app + opt-out email de pago)
-  - Inicio → Avisos; `GET /me/notifications`
+- [x] Avisos N1 (bandeja in-app + opt-out email por evento)
+  - Inicio → Avisos (nuevos/anteriores, vacío, badge no leídos); `GET /me/notifications`
 - [x] Acceso + Credenciales (SSI)
   - Escanear OID4VCI/VP + bandeja offers (`accept`/`fail`) + `identity_core_dart`
   - Kuatia: defaults `issuer.kuatia.xyz` / `verifier.kuatia.xyz` (`KUATIA_*_PUBLIC_URL`)
@@ -393,7 +393,7 @@ E11 → E12
 P1 molinetes → P2 débito QA (+ E5 MP live) → P3 landing/pricing/SEO
   → P4 tokens OpenRouter → P5 migración Excel/IA (último, opcional al piloto)
 En paralelo ops: staging/prod, ToS, smoke E12, gym piloto
-E7 carpeta (hecho) y E8 N1: primer corte (pago + bandeja) hecho; Admin plantillas / E2–E9 / push pendientes
+E7 carpeta (hecho) y E8 N1: bandeja + plantillas Admin + eventos cableados (sin puerta); bandeja staff y push pendientes
 P1 forma del piloto (molinete vs tablet): se evalúa
 ```
 

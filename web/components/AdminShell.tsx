@@ -80,6 +80,7 @@ const NAV_GROUPS: NavGroup[] = [
     label: 'Sistema',
     items: [
       { href: '/config', label: 'Config' },
+      { href: '/avisos', label: 'Avisos' },
       { href: '/plan', label: 'Plan / Uso' },
       { href: '/auditoria', label: 'Auditoría' },
     ],
@@ -96,6 +97,7 @@ function navGroupsForTenant(slug: string | null): NavGroup[] {
         if (item.href === '/sesiones') return false;
         if (item.href === '/afiliados') return false;
         if (item.href === '/plan') return false;
+        if (item.href === '/avisos') return false;
       } else if (item.href === '/tenants') {
         return false;
       }

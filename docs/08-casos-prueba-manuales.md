@@ -228,9 +228,9 @@ Pasos de VPS: [uso/probar-debito-suscripcion-mp.md](./uso/probar-debito-suscripc
 | # | Caso | Esperado | RN/CU | R |
 |---|------|----------|-------|---|
 | N1 | Pago aprobado (caja o MP) | Email (si MAIL_DRIVER=resend) + fila in-app | E1 | |
-| N2 | Gym apaga evento (fila plantilla `active=false`) | No envía | RN-NOT-003 | |
+| N2 | Gym apaga evento (Admin Avisos o `active=false`) | No envía ni in-app | RN-NOT-003 | |
 | N3 | Afiliado apaga email en Avisos | Siguiente pago: bandeja sí, mail no | CU-NOT-003 | |
-| N4 | Editar plantilla | Siguiente envío usa texto nuevo (API/DB; sin UI Admin aún) | CU-NOT-002 | |
+| N4 | Editar plantilla en Admin `/avisos` | Siguiente envío usa texto nuevo | CU-NOT-002 | |
 | N5 | Branding nombre gym | Visible en asunto/cuerpo | RN-NOT-004 | |
 | N6 | Mismo pago webhook 2 veces | Un solo aviso (idempotencia) | | |
 | N7 | Reserva confirmada / cancelada | Aviso in-app (y mail si ON) | E4 E5 | |
