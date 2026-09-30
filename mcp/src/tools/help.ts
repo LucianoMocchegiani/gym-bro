@@ -15,6 +15,7 @@ const TOPICS = [
   'caja',
   'vencimientos',
   'debito',
+  'mercadopago',
   'devoluciones',
   'reportes',
   'roles',
@@ -41,7 +42,7 @@ export function registerHelpTools(server: McpServer): void {
     {
       title: 'Ayuda Faciliter',
       description:
-        'Artículo de cómo funciona Faciliter (español). topic: producto (visión), guia (pantallas; fotos en /docs), afiliados, packs, sesiones, puerta, caja, vencimientos, debito, devoluciones, reportes, roles, chat, soporte (contacto si hay un problema). Sin topic lista los temas. Si reportan un error, bug o piden ayuda humana, usá soporte. Para “dónde queda / cómo se ve / qué ve el socio”, usá guia. No cobra ni edita.',
+        'Artículo de cómo funciona Faciliter (español). topic: producto (visión), guia (pantallas; fotos en /docs), afiliados, packs, sesiones, puerta, caja, vencimientos, debito, mercadopago (conectar MP del local: app, token, webhooks), devoluciones, reportes, roles, chat, soporte (contacto si hay un problema). Sin topic lista los temas. Si reportan un error, bug o piden ayuda humana, usá soporte. Para “dónde queda / cómo se ve / qué ve el socio”, usá guia. Para “cómo conectar Mercado Pago / webhooks / token”, usá mercadopago (alias mp). No cobra ni edita.',
       inputSchema: {
         topic: z
           .string()
@@ -52,26 +53,28 @@ export function registerHelpTools(server: McpServer): void {
     },
     async ({ topic }) => {
       const key = topic?.trim().toLowerCase();
+      const resolved =
+        key === 'mp' ? 'mercadopago' : key;
       if (!key) {
         return jsonResult({
           topics: [...TOPICS],
-          hint: 'Pasá topic con uno de esos valores.',
+          hint: 'Pasá topic con uno de esos valores (mp = mercadopago).',
         });
       }
-      if (!isTopic(key)) {
+      if (!resolved || !isTopic(resolved)) {
         return jsonResult({
           error: 'topic desconocido',
           topics: [...TOPICS],
         });
       }
       try {
-        const markdown = await readFile(join(helpDir(), `${key}.md`), 'utf8');
+        const markdown = await readFile(join(helpDir(), `${resolved}.md`), 'utf8');
         return jsonResult({
-          topic: key,
+          topic: resolved,
           markdown: markdown.trim(),
         });
       } catch {
-        console.error(`help missing: ${key}`);
+        console.error(`help missing: ${resolved}`);
         return jsonResult({
           error: 'artículo no disponible',
           topics: [...TOPICS],

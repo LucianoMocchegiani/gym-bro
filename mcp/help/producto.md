@@ -20,7 +20,7 @@ Brain lleva quién lo tiene, si está vigente y qué le da derecho a hacer.
 
 ## Cobros
 
-Brain **cobra y puede debitar** afiliados en línea (Mercado Pago de la **cuenta del negocio**). El efectivo se registra en **caja** (mostrador) y se cierra el día (arqueo). El dinero del socio **no** se queda en Faciliter.
+Brain **cobra y puede debitar** afiliados en línea (Mercado Pago de la **cuenta del negocio**). Cómo conectar esa cuenta: `get_help` topic `mercadopago`. El efectivo se registra en **caja** (mostrador) y se cierra el día (arqueo). El dinero del socio **no** se queda en Faciliter.
 
 ## Puerta
 

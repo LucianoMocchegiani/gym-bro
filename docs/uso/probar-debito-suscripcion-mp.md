@@ -9,7 +9,7 @@ Faciliter **no guarda la tarjeta**. El cobro lo dispara Mercado Pago (plan + pre
 
 1. Deploy del API con `npx prisma migrate deploy` (migraciones `20260929220000` + `20260929221000`).
 2. Staff con permiso `cashier.operate`.
-3. Cuenta MP del **gym** conectada en Config.
+3. Cuenta MP del **gym** conectada en Config (guía: [configurar-mercadopago-tenant.md](./configurar-mercadopago-tenant.md)).
 4. En la app MP del gym: producto **Suscripciones** y webhooks hacia  
    `{PUBLIC_API_BASE_URL}/api/webhooks/payment?tenantId={uuid-del-gym}`  
    topics: `payment`, `subscription_preapproval`, `subscription_authorized_payment`.

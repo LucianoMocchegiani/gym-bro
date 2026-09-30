@@ -77,6 +77,6 @@ platform.impersonate    → impersonar staff de cualquier tenant
 Tenant: { slug: 'admin', name: 'Faciliter Admin' }
 StaffUser: { email: 'admin@faciliter.xyz', tenantId: admin-tenant }
 Role: 'super-admin'
-Pack seed: Faciliter Brain Basic + servicios (Plataforma Brain, Agente de IA, …)
+Pack seed: Faciliter Brain Basic (60000) + Faciliter Brain Basic de prueba (100) + servicios (Plataforma Brain, Agente de IA, …)
 Landing: GET /public/platform/packs
 ```

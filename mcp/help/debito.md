@@ -4,4 +4,4 @@
 
 Alta en **Caja**: tilde + **link** de checkout MP (`init_point`). El socio completa en Mercado Pago. Pestaña Débitos: pendientes de pagar el link, activos, fallidos; baja; cambio de pack. La ficha solo ataja a `/caja?memberId=&vista=debitos`.
 
-El asistente **lista** mandatos. **No enrola ni cancela.** Hace falta permiso de caja y MP conectado en Config.
+El asistente **lista** mandatos. **No enrola ni cancela.** Hace falta permiso de caja y MP conectado en Config (cómo: `get_help` topic `mercadopago`).

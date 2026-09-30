@@ -107,7 +107,8 @@ Reglas:
 | Recurso | Nombre | Id fijo |
 |---------|--------|---------|
 | Service | `Faciliter Brain` | `00000000-0000-4000-8000-000000000010` |
-| Pack | `Faciliter Brain (mensual)` — 30000 ARS, `MONTHLY` | `00000000-0000-4000-8000-000000000011` |
+| Pack | `Faciliter Brain Basic` — 60000 ARS, `MONTHLY` | `00000000-0000-4000-8000-000000000011` |
+| Pack | `Faciliter Brain Basic de prueba` — 100 ARS, `MONTHLY` | `00000000-0000-4000-8000-000000000016` |
 
 Si querés tus propios valores, poné el id del pack de admin en `{{createdPackId}}` o usá el fijo en el body. El `PackComponent` también es obligatorio: sin él el cobro devuelve *"Pack has no components"*.
 

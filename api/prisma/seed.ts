@@ -547,12 +547,15 @@ async function main(): Promise<void> {
     }
 
     const BRAIN_PACK_ID = '00000000-0000-4000-8000-000000000011';
+    const BRAIN_TRIAL_PACK_ID = '00000000-0000-4000-8000-000000000016';
+    const catalogServiceIds = [brainService.id, ...extraServices.map((s) => s.id)];
+
     const brainPack = await prisma.pack.upsert({
       where: { id: BRAIN_PACK_ID },
       update: {
         name: 'Faciliter Brain Basic',
         description: 'Pack de plataforma: Brain más operación del gym.',
-        price: 30000,
+        price: 60000,
         billingPeriod: BillingPeriod.MONTHLY,
         active: true,
       },
@@ -561,25 +564,48 @@ async function main(): Promise<void> {
         tenantId: ADMIN_TENANT.id,
         name: 'Faciliter Brain Basic',
         description: 'Pack de plataforma: Brain más operación del gym.',
-        price: 30000,
+        price: 60000,
         billingPeriod: BillingPeriod.MONTHLY,
         active: true,
       },
     });
 
-    const catalogServiceIds = [brainService.id, ...extraServices.map((s) => s.id)];
-    for (const serviceId of catalogServiceIds) {
-      await prisma.packComponent.upsert({
-        where: {
-          packId_serviceId: { packId: brainPack.id, serviceId },
-        },
-        update: { creditAmount: 1 },
-        create: {
-          packId: brainPack.id,
-          serviceId,
-          creditAmount: 1,
-        },
-      });
+    const brainTrialPack = await prisma.pack.upsert({
+      where: { id: BRAIN_TRIAL_PACK_ID },
+      update: {
+        name: 'Faciliter Brain Basic de prueba',
+        description:
+          'Mismo alcance que Basic; precio de prueba para validar Mercado Pago.',
+        price: 100,
+        billingPeriod: BillingPeriod.MONTHLY,
+        active: true,
+      },
+      create: {
+        id: BRAIN_TRIAL_PACK_ID,
+        tenantId: ADMIN_TENANT.id,
+        name: 'Faciliter Brain Basic de prueba',
+        description:
+          'Mismo alcance que Basic; precio de prueba para validar Mercado Pago.',
+        price: 100,
+        billingPeriod: BillingPeriod.MONTHLY,
+        active: true,
+      },
+    });
+
+    for (const packId of [brainPack.id, brainTrialPack.id]) {
+      for (const serviceId of catalogServiceIds) {
+        await prisma.packComponent.upsert({
+          where: {
+            packId_serviceId: { packId, serviceId },
+          },
+          update: { creditAmount: 1 },
+          create: {
+            packId,
+            serviceId,
+            creditAmount: 1,
+          },
+        });
+      }
     }
 
     console.log('Seed OK');
@@ -588,6 +614,11 @@ async function main(): Promise<void> {
     adminTenant: { id: ADMIN_TENANT.id, name: ADMIN_TENANT.name, slug: 'admin' },
     platformCatalog: {
       pack: { id: brainPack.id, name: brainPack.name, price: brainPack.price },
+      trialPack: {
+        id: brainTrialPack.id,
+        name: brainTrialPack.name,
+        price: brainTrialPack.price,
+      },
       services: catalogServiceIds.length,
     },
     branch: { id: branch.id, name: branch.name },

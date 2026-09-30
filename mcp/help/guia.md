@@ -37,7 +37,7 @@ Saludo, tarjetas del día (afiliados activos, ingresos, accesos, socios sin pack
 
 ## Config
 
-Una pantalla, dos bloques: **Operación** (horas de cancelación, lista de espera, ingreso tardío, tolerancia de deuda, multi-ingreso) y **Mercado Pago** (cuenta del negocio). El socio no ve Config; nota el efecto (pagar online, cancelar, entrar con deuda).
+Una pantalla, dos bloques: **Operación** (horas de cancelación, lista de espera, ingreso tardío, tolerancia de deuda, multi-ingreso) y **Mercado Pago** (cuenta del negocio). Cómo crear la app, pegar token y cargar webhooks: `get_help` topic `mercadopago`. El socio no ve Config; nota el efecto (pagar online, cancelar, entrar con deuda).
 
 ## Servicios
 

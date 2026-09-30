@@ -45,6 +45,7 @@ Reglas relacionadas
 | [13-setup-db-desde-cero.md](./13-setup-db-desde-cero.md) | Migraciones + seed al levantar de 0 / tras `down -v` | Viva |
 | [uso/guia-web-y-app.md](./uso/guia-web-y-app.md) | Guía de uso (staff). Sitio público: `/docs` | Viva (se refina) |
 | [uso/probar-debito-suscripcion-mp.md](./uso/probar-debito-suscripcion-mp.md) | Comprobar débito MONTHLY en VPS (suscripción MP, sin Brick) | Viva |
+| [uso/configurar-mercadopago-tenant.md](./uso/configurar-mercadopago-tenant.md) | Guía MP para gyms/clubes: app, credenciales, webhooks y ejemplo `admin` | Viva |
 | [14-auditoria-roadmap-vs-codigo-2026-08-13.md](./14-auditoria-roadmap-vs-codigo-2026-08-13.md) | Contraste roadmap MVP vs API/web/mobile | Viva (corte 2026-08-13) |
 | [15-kuatia-deuda-rename.md](./15-kuatia-deuda-rename.md) | Deuda rename/SDK Kuatia; path `identity-core-dart` | Viva |
 | [16-chat-mcp-diseno.md](./16-chat-mcp-diseno.md) | Asistente Admin: `chat-api` portable + MCP GymBro + drawer; diseño cerrado (C7: chips; tope de uso pendiente) | Cerrado (diseño) |

@@ -29,6 +29,7 @@
     "prisma:studio": "prisma studio",
     "prisma:seed": "prisma db seed",
     "prisma:purge-stub": "node --experimental-strip-types --no-warnings prisma/purge-stub-payments.ts",
+    "prisma:upsert-platform-packs": "node --experimental-strip-types --no-warnings prisma/upsert-platform-packs.ts",
     "spike:mp-sub": "node --experimental-strip-types --no-warnings scripts/spike-mp-preapproval.ts"
   },
   "prisma": {
