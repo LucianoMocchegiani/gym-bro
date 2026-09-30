@@ -16,6 +16,7 @@ La creación de registros sigue la skill:
 
 ## Índice
 
+- [2026-09-30 — N1: plantillas Admin y pulido de Avisos](./2026-09-30-n1-plantillas-admin-avisos.md)
 - [2026-09-30 — N1: más eventos y cron de vencimiento](./2026-09-30-n1-eventos-y-cron.md)
 - [2026-09-30 — N1: aviso de pago acreditado](./2026-09-30-n1-pago-acreditado.md)
 - [2026-09-30 — Borrar en R2 fotos de ficha al cambiar o quitar](./2026-09-30-r2-delete-fotos-ficha.md)
