@@ -17,6 +17,7 @@ import {
 } from '../common/list';
 import { IdentityService } from '../auth/identity.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { UploadService } from '../upload/upload.service';
 import {
   CreateStaffDto,
   SetStaffRolesDto,
@@ -49,6 +50,7 @@ export class StaffService {
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
     private readonly identities: IdentityService,
+    private readonly upload: UploadService,
   ) {}
 
   /**
@@ -281,6 +283,13 @@ export class StaffService {
       },
       after: { name: after.name, email: after.email, imageUrl: after.imageUrl },
     });
+    if (dto.imageUrl !== undefined) {
+      await this.upload.replaceOwnedPublicImage(
+        tenantId,
+        staff.imageUrl,
+        dto.imageUrl,
+      );
+    }
     return after;
   }
 
@@ -363,6 +372,11 @@ export class StaffService {
     }
 
     await this.prisma.staffUser.delete({ where: { id: staffUserId } });
+    await this.upload.replaceOwnedPublicImage(
+      tenantId,
+      staff.imageUrl,
+      null,
+    );
     await this.audit.record({
       tenantId,
       actor,

@@ -207,6 +207,7 @@ Pasos de VPS: [uso/probar-debito-suscripcion-mp.md](./uso/probar-debito-suscripc
 | F3 | GET file sin JWT | 401 | RN-FOL-004 | |
 | F4 | `POST /upload` no crea ítem de carpeta | Foto ficha sigue aparte | RN-FOL-004 | |
 | F5 | 11.er ítem o file > 5 MB | 400; UI indica cupo 10 / 5 MB | RN-FOL-006 | |
+| F6 | Quitar o cambiar foto de ficha/servicio/pack | `imageUrl` nuevo o null; el objeto R2 anterior ya no responde | | |
 
 ---
 

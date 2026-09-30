@@ -21,6 +21,7 @@ import {
   toListResult,
 } from '../common/list';
 import { PrismaService } from '../prisma/prisma.service';
+import { UploadService } from '../upload/upload.service';
 import { KuatiaPackSyncService } from '../kuatia/kuatia-pack-sync.service';
 import {
   CreatePackDto,
@@ -55,6 +56,7 @@ export class PacksService {
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
     private readonly kuatiaPackSync: KuatiaPackSyncService,
+    private readonly upload: UploadService,
   ) {}
 
   /**
@@ -456,6 +458,13 @@ export class PacksService {
       before: this.auditSnapshot(this.toDetail(before)),
       after: this.auditSnapshot(detail),
     });
+    if (dto.imageUrl !== undefined) {
+      await this.upload.replaceOwnedPublicImage(
+        tenantId,
+        before.imageUrl,
+        dto.imageUrl,
+      );
+    }
     return detail;
   }
 
@@ -526,6 +535,7 @@ export class PacksService {
     }
 
     await this.prisma.pack.delete({ where: { id: packId } });
+    await this.upload.replaceOwnedPublicImage(tenantId, pack.imageUrl, null);
     await this.audit.record({
       tenantId,
       actor,

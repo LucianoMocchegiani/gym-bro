@@ -24,6 +24,7 @@ import { ContractsService } from '../contracts/contracts.service';
 import { ContractDetail } from '../contracts/contracts.types';
 import { IdentityService } from '../auth/identity.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { UploadService } from '../upload/upload.service';
 import {
   CreateMemberDto,
   ListMembersQueryDto,
@@ -50,6 +51,7 @@ export class MembersService {
     private readonly audit: AuditService,
     private readonly contractsService: ContractsService,
     private readonly identities: IdentityService,
+    private readonly upload: UploadService,
   ) {}
 
   /**
@@ -352,6 +354,13 @@ export class MembersService {
         before: this.auditSnapshot(this.toDetail(before)),
         after: this.auditSnapshot(detail),
       });
+      if (dto.imageUrl !== undefined) {
+        await this.upload.replaceOwnedPublicImage(
+          tenantId,
+          before.imageUrl,
+          dto.imageUrl,
+        );
+      }
       return detail;
     } catch (error: unknown) {
       this.rethrowUniqueConflict(error);
@@ -465,6 +474,11 @@ export class MembersService {
     }
 
     await this.prisma.member.delete({ where: { id: memberId } });
+    await this.upload.replaceOwnedPublicImage(
+      tenantId,
+      member.imageUrl,
+      null,
+    );
     await this.audit.record({
       tenantId,
       actor,

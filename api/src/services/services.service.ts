@@ -20,6 +20,7 @@ import {
   UpdateServiceDto,
 } from './dto/service.dto';
 import { PacksService } from '../packs/packs.service';
+import { UploadService } from '../upload/upload.service';
 import { ServiceDetail } from './services.types';
 
 /** Whitelist de orden para {@link ServicesService.list}. */
@@ -36,6 +37,7 @@ export class ServicesService {
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
     private readonly packs: PacksService,
+    private readonly upload: UploadService,
   ) {}
 
   /**
@@ -190,6 +192,13 @@ export class ServicesService {
       after: this.auditSnapshot(detail),
     });
     await this.packs.ensureDropInPack(tenantId, service.id);
+    if (dto.imageUrl !== undefined) {
+      await this.upload.replaceOwnedPublicImage(
+        tenantId,
+        before.imageUrl,
+        dto.imageUrl,
+      );
+    }
     return detail;
   }
 
@@ -210,7 +219,7 @@ export class ServicesService {
 
     const dropInPack = await this.prisma.pack.findFirst({
       where: { tenantId, originServiceId: serviceId },
-      select: { id: true },
+      select: { id: true, imageUrl: true },
     });
     if (dropInPack) {
       const dropInContracts = await this.prisma.contract.count({
@@ -218,6 +227,11 @@ export class ServicesService {
       });
       if (dropInContracts === 0) {
         await this.prisma.pack.delete({ where: { id: dropInPack.id } });
+        await this.upload.replaceOwnedPublicImage(
+          tenantId,
+          dropInPack.imageUrl,
+          null,
+        );
       }
     }
 
@@ -269,6 +283,11 @@ export class ServicesService {
     }
 
     await this.prisma.service.delete({ where: { id: serviceId } });
+    await this.upload.replaceOwnedPublicImage(
+      tenantId,
+      service.imageUrl,
+      null,
+    );
     await this.audit.record({
       tenantId,
       actor,

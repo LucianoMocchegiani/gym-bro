@@ -104,7 +104,9 @@ Prefijo opcional de proyecto: `R2_KEY_PREFIX` (ej. `gymbro/`).
 └── staff/{staffUserId}/
 ```
 
-Imágenes públicas: URL de R2. Carpeta: GetObject por API (JWT).
+Imágenes públicas: URL de R2. Al cambiar o quitar `imageUrl` (o borrar la entidad en físico) la API borra el objeto anterior si la URL es de este bucket y del mismo tenant (`tenants/{tenantId}/…` o keys planas legacy `members|staff|services|packs/`). No borra `folder/…`. Fallo de delete: log, la ficha ya quedó actualizada.
+
+Carpeta: GetObject por API (JWT); borrar un FILE también borra el objeto.
 
 Wipe de prueba (borra objetos del prefijo + `image_url` + files de carpeta):
 
@@ -132,7 +134,7 @@ R2_PUBLIC_BASE_URL=https://pub-7366ecffdeee44e0b7c6f18a75788312.r2.dev
 
 - **Lectura**: pública (cualquiera con la URL puede ver la imagen)
 - **Escritura**: requiere autenticación JWT (staff session)
-- **Delete**: no hay endpoint exposeado (solo vía script/admin)
+- **Delete de fotos de ficha/catálogo**: no hay `DELETE /upload`; al editar/quitar imagen o borrar la entidad se reutiliza `UploadService.deleteFile` sobre la key de la URL anterior
 - **No hay**: signed URLs, CORS restrictions, o IP whitelisting
 
 ## Métricas monitoreadas
