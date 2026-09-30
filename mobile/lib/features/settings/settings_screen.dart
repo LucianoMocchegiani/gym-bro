@@ -8,8 +8,9 @@ import '../../core/widgets/confirm_dialog.dart';
 import '../../core/widgets/loading_dialog.dart';
 import '../auth/auth_controller.dart';
 import '../credentials/device_wallet_service.dart';
+import '../notifications/notification_prefs_screen.dart';
 
-/// Hub Ajustes: cuenta, wallet SSI, sistema, desarrolladores y sesión.
+/// Hub Ajustes: cuenta, avisos (socio), wallet SSI, sistema, desarrolladores y sesión.
 class SettingsScreen extends StatelessWidget {
   /// Crea la pantalla.
   const SettingsScreen({super.key});
@@ -32,9 +33,9 @@ class SettingsScreen extends StatelessWidget {
       );
     } catch (e) {
       if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('No se pudo cerrar sesión: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('No se pudo cerrar sesión: $e')));
     }
   }
 
@@ -58,14 +59,14 @@ class SettingsScreen extends StatelessWidget {
         action: wallet.resetWallet,
       );
       if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Wallet reiniciada')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Wallet reiniciada')));
     } catch (e) {
       if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('No se pudo reiniciar: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('No se pudo reiniciar: $e')));
     }
   }
 
@@ -83,7 +84,10 @@ class SettingsScreen extends StatelessWidget {
         Card(
           child: ListTile(
             leading: const Icon(Icons.person_outline),
-            title: Text(session?.name ?? (session?.profileType == 'STAFF' ? 'Staff' : 'Afiliado')),
+            title: Text(
+              session?.name ??
+                  (session?.profileType == 'STAFF' ? 'Staff' : 'Afiliado'),
+            ),
             subtitle: Text(
               [
                 if (session?.email != null) session!.email,
@@ -101,6 +105,26 @@ class SettingsScreen extends StatelessWidget {
             onTap: () => auth.switchGym(),
           ),
         ),
+        if (session?.profileType == 'MEMBER') ...[
+          const SizedBox(height: 20),
+          _sectionTitle(context, 'Avisos'),
+          const SizedBox(height: 8),
+          Card(
+            child: ListTile(
+              leading: const Icon(Icons.notifications_outlined),
+              title: const Text('Correo por tipo'),
+              subtitle: const Text('Qué avisos te llegan por mail'),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) => const NotificationPrefsScreen(),
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
         const SizedBox(height: 20),
         _sectionTitle(context, 'Wallet SSI'),
         const SizedBox(height: 8),
@@ -160,11 +184,8 @@ class SettingsScreen extends StatelessWidget {
     return Text(
       label,
       style: Theme.of(context).textTheme.titleSmall?.copyWith(
-            color: Theme.of(context)
-                .colorScheme
-                .onSurface
-                .withValues(alpha: 0.55),
-          ),
+        color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.55),
+      ),
     );
   }
 }

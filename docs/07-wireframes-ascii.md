@@ -201,19 +201,14 @@ Carrito
 ```text
 +----------------------------------+
 | Avisos                           |
-| Correo por tipo  [switches]      |
-|                                  |
-| Nuevos                           |
-| * Pago acreditado  30/09 16:02   |
-| Anteriores                       |
-|   Reserva confirmada  29/09 …    |
+| Nuevos / Anteriores / vacío      |
 +----------------------------------+
-| Vacío: icono + “Todavía no hay   |
-| avisos” + qué va a aparecer      |
+| Ajustes → Avisos                 |
+| Correo por tipo  [switches]      |
 +----------------------------------+
 ```
 
-Inicio: atajo Avisos con conteo de no leídos.
+Inicio: atajo Avisos = bandeja. Opt-out de mail: Ajustes → Avisos.
 
 ---
 

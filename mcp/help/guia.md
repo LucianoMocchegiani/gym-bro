@@ -93,7 +93,7 @@ Pestañas: **Inicio | Acceso | Ajustes**.
 - Sesiones: calendario, día, mis clases.
 - Tienda: Packs y Sesiones (drop-in), carrito, Pagar con Mercado Pago, Historial.
 - Acceso: credencial / QR.
-- Ajustes: cuenta, tema, salir.
+- Ajustes: cuenta, Avisos (correo por tipo, solo socio), tema, salir.
 
 Staff (mismo binario): Inicio con Sesiones, Caja (si tiene permiso) y **Documentos**.
 

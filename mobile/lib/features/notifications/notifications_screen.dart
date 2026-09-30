@@ -6,7 +6,7 @@ import 'notifications_repository.dart';
 
 /// Bandeja in-app del socio (N1, sin push).
 ///
-/// CU-NOT-005. Opt-out de mail: RN-NOT-005.
+/// CU-NOT-005. Opt-out de mail: Ajustes → Avisos.
 class NotificationsScreen extends StatefulWidget {
   /// Crea la pantalla.
   const NotificationsScreen({super.key});
@@ -17,9 +17,7 @@ class NotificationsScreen extends StatefulWidget {
 
 class _NotificationsScreenState extends State<NotificationsScreen> {
   List<AppNotification>? _items;
-  List<NotificationEmailPref> _prefs = [];
   Object? _error;
-  bool _prefLoaded = false;
 
   @override
   void initState() {
@@ -30,17 +28,11 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   Future<void> _load() async {
     setState(() => _error = null);
     try {
-      final repo = context.read<NotificationsRepository>();
-      final items = await repo.listMine();
-      final prefs = await repo.listEmailPrefs();
+      final items = await context.read<NotificationsRepository>().listMine();
       if (!mounted) {
         return;
       }
-      setState(() {
-        _items = items;
-        _prefs = prefs;
-        _prefLoaded = true;
-      });
+      setState(() => _items = items);
     } catch (e) {
       if (!mounted) {
         return;
@@ -82,31 +74,6 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     await _load();
   }
 
-  Future<void> _toggleEmail(String eventCode, bool value) async {
-    try {
-      final pref = await context.read<NotificationsRepository>().setEmailPref(
-        eventCode,
-        value,
-      );
-      if (!mounted) {
-        return;
-      }
-      setState(() {
-        _prefs = [
-          for (final p in _prefs)
-            if (p.eventCode == pref.eventCode) pref else p,
-        ];
-      });
-    } on ApiException catch (e) {
-      if (!mounted) {
-        return;
-      }
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(e.message)));
-    }
-  }
-
   String _when(DateTime at) {
     final l = at.toLocal();
     String two(int n) => n.toString().padLeft(2, '0');
@@ -127,21 +94,6 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         child: ListView(
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 28),
           children: [
-            if (_prefLoaded) ...[
-              Text(
-                'Correo por tipo de aviso',
-                style: Theme.of(context).textTheme.titleSmall,
-              ),
-              ..._prefs.map(
-                (p) => SwitchListTile(
-                  contentPadding: EdgeInsets.zero,
-                  title: Text(p.label),
-                  value: p.emailEnabled,
-                  onChanged: (v) => _toggleEmail(p.eventCode, v),
-                ),
-              ),
-            ],
-            const SizedBox(height: 8),
             if (err != null)
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 24),
@@ -259,7 +211,7 @@ class _EmptyInbox extends StatelessWidget {
           ),
           const SizedBox(height: 6),
           Text(
-            'Cuando se acredite un pago, se confirme una reserva o venza un pack, va a aparecer acá. El mail se puede apagar arriba, evento por evento.',
+            'Cuando se acredite un pago, se confirme una reserva o venza un pack, va a aparecer acá. El correo se configura en Ajustes → Avisos.',
             textAlign: TextAlign.center,
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
               color: scheme.onSurface.withValues(alpha: 0.6),

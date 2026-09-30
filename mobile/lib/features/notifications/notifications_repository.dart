@@ -34,10 +34,7 @@ class AppNotification {
 /// Opt-out de email por evento.
 class NotificationEmailPref {
   /// Crea el modelo.
-  NotificationEmailPref({
-    required this.eventCode,
-    required this.emailEnabled,
-  });
+  NotificationEmailPref({required this.eventCode, required this.emailEnabled});
 
   final String eventCode;
   final bool emailEnabled;
@@ -101,10 +98,7 @@ class NotificationsRepository {
   }
 
   Future<void> markRead(String id) async {
-    await _api.patchJson<void>(
-      '/api/me/notifications/$id/read',
-      parse: (_) {},
-    );
+    await _api.patchJson<void>('/api/me/notifications/$id/read', parse: (_) {});
   }
 
   Future<List<NotificationEmailPref>> listEmailPrefs() {

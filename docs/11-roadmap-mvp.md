@@ -211,7 +211,7 @@ Detalle: [14-auditoria-roadmap-vs-codigo-2026-08-13.md](./14-auditoria-roadmap-v
 - [x] Documentos (carpeta, lectura)
   - Inicio → Documentos; visor Markdown; 10 ítems / 5 MB; `GET /me/folder`
 - [x] Avisos N1 (bandeja in-app + opt-out email por evento)
-  - Inicio → Avisos (nuevos/anteriores, vacío, badge no leídos); `GET /me/notifications`
+  - Inicio → Avisos (bandeja); Ajustes → Avisos (correo por tipo); `GET /me/notifications`
 - [x] Acceso + Credenciales (SSI)
   - Escanear OID4VCI/VP + bandeja offers (`accept`/`fail`) + `identity_core_dart`
   - Kuatia: defaults `issuer.kuatia.xyz` / `verifier.kuatia.xyz` (`KUATIA_*_PUBLIC_URL`)
