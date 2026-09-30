@@ -7,8 +7,10 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { UploadService, UploadFile } from './upload.service';
 import { IsIn, IsOptional, IsString } from 'class-validator';
+import { CurrentTenant } from '../tenant/decorators/current-tenant.decorator';
+import { RequireTenantAuth } from '../tenant/decorators/require-tenant-auth.decorator';
+import { UploadService, UploadFile } from './upload.service';
 
 const FOLDERS = ['services', 'packs', 'members', 'staff', 'tenants'] as const;
 
@@ -22,10 +24,11 @@ class UploadDto {
 /**
  * Endpoint de upload de archivos (POST /upload).
  *
- * @remarks Acepta multipart/form-data con campo `file`.
- * Retorna `{ url, key }` con la URL pública del archivo.
+ * @remarks Acepta multipart/form-data con campo `file`. Staff JWT + tenant.
+ * Key R2: `tenants/{tenantId}/{folder}/{uuid}`.
  */
 @Controller('upload')
+@RequireTenantAuth()
 export class UploadController {
   constructor(private readonly uploadService: UploadService) {}
 
@@ -36,6 +39,7 @@ export class UploadController {
     }),
   )
   async upload(
+    @CurrentTenant() tenantId: string,
     @UploadedFile()
     file: { mimetype: string; size: number; buffer: Buffer } | undefined,
     @Body() dto: UploadDto,
@@ -50,7 +54,7 @@ export class UploadController {
       buffer: file.buffer,
     };
 
-    const folder = dto.folder ?? 'general';
-    return this.uploadService.uploadImage(uploadFile, folder);
+    const folder = dto.folder ?? 'members';
+    return this.uploadService.uploadImage(uploadFile, folder, tenantId);
   }
 }

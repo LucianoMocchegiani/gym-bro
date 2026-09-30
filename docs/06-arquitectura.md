@@ -370,7 +370,7 @@ Todas las rutas de tenant validan membership/permiso + `tenant_id` del token.
 | Transacciones | DB transacciones al confirmar pago → derechos |
 | Webhooks | Inbox de eventos MP con dedup por id MP + idempotencyKey |
 | Jobs | Cron: generar sesiones, avisar vencimientos (E2/E3), reintentos email |
-| Archivos | R2: fotos ficha (`POST /upload` URL pública); carpeta socio/staff (key privada + GET JWT) |
+| Archivos | R2: fotos `tenants/{tenantId}/…` (`POST /upload` URL pública); carpeta `folder/{tenantId}/…` + GET JWT |
 
 ---
 

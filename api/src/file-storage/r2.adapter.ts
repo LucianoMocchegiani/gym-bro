@@ -5,6 +5,8 @@ import {
   PutObjectCommand,
   DeleteObjectCommand,
   GetObjectCommand,
+  ListObjectsV2Command,
+  DeleteObjectsCommand,
 } from '@aws-sdk/client-s3';
 import type { FileStoragePort } from './file-storage.port';
 
@@ -98,5 +100,54 @@ export class R2Adapter implements FileStoragePort {
         Key: fullKey,
       }),
     );
+  }
+
+  async listKeys(prefix = ''): Promise<string[]> {
+    const fullPrefix = this.resolveKey(prefix);
+    const out: string[] = [];
+    let token: string | undefined;
+    do {
+      const page = await this.client.send(
+        new ListObjectsV2Command({
+          Bucket: this.bucket,
+          Prefix: fullPrefix || undefined,
+          ContinuationToken: token,
+        }),
+      );
+      for (const obj of page.Contents ?? []) {
+        if (!obj.Key) {
+          continue;
+        }
+        out.push(this.stripPrefix(obj.Key));
+      }
+      token = page.IsTruncated ? page.NextContinuationToken : undefined;
+    } while (token);
+    return out;
+  }
+
+  async deleteMany(keys: string[]): Promise<void> {
+    const chunkSize = 1000;
+    for (let i = 0; i < keys.length; i += chunkSize) {
+      const slice = keys.slice(i, i + chunkSize);
+      if (slice.length === 0) {
+        continue;
+      }
+      await this.client.send(
+        new DeleteObjectsCommand({
+          Bucket: this.bucket,
+          Delete: {
+            Objects: slice.map((key) => ({ Key: this.resolveKey(key) })),
+            Quiet: true,
+          },
+        }),
+      );
+    }
+  }
+
+  private stripPrefix(fullKey: string): string {
+    if (this.keyPrefix && fullKey.startsWith(this.keyPrefix)) {
+      return fullKey.slice(this.keyPrefix.length);
+    }
+    return fullKey;
   }
 }

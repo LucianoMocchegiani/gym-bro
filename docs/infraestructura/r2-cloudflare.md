@@ -89,14 +89,27 @@ Cloudflare R2 es un servicio de almacenamiento de objetos compatible con S3. Se 
 
 ## Estructura de carpetas en R2
 
+Prefijo opcional de proyecto: `R2_KEY_PREFIX` (ej. `gymbro/`).
+
 ```
-labs/
-├── services/       # Imágenes de servicios
-├── packs/          # Imágenes de packs
-├── members/        # Fotos de perfil de afiliados
-├── staff/          # Fotos de perfil del personal
-├── tenants/        # Logos de gimnasios
-└── trash/          # (futuro) Imágenes marcadas para eliminación
+{prefix}tenants/{tenantId}/
+├── members/     # Foto de ficha socio
+├── staff/
+├── services/
+├── packs/
+└── tenants/     # Logo si se usa POST /upload folder=tenants
+
+{prefix}folder/{tenantId}/
+├── member/{memberId}/
+└── staff/{staffUserId}/
+```
+
+Imágenes públicas: URL de R2. Carpeta: GetObject por API (JWT).
+
+Wipe de prueba (borra objetos del prefijo + `image_url` + files de carpeta):
+
+```bash
+cd api && npm run r2:wipe-test -- --confirm=BORRAR
 ```
 
 ## Configuración

@@ -39,12 +39,13 @@ export class UploadService {
    * Sube una imagen validando tipo y tamaño.
    *
    * @param file - Archivo Multer (buffer disponible en memoryStorage)
-   * @param folder - Carpeta dentro del bucket, ej. `services`, `packs`, `members`
-   * @returns URL pública y key del archivo subido
+   * @param folder - `services` | `packs` | `members` | `staff` | `tenants`
+   * @param tenantId - Del JWT (RN-TEN-001). Key: `tenants/{tenantId}/{folder}/{uuid}.ext`
    */
   async uploadImage(
     file: UploadFile,
     folder: string,
+    tenantId: string,
   ): Promise<{ url: string; key: string }> {
     if (!ALLOWED_TYPES.has(file.mimetype)) {
       throw new BadRequestException(
@@ -59,7 +60,7 @@ export class UploadService {
     }
 
     const ext = this.extFromMime(file.mimetype);
-    const key = `${folder}/${randomUUID()}.${ext}`;
+    const key = `tenants/${tenantId}/${folder}/${randomUUID()}.${ext}`;
     const url = await this.storage.upload(key, file.buffer, file.mimetype);
 
     this.logger.log(`Upload: ${key} (${file.size} bytes)`);

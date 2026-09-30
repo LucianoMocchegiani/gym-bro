@@ -124,7 +124,7 @@ Carpeta **Services**: Staff `catalog.write`. Tipos `ACCESO_LIBRE` y `POR_SESIONE
 
 Carpeta **Packs**: mismos permiso. Requests **MONTHLY** y **ONE_TIME** (como Sesiones con casos). Body con `components` (serviceIds de Services). `price` pesos enteros; `kind` en respuesta. Soporta `imageUrl` (opcional).
 
-Carpeta **Upload**: `POST /upload` (staff auth). Multipart form-data con campo `file` (imagen) y `folder` (`services`|`packs`|`members`|`staff`|`tenants`). Retorna `{ url, key }`. Límite: 5MB, tipos: JPG/PNG/WebP/GIF. Almacenamiento en Cloudflare R2.
+Carpeta **Upload**: `POST /upload` (JWT staff + tenant). Multipart `file` + `folder` (`services`|`packs`|`members`|`staff`|`tenants`). Key `tenants/{tenantId}/{folder}/{uuid}`. Límite 5MB. R2.
 
 Carpeta **Contracts**: Staff **POST contract MONTHLY/ONE_TIME** con `method: STUB` → 400. Alta de pack: Caja o MP. **Re-oferta:** `POST /members/:id/credential-offers` (contrato vigente hoy). Variables `createdMonthlyPackId` / `createdOneTimePackId`. Offers: list + accept + fail member. Lectura staff: `GET /members/:id/account`.
 

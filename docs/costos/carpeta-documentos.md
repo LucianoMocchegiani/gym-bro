@@ -15,7 +15,7 @@ Límites **por carpeta** (un socio **o** un staff; no se mezclan).
 
 Al llegar a 10 hay que **borrar** para cargar otro. Ver se puede; no hay alta nueva.
 
-Las fotos de ficha (`POST /upload`, 5 MB) **no** entran en estos 10 ítems.
+Las fotos de ficha (`POST /upload`, 5 MB) **no** entran en estos 10 ítems. Keys públicas: `tenants/{tenantId}/members|staff|services|packs/…`.
 
 ## Qué cuesta de verdad
 

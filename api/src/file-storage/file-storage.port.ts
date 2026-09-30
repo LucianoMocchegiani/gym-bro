@@ -8,7 +8,7 @@ export interface FileStoragePort {
   /**
    * Sube un archivo y devuelve la URL pública de acceso.
    *
-   * @param key - Clave (path) dentro del bucket, ej. `services/uuid.webp`
+   * @param key - Clave lógica, ej. `tenants/{tenantId}/members/uuid.webp`
    * @param buffer - Contenido del archivo
    * @param contentType - MIME type, ej. `image/webp`
    */
@@ -25,6 +25,18 @@ export interface FileStoragePort {
    * Elimina un archivo por su clave.
    */
   delete(key: string): Promise<void>;
+
+  /**
+   * Claves lógicas (sin `R2_KEY_PREFIX`) bajo un prefijo.
+   *
+   * @param prefix - Prefijo lógico, p. ej. `tenants/{id}/`. Vacío = todo el prefijo de proyecto.
+   */
+  listKeys(prefix?: string): Promise<string[]>;
+
+  /**
+   * Baja en lote (hasta 1000 por llamada internamente).
+   */
+  deleteMany(keys: string[]): Promise<void>;
 }
 
 /** Injection token para FileStoragePort. */
