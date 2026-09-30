@@ -216,6 +216,9 @@ model Tenant {
   platformSignups PlatformSignup[]
   folderLabels    FolderLabel[]
   folderItems     FolderItem[]
+  notificationTemplates     NotificationTemplate[]
+  notificationPreferences   NotificationPreference[]
+  notifications             Notification[]
 
   @@index([ownerIdentityId])
   @@map("tenants")
@@ -382,6 +385,8 @@ model Member {
   transactions  Transaction[]
   debitMandates DebitMandate[]
   folderItems   FolderItem[]   @relation("FolderItemMemberOwner")
+  notificationPreferences NotificationPreference[]
+  notifications           Notification[]
 
   @@unique([tenantId, email])
   @@unique([tenantId, document])
@@ -1223,4 +1228,74 @@ model AuditEvent {
   @@index([tenantId, createdAt])
   @@index([entityType, entityId])
   @@map("audit_events")
+}
+
+/// Eventos N1 cableados (RN-NOT-002). Solo `PAYMENT_APPROVED` en este corte.
+enum NotificationEventCode {
+  PAYMENT_APPROVED
+}
+
+/// Resultado del canal email (el in-app siempre se inserta si el evento corre).
+enum NotificationEmailStatus {
+  SKIPPED
+  SENT
+  FAILED
+}
+
+/// Plantilla por tenant y evento (CU-NOT-002). Si no hay fila, el dispatcher usa defaults.
+model NotificationTemplate {
+  id        String                 @id @default(uuid()) @db.Uuid
+  tenantId  String                 @map("tenant_id") @db.Uuid
+  eventCode NotificationEventCode  @map("event_code")
+  subject   String
+  body      String
+  active    Boolean                @default(true)
+  createdAt DateTime               @default(now()) @map("created_at")
+  updatedAt DateTime               @updatedAt @map("updated_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, eventCode])
+  @@index([tenantId])
+  @@map("notification_templates")
+}
+
+/// Opt-out de email por socio y evento (RN-NOT-005). Sin fila = email ON.
+model NotificationPreference {
+  id           String                @id @default(uuid()) @db.Uuid
+  tenantId     String                @map("tenant_id") @db.Uuid
+  memberId     String                @map("member_id") @db.Uuid
+  eventCode    NotificationEventCode @map("event_code")
+  emailEnabled Boolean               @default(true) @map("email_enabled")
+  createdAt    DateTime              @default(now()) @map("created_at")
+  updatedAt    DateTime              @updatedAt @map("updated_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  member Member @relation(fields: [memberId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, memberId, eventCode])
+  @@index([tenantId, memberId])
+  @@map("notification_preferences")
+}
+
+/// Registro in-app + estado de email (CU-NOT-001 / CU-NOT-005).
+model Notification {
+  id              String                   @id @default(uuid()) @db.Uuid
+  tenantId        String                   @map("tenant_id") @db.Uuid
+  memberId        String                   @map("member_id") @db.Uuid
+  eventCode       NotificationEventCode    @map("event_code")
+  title           String
+  body            String
+  payload         Json?
+  inAppRead       Boolean                  @default(false) @map("in_app_read")
+  emailStatus     NotificationEmailStatus  @map("email_status")
+  idempotencyKey  String                   @map("idempotency_key")
+  createdAt       DateTime                 @default(now()) @map("created_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  member Member @relation(fields: [memberId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, idempotencyKey])
+  @@index([tenantId, memberId, createdAt])
+  @@map("notifications")
 }

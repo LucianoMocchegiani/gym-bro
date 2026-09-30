@@ -69,6 +69,11 @@ identities ||--o{ platform_signups : self_serve
   members ||--o{ folder_items : member_folder
   staff_users ||--o{ folder_items : staff_folder
   folder_labels ||--o{ folder_items : labels
+  tenants ||--o{ notification_templates : notif_tpl
+  tenants ||--o{ notification_preferences : notif_pref
+  tenants ||--o{ notifications : notif_log
+  members ||--o{ notification_preferences : opts_out
+  members ||--o{ notifications : inbox
   members ||--o{ debit_mandates : authorizes
   packs ||--o{ debit_mandates : next_pack
   transaction_items ||--o| debit_mandates : enrolled_by
@@ -549,6 +554,18 @@ Carpeta de notas y files (RN-FOL). XOR: `member_id` **o** `staff_user_id`. Check
 | `folder_items` | `kind` NOTE\|FILE; `body` Markdown; cupo 10 ítems / 5 MB file (RN-FOL-006); `created_by_staff_id` |
 
 API: `/api/folder-labels`; `/api/members/:id/folder*`; `/api/staff/:id/folder*`; `/api/me/folder`.
+
+### 4.9c `notification_templates` / `notification_preferences` / `notifications`
+
+N1 (CU-NOT). Unique `(tenant_id, event_code)` en plantillas; `(tenant_id, member_id, event_code)` en preferencias; `(tenant_id, idempotency_key)` en avisos. Enum evento: `PAYMENT_APPROVED`. Email: `SKIPPED` \| `SENT` \| `FAILED`.
+
+| Tabla | Notas |
+|-------|--------|
+| `notification_templates` | Override opcional; si no hay fila, default en código. `active` apaga el evento. |
+| `notification_preferences` | Sin fila = email ON. |
+| `notifications` | In-app; `in_app_read`. |
+
+API socio: `GET /api/me/notifications`, `PATCH .../read`, `GET|PATCH /api/me/notification-preferences`.
 
 ---
 
@@ -1052,6 +1069,7 @@ Historia incremental (2026-07 / 2026-08) **compactada** en un baseline (`40476fa
 | `20260927020000_drop_super_profile` | Drop perfil SUPER. |
 | `20260929120000_platform_plan_trial` | `tenants.owner_identity_id`, `platform_trial_used_at`; `identities.platform_trial_used_at`; `contracts.is_platform_trial`. |
 | `20260930120000_member_staff_folder` | `folder_labels`, `folder_items`, enum `FolderItemKind`; XOR dueño socio/staff |
+| `20260930180000_notifications_n1` | Plantillas, preferencias, avisos; enums evento y email status |
 
 Comandos y checklist “desde cero”: [13-setup-db-desde-cero.md](./13-setup-db-desde-cero.md).
 
@@ -1124,7 +1142,7 @@ Compose: init SQL en primer boot del volumen + `ensure-db.ts` si el volumen ya e
 
 ## 8. Pendiente de modelar (dominio → DB)
 
-Aún no hay tablas Prisma para (ver [03](./03-modelo-dominio.md) / roadmap): **ledger de deuda de pagos**, **rutinas**, **notificaciones**, etc. La tolerancia de acceso usa atraso desde `endsAt` del contrato libre (sin tabla aparte). Se documentan aquí **al implementarlas**.
+Aún no hay tablas Prisma para (ver [03](./03-modelo-dominio.md) / roadmap): **ledger de deuda de pagos**, **rutinas**, etc. Notificaciones N1: ver §4.9c. La tolerancia de acceso usa atraso desde `endsAt` del contrato libre (sin tabla aparte). Se documentan aquí **al implementarlas**.
 
 **Staff ↔ roles:** tabla `staff_user_roles`. API: Staff `PUT /staff/:staffId/roles`. Super lista staff con `GET /tenants/:tenantId/staff` e impersona. Create tenant exige owner y le asigna rol Admin.
 

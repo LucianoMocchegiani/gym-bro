@@ -4934,6 +4934,48 @@
             ]
         },
         {
+            "name": "Notifications N1",
+            "description": "Bandeja in-app del socio y opt-out de email. Disparo: pago APPROVED (caja/MP). MAIL_DRIVER stub|resend.",
+            "item": [
+                {
+                    "name": "Me GET notifications",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": "{{baseUrl}}/api/me/notifications"
+                    }
+                },
+                {
+                    "name": "Me PATCH notification read",
+                    "request": {
+                        "method": "PATCH",
+                        "header": [],
+                        "url": "{{baseUrl}}/api/me/notifications/{{notificationId}}/read"
+                    }
+                },
+                {
+                    "name": "Me GET notification preferences",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": "{{baseUrl}}/api/me/notification-preferences"
+                    }
+                },
+                {
+                    "name": "Me PATCH notification preferences",
+                    "request": {
+                        "method": "PATCH",
+                        "header": [{"key": "Content-Type", "value": "application/json"}],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"emailEnabled\": false\n}"
+                        },
+                        "url": "{{baseUrl}}/api/me/notification-preferences"
+                    }
+                }
+            ]
+        },
+        {
             "name": "Member catalog",
             "description": "Catálogo del afiliado (E9 mobile): sesiones publicadas (`serviceImageUrl`), packs activos (`imageUrl`) y estado MP.",
             "item": [

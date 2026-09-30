@@ -2,7 +2,7 @@
 
 **Estado:** Viva (corte 2026-09-08)  
 **Qué es:** lo que falta para un primer gym piloto **vendible**. No es el backlog post-MVP ni un rediseño de módulos.  
-**Fuera de este corte:** tienda de productos, white label, AFIP, offline puerta, multi-sede UI, **rutinas plantilla (backlog)** y **E8 Notificaciones N1**. E7 carpeta de documentos está en el producto.
+**Fuera de este corte:** tienda de productos, white label, AFIP, offline puerta, multi-sede UI, **rutinas plantilla (backlog)** y **push N2**. E7 carpeta y el **primer corte N1** (pago aprobado + bandeja app) están en el producto; plantillas Admin, job E2/E3 y resto de eventos siguen pendientes.
 
 Roadmap de épicas históricas: [11-roadmap-mvp.md](./11-roadmap-mvp.md). Diferidos: [99-backlog-post-mvp.md](./99-backlog-post-mvp.md).
 
@@ -107,14 +107,14 @@ Estas cosas **no** están en P1–P5 y sí importan para “un gym de verdad”.
 | Smoke S1–S10 + suite pagos/acceso | E12 · [08](./08-casos-prueba-manuales.md) | Cierre de calidad del núcleo que ya está |
 | MP sandbox → live | E5 | Débito (P2) y cobros del piloto |
 | Legal ToS + privacidad | operaciones | Landing (P3) y datos de afiliados |
-| E7 Rutinas y E8 Notificaciones N1 | Maestro §7 · roadmap | **Fuera de este corte** (2026-09-08). Siguen en el maestro como módulos del MVP histórico; no se implementan ahora |
+| E7 Rutinas y resto E8 | Maestro §7 · roadmap | Rutinas plantilla y push N2 **fuera**. N1 pago + bandeja: hecho 2026-09-30; Admin plantillas / E2–E9 pendientes |
 | Historial packs otros períodos / paginación comprobantes | [app-afiliado.md](./99-backlog-post-mvp/app-afiliado.md) | Nice-to-have del piloto, no bloquea molinete ni pricing |
 
 ### Decisiones de este corte
 
 | # | Decisión |
 |---|----------|
-| 1 | E7 y E8 **no** se atacan en el cierre go-to-market |
+| 1 | E7 rutinas plantilla y push **no** en el cierre go-to-market; N1 pago+bandeja sí (2026-09-30) |
 | 2 | P3 incluye **SEO** (no era “CEO”) |
 | 3 | Primer piloto: molinete físico vs tablet en `/puerta` — **se evalúa** |
 

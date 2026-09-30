@@ -5,10 +5,11 @@ import '../../core/network/api_client.dart';
 import '../account/account_repository.dart';
 import '../auth/auth_controller.dart';
 import '../folder/documents_screen.dart';
+import '../notifications/notifications_screen.dart';
 import '../sessions/sessions_screen.dart';
 import '../store/store_screen.dart';
 
-/// Hub Inicio: saludo, estado breve y atajos (Sesiones / Tienda / Documentos).
+/// Hub Inicio: saludo, estado breve y atajos (Sesiones / Tienda / Documentos / Avisos).
 class HomeScreen extends StatefulWidget {
   /// Crea la pantalla.
   const HomeScreen({super.key});
@@ -135,7 +136,14 @@ class _HomeScreenState extends State<HomeScreen> {
                           ),
                         ),
                         const SizedBox(width: 12),
-                        const Expanded(child: SizedBox.shrink()),
+                        Expanded(
+                          child: _HubTile(
+                            icon: Icons.notifications_outlined,
+                            label: 'Avisos',
+                            subtitle: 'Bandeja',
+                            onTap: () => _open(const NotificationsScreen()),
+                          ),
+                        ),
                       ],
                     ),
                     if (account.reservations.isNotEmpty) ...[

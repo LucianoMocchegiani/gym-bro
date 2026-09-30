@@ -177,14 +177,15 @@ Reemplaza el corte de **rutinas estructuradas** (plantillas/cumplimiento → [ba
 
 ## E8 — Notificaciones N1
 
-- [ ] Modelo plantilla + preferencias
-- [ ] Dispatcher dominio → in-app + email
-- [ ] Eventos E1–E9
-- [ ] Gym activa/desactiva eventos
-- [ ] Afiliado opt-out por evento
-- [ ] Plantillas editables (nombre del gym)
+- [x] Modelo plantilla + preferencias (tablas; plantilla default en código; UI Admin plantillas **no**)
+- [x] Dispatcher dominio → in-app + email (`MailPort` stub/Resend)
+- [~] Eventos E1–E9 — **solo pago APPROVED** cableado
+- [ ] Gym activa/desactiva eventos (Admin)
+- [x] Afiliado opt-out de email (app Avisos)
+- [ ] Plantillas editables (Admin)
 - [ ] Bandeja admin / avisos operativos
 - [ ] Job avisos por vencer / vencida
+- [ ] Push (N2) → [backlog](./99-backlog-post-mvp/notificaciones.md)
 
 ---
 
@@ -209,6 +210,8 @@ Detalle: [14-auditoria-roadmap-vs-codigo-2026-08-13.md](./14-auditoria-roadmap-v
   - Nav real: **Inicio · Acceso · Ajustes** (tema claro/oscuro)
 - [x] Documentos (carpeta, lectura)
   - Inicio → Documentos; visor Markdown; 10 ítems / 5 MB; `GET /me/folder`
+- [x] Avisos N1 (bandeja in-app + opt-out email de pago)
+  - Inicio → Avisos; `GET /me/notifications`
 - [x] Acceso + Credenciales (SSI)
   - Escanear OID4VCI/VP + bandeja offers (`accept`/`fail`) + `identity_core_dart`
   - Kuatia: defaults `issuer.kuatia.xyz` / `verifier.kuatia.xyz` (`KUATIA_*_PUBLIC_URL`)
@@ -238,7 +241,7 @@ Detalle: [14-auditoria-roadmap-vs-codigo-2026-08-13.md](./14-auditoria-roadmap-v
 ### Pendiente — depende de otras épicas
 
 - [ ] Rutinas y cumplimiento → **E7** (sin API)
-- [ ] Avisos + preferencias → **E8** (sin API)
+- [~] Avisos + preferencias → **E8** (pago aprobado + bandeja; resto de eventos y Admin pendiente)
 
 ### Notas
 
@@ -390,7 +393,7 @@ E11 → E12
 P1 molinetes → P2 débito QA (+ E5 MP live) → P3 landing/pricing/SEO
   → P4 tokens OpenRouter → P5 migración Excel/IA (último, opcional al piloto)
 En paralelo ops: staging/prod, ToS, smoke E12, gym piloto
-E7 carpeta (hecho) y E8 N1: E8 fuera de este corte
+E7 carpeta (hecho) y E8 N1: primer corte (pago + bandeja) hecho; Admin plantillas / E2–E9 / push pendientes
 P1 forma del piloto (molinete vs tablet): se evalúa
 ```
 

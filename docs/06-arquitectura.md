@@ -16,7 +16,7 @@
 | **ORM** | **Prisma 6** (`api/prisma/`) | `migrate deploy` al arrancar la API; seed demo a mano. Prisma 7 diferido (ESM) |
 | **Auth API** | JWT + refresh (propio) en MVP | Clerk/Auth0 opcional después |
 | **Jobs** | BullMQ + Redis (cuando haga falta) | Vencimientos, mails, recurrencias |
-| **Email N1** | Proveedor ESP (Resend/SES/similar) | |
+| **Email N1** | MailPort: stub o Resend (`MAIL_DRIVER`) | Push N2 post-MVP |
 | **Storage** | Object storage S3-compatible | Fotos de progreso |
 | **Pagos** | Mercado Pago (cuenta del gym) | |
 | **Acceso** | Adapter SSI / Quark | Intercambiable |
@@ -341,7 +341,7 @@ Prefijo sugerido: `/api/v1`.
 | Chat (servicio `chat-api` :3010) | `GET /health`; `POST /v1/public/session` (landing); `GET/POST /v1/conversations`; `GET/PATCH/DELETE /v1/conversations/:id`; `GET/POST /v1/conversations/:id/messages` (POST = UI Message Stream; OpenRouter + MCP) |
 | MCP (servicio `mcp` :3011) | `GET /health`; `POST /mcp` Streamable HTTP + Bearer. Tools A–D (lectura): operación, reportes/débitos/devoluciones, catálogo/roles/audit slim, `get_help` (`producto`, `guia` + temas) |
 | Carpeta | `/folder-labels`, `/members/:id/folder`, `/staff/:id/folder`, `/me/folder` |
-| Notif | `/notifications`, `/notification-templates`, preferences |
+| Notif N1 | Member `GET /me/notifications`, `PATCH .../read`, `GET|PATCH /me/notification-preferences`. Sin `DELETE /upload`. |
 | Afiliados | Staff CRUD members + PATCH status (`members.deactivate`); estado de cuenta `GET /members/:id/account` / `GET /me/account?coverage=current\|all` |
 | Sesiones | Staff `GET|POST|PATCH /sessions`, `PATCH /sessions/:id/capacity` (ampliar cupo) + `/session-recurrence-rules` (`sessions.write`) |
 | Reservas | Member `/me/reservations` (crédito) + cancel; Staff `POST /members/:id/reservations` (CREDIT) + `GET /sessions/:id/reservations` + `PATCH /reservations/:id/status` (`reservations.write`) |
@@ -371,6 +371,7 @@ Todas las rutas de tenant validan membership/permiso + `tenant_id` del token.
 | Webhooks | Inbox de eventos MP con dedup por id MP + idempotencyKey |
 | Jobs | Cron: generar sesiones, avisar vencimientos (E2/E3), reintentos email |
 | Archivos | R2: fotos `tenants/{tenantId}/…` (`POST /upload` URL pública). Al quitar o reemplazar foto de ficha/staff/servicio/pack (y al borrar físico) se llama `delete` del objeto viejo. Carpeta `folder/{tenantId}/…` + GET JWT (delete de FILE ya borra R2). |
+| Notif N1 | Dispatcher + `MailPort` (stub/Resend). Evento cableado: pago APPROVED. In-app `GET /me/notifications`. Push y cola: post-MVP / cuando el send no entre en el request. |
 
 ---
 

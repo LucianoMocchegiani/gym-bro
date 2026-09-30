@@ -25,6 +25,7 @@ import { ReservationsService } from '../reservations/reservations.service';
 import { MpWebhookProcessResult } from './payment.types';
 import { PlatformSignupService } from '../tenants/platform-signup.service';
 import { DebitService } from '../debit/debit.service';
+import { NotificationDispatcher } from '../notifications/notifications.service';
 
 type CartWithItems = Transaction & {
   transactionItems: Array<{
@@ -65,6 +66,7 @@ export class WebhookPaymentService {
     private readonly platformSignups: PlatformSignupService,
     @Inject(forwardRef(() => DebitService))
     private readonly debit: DebitService,
+    private readonly notifications: NotificationDispatcher,
   ) {}
 
   /**
@@ -365,7 +367,14 @@ export class WebhookPaymentService {
       transactionItem.status === PaymentStatus.REFUNDED
     ) {
       if (transactionItem.status === PaymentStatus.APPROVED) {
-        return this.ensureRights(tenantId, transactionItem);
+        const result = await this.ensureRights(tenantId, transactionItem);
+        if (transactionItem.transactionId) {
+          await this.notifications.notifyPaymentApproved(
+            tenantId,
+            transactionItem.transactionId,
+          );
+        }
+        return result;
       }
       return {
         handled: true,
@@ -426,7 +435,14 @@ export class WebhookPaymentService {
       },
     });
 
-    return this.ensureRights(tenantId, refreshed);
+    const result = await this.ensureRights(tenantId, refreshed);
+    if (transactionItem.transactionId) {
+      await this.notifications.notifyPaymentApproved(
+        tenantId,
+        transactionItem.transactionId,
+      );
+    }
+    return result;
   }
 
   /**
@@ -669,6 +685,8 @@ export class WebhookPaymentService {
         reservationId = fulfilled.reservationId;
       }
     }
+
+    await this.notifications.notifyPaymentApproved(tenantId, transaction.id);
 
     return {
       handled: true,

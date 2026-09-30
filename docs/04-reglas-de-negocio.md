@@ -146,7 +146,7 @@ Formato: **RN-MODULO-NNN** — enunciado — excepciones.
 | ID | Regla |
 |----|--------|
 | RN-NOT-001 | Canal N1 MVP: **email**; además siempre hay registro **in-app**. |
-| RN-NOT-002 | Eventos MVP: E1 pago aprobado; E2 por vencer; E3 vencida/tolerancia; E4 reserva confirmada; E5 reserva cancelada; E6 lista de espera (cupo); E7 rutina asignada; E8 denegado/deuda; E9 devolución. |
+| RN-NOT-002 | Eventos de producto: E1 pago aprobado; E2 por vencer; E3 vencida/tolerancia; E4 reserva confirmada; E5 reserva cancelada; E6 lista de espera (cupo); E7 rutina asignada (**no cableado**; E7 épica es carpeta); E8 denegado/deuda; E9 devolución. **En código (2026-09-30):** solo E1 pago aprobado. |
 | RN-NOT-003 | El gym puede activar/desactivar eventos uno a uno. |
 | RN-NOT-004 | El branding/remitente visible usa el **nombre del gym**. |
 | RN-NOT-005 | El afiliado puede desactivar las notificaciones que quiera (preferencia de no perder al usuario). |

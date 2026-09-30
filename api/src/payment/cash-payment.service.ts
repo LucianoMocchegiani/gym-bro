@@ -21,6 +21,7 @@ import { ContractsService } from '../contracts/contracts.service';
 import { PacksService } from '../packs/packs.service';
 import { PlatformTrialService } from '../tenants/platform-trial.service';
 import { ReservationsService } from '../reservations/reservations.service';
+import { NotificationDispatcher } from '../notifications/notifications.service';
 import { AuditActor } from '../audit/audit.types';
 import { CreateCashCartDto } from './dto/create-cash-cart.dto';
 import { CashCartResult } from './payment.types';
@@ -69,6 +70,7 @@ export class CashPaymentService {
     private readonly reservations: ReservationsService,
     private readonly packs: PacksService,
     private readonly platformTrial: PlatformTrialService,
+    private readonly notifications: NotificationDispatcher,
   ) {}
 
   /**
@@ -327,6 +329,8 @@ export class CashPaymentService {
     } catch {
       this.logger.warn(`CASH cart ${transaction.id} committed without receipt`);
     }
+
+    await this.notifications.notifyPaymentApproved(tenantId, transaction.id);
 
     return {
       transactionId: transaction.id,

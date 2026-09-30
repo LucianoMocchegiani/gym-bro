@@ -41,6 +41,8 @@ Todos los `GET` que devuelven colecciones (Tenants, Roles, Staff, Audit, Members
 
 Carpeta **Folder**: etiquetas, notas/files, `GET /me/folder`. Array (no paginado). Máx. **10 ítems** por dueño; file **5 MB**; nota 20.000 caracteres. Files con GET autenticado.
 
+Carpeta **Notifications N1**: `GET /me/notifications` (array, máx. 50); `PATCH .../read`; preferencia email. JWT Member. El envío lo dispara el cobro APPROVED.
+
 Query params comunes (ya incluidos en cada request, algunos deshabilitados por default):
 
 | Param | Default | Notas |
