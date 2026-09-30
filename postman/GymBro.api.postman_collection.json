@@ -4968,7 +4968,7 @@
                         "header": [{"key": "Content-Type", "value": "application/json"}],
                         "body": {
                             "mode": "raw",
-                            "raw": "{\n  \"emailEnabled\": false\n}"
+                            "raw": "{\n  \"eventCode\": \"PAYMENT_APPROVED\",\n  \"emailEnabled\": false\n}"
                         },
                         "url": "{{baseUrl}}/api/me/notification-preferences"
                     }

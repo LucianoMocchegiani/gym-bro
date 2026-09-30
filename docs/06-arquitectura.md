@@ -369,7 +369,7 @@ Todas las rutas de tenant validan membership/permiso + `tenant_id` del token.
 |------|-------------|
 | Transacciones | DB transacciones al confirmar pago → derechos |
 | Webhooks | Inbox de eventos MP con dedup por id MP + idempotencyKey |
-| Jobs | Cron: generar sesiones, avisar vencimientos (E2/E3), reintentos email |
+| Jobs | Cron Nest 12:00 ART: avisos pack por vencer / tolerancia (E2/E3). Recurrencias de sesiones aparte. |
 | Archivos | R2: fotos `tenants/{tenantId}/…` (`POST /upload` URL pública). Al quitar o reemplazar foto de ficha/staff/servicio/pack (y al borrar físico) se llama `delete` del objeto viejo. Carpeta `folder/{tenantId}/…` + GET JWT (delete de FILE ya borra R2). |
 | Notif N1 | Dispatcher + `MailPort` (stub/Resend). Evento cableado: pago APPROVED. In-app `GET /me/notifications`. Push y cola: post-MVP / cuando el send no entre en el request. |
 

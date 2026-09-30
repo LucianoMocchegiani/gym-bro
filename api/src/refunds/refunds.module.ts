@@ -7,6 +7,7 @@ import { DebitModule } from '../debit/debit.module';
 import { ReceiptsModule } from '../receipts/receipts.module';
 import { RolesModule } from '../roles/roles.module';
 import { WaitlistModule } from '../waitlist/waitlist.module';
+import { NotificationsModule } from '../notifications/notifications.module';
 import { RefundsController } from './refunds.controller';
 import { RefundsService } from './refunds.service';
 /**
@@ -22,6 +23,7 @@ import { RefundsService } from './refunds.service';
     DebitModule,
     ReceiptsModule,
     WaitlistModule,
+    NotificationsModule,
   ],
   controllers: [RefundsController],
   providers: [RefundsService],

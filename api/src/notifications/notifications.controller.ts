@@ -49,9 +49,9 @@ export class NotificationsController {
   getPref(
     @CurrentTenant() tenantId: string,
     @CurrentUser() user: AuthUser,
-  ): Promise<NotificationPreferenceDetail> {
+  ): Promise<NotificationPreferenceDetail[]> {
     this.assertMember(user);
-    return this.notifications.getEmailPreference(tenantId, user.userId);
+    return this.notifications.listEmailPreferences(tenantId, user.userId);
   }
 
   @Patch('me/notification-preferences')
@@ -64,6 +64,7 @@ export class NotificationsController {
     return this.notifications.setEmailPreference(
       tenantId,
       user.userId,
+      dto.eventCode,
       dto.emailEnabled,
     );
   }

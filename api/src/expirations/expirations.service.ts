@@ -161,6 +161,85 @@ export class ExpirationsService {
     };
   }
 
+  /**
+   * Candidatos a aviso E2/E3: MONTHLY en ventana 7 días o tolerancia.
+   *
+   * @remarks No filtra por mandato (la cola Admin sí). Un mail por contrato
+   * (idempotencia en el dispatcher).
+   */
+  async listNotifyRows(tenantId: string): Promise<
+    Array<{
+      memberId: string;
+      contractId: string;
+      packName: string;
+      endsOn: string;
+      daysUntil: number;
+      bucket: 'upcoming' | 'tolerance';
+    }>
+  > {
+    const today = this.businessYmd(new Date());
+    const settings = await this.prisma.tenantSettings.findUnique({
+      where: { tenantId },
+      select: { debtToleranceDays: true },
+    });
+    const debtToleranceDays = settings?.debtToleranceDays ?? 15;
+
+    const contracts = await this.prisma.contract.findMany({
+      where: {
+        tenantId,
+        status: { in: [ContractStatus.ACTIVE, ContractStatus.EXPIRED] },
+        endsAt: { not: null },
+        member: { status: MemberStatus.ACTIVE },
+        pack: { billingPeriod: BillingPeriod.MONTHLY },
+      },
+      select: {
+        id: true,
+        memberId: true,
+        packId: true,
+        status: true,
+        endsAt: true,
+        member: { select: { name: true, email: true } },
+        pack: { select: { name: true } },
+      },
+    });
+
+    const chosen = this.pickLatestMonthly(contracts);
+    const out: Array<{
+      memberId: string;
+      contractId: string;
+      packName: string;
+      endsOn: string;
+      daysUntil: number;
+      bucket: 'upcoming' | 'tolerance';
+    }> = [];
+
+    for (const c of chosen.values()) {
+      if (!c.endsAt || c.memberId === null) {
+        continue;
+      }
+      const endsOn = this.businessYmd(c.endsAt);
+      const daysUntil = this.diffDays(today, endsOn);
+      const bucket =
+        daysUntil >= 0 && daysUntil <= WINDOW_DAYS
+          ? ('upcoming' as const)
+          : daysUntil < 0 && -daysUntil <= debtToleranceDays
+            ? ('tolerance' as const)
+            : null;
+      if (!bucket) {
+        continue;
+      }
+      out.push({
+        memberId: c.memberId,
+        contractId: c.id,
+        packName: c.pack.name,
+        endsOn,
+        daysUntil,
+        bucket,
+      });
+    }
+    return out;
+  }
+
   private pickLatestMonthly(rows: ContractHit[]): Map<string, ContractHit> {
     const map = new Map<string, ContractHit>();
     for (const row of rows) {

@@ -1230,9 +1230,15 @@ model AuditEvent {
   @@map("audit_events")
 }
 
-/// Eventos N1 cableados (RN-NOT-002). Solo `PAYMENT_APPROVED` en este corte.
+/// Eventos N1 cableados (RN-NOT-002). Sin puerta / rutina.
 enum NotificationEventCode {
   PAYMENT_APPROVED
+  RESERVATION_CONFIRMED
+  RESERVATION_CANCELLED
+  WAITLIST_PROMOTED
+  REFUND_EXECUTED
+  CONTRACT_EXPIRING
+  CONTRACT_IN_TOLERANCE
 }
 
 /// Resultado del canal email (el in-app siempre se inserta si el evento corre).

@@ -7,6 +7,7 @@
 import {
   ContractStatus,
   MemberStatus,
+  NotificationEventCode,
   PaymentMethod,
   PaymentStatus,
   Prisma,
@@ -26,6 +27,8 @@ import {
 import { PrismaService } from '../prisma/prisma.service';
 import { TenantSettingsService } from '../tenant-settings/tenant-settings.service';
 import { WaitlistService } from '../waitlist/waitlist.service';
+import { NotificationDispatcher } from '../notifications/notifications.service';
+import { formatSessionWhen } from '../notifications/notification.defaults';
 import {
   CreateReservationDto,
   ListReservationsQueryDto,
@@ -68,6 +71,7 @@ export class ReservationsService {
     private readonly audit: AuditService,
     private readonly tenantSettings: TenantSettingsService,
     private readonly waitlist: WaitlistService,
+    private readonly notifications: NotificationDispatcher,
   ) {}
 
   /**
@@ -318,6 +322,17 @@ export class ReservationsService {
         before: null,
         after: this.auditSnapshot(detail),
       });
+      await this.notifications.notifyMember({
+        tenantId,
+        memberId,
+        event: NotificationEventCode.RESERVATION_CONFIRMED,
+        idempotencyKey: `RESERVATION_CONFIRMED:${reservation.id}`,
+        extraVars: {
+          sesion: detail.serviceName,
+          cuando: formatSessionWhen(detail.sessionStartsAt),
+        },
+        payload: { reservationId: reservation.id },
+      });
       return detail;
     } catch (error: unknown) {
       if (
@@ -361,7 +376,7 @@ export class ReservationsService {
     });
 
     for (const before of rows) {
-      await this.prisma.$transaction(async (tx) => {
+      const cancelledNow = await this.prisma.$transaction(async (tx) => {
         const updated = await tx.reservation.updateMany({
           where: {
             id: before.id,
@@ -371,7 +386,7 @@ export class ReservationsService {
           data: { status: ReservationStatus.CANCELLED },
         });
         if (updated.count !== 1) {
-          return;
+          return false;
         }
         await tx.session.updateMany({
           where: { id: sessionId, tenantId, bookedCount: { gt: 0 } },
@@ -383,7 +398,11 @@ export class ReservationsService {
             data: { remaining: { increment: 1 } },
           });
         }
+        return true;
       });
+      if (!cancelledNow) {
+        continue;
+      }
       await this.audit.record({
         tenantId,
         actor,
@@ -392,6 +411,18 @@ export class ReservationsService {
         entityId: before.id,
         before: this.auditSnapshot(this.toDetail(before)),
         after: null,
+      });
+      const d = this.toDetail(before);
+      await this.notifications.notifyMember({
+        tenantId,
+        memberId: before.memberId,
+        event: NotificationEventCode.RESERVATION_CANCELLED,
+        idempotencyKey: `RESERVATION_CANCELLED:${before.id}`,
+        extraVars: {
+          sesion: d.serviceName,
+          cuando: formatSessionWhen(d.sessionStartsAt),
+        },
+        payload: { reservationId: before.id, reason: 'session_cancelled' },
       });
     }
   }
@@ -510,6 +541,17 @@ export class ReservationsService {
         entityId: reservationId,
         before: this.auditSnapshot(this.toDetail(before)),
         after: this.auditSnapshot(detail),
+      });
+      await this.notifications.notifyMember({
+        tenantId,
+        memberId: before.memberId,
+        event: NotificationEventCode.RESERVATION_CANCELLED,
+        idempotencyKey: `RESERVATION_CANCELLED:${reservationId}`,
+        extraVars: {
+          sesion: before.session.service.name,
+          cuando: formatSessionWhen(before.session.startsAt),
+        },
+        payload: { reservationId },
       });
     }
     return detail;

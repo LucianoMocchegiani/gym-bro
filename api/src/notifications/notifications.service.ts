@@ -6,6 +6,7 @@ import {
 } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import {
+  CABLED_NOTIFICATION_EVENTS,
   defaultTemplate,
   formatAmountArs,
   renderTemplate,
@@ -17,10 +18,17 @@ import type {
   NotificationPreferenceDetail,
 } from './notifications.types';
 
+export type NotifyMemberInput = {
+  tenantId: string;
+  memberId: string;
+  event: NotificationEventCode;
+  idempotencyKey: string;
+  extraVars?: Record<string, string>;
+  payload?: Prisma.InputJsonValue;
+};
+
 /**
- * Fachada N1: in-app + email. No lanza hacia pagos (CU-NOT-001).
- *
- * @remarks Idempotencia `PAYMENT_APPROVED:{transactionId}`. RN-NOT-003/005.
+ * Fachada N1: in-app + email. No lanza al caller de negocio (CU-NOT-001).
  */
 @Injectable()
 export class NotificationDispatcher {
@@ -31,85 +39,101 @@ export class NotificationDispatcher {
     @Inject(MAIL_PORT) private readonly mail: MailPort,
   ) {}
 
-  /**
-   * Aviso de cobro acreditado (caja o MP).
-   */
   async notifyPaymentApproved(
-    tenantId: string,
-    transactionId: string,
-  ): Promise<void> {
-    try {
-      await this.dispatchPaymentApproved(tenantId, transactionId);
-    } catch (err) {
-      this.logger.warn(
-        `notifyPaymentApproved failed tx=${transactionId}: ${err instanceof Error ? err.message : err}`,
-      );
-    }
-  }
-
-  private async dispatchPaymentApproved(
     tenantId: string,
     transactionId: string,
   ): Promise<void> {
     const tx = await this.prisma.transaction.findFirst({
       where: { id: transactionId, tenantId },
-      include: {
-        member: { select: { id: true, email: true, name: true } },
+      select: { memberId: true, amount: true },
+    });
+    if (!tx?.memberId) {
+      return;
+    }
+    await this.notifyMember({
+      tenantId,
+      memberId: tx.memberId,
+      event: NotificationEventCode.PAYMENT_APPROVED,
+      idempotencyKey: `PAYMENT_APPROVED:${transactionId}`,
+      extraVars: { monto: formatAmountArs(tx.amount) },
+      payload: { transactionId },
+    });
+  }
+
+  /**
+   * Inserta in-app y opcionalmente email. Idempotente por `idempotencyKey`.
+   */
+  async notifyMember(input: NotifyMemberInput): Promise<void> {
+    try {
+      await this.dispatch(input);
+    } catch (err) {
+      this.logger.warn(
+        `notify ${input.event} failed: ${err instanceof Error ? err.message : err}`,
+      );
+    }
+  }
+
+  private async dispatch(input: NotifyMemberInput): Promise<void> {
+    const member = await this.prisma.member.findFirst({
+      where: { id: input.memberId, tenantId: input.tenantId },
+      select: {
+        email: true,
+        name: true,
         tenant: { select: { name: true } },
       },
     });
-    if (!tx?.memberId || !tx.member) {
+    if (!member) {
       return;
     }
 
-    const event = NotificationEventCode.PAYMENT_APPROVED;
     const templateRow = await this.prisma.notificationTemplate.findUnique({
       where: {
-        tenantId_eventCode: { tenantId, eventCode: event },
+        tenantId_eventCode: {
+          tenantId: input.tenantId,
+          eventCode: input.event,
+        },
       },
     });
     if (templateRow && !templateRow.active) {
       return;
     }
     const subjectTpl =
-      templateRow?.subject ?? defaultTemplate(event).subject;
-    const bodyTpl = templateRow?.body ?? defaultTemplate(event).body;
+      templateRow?.subject ?? defaultTemplate(input.event).subject;
+    const bodyTpl = templateRow?.body ?? defaultTemplate(input.event).body;
 
     const pref = await this.prisma.notificationPreference.findUnique({
       where: {
         tenantId_memberId_eventCode: {
-          tenantId,
-          memberId: tx.memberId,
-          eventCode: event,
+          tenantId: input.tenantId,
+          memberId: input.memberId,
+          eventCode: input.event,
         },
       },
     });
     const emailOn = pref?.emailEnabled ?? true;
 
-    const gym = tx.tenant.name;
-    const nombre = tx.member.name?.trim() || tx.member.email;
-    const monto = formatAmountArs(tx.amount);
-    const vars = { gym, nombre, monto };
+    const vars: Record<string, string> = {
+      gym: member.tenant.name,
+      nombre: member.name?.trim() || member.email,
+      ...input.extraVars,
+    };
     const title = renderTemplate(subjectTpl, vars);
     const body = renderTemplate(bodyTpl, vars);
-    const idempotencyKey = `PAYMENT_APPROVED:${transactionId}`;
 
-    let emailStatus: NotificationEmailStatus = emailOn
-      ? NotificationEmailStatus.SKIPPED
-      : NotificationEmailStatus.SKIPPED;
+    let emailStatus: NotificationEmailStatus = NotificationEmailStatus.SKIPPED;
 
     try {
       await this.prisma.notification.create({
         data: {
-          tenantId,
-          memberId: tx.memberId,
-          eventCode: event,
+          tenantId: input.tenantId,
+          memberId: input.memberId,
+          eventCode: input.event,
           title,
           body,
-          payload: { transactionId } as Prisma.InputJsonValue,
+          payload: input.payload,
           inAppRead: false,
           emailStatus: NotificationEmailStatus.SKIPPED,
-          idempotencyKey,
+          idempotencyKey: input.idempotencyKey,
         },
       });
     } catch (err) {
@@ -126,14 +150,8 @@ export class NotificationDispatcher {
       return;
     }
 
-    const to = tx.member.email.trim();
+    const to = member.email.trim();
     if (!to) {
-      await this.prisma.notification.update({
-        where: {
-          tenantId_idempotencyKey: { tenantId, idempotencyKey },
-        },
-        data: { emailStatus: NotificationEmailStatus.SKIPPED },
-      });
       return;
     }
 
@@ -142,14 +160,17 @@ export class NotificationDispatcher {
       emailStatus = NotificationEmailStatus.SENT;
     } catch (err) {
       this.logger.warn(
-        `email failed ${idempotencyKey}: ${err instanceof Error ? err.message : err}`,
+        `email failed ${input.idempotencyKey}: ${err instanceof Error ? err.message : err}`,
       );
       emailStatus = NotificationEmailStatus.FAILED;
     }
 
     await this.prisma.notification.update({
       where: {
-        tenantId_idempotencyKey: { tenantId, idempotencyKey },
+        tenantId_idempotencyKey: {
+          tenantId: input.tenantId,
+          idempotencyKey: input.idempotencyKey,
+        },
       },
       data: { emailStatus },
     });
@@ -207,48 +228,45 @@ export class NotificationsService {
     };
   }
 
-  async getEmailPreference(
+  async listEmailPreferences(
     tenantId: string,
     memberId: string,
-  ): Promise<NotificationPreferenceDetail> {
-    const event = NotificationEventCode.PAYMENT_APPROVED;
-    const row = await this.prisma.notificationPreference.findUnique({
-      where: {
-        tenantId_memberId_eventCode: {
-          tenantId,
-          memberId,
-          eventCode: event,
-        },
-      },
+  ): Promise<NotificationPreferenceDetail[]> {
+    const rows = await this.prisma.notificationPreference.findMany({
+      where: { tenantId, memberId },
     });
-    return {
-      eventCode: event,
-      emailEnabled: row?.emailEnabled ?? true,
-    };
+    const byEvent = new Map(rows.map((r) => [r.eventCode, r.emailEnabled]));
+    return CABLED_NOTIFICATION_EVENTS.map((eventCode) => ({
+      eventCode,
+      emailEnabled: byEvent.get(eventCode) ?? true,
+    }));
   }
 
   async setEmailPreference(
     tenantId: string,
     memberId: string,
+    eventCode: NotificationEventCode,
     emailEnabled: boolean,
   ): Promise<NotificationPreferenceDetail> {
-    const event = NotificationEventCode.PAYMENT_APPROVED;
+    if (!CABLED_NOTIFICATION_EVENTS.includes(eventCode)) {
+      throw new NotFoundException('Unknown notification event');
+    }
     await this.prisma.notificationPreference.upsert({
       where: {
         tenantId_memberId_eventCode: {
           tenantId,
           memberId,
-          eventCode: event,
+          eventCode,
         },
       },
       create: {
         tenantId,
         memberId,
-        eventCode: event,
+        eventCode,
         emailEnabled,
       },
       update: { emailEnabled },
     });
-    return { eventCode: event, emailEnabled };
+    return { eventCode, emailEnabled };
   }
 }

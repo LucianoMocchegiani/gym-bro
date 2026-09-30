@@ -8,6 +8,7 @@ import {
 import {
   CashMovementConcept,
   ContractStatus,
+  NotificationEventCode,
   PaymentMethod,
   PaymentStatus,
   Prisma,
@@ -25,6 +26,8 @@ import { MP_ACCOUNT_PORT, MpAccountPort } from '../payment/mp-account.port';
 import { PrismaService } from '../prisma/prisma.service';
 import { WaitlistService } from '../waitlist/waitlist.service';
 import { DebitService } from '../debit/debit.service';
+import { NotificationDispatcher } from '../notifications/notifications.service';
+import { formatAmountArs } from '../notifications/notification.defaults';
 import {
   CreateRefundRequestDto,
   ExecuteRefundDto,
@@ -56,6 +59,7 @@ export class RefundsService {
     private readonly accounts: MercadoPagoAccountService,
     private readonly waitlist: WaitlistService,
     private readonly debit: DebitService,
+    private readonly notifications: NotificationDispatcher,
     @Inject(MP_ACCOUNT_PORT) private readonly mp: MpAccountPort,
   ) {}
 
@@ -525,6 +529,18 @@ export class RefundsService {
         refundRequestIds,
       },
     });
+
+    if (transaction.memberId) {
+      const itemKey = [...itemIds].sort().join(',');
+      await this.notifications.notifyMember({
+        tenantId,
+        memberId: transaction.memberId,
+        event: NotificationEventCode.REFUND_EXECUTED,
+        idempotencyKey: `REFUND_EXECUTED:${transactionId}:${itemKey}`,
+        extraVars: { monto: formatAmountArs(amount) },
+        payload: { transactionId, transactionItemIds: itemIds },
+      });
+    }
 
     return this.toBatchExecutionDetail({
       transactionId,

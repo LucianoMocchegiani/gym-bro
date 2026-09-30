@@ -4,6 +4,7 @@ import { AuthModule } from '../auth/auth.module';
 import { RolesModule } from '../roles/roles.module';
 import { TenantSettingsModule } from '../tenant-settings/tenant-settings.module';
 import { WaitlistModule } from '../waitlist/waitlist.module';
+import { NotificationsModule } from '../notifications/notifications.module';
 import { ReservationsController } from './reservations.controller';
 import { ReservationsService } from './reservations.service';
 /**
@@ -19,6 +20,7 @@ import { ReservationsService } from './reservations.service';
     AuditModule,
     TenantSettingsModule,
     WaitlistModule,
+    NotificationsModule,
   ],
   controllers: [ReservationsController],
   providers: [ReservationsService],

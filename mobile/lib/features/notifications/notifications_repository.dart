@@ -19,7 +19,6 @@ class AppNotification {
   final bool inAppRead;
   final DateTime createdAt;
 
-  /// Parsea JSON de la API.
   factory AppNotification.fromJson(Map<String, dynamic> json) {
     return AppNotification(
       id: json['id'] as String,
@@ -32,30 +31,54 @@ class AppNotification {
   }
 }
 
-/// Preferencia de email para pago acreditado.
+/// Opt-out de email por evento.
 class NotificationEmailPref {
   /// Crea el modelo.
-  NotificationEmailPref({required this.emailEnabled});
+  NotificationEmailPref({
+    required this.eventCode,
+    required this.emailEnabled,
+  });
 
+  final String eventCode;
   final bool emailEnabled;
 
   factory NotificationEmailPref.fromJson(Map<String, dynamic> json) {
     return NotificationEmailPref(
+      eventCode: json['eventCode'] as String,
       emailEnabled: json['emailEnabled'] as bool? ?? true,
     );
+  }
+
+  /// Texto para el switch.
+  String get label {
+    switch (eventCode) {
+      case 'PAYMENT_APPROVED':
+        return 'Pago acreditado';
+      case 'RESERVATION_CONFIRMED':
+        return 'Reserva confirmada';
+      case 'RESERVATION_CANCELLED':
+        return 'Reserva cancelada';
+      case 'WAITLIST_PROMOTED':
+        return 'Lugar en lista de espera';
+      case 'REFUND_EXECUTED':
+        return 'Devolución';
+      case 'CONTRACT_EXPIRING':
+        return 'Pack por vencer';
+      case 'CONTRACT_IN_TOLERANCE':
+        return 'Pack vencido (tolerancia)';
+      default:
+        return eventCode;
+    }
   }
 }
 
 /// Bandeja y opt-out N1 (`GET /me/notifications`).
-///
-/// CU-NOT-003 / CU-NOT-005. Push queda post-MVP.
 class NotificationsRepository {
   /// Crea el repositorio.
   NotificationsRepository(this._api);
 
   final ApiClient _api;
 
-  /// Últimos avisos del socio.
   Future<List<AppNotification>> listMine() {
     return _api.getJson<List<AppNotification>>(
       '/api/me/notifications',
@@ -71,7 +94,6 @@ class NotificationsRepository {
     );
   }
 
-  /// Marca leída.
   Future<void> markRead(String id) async {
     await _api.patchJson<void>(
       '/api/me/notifications/$id/read',
@@ -79,21 +101,31 @@ class NotificationsRepository {
     );
   }
 
-  /// Opt-out de email de pago acreditado.
-  Future<NotificationEmailPref> getEmailPref() {
-    return _api.getJson<NotificationEmailPref>(
+  Future<List<NotificationEmailPref>> listEmailPrefs() {
+    return _api.getJson<List<NotificationEmailPref>>(
       '/api/me/notification-preferences',
-      parse: (json) => NotificationEmailPref.fromJson(
-        Map<String, dynamic>.from(json as Map),
-      ),
+      parse: (json) {
+        if (json is! List) {
+          return [];
+        }
+        return json
+            .whereType<Map>()
+            .map(
+              (e) =>
+                  NotificationEmailPref.fromJson(Map<String, dynamic>.from(e)),
+            )
+            .toList();
+      },
     );
   }
 
-  /// Guarda opt-out de email.
-  Future<NotificationEmailPref> setEmailPref(bool emailEnabled) {
+  Future<NotificationEmailPref> setEmailPref(
+    String eventCode,
+    bool emailEnabled,
+  ) {
     return _api.patchJson<NotificationEmailPref>(
       '/api/me/notification-preferences',
-      body: {'emailEnabled': emailEnabled},
+      body: {'eventCode': eventCode, 'emailEnabled': emailEnabled},
       parse: (json) => NotificationEmailPref.fromJson(
         Map<String, dynamic>.from(json as Map),
       ),

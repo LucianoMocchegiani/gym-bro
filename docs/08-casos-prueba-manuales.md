@@ -233,6 +233,10 @@ Pasos de VPS: [uso/probar-debito-suscripcion-mp.md](./uso/probar-debito-suscripc
 | N4 | Editar plantilla | Siguiente envío usa texto nuevo (API/DB; sin UI Admin aún) | CU-NOT-002 | |
 | N5 | Branding nombre gym | Visible en asunto/cuerpo | RN-NOT-004 | |
 | N6 | Mismo pago webhook 2 veces | Un solo aviso (idempotencia) | | |
+| N7 | Reserva confirmada / cancelada | Aviso in-app (y mail si ON) | E4 E5 | |
+| N8 | Waitlist AUTO_ASSIGN | Aviso “hay un lugar” | E6 | |
+| N9 | Staff ejecuta devolución | Aviso al socio | E9 | |
+| N10 | Cron 12:00 ART, pack MONTHLY en ventana | Un aviso por vencer o tolerancia (no se duplica) | E2 E3 | |
 
 ---
 

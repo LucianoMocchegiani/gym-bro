@@ -179,12 +179,12 @@ Reemplaza el corte de **rutinas estructuradas** (plantillas/cumplimiento → [ba
 
 - [x] Modelo plantilla + preferencias (tablas; plantilla default en código; UI Admin plantillas **no**)
 - [x] Dispatcher dominio → in-app + email (`MailPort` stub/Resend)
-- [~] Eventos E1–E9 — **solo pago APPROVED** cableado
+- [~] Eventos E1–E9 — cableados: pago, reserva±, waitlist, devolución, vencimiento/tolerancia. Sin puerta ni rutina
 - [ ] Gym activa/desactiva eventos (Admin)
-- [x] Afiliado opt-out de email (app Avisos)
+- [x] Afiliado opt-out de email (app Avisos, por evento)
 - [ ] Plantillas editables (Admin)
 - [ ] Bandeja admin / avisos operativos
-- [ ] Job avisos por vencer / vencida
+- [x] Job avisos por vencer / vencida (cron 12:00 ART, una vez por contrato)
 - [ ] Push (N2) → [backlog](./99-backlog-post-mvp/notificaciones.md)
 
 ---

@@ -17,7 +17,7 @@ class NotificationsScreen extends StatefulWidget {
 
 class _NotificationsScreenState extends State<NotificationsScreen> {
   List<AppNotification>? _items;
-  bool _emailEnabled = true;
+  List<NotificationEmailPref> _prefs = [];
   Object? _error;
   bool _prefLoaded = false;
 
@@ -32,13 +32,13 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     try {
       final repo = context.read<NotificationsRepository>();
       final items = await repo.listMine();
-      final pref = await repo.getEmailPref();
+      final prefs = await repo.listEmailPrefs();
       if (!mounted) {
         return;
       }
       setState(() {
         _items = items;
-        _emailEnabled = pref.emailEnabled;
+        _prefs = prefs;
         _prefLoaded = true;
       });
     } catch (e) {
@@ -82,15 +82,20 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     await _load();
   }
 
-  Future<void> _toggleEmail(bool value) async {
+  Future<void> _toggleEmail(String eventCode, bool value) async {
     try {
       final pref = await context
           .read<NotificationsRepository>()
-          .setEmailPref(value);
+          .setEmailPref(eventCode, value);
       if (!mounted) {
         return;
       }
-      setState(() => _emailEnabled = pref.emailEnabled);
+      setState(() {
+        _prefs = [
+          for (final p in _prefs)
+            if (p.eventCode == pref.eventCode) pref else p,
+        ];
+      });
     } on ApiException catch (e) {
       if (!mounted) {
         return;
@@ -113,14 +118,20 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         child: ListView(
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 28),
           children: [
-            if (_prefLoaded)
-              SwitchListTile(
-                contentPadding: EdgeInsets.zero,
-                title: const Text('Email de pago acreditado'),
-                subtitle: const Text('Podés apagar el correo; la bandeja sigue'),
-                value: _emailEnabled,
-                onChanged: _toggleEmail,
+            if (_prefLoaded) ...[
+              Text(
+                'Correo por tipo de aviso',
+                style: Theme.of(context).textTheme.titleSmall,
               ),
+              ..._prefs.map(
+                (p) => SwitchListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: Text(p.label),
+                  value: p.emailEnabled,
+                  onChanged: (v) => _toggleEmail(p.eventCode, v),
+                ),
+              ),
+            ],
             const SizedBox(height: 8),
             if (err != null)
               Padding(

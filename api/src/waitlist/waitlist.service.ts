@@ -7,6 +7,7 @@ import {
 import {
   ContractStatus,
   MemberStatus,
+  NotificationEventCode,
   Prisma,
   ReservationCoverage,
   ReservationStatus,
@@ -19,6 +20,8 @@ import { AuditService } from '../audit/audit.service';
 import { ListResult, normalizeListQuery, toListResult } from '../common/list';
 import { PrismaService } from '../prisma/prisma.service';
 import { TenantSettingsService } from '../tenant-settings/tenant-settings.service';
+import { NotificationDispatcher } from '../notifications/notifications.service';
+import { formatSessionWhen } from '../notifications/notification.defaults';
 import {
   JoinWaitlistDto,
   LeaveWaitlistDto,
@@ -56,6 +59,7 @@ export class WaitlistService {
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
     private readonly tenantSettings: TenantSettingsService,
+    private readonly notifications: NotificationDispatcher,
   ) {}
 
   /**
@@ -464,6 +468,17 @@ export class WaitlistService {
           coverage: ReservationCoverage.CREDIT,
           source: 'waitlist',
         },
+      });
+      await this.notifications.notifyMember({
+        tenantId,
+        memberId: entry.memberId,
+        event: NotificationEventCode.WAITLIST_PROMOTED,
+        idempotencyKey: `WAITLIST_PROMOTED:${entry.id}`,
+        extraVars: {
+          sesion: entry.session.service.name,
+          cuando: formatSessionWhen(entry.session.startsAt),
+        },
+        payload: { waitlistEntryId: entry.id, reservationId: reservation.id },
       });
       return 'promoted';
     } catch {
