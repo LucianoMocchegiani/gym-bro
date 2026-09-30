@@ -16,6 +16,7 @@ La creación de registros sigue la skill:
 
 ## Índice
 
+- [2026-09-30 — App: opt-out de mail en Ajustes](./2026-09-30-avisos-prefs-ajustes.md)
 - [2026-09-30 — N1: renovación débito/caja y avisos de plan Faciliter](./2026-09-30-n1-debito-y-plan-faciliter.md)
 - [2026-09-30 — N1: plantillas Admin y pulido de Avisos](./2026-09-30-n1-plantillas-admin-avisos.md)
 - [2026-09-30 — N1: más eventos y cron de vencimiento](./2026-09-30-n1-eventos-y-cron.md)
