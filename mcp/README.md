@@ -38,7 +38,9 @@ docker compose up --build -d api mcp
 
 **C:** `list_services`, `list_packs`, `get_pack`, `list_roles`, `get_role`, `search_audit_events`.
 
-**D:** `get_help` (artículos en `mcp/help/`: `producto` = cómo funciona Faciliter; `guia` = cómo se ven panel y app; `mercadopago` = guía completa de MP del local; `soporte` = contacto si hay un problema; el resto = temas).
+**D:** `get_help` (artículos en `mcp/help/`: `producto`, `guia`, `mercadopago`, `carpeta` = notas/PDF socio y staff, `soporte`, etc.).
+
+Cada pantalla o flujo nuevo del producto lleva **artículo `mcp/help/{topic}.md`**, topic en `get_help`, y una línea en `guia.md` / `producto.md`. El chat no adivina features: lee help.
 
 403 de Nest → texto de tool “No hay permiso para esta consulta.” Preview de ingreso **no** escribe `access_attempts`. Sin writes.
 

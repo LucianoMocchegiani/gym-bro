@@ -64,6 +64,11 @@ identities ||--o{ platform_signups : self_serve
   tenants ||--o{ receipts : issues
   tenants ||--o| receipt_sequences : numbers
   tenants ||--o{ debit_mandates : debit
+  tenants ||--o{ folder_labels : tags
+  tenants ||--o{ folder_items : archives
+  members ||--o{ folder_items : member_folder
+  staff_users ||--o{ folder_items : staff_folder
+  folder_labels ||--o{ folder_items : labels
   members ||--o{ debit_mandates : authorizes
   packs ||--o{ debit_mandates : next_pack
   transaction_items ||--o| debit_mandates : enrolled_by
@@ -358,6 +363,7 @@ identities ||--o{ platform_signups : self_serve
 | `RefundRequestStatus` | `PENDING`, `REJECTED`, `EXECUTED` | Solicitud de devolución |
 | `AccessCredentialStatus` | `ACTIVE`, `REVOKED` | Credencial de vínculo de acceso |
 | `AccessAttemptResult` | `ALLOWED`, `DENIED` | Resultado de intento de ingreso |
+| `FolderItemKind` | `NOTE`, `FILE` | Ítem de carpeta socio/staff |
 
 ---
 
@@ -532,6 +538,17 @@ Afiliado (socio). Perfil separado del staff (RN-ROL-005). Email único **por ten
 **Unique:** `(tenant_id, email)`, `(tenant_id, document)`, `(tenant_id, identity_id)`.
 
 API Staff: `GET|POST|PATCH /api/members`, `PATCH /api/members/:id/status` (`members.deactivate`, dangerous).
+
+### 4.9b `folder_labels` / `folder_items`
+
+Carpeta de notas y files (RN-FOL). XOR: `member_id` **o** `staff_user_id`. Check SQL `folder_items_owner_xor`. Files: `storage_key` en R2, sin URL pública.
+
+| Tabla | Notas |
+|-------|--------|
+| `folder_labels` | `tenant_id` + `name` unique |
+| `folder_items` | `kind` NOTE\|FILE; `created_by_staff_id` |
+
+API: `/api/folder-labels`; `/api/members/:id/folder*`; `/api/staff/:id/folder*`; `/api/me/folder`.
 
 ---
 
@@ -1034,7 +1051,7 @@ Historia incremental (2026-07 / 2026-08) **compactada** en un baseline (`40476fa
 | `20260925120000_platform_tenant_contracts` | `ContractType`; `member_id` nullable en cobros/contratos. |
 | `20260927020000_drop_super_profile` | Drop perfil SUPER. |
 | `20260929120000_platform_plan_trial` | `tenants.owner_identity_id`, `platform_trial_used_at`; `identities.platform_trial_used_at`; `contracts.is_platform_trial`. |
-| `20260929140000_platform_self_serve_signup` | `platform_signups` (alta Identity + preapproval MP; gym nace en webhook). |
+| `20260930120000_member_staff_folder` | `folder_labels`, `folder_items`, enum `FolderItemKind`; XOR dueño socio/staff |
 
 Comandos y checklist “desde cero”: [13-setup-db-desde-cero.md](./13-setup-db-desde-cero.md).
 

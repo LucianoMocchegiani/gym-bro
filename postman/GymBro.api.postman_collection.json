@@ -4878,6 +4878,61 @@
                 }
             ]
         },
+        },
+        {
+            "name": "Folder",
+            "description": "Carpeta notas/files de socio o staff. Labels por tenant. Files autenticados (no POST /upload).",
+            "item": [
+                {
+                    "name": "List folder labels",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": "{{baseUrl}}/api/folder-labels"
+                    }
+                },
+                {
+                    "name": "Create folder label",
+                    "request": {
+                        "method": "POST",
+                        "header": [{"key": "Content-Type", "value": "application/json"}],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"name\": \"Médico\"\n}"
+                        },
+                        "url": "{{baseUrl}}/api/folder-labels"
+                    }
+                },
+                {
+                    "name": "Member GET folder",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": "{{baseUrl}}/api/members/{{createdMemberId}}/folder"
+                    }
+                },
+                {
+                    "name": "Member POST folder note",
+                    "request": {
+                        "method": "POST",
+                        "header": [{"key": "Content-Type", "value": "application/json"}],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"title\": \"Rutina\",\n  \"body\": \"Lunes: sentadilla\"\n}"
+                        },
+                        "url": "{{baseUrl}}/api/members/{{createdMemberId}}/folder/notes"
+                    }
+                },
+                {
+                    "name": "Me GET folder",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": "{{baseUrl}}/api/me/folder"
+                    }
+                }
+            ]
+        },
         {
             "name": "Member catalog",
             "description": "Catálogo del afiliado (E9 mobile): sesiones publicadas (`serviceImageUrl`), packs activos (`imageUrl`) y estado MP.",

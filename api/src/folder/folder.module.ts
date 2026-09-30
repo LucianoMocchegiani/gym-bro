@@ -1,0 +1,16 @@
+import { Module } from '@nestjs/common';
+import { AuthModule } from '../auth/auth.module';
+import { FileStorageModule } from '../file-storage/file-storage.module';
+import { RolesModule } from '../roles/roles.module';
+import { FolderController } from './folder.controller';
+import { FolderService } from './folder.service';
+
+/**
+ * Carpeta de documentos de socios y staff.
+ */
+@Module({
+  imports: [AuthModule, FileStorageModule, RolesModule],
+  controllers: [FolderController],
+  providers: [FolderService],
+})
+export class FolderModule {}

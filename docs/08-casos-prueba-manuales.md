@@ -180,7 +180,7 @@ Pasos de VPS: [uso/probar-debito-suscripcion-mp.md](./uso/probar-debito-suscripc
 |---|------|----------|-------|---|
 | C6-1 | `npm run smoke` con JWT Admin seed | 17 tools; `get_reports_summary` sin args = mes BA; `get_help` packs | C6 | |
 | C6-2 | Drawer: “ingresos de este mes” | Tool reportes + una línea; totales del mes | C6 | |
-| C6-3 | Drawer: “qué packs hay” / “cómo enrolar débito” / “cómo conectar Mercado Pago” | `list_packs` / `get_help` debito / `get_help` mercadopago | C6 | |
+| C6-3 | Drawer: “qué packs hay” / “cómo enrolar débito” / “cómo conectar Mercado Pago” / “dónde cargo la rutina o un PDF del socio” | `list_packs` / `get_help` debito / `get_help` mercadopago / `get_help` carpeta | C6 | |
 | C6-5 | Landing o Admin: “cómo se ve Caja / qué ve el socio en Inicio” | `get_help` topic `guia`; puede mandar a `/docs` para las fotos | C6 | |
 | C6-4 | Staff sin caja: débitos o caja | Tool “No hay permiso para esta consulta.” | C6 | |
 
@@ -198,11 +198,22 @@ Pasos de VPS: [uso/probar-debito-suscripcion-mp.md](./uso/probar-debito-suscripc
 
 ---
 
-## Rutinas
+## Carpeta
 
 | # | Caso | Esperado | RN/CU | R |
 |---|------|----------|-------|---|
-| U1 | Asignar rutina | Copia creada; E7 | CU-RUT-003 | |
+| F1 | Staff abre carpeta afiliado, nota + PDF | Visible en lista; socio lo ve en app | CU-FOL-001 | |
+| F2 | Staff carpeta de otro staff | Con `staff.read` ve; carga con `staff.write` | CU-FOL-002 | |
+| F3 | GET file sin JWT | 401 | RN-FOL-004 | |
+| F4 | `POST /upload` no crea ítem de carpeta | Foto ficha sigue aparte | RN-FOL-004 | |
+
+---
+
+## Rutinas (backlog)
+
+| # | Caso | Esperado | RN/CU | R |
+|---|------|----------|-------|---|
+| U1 | Asignar rutina | Diferido | CU-RUT-003 | |
 | U2 | Editar plantilla | No cambia copia vieja | RN-RUT-005 | |
 | U3 | Varias rutinas activas | Ambas visibles | RN-RUT-004 | |
 | U4 | Registrar cumplimiento + tiempo | Persistido | CU-RUT-006 | |

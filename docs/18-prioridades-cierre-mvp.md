@@ -2,7 +2,7 @@
 
 **Estado:** Viva (corte 2026-09-08)  
 **Qué es:** lo que falta para un primer gym piloto **vendible**. No es el backlog post-MVP ni un rediseño de módulos.  
-**Fuera de este corte:** tienda de productos, white label, AFIP, offline puerta, multi-sede UI, **E7 Rutinas** y **E8 Notificaciones N1**.
+**Fuera de este corte:** tienda de productos, white label, AFIP, offline puerta, multi-sede UI, **rutinas plantilla (backlog)** y **E8 Notificaciones N1**. E7 carpeta de documentos está en el producto.
 
 Roadmap de épicas históricas: [11-roadmap-mvp.md](./11-roadmap-mvp.md). Diferidos: [99-backlog-post-mvp.md](./99-backlog-post-mvp.md).
 

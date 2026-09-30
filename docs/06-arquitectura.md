@@ -340,7 +340,7 @@ Prefijo sugerido: `/api/v1`.
 | Access | `/access/oid4vp/request`, `/access/oid4vp/session/:id`, `/access-attempts`, `GET /members/:id/access-preview`, manual-pass |
 | Chat (servicio `chat-api` :3010) | `GET /health`; `POST /v1/public/session` (landing); `GET/POST /v1/conversations`; `GET/PATCH/DELETE /v1/conversations/:id`; `GET/POST /v1/conversations/:id/messages` (POST = UI Message Stream; OpenRouter + MCP) |
 | MCP (servicio `mcp` :3011) | `GET /health`; `POST /mcp` Streamable HTTP + Bearer. Tools A–D (lectura): operación, reportes/débitos/devoluciones, catálogo/roles/audit slim, `get_help` (`producto`, `guia` + temas) |
-| Rutinas | `/exercises`, `/routine-templates`, `/assigned-routines` |
+| Carpeta | `/folder-labels`, `/members/:id/folder`, `/staff/:id/folder`, `/me/folder` |
 | Notif | `/notifications`, `/notification-templates`, preferences |
 | Afiliados | Staff CRUD members + PATCH status (`members.deactivate`); estado de cuenta `GET /members/:id/account` / `GET /me/account?coverage=current\|all` |
 | Sesiones | Staff `GET|POST|PATCH /sessions`, `PATCH /sessions/:id/capacity` (ampliar cupo) + `/session-recurrence-rules` (`sessions.write`) |
@@ -370,7 +370,7 @@ Todas las rutas de tenant validan membership/permiso + `tenant_id` del token.
 | Transacciones | DB transacciones al confirmar pago → derechos |
 | Webhooks | Inbox de eventos MP con dedup por id MP + idempotencyKey |
 | Jobs | Cron: generar sesiones, avisar vencimientos (E2/E3), reintentos email |
-| Archivos | Object storage para fotos progreso |
+| Archivos | R2: fotos ficha (`POST /upload` URL pública); carpeta socio/staff (key privada + GET JWT) |
 
 ---
 

@@ -6,6 +6,7 @@ import 'core/theme/gymbro_theme.dart';
 import 'core/theme/theme_controller.dart';
 import 'features/account/account_repository.dart';
 import 'features/auth/auth_controller.dart';
+import 'features/folder/folder_repository.dart';
 import 'features/auth/auth_gate.dart';
 import 'features/auth/auth_repository.dart';
 import 'features/auth/session_store.dart';
@@ -43,6 +44,7 @@ class _FaciliterAppState extends State<FaciliterApp> {
   late final AuthController _auth;
   late final ThemeController _theme;
   late final AccountRepository _accountRepo;
+  late final FolderRepository _folderRepo;
   late final CredentialOffersRepository _offersRepo;
   late final StaffCredentialOffersRepository _staffOffersRepo;
   late final SessionsRepository _sessionsRepo;
@@ -63,6 +65,7 @@ class _FaciliterAppState extends State<FaciliterApp> {
     _authRepo = AuthRepository(api: _api, store: _store);
     _theme = ThemeController();
     _accountRepo = AccountRepository(_api);
+    _folderRepo = FolderRepository(_api);
     _offersRepo = CredentialOffersRepository(_api);
     _staffOffersRepo = StaffCredentialOffersRepository(_api);
     _sessionsRepo = SessionsRepository(_api);
@@ -100,6 +103,7 @@ class _FaciliterAppState extends State<FaciliterApp> {
         ChangeNotifierProvider.value(value: _auth),
         ChangeNotifierProvider.value(value: _theme),
         Provider.value(value: _accountRepo),
+        Provider.value(value: _folderRepo),
         Provider.value(value: _offersRepo),
         Provider.value(value: _staffOffersRepo),
         Provider.value(value: _sessionsRepo),

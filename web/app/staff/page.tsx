@@ -17,9 +17,11 @@ import { StaffCreateForm } from '@/components/StaffCreateForm';
 import { StaffCredentialPanel } from '@/components/StaffCredentialPanel';
 import { StaffFichaPanel } from '@/components/StaffFichaPanel';
 import { StaffRolesPanel } from '@/components/StaffRolesPanel';
+import { PersonFolderModal } from '@/components/PersonFolderModal';
 import {
   IconCredential,
   IconEdit,
+  IconFolder,
   IconRoles,
   RowActions,
   RowIconButton,
@@ -48,8 +50,13 @@ function StaffInner() {
   const fichaId = searchParams.get('ficha')?.trim() || null;
   const rolesId = searchParams.get('roles')?.trim() || null;
   const credencialId = searchParams.get('credencial')?.trim() || null;
+  const carpetaId = searchParams.get('carpeta')?.trim() || null;
   const createOpen =
-    searchParams.get('nuevo') === '1' && !fichaId && !rolesId && !credencialId;
+    searchParams.get('nuevo') === '1' &&
+    !fichaId &&
+    !rolesId &&
+    !credencialId &&
+    !carpetaId;
 
   const [rows, setRows] = useState<StaffUserDetail[]>([]);
   const [total, setTotal] = useState(0);
@@ -116,6 +123,11 @@ function StaffInner() {
   function openCredencial(id: string) {
     setFlashOk(null);
     router.replace(`/staff?credencial=${encodeURIComponent(id)}`, { scroll: false });
+  }
+
+  function openCarpeta(id: string) {
+    setFlashOk(null);
+    router.replace(`/staff?carpeta=${encodeURIComponent(id)}`, { scroll: false });
   }
 
   return (
@@ -194,6 +206,12 @@ function StaffInner() {
                   onClick={() => openCredencial(s.id)}
                 >
                   <IconCredential />
+                </RowIconButton>
+                <RowIconButton
+                  label="Carpeta"
+                  onClick={() => openCarpeta(s.id)}
+                >
+                  <IconFolder />
                 </RowIconButton>
                 <DeleteRowButton
                   dialogTitle={`Eliminar staff?`}
@@ -281,6 +299,18 @@ function StaffInner() {
       >
         {credencialId ? (
           <StaffCredentialPanel key={credencialId} staffId={credencialId} />
+        ) : null}
+      </AdminModal>
+
+      <AdminModal
+        open={Boolean(carpetaId)}
+        onClose={closeModals}
+        title="Carpeta"
+        description="Notas y archivos (PDF o imagen). Las etiquetas las define el gym."
+        size="wide"
+      >
+        {carpetaId ? (
+          <PersonFolderModal key={carpetaId} kind="staff" ownerId={carpetaId} />
         ) : null}
       </AdminModal>
     </AdminShell>

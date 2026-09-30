@@ -25,7 +25,7 @@
 | E4 | Sesiones y reservas | Calendario, cupos, lista espera |
 | E5 | Pagos y caja | MP + efectivo + arqueo |
 | E6 | Acceso QR / SSI | Credencial vínculo + verify |
-| E7 | Rutinas | Catálogo gym + asignación + cumplimiento |
+| E7 | Carpeta documentos | Notas + PDF/imagen socio y staff |
 | E8 | Notificaciones N1 | Email + in-app |
 | E9 | App afiliado | Flutter: cuenta + SSI + calendario + tienda/carrito + historial |
 | E10 | Admin web | Next: thin casi cerrados; faltan MP staff / pase sesión opcional |
@@ -163,15 +163,15 @@
 
 ---
 
-## E7 — Rutinas
+## E7 — Carpeta de documentos
 
-- [ ] Catálogo de ejercicios del gym
-- [ ] Plantilla rutina N días
-- [ ] Asignar rutina (copia)
-- [ ] Editar plantilla vs editar copia
-- [ ] Cumplimiento + descansos + tiempo
-- [ ] Mediciones / fotos opcionales
-- [ ] Desactivar rutina asignada
+Reemplaza el corte de **rutinas estructuradas** (plantillas/cumplimiento → [backlog](./99-backlog-post-mvp/rutinas.md)).
+
+- [x] Etiquetas por tenant
+- [x] Notas y files (PDF/imagen) de socio y staff
+- [x] Admin: modal en grillas `/afiliados` y `/staff`
+- [x] App: Mis documentos (lectura)
+- [x] Files por JWT (no URL pública R2)
 
 ---
 
@@ -207,6 +207,8 @@ Detalle: [14-auditoria-roadmap-vs-codigo-2026-08-13.md](./14-auditoria-roadmap-v
 - [x] Home / estado de cuenta
   - `GET /me/account?coverage=current`; Inicio agrupa por pack (créditos sumados; oculta drop-in en 0), deuda, próximas reservas
   - Nav real: **Inicio · Acceso · Ajustes** (tema claro/oscuro)
+- [x] Mis documentos (carpeta, lectura)
+  - Ajustes → Mis documentos; `GET /me/folder` (socio y staff)
 - [x] Acceso + Credenciales (SSI)
   - Escanear OID4VCI/VP + bandeja offers (`accept`/`fail`) + `identity_core_dart`
   - Kuatia: defaults `issuer.kuatia.xyz` / `verifier.kuatia.xyz` (`KUATIA_*_PUBLIC_URL`)
@@ -373,7 +375,7 @@ E0 → E1 → E2 → E3 → E5 (pagos base)
               ↘ E4 (reservas necesitan packs + pagos)
 E6 (acceso) en paralelo liviano tras E2
 E8 (notif) cuando haya eventos reales (E4/E5)
-E7 rutinas puede ir después del núcleo comercial
+E7 carpeta (notas/files) después del núcleo comercial; rutinas plantilla en backlog
 E9 + E10 UI en paralelo al ir cerrando APIs
 E11 → E12
 ```
@@ -388,7 +390,7 @@ E11 → E12
 P1 molinetes → P2 débito QA (+ E5 MP live) → P3 landing/pricing/SEO
   → P4 tokens OpenRouter → P5 migración Excel/IA (último, opcional al piloto)
 En paralelo ops: staging/prod, ToS, smoke E12, gym piloto
-E7 rutinas y E8 N1: fuera de este corte (siguen [ ] en este roadmap)
+E7 carpeta (hecho) y E8 N1: E8 fuera de este corte
 P1 forma del piloto (molinete vs tablet): se evalúa
 ```
 

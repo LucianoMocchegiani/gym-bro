@@ -26,7 +26,8 @@ Los CU usan la plantilla de [00-indice.md](../00-indice.md) y citan IDs de [04-r
 | [servicios-sesiones-packs.md](./servicios-sesiones-packs.md) | Servicios, sesiones, packs, reservas | Cerrado (v1) |
 | [pagos-caja.md](./pagos-caja.md) | Mercado Pago, caja, devoluciones, débito (suscripción MP) | Cerrado (v1) + débito diseño 2026-09-15 |
 | [acceso-qr.md](./acceso-qr.md) | Acceso / QR / SSI | Cerrado (v1) |
-| [rutinas.md](./rutinas.md) | Rutinas y progreso | Cerrado (v1) |
+| [carpeta.md](./carpeta.md) | Notas y files de socio/staff | Implementado (v1) |
+| [rutinas.md](./rutinas.md) | Rutinas y progreso | Backlog (ya no E7) |
 | [notificaciones.md](./notificaciones.md) | N1 email + in-app | Cerrado (v1) |
 | [roles-permisos.md](./roles-permisos.md) | Roles, permisos, auditoría | Cerrado (v1) |
 
@@ -38,7 +39,8 @@ Los CU usan la plantilla de [00-indice.md](../00-indice.md) y citan IDs de [04-r
 | CU-SER / CU-RES / CU-CON | Servicios, reservas, contrataciones |
 | CU-PAG | Pagos y caja |
 | CU-ACC | Acceso |
-| CU-RUT | Rutinas |
+| CU-FOL | Carpeta documentos |
+| CU-RUT | Rutinas (backlog) |
 | CU-NOT | Notificaciones |
 | CU-ROL | Roles |
 

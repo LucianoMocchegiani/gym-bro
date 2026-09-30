@@ -27,6 +27,7 @@ import { TenantSettingsModule } from './tenant-settings/tenant-settings.module';
 import { TenantsModule } from './tenants/tenants.module';
 import { WaitlistModule } from './waitlist/waitlist.module';
 import { FileStorageModule } from './file-storage/file-storage.module';
+import { FolderModule } from './folder/folder.module';
 import { UploadModule } from './upload/upload.module';
 
 /**
@@ -65,6 +66,7 @@ import { UploadModule } from './upload/upload.module';
     HealthModule,
     FileStorageModule,
     UploadModule,
+    FolderModule,
   ],
 })
 export class AppModule {}

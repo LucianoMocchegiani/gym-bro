@@ -214,6 +214,8 @@ model Tenant {
   transactions    Transaction[]
   debitMandates   DebitMandate[]
   platformSignups PlatformSignup[]
+  folderLabels    FolderLabel[]
+  folderItems     FolderItem[]
 
   @@index([ownerIdentityId])
   @@map("tenants")
@@ -338,6 +340,8 @@ model StaffUser {
   staffCredentialOffers     StaffCredentialOffer[]
   debitMandatesEnrolled     DebitMandate[]          @relation("DebitMandateEnrolledBy")
   debitMandatesCancelled    DebitMandate[]          @relation("DebitMandateCancelledBy")
+  folderItems               FolderItem[]            @relation("FolderItemStaffOwner")
+  folderItemsCreated        FolderItem[]            @relation("FolderItemCreatedBy")
 
   @@unique([tenantId, email])
   @@unique([tenantId, identityId])
@@ -377,6 +381,7 @@ model Member {
   credentialOffers CredentialOffer[]
   transactions  Transaction[]
   debitMandates DebitMandate[]
+  folderItems   FolderItem[]   @relation("FolderItemMemberOwner")
 
   @@unique([tenantId, email])
   @@unique([tenantId, document])
@@ -1142,6 +1147,58 @@ model CashReconciliation {
   @@unique([tenantId, businessDate])
   @@index([tenantId, businessDate])
   @@map("cash_reconciliations")
+}
+
+/// Etiqueta de carpeta definida por el gym (notas/files de socios y staff).
+enum FolderItemKind {
+  NOTE
+  FILE
+}
+
+/// Nombre de etiqueta por tenant (el gym arma la lista).
+model FolderLabel {
+  id        String   @id @default(uuid()) @db.Uuid
+  tenantId  String   @map("tenant_id") @db.Uuid
+  name      String
+  createdAt DateTime @default(now()) @map("created_at")
+
+  tenant Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  items  FolderItem[]
+
+  @@unique([tenantId, name])
+  @@index([tenantId])
+  @@map("folder_labels")
+}
+
+/// Nota o archivo en la carpeta de un socio o de un staff (XOR de FKs).
+///
+/// @remarks Files: key R2 privada; no se expone URL pública. RN-FOL-001..004.
+model FolderItem {
+  id                 String         @id @default(uuid()) @db.Uuid
+  tenantId           String         @map("tenant_id") @db.Uuid
+  kind               FolderItemKind
+  title              String?
+  body               String?
+  storageKey         String?        @map("storage_key")
+  originalFilename   String?        @map("original_filename")
+  mime               String?
+  sizeBytes          Int?           @map("size_bytes")
+  labelId            String?        @map("label_id") @db.Uuid
+  memberId           String?        @map("member_id") @db.Uuid
+  staffUserId        String?        @map("staff_user_id") @db.Uuid
+  createdByStaffId   String?        @map("created_by_staff_id") @db.Uuid
+  createdAt          DateTime       @default(now()) @map("created_at")
+  updatedAt          DateTime       @updatedAt @map("updated_at")
+
+  tenant          Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  label           FolderLabel? @relation(fields: [labelId], references: [id], onDelete: SetNull)
+  member          Member?    @relation("FolderItemMemberOwner", fields: [memberId], references: [id], onDelete: Cascade)
+  staffOwner      StaffUser? @relation("FolderItemStaffOwner", fields: [staffUserId], references: [id], onDelete: Cascade)
+  createdByStaff  StaffUser? @relation("FolderItemCreatedBy", fields: [createdByStaffId], references: [id], onDelete: SetNull)
+
+  @@index([tenantId, memberId, createdAt])
+  @@index([tenantId, staffUserId, createdAt])
+  @@map("folder_items")
 }
 
 /// Evento de auditoría append-only (RN-ROL-008 / CU-ROL-007).

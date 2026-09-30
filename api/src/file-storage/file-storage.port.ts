@@ -15,6 +15,13 @@ export interface FileStoragePort {
   upload(key: string, buffer: Buffer, contentType: string): Promise<string>;
 
   /**
+   * Lee un objeto por clave (bytes + content-type de S3/R2).
+   *
+   * @remarks Usado para carpeta de socio/staff: no se sirve la URL pública.
+   */
+  getObject(key: string): Promise<{ buffer: Buffer; contentType: string }>;
+
+  /**
    * Elimina un archivo por su clave.
    */
   delete(key: string): Promise<void>;

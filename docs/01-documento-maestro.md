@@ -21,7 +21,7 @@ Se concibe como un **ERP + CRM + app** liviano: gestión del negocio, cobro, ing
 ## 2. Objetivos
 
 1. Que el dueño administre afiliados, servicios, packs, sesiones, cobros y caja en un solo lugar.
-2. Que el afiliado pague, reserve, vea rutinas y entre al gym con QR desde la app.
+2. Que el afiliado pague, reserve, vea documentos de su carpeta y entre al gym con QR desde la app.
 3. Que el acceso sea **intercambiable** (SSI/Quark u otro proveedor) sin rehacer el core.
 4. Documentar a nivel **C-producto** (casos de uso densos, reglas, dominio, wireframes ASCII, pruebas manuales) para desarrollar con precisión (humano + IA).
 5. Crecer **módulo a módulo** post-MVP, con backlog explícito.
@@ -33,7 +33,7 @@ Se concibe como un **ERP + CRM + app** liviano: gestión del negocio, cobro, ing
 - Cobros y deudas desordenados (efectivo + online).
 - Control de acceso improvisado o desconectado de la cuota/pack.
 - Estudios por clase y gyms “libres” forzados a herramientas distintas.
-- Falta de autogestión del afiliado (pagar, reservar, ver rutina).
+- Falta de autogestión del afiliado (pagar, reservar, ver documentos).
 - Roles rígidos (recepción/profe) sin poder adaptar permisos.
 
 ---

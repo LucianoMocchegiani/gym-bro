@@ -16,6 +16,7 @@ const TOPICS = [
   'vencimientos',
   'debito',
   'mercadopago',
+  'carpeta',
   'devoluciones',
   'reportes',
   'roles',
@@ -42,7 +43,7 @@ export function registerHelpTools(server: McpServer): void {
     {
       title: 'Ayuda Faciliter',
       description:
-        'Artículo de cómo funciona Faciliter (español). topic: producto (visión), guia (pantallas; fotos en /docs), afiliados, packs, sesiones, puerta, caja, vencimientos, debito, mercadopago (configuración MP completa: app, Config, URL webhook, cuatro topics, checklist, errores; alias mp), devoluciones, reportes, roles, chat, soporte (contacto si hay un problema). Sin topic lista los temas. Si reportan un error, bug o piden ayuda humana, usá soporte. Para “dónde queda / cómo se ve / qué ve el socio”, usá guia. Para “cómo conectar / configurar Mercado Pago / webhooks / token / topics”, usá mercadopago y **reproducí el artículo entero** (pasos 1–6 + tabla de topics); no lo reduzcas a una sola URL. No cobra ni edita.',
+        'Artículo de cómo funciona Faciliter (español). topic: producto, guia, afiliados, packs, sesiones, puerta, caja, vencimientos, debito, mercadopago (MP completo; alias mp), carpeta (notas y PDF/imagen de socio y staff; aliases documentos, folder, rutina, rutinas), devoluciones, reportes, roles, chat, soporte. Sin topic lista los temas. Error/bug/humano → soporte. Pantallas → guia. MP → mercadopago y el artículo entero. Carpeta / rutina como archivo / documentos del socio → carpeta y explicá panel (ícono), etiquetas del gym, app Mis documentos, que no hay módulo de rutinas por días. No cobra ni edita.',
       inputSchema: {
         topic: z
           .string()
@@ -53,12 +54,18 @@ export function registerHelpTools(server: McpServer): void {
     },
     async ({ topic }) => {
       const key = topic?.trim().toLowerCase();
-      const resolved =
-        key === 'mp' ? 'mercadopago' : key;
+      const aliases: Record<string, HelpTopic> = {
+        mp: 'mercadopago',
+        documentos: 'carpeta',
+        folder: 'carpeta',
+        rutina: 'carpeta',
+        rutinas: 'carpeta',
+      };
+      const resolved = key ? (aliases[key] ?? key) : key;
       if (!key) {
         return jsonResult({
           topics: [...TOPICS],
-          hint: 'Pasá topic con uno de esos valores (mp = mercadopago).',
+          hint: 'Pasá topic con uno de esos valores (mp = mercadopago; documentos/folder/rutina = carpeta).',
         });
       }
       if (!resolved || !isTopic(resolved)) {

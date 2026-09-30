@@ -4,7 +4,7 @@
 
 El **afiliado** no es un rol de staff: es otro perfil, el de la app.
 
-Pantalla Admin: **Roles y permisos** (`/roles`). El staff se asigna en **Staff** (`/staff`).
+Pantalla Admin: **Roles y permisos** (`/roles`). El staff se asigna en **Staff** (`/staff`). En Staff, cada persona tiene **carpeta** (notas/PDF), igual que un afiliado: topic `carpeta`.
 
 El asistente lista roles y códigos. **No crea ni edita** roles. Cambiá permisos en esa pantalla.
 

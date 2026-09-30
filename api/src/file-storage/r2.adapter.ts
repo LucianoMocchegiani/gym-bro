@@ -4,6 +4,7 @@ import {
   S3Client,
   PutObjectCommand,
   DeleteObjectCommand,
+  GetObjectCommand,
 } from '@aws-sdk/client-s3';
 import type { FileStoragePort } from './file-storage.port';
 
@@ -66,6 +67,27 @@ export class R2Adapter implements FileStoragePort {
       }),
     );
     return `${this.publicBaseUrl}/${fullKey}`;
+  }
+
+  /**
+   * Lee el objeto crudo (sin URL pública).
+   */
+  async getObject(key: string): Promise<{ buffer: Buffer; contentType: string }> {
+    const fullKey = this.resolveKey(key);
+    const out = await this.client.send(
+      new GetObjectCommand({
+        Bucket: this.bucket,
+        Key: fullKey,
+      }),
+    );
+    const bytes = await out.Body?.transformToByteArray();
+    if (!bytes) {
+      throw new Error(`R2 object empty: ${fullKey}`);
+    }
+    return {
+      buffer: Buffer.from(bytes),
+      contentType: out.ContentType ?? 'application/octet-stream',
+    };
   }
 
   async delete(key: string): Promise<void> {

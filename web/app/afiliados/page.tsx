@@ -16,12 +16,14 @@ import { MemberAccountPanel } from '@/components/MemberAccountPanel';
 import { MemberCreateForm } from '@/components/MemberCreateForm';
 import { MemberCredentialPanel } from '@/components/MemberCredentialPanel';
 import { MemberFichaPanel } from '@/components/MemberFichaPanel';
+import { PersonFolderModal } from '@/components/PersonFolderModal';
 import { RequireStaff } from '@/components/RequireStaff';
 import { PageSkeleton } from '@/components/Skeleton';
 import {
   IconAccount,
   IconCredential,
   IconEdit,
+  IconFolder,
   RowActions,
   RowIconButton,
 } from '@/components/RowActions';
@@ -56,8 +58,13 @@ function AfiliadosInner() {
   const fichaId = searchParams.get('ficha')?.trim() || null;
   const cuentaId = searchParams.get('cuenta')?.trim() || null;
   const credencialId = searchParams.get('credencial')?.trim() || null;
+  const carpetaId = searchParams.get('carpeta')?.trim() || null;
   const createOpen =
-    searchParams.get('nuevo') === '1' && !fichaId && !cuentaId && !credencialId;
+    searchParams.get('nuevo') === '1' &&
+    !fichaId &&
+    !cuentaId &&
+    !credencialId &&
+    !carpetaId;
 
   const [rows, setRows] = useState<MemberDetail[]>([]);
   const [total, setTotal] = useState(0);
@@ -132,6 +139,13 @@ function AfiliadosInner() {
   function openCredencial(id: string) {
     setFlashOk(null);
     router.replace(`/afiliados?credencial=${encodeURIComponent(id)}`, {
+      scroll: false,
+    });
+  }
+
+  function openCarpeta(id: string) {
+    setFlashOk(null);
+    router.replace(`/afiliados?carpeta=${encodeURIComponent(id)}`, {
       scroll: false,
     });
   }
@@ -223,6 +237,12 @@ function AfiliadosInner() {
                 >
                   <IconCredential />
                 </RowIconButton>
+                <RowIconButton
+                  label="Carpeta"
+                  onClick={() => openCarpeta(m.id)}
+                >
+                  <IconFolder />
+                </RowIconButton>
                 <DeleteRowButton
                   dialogTitle={`Eliminar afiliado?`}
                   description={`Se eliminará en físico a ${m.name?.trim() || m.email} si no tiene historial. Con pagos, contratos, reservas u otra actividad no se podrá: conviene dar de baja o suspender.`}
@@ -306,6 +326,18 @@ function AfiliadosInner() {
       >
         {credencialId ? (
           <MemberCredentialPanel key={credencialId} memberId={credencialId} />
+        ) : null}
+      </AdminModal>
+
+      <AdminModal
+        open={Boolean(carpetaId)}
+        onClose={closeModals}
+        title="Carpeta"
+        description="Notas y archivos (PDF o imagen). Las etiquetas las define el gym."
+        size="wide"
+      >
+        {carpetaId ? (
+          <PersonFolderModal key={carpetaId} kind="member" ownerId={carpetaId} />
         ) : null}
       </AdminModal>
     </AdminShell>

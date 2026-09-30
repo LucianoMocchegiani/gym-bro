@@ -386,6 +386,8 @@ Todavía puede no tener pack: lo cobrás en Caja (§11) o él compra en la Tiend
 
 Estados: **Activo / Suspendido / Inactivo**. Suspender corta el acceso; no es borrar la cuenta.
 
+**Carpeta** (ícono en la grilla): notas y PDF/imagen del socio. Las etiquetas las arma el gym. El socio las ve en la app → Ajustes → **Mis documentos**. Lo mismo existe en Staff.
+
 **Estado de cuenta** (otro modal): contratos, acceso libre, créditos, deuda, próximas reservas (si la clase se pagó con crédito o drop-in). Es la contrapantalla de Inicio en la app.
 
 Al contratar un pack se emite la **credencial de acceso** (para la puerta). En el panel: PENDING hasta que el socio la acepta; ACCEPTED cuando ya está en el celular. El socio lo hace en App → **Acceso** → Credenciales → **Aceptar**.

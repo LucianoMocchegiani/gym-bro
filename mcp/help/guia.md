@@ -53,11 +53,11 @@ Solo servicios por sesiones. Pestañas **Calendario** (semana, cupo) y **Recurre
 
 ## Staff y roles
 
-Roles y permisos, después Staff. Admin es de sistema (no se edita). Entrenador se le pueden cambiar permisos (en la demo: no opera Caja). El socio no ve Staff.
+Roles y permisos, después Staff. Admin es de sistema (no se edita). Entrenador se le pueden cambiar permisos (en la demo: no opera Caja). Cada staff también tiene **carpeta** (mismo ícono que en Afiliados): `get_help` topic `carpeta`. El socio no ve Staff.
 
 ## Afiliados
 
-Alta: nombre, email, password, etc. Entra a la app con ese email + slug. Pack se cobra en Caja o Tienda. Estados Activo / Suspendido / Inactivo. Estado de cuenta: contratos, créditos, deuda, reservas. Credencial: PENDING (espera Aceptar en la app) / ACCEPTED (ya en el celular). **Re-emitir** no cobra: pack vigente hoy.
+Alta: nombre, email, password, etc. Entra a la app con ese email + slug. Pack se cobra en Caja o Tienda. Estados Activo / Suspendido / Inactivo. Estado de cuenta: contratos, créditos, deuda, reservas. Credencial: PENDING (espera Aceptar en la app) / ACCEPTED (ya en el celular). **Re-emitir** no cobra: pack vigente hoy. **Carpeta** en la grilla: notas y PDF/imagen; detalle en topic `carpeta`.
 
 ## Caja
 
@@ -89,9 +89,9 @@ Pestañas: **Inicio | Acceso | Ajustes**.
 - Sesiones: calendario, día, mis clases.
 - Tienda: Packs y Sesiones (drop-in), carrito, Pagar con Mercado Pago, Historial.
 - Acceso: credencial / QR.
-- Ajustes: cuenta, tema, salir.
+- Ajustes: cuenta, **Mis documentos** (carpeta que cargó el gym), tema, salir.
 
-Rutinas y avisos todavía no están.
+La **carpeta** (notas/PDF) sí está; un módulo de rutinas por días **no**. Avisos automáticos todavía no.
 
 ## Cómo arrancar un local (orden)
 

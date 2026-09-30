@@ -24,8 +24,8 @@ Plataforma GymBro
       ├── Reservas / ListaEspera
       ├── Pagos / Caja / Arqueo
       │    └── MandatoDebito (post-MVP; suscripción MP)
+      ├── Carpeta (notas / files)
       ├── Ingresos (acceso)
-      ├── CatálogoEjercicios / Rutinas
       └── Notificaciones (plantillas, preferencias)
 ```
 

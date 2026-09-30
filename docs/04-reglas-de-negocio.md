@@ -111,7 +111,20 @@ Formato: **RN-MODULO-NNN** — enunciado — excepciones.
 
 ---
 
+## 6b. Carpeta de documentos (RN-FOL)
+
+| ID | Regla |
+|----|--------|
+| RN-FOL-001 | Cada socio y cada staff tiene una carpeta de **notas** y **archivos** (PDF o imagen) en su tenant. |
+| RN-FOL-002 | Solo staff con `members.write` / `staff.write` carga o borra (Admin web). El dueño y staff con `*.read` ven. |
+| RN-FOL-003 | Las **etiquetas** las define el gym (lista por tenant); Faciliter no impone categorías. |
+| RN-FOL-004 | Los files de carpeta **no** se sirven por URL pública de R2; se bajan con JWT. Las fotos de ficha siguen en `POST /upload`. |
+
+---
+
 ## 6. Rutinas (RN-RUT)
+
+**Fuera del MVP activo:** plantillas/cumplimiento están en [99-backlog-post-mvp/rutinas.md](./99-backlog-post-mvp/rutinas.md). La operación de “dejar una rutina” es un PDF o nota en la carpeta (RN-FOL).
 
 | ID | Regla |
 |----|--------|

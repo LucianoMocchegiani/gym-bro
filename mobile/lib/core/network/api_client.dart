@@ -134,6 +134,33 @@ class ApiClient {
     return decoded as T;
   }
 
+  /// GET binario (PDF/imagen de carpeta).
+  Future<List<int>> getBytes(String path, {bool retried = false}) async {
+    final uri = Uri.parse('${ApiConfig.baseUrl}$path');
+    final headers = <String, String>{
+      'Accept': '*/*',
+    };
+    if (accessToken != null) {
+      headers['Authorization'] = 'Bearer $accessToken';
+    }
+    late http.Response res;
+    try {
+      res = await _http.get(uri, headers: headers);
+    } catch (_) {
+      throw ApiException('Sin conexión con el servidor');
+    }
+    if (res.statusCode == 401 && !retried && onUnauthorized != null) {
+      final ok = await onUnauthorized!();
+      if (ok) {
+        return getBytes(path, retried: true);
+      }
+    }
+    if (res.statusCode < 200 || res.statusCode >= 300) {
+      throw ApiException(_messageFromBody(res), statusCode: res.statusCode);
+    }
+    return res.bodyBytes;
+  }
+
   String _messageFromBody(http.Response res) {
     try {
       final decoded = jsonDecode(res.body);

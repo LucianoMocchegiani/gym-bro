@@ -5,7 +5,7 @@
 
 **Carpeta:** [99-backlog-post-mvp/](./99-backlog-post-mvp/)
 
-E7 Rutinas y E8 Notificaciones siguen en el [roadmap MVP](./11-roadmap-mvp.md) (**fuera del corte de cierre**). MP live sigue en E5. No se copian acá.
+E7 Carpeta documentos y E8 Notificaciones: E7 en código; E8 sigue en el [roadmap MVP](./11-roadmap-mvp.md) (**fuera del corte de cierre**).
 
 **Cierre go-to-market (no es este backlog):** [18-prioridades-cierre-mvp.md](./18-prioridades-cierre-mvp.md) — molinetes, débito QA, landing/pricing/SEO, tokens OpenRouter, migración al final.
 
