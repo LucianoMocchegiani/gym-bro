@@ -42,7 +42,7 @@ export function registerHelpTools(server: McpServer): void {
     {
       title: 'Ayuda Faciliter',
       description:
-        'Artículo de cómo funciona Faciliter (español). topic: producto (visión), guia (pantallas; fotos en /docs), afiliados, packs, sesiones, puerta, caja, vencimientos, debito, mercadopago (conectar MP del local: app, token, webhooks), devoluciones, reportes, roles, chat, soporte (contacto si hay un problema). Sin topic lista los temas. Si reportan un error, bug o piden ayuda humana, usá soporte. Para “dónde queda / cómo se ve / qué ve el socio”, usá guia. Para “cómo conectar Mercado Pago / webhooks / token”, usá mercadopago (alias mp). No cobra ni edita.',
+        'Artículo de cómo funciona Faciliter (español). topic: producto (visión), guia (pantallas; fotos en /docs), afiliados, packs, sesiones, puerta, caja, vencimientos, debito, mercadopago (configuración MP completa: app, Config, URL webhook, cuatro topics, checklist, errores; alias mp), devoluciones, reportes, roles, chat, soporte (contacto si hay un problema). Sin topic lista los temas. Si reportan un error, bug o piden ayuda humana, usá soporte. Para “dónde queda / cómo se ve / qué ve el socio”, usá guia. Para “cómo conectar / configurar Mercado Pago / webhooks / token / topics”, usá mercadopago y **reproducí el artículo entero** (pasos 1–6 + tabla de topics); no lo reduzcas a una sola URL. No cobra ni edita.',
       inputSchema: {
         topic: z
           .string()
