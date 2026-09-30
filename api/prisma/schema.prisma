@@ -1178,6 +1178,7 @@ model FolderItem {
   tenantId           String         @map("tenant_id") @db.Uuid
   kind               FolderItemKind
   title              String?
+  /// Markdown (texto plano válido). Se renderiza sanitizado en Admin y app.
   body               String?
   storageKey         String?        @map("storage_key")
   originalFilename   String?        @map("original_filename")

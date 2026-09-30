@@ -7,6 +7,7 @@ import 'package:share_plus/share_plus.dart';
 
 import '../../core/network/api_client.dart';
 import 'folder_repository.dart';
+import 'note_viewer_screen.dart';
 
 /// Documentos: notas y files de la carpeta (solo lectura).
 ///
@@ -79,19 +80,18 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
   }
 
   void _openNote(FolderItem item) {
-    showDialog<void>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(item.displayTitle),
-        content: SingleChildScrollView(child: Text(item.body ?? '')),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cerrar'),
-          ),
-        ],
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => NoteViewerScreen(item: item),
       ),
     );
+  }
+
+  String _listWhen(DateTime at) {
+    final local = at.toLocal();
+    final hh = local.hour.toString().padLeft(2, '0');
+    final mm = local.minute.toString().padLeft(2, '0');
+    return '${local.day}/${local.month}/${local.year} $hh:$mm';
   }
 
   @override
@@ -116,10 +116,7 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
                       separatorBuilder: (_, index) => const Divider(height: 1),
                       itemBuilder: (context, i) {
                         final it = items[i];
-                        final sub = [
-                          if (it.labelName != null) it.labelName!,
-                          it.createdAt.toLocal().toString().split('.').first,
-                        ].join(' · ');
+                        final sub = _listWhen(it.createdAt);
                         return ListTile(
                           leading: Icon(
                             it.kind == 'NOTE'

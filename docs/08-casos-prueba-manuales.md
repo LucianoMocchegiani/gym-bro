@@ -202,7 +202,7 @@ Pasos de VPS: [uso/probar-debito-suscripcion-mp.md](./uso/probar-debito-suscripc
 
 | # | Caso | Esperado | RN/CU | R |
 |---|------|----------|-------|---|
-| F1 | Staff abre carpeta afiliado, nota + PDF | Visible en lista; socio lo ve en app | CU-FOL-001 | |
+| F1 | Staff abre carpeta: nota Markdown + PDF | Lista solo título/nombre y fecha; Abrir nota muestra visor; socio igual en app | CU-FOL-001 RN-FOL-005 | |
 | F2 | Staff carpeta de otro staff | Con `staff.read` ve; carga con `staff.write` | CU-FOL-002 | |
 | F3 | GET file sin JWT | 401 | RN-FOL-004 | |
 | F4 | `POST /upload` no crea ítem de carpeta | Foto ficha sigue aparte | RN-FOL-004 | |

@@ -8,7 +8,9 @@ import {
   type ChangeEvent,
   type MouseEvent,
 } from 'react';
+import { AdminModal } from '@/components/AdminModal';
 import { Panel } from '@/components/AdminUi';
+import { FolderMarkdown } from '@/components/FolderMarkdown';
 import { ApiClientError } from '@/lib/api/client';
 import {
   createFolderFile,
@@ -212,6 +214,7 @@ export function PersonFolderModal({
   const [newLabel, setNewLabel] = useState('');
   const [file, setFile] = useState<File | null>(null);
   const [busy, setBusy] = useState(false);
+  const [viewNote, setViewNote] = useState<FolderItemDetail | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -372,14 +375,19 @@ export function PersonFolderModal({
             />
           </label>
           <label>
-            Texto
+            Texto (Markdown)
             <textarea
               value={noteBody}
               onChange={(e) => setNoteBody(e.target.value)}
-              rows={5}
+              rows={8}
               disabled={busy}
+              placeholder={'# Título\n\n- Lunes: pecho\n- Miércoles: piernas'}
             />
           </label>
+          <p className="muted small">
+            Títulos con #, listas con - o 1., **negrita**. El asistente va a
+            escribir en el mismo formato.
+          </p>
           <button
             type="button"
             className="primary"
@@ -414,45 +422,58 @@ export function PersonFolderModal({
           <p className="muted">Vacío.</p>
         ) : (
           <ul className="folder-item-list">
-            {items.map((it) => (
-              <li key={it.id} className="folder-item">
-                <strong>
-                  {it.kind === 'NOTE' ? 'Nota' : it.originalFilename ?? 'Archivo'}
-                </strong>
-                {it.label ? ` · ${it.label.name}` : ''}
-                {it.title && it.kind === 'NOTE' ? ` — ${it.title}` : ''}
-                {it.kind === 'NOTE' && it.body ? (
-                  <p className="muted">{it.body}</p>
-                ) : null}
-                <p className="muted small">
-                  {new Date(it.createdAt).toLocaleString()}
-                  {it.createdByName ? ` · ${it.createdByName}` : ''}
-                </p>
-                <div className="folder-item-actions">
-                  {it.kind === 'FILE' ? (
+            {items.map((it) => {
+              const name =
+                it.kind === 'NOTE'
+                  ? it.title?.trim() || 'Nota'
+                  : it.originalFilename ?? 'Archivo';
+              return (
+                <li key={it.id} className="folder-item">
+                  <strong>{name}</strong>
+                  <p className="muted small">
+                    {new Date(it.createdAt).toLocaleString()}
+                    {it.createdByName ? ` · ${it.createdByName}` : ''}
+                  </p>
+                  <div className="folder-item-actions">
                     <button
                       type="button"
                       className="btn ghost"
-                      onClick={() => void openFile(it)}
+                      onClick={() => {
+                        if (it.kind === 'NOTE') {
+                          setViewNote(it);
+                        } else {
+                          void openFile(it);
+                        }
+                      }}
                       disabled={busy}
                     >
                       Abrir
                     </button>
-                  ) : null}
-                  <button
-                    type="button"
-                    className="btn danger"
-                    onClick={() => void remove(it.id)}
-                    disabled={busy}
-                  >
-                    Eliminar
-                  </button>
-                </div>
-              </li>
-            ))}
+                    <button
+                      type="button"
+                      className="btn danger"
+                      onClick={() => void remove(it.id)}
+                      disabled={busy}
+                    >
+                      Eliminar
+                    </button>
+                  </div>
+                </li>
+              );
+            })}
           </ul>
         )}
       </Panel>
+
+      <AdminModal
+        elevated
+        open={Boolean(viewNote)}
+        onClose={() => setViewNote(null)}
+        title={viewNote?.title?.trim() || 'Nota'}
+        size="comfortable"
+      >
+        {viewNote ? <FolderMarkdown source={viewNote.body ?? ''} /> : null}
+      </AdminModal>
     </div>
   );
 }

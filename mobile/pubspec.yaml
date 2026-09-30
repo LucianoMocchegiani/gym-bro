@@ -25,6 +25,7 @@ dependencies:
   qr_flutter: ^4.1.0
   google_sign_in: ^6.3.0
   sign_in_with_apple: ^8.1.0
+  flutter_markdown_plus: ^1.0.12
 
 dev_dependencies:
   flutter_test:

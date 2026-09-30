@@ -11,8 +11,9 @@
 
 1. En la grilla, abre **Carpeta**.
 2. Crea etiqueta si hace falta, o elige una existente.
-3. Guarda una **nota** (texto) o sube **PDF/imagen**.
+3. Guarda una **nota** (**Markdown**: títulos `#`, listas `-`) o sube **PDF/imagen**.
 4. El file queda en R2 con key privada; no usa `POST /upload`.
+5. En **Contenido** solo se listan título/nombre y fecha; **Abrir** muestra el visor (nota) o el file.
 
 **Postcondición:** Ítem visible en Admin y en **Documentos** del dueño (app).
 
@@ -24,7 +25,7 @@
 
 **Actor:** Afiliado o staff autenticado.
 
-**Flujo:** Inicio → Documentos. Solo lectura. Files por `GET /me/folder/:id/file`.
+**Flujo:** Inicio → Documentos. Lista título/nombre y fecha. Nota → visor Markdown. Files por `GET /me/folder/:id/file`.
 
 ---
 

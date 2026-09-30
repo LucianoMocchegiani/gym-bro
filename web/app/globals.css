@@ -1254,6 +1254,116 @@ button.row-icon-btn:disabled {
   gap: 0.5rem;
 }
 
+.folder-md {
+  display: grid;
+  gap: 0.7rem;
+  line-height: 1.55;
+  font-size: 0.95rem;
+  color: var(--ink);
+}
+
+.folder-md > *:first-child {
+  margin-top: 0;
+}
+
+.folder-md h1,
+.folder-md h2,
+.folder-md h3,
+.folder-md h4 {
+  margin: 0.35rem 0 0;
+  font-weight: 650;
+  line-height: 1.3;
+}
+
+.folder-md h1 {
+  font-size: 1.28rem;
+}
+
+.folder-md h2 {
+  font-size: 1.12rem;
+}
+
+.folder-md h3,
+.folder-md h4 {
+  font-size: 1rem;
+}
+
+.folder-md p,
+.folder-md ul,
+.folder-md ol {
+  margin: 0;
+}
+
+.folder-md ul,
+.folder-md ol {
+  padding-left: 1.25rem;
+}
+
+.folder-md li {
+  margin: 0.22rem 0;
+}
+
+.folder-md li + li {
+  margin-top: 0.12rem;
+}
+
+.folder-md strong {
+  font-weight: 650;
+}
+
+.folder-md a {
+  color: var(--accent);
+}
+
+.folder-md code {
+  font-size: 0.88em;
+  padding: 0.08rem 0.35rem;
+  border-radius: 4px;
+  background: var(--input-bg);
+  border: 1px solid var(--line);
+}
+
+.folder-md pre {
+  margin: 0;
+  overflow: auto;
+  padding: 0.85rem 1rem;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  background: var(--input-bg);
+}
+
+.folder-md pre code {
+  padding: 0;
+  border: none;
+  background: transparent;
+}
+
+.folder-md table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.folder-md th,
+.folder-md td {
+  border: 1px solid var(--line);
+  padding: 0.4rem 0.55rem;
+  text-align: left;
+}
+
+.folder-md hr {
+  border: none;
+  border-top: 1px solid var(--line);
+  margin: 0.4rem 0;
+}
+
+.folder-md blockquote {
+  margin: 0;
+  padding: 0.15rem 0 0.15rem 0.85rem;
+  border-left: 3px solid var(--accent);
+  color: var(--muted);
+}
+
 .door-dashboard .admin-panel {
   min-width: 0;
 }

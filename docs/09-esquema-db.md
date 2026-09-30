@@ -546,7 +546,7 @@ Carpeta de notas y files (RN-FOL). XOR: `member_id` **o** `staff_user_id`. Check
 | Tabla | Notas |
 |-------|--------|
 | `folder_labels` | `tenant_id` + `name` unique |
-| `folder_items` | `kind` NOTE\|FILE; `created_by_staff_id` |
+| `folder_items` | `kind` NOTE\|FILE; `body` Markdown; `created_by_staff_id` |
 
 API: `/api/folder-labels`; `/api/members/:id/folder*`; `/api/staff/:id/folder*`; `/api/me/folder`.
 
