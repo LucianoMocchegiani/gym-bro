@@ -319,11 +319,11 @@ export function RowsImportPanel({
 
         {step === 'pick' || step === 'map' || step === 'preview' ? (
           <ImportFilePicker
-            file={file}
+            selected={file ? { name: file.name } : null}
             accept=".xlsx,.csv,.txt"
             hint="Excel (.xlsx) o CSV"
             disabled={busy}
-            onPick={(picked) => void onPickFile(picked)}
+            onPick={(picked) => void onPickFile(picked[0] ?? null)}
           />
         ) : null}
 

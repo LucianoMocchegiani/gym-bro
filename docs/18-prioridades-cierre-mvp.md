@@ -97,7 +97,7 @@ Para un gym que **ya tiene** socios: migrar **afiliado completo** (ficha + foto 
 **v1 en código (2026-10-01, en testeo).** Admin → Afiliados → **Importar** (`/afiliados/importar`), permiso peligroso `members.import` + `members.write`. Reglas: [RN-MIG](./04-reglas-de-negocio.md) (sección 6c). Tabla `member_imports`: [09](./09-esquema-db.md).
 
 - **Planilla** (xlsx/csv): el navegador la lee, sugiere el mapeo por nombre de columna (corregible; queda guardado por gym), muestra la vista previa y manda lotes de 200. Sin mail → error en el CSV. Socio existente (mail, DNI o cuenta) → se omite: re-subir el archivo es idempotente.
-- **Zip**: `fotos/{dni o email}.ext` → foto de perfil; `carpeta/{dni o email}/archivo` → carpeta del socio (10 ítems, 5 MB). Socio que ya tiene foto o carpeta → no se le carga nada (avisado como omitido).
+- **Fotos y carpeta** (carpeta de la PC o zip): `fotos/{dni o email}.ext` → foto de perfil; `carpeta/{dni o email}/archivo` → carpeta del socio (10 ítems, 5 MB). Socio que ya tiene foto o carpeta → no se le carga nada (avisado como omitido).
 - **Contraseña**: altas nuevas con `ChangeMe123!` marcada temporal (aviso en app y web). Quien ya tenía cuenta en otro gym conserva la suya. Vincular Google/Apple borra la temporal. “Crear contraseña” (cuentas solo Google) en app y web; “Cambiar contraseña” también en la app.
 - **Sin job de fondo:** la pestaña tiene que quedar abierta durante la corrida; si se corta, se reintenta el lote o se re-sube el archivo.
 

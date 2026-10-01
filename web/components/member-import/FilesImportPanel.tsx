@@ -3,7 +3,10 @@
 import { useState } from 'react';
 import { Panel } from '@/components/AdminUi';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
-import { ImportFilePicker } from '@/components/member-import/ImportFilePicker';
+import {
+  ImportFilePicker,
+  type PickedSource,
+} from '@/components/member-import/ImportFilePicker';
 import { ApiClientError } from '@/lib/api/client';
 import { FOLDER_MAX_FILE_BYTES, FOLDER_MAX_ITEMS } from '@/lib/api/folder';
 import {
@@ -17,7 +20,12 @@ import {
   type MemberImportDetail,
 } from '@/lib/api/member-imports';
 import { chunk, downloadCsv } from '@/lib/member-import/sheet';
-import { readImportZip, type ZipImportEntry } from '@/lib/member-import/zip';
+import {
+  readImportFolder,
+  readImportZip,
+  type ZipImportContent,
+  type ZipImportEntry,
+} from '@/lib/member-import/zip';
 
 type Step = 'pick' | 'review' | 'running' | 'done';
 
@@ -125,7 +133,10 @@ export function FilesImportPanel({
   onFinished: (detail: MemberImportDetail) => void;
 }) {
   const [step, setStep] = useState<Step>('pick');
-  const [file, setFile] = useState<File | null>(null);
+  const [source, setSource] = useState<{
+    kind: 'zip' | 'folder';
+    picked: PickedSource;
+  } | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [ignored, setIgnored] = useState<string[]>([]);
@@ -138,12 +149,32 @@ export function FilesImportPanel({
   const [finished, setFinished] = useState<MemberImportDetail | null>(null);
 
   async function onPickZip(picked: File | null) {
-    setError(null);
-    setFile(picked);
     if (!picked) return;
+    setSource({ kind: 'zip', picked: { name: picked.name } });
+    await analyze(() => readImportZip(picked), 'No se pudo leer el zip');
+  }
+
+  async function onPickFolder(files: File[]) {
+    if (files.length === 0) return;
+    const root = files[0].webkitRelativePath.split('/')[0] || 'Carpeta';
+    setSource({
+      kind: 'folder',
+      picked: { name: root, detail: `${files.length} archivos` },
+    });
+    await analyze(
+      () => Promise.resolve(readImportFolder(files)),
+      'No se pudo leer la carpeta',
+    );
+  }
+
+  async function analyze(
+    read: () => Promise<ZipImportContent>,
+    fallback: string,
+  ) {
+    setError(null);
     setBusy(true);
     try {
-      const content = await readImportZip(picked);
+      const content = await read();
       const keys = [...new Set(content.entries.map((e) => e.key))];
       const matches = new Map<string, ImportFileMatch>();
       for (const batch of chunk(keys, IMPORT_MATCH_KEYS_PER_BATCH)) {
@@ -158,7 +189,7 @@ export function FilesImportPanel({
       setWithFiles(plan.withFiles);
       setStep('review');
     } catch (err) {
-      setError(errorText(err, 'No se pudo leer el zip'));
+      setError(errorText(err, fallback));
     } finally {
       setBusy(false);
     }
@@ -174,7 +205,7 @@ export function FilesImportPanel({
     try {
       const started = await startMemberImport({
         kind: 'FILES',
-        filename: file?.name ?? 'archivos.zip',
+        filename: source?.picked.name ?? 'archivos',
         totalRows: tasks.length,
       });
       let next = 0;
@@ -234,7 +265,7 @@ export function FilesImportPanel({
 
   function reset() {
     setStep('pick');
-    setFile(null);
+    setSource(null);
     setTasks([]);
     setProblems([]);
     setWithFiles(0);
@@ -261,8 +292,8 @@ export function FilesImportPanel({
       title="2. Fotos y carpeta"
       description={
         <>
-          Un zip con <code>fotos/&#123;dni o mail&#125;.jpg</code> y{' '}
-          <code>carpeta/&#123;dni o mail&#125;/archivo.pdf</code>. Primero
+          Una carpeta o un zip con <code>fotos/&#123;dni o mail&#125;.jpg</code>{' '}
+          y <code>carpeta/&#123;dni o mail&#125;/archivo.pdf</code>. Primero
           importá las fichas. Al socio que ya tiene foto o algo en la carpeta no
           se le carga nada. La carpeta admite hasta {FOLDER_MAX_ITEMS} ítems de
           5 MB por socio.
@@ -273,13 +304,24 @@ export function FilesImportPanel({
         {error ? <p className="err-msg">{error}</p> : null}
 
         {step === 'pick' || step === 'review' ? (
-          <ImportFilePicker
-            file={file}
-            accept=".zip"
-            hint="Zip con fotos/ y carpeta/"
-            disabled={busy}
-            onPick={(picked) => void onPickZip(picked)}
-          />
+          <div className="import-source-grid">
+            <ImportFilePicker
+              selected={source?.kind === 'folder' ? source.picked : null}
+              directory
+              label="Elegir carpeta"
+              hint="La carpeta que tiene fotos/ y carpeta/"
+              disabled={busy}
+              onPick={(files) => void onPickFolder(files)}
+            />
+            <ImportFilePicker
+              selected={source?.kind === 'zip' ? source.picked : null}
+              accept=".zip"
+              label="Elegir zip"
+              hint="Zip con fotos/ y carpeta/"
+              disabled={busy}
+              onPick={(files) => void onPickZip(files[0] ?? null)}
+            />
+          </div>
         ) : null}
         {busy && step === 'pick' ? (
           <p className="muted">Leyendo y cruzando con socios…</p>

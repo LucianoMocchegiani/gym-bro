@@ -21,9 +21,9 @@ Reglas:
 - **Socio que ya existe** en el gym (mismo mail, mismo DNI aunque tenga puntos o guiones, o misma cuenta) → **se omite, no se pisa nada**. Por eso se puede volver a subir el mismo archivo sin duplicar.
 - No se mandan mails ni avisos a los socios importados, y no se emite credencial (eso pasa al cobrar el pack).
 
-## Paso 2 — Zip (fotos y carpeta)
+## Paso 2 — Fotos y carpeta (carpeta de la PC o zip)
 
-Después de cargar las fichas. Un **.zip** con esta forma:
+Después de cargar las fichas. Se puede **elegir una carpeta** de la PC (Elegir carpeta) o subir un **.zip** (Elegir zip), con esta forma:
 
 ```
 fotos/30123456.jpg                 → foto de perfil del socio con DNI 30123456
@@ -34,7 +34,8 @@ carpeta/ana@mail.com/rutina.jpg
 
 - El nombre del archivo (foto) o de la subcarpeta (carpeta) es el **DNI o el mail** del socio. El DNI puede ir con o sin puntos.
 - Fotos: jpg, png, webp, gif. Carpeta: PDF o imagen. Máximo **5 MB** por archivo y **10 ítems** por socio (mismo tope que la carpeta normal).
-- **Si el socio ya tiene foto o algo en la carpeta, no se le carga nada** y se avisa como omitido (“ya tiene archivos cargados”). Volver a subir el mismo zip no duplica.
+- **Si el socio ya tiene foto o algo en la carpeta, no se le carga nada** y se avisa como omitido (“ya tiene archivos cargados”). Volver a subir lo mismo no duplica.
+- Al elegir carpeta, el navegador puede preguntar “¿Subir N archivos a este sitio?”: es normal.
 - Lo que no sigue la convención se ignora y se lista. Archivos sin socio que coincida → omitidos.
 - También pide **CONFIRMAR** y deja un CSV con lo omitido.
 

@@ -1,11 +1,11 @@
 /**
- * Lectura del zip de fotos y carpeta (RN-MIG-005).
+ * Lectura de fotos y carpeta desde un zip o una carpeta elegida (RN-MIG-005).
  *
  * Convención:
  * - `fotos/{dni o email}.jpg|png|webp|gif` → foto de perfil.
  * - `carpeta/{dni o email}/{archivo}.pdf|jpg|png|webp|gif` → carpeta del socio.
  *
- * El zip puede traer una carpeta raíz extra (`export/fotos/...`).
+ * Puede haber una carpeta raíz extra (`export/fotos/...`).
  */
 
 export type ZipImportEntry = {
@@ -39,6 +39,50 @@ function extOf(name: string): string {
 }
 
 /**
+ * Clasifica un archivo por su ruta. `toFile` arma el `File` solo si se usa.
+ */
+function classify(
+  path: string,
+  toFile: (filename: string, mime: string) => File,
+  out: ZipImportContent,
+): void {
+  const parts = path.split('/').filter(Boolean);
+  const filename = parts[parts.length - 1] ?? '';
+  if (
+    parts.some((p) => p === '__MACOSX') ||
+    filename.startsWith('.') ||
+    filename.toLowerCase() === 'thumbs.db' ||
+    filename.toLowerCase() === 'desktop.ini'
+  ) {
+    return;
+  }
+  const mime = MIME_BY_EXT[extOf(filename)];
+  const lowerParts = parts.map((p) => p.toLowerCase());
+  const photoAt = lowerParts.findIndex((p) => PHOTO_DIRS.has(p));
+  const folderAt = lowerParts.findIndex((p) => FOLDER_DIRS.has(p));
+
+  if (mime && photoAt >= 0 && photoAt === parts.length - 2 && mime !== 'application/pdf') {
+    out.entries.push({
+      kind: 'photo',
+      key: filename.slice(0, filename.lastIndexOf('.')).trim(),
+      path,
+      file: toFile(filename, mime),
+    });
+    return;
+  }
+  if (mime && folderAt >= 0 && folderAt === parts.length - 3) {
+    out.entries.push({
+      kind: 'folder',
+      key: parts[folderAt + 1].trim(),
+      path,
+      file: toFile(filename, mime),
+    });
+    return;
+  }
+  out.ignored.push(path);
+}
+
+/**
  * Descomprime y clasifica. Lo que no sigue la convención va a `ignored`.
  */
 export async function readImportZip(file: File): Promise<ZipImportContent> {
@@ -50,46 +94,36 @@ export async function readImportZip(file: File): Promise<ZipImportContent> {
     },
   );
 
-  const entries: ZipImportEntry[] = [];
-  const ignored: string[] = [];
+  const out: ZipImportContent = { entries: [], ignored: [] };
   for (const [path, bytes] of Object.entries(files)) {
     if (path.endsWith('/')) {
       continue;
     }
-    const parts = path.split('/').filter(Boolean);
-    const filename = parts[parts.length - 1] ?? '';
-    if (
-      parts.some((p) => p === '__MACOSX') ||
-      filename.startsWith('.') ||
-      filename.toLowerCase() === 'thumbs.db'
-    ) {
-      continue;
-    }
-    const mime = MIME_BY_EXT[extOf(filename)];
-    const lowerParts = parts.map((p) => p.toLowerCase());
-    const photoAt = lowerParts.findIndex((p) => PHOTO_DIRS.has(p));
-    const folderAt = lowerParts.findIndex((p) => FOLDER_DIRS.has(p));
-
-    if (mime && photoAt >= 0 && photoAt === parts.length - 2 && mime !== 'application/pdf') {
-      const key = filename.slice(0, filename.lastIndexOf('.')).trim();
-      entries.push({
-        kind: 'photo',
-        key,
-        path,
-        file: new File([bytes as BlobPart], filename, { type: mime }),
-      });
-      continue;
-    }
-    if (mime && folderAt >= 0 && folderAt === parts.length - 3) {
-      entries.push({
-        kind: 'folder',
-        key: parts[folderAt + 1].trim(),
-        path,
-        file: new File([bytes as BlobPart], filename, { type: mime }),
-      });
-      continue;
-    }
-    ignored.push(path);
+    classify(
+      path,
+      (filename, mime) =>
+        new File([bytes as BlobPart], filename, { type: mime }),
+      out,
+    );
   }
-  return { entries, ignored };
+  return out;
+}
+
+/**
+ * Clasifica los archivos de una carpeta elegida con `webkitdirectory`.
+ *
+ * @remarks No lee el contenido: cada archivo se sube recién al confirmar.
+ */
+export function readImportFolder(files: File[]): ZipImportContent {
+  const out: ZipImportContent = { entries: [], ignored: [] };
+  for (const file of files) {
+    const path = file.webkitRelativePath || file.name;
+    classify(
+      path,
+      (filename, mime) =>
+        file.type === mime ? file : new File([file], filename, { type: mime }),
+      out,
+    );
+  }
+  return out;
 }

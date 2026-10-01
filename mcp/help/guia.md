@@ -62,7 +62,7 @@ Roles y permisos, después Staff. Admin es de sistema (no se edita). Entrenador 
 
 ## Afiliados
 
-Alta: nombre, email, password, etc. Entra a la app con ese email + slug. Pack se cobra en Caja o Tienda. Estados Activo / Suspendido / Inactivo. Estado de cuenta: contratos, créditos, deuda, reservas. Credencial: PENDING (espera Aceptar en la app) / ACCEPTED (ya en el celular). **Re-emitir** no cobra: pack vigente hoy. **Carpeta** en la grilla: notas y PDF/imagen; detalle en topic `carpeta`. Botón **Importar**: migración masiva desde Excel/CSV + zip de fotos y carpeta (topic `migracion`).
+Alta: nombre, email, password, etc. Entra a la app con ese email + slug. Pack se cobra en Caja o Tienda. Estados Activo / Suspendido / Inactivo. Estado de cuenta: contratos, créditos, deuda, reservas. Credencial: PENDING (espera Aceptar en la app) / ACCEPTED (ya en el celular). **Re-emitir** no cobra: pack vigente hoy. **Carpeta** en la grilla: notas y PDF/imagen; detalle en topic `carpeta`. Botón **Importar**: migración masiva desde Excel/CSV + fotos y carpeta (carpeta de la PC o zip) (topic `migracion`).
 
 ## Caja
 

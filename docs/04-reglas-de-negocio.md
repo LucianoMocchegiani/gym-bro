@@ -132,7 +132,7 @@ Formato: **RN-MODULO-NNN** — enunciado — excepciones.
 | RN-MIG-002 | El **mail** es obligatorio: una fila sin mail válido se omite y sale en el listado de errores. Nombre obligatorio. |
 | RN-MIG-003 | Persona sin cuenta Faciliter → se crea con la contraseña **`ChangeMe123!`** marcada como temporal. Si ya tenía cuenta (otro gym), se vincula **sin tocar** su contraseña. La temporal deja de valer al cambiarla o al entrar con Google/Apple (se borra). Sin contraseña → "Crear contraseña" desde la app o la web. |
 | RN-MIG-004 | Si ya es socio del gym (mismo mail, DNI o cuenta) se **omite**: re-subir el mismo archivo no duplica. El DNI se compara sin puntos ni guiones. |
-| RN-MIG-005 | Zip: si el socio ya tiene foto o algún ítem en la carpeta, no se le carga nada (se informa como omitido: “ya tiene archivos cargados”); re-subir el zip no duplica. Si no tiene nada: una foto de perfil y documentos a carpeta respetando RN-FOL-006. No se mandan mails ni avisos, ni se emite credencial. Una sola auditoría por corrida (`member.import`) con totales. |
+| RN-MIG-005 | Fotos y carpeta (carpeta elegida en la PC o zip, misma estructura `fotos/` y `carpeta/{dni o mail}/`): si el socio ya tiene foto o algún ítem en la carpeta, no se le carga nada (se informa como omitido: “ya tiene archivos cargados”); re-subir no duplica. Si no tiene nada: una foto de perfil y documentos a carpeta respetando RN-FOL-006. No se mandan mails ni avisos, ni se emite credencial. Una sola auditoría por corrida (`member.import`) con totales. |
 
 ---
 
