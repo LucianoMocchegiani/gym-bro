@@ -16,6 +16,7 @@ La creación de registros sigue la skill:
 
 ## Índice
 
+- [2026-10-01 — Gastos del gym y Cierre efectivo/digital](./2026-10-01-gastos-del-gym.md)
 - [2026-10-01 — Migración de afiliados (planilla + zip) y contraseña temporal](./2026-10-01-migracion-afiliados.md)
 - [2026-09-30 — App: opt-out de mail en Ajustes](./2026-09-30-avisos-prefs-ajustes.md)
 - [2026-09-30 — N1: renovación débito/caja y avisos de plan Faciliter](./2026-09-30-n1-debito-y-plan-faciliter.md)
