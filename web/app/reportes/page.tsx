@@ -10,10 +10,13 @@ import { MoneyMovementsTable } from '@/components/MoneyMovementsTable';
 import { RequireStaff } from '@/components/RequireStaff';
 import { SkeletonCards } from '@/components/Skeleton';
 import { ApiClientError } from '@/lib/api/client';
+import { getExpensesSummary, type ExpensesSummary } from '@/lib/api/expenses';
 import { getReportsSummary } from '@/lib/api/reports';
 import type { ReportsSummary } from '@/lib/api/reports';
+import { useAuth } from '@/lib/auth/AuthProvider';
 import { formatMoney } from '@/lib/cash-labels';
 import { todayBusinessDate } from '@/lib/api/payment-register';
+import { hasAllPermissions } from '@/lib/nav-permissions';
 
 function monthStart(ymd: string): string {
   return `${ymd.slice(0, 7)}-01`;
@@ -40,7 +43,13 @@ function ReportesInner() {
   const [appliedTo, setAppliedTo] = useState(today);
   const [appliedMemberId, setAppliedMemberId] = useState(initialMemberId);
 
+  const { session } = useAuth();
+  const canSeeExpenses = hasAllPermissions(session?.permissionCodes, [
+    'expenses.read',
+  ]);
+
   const [data, setData] = useState<ReportsSummary | null>(null);
+  const [expenses, setExpenses] = useState<ExpensesSummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -49,13 +58,21 @@ function ReportesInner() {
     void (async () => {
       setLoading(true);
       try {
-        const summary = await getReportsSummary({
-          from: appliedFrom,
-          to: appliedTo,
-          memberId: appliedMemberId || undefined,
-        });
+        const [summary, expenseSummary] = await Promise.all([
+          getReportsSummary({
+            from: appliedFrom,
+            to: appliedTo,
+            memberId: appliedMemberId || undefined,
+          }),
+          canSeeExpenses && !appliedMemberId
+            ? getExpensesSummary({ from: appliedFrom, to: appliedTo }).catch(
+                () => null,
+              )
+            : Promise.resolve(null),
+        ]);
         if (!cancelled) {
           setData(summary);
+          setExpenses(expenseSummary);
           setError(null);
         }
       } catch (err) {
@@ -72,7 +89,7 @@ function ReportesInner() {
       }
     })();
     return () => { cancelled = true; };
-  }, [appliedFrom, appliedTo, appliedMemberId]);
+  }, [appliedFrom, appliedTo, appliedMemberId, canSeeExpenses]);
 
   function onApply(e: FormEvent) {
     e.preventDefault();
@@ -133,6 +150,48 @@ function ReportesInner() {
             </p>
           </Panel>
         </div>
+      ) : null}
+
+      {data && expenses && !loading ? (
+        <Panel
+          title="Gastos y resultado"
+          description="Resultado simple del período: ingresos − devoluciones − gastos."
+        >
+          <div className="stat-row expense-stats">
+            <div className="stat-card">
+              <p className="muted small">Gastos</p>
+              <p className="stat-value">{formatMoney(expenses.total)}</p>
+              <p className="muted small">
+                Fijos {formatMoney(expenses.byNature.FIXED)} · Variables{' '}
+                {formatMoney(expenses.byNature.VARIABLE)}
+              </p>
+            </div>
+            <div className="stat-card">
+              <p className="muted small">Resultado</p>
+              <p className="stat-value">
+                {formatMoney(
+                  data.income.totalApproved - totalRefunded - expenses.total,
+                )}
+              </p>
+              <p className="muted small">
+                {formatMoney(data.income.totalApproved)} −{' '}
+                {formatMoney(totalRefunded)} − {formatMoney(expenses.total)}
+              </p>
+            </div>
+          </div>
+          {expenses.byLabel.length ? (
+            <ul className="expense-by-label">
+              {expenses.byLabel.map((l) => (
+                <li key={l.labelId}>
+                  <span>{l.name}</span>
+                  <strong>{formatMoney(l.total)}</strong>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="muted small">Sin gastos en el período.</p>
+          )}
+        </Panel>
       ) : null}
 
       <ListToolbar hint="Cobros y devoluciones del rango. Afiliados y packs son estado actual.">

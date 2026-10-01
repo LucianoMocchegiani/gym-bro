@@ -97,6 +97,12 @@ Leyenda resultado: `P` pass · `F` fail · `B` bloqueado · `-` no aplica
 | P6 | Devolución afiliado fuera de política | Rechazo; admin aún puede | RN-PAG-012/011 | |
 | P7 | Admin devolución cart (parcial o todo) | Derechos de los ítems elegidos caen; un egreso + un comprobante REFUND; se puede devolver el resto después | CU-PAG-005 | |
 | P8 | Arqueo con diferencia | Se registra diff; la grilla de Cierre es la misma que Reportes (categoría + tipo + staff + comprobante) | CU-PAG-003 | |
+| P8b | Cierre con cobro MP + cobro efectivo | El efectivo esperado cuenta solo el cobro en efectivo | RN-PAG-007 | |
+| P8c | Gasto en efectivo hoy | Baja el efectivo esperado del Cierre; un gasto por transferencia no lo cambia | RN-GAS-004, CU-PAG-012 | |
+| P8d | Gasto con 5 comprobantes, intentar un sexto | Rechazo "hasta 5 comprobantes" | RN-GAS-005 | |
+| P8e | Cerrar el día y editar/borrar un gasto en efectivo de ese día | 409; adjuntar comprobante sí funciona | RN-GAS-006 | |
+| P8f | Borrar etiqueta con gastos | 409; archivar la saca del selector de gastos nuevos | RN-GAS-003 | |
+| P8g | Reportes con gastos en el período | Panel "Gastos y resultado": fijos/variables, por etiqueta, resultado = ingresos − devoluciones − gastos | CU-PAG-012 | |
 
 ### Débito automático (suscripción MP — comprobar en live)
 

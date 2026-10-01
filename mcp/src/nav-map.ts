@@ -39,6 +39,12 @@ export const NAV_MAP: readonly NavEntry[] = [
     keywords: ['arqueo', 'cierre'],
   },
   {
+    href: '/gastos',
+    label: 'Gastos',
+    anyOf: ['expenses.read'],
+    keywords: ['gasto', 'gastos', 'egreso', 'egresos', 'comprobante', 'etiqueta'],
+  },
+  {
     href: '/devoluciones',
     label: 'Devoluciones',
     anyOf: ['transaction_items.refund'],

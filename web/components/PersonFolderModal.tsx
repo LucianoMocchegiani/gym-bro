@@ -34,8 +34,10 @@ const FOLDER_FILE_ACCEPT =
 
 /**
  * Selector de PDF o imagen con el mismo lenguaje visual que la foto de ficha.
+ *
+ * @remarks También lo usan los comprobantes de gastos (mismos tipos y tope).
  */
-function FolderFileUpload({
+export function FolderFileUpload({
   file,
   onFileSelect,
   onReject,

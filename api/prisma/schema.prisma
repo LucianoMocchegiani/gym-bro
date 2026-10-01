@@ -217,6 +217,9 @@ model Tenant {
   folderLabels    FolderLabel[]
   folderItems     FolderItem[]
   memberImports   MemberImport[]
+  expenseLabels   ExpenseLabel[]
+  expenses        Expense[]
+  expenseFiles    ExpenseFile[]
   notificationTemplates     NotificationTemplate[]
   notificationPreferences   NotificationPreference[]
   notifications             Notification[]
@@ -350,6 +353,7 @@ model StaffUser {
   folderItems               FolderItem[]            @relation("FolderItemStaffOwner")
   folderItemsCreated        FolderItem[]            @relation("FolderItemCreatedBy")
   memberImports             MemberImport[]
+  expensesRecorded          Expense[]               @relation("ExpenseRecorder")
 
   @@unique([tenantId, email])
   @@unique([tenantId, identityId])
@@ -1248,6 +1252,83 @@ model MemberImport {
 
   @@index([tenantId, createdAt])
   @@map("member_imports")
+}
+
+/// Naturaleza del gasto: define cómo se agrupa el reporte (RN-GAS-002).
+enum ExpenseNature {
+  FIXED
+  VARIABLE
+}
+
+/// Con qué se pagó el gasto. Solo CASH resta en el arqueo (RN-GAS-004).
+enum ExpenseMethod {
+  CASH
+  TRANSFER
+  MP
+  CARD
+}
+
+/// Etiqueta de gasto por tenant (el gym arma la lista, como `folder_labels`).
+///
+/// @remarks RN-GAS-003. Con gastos no se borra: se archiva (sale del selector).
+model ExpenseLabel {
+  id         String    @id @default(uuid()) @db.Uuid
+  tenantId   String    @map("tenant_id") @db.Uuid
+  name       String
+  archivedAt DateTime? @map("archived_at")
+  createdAt  DateTime  @default(now()) @map("created_at")
+
+  tenant   Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  expenses Expense[]
+
+  @@unique([tenantId, name])
+  @@index([tenantId])
+  @@map("expense_labels")
+}
+
+/// Asiento de gasto del local (alquiler, sueldos, luz…). No es un cobro.
+///
+/// @remarks RN-GAS-001..006. No crea `cash_movements`: Cierre y Reportes lo
+/// suman aparte. Gasto en efectivo de un día con arqueo cerrado no se toca.
+model Expense {
+  id                String        @id @default(uuid()) @db.Uuid
+  tenantId          String        @map("tenant_id") @db.Uuid
+  businessDate      DateTime      @map("business_date") @db.Date
+  amount            Int
+  nature            ExpenseNature
+  method            ExpenseMethod
+  labelId           String        @map("label_id") @db.Uuid
+  note              String?
+  recordedByStaffId String?       @map("recorded_by_staff_id") @db.Uuid
+  createdAt         DateTime      @default(now()) @map("created_at")
+  updatedAt         DateTime      @updatedAt @map("updated_at")
+
+  tenant          Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  label           ExpenseLabel  @relation(fields: [labelId], references: [id], onDelete: NoAction)
+  recordedByStaff StaffUser?    @relation("ExpenseRecorder", fields: [recordedByStaffId], references: [id], onDelete: SetNull)
+  files           ExpenseFile[]
+
+  @@index([tenantId, businessDate])
+  @@index([tenantId, labelId])
+  @@map("expenses")
+}
+
+/// Comprobante (PDF o imagen) de un gasto, en R2 privado. Máximo 5 por gasto.
+model ExpenseFile {
+  id               String   @id @default(uuid()) @db.Uuid
+  tenantId         String   @map("tenant_id") @db.Uuid
+  expenseId        String   @map("expense_id") @db.Uuid
+  storageKey       String   @map("storage_key")
+  originalFilename String   @map("original_filename")
+  mime             String
+  sizeBytes        Int      @map("size_bytes")
+  createdAt        DateTime @default(now()) @map("created_at")
+
+  tenant  Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  expense Expense @relation(fields: [expenseId], references: [id], onDelete: Cascade)
+
+  @@index([expenseId])
+  @@map("expense_files")
 }
 
 /// Evento de auditoría append-only (RN-ROL-008 / CU-ROL-007).

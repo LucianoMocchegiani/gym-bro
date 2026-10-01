@@ -9,7 +9,10 @@
 | Contracargos / chargebacks automatizados | Pendiente | |
 | Liquidación si GymBro cobrara en el medio | Pendiente | Hoy cobra el gym (MP del tenant) |
 | Arqueo / contabilidad avanzada | Pendiente | MVP ya tiene arqueo básico |
-| Gastos operativos y compra de mercadería | Pendiente | No cuelgan de `transactions`. Documento `expense` / `purchase` → `cash_movements` `OUTCOME`. Venta de producto = línea de carrito. **Categoría de caja:** hoy se deriva de `kind` (Venta/Devolución). Con compra/gastos hay que persistir categoría (`SALE` / `REFUND` / `PURCHASE` / gastos) — `kind` solo dice ingreso/egreso |
+| Gastos operativos y compra de mercadería | Hecho en código (v1) | Tablas `expenses` / `expense_labels` / `expense_files`, aparte de `cash_movements`. Fijo/variable + etiqueta del gym (mercadería = etiqueta). Solo efectivo resta en el arqueo. RN-GAS-001..006, pantalla `/gastos`, Reportes con resultado. |
+| Gastos recurrentes (alquiler todos los meses) | Pendiente | v1 = carga manual. Idea: plantilla mensual que proponga el gasto, sin cargarlo solo. |
+| Tope de almacenamiento R2 por gym (comprobantes de gastos) | Pendiente | v1 crece sin tope (≤ 5 × 5 MB por gasto). Evaluar tope por plan, retención o aviso de uso. |
+| Venta de producto / stock (compra de mercadería como documento) | Pendiente | Venta = línea de carrito. Si hace falta stock, documento `purchase` aparte de gastos. |
 | Débito automático (packs MONTHLY) | Hecho en código | Suscripción MP + `init_point`. QA live P9…P9j. RN-PAG-013..016. [18](../18-prioridades-cierre-mvp.md) P2. |
 | Observabilidad de un cobro | Pendiente | Ver de un vistazo: transacción, ítems, si creó contratos/reservas y el recibo (nota local Caja) |
 | Extraer módulo tesorería (caja, débitos, vencimientos, reportes, cierre, gastos) | Idea · no prioridad | Reusar pagos en otro sistema. Análisis: `local/mis-tickets/ticket-desacoplar-pagos-operacion.md`. No bloquear MVP. |

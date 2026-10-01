@@ -127,6 +127,7 @@
   - `GET /cash-register/day` (timezone BA)
 - [x] Arqueo
   - `POST /cash-register/day/reconcile`; 1 por día; no bloquea cobros
+  - Esperado = solo efectivo (cobros − devoluciones − gastos CASH). Gastos v1 (`/gastos`, RN-GAS) se sumaron post-MVP
 - [x] Solicitud devolución (afiliado)
   - `POST /me/transaction-items/:id/refund-requests`; política fija RN-PAG-012; rechazo con motivo
 - [x] Ejecutar devolución (staff + flag)

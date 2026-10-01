@@ -19,6 +19,7 @@ const TOPICS = [
   'mercadopago',
   'carpeta',
   'devoluciones',
+  'gastos',
   'reportes',
   'roles',
   'chat',
@@ -44,7 +45,7 @@ export function registerHelpTools(server: McpServer): void {
     {
       title: 'Ayuda Faciliter',
       description:
-        'Artículo de cómo funciona Faciliter (español). topic: producto, guia, afiliados, migracion (importar socios desde Excel/CSV + zip de fotos y carpeta, contraseña temporal ChangeMe123!; aliases importar, importacion, migrar, excel, planilla), packs, sesiones, puerta, caja, vencimientos, debito, mercadopago (MP completo; alias mp), carpeta (notas y PDF/imagen de socio y staff; aliases documentos, folder, rutina, rutinas), devoluciones, reportes, roles, chat, soporte. Sin topic lista los temas. Error/bug/humano → soporte. Pantallas → guia. MP → mercadopago y el artículo entero. Carpeta / rutina como archivo / documentos del socio → carpeta y explicá panel (ícono), etiquetas del gym, app Inicio → Documentos, que no hay módulo de rutinas por días. No cobra ni edita.',
+        'Artículo de cómo funciona Faciliter (español). topic: producto, guia, afiliados, migracion (importar socios desde Excel/CSV + zip de fotos y carpeta, contraseña temporal ChangeMe123!; aliases importar, importacion, migrar, excel, planilla), packs, sesiones, puerta, caja, vencimientos, debito, mercadopago (MP completo; alias mp), carpeta (notas y PDF/imagen de socio y staff; aliases documentos, folder, rutina, rutinas), devoluciones, gastos (egresos del gym, etiquetas, comprobantes, efectivo resta en el Cierre; alias egresos), reportes, roles, chat, soporte. Sin topic lista los temas. Error/bug/humano → soporte. Pantallas → guia. MP → mercadopago y el artículo entero. Carpeta / rutina como archivo / documentos del socio → carpeta y explicá panel (ícono), etiquetas del gym, app Inicio → Documentos, que no hay módulo de rutinas por días. No cobra ni edita.',
       inputSchema: {
         topic: z
           .string()
@@ -66,6 +67,8 @@ export function registerHelpTools(server: McpServer): void {
         migrar: 'migracion',
         excel: 'migracion',
         planilla: 'migracion',
+        egresos: 'gastos',
+        gasto: 'gastos',
       };
       const resolved = key ? (aliases[key] ?? key) : key;
       if (!key) {

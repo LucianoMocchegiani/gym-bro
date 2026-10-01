@@ -68,7 +68,7 @@ El dinero que paga el socio va a **tu** Mercado Pago y queda registrado en **caj
 En esta pantalla el staff entra al **cerebro del local**. No es la app del socio: es el tablero de quien opera.
 
 - La URL es `{tu-local}.faciliter.xyz` (en la captura: `gym-de-prueba.faciliter.xyz`).
-- **Operación:** Inicio, Puerta, Caja, Cierre, solicitudes de devolución, Reportes.
+- **Operación:** Inicio, Puerta, Caja, Cierre, Gastos, solicitudes de devolución, Reportes.
 - **Personas:** Afiliados, Staff, Roles y permisos.
 - **Catálogo:** Servicios y Packs (más abajo, Sesiones y el resto del menú).
 - Las tarjetas del día: afiliados activos, ingresos, accesos, socios sin pack, sesiones publicadas.
@@ -550,14 +550,22 @@ El mostrador: pestaña **Cobro** (carrito) y pestaña **Débitos** (renovación 
 
 Solo mueve lo de **ese** día de negocio. Si cobraste otro día, acá aparece $0.
 
+El arqueo cuenta solo **efectivo**: lo esperado en el cajón es cobros en efectivo − devoluciones en efectivo − gastos en efectivo. Transferencias, Mercado Pago y tarjeta no entran: se ven aparte como **digital esperado** (cobros − devoluciones − gastos digitales), junto con el neto del día. Ese número es informativo; no se cierra contra nada.
+
 **Captura:** `web-cierre-vacio.png` — guardada; **rehacer** como `web-cierre-arqueo.png`.  
 **Por qué rehacer:** la foto es del 10/09 y el cobro de Reportes es del 2/09. Elegí en el datepicker el día del movimiento (o cobrá algo ese día) para que se vean ingresos y la lista de movimientos.
 
 **Qué ve el socio:** nada. El cierre es interno.
 
+## Gastos
+
+Lo que paga el gym: alquiler, luz, sueldos, compra de mercadería. Cada gasto lleva fecha, monto, si es **Fijo** o **Variable**, el medio de pago, una **etiqueta** (las define el gym; si ya tienen gastos se archivan, no se borran) y hasta **5 comprobantes** (PDF o imagen).
+
+Solo los gastos en efectivo restan en el **Cierre**. Si el día ya se cerró, esos gastos en efectivo no se editan ni se borran.
+
 ## Reportes
 
-Rango de fechas, no el mostrador. Sirve para ver qué se cobró (pack, drop-in, medio, staff).
+Rango de fechas, no el mostrador. Sirve para ver qué se cobró (pack, drop-in, medio, staff). Con permiso de gastos muestra también los gastos del período y el **resultado** (ingresos − devoluciones − gastos).
 
 **Captura:** `web-reportes-movimientos.png` — lista.
 

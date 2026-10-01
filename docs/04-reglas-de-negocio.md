@@ -80,7 +80,7 @@ Formato: **RN-MODULO-NNN** — enunciado — excepciones.
 | RN-PAG-004 | Una contratación o reserva solo se confirma cuando el pago queda `aprobado`. |
 | RN-PAG-005 | Todo cobro de negocio debe usar **idempotencia** para evitar doble pago. |
 | RN-PAG-006 | Si pese a RN-PAG-005 ocurre un cobro duplicado, el admin gestiona el **reembolso**. |
-| RN-PAG-007 | La caja registra movimientos del día y permite **arqueo** en MVP. |
+| RN-PAG-007 | La caja registra movimientos del día y permite **arqueo** en MVP. El arqueo cuenta solo **efectivo**: esperado = cobros CASH − devoluciones CASH − gastos CASH del día (RN-GAS-004). El Cierre muestra además el **digital esperado** (lo mismo con MP, transferencia y tarjeta) y el neto del día; es informativo y no entra al arqueo. |
 | RN-PAG-008 | Operar caja requiere permiso de rol (no necesariamente solo el rol “Admin”). |
 | RN-PAG-009 | Todo pago aprobado genera **comprobante interno** visible en app y disparador N1. |
 | RN-PAG-010 | AFIP / factura electrónica está fuera de MVP. |
@@ -92,6 +92,19 @@ Formato: **RN-MODULO-NNN** — enunciado — excepciones.
 | RN-PAG-016 | **Baja** en Caja cancela el `preapproval` en MP; el contrato vigente sigue hasta `endsAt`. Devolver el cobro que inscribió el mandato → baja automática de la suscripción. Cambio de pack A→B: cancelar A y alta B para el **próximo** cobro (sin prorrateo; no dos MONTHLY a la vez). |
 | RN-PAG-017 | **Prueba Faciliter (30 días):** cualquier pack de plataforma, **una vez por Identity** y **una vez por tenant**. Caja `admin` (efectivo, tilde) o self-serve (preapproval MP de `admin`; nace el gym al autorizar). Otorgar la prueba crea `Contract` TENANT `$0` a 30 días y marca ambos candados. Un cobro pago (sin tilde / segundo gym) agota solo el cupo del **gym**. |
 | RN-PAG-018 | **Modo limitado (plan Faciliter):** grace **3 días** sin `TENANT` vigente (desde `endsAt` o, si nunca hubo plan, desde el alta del tenant). Después el staff entra pero no opera (API 403 salvo Plan / permisos). Allowlist por id: demo `…0001` y `admin` `…0002`. Impersonación plataforma no se recorta. Afiliado (MEMBER) no se recorta. |
+
+---
+
+## 4b. Gastos (RN-GAS)
+
+| ID | Regla |
+|----|--------|
+| RN-GAS-001 | Un **gasto** es plata que paga el gym (alquiler, luz, mercadería…). No es cobro ni devolución: no crea `cash_movements`, ni comprobante, ni afecta contratos. Ver `expenses.read`; cargar, editar y borrar `expenses.write`. |
+| RN-GAS-002 | Cada gasto lleva fecha de negocio (no futura), monto en pesos enteros, **naturaleza** `FIXED` o `VARIABLE`, **medio** (efectivo, transferencia, Mercado Pago, tarjeta), **etiqueta** obligatoria y nota opcional. Compra de mercadería es una etiqueta más. Sin gastos recurrentes automáticos en v1. |
+| RN-GAS-003 | Las **etiquetas** las define cada gym (nombre único por tenant) y se pueden crear al cargar el gasto. Una etiqueta con gastos no se borra: se **archiva** y deja de ofrecerse para gastos nuevos. |
+| RN-GAS-004 | Solo los gastos en **efectivo** restan en el arqueo del día (RN-PAG-007). Transferencia, MP y tarjeta se registran pero no tocan el cajón. |
+| RN-GAS-005 | Hasta **5 comprobantes** por gasto (PDF o imagen, ≤ 5 MB c/u), en R2 privado; se bajan con JWT. |
+| RN-GAS-006 | Si el día tiene **arqueo cerrado**, sus gastos en efectivo no se editan ni se borran, y no se pueden mover a ni desde ese día. Los comprobantes sí se pueden agregar o quitar. |
 
 ---
 

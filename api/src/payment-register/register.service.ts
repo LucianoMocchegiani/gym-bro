@@ -6,6 +6,7 @@ import {
 import {
   CashMovementConcept,
   CashMovementKind,
+  ExpenseMethod,
   PaymentMethod,
   Prisma,
 } from '@prisma/client';
@@ -32,9 +33,10 @@ type Tx = Prisma.TransactionClient;
  * - Apertura y cierre de caja
  *
  * @remarks
- * A diferencia del CashRegisterService original, este servicio NO filtra por método de pago.
- * Registra movimientos de CUALQUIER método (CASH, MP, STUB) para permitir arqueo y
- * reconciliación de todos los pagos, no solo efectivo.
+ * Registra movimientos de CUALQUIER método (CASH, MP, STUB): la grilla del día
+ * muestra todos. El esperado del arqueo, en cambio, es solo la gaveta:
+ * cobros en efectivo − devoluciones en efectivo − gastos en efectivo
+ * (RN-PAG-007 / RN-GAS-004).
  */
 @Injectable()
 export class PaymentRegisterService {
@@ -147,7 +149,7 @@ export class PaymentRegisterService {
       ? this.parseBusinessDate(dateYmd)
       : this.businessDate(new Date());
 
-    const [rows, reconciliation] = await Promise.all([
+    const [rows, reconciliation, cash, digital] = await Promise.all([
       this.prisma.cashMovement.findMany({
         where: { tenantId, businessDate },
         include: LEDGER_MOVEMENT_INCLUDE,
@@ -161,6 +163,8 @@ export class PaymentRegisterService {
           reconciledByStaff: { select: { id: true, name: true } },
         },
       }),
+      this.cashTotals(tenantId, businessDate),
+      this.digitalTotals(tenantId, businessDate),
     ]);
 
     const movements = buildLedgerRows(rows);
@@ -181,6 +185,8 @@ export class PaymentRegisterService {
         net: income - outcome,
         movementCount: movements.length,
       },
+      cash,
+      digital,
       movements,
       reconciliation: reconciliation
         ? this.toReconciliationDetail(reconciliation)
@@ -216,16 +222,10 @@ export class PaymentRegisterService {
       );
     }
 
-    const incomeAgg = await this.prisma.cashMovement.aggregate({
-      where: { tenantId, businessDate, kind: CashMovementKind.INCOME },
-      _sum: { amount: true },
-    });
-    const outcomeAgg = await this.prisma.cashMovement.aggregate({
-      where: { tenantId, businessDate, kind: CashMovementKind.OUTCOME },
-      _sum: { amount: true },
-    });
-    const expectedAmount =
-      (incomeAgg._sum.amount ?? 0) - (outcomeAgg._sum.amount ?? 0);
+    const { expected: expectedAmount } = await this.cashTotals(
+      tenantId,
+      businessDate,
+    );
     const declaredAmount = dto.declaredAmount;
     const difference = declaredAmount - expectedAmount;
     const note = dto.note?.trim() || null;
@@ -276,6 +276,73 @@ export class PaymentRegisterService {
     }
 
     return this.getDay(tenantId, this.formatBusinessDate(businessDate));
+  }
+
+  /**
+   * Efectivo de la gaveta en el día: cobros y devoluciones CASH y gastos
+   * pagados en efectivo. MP y transferencias no pasan por la caja física.
+   */
+  private cashTotals(
+    tenantId: string,
+    businessDate: Date,
+  ): Promise<CashDayDetail['cash']> {
+    return this.channelTotals(tenantId, businessDate, 'cash');
+  }
+
+  /**
+   * Lo que no pasa por la gaveta: cobros y devoluciones MP y gastos por
+   * transferencia, MP o tarjeta. Informativo; no entra al arqueo.
+   */
+  private digitalTotals(
+    tenantId: string,
+    businessDate: Date,
+  ): Promise<CashDayDetail['digital']> {
+    return this.channelTotals(tenantId, businessDate, 'digital');
+  }
+
+  private async channelTotals(
+    tenantId: string,
+    businessDate: Date,
+    channel: 'cash' | 'digital',
+  ): Promise<CashDayDetail['cash']> {
+    const isCash = channel === 'cash';
+    const itemFilter = {
+      transactionItem: {
+        method: isCash ? PaymentMethod.CASH : { not: PaymentMethod.CASH },
+      },
+    };
+    const [incomeAgg, outcomeAgg, expensesAgg] = await Promise.all([
+      this.prisma.cashMovement.aggregate({
+        where: {
+          tenantId,
+          businessDate,
+          kind: CashMovementKind.INCOME,
+          ...itemFilter,
+        },
+        _sum: { amount: true },
+      }),
+      this.prisma.cashMovement.aggregate({
+        where: {
+          tenantId,
+          businessDate,
+          kind: CashMovementKind.OUTCOME,
+          ...itemFilter,
+        },
+        _sum: { amount: true },
+      }),
+      this.prisma.expense.aggregate({
+        where: {
+          tenantId,
+          businessDate,
+          method: isCash ? ExpenseMethod.CASH : { not: ExpenseMethod.CASH },
+        },
+        _sum: { amount: true },
+      }),
+    ]);
+    const income = incomeAgg._sum.amount ?? 0;
+    const outcome = outcomeAgg._sum.amount ?? 0;
+    const expenses = expensesAgg._sum.amount ?? 0;
+    return { income, outcome, expenses, expected: income - outcome - expenses };
   }
 
   /**

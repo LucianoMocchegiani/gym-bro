@@ -1,6 +1,7 @@
 'use client';
 
 import { FormEvent, useCallback, useEffect, useState } from 'react';
+import Link from 'next/link';
 import { ListToolbar } from '@/components/AdminList';
 import { AdminShell } from '@/components/AdminShell';
 import { Panel } from '@/components/AdminUi';
@@ -15,7 +16,9 @@ import {
 } from '@/lib/api/payment-register';
 import type { CashDayDetail } from '@/lib/api/payment-register';
 import { ApiClientError } from '@/lib/api/client';
+import { useAuth } from '@/lib/auth/AuthProvider';
 import { formatMoney } from '@/lib/cash-labels';
+import { hasAllPermissions } from '@/lib/nav-permissions';
 
 /**
  * Cierre del día: stats + arqueo + misma grilla de movimientos que Reportes.
@@ -29,6 +32,10 @@ export default function ArqueoPage() {
 }
 
 function ArqueoInner() {
+  const { session } = useAuth();
+  const canSeeExpenses = hasAllPermissions(session?.permissionCodes, [
+    'expenses.read',
+  ]);
   const [date, setDate] = useState(todayBusinessDate);
   const [day, setDay] = useState<CashDayDetail | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -47,7 +54,7 @@ function ArqueoInner() {
       setDay(data);
       setLoadError(null);
       if (!data.reconciliation) {
-        setDeclaredAmount(String(data.totals.net));
+        setDeclaredAmount(String(Math.max(0, data.cash.expected)));
       }
     } catch (err) {
       setLoadError(
@@ -99,7 +106,7 @@ function ArqueoInner() {
   return (
     <AdminShell
       title="Cierre"
-      subtitle="Cierre del día (cobros y devoluciones). Los cobros se hacen en Caja."
+      subtitle="Cierre del día: cobros, devoluciones y gastos en efectivo. Los cobros se hacen en Caja."
     >
       <ListToolbar hint="Misma grilla que Reportes, filtrada al día de negocio (BA).">
         <label className="toolbar-field">
@@ -125,20 +132,55 @@ function ArqueoInner() {
             <div className="admin-panel stat-card">
               <p className="muted small">Ingresos</p>
               <p className="stat-value">{formatMoney(day.totals.income)}</p>
+              <p className="muted small">
+                Efectivo {formatMoney(day.cash.income)} · Digital{' '}
+                {formatMoney(day.digital.income)}
+              </p>
             </div>
             <div className="admin-panel stat-card">
-              <p className="muted small">Egresos</p>
+              <p className="muted small">Devoluciones</p>
               <p className="stat-value">{formatMoney(day.totals.outcome)}</p>
+              <p className="muted small">
+                Efectivo {formatMoney(day.cash.outcome)} · Digital{' '}
+                {formatMoney(day.digital.outcome)}
+              </p>
             </div>
             <div className="admin-panel stat-card">
-              <p className="muted small">Neto esperado</p>
-              <p className="stat-value">{formatMoney(day.totals.net)}</p>
+              <p className="muted small">Gastos</p>
+              <p className="stat-value">
+                {formatMoney(day.cash.expenses + day.digital.expenses)}
+              </p>
+              <p className="muted small">
+                Efectivo {formatMoney(day.cash.expenses)} · Digital{' '}
+                {formatMoney(day.digital.expenses)}
+                {canSeeExpenses ? (
+                  <>
+                    {' · '}
+                    <Link href="/gastos">Ver gastos</Link>
+                  </>
+                ) : null}
+              </p>
             </div>
             <div className="admin-panel stat-card">
-              <p className="muted small">Movimientos</p>
-              <p className="stat-value">{day.totals.movementCount}</p>
+              <p className="muted small">Efectivo esperado</p>
+              <p className="stat-value">{formatMoney(day.cash.expected)}</p>
+              <p className="muted small">Lo que tiene que haber en el cajón</p>
+            </div>
+            <div className="admin-panel stat-card">
+              <p className="muted small">Digital esperado</p>
+              <p className="stat-value">{formatMoney(day.digital.expected)}</p>
+              <p className="muted small">
+                Neto del día{' '}
+                {formatMoney(day.cash.expected + day.digital.expected)}
+              </p>
             </div>
           </div>
+          <p className="muted small">
+            Efectivo esperado = cobros − devoluciones − gastos, solo en
+            efectivo; es contra lo que se cierra la caja. Digital esperado =
+            lo mismo con Mercado Pago, transferencias y tarjeta; es informativo
+            y no entra en el cierre. {day.totals.movementCount} movimientos.
+          </p>
 
           <Panel title="Cierre del día" description="Un cierre por día de negocio.">
             {day.reconciliation ? (
@@ -179,12 +221,19 @@ function ArqueoInner() {
                   />
                 </label>
                 <p className="muted small">
-                  Esperado neto: {formatMoney(day.totals.net)}
+                  Efectivo esperado: {formatMoney(day.cash.expected)}
                   {declaredAmount !== '' &&
                   Number.isInteger(Number(declaredAmount))
-                    ? ` · Diff: ${formatMoney(Number(declaredAmount) - day.totals.net)}`
+                    ? ` · Diff: ${formatMoney(Number(declaredAmount) - day.cash.expected)}`
                     : ''}
                 </p>
+                {day.cash.expected < 0 ? (
+                  <p className="muted small">
+                    El esperado da negativo: se pagó en efectivo más de lo que
+                    se cobró hoy (por ejemplo, con el fondo de caja). Declará lo
+                    que hay en el cajón y aclaralo en la nota.
+                  </p>
+                ) : null}
                 <label>
                   Nota (opcional)
                   <textarea

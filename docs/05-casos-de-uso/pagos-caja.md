@@ -59,12 +59,12 @@
 **Flujo principal:**
 1. Staff abre **Cierre** (`/arqueo`): listado de movimientos (1 fila por cobro o devolución; misma grilla que Reportes, con categoría Venta/Devolución y tipo Ingreso/Egreso) y totales.
 2. Staff declara monto contado.
-3. Sistema calcula esperado vs declarado → diferencia.
+3. Sistema calcula el efectivo esperado (cobros en efectivo − devoluciones en efectivo − gastos en efectivo del día) vs declarado → diferencia.
 4. Guarda ArqueoCaja + auditoría.
 
-**Postcondiciones:** Arqueo registrado (no bloquea cobros futuros del día salvo política futura).
+**Postcondiciones:** Arqueo registrado (no bloquea cobros futuros del día). Los gastos en efectivo de ese día quedan bloqueados (RN-GAS-006).
 
-**Reglas relacionadas:** RN-PAG-007
+**Reglas relacionadas:** RN-PAG-007, RN-GAS-004, RN-GAS-006
 
 ---
 
@@ -217,6 +217,29 @@
 5. Impersonación desde `admin`: el gym se usa completo (sin recorte). El afiliado (MEMBER) no entra en este recorte.
 
 **Reglas relacionadas:** RN-PAG-018
+
+---
+
+## CU-PAG-012 Registrar un gasto del gym
+
+**Actor:** Staff con `expenses.write` (ver: `expenses.read`)
+
+**Precondiciones:** Sesión staff del tenant.
+
+**Flujo principal:**
+1. Staff abre **Gastos** (`/gastos`) y toca **+ Nuevo**.
+2. Carga fecha (hoy o pasada), monto, Fijo/Variable, medio, etiqueta (elige una o crea una nueva en el momento) y nota opcional.
+3. Opcional: adjunta hasta 5 comprobantes (PDF o imagen ≤ 5 MB).
+4. Sistema guarda el gasto + auditoría (`expense.create`) y sube los comprobantes a R2 privado.
+5. La lista muestra el gasto; los totales del período (total, fijos, variables, en efectivo, por etiqueta) se actualizan. Reportes suma el gasto al resultado.
+
+**Alternativos:**
+- Editar o borrar el gasto (auditado). Si es en efectivo y el día tiene arqueo cerrado → 409; los comprobantes igual se pueden agregar o quitar.
+- Etiquetas: renombrar, archivar o desarchivar; borrar solo si no tiene gastos (si tiene → 409, hay que archivar).
+
+**Postcondiciones:** Si el medio es efectivo, el esperado del Cierre de ese día baja por el monto.
+
+**Reglas relacionadas:** RN-GAS-001..006, RN-PAG-007
 
 ---
 

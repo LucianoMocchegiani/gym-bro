@@ -55,6 +55,7 @@ const NAV_GROUPS: NavGroup[] = [
       { href: '/caja', label: 'Caja' },
       { href: '/vencimientos', label: 'Vencimientos' },
       { href: '/arqueo', label: 'Cierre' },
+      { href: '/gastos', label: 'Gastos' },
       { href: '/devoluciones', label: 'Solicitudes de devolución' },
       { href: '/reportes', label: 'Reportes' },
     ],

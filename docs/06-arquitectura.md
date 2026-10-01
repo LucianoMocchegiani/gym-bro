@@ -277,7 +277,8 @@ Env: `MP_CHECKOUT_MODE=stub|live`, `PUBLIC_API_BASE_URL` (notification_url).
 
 - `MovimientoCaja` ligado a `Pago`.
 - `ArqueoCaja` por fecha (+ sucursal cuando multi-sede UI).
-- Admin: `/arqueo` = **Cierre**; `/devoluciones` = **Solicitudes de devolución** (`refund_requests`). Grilla: `kind` (ingreso/egreso) + `category` (`SALE` / `REFUND`) **derivada de** `kind` en `buildLedgerRows`. Post-MVP: columna/enum persistido en `cash_movements` (compra y gastos no se infieren del sentido del dinero). Ver backlog Pagos.
+- Admin: `/arqueo` = **Cierre**; `/devoluciones` = **Solicitudes de devolución** (`refund_requests`). Grilla: `kind` (ingreso/egreso) + `category` (`SALE` / `REFUND`) **derivada de** `kind` en `buildLedgerRows`. El arqueo cuenta solo efectivo: `expected` = INCOME CASH − OUTCOME CASH − gastos CASH.
+- Gastos: módulo `expenses` (`/gastos`), tablas propias (no `cash_movements`). Comprobantes en R2 privado vía `FileStoragePort`. `GET /expenses/summary` alimenta Reportes (resultado = ingresos − devoluciones − gastos). RN-GAS.
 
 
 

@@ -133,7 +133,7 @@ Estas cosas **no** están en P1–P5 y sí importan para “un gym de verdad”.
 
 ## Qué no entra (sigue post-MVP)
 
-Tienda de mercadería, white label, AFIP, offline puerta, biometría de hardware, anti-fraude QR, fichaje horario, waitlist modos 2/3, gastos de caja, multi-sede UI, chat writes, rutinas plantilla, push N2, bandeja staff de avisos.
+Tienda de mercadería, white label, AFIP, offline puerta, biometría de hardware, anti-fraude QR, fichaje horario, waitlist modos 2/3, gastos recurrentes y tope R2 de comprobantes (los gastos v1 ya están: RN-GAS), multi-sede UI, chat writes, rutinas plantilla, push N2, bandeja staff de avisos.
 
 ---
 

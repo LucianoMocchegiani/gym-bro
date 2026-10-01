@@ -22,6 +22,8 @@ Brain lleva quién lo tiene, si está vigente y qué le da derecho a hacer.
 
 Brain **cobra y puede debitar** afiliados en línea (Mercado Pago de la **cuenta del negocio**). Cómo conectar esa cuenta: `get_help` topic `mercadopago`. El efectivo se registra en **caja** (mostrador) y se cierra el día (arqueo). El dinero del socio **no** se queda en Faciliter.
 
+Lo que **paga** el gym (alquiler, luz, mercadería) se carga en **Gastos**, con etiqueta y comprobantes; Reportes muestra el resultado. Topic `gastos`.
+
 ## Puerta
 
 La app es la **credencial**. El personal en puerta ve permitido o denegado y el motivo (deuda, sin pack vigente, sin reserva). Ejemplo: clase de pilates o funcional; el afiliado entra con la app para esa clase y queda en los registros de puerta.

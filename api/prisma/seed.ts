@@ -93,6 +93,16 @@ const PERMISSIONS: { code: string; description: string; dangerous: boolean }[] =
       dangerous: false,
     },
     {
+      code: 'expenses.read',
+      description: 'Ver gastos del gym y sus comprobantes',
+      dangerous: false,
+    },
+    {
+      code: 'expenses.write',
+      description: 'Cargar, editar y borrar gastos y sus etiquetas',
+      dangerous: false,
+    },
+    {
       code: 'transaction_items.refund',
       description: 'Devoluciones y reembolsos',
       dangerous: true,

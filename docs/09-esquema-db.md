@@ -93,6 +93,11 @@ identities ||--o{ platform_signups : self_serve
   contracts ||--o{ contract_credit_balances : balances
   tenants ||--o{ refund_requests : has
   members ||--o{ refund_requests : requests
+  tenants ||--o{ expense_labels : defines
+  tenants ||--o{ expenses : pays
+  expense_labels ||--o{ expenses : tags
+  expenses ||--o{ expense_files : attaches
+  staff_users ||--o{ expenses : records
   tenants ||--o{ credential_offers : issues
   contracts ||--o{ credential_offers : offers
   tenants ||--o{ staff_credential_offers : issues
@@ -363,6 +368,8 @@ identities ||--o{ platform_signups : self_serve
 | `FolderItemKind` | `NOTE`, `FILE` | Ítem de carpeta socio/staff |
 | `MemberImportKind` | `ROWS`, `FILES` | Corrida de migración: fichas (planilla) o archivos (zip) |
 | `MemberImportStatus` | `RUNNING`, `DONE` | Estado de la corrida |
+| `ExpenseNature` | `FIXED`, `VARIABLE` | Gasto fijo o variable (RN-GAS-002) |
+| `ExpenseMethod` | `CASH`, `TRANSFER`, `MP`, `CARD` | Medio con que se pagó el gasto; solo `CASH` resta en el arqueo (RN-GAS-004) |
 
 ---
 
@@ -717,7 +724,7 @@ Movimiento de caja del día (CU-PAG-002 / RN-PAG-007).
 
 **Unique:** `(transaction_item_id, kind)` (un INCOME y un OUTCOME por ítem). El cart se resuelve vía el ítem. Egresos de un mismo lote comparten `receipt_id` (grilla: 1 fila por ejecución).
 
-**Categoría (grilla Cierre/Reportes):** no hay columna. `LedgerCategory` (`SALE` / `REFUND`) se calcula en API: `OUTCOME` → devolución, resto → venta. Post-MVP (compra, gastos): persistir categoría en esta tabla; `kind` no alcanza.
+**Categoría (grilla Cierre/Reportes):** no hay columna. `LedgerCategory` (`SALE` / `REFUND`) se calcula en API: `OUTCOME` → devolución, resto → venta. Los gastos **no** van en esta tabla (FK de ítem obligatoria): viven en `expenses` (§4.15k) y Cierre/Reportes los suman aparte.
 
 API: Staff `GET /api/payment-register/day?date=YYYY-MM-DD`, `POST /api/payment-register/day/reconcile` (`cashier.operate`).
 
@@ -730,14 +737,14 @@ Arqueo de caja del día (CU-PAG-003 / RN-PAG-007).
 | `id` | uuid PK | |
 | `tenant_id` | uuid FK | CASCADE |
 | `business_date` | date | día BA |
-| `expected_amount` | int | suma ingresos CASH al momento del arqueo |
+| `expected_amount` | int | efectivo esperado al momento del arqueo: INCOME CASH − OUTCOME CASH − `expenses` CASH del día (RN-PAG-007, RN-GAS-004) |
 | `declared_amount` | int | contado por staff (≥ 0) |
 | `difference` | int | declarado − esperado |
 | `reconciled_by_staff_id` | uuid FK nullable | SET NULL |
 | `note` | text nullable | |
 | `created_at` | timestamptz | |
 
-**Unique:** `(tenant_id, business_date)`. No bloquea cobros posteriores.
+**Unique:** `(tenant_id, business_date)`. No bloquea cobros posteriores. Sí bloquea editar o borrar gastos en efectivo de ese día (RN-GAS-006).
 
 ### 4.15d `receipts` / `receipt_sequences`
 
@@ -861,6 +868,44 @@ Devoluciones (CU-PAG-004/005/007 / RN-PAG-011/012).
 Transaction_items: `refunded_at`, `refund_reason`, `mp_refund_manual_pending`. Caja: `OUTCOME` + concepto `REFUND`; unique `(transaction_item_id, kind)`; `receipt_id` del comprobante del lote.
 
 API: Member `POST /me/transaction-items/:id/refund-requests`, `GET /me/refund-requests`. Staff `GET /refund-requests`, `POST /transactions/:id/refunds` (lote) y `POST /transaction-items/:id/refunds` (wrapper) (`transaction_items.refund`).
+
+### 4.15k `expense_labels` / `expenses` / `expense_files`
+
+Gastos del gym (RN-GAS-001..006). No son cobros: no crean `cash_movements`.
+
+| Columna (`expense_labels`) | Tipo | Notas |
+|---------|------|--------|
+| `id` | uuid PK | |
+| `tenant_id` | uuid FK | CASCADE |
+| `name` | text | unique `(tenant_id, name)` |
+| `archived_at` | timestamptz nullable | archivada = no se ofrece para gastos nuevos |
+| `created_at` | timestamptz | |
+
+| Columna (`expenses`) | Tipo | Notas |
+|---------|------|--------|
+| `id` | uuid PK | |
+| `tenant_id` | uuid FK | CASCADE |
+| `business_date` | date | día BA del gasto; no futuro |
+| `amount` | int | pesos enteros ≥ 1 |
+| `nature` | `ExpenseNature` | `FIXED` \| `VARIABLE` |
+| `method` | `ExpenseMethod` | `CASH` \| `TRANSFER` \| `MP` \| `CARD` |
+| `label_id` | uuid FK | NO ACTION: la API no borra etiquetas con gastos (las archiva) |
+| `note` | text nullable | ≤ 500 |
+| `recorded_by_staff_id` | uuid FK nullable | SET NULL |
+| `created_at` / `updated_at` | timestamptz | |
+
+**Índices:** `(tenant_id, business_date)`, `(tenant_id, label_id)`.
+
+| Columna (`expense_files`) | Tipo | Notas |
+|---------|------|--------|
+| `id` | uuid PK | |
+| `tenant_id` | uuid FK | CASCADE |
+| `expense_id` | uuid FK | CASCADE |
+| `storage_key` | text | R2 privado `expenses/{tenantId}/{expenseId}/{uuid}.ext` |
+| `original_filename` / `mime` / `size_bytes` | text / text / int | PDF o imagen ≤ 5 MB; máx. 5 por gasto |
+| `created_at` | timestamptz | |
+
+API Staff (`expenses.read` en GET, `expenses.write` en el resto): `GET|POST /api/expense-labels`, `PATCH|DELETE /api/expense-labels/:id`; `GET /api/expenses/summary?from&to`; `GET|POST /api/expenses`, `GET|PATCH|DELETE /api/expenses/:id`; `POST /api/expenses/:id/files` (multipart `file`), `GET|DELETE /api/expenses/:id/files/:fileId`.
 
 ### 4.15i `access_credentials`
 
@@ -1079,6 +1124,7 @@ Historia incremental (2026-07 / 2026-08) **compactada** en un baseline (`40476fa
 | `20260930210000_platform_plan_notification_events` | Enum plan Faciliter (`PLATFORM_*`) |
 | `20260930211000_notification_identity_audience` | `notifications.identity_id`; `member_id` nullable |
 | `20261001120000_member_imports` | `identities.password_temporary`; `member_imports` + enums `MemberImportKind`, `MemberImportStatus` |
+| `20261001200000_expenses` | `expense_labels`, `expenses`, `expense_files` + enums `ExpenseNature`, `ExpenseMethod` |
 
 Comandos y checklist “desde cero”: [13-setup-db-desde-cero.md](./13-setup-db-desde-cero.md).
 

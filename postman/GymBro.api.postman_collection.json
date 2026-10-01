@@ -173,6 +173,18 @@
         {
             "key": "memberImportId",
             "value": ""
+        },
+        {
+            "key": "expenseLabelId",
+            "value": ""
+        },
+        {
+            "key": "expenseId",
+            "value": ""
+        },
+        {
+            "key": "expenseFileId",
+            "value": ""
         }
     ],
     "item": [
@@ -4955,6 +4967,210 @@
                         "method": "GET",
                         "header": [],
                         "url": "{{baseUrl}}/api/me/folder"
+                    }
+                }
+            ]
+        },
+        {
+            "name": "Expenses",
+            "description": "Gastos del gym (RN-GAS). JWT Staff: GET con expenses.read; el resto con expenses.write. No crean cash_movements. Solo method=CASH resta en el arqueo (payment-register day.cash.expected). Gasto en efectivo de un día con arqueo cerrado → 409 al editar/borrar.",
+            "item": [
+                {
+                    "name": "List expense labels",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/expense-labels?includeArchived=true",
+                            "host": ["{{baseUrl}}"],
+                            "path": ["api", "expense-labels"],
+                            "query": [{"key": "includeArchived", "value": "true", "description": "false (default) = solo activas"}]
+                        }
+                    }
+                },
+                {
+                    "name": "Create expense label",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('status 201', () => pm.response.to.have.status(201));",
+                                    "pm.collectionVariables.set('expenseLabelId', pm.response.json().id);"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [{"key": "Content-Type", "value": "application/json"}],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"name\": \"Alquiler\"\n}",
+                            "options": {"raw": {"language": "json"}}
+                        },
+                        "url": "{{baseUrl}}/api/expense-labels",
+                        "description": "Nombre repetido en el gym → 409."
+                    }
+                },
+                {
+                    "name": "Update expense label (rename / archive)",
+                    "request": {
+                        "method": "PATCH",
+                        "header": [{"key": "Content-Type", "value": "application/json"}],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"archived\": true\n}",
+                            "options": {"raw": {"language": "json"}}
+                        },
+                        "url": "{{baseUrl}}/api/expense-labels/{{expenseLabelId}}",
+                        "description": "Campos opcionales: name, archived."
+                    }
+                },
+                {
+                    "name": "Delete expense label",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [],
+                        "url": "{{baseUrl}}/api/expense-labels/{{expenseLabelId}}",
+                        "description": "Con gastos → 409 (archivar en su lugar)."
+                    }
+                },
+                {
+                    "name": "Create expense",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('status 201', () => pm.response.to.have.status(201));",
+                                    "pm.collectionVariables.set('expenseId', pm.response.json().id);"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [{"key": "Content-Type", "value": "application/json"}],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"amount\": 15000,\n  \"nature\": \"FIXED\",\n  \"method\": \"CASH\",\n  \"labelId\": \"{{expenseLabelId}}\",\n  \"note\": \"Alquiler octubre\"\n}",
+                            "options": {"raw": {"language": "json"}}
+                        },
+                        "url": "{{baseUrl}}/api/expenses",
+                        "description": "businessDate opcional (YYYY-MM-DD, default hoy BA, no futuro). nature: FIXED | VARIABLE. method: CASH | TRANSFER | MP | CARD. Etiqueta archivada → 400."
+                    }
+                },
+                {
+                    "name": "List expenses",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/expenses?from=&to=",
+                            "host": ["{{baseUrl}}"],
+                            "path": ["api", "expenses"],
+                            "query": [
+                                {"key": "from", "value": "", "description": "YYYY-MM-DD"},
+                                {"key": "to", "value": "", "description": "YYYY-MM-DD"},
+                                {"key": "labelId", "value": "", "disabled": true},
+                                {"key": "nature", "value": "VARIABLE", "disabled": true},
+                                {"key": "method", "value": "CASH", "disabled": true},
+                                {"key": "page", "value": "1", "disabled": true},
+                                {"key": "pageSize", "value": "20", "disabled": true}
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Expenses summary",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/expenses/summary?from=&to=",
+                            "host": ["{{baseUrl}}"],
+                            "path": ["api", "expenses", "summary"],
+                            "query": [
+                                {"key": "from", "value": ""},
+                                {"key": "to", "value": ""}
+                            ]
+                        },
+                        "description": "total, count, byNature, byMethod, byLabel del período."
+                    }
+                },
+                {
+                    "name": "Get expense",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": "{{baseUrl}}/api/expenses/{{expenseId}}"
+                    }
+                },
+                {
+                    "name": "Update expense",
+                    "request": {
+                        "method": "PATCH",
+                        "header": [{"key": "Content-Type", "value": "application/json"}],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"amount\": 16000,\n  \"method\": \"TRANSFER\"\n}",
+                            "options": {"raw": {"language": "json"}}
+                        },
+                        "url": "{{baseUrl}}/api/expenses/{{expenseId}}",
+                        "description": "Todo opcional. CASH en un día con arqueo cerrado (antes o después) → 409."
+                    }
+                },
+                {
+                    "name": "Upload expense file",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('status 201', () => pm.response.to.have.status(201));",
+                                    "pm.collectionVariables.set('expenseFileId', pm.response.json().id);"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [],
+                        "body": {
+                            "mode": "formdata",
+                            "formdata": [{"key": "file", "type": "file", "src": ""}]
+                        },
+                        "url": "{{baseUrl}}/api/expenses/{{expenseId}}/files",
+                        "description": "PDF o imagen ≤ 5 MB. Máx. 5 por gasto. Se permite con arqueo cerrado."
+                    }
+                },
+                {
+                    "name": "Download expense file",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": "{{baseUrl}}/api/expenses/{{expenseId}}/files/{{expenseFileId}}"
+                    }
+                },
+                {
+                    "name": "Delete expense file",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [],
+                        "url": "{{baseUrl}}/api/expenses/{{expenseId}}/files/{{expenseFileId}}"
+                    }
+                },
+                {
+                    "name": "Delete expense",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [],
+                        "url": "{{baseUrl}}/api/expenses/{{expenseId}}",
+                        "description": "Borra también los comprobantes en R2. CASH con arqueo cerrado → 409."
                     }
                 }
             ]

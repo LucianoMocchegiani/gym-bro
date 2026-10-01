@@ -38,7 +38,7 @@ docker compose up --build -d api mcp
 
 **C:** `list_services`, `list_packs`, `get_pack`, `list_roles`, `get_role`, `search_audit_events`.
 
-**D:** `get_help` (artículos en `mcp/help/`: `producto`, `guia`, `mercadopago`, `carpeta` = notas/PDF socio y staff, `migracion` = importar afiliados + contraseña temporal, `soporte`, etc.).
+**D:** `get_help` (artículos en `mcp/help/`: `producto`, `guia`, `mercadopago`, `carpeta` = notas/PDF socio y staff, `migracion` = importar afiliados + contraseña temporal, `gastos` = egresos del gym, `soporte`, etc.).
 
 Cada pantalla o flujo nuevo del producto lleva **artículo `mcp/help/{topic}.md`**, topic en `get_help`, y una línea en `guia.md` / `producto.md`. El chat no adivina features: lee help.
 

@@ -36,7 +36,7 @@ export function registerRegisterTools(server: McpServer): void {
     {
       title: 'Caja del día',
       description:
-        'Totales y pocos movimientos de caja de un día (timezone Buenos Aires). Sin date usa hoy. No arquea ni cobra. Requiere permiso de caja.',
+        'Totales y pocos movimientos de caja de un día (timezone Buenos Aires). `cash.expected` es el efectivo esperado del cierre: cobros en efectivo − devoluciones en efectivo − gastos en efectivo. `digital.expected` es el digital esperado (lo mismo con MP, transferencia y tarjeta): informativo, no entra al cierre. Neto del día = cash.expected + digital.expected. Sin date usa hoy. No arquea ni cobra. Requiere permiso de caja.',
       inputSchema: {
         date: z
           .string()
@@ -54,6 +54,8 @@ export function registerRegisterTools(server: McpServer): void {
         });
         const body = asRecord(raw) ?? {};
         const totals = asRecord(body.totals);
+        const cash = asRecord(body.cash);
+        const digital = asRecord(body.digital);
         const recon = asRecord(body.reconciliation);
         return {
           businessDate: pickString(body, 'businessDate') ?? businessDate,
@@ -64,6 +66,22 @@ export function registerRegisterTools(server: McpServer): void {
                 outcome: totals.outcome ?? null,
                 net: totals.net ?? null,
                 movementCount: totals.movementCount ?? null,
+              }
+            : null,
+          cash: cash
+            ? {
+                income: cash.income ?? null,
+                outcome: cash.outcome ?? null,
+                expenses: cash.expenses ?? null,
+                expected: cash.expected ?? null,
+              }
+            : null,
+          digital: digital
+            ? {
+                income: digital.income ?? null,
+                outcome: digital.outcome ?? null,
+                expenses: digital.expenses ?? null,
+                expected: digital.expected ?? null,
               }
             : null,
           movements: take(compact(asArray(body.movements).map(slimMovement)), 8),

@@ -77,6 +77,15 @@ export function NavIconRefund() {
   );
 }
 
+export function NavIconExpense() {
+  return (
+    <Svg>
+      <path d="M6 3h12v18l-3-2-3 2-3-2-3 2V3Z" />
+      <path d="M9 8h6M9 12h6M9 16h3" />
+    </Svg>
+  );
+}
+
 export function NavIconChart() {
   return (
     <Svg>
@@ -245,6 +254,7 @@ const NAV_ICONS: Record<string, () => ReactNode> = {
   '/caja': NavIconCash,
   '/vencimientos': NavIconCalendar,
   '/arqueo': NavIconCash,
+  '/gastos': NavIconExpense,
   '/devoluciones': NavIconRefund,
   '/reportes': NavIconChart,
   '/afiliados': NavIconPeople,

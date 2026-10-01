@@ -28,6 +28,20 @@ export type CashDayDetail = {
     net: number;
     movementCount: number;
   };
+  /** Gaveta del día: `expected` es el esperado del cierre (solo efectivo). */
+  cash: {
+    income: number;
+    outcome: number;
+    expenses: number;
+    expected: number;
+  };
+  /** MP, transferencias y tarjeta: informativo, no entra al cierre. */
+  digital: {
+    income: number;
+    outcome: number;
+    expenses: number;
+    expected: number;
+  };
   movements: LedgerMovementRow[];
   reconciliation: CashReconciliationDetail | null;
 };

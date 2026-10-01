@@ -19,7 +19,7 @@ El socio **no ve** el tablero del staff. En la app ve su pack, clases y Acceso.
 
 A la izquierda, agrupado:
 
-- **Operación:** Inicio, Puerta, Caja, Vencimientos, Cierre, solicitudes de devolución, Reportes.
+- **Operación:** Inicio, Puerta, Caja, Vencimientos, Cierre, Gastos, solicitudes de devolución, Reportes.
 - **Personas:** Afiliados, Staff, Roles y permisos.
 - **Catálogo:** Servicios, Packs, Sesiones.
 - **Sistema:** Config, Avisos (plantillas), Plan / Uso, Auditoría.
@@ -74,11 +74,15 @@ Lista de packs mensuales por vencer (7 días) o en tolerancia. Filtros débito v
 
 ## Cierre
 
-Totales **de ese día** de negocio y arqueo de efectivo. Si cobraste otro día, acá puede aparecer $0. El socio no ve Cierre.
+Totales **de ese día** de negocio y arqueo de efectivo. Si cobraste otro día, acá puede aparecer $0. El socio no ve Cierre. Efectivo esperado = cobros en efectivo − devoluciones en efectivo − gastos en efectivo (contra eso se cierra). Digital esperado = lo mismo con MP, transferencia y tarjeta (informativo). Neto del día = los dos sumados.
+
+## Gastos
+
+Lo que paga el gym (alquiler, luz, mercadería…): fecha, monto, Fijo/Variable, medio, etiqueta del gym, nota y hasta 5 comprobantes. Solo el efectivo resta en el Cierre. Topic `gastos`.
 
 ## Reportes
 
-Rango de fechas (no el mostrador): qué se cobró (pack, drop-in, medio, staff).
+Rango de fechas (no el mostrador): qué se cobró (pack, drop-in, medio, staff). Con permiso de gastos, también gastos y resultado.
 
 ## Puerta
 

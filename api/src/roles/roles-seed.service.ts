@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger, OnApplicationBootstrap } from '@nestjs/common';
 import { Permission, Prisma, Role } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import {
@@ -23,8 +23,24 @@ export type SeededRoleSummary = {
  * @remarks RN-ROL-002 / CU-ROL-001. No asigna roles a StaffUser (tarea posterior).
  */
 @Injectable()
-export class RolesSeedService {
+export class RolesSeedService implements OnApplicationBootstrap {
+  private readonly logger = new Logger(RolesSeedService.name);
+
   constructor(private readonly prisma: PrismaService) {}
+
+  /**
+   * Al arrancar, los permisos nuevos del catálogo llegan a los Admin de gyms
+   * ya existentes sin esperar a que alguien guarde un rol.
+   */
+  async onApplicationBootstrap(): Promise<void> {
+    try {
+      await this.ensurePermissionCatalog();
+    } catch (error: unknown) {
+      this.logger.warn(
+        `No se pudo sincronizar el catálogo de permisos: ${error instanceof Error ? error.message : String(error)}`,
+      );
+    }
+  }
 
   /**
    * Upsert idempotente de todos los permisos del catálogo de producto.
