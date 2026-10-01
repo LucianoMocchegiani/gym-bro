@@ -3,6 +3,7 @@
 import { useMemo, useState } from 'react';
 import { Panel } from '@/components/AdminUi';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
+import { ImportFilePicker } from '@/components/member-import/ImportFilePicker';
 import { ApiClientError } from '@/lib/api/client';
 import {
   IMPORT_ROWS_PER_BATCH,
@@ -317,15 +318,13 @@ export function RowsImportPanel({
         {error ? <p className="err-msg">{error}</p> : null}
 
         {step === 'pick' || step === 'map' || step === 'preview' ? (
-          <label>
-            Planilla
-            <input
-              type="file"
-              accept=".xlsx,.csv,.txt"
-              disabled={busy}
-              onChange={(e) => void onPickFile(e.target.files?.[0] ?? null)}
-            />
-          </label>
+          <ImportFilePicker
+            file={file}
+            accept=".xlsx,.csv,.txt"
+            hint="Excel (.xlsx) o CSV"
+            disabled={busy}
+            onPick={(picked) => void onPickFile(picked)}
+          />
         ) : null}
 
         {busy && step === 'pick' ? <p className="muted">Leyendo…</p> : null}

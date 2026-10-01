@@ -701,6 +701,13 @@ button.linkish:hover {
   gap: 0.75rem;
 }
 
+.page-head-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
 .admin-content {
   width: min(1100px, 100%);
   margin: 0 auto;
@@ -1214,6 +1221,13 @@ button.row-icon-btn:disabled {
   border-style: solid;
   border-color: var(--line);
   overflow: hidden;
+}
+
+.folder-file-empty[aria-disabled='true'],
+.folder-file-pdf[aria-disabled='true'] {
+  cursor: default;
+  opacity: 0.6;
+  pointer-events: none;
 }
 
 .folder-file-pdf-name {

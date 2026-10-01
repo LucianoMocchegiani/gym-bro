@@ -162,7 +162,7 @@ function AfiliadosInner() {
     <AdminShell
       title="Afiliados"
       actions={
-        <>
+        <div className="page-head-actions">
           {canImport ? (
             <Link href="/afiliados/importar" className="btn ghost">
               Importar
@@ -171,7 +171,7 @@ function AfiliadosInner() {
           <button type="button" className="btn" onClick={openCreate}>
             + Nuevo
           </button>
-        </>
+        </div>
       }
     >
       <ListToolbar>

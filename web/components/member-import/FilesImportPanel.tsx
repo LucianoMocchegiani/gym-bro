@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { Panel } from '@/components/AdminUi';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
+import { ImportFilePicker } from '@/components/member-import/ImportFilePicker';
 import { ApiClientError } from '@/lib/api/client';
 import { FOLDER_MAX_FILE_BYTES, FOLDER_MAX_ITEMS } from '@/lib/api/folder';
 import {
@@ -272,15 +273,13 @@ export function FilesImportPanel({
         {error ? <p className="err-msg">{error}</p> : null}
 
         {step === 'pick' || step === 'review' ? (
-          <label>
-            Zip
-            <input
-              type="file"
-              accept=".zip"
-              disabled={busy}
-              onChange={(e) => void onPickZip(e.target.files?.[0] ?? null)}
-            />
-          </label>
+          <ImportFilePicker
+            file={file}
+            accept=".zip"
+            hint="Zip con fotos/ y carpeta/"
+            disabled={busy}
+            onPick={(picked) => void onPickZip(picked)}
+          />
         ) : null}
         {busy && step === 'pick' ? (
           <p className="muted">Leyendo y cruzando con socios…</p>
