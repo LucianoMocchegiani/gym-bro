@@ -101,7 +101,7 @@ function ImportarInner() {
             {history.length === 0 ? (
               <p className="muted">Todavía no hay importaciones.</p>
             ) : (
-              <div className="table-wrap">
+              <div className="table-wrap table-scroll">
                 <table className="data-table">
                   <thead>
                     <tr>

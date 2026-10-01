@@ -373,6 +373,53 @@ Canales futuros (WhatsApp/Push) = nuevos `ChannelSender` sin tocar el dispatcher
 
 ---
 
+## 11b. Migración de afiliados (importación)
+
+Admin → Afiliados → Importar. Reglas: RN-MIG ([04](./04-reglas-de-negocio.md) §6c). Tabla `member_imports` ([09](./09-esquema-db.md) §4.9d).
+
+### Cómo corre
+
+```text
+Navegador (parsea xlsx/csv/zip/carpeta)
+  ├─ Planilla: lotes de 200 filas, secuenciales ── POST /member-imports/:id/rows
+  │     API por lote: consultas de clasificación (masivas)
+  │                   → 1 transacción por fila nueva (en serie)
+  │                   → 1 update de contadores
+  └─ Fotos/carpeta: 1 request por archivo, 3 en paralelo
+        foto:    R2 upload → UPDATE member (solo si imageUrl null) → si perdió, delete R2
+        carpeta: cupo → R2 upload → INSERT folder_item → si falla, delete R2
+        + 1 update de contadores por archivo
+```
+
+- **Sin job en servidor:** la pestaña tiene que quedar abierta. Cortes → Reintentar el lote o re-subir (idempotente: existentes se omiten).
+- **El parseo no toca la API:** el navegador lee Excel/CSV (`read-excel-file`, `papaparse`) y zip (`fflate`) o la carpeta (`webkitdirectory`). La API solo recibe JSON chico y archivos de a uno.
+- **Transacción por fila, no por lote:** una fila mala (p. ej. P2002 por carrera) no tumba las otras 199.
+- **R2 y Postgres no comparten transacción:** el orden es R2 primero y DB después, con borrado de R2 si la DB falla. Peor caso: un objeto huérfano en R2 si la API muere entre los dos pasos; nunca un registro apuntando a un archivo inexistente.
+
+### Carga sobre la API (por qué no bloquea)
+
+| Recurso | Uso por persona importando |
+|---------|----------------------------|
+| Event loop | Todo I/O async (Prisma, R2). CPU por lote: normalizar 200 filas + sets (ms) |
+| Hash de contraseña | `ChangeMe123!` se hashea **una vez por proceso** (memo) y se reutiliza; `bcryptjs` es JS puro, por eso no se hashea por fila |
+| Pool de Postgres | Planilla: 1 conexión a la vez (transacciones en serie, ms cada una). Archivos: hasta 3 requests simultáneos |
+| Lock | Los 3 requests de archivos actualizan la misma fila de `member_imports` (contadores): esperas de ms, sin deadlock (una sola fila) |
+| Memoria | Multer en memoria: hasta 5 MB por archivo × 3 en paralelo ≈ 15 MB, se libera al terminar cada uno |
+| Body JSON | Límite Express 100 kB → por eso 200 filas por lote |
+| Rate limit | No hay throttler en la API hoy; si se agrega, contemplar ráfagas de cientos de requests de archivos |
+
+Dimensionado para cientos o pocos miles de socios por gym.
+
+### Qué vigilar si crece
+
+1. **DNI contra todo el gym en cada lote.** Para comparar DNI aunque vengan con puntos/guiones, cada lote (`loadExisting`) y cada `match` del zip traen **todos** los `members.document` del tenant y normalizan en memoria. Irrelevante con 1–5k socios; con decenas de miles son consultas pesadas repetidas. Solución: columna `document_normalized` con índice `(tenant_id, document_normalized)` y buscar con `in`.
+2. **Altas fila por fila.** 10.000 filas ≈ 10.000 transacciones cortas: funciona, pero tarda minutos con la pestaña abierta. Para ese tamaño: `createMany` por lote (resolviendo identidades antes) o cola/worker en servidor con progreso por polling.
+3. **Cupo de carpeta con concurrencia.** `assertItemQuota` es count + insert (no atómico). La web planifica el cupo y no manda más de 10 por socio, pero un cliente directo a la API con muchos requests en paralelo al mismo socio podría pasarse por 1–2. Si importa: lock por socio o constraint.
+4. **Objetos huérfanos en R2.** Raro (caída entre upload y DB). Si aparecen: job de limpieza que compare prefijos `folder/{tenant}/…` y `tenants/{tenant}/members/…` contra la DB.
+5. **Throttler futuro.** Si se agrega rate limit global, excluir o subir el tope de `/member-imports/*` para el staff, o la subida de archivos se va a cortar.
+
+---
+
 
 
 ## 12. APIs (contrato conceptual)
@@ -392,6 +439,7 @@ Prefijo sugerido: `/api/v1`.
 | Chat (servicio `chat-api` :3010) | `GET /health`; `POST /v1/public/session` (landing); `GET/POST /v1/conversations`; `GET/PATCH/DELETE /v1/conversations/:id`; `GET/POST /v1/conversations/:id/messages` (POST = UI Message Stream; OpenRouter + MCP)                                |
 | MCP (servicio `mcp` :3011)       | `GET /health`; `POST /mcp` Streamable HTTP + Bearer. Tools A–D (lectura): operación, reportes/débitos/devoluciones, catálogo/roles/audit slim, `get_help` (`producto`, `guia` + temas)                                                            |
 | Carpeta                          | `/folder-labels`, `/members/:id/folder`, `/staff/:id/folder`, `/me/folder`                                                                                                                                                                        |
+| Migración afiliados              | Staff `members.import` + `members.write`: `/member-imports` (list, preview, match, start, `:id/rows`, `:id/members/:memberId/photo` y `/folder`, `:id/finish`). Auth: `GET /auth/password`, `POST /auth/set-password`. Ver §11b                     |
 | Notif N1                         | Member `GET /me/notifications` (solo socio). Staff plantillas `/notification-templates`. Avisos de plan Faciliter: mail al Identity dueño, no GET staff.                                                                                          |
 | Afiliados                        | Staff CRUD members + PATCH status (`members.deactivate`); estado de cuenta `GET /members/:id/account` / `GET /me/account?coverage=current                                                                                                         |
 | Sesiones                         | Staff `GET                                                                                                                                                                                                                                        |

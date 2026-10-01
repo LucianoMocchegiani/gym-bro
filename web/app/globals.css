@@ -1229,6 +1229,91 @@ button.row-icon-btn:disabled {
   gap: 0.75rem;
 }
 
+.stat-row.import-stats {
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+}
+
+.import-table td:last-child {
+  white-space: normal;
+  min-width: 220px;
+}
+
+.import-map-controls {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 260px));
+  gap: 0.75rem;
+}
+
+.import-map {
+  display: grid;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.import-map-head,
+.import-map-row {
+  display: grid;
+  grid-template-columns: minmax(150px, 1fr) minmax(0, 1.6fr) minmax(0, 1fr);
+  gap: 0.75rem;
+  align-items: center;
+  padding: 0.65rem 0.85rem;
+}
+
+.import-map-head {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+  font-weight: 600;
+  border-bottom: 1px solid var(--line);
+}
+
+.import-map-row + .import-map-row {
+  border-top: 1px solid var(--line);
+}
+
+.import-map-row:nth-child(even) {
+  background: var(--table-row);
+}
+
+.import-map-field,
+.import-map-source {
+  display: grid;
+  gap: 0.3rem;
+  min-width: 0;
+}
+
+.import-map-source select,
+.import-map-source input {
+  width: 100%;
+  min-width: 0;
+}
+
+.import-map-sample {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.import-map-sample-label {
+  display: none;
+}
+
+@media (max-width: 640px) {
+  .import-map-head {
+    display: none;
+  }
+
+  .import-map-row {
+    grid-template-columns: 1fr;
+    gap: 0.4rem;
+  }
+
+  .import-map-sample-label {
+    display: inline;
+  }
+}
+
 .folder-file-empty[aria-disabled='true'],
 .folder-file-pdf[aria-disabled='true'] {
   cursor: default;

@@ -329,7 +329,7 @@ export function FilesImportPanel({
 
         {step === 'review' ? (
           <>
-            <div className="stat-row">
+            <div className="stat-row import-stats">
               <Panel className="stat-card">
                 <p className="muted small">Fotos a subir</p>
                 <p className="stat-value">{photos}</p>
@@ -420,24 +420,26 @@ function FileProblemsBlock({ rows }: { rows: FileProblem[] }) {
   return (
     <>
       <div className="table-wrap">
-        <table className="data-table">
-          <thead>
-            <tr>
-              <th>Archivo</th>
-              <th>Resultado</th>
-              <th>Motivo</th>
-            </tr>
-          </thead>
-          <tbody>
-            {shown.map((r, i) => (
-              <tr key={`${r.path}-${i}`}>
-                <td>{r.path}</td>
-                <td>{r.result}</td>
-                <td>{r.reason}</td>
+        <div className="table-scroll">
+          <table className="data-table import-table">
+            <thead>
+              <tr>
+                <th>Archivo</th>
+                <th>Resultado</th>
+                <th>Motivo</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {shown.map((r, i) => (
+                <tr key={`${r.path}-${i}`}>
+                  <td>{r.path}</td>
+                  <td>{r.result}</td>
+                  <td>{r.reason}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
         {rows.length > shown.length ? (
           <p className="muted small">
             Mostrando 100 de {rows.length}. El CSV trae todos.

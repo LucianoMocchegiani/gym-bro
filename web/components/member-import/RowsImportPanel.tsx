@@ -331,106 +331,109 @@ export function RowsImportPanel({
 
         {(step === 'map' || step === 'preview') && mapping ? (
           <>
-            {sheets.length > 1 ? (
+            <div className="import-map-controls">
+              {sheets.length > 1 ? (
+                <label>
+                  Hoja
+                  <select
+                    value={sheetIndex}
+                    onChange={(e) => changeSheet(Number(e.target.value))}
+                  >
+                    {sheets.map((s, i) => (
+                      <option key={s.name + i} value={i}>
+                        {s.name} ({s.rows.length} filas)
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              ) : null}
               <label>
-                Hoja
-                <select
-                  value={sheetIndex}
-                  onChange={(e) => changeSheet(Number(e.target.value))}
-                >
-                  {sheets.map((s, i) => (
-                    <option key={s.name + i} value={i}>
-                      {s.name} ({s.rows.length} filas)
-                    </option>
-                  ))}
-                </select>
+                Fila de encabezados
+                <input
+                  type="number"
+                  min={1}
+                  value={headerRow}
+                  onChange={(e) => changeHeaderRow(Number(e.target.value))}
+                />
               </label>
-            ) : null}
-            <label>
-              Fila de encabezados
-              <input
-                type="number"
-                min={1}
-                value={headerRow}
-                onChange={(e) => changeHeaderRow(Number(e.target.value))}
-              />
-            </label>
+            </div>
 
-            <div className="table-wrap">
-              <table className="data-table">
-                <thead>
-                  <tr>
-                    <th>Campo Faciliter</th>
-                    <th>Viene de</th>
-                    <th>Ejemplo</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {IMPORT_FIELDS.map((field) => {
-                    const src = mapping[field.key];
-                    const selectValue =
-                      src?.kind === 'column'
-                        ? String(src.index)
-                        : src?.kind === 'fixed'
-                          ? 'fixed'
-                          : '';
-                    const sample =
-                      src?.kind === 'column'
-                        ? (table[headerRow]?.[src.index] ?? '')
-                        : src?.kind === 'fixed'
-                          ? src.value
-                          : '';
-                    return (
-                      <tr key={field.key}>
-                        <td>
-                          {field.label}
-                          {field.required ? ' *' : ''}
-                          {field.hint ? (
-                            <div className="muted small">{field.hint}</div>
-                          ) : null}
-                        </td>
-                        <td>
-                          <select
-                            value={selectValue}
-                            onChange={(e) => {
-                              const v = e.target.value;
-                              if (v === '') setField(field.key, null);
-                              else if (v === 'fixed')
-                                setField(field.key, { kind: 'fixed', value: '' });
-                              else
-                                setField(field.key, {
-                                  kind: 'column',
-                                  index: Number(v),
-                                });
-                            }}
-                          >
-                            <option value="">— No importar —</option>
-                            {headers.map((h, i) => (
-                              <option key={i} value={i}>
-                                {h}
-                              </option>
-                            ))}
-                            <option value="fixed">Valor fijo…</option>
-                          </select>
-                          {src?.kind === 'fixed' ? (
-                            <input
-                              value={src.value}
-                              placeholder="Mismo valor para todas las filas"
-                              onChange={(e) =>
-                                setField(field.key, {
-                                  kind: 'fixed',
-                                  value: e.target.value,
-                                })
-                              }
-                            />
-                          ) : null}
-                        </td>
-                        <td className="muted small">{sample || '—'}</td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+            <div className="import-map">
+              <div className="import-map-head" aria-hidden>
+                <span>Campo Faciliter</span>
+                <span>Viene de</span>
+                <span>Ejemplo</span>
+              </div>
+              {IMPORT_FIELDS.map((field) => {
+                const src = mapping[field.key];
+                const selectValue =
+                  src?.kind === 'column'
+                    ? String(src.index)
+                    : src?.kind === 'fixed'
+                      ? 'fixed'
+                      : '';
+                const sample =
+                  src?.kind === 'column'
+                    ? (table[headerRow]?.[src.index] ?? '')
+                    : src?.kind === 'fixed'
+                      ? src.value
+                      : '';
+                return (
+                  <div key={field.key} className="import-map-row">
+                    <div className="import-map-field">
+                      <strong>
+                        {field.label}
+                        {field.required ? ' *' : ''}
+                      </strong>
+                      {field.hint ? (
+                        <span className="muted small">{field.hint}</span>
+                      ) : null}
+                    </div>
+                    <div className="import-map-source">
+                      <select
+                        aria-label={`Columna para ${field.label}`}
+                        value={selectValue}
+                        onChange={(e) => {
+                          const v = e.target.value;
+                          if (v === '') setField(field.key, null);
+                          else if (v === 'fixed')
+                            setField(field.key, { kind: 'fixed', value: '' });
+                          else
+                            setField(field.key, {
+                              kind: 'column',
+                              index: Number(v),
+                            });
+                        }}
+                      >
+                        <option value="">— No importar —</option>
+                        {headers.map((h, i) => (
+                          <option key={i} value={i}>
+                            {h}
+                          </option>
+                        ))}
+                        <option value="fixed">Valor fijo…</option>
+                      </select>
+                      {src?.kind === 'fixed' ? (
+                        <input
+                          aria-label={`Valor fijo para ${field.label}`}
+                          value={src.value}
+                          placeholder="Mismo valor para todas las filas"
+                          onChange={(e) =>
+                            setField(field.key, {
+                              kind: 'fixed',
+                              value: e.target.value,
+                            })
+                          }
+                        />
+                      ) : null}
+                    </div>
+                    <div className="import-map-sample muted small">
+                      <span className="import-map-sample-label">Ej.: </span>
+                      {sample || '—'}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
 
             <p className="muted small">
@@ -460,7 +463,7 @@ export function RowsImportPanel({
 
         {step === 'preview' && previewCounts ? (
           <>
-            <div className="stat-row">
+            <div className="stat-row import-stats">
               <Panel className="stat-card">
                 <p className="muted small">Se crean</p>
                 <p className="stat-value">{previewCounts.news}</p>
@@ -535,9 +538,8 @@ export function RowsImportPanel({
         {step === 'done' && finished ? (
           <>
             <p className="ok-msg">
-              Listo: {finished.createdCount} creados ·{' '}
-              {finished.skippedCount} omitidos · {finished.failedCount} con
-              error
+              Listo: {finished.createdCount} creados · {finished.skippedCount}{' '}
+              omitidos · {finished.failedCount} con error
               {split.duplicates.length
                 ? ` · ${split.duplicates.length} repetidos en la planilla`
                 : ''}
@@ -584,28 +586,30 @@ function ProblemsTable({ rows }: { rows: RowOutcome[] }) {
   const shown = rows.slice(0, 100);
   return (
     <div className="table-wrap">
-      <table className="data-table">
-        <thead>
-          <tr>
-            <th>Fila</th>
-            <th>Email</th>
-            <th>Nombre</th>
-            <th>Resultado</th>
-            <th>Motivo</th>
-          </tr>
-        </thead>
-        <tbody>
-          {shown.map((r) => (
-            <tr key={`${r.rowNumber}-${r.result}`}>
-              <td>{r.rowNumber}</td>
-              <td>{r.email || '—'}</td>
-              <td>{r.name || '—'}</td>
-              <td>{r.result}</td>
-              <td>{r.reason}</td>
+      <div className="table-scroll">
+        <table className="data-table import-table">
+          <thead>
+            <tr>
+              <th>Fila</th>
+              <th>Email</th>
+              <th>Nombre</th>
+              <th>Resultado</th>
+              <th>Motivo</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {shown.map((r) => (
+              <tr key={`${r.rowNumber}-${r.result}`}>
+                <td>{r.rowNumber}</td>
+                <td>{r.email || '—'}</td>
+                <td>{r.name || '—'}</td>
+                <td>{r.result}</td>
+                <td>{r.reason}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
       {rows.length > shown.length ? (
         <p className="muted small">
           Mostrando 100 de {rows.length}. El CSV trae todas.
