@@ -120,6 +120,10 @@ Carpeta **Refunds**: Member `POST /me/transaction-items/:transactionItemId/refun
 
 Carpeta **Receipts**: Member `GET /me/receipts` y `GET /me/receipts/:id`. Staff `GET /receipts/:id` y `GET /transactions/:transactionId/receipt` (`members.read`). Código `GB-000001`. El cash cart guarda `createdReceiptId`.
 
+Carpeta **Member imports**: migración de afiliados desde otro sistema (RN-MIG). Staff con `members.import` (peligroso) **y** `members.write`. Flujo planilla: `POST /member-imports/preview` → `POST /member-imports` (`kind: ROWS`, guarda `memberImportId`) → `POST /member-imports/:id/rows` (lotes ≤ 200, idempotente) → `POST .../finish` (auditoría `member.import`). Flujo zip: `POST /member-imports/match` (DNI o mail) → `POST /member-imports` (`kind: FILES`) → `POST .../members/:memberId/photo` o `.../folder` (multipart `file`, 5 MB) → finish. Altas nuevas con `ChangeMe123!` marcada temporal; quien ya tenía cuenta en otro gym conserva su contraseña.
+
+Contraseña (Auth): `GET /auth/password` → `{ hasPassword, temporary }`; `POST /auth/set-password` crea contraseña a cuentas solo Google/Apple (409 si ya tiene). `POST /auth/change-password` sirve para Staff, Member e Identity, desmarca la temporal y revoca todas las sesiones de la persona. Vincular Google/Apple a una cuenta con temporal borra la temporal.
+
 Carpeta **Member catalog**: Catálogo del afiliado (E9 mobile). Member `GET /me/sessions` (sesiones publicadas + `serviceImageUrl`), `GET /me/packs` (packs activos + `imageUrl`), `GET /me/mp-status` (`{ connected }`).
 
 Carpeta **Services**: Staff `catalog.write`. Tipos `ACCESO_LIBRE` y `POR_SESIONES`; `dropInPrice` (ARS) habilita drop-in; desactivar con `active: false`. Soporta `imageUrl` (opcional). El catálogo es tenant-scoped: el del tenant `admin` es el **catálogo de plataforma** (el pack Brain que se vende a los gyms).

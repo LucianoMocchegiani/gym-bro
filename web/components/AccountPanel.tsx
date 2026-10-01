@@ -1,9 +1,13 @@
 'use client';
 
-import { FormEvent, useState } from 'react';
+import { FormEvent, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ApiClientError } from '@/lib/api/client';
-import { changePassword } from '@/lib/api/auth';
+import {
+  changePassword,
+  getPasswordStatus,
+  setPassword,
+} from '@/lib/api/auth';
 import { AdminModal } from '@/components/AdminModal';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { Panel } from '@/components/AdminUi';
@@ -36,11 +40,12 @@ function initials(name: string | null, email: string): string {
 }
 
 /**
- * Pantalla de cuenta (avatar → datos, cerrar sesión y cambio de contraseña).
+ * Pantalla de cuenta (avatar → datos, cerrar sesión y contraseña).
  *
  * @remarks Usado en el panel Staff (`/cuenta`) y en el apex Identity.
- * El cambio de contraseña abre un modal; al cambiarla el server revoca todos
- * los refresh tokens → se invita a re-login. En apex Identity, `passwordAuth`.
+ * Con contraseña: cambiarla revoca todos los refresh → re-login. Sin
+ * contraseña (Google/Apple): "Crear contraseña", sin cerrar sesiones.
+ * El estado real sale de `GET /auth/password`. En apex Identity, `passwordAuth`.
  */
 export function AccountPanel({
   name,
@@ -50,10 +55,12 @@ export function AccountPanel({
   onLogout,
   loginHref,
   onReturnToPlatform,
-  hasPassword = true,
+  hasPassword: hasPasswordFromLogin = true,
   passwordAuth = 'staff',
 }: AccountPanelProps) {
   const router = useRouter();
+  const [hasPassword, setHasPassword] = useState(hasPasswordFromLogin);
+  const [temporary, setTemporary] = useState(false);
   const [pwOpen, setPwOpen] = useState(false);
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
@@ -63,6 +70,34 @@ export function AccountPanel({
   const [done, setDone] = useState(false);
   const [logoutOpen, setLogoutOpen] = useState(false);
   const [logoutBusy, setLogoutBusy] = useState(false);
+
+  const [created, setCreated] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    void getPasswordStatus(passwordAuth)
+      .then((s) => {
+        if (!cancelled) {
+          setHasPassword(s.hasPassword);
+          setTemporary(s.temporary);
+        }
+      })
+      .catch(() => {
+        // Queda el dato del login.
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [passwordAuth]);
+
+  function openPasswordModal(): void {
+    setError(null);
+    setCurrentPassword('');
+    setNewPassword('');
+    setConfirm('');
+    setCreated(false);
+    setPwOpen(true);
+  }
 
   function closeModal(): void {
     if (!done) {
@@ -83,13 +118,20 @@ export function AccountPanel({
     }
     setBusy(true);
     try {
-      await changePassword({ currentPassword, newPassword }, passwordAuth);
-      setDone(true);
+      if (hasPassword) {
+        await changePassword({ currentPassword, newPassword }, passwordAuth);
+        setDone(true);
+      } else {
+        await setPassword(newPassword, passwordAuth);
+        setHasPassword(true);
+        setTemporary(false);
+        setCreated(true);
+      }
     } catch (err) {
       setError(
         err instanceof ApiClientError
           ? err.message
-          : 'No se pudo cambiar la contraseña',
+          : 'No se pudo guardar la contraseña',
       );
     } finally {
       setBusy(false);
@@ -125,18 +167,22 @@ export function AccountPanel({
       </Panel>
 
       <Panel
-        title="Cambiar contraseña"
-        description={hasPassword ? "Se necesita la contraseña actual. Al cambiarla se cierran todas las sesiones activas." : "Tu cuenta usa Google. No tenés contraseña para cambiar."}
+        title={hasPassword ? 'Cambiar contraseña' : 'Crear contraseña'}
+        description={
+          hasPassword
+            ? 'Se necesita la contraseña actual. Al cambiarla se cierran todas las sesiones activas.'
+            : 'Entrás con Google o Apple. Si querés, creá una contraseña para entrar también con tu mail.'
+        }
       >
+        {temporary ? (
+          <p className="err-msg">
+            Estás usando la contraseña inicial (ChangeMe123!). Cambiala por una
+            tuya.
+          </p>
+        ) : null}
         <div className="admin-modal-actions">
-          <button
-            type="button"
-            className="btn"
-            onClick={() => setPwOpen(true)}
-            disabled={!hasPassword}
-            title={!hasPassword ? "Tu cuenta es con Google — no tenés contraseña" : undefined}
-          >
-            Cambiar contraseña
+          <button type="button" className="btn" onClick={openPasswordModal}>
+            {hasPassword ? 'Cambiar contraseña' : 'Crear contraseña'}
           </button>
         </div>
       </Panel>
@@ -175,11 +221,30 @@ export function AccountPanel({
       <AdminModal
         open={pwOpen}
         onClose={closeModal}
-        title="Cambiar contraseña"
-        description="Necesitás la actual. Al cambiarla se cierran todas las sesiones activas."
+        title={hasPassword && !created ? 'Cambiar contraseña' : 'Crear contraseña'}
+        description={
+          hasPassword && !created
+            ? 'Necesitás la actual. Al cambiarla se cierran todas las sesiones activas.'
+            : 'Mínimo 8 caracteres. Tu sesión sigue abierta.'
+        }
         showCloseButton={!done}
       >
-        {done ? (
+        {created ? (
+          <div className="admin-stack">
+            <p className="success">
+              Contraseña creada. Ya podés entrar también con tu mail.
+            </p>
+            <div className="admin-modal-actions">
+              <button
+                type="button"
+                className="btn"
+                onClick={() => setPwOpen(false)}
+              >
+                Listo
+              </button>
+            </div>
+          </div>
+        ) : done ? (
           <div className="admin-stack">
             <p className="success">
               Contraseña cambiada. Volvé a iniciar sesión con la nueva
@@ -197,16 +262,18 @@ export function AccountPanel({
           </div>
         ) : (
           <form className="admin-form" onSubmit={(e) => void onSubmit(e)}>
-            <label>
-              Contraseña actual
-              <input
-                type="password"
-                value={currentPassword}
-                onChange={(e) => setCurrentPassword(e.target.value)}
-                required
-                minLength={8}
-              />
-            </label>
+            {hasPassword ? (
+              <label>
+                Contraseña actual
+                <input
+                  type="password"
+                  value={currentPassword}
+                  onChange={(e) => setCurrentPassword(e.target.value)}
+                  required
+                  minLength={8}
+                />
+              </label>
+            ) : null}
             <label>
               Nueva contraseña
               <input
@@ -240,7 +307,11 @@ export function AccountPanel({
                 Cancelar
               </button>
               <button type="submit" className="btn" disabled={busy}>
-                {busy ? 'Guardando…' : 'Cambiar contraseña'}
+                {busy
+                  ? 'Guardando…'
+                  : hasPassword
+                    ? 'Cambiar contraseña'
+                    : 'Crear contraseña'}
               </button>
             </div>
           </form>

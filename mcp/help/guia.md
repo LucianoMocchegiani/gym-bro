@@ -34,6 +34,7 @@ Saludo, tarjetas del día (afiliados activos, ingresos, accesos, socios sin pack
 
 - **Staff:** “Acceso staff”, nombre del local, email y contraseña (el gym sale del subdominio).
 - **App:** email y contraseña de la **cuenta** Faciliter (sin slug). Si hay varios gyms, se elige local y socio/staff. Google/Apple después.
+- **Contraseña:** app → Ajustes → Cambiar contraseña (o **Crear contraseña** si la cuenta entró solo con Google/Apple). En el panel, lo mismo en **Cuenta**. Socios importados: temporal `ChangeMe123!` con aviso en Ajustes hasta que la cambien (topic `migracion`).
 
 ## Config
 
@@ -61,7 +62,7 @@ Roles y permisos, después Staff. Admin es de sistema (no se edita). Entrenador 
 
 ## Afiliados
 
-Alta: nombre, email, password, etc. Entra a la app con ese email + slug. Pack se cobra en Caja o Tienda. Estados Activo / Suspendido / Inactivo. Estado de cuenta: contratos, créditos, deuda, reservas. Credencial: PENDING (espera Aceptar en la app) / ACCEPTED (ya en el celular). **Re-emitir** no cobra: pack vigente hoy. **Carpeta** en la grilla: notas y PDF/imagen; detalle en topic `carpeta`.
+Alta: nombre, email, password, etc. Entra a la app con ese email + slug. Pack se cobra en Caja o Tienda. Estados Activo / Suspendido / Inactivo. Estado de cuenta: contratos, créditos, deuda, reservas. Credencial: PENDING (espera Aceptar en la app) / ACCEPTED (ya en el celular). **Re-emitir** no cobra: pack vigente hoy. **Carpeta** en la grilla: notas y PDF/imagen; detalle en topic `carpeta`. Botón **Importar**: migración masiva desde Excel/CSV + zip de fotos y carpeta (topic `migracion`).
 
 ## Caja
 
@@ -93,7 +94,7 @@ Pestañas: **Inicio | Acceso | Ajustes**.
 - Sesiones: calendario, día, mis clases.
 - Tienda: Packs y Sesiones (drop-in), carrito, Pagar con Mercado Pago, Historial.
 - Acceso: credencial / QR.
-- Ajustes: cuenta, Avisos (correo por tipo, solo socio), tema, salir.
+- Ajustes: cuenta, cambiar o crear contraseña, Avisos (correo por tipo, solo socio), tema, salir.
 
 Staff (mismo binario): Inicio con Sesiones, Caja (si tiene permiso) y **Documentos**.
 
@@ -101,7 +102,7 @@ La **carpeta** (notas/PDF) sí está; un módulo de rutinas por días **no**. Av
 
 ## Cómo arrancar un local (orden)
 
-Config (MP) → Servicios → Packs → Sesiones si hay clases → Staff/roles → Afiliados → cobrar en Caja o que el socio pague en la app.
+Config (MP) → Servicios → Packs → Sesiones si hay clases → Staff/roles → Afiliados (a mano o **Importar** si vienen de otro sistema) → cobrar en Caja o que el socio pague en la app.
 
 ## Sitio de capturas
 

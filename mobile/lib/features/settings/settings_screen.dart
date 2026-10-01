@@ -7,13 +7,35 @@ import '../../core/theme/theme_controller.dart';
 import '../../core/widgets/confirm_dialog.dart';
 import '../../core/widgets/loading_dialog.dart';
 import '../auth/auth_controller.dart';
+import '../auth/password_screen.dart';
 import '../credentials/device_wallet_service.dart';
 import '../notifications/notification_prefs_screen.dart';
 
-/// Hub Ajustes: cuenta, avisos (socio), wallet SSI, sistema, desarrolladores y sesión.
-class SettingsScreen extends StatelessWidget {
+/// Hub Ajustes: cuenta, contraseña, avisos (socio), wallet SSI, sistema y sesión.
+class SettingsScreen extends StatefulWidget {
   /// Crea la pantalla.
   const SettingsScreen({super.key});
+
+  @override
+  State<SettingsScreen> createState() => _SettingsScreenState();
+}
+
+class _SettingsScreenState extends State<SettingsScreen> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) context.read<AuthController>().loadPasswordStatus();
+    });
+  }
+
+  void _openPassword(BuildContext context, bool hasPassword) {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => PasswordScreen(hasPassword: hasPassword),
+      ),
+    );
+  }
 
   Future<void> _logout(BuildContext context) async {
     final ok = await showConfirmDialog(
@@ -75,10 +97,37 @@ class SettingsScreen extends StatelessWidget {
     final auth = context.watch<AuthController>();
     final theme = context.watch<ThemeController>();
     final session = auth.session;
+    final password = auth.passwordStatus;
+    final hasPassword = password?.hasPassword ?? true;
 
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 28),
       children: [
+        if (password?.temporary == true) ...[
+          Card(
+            color: Theme.of(context).colorScheme.errorContainer,
+            child: ListTile(
+              leading: Icon(
+                Icons.warning_amber_rounded,
+                color: Theme.of(context).colorScheme.onErrorContainer,
+              ),
+              title: Text(
+                'Estás usando la contraseña inicial',
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.onErrorContainer,
+                ),
+              ),
+              subtitle: Text(
+                'Cambiala por una tuya.',
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.onErrorContainer,
+                ),
+              ),
+              onTap: () => _openPassword(context, true),
+            ),
+          ),
+          const SizedBox(height: 12),
+        ],
         _sectionTitle(context, 'Cuenta'),
         const SizedBox(height: 8),
         Card(
@@ -103,6 +152,22 @@ class SettingsScreen extends StatelessWidget {
             title: const Text('Cambiar gym'),
             subtitle: const Text('Elegí otro local o perfil'),
             onTap: () => auth.switchGym(),
+          ),
+        ),
+        const SizedBox(height: 8),
+        Card(
+          child: ListTile(
+            leading: const Icon(Icons.lock_outline),
+            title: Text(
+              hasPassword ? 'Cambiar contraseña' : 'Crear contraseña',
+            ),
+            subtitle: Text(
+              hasPassword
+                  ? 'Para entrar con tu mail'
+                  : 'Entrás con Google o Apple. Sumá una contraseña.',
+            ),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => _openPassword(context, hasPassword),
           ),
         ),
         if (session?.profileType == 'MEMBER') ...[

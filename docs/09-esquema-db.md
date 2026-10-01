@@ -69,6 +69,8 @@ identities ||--o{ platform_signups : self_serve
   members ||--o{ folder_items : member_folder
   staff_users ||--o{ folder_items : staff_folder
   folder_labels ||--o{ folder_items : labels
+  tenants ||--o{ member_imports : migrates
+  staff_users ||--o{ member_imports : ran_by
   tenants ||--o{ notification_templates : notif_tpl
   tenants ||--o{ notification_preferences : notif_pref
   tenants ||--o{ notifications : notif_log
@@ -107,9 +109,9 @@ identities ||--o{ platform_signups : self_serve
   permissions ||--o{ role_permissions : has
   staff_users ||--o{ staff_user_roles : has
   roles ||--o{ staff_user_roles : has
-  super_users ||--o{ refresh_tokens : has
   staff_users ||--o{ refresh_tokens : has
   members ||--o{ refresh_tokens : has
+  identities ||--o{ refresh_tokens : has
 
   tenants {
     uuid id PK
@@ -214,16 +216,6 @@ identities ||--o{ platform_signups : self_serve
     jsonb before
     jsonb after
     timestamptz created_at
-  }
-
-  super_users {
-    uuid id PK
-    text email UK
-    text password_hash
-    text name
-    boolean active
-    timestamptz created_at
-    timestamptz updated_at
   }
 
   staff_users {
@@ -348,7 +340,7 @@ identities ||--o{ platform_signups : self_serve
 | `TenantStatus` | `ACTIVE`, `SUSPENDED` | Estado del gym (RN-TEN-002) |
 | `QuarkProvisionStatus` | _(eliminado)_ | Histórico; wallets ahora solo env Kuatia |
 | `CredentialOfferStatus` | `PENDING`, `FAILED`, `ACCEPTED` | Offer OID4VCI (soft-fail + accept wallet) |
-| `AuthProfileType` | `SUPER`, `STAFF`, `MEMBER`, `IDENTITY` | Dueño del refresh token. IDENTITY = persona (picker), sin tenant |
+| `AuthProfileType` | `STAFF`, `MEMBER`, `IDENTITY` | Dueño del refresh token. IDENTITY = persona (picker), sin tenant. `SUPER` se dropeó. |
 | `MemberStatus` | `ACTIVE`, `SUSPENDED`, `INACTIVE` | Estado del afiliado (CU-AFI-003) |
 | `ServiceType` | `ACCESO_LIBRE`, `POR_SESIONES` | Tipo de servicio (RN-SER-001) |
 | `BillingPeriod` | `MONTHLY`, `ONE_TIME` | Periodicidad de cobro del pack |
@@ -369,6 +361,8 @@ identities ||--o{ platform_signups : self_serve
 | `AccessCredentialStatus` | `ACTIVE`, `REVOKED` | Credencial de vínculo de acceso |
 | `AccessAttemptResult` | `ALLOWED`, `DENIED` | Resultado de intento de ingreso |
 | `FolderItemKind` | `NOTE`, `FILE` | Ítem de carpeta socio/staff |
+| `MemberImportKind` | `ROWS`, `FILES` | Corrida de migración: fichas (planilla) o archivos (zip) |
+| `MemberImportStatus` | `RUNNING`, `DONE` | Estado de la corrida |
 
 ---
 
@@ -469,18 +463,9 @@ N:N staff ↔ rol (RN-ROL-004).
 
 ---
 
-### 4.7 `super_users`
+### 4.7 `super_users` (eliminada)
 
-Super Admin de plataforma (sin `tenant_id`, RN-ROL-001).
-
-| Columna | Tipo | Notas |
-|---------|------|--------|
-| `id` | uuid PK | |
-| `email` | text UK | |
-| `password_hash` | text | bcrypt |
-| `name` | text nullable | |
-| `active` | boolean | default true |
-| `created_at` / `updated_at` | timestamptz | |
+No existe. La plataforma es el tenant `admin` (staff + rol `super-admin`). Migración `20260927020000_drop_super_profile`.
 
 ---
 
@@ -493,13 +478,14 @@ Persona Faciliter (login de la app). Membresías = `members` / `staff_users`.
 | `id` | uuid PK | |
 | `email` | text UK | minúsculas |
 | `password_hash` | text nullable | Null = solo Google/Apple |
+| `password_temporary` | boolean | default false. `ChangeMe123!` de migración (RN-MIG-003). Se limpia al cambiarla/crearla; al vincular Google/Apple se borra el hash. |
 | `google_sub` | text UK nullable | |
 | `apple_sub` | text UK nullable | |
 | `name` | text nullable | |
 | `platform_trial_used_at` | timestamptz nullable | Mes de prueba Faciliter (una vez por cuenta) |
 | `created_at` / `updated_at` | timestamptz | |
 
-API app: `POST /auth/identity/login`, `POST /auth/google`, `GET /auth/memberships`, `POST /auth/select-context`.
+API app: `POST /auth/identity/login`, `POST /auth/google`, `GET /auth/memberships`, `POST /auth/select-context`. Contraseña: `GET /auth/password`, `POST /auth/change-password`, `POST /auth/set-password`.
 
 ---
 
@@ -555,6 +541,25 @@ Carpeta de notas y files (RN-FOL). XOR: `member_id` **o** `staff_user_id`. Check
 
 API: `/api/folder-labels`; `/api/members/:id/folder*`; `/api/staff/:id/folder*`; `/api/me/folder`.
 
+### 4.9d `member_imports`
+
+Corrida de migración de afiliados desde otro sistema (RN-MIG). El Admin parsea planilla/zip en el navegador y manda lotes; acá quedan contadores y el mapa usado.
+
+| Columna | Tipo | Notas |
+|---------|------|--------|
+| `id` | uuid PK | |
+| `tenant_id` | uuid FK → `tenants` | ON DELETE CASCADE · index `(tenant_id, created_at)` |
+| `kind` | `MemberImportKind` | ROWS = fichas · FILES = fotos/carpeta |
+| `status` | `MemberImportStatus` | RUNNING → DONE al cerrar (audita `member.import`) |
+| `filename` | text | |
+| `total_rows` | int | filas o archivos a procesar |
+| `created_count` / `skipped_count` / `failed_count` | int | default 0, se incrementan por lote |
+| `mapping` | jsonb nullable | campo → `{header}` o `{value}`; se reusa en la próxima corrida |
+| `created_by_staff_id` | uuid FK → `staff_users` nullable | ON DELETE SET NULL |
+| `created_at` / `finished_at` | timestamptz | |
+
+API: `/api/member-imports*` (`members.import` + `members.write`).
+
 ### 4.9c `notification_templates` / `notification_preferences` / `notifications`
 
 N1 (CU-NOT). Unique `(tenant_id, idempotency_key)`. Socio: `member_id`. Dueño plan Faciliter: `identity_id` (XOR). Eventos socio: `PAYMENT_APPROVED`, `RESERVATION_*`, `WAITLIST_PROMOTED`, `REFUND_EXECUTED`, `CONTRACT_EXPIRING`, `CONTRACT_EXPIRING_DEBIT`, `CONTRACT_IN_TOLERANCE`, `DEBIT_CHARGE_FAILED`, `DEBIT_MANDATE_FAILED`. Eventos plan (no aparecen en Admin `/avisos` del gym): `PLATFORM_PLAN_PAID`, `PLATFORM_PLAN_EXPIRING`, `PLATFORM_PLAN_EXPIRING_DEBIT`, `PLATFORM_PLAN_IN_TOLERANCE`, `PLATFORM_DEBIT_CHARGE_FAILED`, `PLATFORM_DEBIT_MANDATE_FAILED`. Cron 12:00 ART. Débito socio: cobro rechazado → `RETRYING`; preapproval caído → `FAILED`.
@@ -596,7 +601,7 @@ EventoAuditoria append-only (RN-ROL-008 / CU-ROL-007). Sin UPDATE/DELETE de nego
 |---------|------|--------|
 | `id` | uuid PK | |
 | `tenant_id` | uuid FK → `tenants` nullable | CASCADE · index con `created_at` |
-| `actor_profile` | `AuthProfileType` | SUPER o STAFF en práctica |
+| `actor_profile` | `AuthProfileType` | STAFF o IDENTITY en práctica |
 | `actor_id` | uuid | id del super/staff (sin FK dura) |
 | `action` | text | ej. `tenant.update`, `role.create` |
 | `entity_type` | text | ej. `tenant`, `role`, `staff_user` |
@@ -1073,6 +1078,7 @@ Historia incremental (2026-07 / 2026-08) **compactada** en un baseline (`40476fa
 | `20260930200000_notification_debit_renewal` | Enum: `CONTRACT_EXPIRING_DEBIT`, `DEBIT_CHARGE_FAILED`, `DEBIT_MANDATE_FAILED` |
 | `20260930210000_platform_plan_notification_events` | Enum plan Faciliter (`PLATFORM_*`) |
 | `20260930211000_notification_identity_audience` | `notifications.identity_id`; `member_id` nullable |
+| `20261001120000_member_imports` | `identities.password_temporary`; `member_imports` + enums `MemberImportKind`, `MemberImportStatus` |
 
 Comandos y checklist “desde cero”: [13-setup-db-desde-cero.md](./13-setup-db-desde-cero.md).
 

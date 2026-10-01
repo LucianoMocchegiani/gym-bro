@@ -14,9 +14,9 @@ class AuthController extends ChangeNotifier {
     required AuthRepository auth,
     required ApiClient api,
     DeviceWalletService? wallet,
-  })  : _auth = auth,
-        _api = api,
-        _wallet = wallet {
+  }) : _auth = auth,
+       _api = api,
+       _wallet = wallet {
     _api.onUnauthorized = refreshIfNeeded;
   }
 
@@ -28,6 +28,7 @@ class AuthController extends ChangeNotifier {
   IdentitySession? _identity;
   List<MembershipRow> _memberships = const [];
   List<String> _permissionCodes = const [];
+  PasswordStatus? _passwordStatus;
   bool _ready = false;
   String? _error;
   bool _busy = false;
@@ -40,6 +41,9 @@ class AuthController extends ChangeNotifier {
   List<MembershipRow> get memberships => _memberships;
 
   List<String> get permissionCodes => _permissionCodes;
+
+  /// Null hasta cargarlo (Ajustes lo pide al abrir).
+  PasswordStatus? get passwordStatus => _passwordStatus;
 
   bool get canOperateCashier =>
       _session?.profileType == 'STAFF' &&
@@ -97,10 +101,7 @@ class AuthController extends ChangeNotifier {
   }
 
   /// Email + password de la cuenta (sin slug).
-  Future<bool> login({
-    required String email,
-    required String password,
-  }) async {
+  Future<bool> login({required String email, required String password}) async {
     _busy = true;
     _error = null;
     notifyListeners();
@@ -260,6 +261,60 @@ class AuthController extends ChangeNotifier {
     return false;
   }
 
+  /// Carga si la cuenta tiene contraseña y si es la temporal. Silencioso si falla.
+  Future<void> loadPasswordStatus() async {
+    try {
+      _passwordStatus = await _auth.fetchPasswordStatus();
+      notifyListeners();
+    } catch (_) {
+      // Ajustes muestra la fila igual, sin aviso.
+    }
+  }
+
+  /// Cambia la contraseña y vuelve a entrar al mismo gym con la nueva.
+  ///
+  /// La API revoca todas las sesiones de la persona (RN-MIG-003), así que se
+  /// re-loguea la identity y se re-elige el contexto actual.
+  /// Lanza [ApiException] si la actual no es correcta.
+  Future<void> changePassword({
+    required String currentPassword,
+    required String newPassword,
+  }) async {
+    final current = _session;
+    final email = _identity?.email ?? current?.email;
+    await _auth.changePassword(
+      currentPassword: currentPassword,
+      newPassword: newPassword,
+    );
+    if (email == null) {
+      await logout();
+      return;
+    }
+    _identity = await _auth.loginIdentity(email: email, password: newPassword);
+    if (current != null) {
+      _session = await _auth.selectContext(
+        MembershipRow(
+          tenantId: current.tenantId,
+          tenantSlug: current.tenantSlug,
+          tenantName: current.tenantSlug,
+          profile: current.profileType,
+        ),
+      );
+      await _hydratePermissions();
+    } else {
+      _memberships = await _auth.listMemberships();
+    }
+    _passwordStatus = const PasswordStatus(hasPassword: true, temporary: false);
+    notifyListeners();
+  }
+
+  /// Crea contraseña (cuenta solo Google/Apple). La sesión sigue.
+  Future<void> createPassword({required String newPassword}) async {
+    await _auth.setPassword(newPassword: newPassword);
+    _passwordStatus = const PasswordStatus(hasPassword: true, temporary: false);
+    notifyListeners();
+  }
+
   /// Cierra la cuenta Faciliter y bloquea la wallet.
   Future<void> logout() async {
     await _auth.logout();
@@ -268,6 +323,7 @@ class AuthController extends ChangeNotifier {
     _identity = null;
     _memberships = const [];
     _permissionCodes = const [];
+    _passwordStatus = null;
     notifyListeners();
   }
 

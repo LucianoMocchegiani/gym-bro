@@ -216,6 +216,7 @@ model Tenant {
   platformSignups PlatformSignup[]
   folderLabels    FolderLabel[]
   folderItems     FolderItem[]
+  memberImports   MemberImport[]
   notificationTemplates     NotificationTemplate[]
   notificationPreferences   NotificationPreference[]
   notifications             Notification[]
@@ -297,6 +298,8 @@ model Identity {
   email        String   @unique
   /// Null si la cuenta solo entra con Google/Apple.
   passwordHash String?  @map("password_hash")
+  /// Password inicial de migración (`ChangeMe123!`). Se limpia al cambiarla o al vincular Google/Apple.
+  passwordTemporary Boolean @default(false) @map("password_temporary")
   /// OIDC Google (corte B). Null hasta vincular.
   googleSub    String?  @unique @map("google_sub")
   /// Sign in with Apple (después). Null hasta vincular.
@@ -346,6 +349,7 @@ model StaffUser {
   debitMandatesCancelled    DebitMandate[]          @relation("DebitMandateCancelledBy")
   folderItems               FolderItem[]            @relation("FolderItemStaffOwner")
   folderItemsCreated        FolderItem[]            @relation("FolderItemCreatedBy")
+  memberImports             MemberImport[]
 
   @@unique([tenantId, email])
   @@unique([tenantId, identityId])
@@ -1206,6 +1210,44 @@ model FolderItem {
   @@index([tenantId, memberId, createdAt])
   @@index([tenantId, staffUserId, createdAt])
   @@map("folder_items")
+}
+
+/// Qué trae una corrida de migración: fichas (planilla) o archivos (zip).
+enum MemberImportKind {
+  ROWS
+  FILES
+}
+
+enum MemberImportStatus {
+  RUNNING
+  DONE
+}
+
+/// Corrida de migración de afiliados desde otro sistema (RN-MIG-001..005).
+///
+/// @remarks El Admin parsea la planilla/zip y manda lotes; acá quedan
+/// contadores, el mapa de columnas usado y quién la corrió.
+model MemberImport {
+  id               String             @id @default(uuid()) @db.Uuid
+  tenantId         String             @map("tenant_id") @db.Uuid
+  kind             MemberImportKind
+  status           MemberImportStatus @default(RUNNING)
+  filename         String
+  totalRows        Int                @map("total_rows")
+  createdCount     Int                @default(0) @map("created_count")
+  skippedCount     Int                @default(0) @map("skipped_count")
+  failedCount      Int                @default(0) @map("failed_count")
+  /// Campo Faciliter → columna origen (o valor fijo). Se reusa en la próxima corrida.
+  mapping          Json?
+  createdByStaffId String?            @map("created_by_staff_id") @db.Uuid
+  createdAt        DateTime           @default(now()) @map("created_at")
+  finishedAt       DateTime?          @map("finished_at")
+
+  tenant         Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  createdByStaff StaffUser? @relation(fields: [createdByStaffId], references: [id], onDelete: SetNull)
+
+  @@index([tenantId, createdAt])
+  @@map("member_imports")
 }
 
 /// Evento de auditoría append-only (RN-ROL-008 / CU-ROL-007).

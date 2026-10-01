@@ -64,6 +64,20 @@ export function canAccessNavHref(
 }
 
 /**
+ * True si tiene todos los códigos (permisos ya hidratados).
+ */
+export function hasAllPermissions(
+  permissionCodes: string[] | null | undefined,
+  codes: readonly string[],
+): boolean {
+  if (!permissionCodes || codes.length === 0) {
+    return false;
+  }
+  const set = new Set(permissionCodes);
+  return codes.every((code) => set.has(code));
+}
+
+/**
  * True si tiene al menos uno de los códigos (permisos ya hidratados).
  */
 export function hasAnyPermission(

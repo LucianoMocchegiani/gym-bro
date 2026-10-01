@@ -146,6 +146,39 @@ export async function apiRequest<T>(
 }
 
 /**
+ * POST multipart con Bearer staff (refresh y reintento en 401).
+ */
+export async function apiMultipart<T>(
+  path: string,
+  formData: FormData,
+  _retried = false,
+): Promise<T> {
+  const headers: Record<string, string> = { Accept: 'application/json' };
+  const session = readStaffSession();
+  if (session?.accessToken) {
+    headers.Authorization = `Bearer ${session.accessToken}`;
+  }
+  const res = await fetch(`${apiBaseUrl()}${path}`, {
+    method: 'POST',
+    headers,
+    credentials: 'include',
+    body: formData,
+  });
+  if (res.status === 401 && !_retried && (await tryRefresh('staff'))) {
+    return apiMultipart<T>(path, formData, true);
+  }
+  const parsed = (await res.json().catch(() => null)) as unknown;
+  if (!res.ok) {
+    throw new ApiClientError(
+      res.status,
+      parsed as ApiErrorBody,
+      `Error HTTP ${res.status}`,
+    );
+  }
+  return parsed as T;
+}
+
+/**
  * Idempotency key corta para mutaciones de mostrador.
  */
 export function newIdempotencyKey(prefix: string): string {

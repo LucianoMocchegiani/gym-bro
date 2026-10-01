@@ -1,6 +1,6 @@
 # Faciliter — Prioridades para cerrar el MVP
 
-**Estado:** Viva (corte 2026-09-08)  
+**Estado:** Viva (corte 2026-09-30)  
 **Qué es:** lo que falta para un primer gym piloto **vendible**. No es el backlog post-MVP ni un rediseño de módulos.  
 **Fuera de este corte:** tienda de productos, white label, AFIP, offline puerta, multi-sede UI, **rutinas plantilla (backlog)** y **push N2**. E7 carpeta y E8 N1 (email + in-app, plantillas Admin, eventos cableados salvo puerta) están en el producto; bandeja operativa staff sigue pendiente.
 
@@ -12,11 +12,11 @@ Roadmap de épicas históricas: [11-roadmap-mvp.md](./11-roadmap-mvp.md). Diferi
 
 | # | Prioridad | Tipo | Estado hoy |
 |---|-----------|------|------------|
-| P1 | Molinetes / hardware de puerta | Diseño + adapters | En backlog acceso; sin spike de marcas |
-| P2 | Débito automático MONTHLY | Código + QA | **En código:** suscripción MP + `init_point`. QA P9…P9j en live |
-| P3 | Landing + pricing + SEO | Comercial / web pública | Landing + SEO en el apex; precio a convenir; legales borrador |
-| P4 | Tokens y costo OpenRouter | Tope C7 + insumo de pricing | Tope C7 pendiente; no hay costo por gym |
-| P5 | Migración de datos (Excel + IA) | Ops / onboarding | El **último**; puede no existir en el primer piloto |
+| P1 | Molinetes / hardware de puerta | Diseño + adapters | Kuatia se queda. Contrato fiel a Kuatia; ZKTeco se adapta. Credenciales se generan; en ZK **no se mandan** a Kuatia. Ticket: `local/mis-tickets/ticket-acceso-zkteco-contrato.md` |
+| P2 | Débito automático MONTHLY | QA live | Código: suscripción MP + `init_point`. Falta P9…P9j en VPS |
+| P3 | Landing + pricing + SEO | Comercial / web pública | Apex + catálogo + **alta self-serve**. Falta renovar/cambiar pack y baja de mandato; OG 1200×630 + SEO marca; legales finales; precio a convenir |
+| P4 | Tokens y costo OpenRouter | Tope staff + insumo de pricing | C7 (abort/título/chips) en repo. Tope **staff** pendiente; landing ya tiene tope por IP. Sin costo $/gym |
+| P5 | Migración de datos (Excel + IA) | Ops / onboarding | **v1 en código** (en testeo): Afiliados → Importar (planilla + zip fotos/carpeta), mapeo heurístico. Falta IA de mapeo y “olvidé mi contraseña” por mail |
 
 ---
 
@@ -35,7 +35,7 @@ Alcance de este corte (sin elegir marca todavía):
 
 Detalle vivo: [99-backlog-post-mvp/acceso.md](./99-backlog-post-mvp/acceso.md). Diseño SSI: [12-acceso-quark-oid4-diseno.md](./12-acceso-quark-oid4-diseno.md).
 
-Hay que correr el [método de producto](./10-metodo-definicion-producto.md) **antes** de codear un vendor.
+**Contrato (P1):** extraer un puerto **fiel a Kuatia** (`KuatiaAdminPort` hoy). Adapter HTTP Kuatia lo implementa. ZKTeco (y otros) implementan el mismo puerto: las credenciales se **arman igual**; **no se envían** a Kuatia. Evaluate sigue en Nest. Ideación: `local/mis-tickets/ticket-acceso-zkteco-contrato.md`.
 
 Inventario (formas + cómo se enchufa): [ideas/2026-09-08-tipos-molinetes.md](./ideas/2026-09-08-tipos-molinetes.md).  
 Necesidades HW/SW: [19-puerta-molinete-hw-sw.md](./19-puerta-molinete-hw-sw.md).
@@ -46,13 +46,11 @@ Necesidades HW/SW: [19-puerta-molinete-hw-sw.md](./19-puerta-molinete-hw-sw.md).
 
 ## P2 — Débito automático (suscripción MP)
 
-Diseño reabierto **2026-09-15** (RN-PAG-013..016, CU-PAG-008..010): Mercado Pago cobra con **plan + preapproval**; Caja genera `init_point`; contrato al webhook. UI `/caja?memberId=&vista=debitos`.
+En código (no es tarjeta+job): Mercado Pago cobra con **plan + preapproval**; Caja genera `init_point`; contrato al webhook. UI `/caja?memberId=&vista=debitos`. RN-PAG-013..016, CU-PAG-008..010.
 
-El código usa **plan + preapproval**; Caja genera `init_point`; contrato al webhook. UI `/caja?memberId=&vista=debitos`. No hay Brick ni job de cobro.
+**Pendiente:** QA en live (P9…P9j). Guía: `docs/uso/probar-debito-suscripcion-mp.md` y `local/en-testeo/probar-debito-y-asistente.md`.
 
 Dependencia: producto Suscripciones + webhooks en la app MP del gym; [E5 MP live](./11-roadmap-mvp.md).
-
-Checklist: `docs/08-casos-prueba-manuales.md` (P9… P9j).
 
 ---
 
@@ -62,9 +60,15 @@ Sitio público en el **apex** (`http://localhost:3002/` / dominio de plataforma)
 
 Este corte (en código):
 
-- Landing: gyms, clubes y estudios (afiliaciones); CTA a Google Calendar (`https://calendar.app.google/dcTzccnNjB6tTLXR8`); prueba del asistente (sin datos de un gym).
-- Landing: gyms, clubes y estudios; CTA a Calendar; prueba del asistente. **Planes** = packs activos del tenant `admin` (`GET /public/platform/packs`); no es compra self-serve.
-- SEO: title/meta, OG, canonical, JSON-LD, `sitemap.xml`, `robots.txt`, copy en castellano.
+- Landing: gyms, clubes y estudios; CTA a Calendar; prueba del asistente (sin datos de un gym).
+- **Planes** = packs activos del tenant `admin` (`GET /public/platform/packs`).
+- **Alta self-serve:** Identity → `/empezar` → preapproval MP de `admin`; el gym nace en el webhook. Caja `admin` sigue para cobro asistido y prueba 30 días (RN-PAG-017).
+- SEO base: title/meta, OG, canonical, JSON-LD, `sitemap.xml`, `robots.txt`, copy en castellano.
+
+Todavía:
+
+- Renovar / cambiar pack Faciliter y baja de mandato en apex (`PlanPanel` es lectura).
+- OG 1200×630 (hoy `og-stack.png` 1200×1200) y SEO de marca “faciliter”. Detalle: `local/mis-tickets/ticket-seo-og-google.md`.
 - `/legal/terminos` y `/legal/privacidad`: **borrador** (no es el texto final Argentina). El contrato revisado sigue en [operaciones.md](./99-backlog-post-mvp/operaciones.md).
 
 El costo de OpenRouter (P4) alimenta el número de pricing; no al revés.
@@ -73,7 +77,7 @@ El costo de OpenRouter (P4) alimenta el número de pricing; no al revés.
 
 ## P4 — Tokens y consumo OpenRouter
 
-El asistente Admin **ya corre** (post-MVP de producto, pero en el repo). La burbuja de la landing **también** llama OpenRouter. OpenRouter se paga. Sin números no se puede poner el chat en un plan ni capar abuse. La landing tiene un tope por IP/hora; el tope por staff sigue pendiente.
+El asistente Admin **ya corre** (C7: abort, título, chips; smoke pendiente de probar en VPS). La burbuja de la landing **también** llama OpenRouter. OpenRouter se paga. Sin números no se puede poner el chat en un plan ni capar abuse. La landing tiene un tope por IP/hora; el tope por **staff** sigue pendiente.
 
 Dos capas (no mezclarlas):
 
@@ -88,9 +92,16 @@ Sin dashboard fancy: logs o suma por `tenant_id` + `user_id` alcanza para el pri
 
 ## P5 — Migración (Excel + IA)
 
-Para un gym que **ya tiene** socios/packs en otro sistema: importar desde planilla (y tal vez ayuda de IA para mapear columnas).
+Para un gym que **ya tiene** socios: migrar **afiliado completo** (ficha + foto de perfil + carpeta). Packs/caja/QR son de Faciliter. Excel + files; sin 700k `Transaction`. Ideación: `local/mis-tickets/ticket-migracion-gyms.md`.
 
-**El de menor prioridad.** Primero el MVP en un gym que carga de cero (o carga a mano). Si el piloto exige migración, se abre después con el [método](./10-metodo-definicion-producto.md).
+**v1 en código (2026-10-01, en testeo).** Admin → Afiliados → **Importar** (`/afiliados/importar`), permiso peligroso `members.import` + `members.write`. Reglas: [RN-MIG](./04-reglas-de-negocio.md) (sección 6c). Tabla `member_imports`: [09](./09-esquema-db.md).
+
+- **Planilla** (xlsx/csv): el navegador la lee, sugiere el mapeo por nombre de columna (corregible; queda guardado por gym), muestra la vista previa y manda lotes de 200. Sin mail → error en el CSV. Socio existente (mail, DNI o cuenta) → se omite: re-subir el archivo es idempotente.
+- **Zip**: `fotos/{dni o email}.ext` → foto de perfil; `carpeta/{dni o email}/archivo` → carpeta del socio (10 ítems, 5 MB). Socio que ya tiene foto o carpeta → no se le carga nada (avisado como omitido).
+- **Contraseña**: altas nuevas con `ChangeMe123!` marcada temporal (aviso en app y web). Quien ya tenía cuenta en otro gym conserva la suya. Vincular Google/Apple borra la temporal. “Crear contraseña” (cuentas solo Google) en app y web; “Cambiar contraseña” también en la app.
+- **Sin job de fondo:** la pestaña tiene que quedar abierta durante la corrida; si se corta, se reintenta el lote o se re-sube el archivo.
+
+Pendiente: mapeo con IA, selector de sede en la UI (la API acepta `branchId`), “olvidé mi contraseña” por mail.
 
 No entra: sync continua bidireccional, ni conector a un vendor concreto en este corte.
 
@@ -122,7 +133,7 @@ Estas cosas **no** están en P1–P5 y sí importan para “un gym de verdad”.
 
 ## Qué no entra (sigue post-MVP)
 
-Tienda de mercadería, white label, AFIP, offline puerta, biometría de hardware, anti-fraude QR, fichaje horario, waitlist modos 2/3, gastos de caja, multi-sede UI, chat writes, E7, E8.
+Tienda de mercadería, white label, AFIP, offline puerta, biometría de hardware, anti-fraude QR, fichaje horario, waitlist modos 2/3, gastos de caja, multi-sede UI, chat writes, rutinas plantilla, push N2, bandeja staff de avisos.
 
 ---
 

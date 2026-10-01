@@ -19,6 +19,7 @@ import {
   MembershipsList,
   type AuthMeResponse,
   type AuthUser,
+  type PasswordStatus,
 } from './auth.types';
 import { CurrentUser } from './decorators/current-user.decorator';
 import { RequireIdentityAuth } from './decorators/require-identity-auth.decorator';
@@ -38,6 +39,7 @@ import {
   MemberLoginDto,
   RefreshTokenDto,
   SelectContextDto,
+  SetPasswordDto,
   StaffLoginDto,
 } from './dto/auth.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
@@ -234,9 +236,10 @@ export class AuthController {
   }
 
   /**
-   * Cambia la contraseña del usuario autenticado (staff o Identity).
+   * Cambia la contraseña del usuario autenticado (staff, socio o persona).
    *
-   * @remarks Revoca todos los refresh tokens → obliga a re-login.
+   * @remarks Revoca todas las sesiones de la persona → re-login (la app lo
+   * hace sola con la contraseña nueva).
    */
   @UseGuards(JwtAuthGuard)
   @Post('change-password')
@@ -245,6 +248,29 @@ export class AuthController {
     @Body() dto: ChangePasswordDto,
   ): Promise<{ ok: true }> {
     return this.authService.changePassword(user, dto);
+  }
+
+  /**
+   * Si la cuenta tiene contraseña y si es la temporal de migración.
+   */
+  @UseGuards(JwtAuthGuard)
+  @Get('password')
+  passwordStatus(@CurrentUser() user: AuthUser): Promise<PasswordStatus> {
+    return this.authService.getPasswordStatus(user);
+  }
+
+  /**
+   * Crea contraseña en una cuenta sin contraseña (entró con Google/Apple).
+   *
+   * @throws 409 si ya tiene contraseña.
+   */
+  @UseGuards(JwtAuthGuard)
+  @Post('set-password')
+  setPassword(
+    @CurrentUser() user: AuthUser,
+    @Body() dto: SetPasswordDto,
+  ): Promise<{ ok: true }> {
+    return this.authService.setPassword(user, dto);
   }
 
   /**

@@ -31,9 +31,11 @@ import {
   MembershipRow,
   MembershipsList,
   type AuthUser,
+  type PasswordStatus,
 } from './auth.types';
 import {
   ChangePasswordDto,
+  SetPasswordDto,
   IdentityLoginDto,
   IdentityRegisterDto,
   GoogleLoginDto,
@@ -303,6 +305,7 @@ export class AuthService {
         data: {
           appleSub: claims.sub,
           name: byEmail.name ?? claims.name,
+          ...this.dropTemporaryPassword(byEmail),
         },
       });
       return this.issueIdentity({ ...linked, hasPassword: false });
@@ -374,7 +377,11 @@ export class AuthService {
       }
       const linked = await this.prisma.identity.update({
         where: { id: byEmail.id },
-        data: { googleSub: claims.sub, name: byEmail.name ?? claims.name },
+        data: {
+          googleSub: claims.sub,
+          name: byEmail.name ?? claims.name,
+          ...this.dropTemporaryPassword(byEmail),
+        },
       });
       const staff = await this.prisma.staffUser.findUnique({
         where: { tenantId_identityId: { tenantId, identityId: linked.id } },
@@ -637,69 +644,124 @@ export class AuthService {
   }
 
   /**
-   * Cambia la contraseña del usuario autenticado (STAFF o IDENTITY).
+   * Si la cuenta del usuario autenticado tiene contraseña y si es la temporal.
+   */
+  async getPasswordStatus(user: AuthUser): Promise<PasswordStatus> {
+    const identity = await this.identityOf(user);
+    return {
+      hasPassword: Boolean(identity.passwordHash),
+      temporary: identity.passwordTemporary,
+    };
+  }
+
+  /**
+   * Cambia la contraseña del usuario autenticado (STAFF, MEMBER o IDENTITY).
    *
-   * @remarks Cambia el hash de `identities` (misma pass en todos los gyms).
-   * Revoca refresh de ese staff y de la identity.
-   * @throws {UnauthorizedException} Contraseña actual inválida o perfil sin soporte.
+   * @remarks Cambia el hash de `identities` (misma pass en todos los gyms) y
+   * deja de ser temporal (RN-MIG-003). Revoca todas las sesiones de la persona
+   * (identity, staff y socio en cualquier gym): el cliente vuelve a loguearse.
+   * @throws {UnauthorizedException} Contraseña actual inválida o cuenta sin contraseña.
    */
   async changePassword(
     user: AuthUser,
     dto: ChangePasswordDto,
   ): Promise<{ ok: true }> {
+    const identity = await this.identityOf(user);
+    if (!identity.passwordHash) {
+      throw new UnauthorizedException('Invalid credentials');
+    }
+    await this.assertPassword(dto.currentPassword, identity.passwordHash);
     const newHash = await bcrypt.hash(dto.newPassword, 12);
+    await this.prisma.identity.update({
+      where: { id: identity.id },
+      data: { passwordHash: newHash, passwordTemporary: false },
+    });
+    await this.revokeAllSessions(identity.id);
+    return { ok: true };
+  }
 
-    if (user.profileType === AuthProfileType.IDENTITY) {
-      const identity = await this.prisma.identity.findUnique({
-        where: { id: user.userId },
-      });
-      if (!identity?.passwordHash) {
-        throw new UnauthorizedException('Invalid credentials');
-      }
-      await this.assertPassword(dto.currentPassword, identity.passwordHash);
-      await this.prisma.identity.update({
-        where: { id: identity.id },
-        data: { passwordHash: newHash },
-      });
-      await this.prisma.refreshToken.updateMany({
-        where: { revokedAt: null, identityId: identity.id },
-        data: { revokedAt: new Date() },
-      });
-      return { ok: true };
-    }
-
-    if (user.profileType === AuthProfileType.STAFF) {
-      const staffUser = await this.prisma.staffUser.findUnique({
-        where: { id: user.userId },
-        include: { identity: { select: { id: true, passwordHash: true } } },
-      });
-      if (!staffUser?.identity.passwordHash) {
-        throw new UnauthorizedException('Invalid credentials');
-      }
-      await this.assertPassword(
-        dto.currentPassword,
-        staffUser.identity.passwordHash,
+  /**
+   * Crea contraseña en una cuenta que no tiene (entró con Google/Apple).
+   *
+   * @remarks No revoca sesiones: antes no había contraseña que filtrar.
+   * @throws {ConflictException} La cuenta ya tiene contraseña (usar cambiar).
+   */
+  async setPassword(
+    user: AuthUser,
+    dto: SetPasswordDto,
+  ): Promise<{ ok: true }> {
+    const identity = await this.identityOf(user);
+    if (identity.passwordHash) {
+      throw new ConflictException(
+        'Tu cuenta ya tiene contraseña. Usá cambiar contraseña.',
       );
-      await this.prisma.identity.update({
-        where: { id: staffUser.identity.id },
-        data: { passwordHash: newHash },
-      });
-      await this.prisma.refreshToken.updateMany({
-        where: {
-          revokedAt: null,
-          OR: [
-            { staffUserId: user.userId },
-            { identityId: staffUser.identity.id },
-          ],
-        },
-        data: { revokedAt: new Date() },
-      });
-      return { ok: true };
     }
+    const newHash = await bcrypt.hash(dto.newPassword, 12);
+    const updated = await this.prisma.identity.updateMany({
+      where: { id: identity.id, passwordHash: null },
+      data: { passwordHash: newHash, passwordTemporary: false },
+    });
+    if (updated.count === 0) {
+      throw new ConflictException(
+        'Tu cuenta ya tiene contraseña. Usá cambiar contraseña.',
+      );
+    }
+    return { ok: true };
+  }
 
-    throw new BadRequestException(
-      'Cambio de contraseña no disponible para este perfil',
-    );
+  /** Persona detrás del JWT (staff y socio → su `identity`). */
+  private async identityOf(user: AuthUser) {
+    let identityId: string | null = null;
+    if (user.profileType === AuthProfileType.IDENTITY) {
+      identityId = user.userId;
+    } else if (user.profileType === AuthProfileType.STAFF) {
+      const staff = await this.prisma.staffUser.findUnique({
+        where: { id: user.userId },
+        select: { identityId: true },
+      });
+      identityId = staff?.identityId ?? null;
+    } else if (user.profileType === AuthProfileType.MEMBER) {
+      const member = await this.prisma.member.findUnique({
+        where: { id: user.userId },
+        select: { identityId: true },
+      });
+      identityId = member?.identityId ?? null;
+    }
+    const identity = identityId
+      ? await this.prisma.identity.findUnique({ where: { id: identityId } })
+      : null;
+    if (!identity) {
+      throw new UnauthorizedException('Invalid credentials');
+    }
+    return identity;
+  }
+
+  /** Revoca refresh de la persona y de todos sus perfiles (staff/socio). */
+  private async revokeAllSessions(identityId: string): Promise<void> {
+    await this.prisma.refreshToken.updateMany({
+      where: {
+        revokedAt: null,
+        OR: [
+          { identityId },
+          { staffUser: { identityId } },
+          { member: { identityId } },
+        ],
+      },
+      data: { revokedAt: new Date() },
+    });
+  }
+
+  /**
+   * Al vincular Google/Apple, la contraseña temporal de migración deja de valer.
+   *
+   * @remarks RN-MIG-003: nadie puede entrar con `ChangeMe123!` sabiendo el mail.
+   */
+  private dropTemporaryPassword(identity: {
+    passwordTemporary: boolean;
+  }): Prisma.IdentityUpdateInput {
+    return identity.passwordTemporary
+      ? { passwordHash: null, passwordTemporary: false }
+      : {};
   }
 
   private proxySessions = new Map<string, string>();
@@ -755,6 +817,7 @@ export class AuthService {
         data: {
           googleSub: params.googleSub,
           name: byEmail.name ?? params.name,
+          ...this.dropTemporaryPassword(byEmail),
         },
       });
     }

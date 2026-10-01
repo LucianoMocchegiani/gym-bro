@@ -169,6 +169,10 @@
         {
             "key": "createdReceiptId",
             "value": ""
+        },
+        {
+            "key": "memberImportId",
+            "value": ""
         }
     ],
     "item": [
@@ -809,7 +813,30 @@
                             }
                         },
                         "url": "{{baseUrl}}/api/auth/change-password",
-                        "description": "Cambia la contraseña del JWT Staff o Identity. Revoca refresh → re-login. Ajustá newPassword antes de correrlo."
+                        "description": "Cambia la contraseña del JWT Staff, Member o Identity. Desmarca la temporal y revoca todas las sesiones de la persona → re-login. Ajustá newPassword antes de correrlo."
+                    }
+                },
+                {
+                    "name": "Password status (JWT)",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": "{{baseUrl}}/api/auth/password",
+                        "description": "{ hasPassword, temporary }. temporary = sigue con la ChangeMe123! de la migración."
+                    }
+                },
+                {
+                    "name": "Set password (JWT, cuenta sin contraseña)",
+                    "request": {
+                        "method": "POST",
+                        "header": [{"key": "Content-Type", "value": "application/json"}],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"newPassword\": \"NuevaClave123\"\n}",
+                            "options": {"raw": {"language": "json"}}
+                        },
+                        "url": "{{baseUrl}}/api/auth/set-password",
+                        "description": "Crea contraseña para cuentas solo Google/Apple. 409 si ya tiene."
                     }
                 },
                 {
@@ -4878,7 +4905,6 @@
                 }
             ]
         },
-        },
         {
             "name": "Folder",
             "description": "Carpeta notas/files de socio o staff. Labels por tenant. Files autenticados (no POST /upload).",
@@ -4929,6 +4955,123 @@
                         "method": "GET",
                         "header": [],
                         "url": "{{baseUrl}}/api/me/folder"
+                    }
+                }
+            ]
+        },
+        {
+            "name": "Member imports",
+            "description": "Migración de afiliados (RN-MIG). JWT Staff con members.import + members.write. La web parsea la planilla/zip y manda lotes: start → rows (≤200 por lote) → finish. Zip: match → photo / folder por socio. Altas nuevas con contraseña temporal ChangeMe123!.",
+            "item": [
+                {
+                    "name": "List imports (historial)",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": "{{baseUrl}}/api/member-imports"
+                    }
+                },
+                {
+                    "name": "Preview rows",
+                    "request": {
+                        "method": "POST",
+                        "header": [{"key": "Content-Type", "value": "application/json"}],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"rows\": [\n    { \"rowNumber\": 2, \"email\": \"migrado1@example.com\", \"name\": \"Ana Migrada\", \"document\": \"30.123.456\", \"phone\": \"1155550000\", \"status\": \"activo\" },\n    { \"rowNumber\": 3, \"name\": \"Sin Mail\" }\n  ]\n}",
+                            "options": {"raw": {"language": "json"}}
+                        },
+                        "url": "{{baseUrl}}/api/member-imports/preview",
+                        "description": "Clasifica cada fila: new / existing / error. No escribe nada."
+                    }
+                },
+                {
+                    "name": "Start import (ROWS)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('status 201', () => pm.response.to.have.status(201));",
+                                    "pm.collectionVariables.set('memberImportId', pm.response.json().id);"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [{"key": "Content-Type", "value": "application/json"}],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"kind\": \"ROWS\",\n  \"filename\": \"socios.xlsx\",\n  \"totalRows\": 2,\n  \"mapping\": { \"email\": \"Mail\", \"name\": \"Nombre\" }\n}",
+                            "options": {"raw": {"language": "json"}}
+                        },
+                        "url": "{{baseUrl}}/api/member-imports",
+                        "description": "Abre una corrida (ROWS o FILES). Guarda memberImportId. El mapping queda como sugerencia para la próxima."
+                    }
+                },
+                {
+                    "name": "Import rows batch",
+                    "request": {
+                        "method": "POST",
+                        "header": [{"key": "Content-Type", "value": "application/json"}],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"rows\": [\n    { \"rowNumber\": 2, \"email\": \"migrado1@example.com\", \"name\": \"Ana Migrada\", \"document\": \"30.123.456\", \"status\": \"activo\" },\n    { \"rowNumber\": 3, \"name\": \"Sin Mail\" }\n  ]\n}",
+                            "options": {"raw": {"language": "json"}}
+                        },
+                        "url": "{{baseUrl}}/api/member-imports/{{memberImportId}}/rows",
+                        "description": "Da de alta las filas nuevas; existentes → skipped; inválidas → failed. Idempotente: repetir el lote no duplica."
+                    }
+                },
+                {
+                    "name": "Match files (zip)",
+                    "request": {
+                        "method": "POST",
+                        "header": [{"key": "Content-Type", "value": "application/json"}],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"keys\": [\"30123456\", \"migrado1@example.com\"]\n}",
+                            "options": {"raw": {"language": "json"}}
+                        },
+                        "url": "{{baseUrl}}/api/member-imports/match",
+                        "description": "DNI (normalizado) o mail → socio, si ya tiene foto y cuántos ítems de carpeta."
+                    }
+                },
+                {
+                    "name": "Import member photo",
+                    "request": {
+                        "method": "POST",
+                        "header": [],
+                        "body": {
+                            "mode": "formdata",
+                            "formdata": [{"key": "file", "type": "file", "src": ""}]
+                        },
+                        "url": "{{baseUrl}}/api/member-imports/{{memberImportId}}/members/{{createdMemberId}}/photo",
+                        "description": "Foto de perfil pública. Se omite si el socio ya tiene foto."
+                    }
+                },
+                {
+                    "name": "Import member folder file",
+                    "request": {
+                        "method": "POST",
+                        "header": [],
+                        "body": {
+                            "mode": "formdata",
+                            "formdata": [{"key": "file", "type": "file", "src": ""}]
+                        },
+                        "url": "{{baseUrl}}/api/member-imports/{{memberImportId}}/members/{{createdMemberId}}/folder",
+                        "description": "Archivo privado a la carpeta del socio (mismos límites que la carpeta: 10 ítems, 5 MB)."
+                    }
+                },
+                {
+                    "name": "Finish import",
+                    "request": {
+                        "method": "POST",
+                        "header": [],
+                        "url": "{{baseUrl}}/api/member-imports/{{memberImportId}}/finish",
+                        "description": "Cierra la corrida y registra la auditoría member.import. Idempotente."
                     }
                 }
             ]

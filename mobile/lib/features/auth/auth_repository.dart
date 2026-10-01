@@ -69,12 +69,31 @@ class MembershipRow {
   String get roleLabel => profile == 'STAFF' ? 'Staff' : 'Socio';
 }
 
+/// Estado de la contraseña de la persona (`GET /auth/password`).
+class PasswordStatus {
+  /// Crea el estado.
+  const PasswordStatus({required this.hasPassword, required this.temporary});
+
+  /// Falso si entra solo con Google/Apple.
+  final bool hasPassword;
+
+  /// `ChangeMe123!` de migración: hay que pedir que la cambie (RN-MIG-003).
+  final bool temporary;
+
+  factory PasswordStatus.fromJson(Map<String, dynamic> json) {
+    return PasswordStatus(
+      hasPassword: json['hasPassword'] == true,
+      temporary: json['temporary'] == true,
+    );
+  }
+}
+
 /// Auth contra Nest (identity + contexto de gym).
 class AuthRepository {
   /// Crea el repositorio.
   AuthRepository({required ApiClient api, required SessionStore store})
-      : _api = api,
-        _store = store;
+    : _api = api,
+      _store = store;
 
   final ApiClient _api;
   final SessionStore _store;
@@ -87,10 +106,7 @@ class AuthRepository {
     final tokens = await _api.postJson<AuthTokensResponse>(
       '/api/auth/identity/login',
       auth: false,
-      body: {
-        'email': email.trim(),
-        'password': password,
-      },
+      body: {'email': email.trim(), 'password': password},
       parse: (json) =>
           AuthTokensResponse.fromJson(json! as Map<String, dynamic>),
     );
@@ -173,10 +189,7 @@ class AuthRepository {
     _api.accessToken = identity.accessToken;
     final tokens = await _api.postJson<AuthTokensResponse>(
       '/api/auth/select-context',
-      body: {
-        'tenantId': row.tenantId,
-        'profile': row.profile,
-      },
+      body: {'tenantId': row.tenantId, 'profile': row.profile},
       parse: (json) =>
           AuthTokensResponse.fromJson(json! as Map<String, dynamic>),
     );
@@ -214,6 +227,36 @@ class AuthRepository {
         }
         return codes.whereType<String>().toList();
       },
+    );
+  }
+
+  /// Si la cuenta tiene contraseña y si es la temporal.
+  Future<PasswordStatus> fetchPasswordStatus() async {
+    return _api.getJson<PasswordStatus>(
+      '/api/auth/password',
+      parse: (json) =>
+          PasswordStatus.fromJson(Map<String, dynamic>.from(json! as Map)),
+    );
+  }
+
+  /// Cambia la contraseña. La API cierra todas las sesiones de la persona.
+  Future<void> changePassword({
+    required String currentPassword,
+    required String newPassword,
+  }) async {
+    await _api.postJson<void>(
+      '/api/auth/change-password',
+      body: {'currentPassword': currentPassword, 'newPassword': newPassword},
+      parse: (_) {},
+    );
+  }
+
+  /// Crea contraseña en una cuenta sin contraseña. No cierra sesiones.
+  Future<void> setPassword({required String newPassword}) async {
+    await _api.postJson<void>(
+      '/api/auth/set-password',
+      body: {'newPassword': newPassword},
+      parse: (_) {},
     );
   }
 

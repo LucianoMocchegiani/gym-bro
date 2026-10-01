@@ -4,6 +4,8 @@ export type NavEntry = {
   href: string;
   label: string;
   anyOf: readonly string[];
+  /** Además de `anyOf`: hacen falta todos. */
+  allOf?: readonly string[];
   keywords: readonly string[];
 };
 
@@ -53,6 +55,22 @@ export const NAV_MAP: readonly NavEntry[] = [
     label: 'Afiliados',
     anyOf: ['members.read'],
     keywords: ['afiliado', 'afiliados', 'socio', 'ficha', 'miembro'],
+  },
+  {
+    href: '/afiliados/importar',
+    label: 'Importar afiliados',
+    anyOf: [],
+    allOf: ['members.import', 'members.write'],
+    keywords: [
+      'importar',
+      'importacion',
+      'migrar',
+      'migracion',
+      'excel',
+      'planilla',
+      'csv',
+      'zip',
+    ],
   },
   {
     href: '/staff',
@@ -105,6 +123,9 @@ export const NAV_MAP: readonly NavEntry[] = [
 ];
 
 function allowed(entry: NavEntry, codes: Set<string>): boolean {
+  if (entry.allOf && !entry.allOf.every((code) => codes.has(code))) {
+    return false;
+  }
   if (entry.anyOf.length === 0) {
     return true;
   }

@@ -50,6 +50,13 @@ export type AuthTokens = {
   };
 };
 
+/** `GET /auth/password`: estado de la contraseña de la persona. */
+export type PasswordStatus = {
+  hasPassword: boolean;
+  /** `ChangeMe123!` de migración: la app pide cambiarla. */
+  temporary: boolean;
+};
+
 export type MembershipProfile = 'MEMBER' | 'STAFF';
 
 /**

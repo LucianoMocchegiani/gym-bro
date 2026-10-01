@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { Suspense, useCallback, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import {
@@ -31,7 +32,9 @@ import { StatusPill, memberStatusTone } from '@/components/StatusPill';
 import { ApiClientError } from '@/lib/api/client';
 import { deleteMember, listMembers } from '@/lib/api/members';
 import type { MemberDetail, MemberStatus } from '@/lib/api/members';
+import { useAuth } from '@/lib/auth/AuthProvider';
 import { formatMemberStatus } from '@/lib/member-labels';
+import { hasAllPermissions } from '@/lib/nav-permissions';
 
 const PAGE_SIZE = 20;
 
@@ -55,6 +58,11 @@ export default function AfiliadosPage() {
 function AfiliadosInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { session } = useAuth();
+  const canImport = hasAllPermissions(session?.permissionCodes, [
+    'members.import',
+    'members.write',
+  ]);
   const fichaId = searchParams.get('ficha')?.trim() || null;
   const cuentaId = searchParams.get('cuenta')?.trim() || null;
   const credencialId = searchParams.get('credencial')?.trim() || null;
@@ -154,9 +162,16 @@ function AfiliadosInner() {
     <AdminShell
       title="Afiliados"
       actions={
-        <button type="button" className="btn" onClick={openCreate}>
-          + Nuevo
-        </button>
+        <>
+          {canImport ? (
+            <Link href="/afiliados/importar" className="btn ghost">
+              Importar
+            </Link>
+          ) : null}
+          <button type="button" className="btn" onClick={openCreate}>
+            + Nuevo
+          </button>
+        </>
       }
     >
       <ListToolbar>

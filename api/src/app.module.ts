@@ -29,6 +29,7 @@ import { TenantsModule } from './tenants/tenants.module';
 import { WaitlistModule } from './waitlist/waitlist.module';
 import { FileStorageModule } from './file-storage/file-storage.module';
 import { FolderModule } from './folder/folder.module';
+import { MemberImportModule } from './member-import/member-import.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { UploadModule } from './upload/upload.module';
 
@@ -70,6 +71,7 @@ import { UploadModule } from './upload/upload.module';
     FileStorageModule,
     UploadModule,
     FolderModule,
+    MemberImportModule,
     NotificationsModule,
   ],
 })

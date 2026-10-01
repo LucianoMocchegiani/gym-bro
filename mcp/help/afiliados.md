@@ -10,4 +10,6 @@ La **credencial de puerta** se emite al cobrar el pack. **Re-emitir** (ficha del
 
 El alta, la baja y la edición son en esa pantalla. El asistente puede buscar y resumir la cuenta, pero **no da de alta** ni edita datos.
 
+**Importar** (botón en Afiliados, `/afiliados/importar`): carga masiva desde otro sistema con un Excel/CSV (fichas) y un zip (fotos y carpeta). Los socios nuevos entran a la app con `ChangeMe123!` y la cambian en Ajustes. Detalle: `get_help` topic `migracion`. Requiere `members.import` + `members.write`.
+
 Si no ves el menú, tu rol no tiene permiso de afiliados.

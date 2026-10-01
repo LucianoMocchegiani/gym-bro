@@ -15,11 +15,18 @@ export class IdentityService {
    * Garantiza una `identities` para el mail. No pisa password si ya existía.
    *
    * @param db Transacción opcional (alta tenant/staff/afiliado).
+   * @param input.passwordTemporary Solo aplica si se crea (migración de afiliados).
+   * @returns `created` en true si la persona no existía.
    */
   async ensure(
     db: IdentityDb | undefined,
-    input: { email: string; passwordHash: string; name: string | null },
-  ): Promise<{ id: string }> {
+    input: {
+      email: string;
+      passwordHash: string;
+      name: string | null;
+      passwordTemporary?: boolean;
+    },
+  ): Promise<{ id: string; created: boolean }> {
     const client = db ?? this.prisma;
     const email = input.email.trim().toLowerCase();
     const existing = await client.identity.findUnique({
@@ -27,15 +34,17 @@ export class IdentityService {
       select: { id: true },
     });
     if (existing) {
-      return existing;
+      return { id: existing.id, created: false };
     }
-    return client.identity.create({
+    const created = await client.identity.create({
       data: {
         email,
         passwordHash: input.passwordHash,
+        passwordTemporary: input.passwordTemporary ?? false,
         name: input.name,
       },
       select: { id: true },
     });
+    return { id: created.id, created: true };
   }
 }

@@ -49,6 +49,7 @@ export const AUDIT_ACTIONS = {
   memberCreate: 'member.create',
   memberUpdate: 'member.update',
   memberStatus: 'member.status',
+  memberImport: 'member.import',
   serviceCreate: 'service.create',
   serviceUpdate: 'service.update',
   serviceDelete: 'service.delete',

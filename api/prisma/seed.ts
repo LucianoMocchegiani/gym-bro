@@ -53,6 +53,11 @@ const PERMISSIONS: { code: string; description: string; dangerous: boolean }[] =
       dangerous: true,
     },
     {
+      code: 'members.import',
+      description: 'Migrar afiliados masivamente desde otro sistema',
+      dangerous: true,
+    },
+    {
       code: 'staff.read',
       description: 'Ver staff',
       dangerous: false,

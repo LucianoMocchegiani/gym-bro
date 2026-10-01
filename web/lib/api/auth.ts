@@ -151,6 +151,37 @@ export function changePassword(
   });
 }
 
+export type PasswordStatus = {
+  hasPassword: boolean;
+  /** `ChangeMe123!` de migración (RN-MIG-003). */
+  temporary: boolean;
+};
+
+/**
+ * Estado real de la contraseña de la persona (no el del login).
+ */
+export function getPasswordStatus(
+  auth: 'staff' | 'identity' = 'staff',
+): Promise<PasswordStatus> {
+  return apiRequest<PasswordStatus>('/auth/password', { auth });
+}
+
+/**
+ * Crea contraseña en una cuenta sin contraseña (entró con Google/Apple).
+ *
+ * @remarks No cierra sesiones. 409 si ya tiene.
+ */
+export function setPassword(
+  newPassword: string,
+  auth: 'staff' | 'identity' = 'staff',
+): Promise<{ ok: true }> {
+  return apiRequest<{ ok: true }>('/auth/set-password', {
+    method: 'POST',
+    body: { newPassword },
+    auth,
+  });
+}
+
 /**
  * Empieza impersonación: cookie de handoff en el API, sin JWT en el body.
  */

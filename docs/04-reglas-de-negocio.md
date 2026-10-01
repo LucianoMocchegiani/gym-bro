@@ -124,6 +124,18 @@ Formato: **RN-MODULO-NNN** — enunciado — excepciones.
 
 ---
 
+## 6c. Migración de afiliados (RN-MIG)
+
+| ID | Regla |
+|----|--------|
+| RN-MIG-001 | La migración desde otro sistema trae solo al **afiliado**: ficha, foto de perfil y carpeta. Packs, contratos, caja, débito y QR se arman en Faciliter. Requiere `members.import` (peligroso) + `members.write`. |
+| RN-MIG-002 | El **mail** es obligatorio: una fila sin mail válido se omite y sale en el listado de errores. Nombre obligatorio. |
+| RN-MIG-003 | Persona sin cuenta Faciliter → se crea con la contraseña **`ChangeMe123!`** marcada como temporal. Si ya tenía cuenta (otro gym), se vincula **sin tocar** su contraseña. La temporal deja de valer al cambiarla o al entrar con Google/Apple (se borra). Sin contraseña → "Crear contraseña" desde la app o la web. |
+| RN-MIG-004 | Si ya es socio del gym (mismo mail, DNI o cuenta) se **omite**: re-subir el mismo archivo no duplica. El DNI se compara sin puntos ni guiones. |
+| RN-MIG-005 | Zip: si el socio ya tiene foto o algún ítem en la carpeta, no se le carga nada (se informa como omitido: “ya tiene archivos cargados”); re-subir el zip no duplica. Si no tiene nada: una foto de perfil y documentos a carpeta respetando RN-FOL-006. No se mandan mails ni avisos, ni se emite credencial. Una sola auditoría por corrida (`member.import`) con totales. |
+
+---
+
 ## 6. Rutinas (RN-RUT)
 
 **Fuera del MVP activo:** plantillas/cumplimiento están en [99-backlog-post-mvp/rutinas.md](./99-backlog-post-mvp/rutinas.md). La operación de “dejar una rutina” es un PDF o nota en la carpeta (RN-FOL).
@@ -159,7 +171,7 @@ Formato: **RN-MODULO-NNN** — enunciado — excepciones.
 
 | ID | Regla |
 |----|--------|
-| RN-ROL-001 | Super Admin es exclusivo del equipo GymBro. |
+| RN-ROL-001 | El rol **Super Admin** (`super-admin`) vive en el tenant plataforma (`admin`). Es exclusivo del equipo Faciliter. No hay perfil JWT `SUPER` ni `POST /auth/super/login`. |
 | RN-ROL-002 | Al crear un gym se generan roles seed (Admin, Entrenador; slug `entrenador`). El gym puede crear, editar y **eliminar** roles; el **Admin** de sistema no se edita ni se elimina. En el tenant plataforma, **Super Admin** (`super-admin`) igual: no se edita ni se elimina. Entrenador es seed (permisos default) y sí se puede editar o borrar. |
 | RN-ROL-003 | Los permisos tienen scope de **tenant**. |
 | RN-ROL-004 | Un usuario staff puede tener **múltiples roles**. |

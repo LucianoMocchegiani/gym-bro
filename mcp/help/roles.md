@@ -8,4 +8,6 @@ Pantalla Admin: **Roles y permisos** (`/roles`). El staff se asigna en **Staff**
 
 El asistente lista roles y códigos. **No crea ni edita** roles. Cambiá permisos en esa pantalla.
 
+Algunos permisos están marcados como **peligrosos**. Ejemplo: `members.import` (migrar afiliados masivamente; también exige `members.write`). Detalle: topic `migracion`.
+
 Hace falta permiso de roles.

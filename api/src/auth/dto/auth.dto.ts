@@ -73,7 +73,7 @@ export class LogoutDto {
 }
 
 /**
- * Cambio de contraseña autenticado (staff / super).
+ * Cambio de contraseña autenticado (staff, socio o persona).
  */
 export class ChangePasswordDto {
   @IsString()
@@ -82,6 +82,17 @@ export class ChangePasswordDto {
 
   @IsString()
   @MinLength(8)
+  @MaxLength(128)
+  newPassword!: string;
+}
+
+/**
+ * Crear contraseña en una cuenta que no tiene (entró con Google/Apple).
+ */
+export class SetPasswordDto {
+  @IsString()
+  @MinLength(8)
+  @MaxLength(128)
   newPassword!: string;
 }
 
