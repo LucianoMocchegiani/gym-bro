@@ -8,6 +8,11 @@
 - Historial: un comprobante por transacción + solicitar devolución.
 - Sesiones: calendario mensual, crédito o drop-in al carrito, Mis clases.
 
+## Hecho (Identity)
+
+- Corte A: cuenta Faciliter + picker de gym.
+- Corte B: Google (`POST /auth/google`). Corte C: Apple (`POST /auth/apple`). Login Google/Apple en **Admin web**: después.
+
 ## Pendiente
 
 | Ítem | Estado | Notas |
@@ -16,8 +21,8 @@
 | Paginación de comprobantes | Pendiente | Hoy lista hasta 50 |
 | Productos en Tienda | Pendiente | Misma `CatalogCard`; módulo shop → [producto.md](./producto.md) |
 | Tickets de reclamo (IA) | Pendiente | Abrir un reclamo desde la app; la IA lleva el hilo (estilo ML/MP). Inbox Admin: [admin.md](./admin.md) |
-| Identity + picker de gym | Corte A en código | Cuenta Faciliter (`identities`); login app email+password; lista de gyms; JWT de negocio al elegir. Wallet de la persona. |
-| Login con Google | Corte B en código | `POST /auth/google` + `google_sign_in` (id_token). Vincula `google_sub` al mail. Apple y Google en Admin web: después. |
+| Crashlytics (Firebase) | Pendiente | Crashes iOS/Android. Ticket: `local/mis-tickets/ticket-crashlytics-mobile.md` |
+| Preparar App Store y Play | Pendiente | Fichas, firmas, permisos, API prod. Ticket: `local/mis-tickets/ticket-tiendas-ios-android.md` |
 
 ## Mejoras de UX (charla)
 

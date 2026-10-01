@@ -7,7 +7,7 @@
 
 ## Resumen
 
-La bandeja in-app sigue en Inicio → Avisos. El correo por tipo de evento se configura en Ajustes → Avisos (solo afiliado). Guía de prueba en `docs/uso/probar-notificaciones.md`.
+La bandeja in-app sigue en Inicio → Avisos. El correo por tipo de evento se configura en Ajustes → Avisos (solo afiliado). Guía de prueba local: `local/en-testeo/probar-notificaciones.md` (no versionada).
 
 ## Cambios principales
 

@@ -45,7 +45,6 @@ Reglas relacionadas
 | [13-setup-db-desde-cero.md](./13-setup-db-desde-cero.md) | Migraciones + seed al levantar de 0 / tras `down -v` | Viva |
 | [uso/guia-web-y-app.md](./uso/guia-web-y-app.md) | Guía de uso (staff). Sitio público: `/docs` | Viva (se refina) |
 | [uso/probar-debito-suscripcion-mp.md](./uso/probar-debito-suscripcion-mp.md) | Comprobar débito MONTHLY en VPS (suscripción MP, sin Brick) | Viva |
-| [uso/probar-notificaciones.md](./uso/probar-notificaciones.md) | Lista de avisos N1: cuándo se disparan y quién los ve | Viva |
 | [uso/configurar-mercadopago-tenant.md](./uso/configurar-mercadopago-tenant.md) | Guía MP para gyms/clubes: app, credenciales, webhooks y ejemplo `admin` | Viva |
 | [14-auditoria-roadmap-vs-codigo-2026-08-13.md](./14-auditoria-roadmap-vs-codigo-2026-08-13.md) | Contraste roadmap MVP vs API/web/mobile | Viva (corte 2026-08-13) |
 | [15-kuatia-deuda-rename.md](./15-kuatia-deuda-rename.md) | Deuda rename/SDK Kuatia; path `identity-core-dart` | Viva |
@@ -54,7 +53,6 @@ Reglas relacionadas
 | [17-roadmap-chat-mcp.md](./17-roadmap-chat-mcp.md) | Tareas ordenadas del asistente (C0–C7); post-MVP | Borrador |
 | [18-prioridades-cierre-mvp.md](./18-prioridades-cierre-mvp.md) | Prioridades para un MVP vendible (molinetes, débito QA, landing/SEO, tokens, migración) | Viva |
 | [19-puerta-molinete-hw-sw.md](./19-puerta-molinete-hw-sw.md) | Molinete: BOM hardware + software (relé, agente, Kuatia nativo, DNI/huella opcionales) | Borrador |
-| [20-handoff-impersonacion-entre-subdominios.md](./20-handoff-impersonacion-entre-subdominios.md) | Impersonación plataforma→gym: cookie `impersonation_handoff` + `POST /auth/from-handoff`. QA con HTTPS | Hecho |
 | [mobile/isar-wallet.md](./mobile/isar-wallet.md) | Wallet local (Isar): VCs en el device, secreto, workaround AGP 8 | Viva |
 | [credenciales-demo.md](./credenciales-demo.md) | Cuentas seed locales (Plataforma `admin` / Staff / Member) | Viva |
 | [costos/r2-cloudflare.md](./costos/r2-cloudflare.md) | Precios Cloudflare R2 (free tier y post-free) | Viva |

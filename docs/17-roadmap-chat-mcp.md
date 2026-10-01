@@ -139,7 +139,7 @@ C0 (Nest preview, chico)
 
 C3 se puede probar sin UI. C5 no tiene sentido antes de C4.
 
-**Out de este roadmap:** writes (cobrar, devolver, reservar), `compare_reports`, `chat-web/` suelto, OpenCode en runtime, summary buffer (v2 contexto), C-producto RN/CU.
+**Out de este roadmap:** writes (cobrar, devolver, reservar, gastos, etc. **con confirmación** — ticket local `mis-tickets/ticket-mcp-writes-confirmacion.md`, **último**), `compare_reports`, `chat-web/` suelto, OpenCode en runtime, summary buffer (v2 contexto), C-producto RN/CU de writes.
 
 ---
 

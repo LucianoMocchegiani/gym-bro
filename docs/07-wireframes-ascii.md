@@ -225,7 +225,7 @@ Inicio: atajo Avisos = bandeja. Opt-out de mail: Ajustes → Avisos.
 +----------------------------------------------------------------+
 ```
 
-Sin sesión / 401 sin refresh → `/login` (RequireStaff + `GET /auth/me`). Super: `/super/login`.
+Sin sesión / 401 sin refresh → `/login` (RequireStaff + `GET /auth/me`). Plataforma: mismo login, host `admin.…`.
 
 **Avisos** (Sistema): plantillas por evento (`GET|PATCH /notification-templates`). Apagar evento = no in-app ni mail.
 

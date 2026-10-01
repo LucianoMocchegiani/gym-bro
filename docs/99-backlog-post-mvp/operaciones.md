@@ -15,8 +15,8 @@ Notas que estaban en `local/backlog-mejoras.md` (ops). El setup de desarrollo ya
 | Branding / identidad visual | Pendiente | Paleta y tipos ya en uso; falta logo/guideline |
 | Pricing / planes SaaS | Parcial (P3) | Un plan en la landing, precio a convenir. Número cuando exista costo OpenRouter (P4). [producto.md](./producto.md) · [18](../18-prioridades-cierre-mvp.md) |
 | Marketing landing | Hecho (P3) | Apex: copy de producto, burbuja del asistente (sesión anónima), un plan, SEO. |
-| Docs de uso (web + app) | Pendiente | Apartado público tipo Kuatia, pero para usar Admin y app: módulos, primeros pasos, config. Diseño aparte; no es el C-producto. |
-| Migración de datos (Excel + IA) | Prioridad baja (P5) | Importar socios/packs de otro sistema. **Después del piloto** si no bloquea. [18](../18-prioridades-cierre-mvp.md) |
+| Docs de uso (web + app) | Pendiente | `/docs` + MCP `get_help` alineados. Ticket: `local/mis-tickets/ticket-guia-landing-mcp.md`. |
+| Migración de datos (Excel + IA) | Prioridad baja (P5) | v1 = ficha + foto + carpeta. Ticket: `local/mis-tickets/ticket-migracion-gyms.md`. [18](../18-prioridades-cierre-mvp.md) |
 | Soporte / onboarding de más gyms | Pendiente | |
 | Deploy prod + CI/CD | Parcial | Compose con imágenes de build + migrate al arrancar. Falta CI/CD y proxy TLS |
 

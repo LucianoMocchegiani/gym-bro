@@ -258,9 +258,9 @@ Detalle: [14-auditoria…](./14-auditoria-roadmap-vs-codigo-2026-08-13.md).
 
 ### Hecho (mínimo operativo)
 
-- [x] Login staff / Super Admin
-  - Staff: `{slug}.localhost:3002/login` (o `{slug}.{APP_DOMAIN}`); Super: `/super/login`
-  - `GET /auth/me` al entrar; 401 sin refresh → login (RequireStaff / RequireSuper)
+- [x] Login staff (incluye plataforma)
+  - `{slug}.localhost:3002/login` (o `{slug}.{APP_DOMAIN}`); plataforma: slug `admin`
+  - `GET /auth/me` al entrar; 401 sin refresh → `/login` (RequireStaff)
 - [x] Dashboard mínimo
   - `/`: KPIs del día (caja, activos, sin pack proxy, puerta, sesiones) + atajos
   - Deuda $ agregada: no hay endpoint; proxy vía reportes / sin pack

@@ -106,4 +106,4 @@ El seed crea en el tenant `admin` lo que la Caja de plataforma vende:
 
 ---
 
-[Índice](./00-indice.md) · [Postman](../postman/README.md) · [README](../README.md) · [Handoff impersonación](./20-handoff-impersonacion-entre-subdominios.md)
+[Índice](./00-indice.md) · [Postman](../postman/README.md) · [README](../README.md)

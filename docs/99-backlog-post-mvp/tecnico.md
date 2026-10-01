@@ -8,7 +8,7 @@
 | Rate limit + hardening | Pendiente | Límites por endpoint, k6, monitoreo (Sentry o similar), secrets vault |
 | Chat + MCP como infra | C5 drawer | Burbuja Admin → `chat-api`. [16](../16-chat-mcp-diseno.md) · [17](../17-roadmap-chat-mcp.md) |
 | Tope y costo OpenRouter | Prioridad cierre (P4) | Tope C7 + consumo para pricing. [18](../18-prioridades-cierre-mvp.md) · [17](../17-roadmap-chat-mcp.md) |
-| Handoff de impersonación entre subdominios | Hecho · cookie un uso | `POST /auth/from-handoff`. QA web con HTTPS. [20](../20-handoff-impersonacion-entre-subdominios.md) |
+| Handoff de impersonación entre subdominios | Hecho · cookie un uso | `POST /auth/from-handoff`. QA web con HTTPS. [Arquitectura §5](../06-arquitectura.md) |
 
 Deploy staging/prod y CI: [operaciones.md](./operaciones.md).
 

@@ -29,6 +29,6 @@ La plataforma es el tenant `admin` (staff + permisos `platform.*`); no hay perfi
 
 ## Referencias
 
-- [docs/20-handoff-impersonacion-entre-subdominios.md](../20-handoff-impersonacion-entre-subdominios.md)
+- [docs/06-arquitectura.md](../06-arquitectura.md) (§5 autenticación / handoff)
 - [docs/05-platform-contract-design.md](../05-platform-contract-design.md)
 - Commit: `ec47120` / https://github.com/LucianoMocchegiani/gym-bro/commit/ec47120

@@ -7,19 +7,21 @@
 
 ## 0. Stack elegido (MVP)
 
-| Capa | Tecnología | Notas |
-|------|------------|--------|
-| **API / backend** | **NestJS 11 + TypeScript 5.9** | Monolito modular; runtime **Node 24** (Active LTS) |
-| **Web** | **Next.js 16 (App Router) + React 19** | Landing (apex) + Admin / Super en `web/` |
-| **App móvil** | **Flutter** | Afiliado y staff (mismo binario); acceso QR / wallet SSI |
-| **Base de datos** | **PostgreSQL 16** | Multi-tenant por `tenant_id` |
-| **ORM** | **Prisma 6** (`api/prisma/`) | `migrate deploy` al arrancar la API; seed demo a mano. Prisma 7 diferido (ESM) |
-| **Auth API** | JWT + refresh (propio) en MVP | Clerk/Auth0 opcional después |
-| **Jobs** | BullMQ + Redis (cuando haga falta) | Vencimientos, mails, recurrencias |
-| **Email N1** | MailPort: stub o Resend (`MAIL_DRIVER`) | Push N2 post-MVP |
-| **Storage** | Object storage S3-compatible | Fotos de progreso |
-| **Pagos** | Mercado Pago (cuenta del gym) | |
-| **Acceso** | Adapter SSI / Quark | Intercambiable |
+
+| Capa              | Tecnología                              | Notas                                                                          |
+| ----------------- | --------------------------------------- | ------------------------------------------------------------------------------ |
+| **API / backend** | **NestJS 11 + TypeScript 5.9**          | Monolito modular; runtime **Node 24** (Active LTS)                             |
+| **Web**           | **Next.js 16 (App Router) + React 19**  | Landing (apex) + Admin / Super en `web/`                                       |
+| **App móvil**     | **Flutter**                             | Afiliado y staff (mismo binario); acceso QR / wallet SSI                       |
+| **Base de datos** | **PostgreSQL 16**                       | Multi-tenant por `tenant_id`                                                   |
+| **ORM**           | **Prisma 6** (`api/prisma/`)            | `migrate deploy` al arrancar la API; seed demo a mano. Prisma 7 diferido (ESM) |
+| **Auth API**      | JWT + refresh (propio) en MVP           | Clerk/Auth0 opcional después                                                   |
+| **Jobs**          | BullMQ + Redis (cuando haga falta)      | Vencimientos, mails, recurrencias                                              |
+| **Email N1**      | MailPort: stub o Resend (`MAIL_DRIVER`) | Push N2 post-MVP                                                               |
+| **Storage**       | Object storage S3-compatible            | Fotos de progreso                                                              |
+| **Pagos**         | Mercado Pago (cuenta del gym)           |                                                                                |
+| **Acceso**        | Adapter SSI / Quark                     | Intercambiable                                                                 |
+
 
 Estructura de repo sugerida:
 
@@ -35,6 +37,8 @@ docs/           # C-producto (ya existe)
 
 ---
 
+
+
 ## 1. Objetivos técnicos
 
 1. Multi-tenant con aislamiento estricto de datos (RN-TEN-001).
@@ -45,19 +49,21 @@ docs/           # C-producto (ya existe)
 
 ---
 
+
+
 ## 2. Vista de contexto (C4 L1)
 
 ```text
-┌─────────────┐     ┌─────────────┐     ┌──────────────────┐
-│ App móvil   │     │ Web Admin   │     │ Web Super Admin  │
-│ (afiliado + │     │ (staff gym) │     │ (GymBro)         │
-│  staff luz) │     │             │     │                  │
-└──────┬──────┘     └──────┬──────┘     └────────┬─────────┘
-       │                   │                     │
-       └────────────┬──────┴─────────────────────┘
+┌─────────────┐     ┌───────────────┐     ┌──────────────────┐
+│ App móvil   │     │ Web Admin     │     │    Web Admin     │
+│ (afiliado + │     │(staff tennant)│     │   (Faciliter)    │
+│  staff luz) │     │               │     │                  │
+└──────┬──────┘     └──────┬────────┘     └────────┬─────────┘
+       │                   │                       │
+       └────────────┬──────┴───────────────────────┘
                     ▼
             ┌───────────────┐
-            │  API GymBro   │
+            │  API Faciliter│
             │  (backend)    │
             └───────┬───────┘
                     │
@@ -66,24 +72,28 @@ docs/           # C-producto (ya existe)
 ┌─────────┐  ┌───────────┐  ┌────────────┐  ┌────────────────┐
 │  DB     │  │ Mercado   │  │ Access     │  │ Email (N1)     │
 │ tenant  │  │ Pago      │  │ Adapter    │  │ proveedor SMTP │
-│ scoped  │  │ (x gym)   │  │ → Quark    │  │ / ESP          │
+│ scoped  │  │ (x gym)   │  │ → Kuatia   │  │ / ESP          │
 └─────────┘  └───────────┘  └────────────┘  └────────────────┘
 ```
 
 ---
 
+
+
 ## 3. Estilo de despliegue recomendado (MVP)
 
-| Opción | Cuándo |
-|--------|--------|
-| **Modular monolith** (recomendado) | Un deploy, módulos por carpetas/bounded contexts |
-| Microservicios | Post-MVP solo si un módulo lo exige (ej. acceso de alto QPS) |
+
+| Opción                             | Cuándo                                                       |
+| ---------------------------------- | ------------------------------------------------------------ |
+| **Modular monolith** (recomendado) | Un deploy, módulos por carpetas/bounded contexts             |
+| Microservicios                     | Post-MVP solo si un módulo lo exige (ej. acceso de alto QPS) |
+
 
 Estructura lógica interna:
 
 ```text
 api/                    # NestJS (módulos por dominio dentro de src/)
-web/                    # Next.js — landing (apex) + Admin (slug.localhost) + Super (/super)
+web/                    # Next.js — landing (apex) + Admin (slug.localhost) 
 mobile/                 # Flutter
 # Dominios Nest (api/src):
 #   auth, tenants, members, staff, roles, services, packs, sessions,
@@ -91,24 +101,32 @@ mobile/                 # Flutter
 #   refunds, receipts, access, quark, audit, reports, tenant-settings, …
 ```
 
-CORS: la API acepta orígenes de `CORS_ORIGIN` (default `http://localhost:3000`) para el panel web.
+CORS: la API acepta orígenes de `CORS_ORIGIN` (default `http://localhost:3002`) para el panel web.
 
 ---
 
+
+
 ## 4. Multi-tenant
+
+
 
 ### 4.1 Modelo
 
-- **Tenant = Gimnasio** (row-level isolation con `tenant_id` en todas las tablas de negocio).
-- Super Admin opera fuera del scope de un gym (CRUD de tenants). Para operar un gym: `POST /auth/super/impersonate` (cookie `impersonation_handoff` ~60 s) + `POST /auth/from-handoff` en el origen del gym (JWT Staff 4h) + rutas Staff. QA web con HTTPS.
+- **Tenant = Gimnasio** (row-level isolation con `tenant_id` en todas las tablas de negocio). La plataforma Faciliter es el tenant `admin`: staff con `tenantId` como cualquier gym, más permisos `platform.*`.
+- Operar otro gym: impersonación (§5), no un perfil JWT sin tenant.
 - Staff/afiliado: `tenantId` del **JWT** (`TenantGuard` + `@CurrentTenant()` / `@RequireTenantAuth()`). Nunca confiar en body (RN-TEN-001).
 - Tenant **suspendido**: se corta en **login/refresh**; el access JWT puede vivir hasta su TTL (~15 min).
+
+
 
 ### 4.2 Sucursales (S2)
 
 - Tabla `branches` (modelo Prisma `Branch`) desde día 1.
-- MVP UI: una sucursal activa/default; APIs ya pueden exponer `defaultBranch` en respuestas Super (`POST/GET /api/tenants`).
+- MVP UI: una sucursal activa/default; APIs ya pueden exponer `defaultBranch` en respuestas de plataforma (`POST/GET /api/tenants`).
 - Al crear tenant: seed automático `Sede principal` (`is_default = true`). Sin CRUD multi-sede en esta etapa.
+
+
 
 ### 4.3 Plan SaaS GymBro
 
@@ -117,37 +135,44 @@ CORS: la API acepta orígenes de `CORS_ORIGIN` (default `http://localhost:3000`)
 
 ---
 
+
+
 ## 5. Autenticación y autorización
 
 ```text
 Login por perfil o cuenta → access JWT + refresh (Postgres)
-      → claims: sub, profileType (SUPER|STAFF|MEMBER|IDENTITY), tenantId?, email
+      → claims: sub, profileType (STAFF|MEMBER|IDENTITY), tenantId?, email
       → JwtAuthGuard
       → (E1) permisos unión de roles + flags (CU-ROL-006)
 ```
 
+
 | Perfil | Notas | Endpoint login |
 |--------|-------|----------------|
-| Super Admin | Sin tenant (RN-ROL-001) | `POST /api/auth/super/login` |
+| Staff | `tenantId` obligatorio. Plataforma = slug `admin` (rol `super-admin`, `platform.*`). RN-ROL-001 | `POST /api/auth/staff/login` (`tenantSlug`) o identity + `POST /auth/select-context` |
 | Identity | Persona; **sin** `tenantId` | `POST /api/auth/identity/login` o `POST /api/auth/google` |
-| Staff | `tenantId` obligatorio | `POST /api/auth/staff/login` o identity + `POST /auth/select-context` |
 | Afiliado | Perfil separado (RN-ROL-005) | `POST /api/auth/member/login` o identity + select-context |
+
 
 Identity: `GET /api/auth/memberships` + `POST /api/auth/select-context`. Alta web: `POST /api/auth/identity/register`, `POST /api/identity/signups` (preapproval en MP de `admin`; gym nace en webhook). Apex: `/login` sin sesión (carga hasta cookie/JWT); `/cuenta` autenticado = mismo `AccountPanel` que el gym + Mis tenants + plan. Google app: `POST /api/auth/google`. Google web: proxy `login.faciliter.xyz` → `POST /api/auth/from-cookie`.
 
 También: `POST /api/auth/refresh`, `POST /api/auth/logout`, `GET /api/auth/me` (incluye `tenantId` y `platformAccess` `ok`|`limited` para recorte de plan Faciliter), `POST /api/auth/change-password` (JWT STAFF o IDENTITY; verifica la actual con bcrypt y revoca refresh → re-login).
 
 Rutas de negocio del gym: `@RequireTenantAuth()` = JWT + `TenantGuard` + `PlatformAccessGuard` (RN-PAG-018). Staff limitado: 403 salvo `@AllowWhenLimited()` (`GET /plan`, `GET /me/permissions`). Impersonación y MEMBER no se recortan.
-Rutas de plataforma: tenant `admin` + `platform.*`. Operar un gym = `POST /api/auth/super/impersonate` (cookie) → `{slug}/login?handoff=1` → `POST /api/auth/from-handoff` + rutas Staff (no hay espejos nested).
+Rutas de plataforma: tenant `admin` + `platform.*`. Operar un gym: `POST /api/auth/super/impersonate` setea cookie `impersonation_handoff` (un uso, ~60 s, `SameSite=None; Secure`, `Domain` = `COOKIE_PARENT_DOMAIN` o `.` + `CORS_APP_DOMAIN`) y **no** devuelve JWT; el browser va a `{slug}/login?handoff=1` y canjea con `POST /api/auth/from-handoff` (JWT Staff 4h, borra cookie). Store en memoria (`ImpersonationHandoffStore`), como el proxy Google (`central_session`); restart de API mata handoffs pendientes. Sin tabla Prisma. QA web en HTTPS: `http://*.localhost` no comparte esa cookie. Volver: `/cuenta` → logout del gym; la sesión de plataforma sigue en el origen `admin`. No hay espejos nested de negocio.
 Autorización fina staff: `@RequirePermission('code')` (unión de roles; permisos `dangerous` = flags RN-ROL-007).
 
 Afiliado y staff **nunca** comparten el mismo perfil de sesión (RN-ROL-005).
 
-Pruebas manuales: colección Postman en [`postman/`](../postman/).
+Pruebas manuales: colección Postman en `[postman/](../postman/)`.
 
 ---
 
+
+
 ## 6. Adapter de acceso (OID4VP)
+
+
 
 ### 6.1 Flujo OID4VP (implementado)
 
@@ -168,6 +193,8 @@ Identidad = claim `memberId` de la VC de pack (`urn:faciliter:pack:{id}`). Sin s
 - Eliminados: `ACCESS_PROVIDER=stub`, `AccessIdentityProvider` stub, `POST /access/verify`, `POST /me/access/check-in`, endpoints `access-credentials`.
 - Tabla `access_credentials` queda legada (sin API).
 
+
+
 ### 6.2b Kuatia (OID4VCI + OID4VP)
 
 Diseño: [12-acceso-quark-oid4-diseno.md](./12-acceso-quark-oid4-diseno.md). Docs API: [kuatia.xyz/docs](https://kuatia.xyz/docs).
@@ -175,13 +202,16 @@ Diseño: [12-acceso-quark-oid4-diseno.md](./12-acceso-quark-oid4-diseno.md). Doc
 **Modelo:** 1 producto Kuatia “GymBro” → **1 issuer + 1 verifier** compartidos. Gyms se distinguen por claims (`tenantId`, `packId`), no por wallets.
 
 **Implementado (corte adapter):**
-- Compose **sin** `quark-issuer` / `quark-verifier`; bases y keys en `KUATIA_*` (`api/.env`).
+
+- Compose **sin** `quark-issuer` / `quark-verifier`; bases y keys en `KUATIA_`* (`api/.env`).
 - Auth admin: header `x-api-key` (`iss_live_…` / `ver_live_…`) en `HttpQuarkAdminAdapter`.
 - Al `POST /api/tenants`: solo DB GymBro + **bind** de wallet IDs compartidos (`READY` / `MISSING` si falta env). No crea issuer/verifier.
 - Reintento Super: `POST /api/tenants/:id/quark/provision` (mismo bind).
 - Create/update pack → `PATCH …/records/metadata` del issuer compartido (`pack_{id}` / `urn:faciliter:pack:{id}`; soft-fail en `packs.quark_*`).
 - Offer / VP: mismos flujos, contra IDs fijos de env.
 - Columnas/módulo `quark_*` se mantienen por compatibilidad de schema/API.
+
+
 
 ### 6.3 Evaluación de ingreso (dominio puro)
 
@@ -203,13 +233,19 @@ Implementado: `POST /access/oid4vp/request` + `GET /access/oid4vp/session/:id` (
 
 ---
 
+
+
 ## 7. Pagos (Mercado Pago + caja)
+
+
 
 ### 7.1 Principios
 
 - Credenciales MP **por tenant** (`mercadopago_accounts`; access_token cifrado; permiso `mp.connect`).
 - Derechos (contratación/reserva) solo tras `aprobado` (RN-PAG-004).
 - Toda intención de cobro: `idempotency_key` única de negocio (RN-PAG-005).
+
+
 
 ### 7.1b Cuenta MP (CU-PAG-006)
 
@@ -241,7 +277,9 @@ Env: `MP_CHECKOUT_MODE=stub|live`, `PUBLIC_API_BASE_URL` (notification_url).
 
 - `MovimientoCaja` ligado a `Pago`.
 - `ArqueoCaja` por fecha (+ sucursal cuando multi-sede UI).
-- Admin: `/arqueo` = **Cierre**; `/devoluciones` = **Solicitudes de devolución** (`refund_requests`). Grilla: `kind` (ingreso/egreso) + `category` (`SALE` / `REFUND`) **derivada de `kind`** en `buildLedgerRows`. Post-MVP: columna/enum persistido en `cash_movements` (compra y gastos no se infieren del sentido del dinero). Ver backlog Pagos.
+- Admin: `/arqueo` = **Cierre**; `/devoluciones` = **Solicitudes de devolución** (`refund_requests`). Grilla: `kind` (ingreso/egreso) + `category` (`SALE` / `REFUND`) **derivada de** `kind` en `buildLedgerRows`. Post-MVP: columna/enum persistido en `cash_movements` (compra y gastos no se infieren del sentido del dinero). Ver backlog Pagos.
+
+
 
 ### 7.4 Devoluciones
 
@@ -255,6 +293,8 @@ Staff POST /transactions/:id/refunds (transaction_items.refund)
   → POST /transaction-items/:id/refunds = wrapper de un ítem
   → motiveCode=doble_cobro (CU-PAG-007)
 ```
+
+
 
 ### 7.5 Débito automático MONTHLY
 
@@ -285,6 +325,8 @@ Caja /caja?memberId=&vista=debitos (CU-PAG-010)
   devolver cobro que inscribió → cancelByEnrolledItems + cancel MP
 ```
 
+
+
 ## 8. Módulo catálogo / reservas
 
 - Generación de sesiones por `ReglaRecurrencia` (job o al guardar regla con horizonte).
@@ -292,6 +334,8 @@ Caja /caja?memberId=&vista=debitos (CU-PAG-010)
 - Lista de espera: strategy pattern por `modoListaEspera` (auto / afiliado / staff).
 
 ---
+
+
 
 ## 9. Notificaciones
 
@@ -308,6 +352,8 @@ Canales futuros (WhatsApp/Push) = nuevos `ChannelSender` sin tocar el dispatcher
 
 ---
 
+
+
 ## 10. Rutinas
 
 - Blob/snapshot JSON o tablas de días/ítems al asignar (copia).
@@ -315,6 +361,8 @@ Canales futuros (WhatsApp/Push) = nuevos `ChannelSender` sin tocar el dispatcher
 - Independiente de sesiones (sin FK obligatoria a Sesion).
 
 ---
+
+
 
 ## 11. Auditoría
 
@@ -325,55 +373,67 @@ Canales futuros (WhatsApp/Push) = nuevos `ChannelSender` sin tocar el dispatcher
 
 ---
 
+
+
 ## 12. APIs (contrato conceptual)
 
 Prefijo sugerido: `/api/v1`.
 
-| Área | Endpoints / CU relacionados |
-|------|------------------------------|
-| Auth | `POST /auth/login`, refresh |
-| Super | CRUD `/tenants`, `GET /tenants/:id/staff`, `POST /auth/super/impersonate` + `POST /auth/from-handoff`, `POST /tenants/:id/quark/provision`. Operar el gym = impersonar (rutas Staff). |
-| Afiliados | CRUD `/members` (Staff JWT) |
-| Catálogo | `/services`, `/packs`, `/sessions`; landing `GET /public/platform/packs` |
-| Reservas | `/sessions/:id/reservations`, waitlist |
-| Billing | cart MP `/me|members/:id/transaction-items/mp/cart`, cash cart Staff, webhook `/webhooks/payment` |
-| Access | `/access/oid4vp/request`, `/access/oid4vp/session/:id`, `/access-attempts`, `GET /members/:id/access-preview`, manual-pass |
-| Chat (servicio `chat-api` :3010) | `GET /health`; `POST /v1/public/session` (landing); `GET/POST /v1/conversations`; `GET/PATCH/DELETE /v1/conversations/:id`; `GET/POST /v1/conversations/:id/messages` (POST = UI Message Stream; OpenRouter + MCP) |
-| MCP (servicio `mcp` :3011) | `GET /health`; `POST /mcp` Streamable HTTP + Bearer. Tools A–D (lectura): operación, reportes/débitos/devoluciones, catálogo/roles/audit slim, `get_help` (`producto`, `guia` + temas) |
-| Carpeta | `/folder-labels`, `/members/:id/folder`, `/staff/:id/folder`, `/me/folder` |
-| Notif N1 | Member `GET /me/notifications` (solo socio). Staff plantillas `/notification-templates`. Avisos de plan Faciliter: mail al Identity dueño, no GET staff. |
-| Afiliados | Staff CRUD members + PATCH status (`members.deactivate`); estado de cuenta `GET /members/:id/account` / `GET /me/account?coverage=current\|all` |
-| Sesiones | Staff `GET|POST|PATCH /sessions`, `PATCH /sessions/:id/capacity` (ampliar cupo) + `/session-recurrence-rules` (`sessions.write`) |
-| Reservas | Member `/me/reservations` (crédito) + cancel; Staff `POST /members/:id/reservations` (CREDIT) + `GET /sessions/:id/reservations` + `PATCH /reservations/:id/status` (`reservations.write`) |
-| Waitlist | Member `/me/waitlist`; Staff `POST /members/:id/waitlist`, `GET /sessions/:id/waitlist` (`reservations.write`; query `status` / `allStatuses`); promoción AUTO al liberar cupo |
-| Settings | Staff `GET|PATCH /tenant-settings` (`tenant.settings.*`; horas cancelación, `waitlistMode`, `allowLateSessionEntry`) |
-| Caja | Staff `GET /payment-register/day`, `POST /payment-register/day/reconcile` (`cashier.operate`); ingresos = cart; egresos = una ejecución de devolución |
-| Mercado Pago | Staff `GET|PUT|DELETE /mercadopago/account`, `POST .../test` (`mp.connect`); webhook `POST /webhooks/payment`; cart Member `POST /me/transaction-items/mp/cart`; cart Staff `POST /members/:id/transaction-items/mp/cart` |
-| Devoluciones | Member `POST /me/transaction-items/:id/refund-requests`, `GET /me/refund-requests`; Staff `GET /refund-requests`, `POST /transactions/:id/refunds` (lote) y `POST /transaction-items/:id/refunds` (wrapper) (`transaction_items.refund`) |
-| Comprobantes | Member `/me/receipts`; Staff `GET /receipts/:id`, `GET /transactions/:id/receipt` (`members.read`); `lines[]` (pack → contrato/vigencia + `services[]`; drop-in → reserva/horario) |
-| Catálogo | Staff CRUD services + packs (`catalog.write`; kind inferido; `creditsExpireAt`; `imageUrl`). Member `GET /me/packs` (`imageUrl`) y `GET /me/sessions` (`serviceImageUrl`) |
-| Contrataciones | Alta de pack: Caja o MP; `POST /members/:id/contracts` con STUB → 400; re-oferta `POST /members/:id/credential-offers` (`packId` opcional); `PATCH /contracts/:id/status` → `CANCELLED` (pierde derechos, RN-SER-009); Member `GET /me/contracts` |
-| Roles | Staff list-get-create-patch roles; `PUT /staff/:id/roles`; `GET /me/permissions` (UI nav). Super: `GET /tenants/:id/staff` + impersonate |
-| Auditoría | Staff `/auditoria` → `GET /audit-events` (`audit.read`); Super impersona; escritura en mutaciones |
-| Reportes | Staff `GET /reports/summary?from&to` (`reports.read`); ingresos $ + devoluciones + snapshot; `transactions[]` misma fila que caja |
-| Vencimientos | Staff `GET /expirations?view&pay` (`members.read`); cola MONTHLY por vencer (7 días) o en tolerancia; no es reporte |
-| Caja | `/cash/day`, `/cash/close` |
+
+| Área                             | Endpoints / CU relacionados                                                                                                                                                                                                                       |
+| -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Auth                             | `POST /auth/login`, refresh                                                                                                                                                                                                                       |
+| Plataforma | Staff del tenant `admin` + `platform.*`. CRUD `/tenants`, `GET /tenants/:id/staff`, `POST /auth/super/impersonate` (nombre histórico) + `POST /auth/from-handoff`, `POST /tenants/:id/quark/provision`. Operar el gym = impersonar (rutas Staff). |
+| Afiliados                        | CRUD `/members` (Staff JWT)                                                                                                                                                                                                                       |
+| Catálogo                         | `/services`, `/packs`, `/sessions`; landing `GET /public/platform/packs`                                                                                                                                                                          |
+| Reservas                         | `/sessions/:id/reservations`, waitlist                                                                                                                                                                                                            |
+| Billing                          | cart MP `/me                                                                                                                                                                                                                                      |
+| Access                           | `/access/oid4vp/request`, `/access/oid4vp/session/:id`, `/access-attempts`, `GET /members/:id/access-preview`, manual-pass                                                                                                                        |
+| Chat (servicio `chat-api` :3010) | `GET /health`; `POST /v1/public/session` (landing); `GET/POST /v1/conversations`; `GET/PATCH/DELETE /v1/conversations/:id`; `GET/POST /v1/conversations/:id/messages` (POST = UI Message Stream; OpenRouter + MCP)                                |
+| MCP (servicio `mcp` :3011)       | `GET /health`; `POST /mcp` Streamable HTTP + Bearer. Tools A–D (lectura): operación, reportes/débitos/devoluciones, catálogo/roles/audit slim, `get_help` (`producto`, `guia` + temas)                                                            |
+| Carpeta                          | `/folder-labels`, `/members/:id/folder`, `/staff/:id/folder`, `/me/folder`                                                                                                                                                                        |
+| Notif N1                         | Member `GET /me/notifications` (solo socio). Staff plantillas `/notification-templates`. Avisos de plan Faciliter: mail al Identity dueño, no GET staff.                                                                                          |
+| Afiliados                        | Staff CRUD members + PATCH status (`members.deactivate`); estado de cuenta `GET /members/:id/account` / `GET /me/account?coverage=current                                                                                                         |
+| Sesiones                         | Staff `GET                                                                                                                                                                                                                                        |
+| Reservas                         | Member `/me/reservations` (crédito) + cancel; Staff `POST /members/:id/reservations` (CREDIT) + `GET /sessions/:id/reservations` + `PATCH /reservations/:id/status` (`reservations.write`)                                                        |
+| Waitlist                         | Member `/me/waitlist`; Staff `POST /members/:id/waitlist`, `GET /sessions/:id/waitlist` (`reservations.write`; query `status` / `allStatuses`); promoción AUTO al liberar cupo                                                                    |
+| Settings                         | Staff `GET                                                                                                                                                                                                                                        |
+| Caja                             | Staff `GET /payment-register/day`, `POST /payment-register/day/reconcile` (`cashier.operate`); ingresos = cart; egresos = una ejecución de devolución                                                                                             |
+| Mercado Pago                     | Staff `GET                                                                                                                                                                                                                                        |
+| Devoluciones                     | Member `POST /me/transaction-items/:id/refund-requests`, `GET /me/refund-requests`; Staff `GET /refund-requests`, `POST /transactions/:id/refunds` (lote) y `POST /transaction-items/:id/refunds` (wrapper) (`transaction_items.refund`)          |
+| Comprobantes                     | Member `/me/receipts`; Staff `GET /receipts/:id`, `GET /transactions/:id/receipt` (`members.read`); `lines[]` (pack → contrato/vigencia + `services[]`; drop-in → reserva/horario)                                                                |
+| Catálogo                         | Staff CRUD services + packs (`catalog.write`; kind inferido; `creditsExpireAt`; `imageUrl`). Member `GET /me/packs` (`imageUrl`) y `GET /me/sessions` (`serviceImageUrl`)                                                                         |
+| Contrataciones                   | Alta de pack: Caja o MP; `POST /members/:id/contracts` con STUB → 400; re-oferta `POST /members/:id/credential-offers` (`packId` opcional); `PATCH /contracts/:id/status` → `CANCELLED` (pierde derechos, RN-SER-009); Member `GET /me/contracts` |
+| Roles                            | Staff list-get-create-patch roles; `PUT /staff/:id/roles`; `GET /me/permissions` (UI nav). Super: `GET /tenants/:id/staff` + impersonate                                                                                                          |
+| Auditoría                        | Staff `/auditoria` → `GET /audit-events` (`audit.read`); Super impersona; escritura en mutaciones                                                                                                                                                 |
+| Reportes                         | Staff `GET /reports/summary?from&to` (`reports.read`); ingresos $ + devoluciones + snapshot; `transactions[]` misma fila que caja                                                                                                                 |
+| Vencimientos                     | Staff `GET /expirations?view&pay` (`members.read`); cola MONTHLY por vencer (7 días) o en tolerancia; no es reporte                                                                                                                               |
+| Caja                             | `/cash/day`, `/cash/close`                                                                                                                                                                                                                        |
+
+
+
 
 Todas las rutas de tenant validan membership/permiso + `tenant_id` del token.
 
 ---
 
+
+
 ## 13. Datos y consistencia
 
-| Tema | Enfoque MVP |
-|------|-------------|
-| Transacciones | DB transacciones al confirmar pago → derechos |
-| Webhooks | Inbox de eventos MP con dedup por id MP + idempotencyKey |
-| Jobs | Cron Nest 12:00 ART: avisos pack por vencer / tolerancia (E2/E3). Recurrencias de sesiones aparte. |
-| Archivos | R2: fotos `tenants/{tenantId}/…` (`POST /upload` URL pública). Al quitar o reemplazar foto de ficha/staff/servicio/pack (y al borrar físico) se llama `delete` del objeto viejo. Carpeta `folder/{tenantId}/…` + GET JWT (delete de FILE ya borra R2). |
-| Notif N1 | Dispatcher + `MailPort`. Socio: in-app + mail. Dueño gym: mail + fila `identity_id` (plan Faciliter). Plantillas gym `/avisos` solo eventos socio. Push y cola: post-MVP. |
+
+| Tema          | Enfoque MVP                                                                                                                                                                                                                                            |
+| ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Transacciones | DB transacciones al confirmar pago → derechos                                                                                                                                                                                                          |
+| Webhooks      | Inbox de eventos MP con dedup por id MP + idempotencyKey                                                                                                                                                                                               |
+| Jobs          | Cron Nest 12:00 ART: avisos pack por vencer / tolerancia (E2/E3). Recurrencias de sesiones aparte.                                                                                                                                                     |
+| Archivos      | R2: fotos `tenants/{tenantId}/…` (`POST /upload` URL pública). Al quitar o reemplazar foto de ficha/staff/servicio/pack (y al borrar físico) se llama `delete` del objeto viejo. Carpeta `folder/{tenantId}/…` + GET JWT (delete de FILE ya borra R2). |
+| Notif N1      | Dispatcher + `MailPort`. Socio: in-app + mail. Dueño gym: mail + fila `identity_id` (plan Faciliter). Plantillas gym `/avisos` solo eventos socio. Push y cola: post-MVP.                                                                              |
+
 
 ---
+
+
 
 ## 14. Seguridad (mínimo)
 
@@ -385,6 +445,8 @@ Todas las rutas de tenant validan membership/permiso + `tenant_id` del token.
 
 ---
 
+
+
 ## 15. Observabilidad
 
 - Request id / correlation id.
@@ -393,21 +455,27 @@ Todas las rutas de tenant validan membership/permiso + `tenant_id` del token.
 
 ---
 
+
+
 ## 16. Decisiones técnicas pendientes (detalle fino)
 
 Stack principal cerrado en §0. Queda por cerrar al scaffold:
 
-| Tema | Estado |
-|------|--------|
-| ORM (Prisma vs Drizzle) | **Prisma 6** (Drizzle descartado; Prisma 7 diferido por ESM/Nest) |
-| Runtime Node | **24 Active LTS** (`node:24-alpine` en Docker) |
-| Hosting (Railway / Fly / VPS / AWS) | Pendiente (prod) |
+
+| Tema                                                      | Estado                                                                                                                       |
+| --------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| ORM (Prisma vs Drizzle)                                   | **Prisma 6** (Drizzle descartado; Prisma 7 diferido por ESM/Nest)                                                            |
+| Runtime Node                                              | **24 Active LTS** (`node:24-alpine` en Docker)                                                                               |
+| Hosting (Railway / Fly / VPS / AWS)                       | Pendiente (prod)                                                                                                             |
 | Docker Compose (postgres, redis, api, web, chat-api, mcp) | Hecho (imágenes de build; migrate al arrancar; seed a mano; chat-api C1–C7 salvo tope de uso; mcp C3+C6; drawer Admin chips) |
-| CI mínimo (GitHub Actions: lint + build api/web) | Hecho (`.github/workflows/ci.yml`) |
-| Monorepo tool (pnpm workspaces / Turborepo / separado) | **Separado** — sin package.json raíz; cada app se instala sola |
-| Proveedor exacto de email | Pendiente |
+| CI mínimo (GitHub Actions: lint + build api/web)          | Hecho (`.github/workflows/ci.yml`)                                                                                           |
+| Monorepo tool (pnpm workspaces / Turborepo / separado)    | **Separado** — sin package.json raíz; cada app se instala sola                                                               |
+| Proveedor exacto de email                                 | Pendiente                                                                                                                    |
+
 
 ---
+
+
 
 ## 17. Mapa a post-MVP
 
