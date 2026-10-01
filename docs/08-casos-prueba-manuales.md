@@ -184,7 +184,7 @@ Pasos de VPS: [uso/probar-debito-suscripcion-mp.md](./uso/probar-debito-suscripc
 
 | # | Caso | Esperado | RN/CU | R |
 |---|------|----------|-------|---|
-| C6-1 | `npm run smoke` con JWT Admin seed | 17 tools; `get_reports_summary` sin args = mes BA; `get_help` packs | C6 | |
+| C6-1 | `npm run smoke` con JWT Admin seed | 19 tools; `get_reports_summary` sin args = mes BA; `get_help` packs; gastos OK Admin / sin permiso Entrenador | C6 | |
 | C6-2 | Drawer: “ingresos de este mes” | Tool reportes + una línea; totales del mes | C6 | |
 | C6-3 | Drawer: “qué packs hay” / “cómo enrolar débito” / “cómo conectar Mercado Pago” / “dónde cargo la rutina o un PDF del socio” | `list_packs` / `get_help` debito / `get_help` mercadopago / `get_help` carpeta | C6 | |
 | C6-5 | Landing o Admin: “cómo se ve Caja / qué ve el socio en Inicio” | `get_help` topic `guia`; puede mandar a `/docs` para las fotos | C6 | |

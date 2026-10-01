@@ -3,6 +3,7 @@ import { registerAccessTools } from './tools/access.js';
 import { registerAuditTools } from './tools/audit.js';
 import { registerCatalogTools } from './tools/catalog.js';
 import { registerDebitTools } from './tools/debit.js';
+import { registerExpenseTools } from './tools/expenses.js';
 import { registerHelpTools } from './tools/help.js';
 import { registerMemberTools } from './tools/members.js';
 import { registerNavTools } from './tools/nav.js';
@@ -26,6 +27,7 @@ export function createGymbroMcpServer(): McpServer {
   registerRegisterTools(server);
   registerNavTools(server);
   registerReportsTools(server);
+  registerExpenseTools(server);
   registerRefundTools(server);
   registerDebitTools(server);
   registerCatalogTools(server);

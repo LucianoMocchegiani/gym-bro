@@ -34,7 +34,7 @@ docker compose up --build -d api mcp
 
 **A:** `search_members`, `get_member_account`, `preview_member_access`, `list_sessions`, `get_session`, `get_cash_day`, `suggest_nav`.
 
-**B:** `get_reports_summary`, `list_refund_requests`, `list_debit_mandates`.
+**B:** `get_reports_summary`, `get_expenses_summary` y `list_expenses` (gastos, `expenses.read`; etiqueta por nombre), `list_refund_requests`, `list_debit_mandates`.
 
 **C:** `list_services`, `list_packs`, `get_pack`, `list_roles`, `get_role`, `search_audit_events`.
 
@@ -57,6 +57,6 @@ npm run smoke
 
 Login automático a `http://localhost:3001` (`admin@gymdeprueba.com` y `entrenador@gymdeprueba.com`). Overrides: `ACCESS_TOKEN`, `ACCESS_TOKEN_ENTRENADOR`, `GYMBRO_API_URL`, `TENANT_SLUG`.
 
-Esperado: 17 tools; reportes `this_month` ≠ `last_month`; Admin puede caja; Entrenador recibe “no hay permiso” en caja/débitos y sí reportes + help.
+Esperado: 19 tools; reportes `this_month` ≠ `last_month`; Admin puede caja y gastos; Entrenador recibe “no hay permiso” en caja/débitos/gastos y sí reportes + help.
 
 Colección Postman aparte: `postman/GymBro.mcp.postman_collection.json` (health + initialize). El flujo completo de tools es el smoke.

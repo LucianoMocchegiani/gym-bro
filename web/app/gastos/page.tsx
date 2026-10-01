@@ -196,7 +196,7 @@ function GastosInner() {
   return (
     <AdminShell
       title="Gastos"
-      subtitle="Alquiler, sueldos, luz, mercadería… Lo que sale del gym."
+      subtitle="Alquiler, sueldos, luz, etc."
       actions={
         <div className="page-head-actions">
           <button type="button" className="btn ghost" onClick={() => go('etiquetas=1')}>

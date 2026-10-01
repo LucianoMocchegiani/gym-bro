@@ -21,6 +21,7 @@ const searchQ = process.env.SEARCH_Q?.trim() || 'socio';
 
 const EXPECTED_TOOLS = [
   'get_cash_day',
+  'get_expenses_summary',
   'get_help',
   'get_member_account',
   'get_pack',
@@ -28,6 +29,7 @@ const EXPECTED_TOOLS = [
   'get_role',
   'get_session',
   'list_debit_mandates',
+  'list_expenses',
   'list_packs',
   'list_refund_requests',
   'list_roles',
@@ -180,6 +182,16 @@ async function smokeAdmin(client: Client): Promise<void> {
   if (cash.isError) {
     throw new Error(`admin get_cash_day error: ${cash.text}`);
   }
+
+  const expenses = await callJson(client, 'get_expenses_summary', { period: 'this_month' });
+  if (expenses.isError || (expenses.json as ReportSlim | null)?.period !== 'this_month') {
+    throw new Error(`admin get_expenses_summary error: ${expenses.text}`);
+  }
+  const expenseList = await callJson(client, 'list_expenses', {});
+  if (expenseList.isError) {
+    throw new Error(`admin list_expenses error: ${expenseList.text}`);
+  }
+  console.log('get_expenses_summary:', expenses.text.slice(0, 180));
 }
 
 async function smokeEntrenador(client: Client): Promise<void> {
@@ -194,6 +206,12 @@ async function smokeEntrenador(client: Client): Promise<void> {
     throw new Error(`entrenador list_debit_mandates debía negar permiso: ${debit.text}`);
   }
   console.log('entrenador list_debit_mandates:', debit.text);
+
+  const expenses = await callJson(client, 'get_expenses_summary', {});
+  if (!expenses.isError || !expenses.text.toLowerCase().includes('permiso')) {
+    throw new Error(`entrenador get_expenses_summary debía negar permiso: ${expenses.text}`);
+  }
+  console.log('entrenador get_expenses_summary:', expenses.text);
 
   const reports = await callJson(client, 'get_reports_summary', {});
   if (reports.isError) {

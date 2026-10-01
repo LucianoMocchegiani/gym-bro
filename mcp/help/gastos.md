@@ -10,6 +10,6 @@ Solo los gastos en **efectivo** restan en el **Cierre** (`/arqueo`): efectivo es
 
 En **Reportes** aparecen los gastos del período (fijos y variables, por etiqueta) y el **resultado**: ingresos − devoluciones − gastos.
 
-No hay gastos recurrentes automáticos: cada mes se carga el gasto. El asistente **no carga** gastos.
+No hay gastos recurrentes automáticos: cada mes se carga el gasto. El asistente puede **consultar** gastos (cuánto se gastó en un período, por etiqueta, los últimos cargados) pero **no carga** ni edita.
 
 Permisos: `expenses.read` para ver, `expenses.write` para cargar, editar y borrar.

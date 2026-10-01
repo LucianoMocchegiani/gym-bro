@@ -105,6 +105,7 @@ Une C2 + C3. `chat-api` sigue sin conocer afiliados.
 
 - [x] `get_reports_summary` (`period` / `from`–`to`)
 - [x] `list_refund_requests`, `list_debit_mandates`
+- [x] `get_expenses_summary`, `list_expenses` (gastos, `expenses.read`)
 - [x] `list_services`, `list_packs`, `get_pack`
 - [x] `list_roles`, `get_role`
 - [x] `search_audit_events` (slim, sin before/after)

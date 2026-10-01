@@ -272,6 +272,7 @@ mcp/
         ├── sessions.ts       # list_sessions, get_session
         ├── register.ts       # get_cash_day
         ├── reports.ts        # get_reports_summary
+        ├── expenses.ts       # get_expenses_summary, list_expenses
         ├── refunds.ts        # list_refund_requests
         ├── debit.ts          # list_debit_mandates
         ├── catalog.ts        # list_services, list_packs, get_pack
@@ -648,6 +649,8 @@ Comparar semanas/meses: **la misma tool dos veces** (`get_reports_summary` con `
 | Tool | Pregunta | REST | Permiso |
 |------|----------|------|---------|
 | `get_reports_summary` | “Ingresos de agosto vs julio” | `GET /api/reports/summary?from&to` | `reports.read` |
+| `get_expenses_summary` | “¿Cuánto gastamos este mes?” / “¿Cuánto fue alquiler?” | `GET /api/expenses/summary?from&to` (mismo `period` que reportes) | `expenses.read` |
+| `list_expenses` | Últimos gastos (máx. 15), filtro por etiqueta (nombre), naturaleza, medio | `GET /api/expenses` slim | `expenses.read` |
 | `list_refund_requests` | Solicitudes de devolución | `GET /api/refund-requests` slim | `transaction_items.refund` |
 | `list_debit_mandates` | Mandatos ACTIVE/FAILED… | `GET /api/debit-mandates` slim | `cashier.operate` |
 
