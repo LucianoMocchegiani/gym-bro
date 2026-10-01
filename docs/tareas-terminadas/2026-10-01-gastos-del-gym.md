@@ -17,6 +17,7 @@ El staff carga lo que paga el gym en **Gastos** (`/gastos`): fecha, monto, Fijo/
 - `payment-register/day`: `cash` y `digital` `{ income, outcome, expenses, expected }`; el arqueo guarda `cash.expected`.
 - Web: pantalla Gastos, panel en Reportes, tarjetas del Cierre (gastos, efectivo y digital esperado); el declarado no propone negativos.
 - MCP: `nav-map` `/gastos`, topic `gastos`, `get_cash_day` con `digital`. Postman carpeta Expenses.
+- MCP (commit `b9a750e`): tools de lectura `get_expenses_summary` y `list_expenses` (`expenses.read`; etiqueta por nombre).
 
 ## Decisiones
 
@@ -30,8 +31,10 @@ El staff carga lo que paga el gym en **Gastos** (`/gastos`): fecha, monto, Fijo/
 - `tsc` API / web / MCP; ESLint de lo nuevo (quedan errores previos en `arqueo` y `PersonFolderModal`).
 - Docker `up --build api web mcp`: migración aplicada; `/gastos`, `/arqueo`, `/reportes` 200.
 - Smoke por API (27 chequeos): permisos, 409 de etiqueta/cierre, tope de 5 comprobantes, efectivo vs digital esperado, auditoría. Datos borrados.
+- `npm run smoke` del MCP: 19 tools; gastos OK con Admin, "No hay permiso" con Entrenador; filtro por etiqueta probado con datos reales.
 
 ## Referencias
 
 - RN-GAS-001..006, RN-PAG-007 ([04](../04-reglas-de-negocio.md)); CU-PAG-003 / CU-PAG-012 ([pagos-caja](../05-casos-de-uso/pagos-caja.md)); [09 §4.15k](../09-esquema-db.md).
 - Commit: `b84c9eb` / https://github.com/LucianoMocchegiani/gym-bro/commit/b84c9eb
+- Tools MCP: `b9a750e` / https://github.com/LucianoMocchegiani/gym-bro/commit/b9a750e
