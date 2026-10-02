@@ -7,6 +7,7 @@ function isPublicMarketingPath(pathname: string): boolean {
     pathname === '/' ||
     pathname.startsWith('/legal') ||
     pathname.startsWith('/docs') ||
+    pathname === '/cuenta/eliminar' ||
     pathname === '/sitemap.xml' ||
     pathname === '/robots.txt'
   );
@@ -35,6 +36,6 @@ export function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    '/((?!_next/static|_next/image|favicon.ico|icon.svg|og-stack.png|apple-icon.png|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+    '/((?!_next/static|_next/image|favicon.ico|icon.svg|apple-icon.png|opengraph-image|twitter-image|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
   ],
 };

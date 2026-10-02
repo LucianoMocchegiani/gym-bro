@@ -7,7 +7,7 @@ import { publicSiteUrl } from '@/lib/site-url';
 export const metadata: Metadata = {
   title: 'Guía de uso',
   description:
-    'Cómo usar Faciliter Brain: panel del local, app del socio, cobros y puerta. Se va refinando con capturas reales.',
+    'Guía de uso de Faciliter: panel del local, app del socio, cobros y puerta. Se va refinando con capturas reales.',
   alternates: { canonical: `${publicSiteUrl()}/docs` },
 };
 

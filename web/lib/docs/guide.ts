@@ -12,18 +12,20 @@ export type DocsPageMeta = {
 export const DOCS_PAGES: readonly DocsPageMeta[] = [
   {
     slug: 'que-es',
-    title: 'Qué es y cómo funciona',
-    description: 'Panel, app y para qué sirve Faciliter Brain.',
+    title: 'Qué es Faciliter y cómo funciona',
+    description: 'Para qué sirve Faciliter: el panel del local y la app del socio.',
   },
   {
     slug: 'primeros-pasos',
-    title: 'Primeros pasos',
-    description: 'Orden para arrancar un local: config, catálogo, gente y cobro.',
+    title: 'Primeros pasos en Faciliter',
+    description:
+      'Orden para arrancar un local en Faciliter: config, catálogo, gente y cobro.',
   },
   {
     slug: 'modulos',
-    title: 'Módulos',
-    description: 'Config, caja, puerta, app y el resto, con más pantallas.',
+    title: 'Módulos de Faciliter',
+    description:
+      'Config, caja, puerta, app y el resto de Faciliter, con más pantallas.',
   },
 ];
 

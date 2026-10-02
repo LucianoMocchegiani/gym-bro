@@ -5,9 +5,10 @@ import { extractTenantSlugFromHost } from '@/lib/tenant-host';
 import { publicSiteUrl } from '@/lib/site-url';
 import { DashboardHome } from './dashboard-home';
 
-const LANDING_TITLE = 'Faciliter — gyms, clubes y estudios';
+const LANDING_TITLE =
+  'Faciliter | Software de afiliaciones para gyms, clubes y estudios';
 const LANDING_DESCRIPTION =
-  'Faciliter Brain: sistema de afiliaciones para gyms, clubes y estudios. Cobros en línea y en efectivo, app del socio, puerta y asistente.';
+  'Faciliter es el sistema de afiliaciones para gyms, clubes y estudios en Argentina: cobros en línea y en efectivo, app del socio, puerta QR y asistente.';
 
 /**
  * Apex de plataforma → landing. Host con slug de gym → dashboard Staff.
@@ -40,20 +41,11 @@ export async function generateMetadata(): Promise<Metadata> {
       siteName: 'Faciliter',
       title: LANDING_TITLE,
       description: LANDING_DESCRIPTION,
-      images: [
-        {
-          url: `${site}/og-stack.png`,
-          width: 1200,
-          height: 1200,
-          alt: 'Faciliter Brain — el cerebro de tus afiliados',
-        },
-      ],
     },
     twitter: {
       card: 'summary_large_image',
       title: LANDING_TITLE,
       description: LANDING_DESCRIPTION,
-      images: [`${site}/og-stack.png`],
     },
     alternates: { canonical: site },
     robots: { index: true, follow: true },

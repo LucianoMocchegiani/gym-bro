@@ -90,19 +90,34 @@ export async function LandingPage() {
   const packs = await fetchPublicPlatformPacks();
   const jsonLd = {
     '@context': 'https://schema.org',
-    '@type': 'SoftwareApplication',
-    name: 'Faciliter',
-    applicationCategory: 'BusinessApplication',
-    operatingSystem: 'Web',
-    description:
-      'Faciliter Brain: sistema de afiliaciones para gyms, clubes y estudios. Cobros en línea y en efectivo, app del afiliado, puerta y asistente.',
-    url: site,
-    offers: {
-      '@type': 'Offer',
-      availability: 'https://schema.org/InStock',
-      url: `${site}#precio`,
-    },
-    areaServed: { '@type': 'Country', name: 'Argentina' },
+    '@graph': [
+      {
+        '@type': 'Organization',
+        '@id': `${site}#organization`,
+        name: 'Faciliter',
+        url: site,
+        logo: `${site}/icon.png`,
+        areaServed: { '@type': 'Country', name: 'Argentina' },
+      },
+      {
+        '@type': 'SoftwareApplication',
+        name: 'Faciliter',
+        alternateName: 'Faciliter Brain',
+        applicationCategory: 'BusinessApplication',
+        operatingSystem: 'Web, Android, iOS',
+        description:
+          'Faciliter es el sistema de afiliaciones para gyms, clubes y estudios: cobros en línea y en efectivo, app del afiliado, puerta QR y asistente.',
+        url: site,
+        image: `${site}/icon.png`,
+        publisher: { '@id': `${site}#organization` },
+        offers: {
+          '@type': 'Offer',
+          availability: 'https://schema.org/InStock',
+          url: `${site}#precio`,
+        },
+        areaServed: { '@type': 'Country', name: 'Argentina' },
+      },
+    ],
   };
 
   return (
@@ -114,13 +129,13 @@ export async function LandingPage() {
 
       <MktShell as="section" className="mkt-hero">
         <div className="mkt-hero-copy">
-          <p className="mkt-kicker">Faciliter Brain</p>
+          <p className="mkt-kicker">Software de afiliaciones · Argentina</p>
           <h1>
-            El cerebro de tus{' '}
+            Faciliter: el cerebro de tus{' '}
             <span className="accent-text">afiliados</span>.
           </h1>
           <p className="mkt-lead">
-            Manejá tu negocio desde Faciliter Brain: afiliados, cobros, puerta
+            Manejá tu negocio desde Faciliter (Brain): afiliados, cobros, puerta
             y app, para gyms, clubes, estudios y cualquier operación con socios.
             Los registros los ves en el panel o se los preguntás al asistente.
           </p>

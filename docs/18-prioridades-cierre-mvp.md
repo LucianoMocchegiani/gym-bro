@@ -14,7 +14,7 @@ Roadmap de épicas históricas: [11-roadmap-mvp.md](./11-roadmap-mvp.md). Diferi
 |---|-----------|------|------------|
 | P1 | Molinetes / hardware de puerta | Diseño + adapters | Kuatia se queda. Contrato fiel a Kuatia; ZKTeco se adapta. Credenciales se generan; en ZK **no se mandan** a Kuatia. Ticket: `local/mis-tickets/ticket-acceso-zkteco-contrato.md` |
 | P2 | Débito automático MONTHLY | QA live | Código: suscripción MP + `init_point`. Falta P9…P9j en VPS |
-| P3 | Landing + pricing + SEO | Comercial / web pública | Apex + catálogo + **alta self-serve**. Falta renovar/cambiar pack y baja de mandato; OG 1200×630 + SEO marca; legales finales; precio a convenir |
+| P3 | Landing + pricing + SEO | Comercial / web pública | Apex + catálogo + **alta self-serve**. Falta renovar/cambiar pack y baja de mandato; legales finales; precio a convenir |
 | P4 | Tokens y costo OpenRouter | Tope staff + insumo de pricing | C7 (abort/título/chips) en repo. Tope **staff** pendiente; landing ya tiene tope por IP. Sin costo $/gym |
 | P5 | Migración de datos (Excel + IA) | Ops / onboarding | **v1 en código** (en testeo): Afiliados → Importar (planilla + zip fotos/carpeta), mapeo heurístico. Falta IA de mapeo y “olvidé mi contraseña” por mail |
 
@@ -64,11 +64,12 @@ Este corte (en código):
 - **Planes** = packs activos del tenant `admin` (`GET /public/platform/packs`).
 - **Alta self-serve:** Identity → `/empezar` → preapproval MP de `admin`; el gym nace en el webhook. Caja `admin` sigue para cobro asistido y prueba 30 días (RN-PAG-017).
 - SEO base: title/meta, OG, canonical, JSON-LD, `sitemap.xml`, `robots.txt`, copy en castellano.
+- SEO de marca: title y H1 con “Faciliter” primero (“Faciliter Brain” queda como `alternateName`), JSON-LD `Organization` + `SoftwareApplication`, preview 1200×630 generada en el build (`app/opengraph-image.tsx`, `lib/brand-image.tsx`, Barlow Condensed en `web/assets/fonts`) e isotipo de triángulo de nodos en favicon, ícono Apple y app.
+- Google Search Console: propiedad de dominio verificada por DNS TXT (fuera del código).
 
 Todavía:
 
 - Renovar / cambiar pack Faciliter y baja de mandato en apex (`PlanPanel` es lectura).
-- OG 1200×630 (hoy `og-stack.png` 1200×1200) y SEO de marca “faciliter”. Detalle: `local/mis-tickets/ticket-seo-og-google.md`.
 - `/legal/terminos` y `/legal/privacidad`: **borrador** (no es el texto final Argentina). El contrato revisado sigue en [operaciones.md](./99-backlog-post-mvp/operaciones.md).
 
 El costo de OpenRouter (P4) alimenta el número de pricing; no al revés.

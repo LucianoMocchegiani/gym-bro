@@ -1,4 +1,4 @@
-# Guía de uso — Faciliter Brain (web + app)
+# Guía de uso — Faciliter (web + app)
 
 **Estado:** Publicada en `/docs` (se refina).  
 **Sitio:** `web/content/docs/guia.md` + capturas en `web/public/docs/`.  
@@ -23,7 +23,7 @@ En cada captura: **nombre de archivo**, **dónde sacarla**, **qué tiene que ver
 
 ```text
 Qué es
-  01  Qué es Faciliter Brain
+  01  Qué es Faciliter
   02  Cómo funciona (web vs app)
   03  Casos de uso
 
@@ -48,9 +48,9 @@ Los primeros pasos **ya contrastan** qué ve el socio. Los módulos profundizan.
 
 # Parte 1 — Qué es y cómo funciona
 
-## 01. Qué es Faciliter Brain
+## 01. Qué es Faciliter
 
-Faciliter Brain es el sistema de **afiliaciones** del local: socios, lo que les vendés, cobros, clases y quién puede entrar. Sirve a gyms, clubes, estudios y cualquier negocio que trabaje con afiliados.
+Faciliter (también le decimos Brain) es el sistema de **afiliaciones** del local: socios, lo que les vendés, cobros, clases y quién puede entrar. Sirve a gyms, clubes, estudios y cualquier negocio que trabaje con afiliados.
 
 Hay **dos caras**, una sola operación:
 

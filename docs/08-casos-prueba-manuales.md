@@ -290,7 +290,8 @@ Pasos de VPS: [uso/probar-debito-suscripcion-mp.md](./uso/probar-debito-suscripc
 |---|------|----------|-------|---|
 | M1 | Apex `http://localhost:3002/` | Landing Faciliter (no pide login) | P3 | |
 | M2 | Tenant `http://demo.localhost:3002/` | Dashboard Admin (RequireStaff) | — | |
-| M3 | View-source apex | `<title>` Faciliter, description, canonical, JSON-LD | P3 | |
+| M3 | View-source apex | `<title>` empieza con “Faciliter \|”, description, canonical, JSON-LD `Organization` + `SoftwareApplication` | P3 | |
+| M3b | `/opengraph-image` y preview al compartir | PNG 1200×630: isotipo + FACILITER + tagline; `og:image:width` 1200 / `height` 630 | P3 | |
 | M4 | `/sitemap.xml` y `/robots.txt` | URLs públicas; Admin en disallow | P3 | |
 | M5 | `/legal/terminos` y `/legal/privacidad` | Borrador visible; no 404 | P3 | |
 | M6 | Host tenant: header `X-Robots-Tag` | `noindex, nofollow` | P3 | |

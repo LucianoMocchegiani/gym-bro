@@ -27,37 +27,21 @@ export const metadata: Metadata = {
     template: '%s · Faciliter',
   },
   description:
-    'Software de afiliaciones para gyms, clubes y estudios en Argentina: caja, packs, puerta QR y app.',
+    'Faciliter es el software de afiliaciones para gyms, clubes y estudios en Argentina: caja, packs, puerta QR y app.',
   applicationName: 'Faciliter',
-  icons: {
-    icon: [
-      { url: '/icon.svg', type: 'image/svg+xml' },
-      { url: '/favicon.png', type: 'image/png' },
-    ],
-    apple: '/apple-icon.png',
-  },
   openGraph: {
     type: 'website',
     locale: 'es_AR',
     siteName: 'Faciliter',
     title: 'Faciliter',
     description:
-      'Software de afiliaciones para gyms, clubes y estudios en Argentina: caja, packs, puerta QR y app.',
-    images: [
-      {
-        url: '/og-stack.png',
-        width: 1200,
-        height: 1200,
-        alt: 'Faciliter Brain — el cerebro de tus afiliados',
-      },
-    ],
+      'Faciliter es el software de afiliaciones para gyms, clubes y estudios en Argentina: caja, packs, puerta QR y app.',
   },
   twitter: {
     card: 'summary_large_image',
     title: 'Faciliter',
     description:
-      'Software de afiliaciones para gyms, clubes y estudios en Argentina: caja, packs, puerta QR y app.',
-    images: ['/og-stack.png'],
+      'Faciliter es el software de afiliaciones para gyms, clubes y estudios en Argentina: caja, packs, puerta QR y app.',
   },
 };
 
