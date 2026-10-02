@@ -25,7 +25,7 @@ import {
   toListResult,
 } from '../common/list';
 import { PrismaService } from '../prisma/prisma.service';
-import { KuatiaOfferService } from '../kuatia/kuatia-offer.service';
+import { CredentialIssuerPort } from '../access-providers/credential-issuer.port';
 import {
   PLATFORM_TRIAL_DAYS,
   addCalendarDays,
@@ -89,7 +89,7 @@ export class ContractsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
-    private readonly kuatiaOffers: KuatiaOfferService,
+    private readonly credentialIssuer: CredentialIssuerPort,
   ) {}
 
   /**
@@ -315,7 +315,7 @@ export class ContractsService {
     }
     if (transactionItem.contract) {
       if (transactionItem.memberId) {
-        await this.kuatiaOffers.ensureOfferForContract(
+        await this.credentialIssuer.ensureOfferForContract(
           tenantId,
           transactionItem.contract.id,
           { force: true },
@@ -381,7 +381,10 @@ export class ContractsService {
         after: this.auditSnapshot(detail),
       });
       if (transactionItem.memberId) {
-        await this.kuatiaOffers.ensureOfferForContract(tenantId, contract.id);
+        await this.credentialIssuer.ensureOfferForContract(
+          tenantId,
+          contract.id,
+        );
       }
       return detail;
     } catch (error: unknown) {
@@ -397,7 +400,7 @@ export class ContractsService {
         });
         if (again?.contract) {
           if (again.memberId) {
-            await this.kuatiaOffers.ensureOfferForContract(
+            await this.credentialIssuer.ensureOfferForContract(
               tenantId,
               again.contract.id,
             );
@@ -497,7 +500,7 @@ export class ContractsService {
       after: this.auditSnapshot(detail),
     });
     if (transactionItem.memberId) {
-      await this.kuatiaOffers.ensureOfferForContract(tenantId, contract.id);
+      await this.credentialIssuer.ensureOfferForContract(tenantId, contract.id);
     }
     return detail;
   }
@@ -662,7 +665,7 @@ export class ContractsService {
         throw new BadRequestException(
           memberId
             ? `Member already has an active MONTHLY plan (${otherPlan.pack.name}). ` +
-              'Renew that pack or use a ONE_TIME pack for extras.'
+                'Renew that pack or use a ONE_TIME pack for extras.'
             : `Gym already has an active Faciliter plan (${otherPlan.pack.name}).`,
         );
       }

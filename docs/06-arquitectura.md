@@ -228,8 +228,28 @@ Implementado: `POST /access/oid4vp/request` + `GET /access/oid4vp/session/:id` (
 
 ### 6.4 Modos de escaneo
 
-- MVP UI: solo **modo B** (afiliado escanea QR de puerta = `requestUri` OID4VP).
-- Admin: `/puerta`. App: hub Acceso → Escanear.
+- Gym Kuatia: **modo B** (afiliado escanea QR de puerta = `requestUri` OID4VP). Admin: `/puerta`. App: hub Acceso → Escanear.
+- Gym ZKTeco: `member_at_device` (la persona se identifica en el aparato). `/puerta` muestra "Este gym usa acceso ZKTeco" + últimos ingresos.
+
+### 6.5 Contrato de sistemas de puerta (RN-ACC-010)
+
+Un gym elige su sistema en `tenant_settings.access_provider` (`KUATIA` default | `ZKTECO`). Las reglas no dependen del sistema:
+
+```text
+Kuatia OID4VP ─┐                       ┌─ persist access_attempts (+ channel)
+ZKTeco evento ─┼─► AccessSubject ──► AccessVerifyService.evaluateSubject ─┤
+Pase manual ───┘   (socio | staff)     └─ si allow y ZKTeco → DoorActuatorPort.open
+```
+
+| Pieza | Dónde | Rol |
+|-------|-------|-----|
+| Entrada genérica | `access/access-verify.service.ts` `evaluateSubject(subject, origin)` | `origin` = tenant, `channel`, `scanMode`, `credentialRef`, actor. Socio → `evaluateAndPersist`; staff → regla staff |
+| Adapter Kuatia | `access/access-oid4vp.service.ts` | VP → `AccessSubject`; 409 si el gym no es Kuatia |
+| Adapter ZKTeco | `access/access-zkteco.service.ts` + `POST /access/zkteco/events` | Número → vínculo (`access_identity_links`) o DNI → `AccessSubject`; idempotente por `credential_ref` |
+| Puerto emisión | `access-providers/credential-issuer.port.ts` → `TenantCredentialIssuer` | Packs/contratos emiten por acá: Kuatia sincroniza/emite; ZKTeco no-op. Offers manuales socio/staff → 409 en ZKTeco |
+| Puerto apertura | `access-providers/door-actuator.port.ts` → `LogDoorActuatorAdapter` | Hoy solo registra "Abrir puerta (simulado)". Relé/agente real: [19-puerta-molinete-hw-sw.md](./19-puerta-molinete-hw-sw.md) |
+
+El puente ZKTeco se autentica como staff (`access.verify`) en este corte; token de dispositivo y SDK/bridge del aparato quedan fuera de `api/`.
 
 ---
 

@@ -42,6 +42,12 @@ enum MemberStatus {
 }
 
 /// Resultado de un intento de ingreso en puerta (RN-ACC-007).
+/// Sistema de puerta del gym (un proveedor por gym; ZKTeco no emite nada en Kuatia).
+enum AccessProvider {
+  KUATIA
+  ZKTECO
+}
+
 enum AccessAttemptResult {
   ALLOWED
   DENIED
@@ -208,6 +214,7 @@ model Tenant {
   refundRequests  RefundRequest[]
   accessCredentials AccessCredential[]
   accessAttempts  AccessAttempt[]
+  accessIdentityLinks AccessIdentityLink[]
   auditEvents     AuditEvent[]
   credentialOffers CredentialOffer[]
   staffCredentialOffers StaffCredentialOffer[]
@@ -264,6 +271,8 @@ model TenantSettings {
   multiEntryEnabled            Boolean      @default(false) @map("multi_entry_enabled")
   /// Tope de ingresos ALLOWED/día cuando `multiEntryEnabled` (mín. 1).
   multiEntryMaxPerDay          Int          @default(1) @map("multi_entry_max_per_day")
+  /// RN-ACC-010: sistema de puerta. KUATIA = QR + app; ZKTECO = aparato del torno.
+  accessProvider               AccessProvider @default(KUATIA) @map("access_provider")
   createdAt                    DateTime     @default(now()) @map("created_at")
   updatedAt                    DateTime     @updatedAt @map("updated_at")
 
@@ -347,6 +356,7 @@ model StaffUser {
   refundRequestsResolved    RefundRequest[]         @relation("RefundRequestResolver")
   accessAttemptsRecorded    AccessAttempt[]         @relation("AccessAttemptStaff")
   accessAttemptsAsSubject   AccessAttempt[]         @relation("AccessAttemptSubjectStaff")
+  accessIdentityLinks       AccessIdentityLink[]
   staffCredentialOffers     StaffCredentialOffer[]
   debitMandatesEnrolled     DebitMandate[]          @relation("DebitMandateEnrolledBy")
   debitMandatesCancelled    DebitMandate[]          @relation("DebitMandateCancelledBy")
@@ -390,6 +400,7 @@ model Member {
   refundRequests RefundRequest[]
   accessCredentials AccessCredential[]
   accessAttempts AccessAttempt[]
+  accessIdentityLinks AccessIdentityLink[]
   credentialOffers CredentialOffer[]
   transactions  Transaction[]
   debitMandates DebitMandate[]
@@ -1029,6 +1040,8 @@ model AccessAttempt {
   result          AccessAttemptResult
   reasonCode      String              @map("reason_code")
   scanMode        String              @map("scan_mode")
+  /// Por qué sistema llegó el ingreso: `kuatia` | `zkteco` | `manual`.
+  channel         String              @default("kuatia")
   reservationId   String?             @map("reservation_id") @db.Uuid
   sessionId       String?             @map("session_id") @db.Uuid
   manualPass      Boolean             @default(false) @map("manual_pass")
@@ -1050,6 +1063,31 @@ model AccessAttempt {
   @@index([subjectStaffId, createdAt])
   @@index([tenantId, memberId, result, createdAt])
   @@map("access_attempts")
+}
+
+/// Vínculo entre el número de usuario de un aparato de puerta y un socio o staff (RN-ACC-011).
+///
+/// @remarks Exactamente uno de `memberId` / `staffUserId` (CHECK SQL). Sin vínculo,
+/// ZKTeco busca el socio por `members.document`.
+model AccessIdentityLink {
+  id          String         @id @default(uuid()) @db.Uuid
+  tenantId    String         @map("tenant_id") @db.Uuid
+  provider    AccessProvider
+  /// Número de usuario en el aparato (PIN / User ID).
+  externalId  String         @map("external_id")
+  memberId    String?        @map("member_id") @db.Uuid
+  staffUserId String?        @map("staff_user_id") @db.Uuid
+  createdAt   DateTime       @default(now()) @map("created_at")
+  updatedAt   DateTime       @updatedAt @map("updated_at")
+
+  tenant    Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  member    Member?    @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  staffUser StaffUser? @relation(fields: [staffUserId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, provider, externalId])
+  @@index([memberId])
+  @@index([staffUserId])
+  @@map("access_identity_links")
 }
 
 /// Offer OID4VCI de credencial de acceso staff (molinete; sin fichaje en MVP).

@@ -108,6 +108,9 @@ identities ||--o{ platform_signups : self_serve
   members ||--o{ access_attempts : attempts
   sessions ||--o{ access_attempts : linked
   reservations ||--o{ access_attempts : linked
+  tenants ||--o{ access_identity_links : maps
+  members ||--o{ access_identity_links : linked
+  staff_users ||--o{ access_identity_links : linked
   tenants ||--o{ audit_events : has
   branches ||--o{ members : default_for
   roles ||--o{ role_permissions : has
@@ -365,6 +368,7 @@ identities ||--o{ platform_signups : self_serve
 | `RefundRequestStatus` | `PENDING`, `REJECTED`, `EXECUTED` | Solicitud de devolución |
 | `AccessCredentialStatus` | `ACTIVE`, `REVOKED` | Credencial de vínculo de acceso |
 | `AccessAttemptResult` | `ALLOWED`, `DENIED` | Resultado de intento de ingreso |
+| `AccessProvider` | `KUATIA`, `ZKTECO` | Sistema de puerta del gym y proveedor de un vínculo (RN-ACC-010/011) |
 | `FolderItemKind` | `NOTE`, `FILE` | Ítem de carpeta socio/staff |
 | `MemberImportKind` | `ROWS`, `FILES` | Corrida de migración: fichas (planilla) o archivos (zip) |
 | `MemberImportStatus` | `RUNNING`, `DONE` | Estado de la corrida |
@@ -933,10 +937,11 @@ Intentos de ingreso (CU-ACC-001 / RN-ACC-007) y marca de presente (RN-RES-007).
 | `tenant_id` | uuid FK | |
 | `member_id` | uuid FK nullable | SET NULL (afiliado) |
 | `subject_staff_id` | uuid FK nullable | Staff sujeto del molinete (VC staff); ≠ `actor_staff_id` |
-| `credential_ref` | text nullable | OID4VP: `oid4vp:{sessionId}` |
+| `credential_ref` | text nullable | OID4VP: `oid4vp:{sessionId}`; ZKTeco: `zkteco:{serie\|sin-serie}:{número}:{ISO}` (clave de idempotencia del evento) |
 | `result` | `AccessAttemptResult` | `ALLOWED` \| `DENIED` |
-| `reason_code` | text | p.ej. `ok_acceso_libre`, `ok_staff`, `sin_derecho` |
-| `scan_mode` | text | MVP puerta: `member_scans_gym` (OID4VP) \| `manual` |
+| `reason_code` | text | p.ej. `ok_acceso_libre`, `ok_staff`, `sin_derecho`, `sin_vinculo` |
+| `scan_mode` | text | `member_scans_gym` (OID4VP) \| `member_at_device` (ZKTeco) \| `manual` |
+| `channel` | text | default `kuatia`; `kuatia` \| `zkteco` \| `manual` (RN-ACC-010). Backfill: pases manuales → `manual` |
 | `reservation_id` / `session_id` | uuid FK nullable | |
 | `manual_pass` | boolean | default false |
 | `motive_code` | text nullable | pase manual: `deuda` \| `olvido_celular` \| `cortesia` \| `otro` |
@@ -946,7 +951,25 @@ Intentos de ingreso (CU-ACC-001 / RN-ACC-007) y marca de presente (RN-RES-007).
 
 Reservas: `checked_in_at` timestamptz nullable (primera allow asociada).
 
-API: Staff `POST /access/oid4vp/request`, `GET /access/oid4vp/session/:id`, `GET /access-attempts`, `GET /members/:id/access-preview` (`access.verify`; preview **sin** persistir intento); `POST /members/:id/access/manual-pass` (`access.manual_pass`).
+API: Staff `POST /access/oid4vp/request` (409 en gym ZKTeco), `GET /access/oid4vp/session/:id`, `GET /access-attempts`, `GET /members/:id/access-preview` (`access.verify`; preview **sin** persistir intento); `POST /members/:id/access/manual-pass` (`access.manual_pass`); `GET /access/door` (cualquier staff: `{ provider }`); `POST /access/zkteco/events` (`access.verify`, solo gym ZKTeco).
+
+### 4.15l `access_identity_links`
+
+Número de usuario de un aparato de puerta → socio **o** staff (RN-ACC-011). Sin vínculo, ZKTeco cae a `members.document`.
+
+| Columna | Tipo | Notas |
+|---------|------|--------|
+| `id` | uuid PK | |
+| `tenant_id` | uuid FK → `tenants` | CASCADE |
+| `provider` | `AccessProvider` | En este corte siempre `ZKTECO` |
+| `external_id` | text | PIN/tarjeta del aparato; API `^[A-Za-z0-9_-]{1,32}$` |
+| `member_id` | uuid FK nullable → `members` | CASCADE |
+| `staff_user_id` | uuid FK nullable → `staff_users` | CASCADE |
+| `created_at` / `updated_at` | timestamptz | |
+
+Unique (`tenant_id`, `provider`, `external_id`). CHECK: exactamente uno de `member_id` / `staff_user_id`. Índices por `member_id` y `staff_user_id`.
+
+API Staff: `GET|POST /api/members/:id/access-links` (`members.read` / `members.write`), `DELETE /api/members/:id/access-links/:linkId`; `GET|POST /api/staff/:id/access-links` (`staff.read` / `staff.write`), `DELETE /api/staff/:id/access-links/:linkId`. Auditoría `access.link.create` / `access.link.delete`.
 
 ### 4.16 `contracts`
 
@@ -1070,6 +1093,7 @@ Config operativa 1:1 con tenant (RN-TEN-005).
 | Columna | Tipo | Notas |
 |---------|------|--------|
 | `tenant_id` | uuid PK FK → `tenants` | CASCADE |
+| `access_provider` | `AccessProvider` | default `KUATIA`; sistema de puerta (RN-ACC-010) |
 | `reservation_cancellation_hours` | int | default 6; rango API 0–720 |
 | `waitlist_mode` | `WaitlistMode` | default `AUTO_ASSIGN`; liberación MVP solo AUTO |
 | `allow_late_session_entry` | boolean | default false; RN-RES-006 / CU-RES-006 |
@@ -1125,6 +1149,7 @@ Historia incremental (2026-07 / 2026-08) **compactada** en un baseline (`40476fa
 | `20260930211000_notification_identity_audience` | `notifications.identity_id`; `member_id` nullable |
 | `20261001120000_member_imports` | `identities.password_temporary`; `member_imports` + enums `MemberImportKind`, `MemberImportStatus` |
 | `20261001200000_expenses` | `expense_labels`, `expenses`, `expense_files` + enums `ExpenseNature`, `ExpenseMethod` |
+| `20261002180000_access_provider_zkteco` | Enum `AccessProvider`; `tenant_settings.access_provider`; `access_attempts.channel` (+ backfill `manual`); tabla `access_identity_links` |
 
 Comandos y checklist “desde cero”: [13-setup-db-desde-cero.md](./13-setup-db-desde-cero.md).
 

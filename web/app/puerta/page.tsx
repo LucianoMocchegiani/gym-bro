@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { FormEvent, Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { AccessResultBanner } from '@/components/AccessResult';
+import { AccessResultBanner, AttemptsList } from '@/components/AccessResult';
 import { memberFichaHref } from '@/lib/member-link';
 import {
   DataTable,
@@ -23,7 +23,12 @@ import {
   accessResultTone,
 } from '@/components/StatusPill';
 import { VenueQr } from '@/components/VenueQr';
-import { formatAccessReason } from '@/lib/access-labels';
+import {
+  formatAccessChannel,
+  formatAccessReason,
+  formatAccessSubject,
+} from '@/lib/access-labels';
+import { useAccessDoor } from '@/lib/use-access-door';
 import {
   createOid4VpRequest,
   getOid4VpSession,
@@ -38,6 +43,7 @@ import { ApiClientError } from '@/lib/api/client';
 import { VenueQrSkeleton } from '@/components/VenueQrSkeleton';
 
 const PAGE_SIZE = 20;
+const RECENT_SIZE = 10;
 
 function formatWhen(iso: string): string {
   return new Intl.DateTimeFormat('es-AR', {
@@ -45,26 +51,6 @@ function formatWhen(iso: string): string {
     timeStyle: 'short',
     timeZone: 'America/Argentina/Buenos_Aires',
   }).format(new Date(iso));
-}
-
-function subjectLabel(a: AccessAttemptDetail): string {
-  if (a.subjectStaffId) {
-    return (
-      a.subjectStaffName?.trim() ||
-      a.subjectStaffEmail?.trim() ||
-      a.subjectStaffId
-    );
-  }
-  if (a.memberName?.trim()) {
-    return a.memberName;
-  }
-  if (a.memberEmail?.trim()) {
-    return a.memberEmail;
-  }
-  if (a.credentialRef) {
-    return a.credentialRef;
-  }
-  return '—';
 }
 
 /**
@@ -104,6 +90,9 @@ function PuertaInner() {
   const [hasMore, setHasMore] = useState(false);
   const [attemptsLoading, setAttemptsLoading] = useState(true);
   const [attemptsError, setAttemptsError] = useState<string | null>(null);
+  const [recent, setRecent] = useState<AccessAttemptDetail[] | null>(null);
+  const [recentError, setRecentError] = useState<string | null>(null);
+  const doorProvider = useAccessDoor();
   const doneSessionRef = useRef<string | null>(null);
   const verifyStartedRef = useRef(false);
 
@@ -171,12 +160,46 @@ function PuertaInner() {
       verifyStartedRef.current = false;
       return;
     }
-    if (verifyStartedRef.current) {
+    if (doorProvider !== 'KUATIA' || verifyStartedRef.current) {
       return;
     }
     verifyStartedRef.current = true;
     void startRequest();
-  }, [tab]);
+  }, [tab, doorProvider]);
+
+  /** Gym ZKTeco: últimos ingresos de hoy en Verificar, refrescados por poll. */
+  useEffect(() => {
+    if (tab !== 'verificar' || doorProvider !== 'ZKTECO') {
+      return;
+    }
+    let cancelled = false;
+    const loadRecent = async () => {
+      try {
+        const data = await listAccessAttempts({
+          page: 1,
+          pageSize: RECENT_SIZE,
+          from: today,
+          to: today,
+        });
+        if (cancelled) return;
+        setRecent(data.items);
+        setRecentError(null);
+      } catch (err) {
+        if (cancelled) return;
+        setRecentError(
+          err instanceof ApiClientError
+            ? err.message
+            : 'No se pudieron cargar los últimos ingresos',
+        );
+      }
+    };
+    void loadRecent();
+    const id = window.setInterval(() => void loadRecent(), 5000);
+    return () => {
+      cancelled = true;
+      window.clearInterval(id);
+    };
+  }, [tab, doorProvider, today]);
 
   useEffect(() => {
     if (tab !== 'historial') {
@@ -239,7 +262,36 @@ function PuertaInner() {
 
   return (
     <DoorShell title="Acceso puerta">
-      {tab === 'verificar' ? (
+      {tab === 'verificar' && doorProvider === null ? (
+        <AdminGrid className="door-dashboard">
+          <Panel title="Verificar ingreso">
+            <VenueQrSkeleton />
+          </Panel>
+        </AdminGrid>
+      ) : null}
+
+      {tab === 'verificar' && doorProvider === 'ZKTECO' ? (
+        <AdminGrid className="door-dashboard">
+          <Panel
+            title="Este gym usa acceso ZKTeco"
+            description="El socio se identifica en el aparato con su número."
+          >
+            <p className="muted small">
+              Faciliter aplica las mismas reglas que con la app (reserva,
+              deuda, multi-ingreso) y registra cada intento. Si falla el
+              aparato, usá Pase manual.
+            </p>
+          </Panel>
+          <AttemptsList
+            attempts={recent ?? []}
+            loading={recent === null && !recentError}
+            error={recentError}
+            description={`Últimos ${RECENT_SIZE} de hoy · se actualiza solo.`}
+          />
+        </AdminGrid>
+      ) : null}
+
+      {tab === 'verificar' && doorProvider === 'KUATIA' ? (
         <AdminGrid className="door-dashboard">
           <Panel
             title="Verificar ingreso"
@@ -336,6 +388,7 @@ function PuertaInner() {
                 <th>Resultado</th>
                 <th>Quién</th>
                 <th>Motivo</th>
+                <th>Canal</th>
                 <th>Cuándo</th>
               </>
             }
@@ -352,7 +405,7 @@ function PuertaInner() {
                     <Link
                       href={`/staff?roles=${encodeURIComponent(a.subjectStaffId)}`}
                     >
-                      {subjectLabel(a)}
+                      {formatAccessSubject(a)}
                     </Link>
                   ) : a.memberId ? (
                     <Link
@@ -361,14 +414,17 @@ function PuertaInner() {
                         a.memberName ?? a.memberEmail ?? '',
                       )}
                     >
-                      {subjectLabel(a)}
+                      {formatAccessSubject(a)}
                     </Link>
                   ) : (
-                    subjectLabel(a)
+                    formatAccessSubject(a)
                   )}
                 </td>
                 <td className="muted small">
                   {formatAccessReason(a.reasonCode)}
+                </td>
+                <td className="muted small">
+                  {formatAccessChannel(a.channel)}
                 </td>
                 <td>{formatWhen(a.createdAt)}</td>
               </tr>

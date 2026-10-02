@@ -97,8 +97,12 @@ DNI: sumar el lector existente + documento en fichas. Huella: no en el piloto sa
 | Wallet | `mobile` | Escanea y presenta VP |
 | Pase manual | Staff | Sin hierro |
 | Documento en ficha | `members.document` | Unique por tenant |
+| Sistema de puerta por gym | `tenant_settings.access_provider` | `KUATIA` \| `ZKTECO` (RN-ACC-010) |
+| Contrato de puerta | `evaluateSubject` + `CredentialIssuerPort` + `DoorActuatorPort` | Un evaluate para todos los canales; ver [06 §6.5](./06-arquitectura.md) |
+| Evento ZKTeco (simulado) | `POST /access/zkteco/events` | Número → vínculo o DNI → evaluate → intento `channel=zkteco`; idempotente |
+| Vínculos número → persona | `access_identity_links` + "Acceso ZKTeco" en Afiliados/Staff | RN-ACC-011 |
 
-Falta el **actuador** y, para DNI, **identidad por documento**.
+Falta el **actuador real** (hoy `LogDoorActuatorAdapter` solo registra), el **puente** del aparato ZKTeco y el token de dispositivo.
 
 ### 2.2 Agente de puerta (nuevo, en el gym)
 
@@ -120,9 +124,10 @@ Sugerencia de repo (al codear): `gate-agent/` o servicio en el box. No meter GPI
 | Necesidad | Corte | Notas |
 |----------|-------|--------|
 | Tras `allow` en OID4VP / preview, disparar pulso | P1 | `/puerta` llama al agente (URL LAN configurable) **o** el agente poll-ea la sesión |
-| Identidad por DNI | Módulo DNI | `document` → member → evaluate → (opcional) persistir intento. Hoy preview pide `memberId` |
-| Config tenant | Canales | `kuatia` / `dni` / ambos. Huella después |
-| Intento | Motivo + canal | `scan_mode` / método: `oid4vp` \| `dni` \| `manual` \| luego `fingerprint` |
+| Identidad por DNI | Módulo DNI | Hecho para ZKTeco (número = `document` si no hay vínculo). Lector DNI propio: mismo camino con otro adapter |
+| Config tenant | Canales | Hecho: un sistema por gym (`KUATIA` / `ZKTECO`). Varios a la vez (gym pass): después |
+| Intento | Motivo + canal | Hecho: `access_attempts.channel` `kuatia` \| `zkteco` \| `manual`; `scan_mode` `member_at_device` para aparato |
+| Abrir tras allow | P1 | Puerto `DoorActuatorPort` listo; falta el adapter real (agente/relé) y el token de dispositivo del puente |
 
 Un evaluate. Varios *quién*. Un pulso.
 

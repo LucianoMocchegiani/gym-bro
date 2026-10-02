@@ -1,3 +1,5 @@
+import type { AccessAttemptDetail } from '@/lib/api/access';
+
 /**
  * Etiquetas legibles de motivos de acceso (RN-ACC-007).
  */
@@ -16,7 +18,47 @@ const REASON_LABELS: Record<string, string> = {
   deuda_excedida: 'Deuda fuera de tolerancia',
   multi_ingreso_excedido: 'Multi-ingreso excedido',
   payload_invalido: 'Datos de escaneo inválidos',
+  sin_vinculo: 'Número de usuario del aparato sin vincular',
 };
+
+const CHANNEL_LABELS: Record<string, string> = {
+  kuatia: 'App (Kuatia)',
+  zkteco: 'ZKTeco',
+  manual: 'Pase manual',
+};
+
+/**
+ * Canal por el que entró el intento (RN-ACC-010).
+ */
+export function formatAccessChannel(code: string): string {
+  return CHANNEL_LABELS[code] ?? code;
+}
+
+/**
+ * Quién intentó entrar: staff, afiliado o, en ZKTeco sin vínculo, el número.
+ */
+export function formatAccessSubject(a: AccessAttemptDetail): string {
+  if (a.subjectStaffId) {
+    return (
+      a.subjectStaffName?.trim() ||
+      a.subjectStaffEmail?.trim() ||
+      a.subjectStaffId
+    );
+  }
+  if (a.memberName?.trim()) {
+    return a.memberName;
+  }
+  if (a.memberEmail?.trim()) {
+    return a.memberEmail;
+  }
+  if (a.channel === 'zkteco' && a.credentialRef) {
+    const externalId = a.credentialRef.split(':')[2];
+    if (externalId) {
+      return `Nº ${externalId} (sin vincular)`;
+    }
+  }
+  return a.credentialRef || '—';
+}
 
 /**
  * Traduce `reasonCode` de la API a texto de puerta.

@@ -12,7 +12,7 @@ Roadmap de épicas históricas: [11-roadmap-mvp.md](./11-roadmap-mvp.md). Diferi
 
 | # | Prioridad | Tipo | Estado hoy |
 |---|-----------|------|------------|
-| P1 | Molinetes / hardware de puerta | Diseño + adapters | Kuatia se queda. Contrato fiel a Kuatia; ZKTeco se adapta. Credenciales se generan; en ZK **no se mandan** a Kuatia. Ticket: `local/mis-tickets/ticket-acceso-zkteco-contrato.md` |
+| P1 | Molinetes / hardware de puerta | Diseño + adapters | **Contrato en código:** sistema de puerta por gym (Kuatia default / ZKTeco), un evaluate para todos los canales, ZKTeco simulado por API + vínculos número → socio/staff, canal en historial. En gym ZK no se emite nada a Kuatia. Falta relé/agente real y puente del aparato |
 | P2 | Débito automático MONTHLY | QA live | Código: suscripción MP + `init_point`. Falta P9…P9j en VPS |
 | P3 | Landing + pricing + SEO | Comercial / web pública | Apex + catálogo + **alta self-serve**. Falta renovar/cambiar pack y baja de mandato; legales finales; precio a convenir |
 | P4 | Tokens y costo OpenRouter | Tope staff + insumo de pricing | C7 (abort/título/chips) en repo. Tope **staff** pendiente; landing ya tiene tope por IP. Sin costo $/gym |
@@ -35,7 +35,7 @@ Alcance de este corte (sin elegir marca todavía):
 
 Detalle vivo: [99-backlog-post-mvp/acceso.md](./99-backlog-post-mvp/acceso.md). Diseño SSI: [12-acceso-quark-oid4-diseno.md](./12-acceso-quark-oid4-diseno.md).
 
-**Contrato (P1):** extraer un puerto **fiel a Kuatia** (`KuatiaAdminPort` hoy). Adapter HTTP Kuatia lo implementa. ZKTeco (y otros) implementan el mismo puerto: las credenciales se **arman igual**; **no se envían** a Kuatia. Evaluate sigue en Nest. Ideación: `local/mis-tickets/ticket-acceso-zkteco-contrato.md`.
+**Contrato (P1, hecho):** `tenant_settings.access_provider` elige el sistema (RN-ACC-010). Toda entrada (Kuatia OID4VP, evento ZKTeco, pase manual) pasa por `evaluateSubject` con las mismas reglas y guarda `channel`. Packs/contratos emiten por `CredentialIssuerPort` (Kuatia emite; ZKTeco no-op). Tras un allow ZKTeco se llama a `DoorActuatorPort` (hoy solo registra). Identidad ZKTeco: vínculo o DNI (RN-ACC-011). Detalle: [06 §6.5](./06-arquitectura.md).
 
 Inventario (formas + cómo se enchufa): [ideas/2026-09-08-tipos-molinetes.md](./ideas/2026-09-08-tipos-molinetes.md).  
 Necesidades HW/SW: [19-puerta-molinete-hw-sw.md](./19-puerta-molinete-hw-sw.md).

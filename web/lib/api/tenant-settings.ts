@@ -6,8 +6,11 @@ import { apiRequest } from '@/lib/api/client';
 
 export type WaitlistMode = 'AUTO_ASSIGN' | 'MEMBER_CONFIRM' | 'STAFF_CONFIRM';
 
+export type AccessProvider = 'KUATIA' | 'ZKTECO';
+
 export type TenantSettingsDetail = {
   tenantId: string;
+  accessProvider: AccessProvider;
   reservationCancellationHours: number;
   waitlistMode: WaitlistMode;
   allowLateSessionEntry: boolean;
@@ -19,6 +22,7 @@ export type TenantSettingsDetail = {
 };
 
 export type UpdateTenantSettingsInput = {
+  accessProvider?: AccessProvider;
   reservationCancellationHours?: number;
   waitlistMode?: WaitlistMode;
   allowLateSessionEntry?: boolean;

@@ -39,4 +39,9 @@ export class UpdateTenantSettingsDto {
   @Min(1)
   @Max(50)
   multiEntryMaxPerDay?: number;
+
+  /** Sistema de puerta: QR con la app (Kuatia) o aparato ZKTeco (RN-ACC-010). */
+  @IsOptional()
+  @IsIn(['KUATIA', 'ZKTECO'])
+  accessProvider?: 'KUATIA' | 'ZKTECO';
 }

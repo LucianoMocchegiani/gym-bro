@@ -7,7 +7,7 @@ import { AuditService } from './audit.service';
  * EventoAuditoria: escritura desde servicios + GET Staff.
  */
 @Module({
-  imports: [AuthModule, forwardRef(() => RolesModule)],
+  imports: [forwardRef(() => AuthModule), forwardRef(() => RolesModule)],
   controllers: [AuditController],
   providers: [AuditService],
   exports: [AuditService],

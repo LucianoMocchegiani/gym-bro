@@ -10,6 +10,7 @@ import {
   ListToolbar,
   listCountDescription,
 } from '@/components/AdminList';
+import { AccessLinksPanel } from '@/components/AccessLinksPanel';
 import { AdminModal } from '@/components/AdminModal';
 import { AdminShell } from '@/components/AdminShell';
 import { DeleteRowButton } from '@/components/DeleteRowButton';
@@ -35,6 +36,7 @@ import type { MemberDetail, MemberStatus } from '@/lib/api/members';
 import { useAuth } from '@/lib/auth/AuthProvider';
 import { formatMemberStatus } from '@/lib/member-labels';
 import { hasAllPermissions } from '@/lib/nav-permissions';
+import { useAccessDoor } from '@/lib/use-access-door';
 
 const PAGE_SIZE = 20;
 
@@ -67,6 +69,7 @@ function AfiliadosInner() {
   const cuentaId = searchParams.get('cuenta')?.trim() || null;
   const credencialId = searchParams.get('credencial')?.trim() || null;
   const carpetaId = searchParams.get('carpeta')?.trim() || null;
+  const doorProvider = useAccessDoor();
   const createOpen =
     searchParams.get('nuevo') === '1' &&
     !fichaId &&
@@ -247,7 +250,11 @@ function AfiliadosInner() {
                   <IconAccount />
                 </RowIconButton>
                 <RowIconButton
-                  label="Credencial de acceso"
+                  label={
+                    doorProvider === 'ZKTECO'
+                      ? 'Acceso ZKTeco'
+                      : 'Credencial de acceso'
+                  }
                   onClick={() => openCredencial(m.id)}
                 >
                   <IconCredential />
@@ -335,11 +342,24 @@ function AfiliadosInner() {
       <AdminModal
         open={Boolean(credencialId)}
         onClose={closeModals}
-        title="Credencial de acceso"
-        description="Offer OID4VCI para molinete."
+        title={
+          doorProvider === 'ZKTECO' ? 'Acceso ZKTeco' : 'Credencial de acceso'
+        }
+        description={
+          doorProvider === 'ZKTECO'
+            ? 'Número con el que se identifica en el aparato ZKTeco.'
+            : 'Offer OID4VCI para molinete.'
+        }
         size="comfortable"
       >
-        {credencialId ? (
+        {credencialId && doorProvider === 'ZKTECO' ? (
+          <AccessLinksPanel
+            key={credencialId}
+            kind="member"
+            subjectId={credencialId}
+          />
+        ) : null}
+        {credencialId && doorProvider === 'KUATIA' ? (
           <MemberCredentialPanel key={credencialId} memberId={credencialId} />
         ) : null}
       </AdminModal>

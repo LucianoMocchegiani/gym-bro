@@ -138,7 +138,9 @@ Carpeta **Upload**: `POST /upload` (JWT staff + tenant). Multipart `file` + `fol
 
 Carpeta **Contracts**: Staff **POST contract MONTHLY/ONE_TIME** con `method: STUB` → 400. Alta de pack: Caja o MP. **Re-oferta:** `POST /members/:id/credential-offers` (contrato vigente hoy). Variables `createdMonthlyPackId` / `createdOneTimePackId`. Offers: list + accept + fail member. Lectura staff: `GET /members/:id/account`.
 
-Carpeta **Access OID4VP**: Staff `POST /access/oid4vp/request` (pestaña **Visualize** → QR) + `GET /access/oid4vp/session/:id` (poll → evaluate). `GET /members/:id/access-preview` (simula ingreso **sin** historial). Pase manual + `GET /access-attempts`. Stubs de vínculo retirados.
+Carpeta **Access OID4VP**: Staff `POST /access/oid4vp/request` (pestaña **Visualize** → QR) + `GET /access/oid4vp/session/:id` (poll → evaluate). `GET /members/:id/access-preview` (simula ingreso **sin** historial). Pase manual + `GET /access-attempts` (cada intento trae `channel`: `kuatia` / `zkteco` / `manual`). Stubs de vínculo retirados.
+
+Carpeta **Access ZKTeco** (aparato de acceso simulado, RN-ACC-010/011): `GET /access/door` → `PATCH /tenant-settings` `accessProvider=ZKTECO` → vínculo número → socio (`/members/:id/access-links`; staff: `/staff/:id/access-links`) → `POST /access/zkteco/events` `{ userId, occurredAt, deviceSerial? }` (vínculo o DNI; repetir el mismo evento → `duplicate=true`) → borrar vínculo → volver a `KUATIA`. Con el gym en ZKTeco, el QR OID4VP y las offers manuales responden 409.
 
 Bandeja staff propia: `GET /me/staff-credential-offers` + accept/fail (JWT Staff; no es la de packs del socio).
 

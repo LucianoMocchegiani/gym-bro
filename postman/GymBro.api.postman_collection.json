@@ -163,6 +163,10 @@
             "value": ""
         },
         {
+            "key": "zktecoLinkId",
+            "value": ""
+        },
+        {
             "key": "tenantSlug",
             "value": "gym-de-prueba"
         },
@@ -4957,6 +4961,181 @@
                                 }
                             ]
                         }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "Access ZKTeco",
+            "description": "Sistema de puerta por gym (RN-ACC-010) y acceso ZKTeco simulado (RN-ACC-011). Orden: PATCH provider ZKTECO → vínculos → eventos → volver a KUATIA. El puente se autentica como staff con access.verify.",
+            "item": [
+                {
+                    "name": "Staff GET access door",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('door 200', () => pm.response.to.have.status(200));",
+                                    "pm.test('provider', () => pm.expect(['KUATIA','ZKTECO']).to.include(pm.response.json().provider));"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            }
+                        ],
+                        "url": "{{baseUrl}}/api/access/door",
+                        "description": "Cualquier staff. { provider: KUATIA | ZKTECO }."
+                    }
+                },
+                {
+                    "name": "Staff PATCH provider ZKTECO",
+                    "request": {
+                        "method": "PATCH",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"accessProvider\": \"ZKTECO\"\n}"
+                        },
+                        "url": "{{baseUrl}}/api/tenant-settings",
+                        "description": "tenant.settings.write. Desde acá: QR OID4VP y offers manuales → 409."
+                    }
+                },
+                {
+                    "name": "Staff POST member access link",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('link 201', () => pm.response.to.have.status(201));",
+                                    "const j = pm.response.json();",
+                                    "if (j.id) pm.collectionVariables.set('zktecoLinkId', j.id);"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"externalId\": \"1001\"\n}"
+                        },
+                        "url": "{{baseUrl}}/api/members/{{createdMemberId}}/access-links",
+                        "description": "members.write. Número del aparato (PIN/tarjeta) → socio. Único por gym (409 si ya lo usa otra persona). Staff: POST /api/staff/:staffId/access-links."
+                    }
+                },
+                {
+                    "name": "Staff GET member access links",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            }
+                        ],
+                        "url": "{{baseUrl}}/api/members/{{createdMemberId}}/access-links",
+                        "description": "members.read. Staff: GET /api/staff/:staffId/access-links (staff.read)."
+                    }
+                },
+                {
+                    "name": "Bridge POST zkteco event",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('event 200', () => pm.response.to.have.status(200));",
+                                    "const j = pm.response.json();",
+                                    "pm.test('allowed boolean', () => pm.expect(j.allowed).to.be.a('boolean'));",
+                                    "pm.test('channel zkteco', () => pm.expect(j.result.attempt.channel).to.eql('zkteco'));"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"userId\": \"1001\",\n  \"occurredAt\": \"{{$isoTimestamp}}\",\n  \"deviceSerial\": \"SIM-001\"\n}"
+                        },
+                        "url": "{{baseUrl}}/api/access/zkteco/events",
+                        "description": "access.verify. userId = vínculo o DNI del socio. Responde { allowed, reasonCode, reasonLabel, open, duplicate, result }. Mismo serial+userId+occurredAt → duplicate=true, open=false. Número desconocido → sin_vinculo."
+                    }
+                },
+                {
+                    "name": "Staff DELETE member access link",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            }
+                        ],
+                        "url": "{{baseUrl}}/api/members/{{createdMemberId}}/access-links/{{zktecoLinkId}}",
+                        "description": "members.write. 204."
+                    }
+                },
+                {
+                    "name": "Staff PATCH provider KUATIA",
+                    "request": {
+                        "method": "PATCH",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"accessProvider\": \"KUATIA\"\n}"
+                        },
+                        "url": "{{baseUrl}}/api/tenant-settings",
+                        "description": "Vuelve al QR de la app. Evento ZKTeco → 409."
                     }
                 }
             ]

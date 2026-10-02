@@ -1,9 +1,47 @@
 import { AccessCredentialStatus } from '@prisma/client';
 
 /**
- * Modo de escaneo en puerta (RN-ACC-003). MVP UI: solo `member_scans_gym` vía OID4VP.
+ * Modo de escaneo en puerta (RN-ACC-003).
+ *
+ * @remarks `member_scans_gym` = QR Kuatia en `/puerta`; `member_at_device` = la
+ * persona se identifica en el aparato del torno (ZKTeco).
  */
-export type AccessScanMode = 'gym_scans_member' | 'member_scans_gym';
+export type AccessScanMode =
+  'gym_scans_member' | 'member_scans_gym' | 'member_at_device';
+
+/**
+ * Sistema por el que llegó un ingreso (`access_attempts.channel`, RN-ACC-010).
+ */
+export const ACCESS_CHANNEL = {
+  kuatia: 'kuatia',
+  zkteco: 'zkteco',
+  manual: 'manual',
+} as const;
+
+export type AccessChannel =
+  (typeof ACCESS_CHANNEL)[keyof typeof ACCESS_CHANNEL];
+
+/**
+ * Quién quiere entrar, ya identificado por el sistema de puerta.
+ *
+ * @remarks Cada adapter (Kuatia, ZKTeco…) resuelve su identidad a esto; las
+ * reglas de Faciliter no saben de qué sistema vino.
+ */
+export type AccessSubject =
+  { kind: 'member'; memberId: string } | { kind: 'staff'; staffUserId: string };
+
+/**
+ * Origen del intento: canal, modo y referencia idempotente del sistema de puerta.
+ */
+export type AccessEntryOrigin = {
+  tenantId: string;
+  channel: AccessChannel;
+  scanMode: AccessScanMode;
+  /** Referencia del evento en el sistema de puerta (`oid4vp:{id}`, `zkteco:{…}`). */
+  credentialRef: string;
+  /** Staff que opera la puerta, o `null` si el evento vino de un aparato. */
+  actorStaffId: string | null;
+};
 
 /**
  * Credencial de vínculo (tabla legada `access_credentials`; stubs retirados).
@@ -27,7 +65,7 @@ export const ACCESS_REASON = {
   okReserva: 'ok_reserva',
   /** Pack libre vencido pero dentro de `debtToleranceDays` (RN-ACC-005). */
   okDeudaTolerancia: 'ok_deuda_tolerancia',
-  /** Staff activo con VC de acceso (molinete; sin pack/deuda). */
+  /** Staff activo (VC de acceso o vínculo ZKTeco; sin pack/deuda). */
   okStaff: 'ok_staff',
   credencialInvalida: 'credencial_invalida',
   tenantMismatch: 'tenant_mismatch',
@@ -38,6 +76,8 @@ export const ACCESS_REASON = {
   deudaExcedida: 'deuda_excedida',
   multiIngresoExcedido: 'multi_ingreso_excedido',
   payloadInvalido: 'payload_invalido',
+  /** El aparato informó un número de usuario sin vínculo ni DNI en el gym. */
+  sinVinculo: 'sin_vinculo',
   okPaseManual: 'ok_pase_manual',
 } as const;
 
@@ -52,7 +92,7 @@ export const ACCESS_REASON_LABEL: Record<AccessReasonCode, string> = {
   [ACCESS_REASON.okReserva]: 'Puede entrar: tiene reserva en ventana.',
   [ACCESS_REASON.okDeudaTolerancia]:
     'Puede entrar: pack vencido dentro de la tolerancia de deuda.',
-  [ACCESS_REASON.okStaff]: 'Puede entrar: staff activo (molinete).',
+  [ACCESS_REASON.okStaff]: 'Puede entrar: staff activo.',
   [ACCESS_REASON.credencialInvalida]: 'No puede entrar: credencial inválida.',
   [ACCESS_REASON.tenantMismatch]: 'No puede entrar: gym no coincide.',
   [ACCESS_REASON.tenantSuspendido]: 'No puede entrar: gym suspendido.',
@@ -63,6 +103,8 @@ export const ACCESS_REASON_LABEL: Record<AccessReasonCode, string> = {
   [ACCESS_REASON.multiIngresoExcedido]:
     'No puede entrar: ya alcanzó el tope de ingresos del día.',
   [ACCESS_REASON.payloadInvalido]: 'No puede entrar: payload inválido.',
+  [ACCESS_REASON.sinVinculo]:
+    'No puede entrar: número de usuario del aparato sin vincular.',
   [ACCESS_REASON.okPaseManual]: 'Ingreso por pase manual.',
 };
 
@@ -100,6 +142,7 @@ export type AccessAttemptDetail = {
   result: 'ALLOWED' | 'DENIED';
   reasonCode: string;
   scanMode: string;
+  channel: string;
   reservationId: string | null;
   sessionId: string | null;
   manualPass: boolean;
@@ -121,6 +164,40 @@ export type AccessVerifyResult = {
   sessionId: string | null;
   checkedInAt: Date | null;
   attempt: AccessAttemptDetail;
+};
+
+/**
+ * Respuesta de `POST /access/zkteco/events` para el puente del gym.
+ *
+ * @remarks `open` = el puente debe abrir (allow y no repetido). `duplicate` =
+ * el evento ya se había procesado; se devuelve el mismo resultado sin abrir.
+ */
+export type ZktecoEventResult = {
+  allowed: boolean;
+  reasonCode: string;
+  reasonLabel: string;
+  open: boolean;
+  duplicate: boolean;
+  result: AccessVerifyResult;
+};
+
+/**
+ * Vínculo número de aparato → socio o staff (RN-ACC-011).
+ */
+export type AccessIdentityLinkDetail = {
+  id: string;
+  provider: 'KUATIA' | 'ZKTECO';
+  externalId: string;
+  memberId: string | null;
+  staffUserId: string | null;
+  createdAt: Date;
+};
+
+/**
+ * Sistema de puerta del gym (RN-ACC-010).
+ */
+export type AccessDoorConfig = {
+  provider: 'KUATIA' | 'ZKTECO';
 };
 
 /**

@@ -1,5 +1,6 @@
 /**
- * Access API (módulo `access`): OID4VP puerta + pase manual + historial.
+ * Access API (módulo `access`): sistema de puerta, OID4VP, pase manual,
+ * historial y vínculos ZKTeco.
  */
 
 import { apiRequest } from '@/lib/api/client';
@@ -25,6 +26,7 @@ export type AccessAttemptDetail = {
   result: 'ALLOWED' | 'DENIED';
   reasonCode: string;
   scanMode: string;
+  channel: string;
   reservationId: string | null;
   sessionId: string | null;
   manualPass: boolean;
@@ -50,6 +52,66 @@ export type AccessOid4VpRequestResult = {
   verificationSessionId: string;
   scanMode: 'member_scans_gym';
 };
+
+export type AccessProvider = 'KUATIA' | 'ZKTECO';
+
+export type AccessDoorConfig = {
+  provider: AccessProvider;
+};
+
+export type AccessIdentityLink = {
+  id: string;
+  provider: AccessProvider;
+  externalId: string;
+  memberId: string | null;
+  staffUserId: string | null;
+  createdAt: string;
+};
+
+export type AccessLinkSubject =
+  | { kind: 'member'; id: string }
+  | { kind: 'staff'; id: string };
+
+/**
+ * Sistema de puerta del gym (RN-ACC-010); legible por cualquier staff.
+ */
+export function getAccessDoor(): Promise<AccessDoorConfig> {
+  return apiRequest<AccessDoorConfig>('/access/door');
+}
+
+function accessLinksPath(subject: AccessLinkSubject): string {
+  const base = subject.kind === 'member' ? 'members' : 'staff';
+  return `/${base}/${encodeURIComponent(subject.id)}/access-links`;
+}
+
+/**
+ * Números del aparato vinculados a un socio o staff (RN-ACC-011).
+ */
+export function listAccessLinks(
+  subject: AccessLinkSubject,
+): Promise<AccessIdentityLink[]> {
+  return apiRequest<AccessIdentityLink[]>(accessLinksPath(subject));
+}
+
+export function createAccessLink(
+  subject: AccessLinkSubject,
+  externalId: string,
+): Promise<AccessIdentityLink> {
+  return apiRequest<AccessIdentityLink>(accessLinksPath(subject), {
+    method: 'POST',
+    body: { externalId },
+  });
+}
+
+export function deleteAccessLink(
+  subject: AccessLinkSubject,
+  linkId: string,
+): Promise<void> {
+  return apiRequest<void>(
+    `${accessLinksPath(subject)}/${encodeURIComponent(linkId)}`,
+    { method: 'DELETE' },
+  );
+}
 
 export type AccessOid4VpSessionResult =
   | { status: 'pending'; state: string }

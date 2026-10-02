@@ -121,6 +121,8 @@ Formato: **RN-MODULO-NNN** — enunciado — excepciones.
 | RN-ACC-007 | Todo intento (ok/deny) se registra con **motivo**. |
 | RN-ACC-008 | Offline en puerta es post-MVP; MVP asume conectividad. |
 | RN-ACC-009 | Multi-ingreso según RN-TEN-007. |
+| RN-ACC-010 | **Sistema de puerta por gym:** `tenant_settings.access_provider` = `KUATIA` (default: QR de `/puerta` + credencial en la app) o `ZKTECO` (control de acceso ZKTeco: molinete, puerta u otro aparato donde la persona se identifica). Uno solo por gym en este corte; el diseño admite varios (gym pass necesitará Kuatia en todos). Las reglas de ingreso (RN-ACC-004/005/009, reserva, staff) son **las mismas** para cualquier sistema; cada intento guarda su `channel` (`kuatia` / `zkteco` / `manual`). En un gym ZKTeco no se emiten credenciales Kuatia (cobro de pack, re-emisión manual socio/staff → 409) y el QR OID4VP de `/puerta` responde 409. Pase manual funciona igual en ambos. |
+| RN-ACC-011 | **Identidad ZKTeco:** el número de usuario del aparato (PIN o tarjeta) se resuelve primero por **vínculo** (`access_identity_links`: gym + proveedor + número → socio **o** staff, único por gym) y, si no hay, por `members.document` (DNI). El staff necesita vínculo. Número sin resolver → denegado `sin_vinculo`. Cada evento es idempotente por serie + número + hora del aparato: repetirlo devuelve el mismo resultado sin abrir de nuevo. Tras un permitido se pide abrir la puerta (en este corte, adaptador que solo registra). |
 
 ---
 

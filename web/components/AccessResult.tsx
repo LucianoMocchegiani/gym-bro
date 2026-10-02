@@ -1,31 +1,15 @@
 'use client';
 
 import Link from 'next/link';
-import { formatAccessReason } from '@/lib/access-labels';
+import {
+  formatAccessChannel,
+  formatAccessReason,
+  formatAccessSubject,
+} from '@/lib/access-labels';
 import type { AccessAttemptDetail, AccessVerifyResult } from '@/lib/api/access';
 import { Panel } from '@/components/AdminUi';
 import { Skeleton } from '@/components/Skeleton';
 import { memberFichaHref } from '@/lib/member-link';
-
-function subjectLabel(a: AccessAttemptDetail): string {
-  if (a.subjectStaffId) {
-    return (
-      a.subjectStaffName?.trim() ||
-      a.subjectStaffEmail?.trim() ||
-      a.subjectStaffId
-    );
-  }
-  if (a.memberName?.trim()) {
-    return a.memberName;
-  }
-  if (a.memberEmail?.trim()) {
-    return a.memberEmail;
-  }
-  if (a.credentialRef) {
-    return a.credentialRef;
-  }
-  return '—';
-}
 
 /**
  * Resultado grande de verificación / pase manual.
@@ -135,7 +119,7 @@ export function AttemptsList({
                 <Link
                   href={`/staff?roles=${encodeURIComponent(a.subjectStaffId)}`}
                 >
-                  {subjectLabel(a)}
+                  {formatAccessSubject(a)}
                 </Link>
               ) : a.memberId ? (
                 <Link
@@ -144,15 +128,16 @@ export function AttemptsList({
                     a.memberName ?? a.memberEmail ?? '',
                   )}
                 >
-                  {subjectLabel(a)}
+                  {formatAccessSubject(a)}
                 </Link>
               ) : (
-                subjectLabel(a)
+                formatAccessSubject(a)
               )}
             </span>
             <span>
               {formatAccessReason(a.reasonCode)}
-              {a.manualPass ? ' · manual' : ''}
+              {' · '}
+              {formatAccessChannel(a.channel)}
               {a.motiveCode ? ` · ${a.motiveCode}` : ''}
             </span>
             <time dateTime={a.createdAt}>

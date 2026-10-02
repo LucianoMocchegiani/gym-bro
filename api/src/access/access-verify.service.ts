@@ -22,14 +22,22 @@ import { TenantSettingsService } from '../tenant-settings/tenant-settings.servic
 import { ListAccessAttemptsQueryDto } from './dto/list-access-attempts.dto';
 import { ManualPassDto } from './dto/manual-pass.dto';
 import {
+  ACCESS_CHANNEL,
   ACCESS_REASON,
   ACCESS_REASON_LABEL,
   AccessAttemptDetail,
+  AccessEntryOrigin,
   AccessPreviewResult,
   AccessReasonCode,
-  AccessScanMode,
+  AccessSubject,
   AccessVerifyResult,
 } from './access.types';
+
+/** Origen de persistencia: el pase manual no tiene referencia de sistema de puerta. */
+type PersistOrigin = Omit<AccessEntryOrigin, 'scanMode' | 'credentialRef'> & {
+  scanMode: AccessEntryOrigin['scanMode'] | 'manual';
+  credentialRef: string | null;
+};
 
 /** Misma zona que caja para “día” de multi-ingreso. */
 const ACCESS_TIMEZONE = 'America/Argentina/Buenos_Aires';
@@ -55,7 +63,8 @@ type CoverageHit = {
 /**
  * Evaluación de derechos de ingreso y pase manual (CU-ACC-001..004 / RN-ACC-004..009).
  *
- * @remarks Identidad OID4VP llega desde `AccessOid4VpService` (claim `memberId`).
+ * @remarks No sabe de sistemas de puerta: Kuatia (`AccessOid4VpService`) y ZKTeco
+ * (`AccessZktecoService`) resuelven la identidad y entran por `evaluateSubject`.
  * Deuda = días calendario (BA) desde `endsAt` del último contrato libre ACTIVE;
  * si `0 ≤ overdue ≤ debtToleranceDays` permite ingreso aunque el pack ya venció.
  * Pases manuales no cuentan para el tope de multi-ingreso.
@@ -69,20 +78,21 @@ export class AccessVerifyService {
   ) {}
 
   /**
-   * Evalúa derechos tras una presentación OID4VP ya resuelta a `memberId`.
+   * Evalúa y persiste el ingreso de alguien ya identificado por un sistema de puerta.
    *
-   * @remarks CU-ACC-001 / RN-ACC-003 (`member_scans_gym`).
+   * @remarks Única entrada a las reglas de Faciliter (RN-ACC-004..009 socio,
+   * RN-ACC-008 staff). Kuatia (OID4VP) y ZKTeco llegan acá con el mismo contrato;
+   * `origin.channel` solo queda en el historial. El tenant viene del contexto
+   * autenticado, nunca del sistema de puerta.
    */
-  async evaluateOid4VpPresentation(input: {
-    tenantId: string;
-    memberId: string;
-    credentialRef: string;
-    actorStaffId: string | null;
-  }): Promise<AccessVerifyResult> {
-    return this.evaluateAndPersist({
-      ...input,
-      scanMode: 'member_scans_gym',
-    });
+  async evaluateSubject(
+    subject: AccessSubject,
+    origin: AccessEntryOrigin,
+  ): Promise<AccessVerifyResult> {
+    if (subject.kind === 'staff') {
+      return this.evaluateStaff(subject.staffUserId, origin);
+    }
+    return this.evaluateAndPersist({ memberId: subject.memberId, origin });
   }
 
   /**
@@ -117,91 +127,79 @@ export class AccessVerifyService {
   }
 
   /**
-   * Persiste un deny OID4VP sin pasar por evaluate (payload / tenant mismatch).
+   * Persiste un deny cuando el sistema de puerta no pudo identificar a nadie válido.
+   *
+   * @remarks Sin pasar por las reglas: payload inválido, gym de la credencial
+   * distinto (`tenant_mismatch`) o número de aparato sin vínculo (`sin_vinculo`).
    */
-  async persistOid4VpDenied(input: {
-    tenantId: string;
+  async persistIdentityDenied(input: {
+    origin: AccessEntryOrigin;
     memberId: string | null;
-    subjectStaffId?: string | null;
-    credentialRef: string;
-    actorStaffId: string | null;
+    subjectStaffId: string | null;
     reasonCode: AccessReasonCode;
   }): Promise<AccessVerifyResult> {
     return this.persistDenied({
-      tenantId: input.tenantId,
+      origin: input.origin,
       memberId: input.memberId,
-      subjectStaffId: input.subjectStaffId ?? null,
-      credentialRef: input.credentialRef,
-      scanMode: 'member_scans_gym',
-      actorStaffId: input.actorStaffId,
+      subjectStaffId: input.subjectStaffId,
       reasonCode: input.reasonCode,
     });
   }
 
   /**
-   * Evalúa ingreso de staff tras OID4VP (VC de vínculo; sin pack/deuda/fichaje).
+   * Regla de staff: entra si existe en el tenant y está activo (sin pack/deuda/fichaje).
    *
-   * @remarks Allow si el staff existe en el tenant y `active`. Roles no van en la VC.
+   * @remarks RN-ACC-008. Roles no intervienen.
    */
-  async evaluateStaffOid4VpPresentation(input: {
-    tenantId: string;
-    staffUserId: string;
-    credentialRef: string;
-    actorStaffId: string | null;
-  }): Promise<AccessVerifyResult> {
+  private async evaluateStaff(
+    staffUserId: string,
+    origin: AccessEntryOrigin,
+  ): Promise<AccessVerifyResult> {
     const tenant = await this.prisma.tenant.findUnique({
-      where: { id: input.tenantId },
+      where: { id: origin.tenantId },
       select: { status: true },
     });
     if (!tenant || tenant.status === TenantStatus.SUSPENDED) {
       return this.persistDenied({
-        tenantId: input.tenantId,
+        origin,
         memberId: null,
-        subjectStaffId: input.staffUserId,
-        credentialRef: input.credentialRef,
-        scanMode: 'member_scans_gym',
-        actorStaffId: input.actorStaffId,
+        subjectStaffId: staffUserId,
         reasonCode: ACCESS_REASON.tenantSuspendido,
       });
     }
 
     const staff = await this.prisma.staffUser.findFirst({
-      where: { id: input.staffUserId, tenantId: input.tenantId },
+      where: { id: staffUserId, tenantId: origin.tenantId },
       select: { id: true, active: true, name: true, email: true },
     });
     if (!staff) {
       return this.persistDenied({
-        tenantId: input.tenantId,
+        origin,
         memberId: null,
         subjectStaffId: null,
-        credentialRef: input.credentialRef,
-        scanMode: 'member_scans_gym',
-        actorStaffId: input.actorStaffId,
         reasonCode: ACCESS_REASON.credencialInvalida,
       });
     }
     if (!staff.active) {
       return this.persistDenied({
-        tenantId: input.tenantId,
+        origin,
         memberId: null,
         subjectStaffId: staff.id,
-        credentialRef: input.credentialRef,
-        scanMode: 'member_scans_gym',
-        actorStaffId: input.actorStaffId,
         reasonCode: ACCESS_REASON.staffInactivo,
       });
     }
 
     const attempt = await this.prisma.accessAttempt.create({
       data: {
-        tenantId: input.tenantId,
+        tenantId: origin.tenantId,
         memberId: null,
         subjectStaffId: staff.id,
-        credentialRef: input.credentialRef,
+        credentialRef: origin.credentialRef,
         result: AccessAttemptResult.ALLOWED,
         reasonCode: ACCESS_REASON.okStaff,
-        scanMode: 'member_scans_gym',
-        actorStaffId: input.actorStaffId,
+        scanMode: origin.scanMode,
+        channel: origin.channel,
+        actorStaffId: origin.actorStaffId,
       },
     });
 
@@ -345,11 +343,14 @@ export class AccessVerifyService {
 
     const note = dto.note?.trim() ? dto.note.trim() : null;
     const result = await this.persistAllowed({
-      tenantId,
+      origin: {
+        tenantId,
+        channel: ACCESS_CHANNEL.manual,
+        scanMode: 'manual',
+        credentialRef: null,
+        actorStaffId,
+      },
       memberId,
-      credentialRef: null,
-      scanMode: 'manual',
-      actorStaffId,
       reasonCode: ACCESS_REASON.okPaseManual,
       reservationId,
       sessionId,
@@ -378,37 +379,29 @@ export class AccessVerifyService {
   }
 
   private async evaluateAndPersist(input: {
-    tenantId: string;
     memberId: string;
-    credentialRef: string;
-    scanMode: AccessScanMode;
-    actorStaffId: string | null;
+    origin: AccessEntryOrigin;
   }): Promise<AccessVerifyResult> {
-    const { tenantId, memberId, credentialRef, scanMode, actorStaffId } = input;
+    const { memberId, origin } = input;
 
     const member = await this.prisma.member.findFirst({
-      where: { id: memberId, tenantId },
+      where: { id: memberId, tenantId: origin.tenantId },
       select: { id: true, status: true },
     });
 
-    const decision = await this.evaluateDecision(tenantId, member);
+    const decision = await this.evaluateDecision(origin.tenantId, member);
     if (!decision.allowed) {
       return this.persistDenied({
-        tenantId,
-        memberId,
-        credentialRef,
-        scanMode,
-        actorStaffId,
+        origin,
+        memberId: member ? memberId : null,
+        subjectStaffId: null,
         reasonCode: decision.reasonCode,
       });
     }
 
     return this.persistAllowed({
-      tenantId,
+      origin,
       memberId,
-      credentialRef,
-      scanMode,
-      actorStaffId,
       reasonCode: decision.reasonCode,
       reservationId: decision.reservationId,
       sessionId: decision.sessionId,
@@ -664,11 +657,8 @@ export class AccessVerifyService {
   }
 
   private async persistAllowed(input: {
-    tenantId: string;
+    origin: PersistOrigin;
     memberId: string;
-    credentialRef: string | null;
-    scanMode: AccessScanMode | 'manual';
-    actorStaffId: string | null;
     reasonCode: AccessReasonCode;
     reservationId: string | null;
     sessionId: string | null;
@@ -676,6 +666,7 @@ export class AccessVerifyService {
     motiveCode?: string | null;
     note?: string | null;
   }): Promise<AccessVerifyResult> {
+    const { origin } = input;
     const now = new Date();
     const { attempt, checkedInAt } = await this.prisma.$transaction(
       async (tx) => {
@@ -684,7 +675,7 @@ export class AccessVerifyService {
           const reservation = await tx.reservation.findFirst({
             where: {
               id: input.reservationId,
-              tenantId: input.tenantId,
+              tenantId: origin.tenantId,
               memberId: input.memberId,
             },
             select: { id: true, checkedInAt: true },
@@ -703,18 +694,19 @@ export class AccessVerifyService {
 
         const attempt = await tx.accessAttempt.create({
           data: {
-            tenantId: input.tenantId,
+            tenantId: origin.tenantId,
             memberId: input.memberId,
-            credentialRef: input.credentialRef,
+            credentialRef: origin.credentialRef,
             result: AccessAttemptResult.ALLOWED,
             reasonCode: input.reasonCode,
-            scanMode: input.scanMode,
+            scanMode: origin.scanMode,
+            channel: origin.channel,
             reservationId: input.reservationId,
             sessionId: input.sessionId,
             manualPass: input.manualPass ?? false,
             motiveCode: input.motiveCode ?? null,
             note: input.note ?? null,
-            actorStaffId: input.actorStaffId,
+            actorStaffId: origin.actorStaffId,
           },
         });
         return { attempt, checkedInAt };
@@ -734,31 +726,30 @@ export class AccessVerifyService {
   }
 
   private async persistDenied(input: {
-    tenantId: string;
+    origin: AccessEntryOrigin;
     memberId: string | null;
-    subjectStaffId?: string | null;
-    credentialRef: string | null;
-    scanMode: AccessScanMode;
-    actorStaffId: string | null;
+    subjectStaffId: string | null;
     reasonCode: AccessReasonCode;
   }): Promise<AccessVerifyResult> {
+    const { origin } = input;
     const attempt = await this.prisma.accessAttempt.create({
       data: {
-        tenantId: input.tenantId,
+        tenantId: origin.tenantId,
         memberId: input.memberId,
-        subjectStaffId: input.subjectStaffId ?? null,
-        credentialRef: input.credentialRef,
+        subjectStaffId: input.subjectStaffId,
+        credentialRef: origin.credentialRef,
         result: AccessAttemptResult.DENIED,
         reasonCode: input.reasonCode,
-        scanMode: input.scanMode,
-        actorStaffId: input.actorStaffId,
+        scanMode: origin.scanMode,
+        channel: origin.channel,
+        actorStaffId: origin.actorStaffId,
       },
     });
     return {
       allowed: false,
       reasonCode: input.reasonCode,
       memberId: input.memberId,
-      subjectStaffId: input.subjectStaffId ?? null,
+      subjectStaffId: input.subjectStaffId,
       reservationId: null,
       sessionId: null,
       checkedInAt: null,
@@ -848,6 +839,7 @@ export class AccessVerifyService {
       result: row.result,
       reasonCode: row.reasonCode,
       scanMode: row.scanMode,
+      channel: row.channel,
       reservationId: row.reservationId,
       sessionId: row.sessionId,
       manualPass: row.manualPass,

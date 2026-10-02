@@ -1,5 +1,6 @@
 import {
   Body,
+  ConflictException,
   Controller,
   ForbiddenException,
   Get,
@@ -10,12 +11,14 @@ import {
   Post,
   Query,
 } from '@nestjs/common';
+import { AccessProvider } from '@prisma/client';
 import type { AuthUser } from '../auth/auth.types';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { ListQueryDto, ListResult } from '../common/list';
 import { RequirePermission } from '../roles/decorators/require-permission.decorator';
 import { CurrentTenant } from '../tenant/decorators/current-tenant.decorator';
 import { RequireTenantAuth } from '../tenant/decorators/require-tenant-auth.decorator';
+import { TenantSettingsService } from '../tenant-settings/tenant-settings.service';
 import { FailCredentialOfferDto } from './dto/fail-credential-offer.dto';
 import { IssueMemberCredentialOfferDto } from './dto/issue-member-credential-offer.dto';
 import { IssueStaffCredentialOfferDto } from './dto/issue-staff-credential-offer.dto';
@@ -41,6 +44,7 @@ export class CredentialOffersController {
   constructor(
     private readonly offers: KuatiaOfferService,
     private readonly staffOffers: KuatiaStaffOfferService,
+    private readonly tenantSettings: TenantSettingsService,
   ) {}
 
   /**
@@ -169,11 +173,12 @@ export class CredentialOffersController {
   @Post('members/:memberId/credential-offers')
   @HttpCode(HttpStatus.CREATED)
   @RequirePermission('members.write')
-  issueForMemberCurrentContract(
+  async issueForMemberCurrentContract(
     @CurrentTenant() tenantId: string,
     @Param('memberId', ParseUUIDPipe) memberId: string,
     @Body() body: IssueMemberCredentialOfferDto,
   ): Promise<CredentialOfferListItem> {
+    await this.assertEmitsInKuatia(tenantId);
     return this.offers.ensureOfferForCurrentContract(tenantId, memberId, {
       force: body?.force ?? true,
       packId: body?.packId,
@@ -199,13 +204,28 @@ export class CredentialOffersController {
   @Post('staff/:staffId/credential-offers')
   @HttpCode(HttpStatus.CREATED)
   @RequirePermission('staff.write')
-  issueForStaffUser(
+  async issueForStaffUser(
     @CurrentTenant() tenantId: string,
     @Param('staffId', ParseUUIDPipe) staffId: string,
     @Body() body: IssueStaffCredentialOfferDto,
   ): Promise<StaffCredentialOfferListItem> {
+    await this.assertEmitsInKuatia(tenantId);
     return this.staffOffers.ensureOfferForStaff(tenantId, staffId, {
       force: body?.force ?? true,
     });
+  }
+
+  /**
+   * Un gym ZKTeco no emite credenciales en Kuatia (RN-ACC-010).
+   *
+   * @throws {ConflictException} Si el sistema de puerta del gym no es Kuatia.
+   */
+  private async assertEmitsInKuatia(tenantId: string): Promise<void> {
+    const provider = await this.tenantSettings.getAccessProvider(tenantId);
+    if (provider !== AccessProvider.KUATIA) {
+      throw new ConflictException(
+        'Este gym usa acceso ZKTeco: no se emiten credenciales en la app.',
+      );
+    }
   }
 }

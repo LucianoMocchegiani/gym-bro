@@ -110,15 +110,14 @@
 
 **Precondiciones:** Permiso de configuración.
 
-**Flujo principal:**
-1. Actor elige proveedor (`SSI_QUARK` u otro futuro).
-2. Carga parámetros (credenciales, endpoints).
-3. Prueba de conexión opcional.
-4. Guarda AccessAdapterConfig.
+**Flujo principal (implementado):**
+1. En Admin → Config → Operación, el actor elige **Puerta**: "QR con la app (Kuatia)" o "Acceso ZKTeco" (`PATCH /tenant-settings` `accessProvider`).
+2. Confirma (el diálogo avisa qué deja de funcionar).
+3. Se guarda `tenant_settings.access_provider` (auditado con el resto de la config).
 
-**Postcondiciones:** CU-ACC-001 usa el proveedor activo.
+**Postcondiciones:** Kuatia → CU-ACC-001 por QR. ZKTeco → CU-ACC-008; la app no recibe credenciales nuevas y `/puerta` muestra "Este gym usa acceso ZKTeco" + últimos ingresos en lugar del QR. Parámetros de conexión por proveedor (endpoints, token de dispositivo): post-MVP.
 
-**Reglas relacionadas:** RN-ACC-001
+**Reglas relacionadas:** RN-ACC-001, RN-ACC-010
 
 ---
 
@@ -133,6 +132,48 @@
 4. Guarda ConfiguracionGym.
 
 **Reglas relacionadas:** RN-TEN-004, RN-TEN-007, RN-RES-006
+
+---
+
+## CU-ACC-008 Ingreso por acceso ZKTeco
+
+**Actor:** Afiliado o staff + puente del gym (aparato ZKTeco: molinete, puerta, lector)
+
+**Precondiciones:** Gym con `access_provider = ZKTECO` (CU-ACC-006). El puente se autentica como staff con `access.verify` (token de dispositivo: post-MVP).
+
+**Flujo principal:**
+1. La persona se identifica en el aparato (PIN/tarjeta); el puente envía `POST /access/zkteco/events` `{ userId, occurredAt, deviceSerial? }`.
+2. Faciliter resuelve el número: vínculo (CU-ACC-009) → socio o staff; si no hay, socio con ese DNI (RN-ACC-011).
+3. Evalúa con las **mismas reglas** que CU-ACC-001 (activo, reserva en ventana, acceso libre, deuda, multi-ingreso; staff activo).
+4. Registra IntentoIngreso con `channel = zkteco`, `scanMode = member_at_device`.
+5. Si permitido → pide abrir la puerta (adaptador que registra en log en este corte) y responde `open = true`.
+
+**Errores:**
+- Número sin resolver → deny `sin_vinculo`.
+- Evento repetido (misma serie + número + hora) → mismo resultado, `duplicate = true`, `open = false`.
+- Gym no ZKTeco → 409.
+
+**Postcondiciones:** Intento visible en `/puerta` → Historial con canal "ZKTeco".
+
+**Reglas relacionadas:** RN-ACC-007, RN-ACC-010, RN-ACC-011
+
+---
+
+## CU-ACC-009 Vincular número del aparato
+
+**Actor:** Staff con `members.write` (socios) o `staff.write` (staff)
+
+**Precondiciones:** Gym ZKTeco.
+
+**Flujo principal:**
+1. En Afiliados o Staff, el actor abre la acción de acceso de la fila ("Acceso ZKTeco").
+2. Ve los números vinculados y, para socios, si el DNI sirve de respaldo.
+3. Agrega un número (letras, dígitos, `-`, `_`; hasta 32) o lo desvincula.
+4. Se audita (`access.link.create` / `access.link.delete`).
+
+**Errores:** Número ya vinculado a otra persona del gym → 409.
+
+**Reglas relacionadas:** RN-ACC-011
 
 ---
 

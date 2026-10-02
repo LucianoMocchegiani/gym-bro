@@ -138,6 +138,13 @@ Pasos de VPS: [uso/probar-debito-suscripcion-mp.md](./uso/probar-debito-suscripc
 | X5 | Credencial revocada | Deny | CU-AFI-003/006 | |
 | X6 | Historial muestra motivos | Lista ok/deny | CU-ACC-005 | |
 | X13 | GET access-preview (allow/deny) | 200 + `reasonCode`; **sin** fila nueva en historial | C0 chat/MCP | |
+| X14 | Config → Puerta = Acceso ZKTeco | `/puerta` sin QR: "Este gym usa acceso ZKTeco" + últimos ingresos; `POST /access/oid4vp/request` 409; emitir credencial socio/staff 409 | RN-ACC-010 | |
+| X15 | Evento ZKTeco con DNI del socio (sin vínculo) | Misma decisión que con la app (p.ej. `sin_derecho` / `ok_acceso_libre`); historial canal "ZKTeco" | RN-ACC-011, CU-ACC-008 | |
+| X16 | Evento ZKTeco con número vinculado a staff activo | ALLOWED `ok_staff`, `open=true`; log "Abrir puerta (simulado)" | RN-ACC-011 | |
+| X17 | Evento ZKTeco con número desconocido | DENIED `sin_vinculo`; Quién = "Nº … (sin vincular)" | RN-ACC-011 | |
+| X18 | Mismo evento ZKTeco dos veces | `duplicate=true`, `open=false`, una sola fila en historial | RN-ACC-011 | |
+| X19 | Vincular número ya usado por otra persona | 409 | CU-ACC-009 | |
+| X20 | Volver Config → Puerta = Kuatia | QR de `/puerta` vuelve; evento ZKTeco → 409 | RN-ACC-010 | |
 | X7 | Ingreso tardío si política ON | Paga/crédito + entra | CU-RES-006 | |
 | X8 | Renovar MONTHLY a tiempo | `startsAt` = día después de `endsAt` previo | RN-CON-001 | |
 | X9 | Renovar tras hueco sin ingresos | `startsAt` ≈ día de pago | RN-CON-001 | |

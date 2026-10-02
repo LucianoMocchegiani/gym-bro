@@ -3,7 +3,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { Prisma, WaitlistMode } from '@prisma/client';
+import { AccessProvider, Prisma, WaitlistMode } from '@prisma/client';
 import { AUDIT_ACTIONS, AuditActor } from '../audit/audit.types';
 import { AuditService } from '../audit/audit.service';
 import { PrismaService } from '../prisma/prisma.service';
@@ -55,7 +55,8 @@ export class TenantSettingsService {
       dto.allowLateSessionEntry === undefined &&
       dto.debtToleranceDays === undefined &&
       dto.multiEntryEnabled === undefined &&
-      dto.multiEntryMaxPerDay === undefined
+      dto.multiEntryMaxPerDay === undefined &&
+      dto.accessProvider === undefined
     ) {
       throw new BadRequestException(
         'Provide at least one settings field to update',
@@ -87,6 +88,9 @@ export class TenantSettingsService {
         ...(dto.multiEntryMaxPerDay !== undefined
           ? { multiEntryMaxPerDay: dto.multiEntryMaxPerDay }
           : {}),
+        ...(dto.accessProvider !== undefined
+          ? { accessProvider: dto.accessProvider }
+          : {}),
       },
     });
     const detail = this.toDetail(settings);
@@ -116,6 +120,17 @@ export class TenantSettingsService {
   async getWaitlistMode(tenantId: string): Promise<WaitlistMode> {
     const settings = await this.getOrCreate(tenantId);
     return settings.waitlistMode;
+  }
+
+  /**
+   * Sistema de puerta efectivo del gym (default KUATIA si aún no hay row).
+   *
+   * @remarks RN-ACC-010. Define si se emiten credenciales en Kuatia y qué
+   * entrada de puerta acepta el gym (QR OID4VP o eventos ZKTeco).
+   */
+  async getAccessProvider(tenantId: string): Promise<AccessProvider> {
+    const settings = await this.getOrCreate(tenantId);
+    return settings.accessProvider;
   }
 
   /**
@@ -218,6 +233,7 @@ export class TenantSettingsService {
     debtToleranceDays: number;
     multiEntryEnabled: boolean;
     multiEntryMaxPerDay: number;
+    accessProvider: AccessProvider;
     createdAt: Date;
     updatedAt: Date;
   }): TenantSettingsDetail {
@@ -229,6 +245,7 @@ export class TenantSettingsService {
       debtToleranceDays: row.debtToleranceDays,
       multiEntryEnabled: row.multiEntryEnabled,
       multiEntryMaxPerDay: row.multiEntryMaxPerDay,
+      accessProvider: row.accessProvider,
       createdAt: row.createdAt,
       updatedAt: row.updatedAt,
     };
@@ -242,6 +259,7 @@ export class TenantSettingsService {
       debtToleranceDays: detail.debtToleranceDays,
       multiEntryEnabled: detail.multiEntryEnabled,
       multiEntryMaxPerDay: detail.multiEntryMaxPerDay,
+      accessProvider: detail.accessProvider,
     };
   }
 }

@@ -19,6 +19,7 @@ import {
   updateTenantSettings,
 } from '@/lib/api/tenant-settings';
 import type {
+  AccessProvider,
   TenantSettingsDetail,
   WaitlistMode,
 } from '@/lib/api/tenant-settings';
@@ -36,6 +37,8 @@ export default function ConfigPage() {
 
 function ConfigInner() {
   const [settings, setSettings] = useState<TenantSettingsDetail | null>(null);
+  const [accessProvider, setAccessProvider] =
+    useState<AccessProvider>('KUATIA');
   const [cancellationHours, setCancellationHours] = useState('24');
   const [waitlistMode, setWaitlistMode] =
     useState<WaitlistMode>('AUTO_ASSIGN');
@@ -97,6 +100,7 @@ function ConfigInner() {
 
   function applySettings(s: TenantSettingsDetail) {
     setSettings(s);
+    setAccessProvider(s.accessProvider);
     setCancellationHours(String(s.reservationCancellationHours));
     setWaitlistMode(s.waitlistMode);
     setAllowLate(s.allowLateSessionEntry);
@@ -111,6 +115,7 @@ function ConfigInner() {
       return;
     }
     const dirty =
+      accessProvider !== settings.accessProvider ||
       cancellationHours !== String(settings.reservationCancellationHours) ||
       waitlistMode !== settings.waitlistMode ||
       allowLate !== settings.allowLateSessionEntry ||
@@ -130,6 +135,7 @@ function ConfigInner() {
     setSettingsOk(false);
     try {
       const updated = await updateTenantSettings({
+        accessProvider,
         reservationCancellationHours: Number(cancellationHours),
         waitlistMode,
         allowLateSessionEntry: allowLate,
@@ -235,6 +241,23 @@ function ConfigInner() {
                 className="admin-form"
                 onSubmit={(e) => void onSaveSettings(e)}
               >
+                <label>
+                  Puerta
+                  <select
+                    value={accessProvider}
+                    onChange={(e) =>
+                      setAccessProvider(e.target.value as AccessProvider)
+                    }
+                  >
+                    <option value="KUATIA">QR con la app (Kuatia)</option>
+                    <option value="ZKTECO">Acceso ZKTeco</option>
+                  </select>
+                </label>
+                <p className="muted small">
+                  {accessProvider === 'ZKTECO'
+                    ? 'El socio se identifica en el aparato con su número (vínculo en la ficha o DNI). La app no emite credenciales y /puerta no muestra QR.'
+                    : 'El socio escanea el QR de /puerta con su credencial en la app.'}
+                </p>
                 <label>
                   Horas de cancelación de reserva
                   <input
@@ -390,7 +413,11 @@ function ConfigInner() {
       <ConfirmDialog
         open={confirmSettings}
         title="Guardar cambios"
-        description="¿Confirmás guardar la configuración de operación del gym?"
+        description={
+          settings && accessProvider !== settings.accessProvider
+            ? `¿Confirmás guardar? La puerta pasa a ${accessProvider === 'ZKTECO' ? 'acceso ZKTeco: deja de funcionar el QR de la app' : 'QR con la app (Kuatia): los socios necesitan su credencial'}.`
+            : '¿Confirmás guardar la configuración de operación del gym?'
+        }
         confirmLabel="Guardar"
         busy={settingsBusy}
         onConfirm={() => {

@@ -1,10 +1,13 @@
 import {
   BadRequestException,
+  ConflictException,
   Injectable,
   Logger,
   ServiceUnavailableException,
 } from '@nestjs/common';
+import { AccessProvider } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import { TenantSettingsService } from '../tenant-settings/tenant-settings.service';
 import { KuatiaHttpError } from '../kuatia/http-kuatia-admin.adapter';
 import { KuatiaAdminPort } from '../kuatia/kuatia-admin.port';
 import { KuatiaEnvService } from '../kuatia/kuatia-env.service';
@@ -12,7 +15,9 @@ import { packKuatiaIds } from '../kuatia/kuatia-pack-sync.service';
 import { staffKuatiaIds } from '../kuatia/kuatia-staff-sync.service';
 import { AccessVerifyService } from './access-verify.service';
 import {
+  ACCESS_CHANNEL,
   ACCESS_REASON,
+  AccessEntryOrigin,
   AccessOid4VpRequestResult,
   AccessOid4VpSessionResult,
   AccessVerifyResult,
@@ -43,6 +48,7 @@ export class AccessOid4VpService {
     private readonly kuatia: KuatiaAdminPort,
     private readonly kuatiaEnv: KuatiaEnvService,
     private readonly accessVerify: AccessVerifyService,
+    private readonly tenantSettings: TenantSettingsService,
   ) {}
 
   /**
@@ -54,6 +60,12 @@ export class AccessOid4VpService {
    * vino en el VP. VCT staff = `urn:faciliter:staff:{tenantId}`.
    */
   async createRequest(tenantId: string): Promise<AccessOid4VpRequestResult> {
+    const provider = await this.tenantSettings.getAccessProvider(tenantId);
+    if (provider !== AccessProvider.KUATIA) {
+      throw new ConflictException(
+        'Este gym usa acceso ZKTeco: la puerta no usa QR (RN-ACC-010).',
+      );
+    }
     const verifierWalletId = this.requireVerifierWallet();
     const packs = await this.prisma.pack.findMany({
       where: { tenantId },
@@ -153,14 +165,19 @@ export class AccessOid4VpService {
       typeof claims.memberId === 'string' ? claims.memberId.trim() : '';
     const claimTenantId =
       typeof claims.tenantId === 'string' ? claims.tenantId.trim() : '';
+    const origin: AccessEntryOrigin = {
+      tenantId,
+      channel: ACCESS_CHANNEL.kuatia,
+      scanMode: 'member_scans_gym',
+      credentialRef: oid4vpCredentialRef(sessionId),
+      actorStaffId,
+    };
 
     if (claimTenantId && claimTenantId !== tenantId) {
-      const denied = await this.accessVerify.persistOid4VpDenied({
-        tenantId,
-        memberId: memberId || null,
-        subjectStaffId: staffId || null,
-        credentialRef: oid4vpCredentialRef(sessionId),
-        actorStaffId,
+      const denied = await this.accessVerify.persistIdentityDenied({
+        origin,
+        memberId: null,
+        subjectStaffId: null,
         reasonCode: ACCESS_REASON.tenantMismatch,
       });
       return { status: 'done', state, result: denied };
@@ -168,33 +185,27 @@ export class AccessOid4VpService {
 
     // Preferir staff si ambos (caso anómalo).
     if (staffId) {
-      const result = await this.accessVerify.evaluateStaffOid4VpPresentation({
-        tenantId,
-        staffUserId: staffId,
-        credentialRef: oid4vpCredentialRef(sessionId),
-        actorStaffId,
-      });
+      const result = await this.accessVerify.evaluateSubject(
+        { kind: 'staff', staffUserId: staffId },
+        origin,
+      );
       return { status: 'done', state, result };
     }
 
     if (!memberId) {
-      const denied = await this.accessVerify.persistOid4VpDenied({
-        tenantId,
+      const denied = await this.accessVerify.persistIdentityDenied({
+        origin,
         memberId: null,
         subjectStaffId: null,
-        credentialRef: oid4vpCredentialRef(sessionId),
-        actorStaffId,
         reasonCode: ACCESS_REASON.payloadInvalido,
       });
       return { status: 'done', state, result: denied };
     }
 
-    const result = await this.accessVerify.evaluateOid4VpPresentation({
-      tenantId,
-      memberId,
-      credentialRef: oid4vpCredentialRef(sessionId),
-      actorStaffId,
-    });
+    const result = await this.accessVerify.evaluateSubject(
+      { kind: 'member', memberId },
+      origin,
+    );
     return { status: 'done', state, result };
   }
 

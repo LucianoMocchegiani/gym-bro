@@ -1,6 +1,7 @@
 ﻿import { Module } from '@nestjs/common';
 import { AuthModule } from '../auth/auth.module';
 import { RolesModule } from '../roles/roles.module';
+import { TenantSettingsModule } from '../tenant-settings/tenant-settings.module';
 import { CredentialOffersController } from './credential-offers.controller';
 import { HttpKuatiaAdminAdapter } from './http-kuatia-admin.adapter';
 import { KuatiaAdminPort } from './kuatia-admin.port';
@@ -16,7 +17,7 @@ import { KuatiaStaffSyncService } from './kuatia-staff-sync.service';
  * @see https://kuatia.xyz/docs
  */
 @Module({
-  imports: [AuthModule, RolesModule],
+  imports: [AuthModule, RolesModule, TenantSettingsModule],
   controllers: [CredentialOffersController],
   providers: [
     HttpKuatiaAdminAdapter,

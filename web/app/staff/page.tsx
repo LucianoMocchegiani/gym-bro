@@ -8,6 +8,7 @@ import {
   ListToolbar,
   listCountDescription,
 } from '@/components/AdminList';
+import { AccessLinksPanel } from '@/components/AccessLinksPanel';
 import { AdminModal } from '@/components/AdminModal';
 import { AdminShell } from '@/components/AdminShell';
 import { DeleteRowButton } from '@/components/DeleteRowButton';
@@ -31,6 +32,7 @@ import { ApiClientError } from '@/lib/api/client';
 import { listStaff } from '@/lib/api/staff';
 import type { StaffUserDetail } from '@/lib/api/staff';
 import { deleteStaff } from '@/lib/api/staff';
+import { useAccessDoor } from '@/lib/use-access-door';
 
 const PAGE_SIZE = 20;
 
@@ -51,6 +53,7 @@ function StaffInner() {
   const rolesId = searchParams.get('roles')?.trim() || null;
   const credencialId = searchParams.get('credencial')?.trim() || null;
   const carpetaId = searchParams.get('carpeta')?.trim() || null;
+  const doorProvider = useAccessDoor();
   const createOpen =
     searchParams.get('nuevo') === '1' &&
     !fichaId &&
@@ -202,7 +205,11 @@ function StaffInner() {
                   <IconRoles />
                 </RowIconButton>
                 <RowIconButton
-                  label="Credencial de acceso"
+                  label={
+                    doorProvider === 'ZKTECO'
+                      ? 'Acceso ZKTeco'
+                      : 'Credencial de acceso'
+                  }
                   onClick={() => openCredencial(s.id)}
                 >
                   <IconCredential />
@@ -293,11 +300,24 @@ function StaffInner() {
       <AdminModal
         open={Boolean(credencialId)}
         onClose={closeModals}
-        title="Credencial de acceso"
-        description="Offer OID4VCI para molinete (sin fichaje)."
+        title={
+          doorProvider === 'ZKTECO' ? 'Acceso ZKTeco' : 'Credencial de acceso'
+        }
+        description={
+          doorProvider === 'ZKTECO'
+            ? 'Número con el que se identifica en el aparato ZKTeco (sin fichaje).'
+            : 'Offer OID4VCI para molinete (sin fichaje).'
+        }
         size="comfortable"
       >
-        {credencialId ? (
+        {credencialId && doorProvider === 'ZKTECO' ? (
+          <AccessLinksPanel
+            key={credencialId}
+            kind="staff"
+            subjectId={credencialId}
+          />
+        ) : null}
+        {credencialId && doorProvider === 'KUATIA' ? (
           <StaffCredentialPanel key={credencialId} staffId={credencialId} />
         ) : null}
       </AdminModal>

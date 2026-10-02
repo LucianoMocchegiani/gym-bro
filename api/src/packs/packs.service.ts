@@ -22,14 +22,19 @@ import {
 } from '../common/list';
 import { PrismaService } from '../prisma/prisma.service';
 import { UploadService } from '../upload/upload.service';
-import { KuatiaPackSyncService } from '../kuatia/kuatia-pack-sync.service';
+import { CredentialIssuerPort } from '../access-providers/credential-issuer.port';
 import {
   CreatePackDto,
   ListPacksQueryDto,
   PackComponentInputDto,
   UpdatePackDto,
 } from './dto/pack.dto';
-import { PackComponentDetail, PackDetail, PackKind, PublicPlatformPack } from './packs.types';
+import {
+  PackComponentDetail,
+  PackDetail,
+  PackKind,
+  PublicPlatformPack,
+} from './packs.types';
 import { MemberPackDetail } from '../member-catalog/member-catalog.types';
 
 /** Whitelist de orden para {@link PacksService.list}. */
@@ -55,7 +60,7 @@ export class PacksService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
-    private readonly kuatiaPackSync: KuatiaPackSyncService,
+    private readonly credentialIssuer: CredentialIssuerPort,
     private readonly upload: UploadService,
   ) {}
 
@@ -262,7 +267,7 @@ export class PacksService {
           });
         }
       });
-      await this.kuatiaPackSync.syncPackConfiguration(
+      await this.credentialIssuer.syncPackConfiguration(
         tenantId,
         existing.id,
         name,
@@ -286,7 +291,11 @@ export class PacksService {
         },
       },
     });
-    await this.kuatiaPackSync.syncPackConfiguration(tenantId, created.id, name);
+    await this.credentialIssuer.syncPackConfiguration(
+      tenantId,
+      created.id,
+      name,
+    );
     return { id: created.id, price };
   }
 
@@ -343,7 +352,7 @@ export class PacksService {
       return created;
     });
 
-    await this.kuatiaPackSync.syncPackConfiguration(
+    await this.credentialIssuer.syncPackConfiguration(
       tenantId,
       pack.id,
       pack.name,
@@ -442,7 +451,7 @@ export class PacksService {
       });
     });
 
-    await this.kuatiaPackSync.syncPackConfiguration(
+    await this.credentialIssuer.syncPackConfiguration(
       tenantId,
       pack.id,
       pack.name,
@@ -515,7 +524,7 @@ export class PacksService {
         data: { active: false },
         include: this.packInclude(),
       });
-      await this.kuatiaPackSync.syncPackConfiguration(
+      await this.credentialIssuer.syncPackConfiguration(
         tenantId,
         packId,
         updated.name,
