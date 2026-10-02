@@ -26,12 +26,16 @@ export class AppleIdTokenService {
   private readonly jwks = createRemoteJWKSet(
     new URL('https://appleid.apple.com/auth/keys'),
   );
-  private readonly serviceId: string;
-  private readonly teamId: string;
+  /** Service ID (flujo web) y bundle ids de la app iOS (login nativo). */
+  private readonly audiences: string[];
 
   constructor(config: ConfigService) {
-    this.serviceId = config.get<string>('APPLE_SERVICE_ID') ?? '';
-    this.teamId = config.get<string>('APPLE_TEAM_ID') ?? '';
+    this.audiences = [
+      config.get<string>('APPLE_SERVICE_ID') ?? '',
+      ...(config.get<string>('APPLE_APP_BUNDLE_IDS') ?? '').split(','),
+    ]
+      .map((s) => s.trim())
+      .filter(Boolean);
   }
 
   /**
@@ -39,13 +43,13 @@ export class AppleIdTokenService {
    * @throws {UnauthorizedException} Token inválido, email no verificado o issuer/audience incorrectos.
    */
   async verify(idToken: string): Promise<AppleIdentityClaims> {
-    if (!this.serviceId || !this.teamId) {
+    if (this.audiences.length === 0) {
       throw new ServiceUnavailableException('Apple login is not configured');
     }
     try {
       const { payload } = await jwtVerify(idToken, this.jwks, {
         issuer: APPLE_ISSUER,
-        audience: this.serviceId,
+        audience: this.audiences,
       });
 
       const sub = (payload.sub as string)?.trim();

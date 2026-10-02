@@ -1,0 +1,7 @@
+# Copiar a android/key.properties (está en .gitignore) y completar.
+# storeFile: ruta absoluta al keystore de subida, FUERA del repo.
+# Guía: docs/mobile/publicar-tiendas.md
+storePassword=CAMBIAR
+keyPassword=CAMBIAR
+keyAlias=upload
+storeFile=C:/Users/User/keys/faciliter-upload.jks

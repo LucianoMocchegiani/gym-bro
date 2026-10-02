@@ -1,8 +1,10 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/config/api_config.dart';
 import '../../core/config/chat_config.dart';
+import '../../core/crash/crash_reporter.dart';
 import '../../core/theme/theme_controller.dart';
 import '../../core/widgets/confirm_dialog.dart';
 import '../../core/widgets/loading_dialog.dart';
@@ -218,24 +220,40 @@ class _SettingsScreenState extends State<SettingsScreen> {
             onChanged: (_) => theme.toggle(),
           ),
         ),
-        const SizedBox(height: 20),
-        _sectionTitle(context, 'Desarrolladores'),
-        const SizedBox(height: 8),
-        Card(
-          child: ListTile(
-            leading: const Icon(Icons.cloud_outlined),
-            title: const Text('API'),
-            subtitle: Text(ApiConfig.baseUrl),
-          ),
-        ),
-        if (session?.profileType == 'STAFF')
+        if (!kReleaseMode || CrashReporter.crashTestEnabled) ...[
+          const SizedBox(height: 20),
+          _sectionTitle(context, 'Desarrolladores'),
+          const SizedBox(height: 8),
           Card(
             child: ListTile(
-              leading: const Icon(Icons.chat_outlined),
-              title: const Text('Chat API'),
-              subtitle: Text(ChatConfig.baseUrl),
+              leading: const Icon(Icons.cloud_outlined),
+              title: const Text('API'),
+              subtitle: Text(ApiConfig.baseUrl),
             ),
           ),
+          if (session?.profileType == 'STAFF')
+            Card(
+              child: ListTile(
+                leading: const Icon(Icons.chat_outlined),
+                title: const Text('Chat API'),
+                subtitle: Text(ChatConfig.baseUrl),
+              ),
+            ),
+          if (CrashReporter.crashTestEnabled)
+            Card(
+              child: ListTile(
+                leading: const Icon(Icons.bug_report_outlined),
+                title: const Text('Probar Crashlytics'),
+                subtitle: Text(
+                  CrashReporter.enabled
+                      ? 'Cierra la app con un crash de prueba'
+                      : 'Crashlytics no está activo en este build',
+                ),
+                enabled: CrashReporter.enabled,
+                onTap: CrashReporter.testCrash,
+              ),
+            ),
+        ],
         const SizedBox(height: 24),
         FilledButton.tonal(
           onPressed: () => _logout(context),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import 'core/crash/crash_reporter.dart';
 import 'core/network/api_client.dart';
 import 'core/theme/gymbro_theme.dart';
 import 'core/theme/theme_controller.dart';
@@ -24,8 +25,9 @@ import 'features/store/refund_repository.dart';
 import 'features/store/receipts_repository.dart';
 
 /// Punto de entrada de la app Faciliter.
-void main() {
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await CrashReporter.init();
   runApp(const FaciliterApp());
 }
 
@@ -82,6 +84,7 @@ class _FaciliterAppState extends State<FaciliterApp> {
     _staffCajaRepo = StaffCajaRepository(_api);
     _auth = AuthController(auth: _authRepo, api: _api, wallet: _wallet);
     _auth.addListener(_clearCartOnLogout);
+    _auth.addListener(_syncCrashUser);
     _bootstrap();
   }
 
@@ -89,9 +92,26 @@ class _FaciliterAppState extends State<FaciliterApp> {
     if (!_auth.isAuthenticated) _cart.clear();
   }
 
+  String? _crashUserKey;
+
+  void _syncCrashUser() {
+    final identityId = _auth.identity?.identityId;
+    final profileType = _auth.session?.profileType;
+    final tenantId = _auth.session?.tenantId;
+    final key = '$identityId|$profileType|$tenantId';
+    if (key == _crashUserKey) return;
+    _crashUserKey = key;
+    CrashReporter.setUser(
+      identityId: identityId,
+      profileType: profileType,
+      tenantId: tenantId,
+    );
+  }
+
   @override
   void dispose() {
     _auth.removeListener(_clearCartOnLogout);
+    _auth.removeListener(_syncCrashUser);
     super.dispose();
   }
 

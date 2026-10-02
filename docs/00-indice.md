@@ -54,6 +54,8 @@ Reglas relacionadas
 | [18-prioridades-cierre-mvp.md](./18-prioridades-cierre-mvp.md) | Prioridades para un MVP vendible (molinetes, débito QA, landing/SEO, tokens, migración) | Viva |
 | [19-puerta-molinete-hw-sw.md](./19-puerta-molinete-hw-sw.md) | Molinete: BOM hardware + software (relé, agente, Kuatia nativo, DNI/huella opcionales) | Borrador |
 | [mobile/isar-wallet.md](./mobile/isar-wallet.md) | Wallet local (Isar): VCs en el device, secreto, workaround AGP 8 | Viva |
+| [mobile/publicar-tiendas.md](./mobile/publicar-tiendas.md) | Publicar en Play / App Store: cuentas, Firebase Crashlytics, firma, Codemagic, Data safety | Viva |
+| [mobile/fichas-tiendas.md](./mobile/fichas-tiendas.md) | Borrador de textos de las fichas de Play y App Store | Borrador |
 | [credenciales-demo.md](./credenciales-demo.md) | Cuentas seed locales (Plataforma `admin` / Staff / Member) | Viva |
 | [costos/r2-cloudflare.md](./costos/r2-cloudflare.md) | Precios Cloudflare R2 (free tier y post-free) | Viva |
 | [costos/carpeta-documentos.md](./costos/carpeta-documentos.md) | Límites y costo de carpeta (notas/files, escenario 200 socios) | Viva |

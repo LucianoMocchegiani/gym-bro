@@ -25,6 +25,23 @@ subprojects {
     }
 }
 
+// isar_flutter_libs 3.1 compila con SDK 30 y el release falla con
+// "resource android:attr/lStar not found".
+subprojects {
+    if (name == "isar_flutter_libs") {
+        afterEvaluate {
+            val android = extensions.getByName("android")
+            android.javaClass.methods
+                .first {
+                    it.name == "setCompileSdkVersion" &&
+                        it.parameterCount == 1 &&
+                        it.parameterTypes[0] == Int::class.javaPrimitiveType
+                }
+                .invoke(android, 36)
+        }
+    }
+}
+
 val newBuildDir: Directory =
     rootProject.layout.buildDirectory
         .dir("../../build")

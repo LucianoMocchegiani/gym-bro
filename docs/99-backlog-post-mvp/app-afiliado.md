@@ -21,8 +21,10 @@
 | Paginación de comprobantes | Pendiente | Hoy lista hasta 50 |
 | Productos en Tienda | Pendiente | Misma `CatalogCard`; módulo shop → [producto.md](./producto.md) |
 | Tickets de reclamo (IA) | Pendiente | Abrir un reclamo desde la app; la IA lleva el hilo (estilo ML/MP). Inbox Admin: [admin.md](./admin.md) |
-| Crashlytics (Firebase) | Pendiente | Crashes iOS/Android. Ticket: `local/mis-tickets/ticket-crashlytics-mobile.md` |
-| Preparar App Store y Play | Pendiente | Fichas, firmas, permisos, API prod. Ticket: `local/mis-tickets/ticket-tiendas-ios-android.md` |
+| Crashlytics (Firebase) | En curso | Código listo (solo release, tolerante sin config). Falta crear las apps en Firebase y commitear la config. [publicar-tiendas.md](../mobile/publicar-tiendas.md) |
+| Preparar App Store y Play | En curso | Firma, permisos iOS, entitlements, fichas en borrador. Faltan cuentas, eliminar cuenta y 16 KB (Isar/sodium). [publicar-tiendas.md](../mobile/publicar-tiendas.md) |
+| Eliminar cuenta | Pendiente | Requisito de Apple y Play (en la app + URL web). Ticket: `local/mis-tickets/ticket-eliminar-cuenta.md` |
+| Librerías nativas a 16 KB | Pendiente | `libisar.so` y `libsodium.so` a 4 KB; Play las rechaza. Ticket: `local/mis-tickets/ticket-16kb-isar-sodium.md` |
 
 ## Mejoras de UX (charla)
 
@@ -30,7 +32,7 @@
 |------|--------|--------|
 | Devolución detrás de ⋮ | Pendiente | En Historial, no un botón grande “Solicitar devolución” en cada card |
 | Ajustes como menú | Pendiente | Cuenta → pantalla cuenta; Wallet → solo reiniciar; Sistema → tema + API **solo en debug** |
-| Ocultar detalles de API en Ajustes | Pendiente | Visible solo en build de desarrollo |
+| Ocultar detalles de API en Ajustes | Hecho | "Desarrolladores" solo en debug o con `CRASH_TEST` |
 
 Rutinas y avisos de la app: [roadmap E7/E8](../11-roadmap-mvp.md).
 

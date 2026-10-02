@@ -52,12 +52,23 @@ Google: el client Web va bakeado en la app (`GoogleAuthConfig`). Nest usa el mis
   - **Inicio staff:** Sesiones (roster) / Caja (`cashier.operate`)
     - **Caja:** picker, cobro CASH/MP, panel de comprobante + Compartir
   - **Acceso:** Escanear (default, cámara) · Credenciales (pendientes de aceptación máx. ½ pantalla + VCs wallet)
-  - **Ajustes:** cuenta, wallet, tema, Desarrolladores (API / Chat API en staff), logout
+  - **Ajustes:** cuenta, wallet, tema, logout. Desarrolladores (API / Chat API en staff) solo en debug o con `CRASH_TEST`
 - Cards SSI estilo quark-wallet + detalle expandible (look GymBro); eliminar VC una a una con confirmación
 - Diálogo de confirmación reutilizable (`showConfirmDialog`) para logout / borrar VC / reiniciar wallet
 - Diálogo de carga (`runWithLoadingDialog`) mientras terminan esas acciones y al aceptar offers
 - Sin stub / `stub-venue` en la app
 
 Issuer público: `https://issuer.kuatia.xyz`.
+
+## Release y tiendas
+
+```powershell
+fvm flutter build appbundle --release --build-number=<N>
+```
+
+- Firma: `android/key.properties` (copiar de `key.properties.example`; fuera de git). Sin él, firma debug.
+- Crashlytics: solo release y solo si están `android/app/google-services.json` / `ios/Runner/GoogleService-Info.plist`. Crash de prueba: `--dart-define=CRASH_TEST=true` → Ajustes → Desarrolladores.
+- Sign in with Apple: solo iOS.
+- Guía completa: [docs/mobile/publicar-tiendas.md](../docs/mobile/publicar-tiendas.md).
 
 Pendiente: Historial fino (comprobante + listado solicitudes), rutinas, avisos.

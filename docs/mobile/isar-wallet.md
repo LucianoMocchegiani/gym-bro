@@ -53,7 +53,9 @@ No es un fallo de FVM, del teléfono ni de `pub get`. Es incompatibilidad del pl
 
 ### Workaround actual
 
-En `mobile/android/build.gradle.kts` se inyecta `namespace` a librerías Android que no lo traen. El modelo de wallet no cambia; solo permite **construir** el plugin viejo.
+En `mobile/android/build.gradle.kts` se inyecta `namespace` a librerías Android que no lo traen, y se fuerza `compileSdk` 36 en `isar_flutter_libs` (con su SDK 30 el release falla con `android:attr/lStar not found`). El modelo de wallet no cambia; solo permite **construir** el plugin viejo.
+
+`libisar.so` 3.1 está alineada a 4 KB: Google Play la rechaza (exige 16 KB). Ver [publicar-tiendas.md § Problemas conocidos](./publicar-tiendas.md#problemas-conocidos).
 
 El riesgo a futuro es de **mantenimiento**: cada subida de Flutter/AGP puede volver a romper el plugin. Arreglo de fondo (no hecho): fork `isar_community`, o el SDK oficial de Kuatia cuando reemplace a `identity_core_dart`.
 

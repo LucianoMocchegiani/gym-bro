@@ -1,0 +1,7 @@
+// Google Sign-In en iOS (Info.plist: GIDClientID y URL scheme).
+// Completar con el OAuth client tipo iOS (bundle com.faciliter.mobile) del
+// proyecto GCP de Faciliter. Guía: docs/mobile/publicar-tiendas.md
+// No son secretos. Sin client iOS, el botón de Google falla solo en iOS.
+GOOGLE_IOS_CLIENT_ID =
+GOOGLE_IOS_REVERSED_CLIENT_ID =
+GOOGLE_SERVER_CLIENT_ID = 382351831666-vtubuvqok9bq2p3s2bdbpe6iifrvue16.apps.googleusercontent.com
