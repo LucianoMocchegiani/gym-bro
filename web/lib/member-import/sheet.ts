@@ -141,6 +141,29 @@ function normalizeHeader(value: string): string {
 }
 
 /**
+ * Primera columna cuyo encabezado coincide (o contiene) algún sinónimo.
+ *
+ * @returns Índice de la columna o `null`.
+ */
+export function findColumn(
+  headers: string[],
+  synonyms: string[],
+  skip: number[] = [],
+): number | null {
+  const normalized = headers.map(normalizeHeader);
+  const wanted = synonyms.map(normalizeHeader);
+  let idx = normalized.findIndex(
+    (h, i) => !skip.includes(i) && wanted.includes(h),
+  );
+  if (idx < 0) {
+    idx = normalized.findIndex(
+      (h, i) => !skip.includes(i) && h && wanted.some((s) => h.includes(s)),
+    );
+  }
+  return idx >= 0 ? idx : null;
+}
+
+/**
  * Sugiere el mapa: primero el guardado de la última corrida (por nombre de
  * columna), después por sinónimos del encabezado.
  */

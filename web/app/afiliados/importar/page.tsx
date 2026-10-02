@@ -4,18 +4,27 @@ import Link from 'next/link';
 import { useCallback, useEffect, useState } from 'react';
 import { Panel } from '@/components/AdminUi';
 import { AdminShell } from '@/components/AdminShell';
+import { AccessCodesImportPanel } from '@/components/member-import/AccessCodesImportPanel';
 import { FilesImportPanel } from '@/components/member-import/FilesImportPanel';
 import { RowsImportPanel } from '@/components/member-import/RowsImportPanel';
 import { RequireStaff } from '@/components/RequireStaff';
 import { ApiClientError } from '@/lib/api/client';
 import {
   listMemberImports,
+  type ImportKind,
   type MemberImportDetail,
 } from '@/lib/api/member-imports';
 import { useAuth } from '@/lib/auth/AuthProvider';
 import type { SavedMapping } from '@/lib/member-import/sheet';
+import { useAccessDoor } from '@/lib/use-access-door';
 
 const IMPORT_CODES = ['members.import', 'members.write'] as const;
+
+const IMPORT_KIND_LABELS: Record<ImportKind, string> = {
+  ROWS: 'Fichas',
+  FILES: 'Archivos',
+  ACCESS_CODES: 'Números de acceso',
+};
 
 export default function ImportarAfiliadosPage() {
   return (
@@ -28,7 +37,8 @@ export default function ImportarAfiliadosPage() {
 /**
  * Migración de afiliados desde otro sistema (RN-MIG-001..005).
  *
- * @remarks Ficha + foto + carpeta. Sin packs, contratos, caja ni QR.
+ * @remarks Ficha + foto + carpeta; en gym ZKTeco, números del aparato
+ * (RN-MIG-006). Sin packs, contratos, caja ni QR.
  */
 function ImportarInner() {
   const { session } = useAuth();
@@ -36,6 +46,7 @@ function ImportarInner() {
   const allowed =
     codes == null || IMPORT_CODES.every((c) => codes.includes(c));
 
+  const doorProvider = useAccessDoor();
   const [history, setHistory] = useState<MemberImportDetail[]>([]);
   const [historyError, setHistoryError] = useState<string | null>(null);
   const [loaded, setLoaded] = useState(false);
@@ -96,6 +107,9 @@ function ImportarInner() {
             onFinished={() => void load()}
           />
           <FilesImportPanel onFinished={() => void load()} />
+          {doorProvider === 'ZKTECO' ? (
+            <AccessCodesImportPanel onFinished={() => void load()} />
+          ) : null}
           <Panel title="Últimas importaciones">
             {historyError ? <p className="err-msg">{historyError}</p> : null}
             {history.length === 0 ? (
@@ -121,7 +135,7 @@ function ImportarInner() {
                           {new Date(h.createdAt).toLocaleString('es-AR')}
                           {h.status === 'RUNNING' ? ' (sin terminar)' : ''}
                         </td>
-                        <td>{h.kind === 'ROWS' ? 'Fichas' : 'Archivos'}</td>
+                        <td>{IMPORT_KIND_LABELS[h.kind]}</td>
                         <td>{h.filename}</td>
                         <td>{h.createdCount}</td>
                         <td>{h.skippedCount}</td>

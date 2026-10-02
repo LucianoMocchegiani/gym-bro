@@ -34,6 +34,11 @@ Leyenda resultado: `P` pass · `F` fail · `B` bloqueado · `-` no aplica
 | A3 | Afiliado ve solo su cuenta | No ve datos de otros | CU-AFI-005, RN-TEN-001 | |
 | A4 | Staff ve credential offers en ficha | Lista status + lastError; copiar URI | E6 OID4VCI | |
 | A5 | Staff re-emite offer | `POST /members/:id/credential-offers` (`packId` opcional); offer del pack que cubre hoy; nuevo PENDING (o soft-fail); no cobra | E6 OID4VCI | |
+| A6 | Importar en gym Kuatia | No aparece el paso "3. Números del aparato ZKTeco"; `POST /member-imports/access-codes/preview` → 409 | RN-MIG-006 | |
+| A7 | Importar números (gym ZKTeco): DNI con puntos y mail en mayúsculas | Revisión "Se vinculan"; tras confirmar, la ficha muestra el número en Acceso ZKTeco; corrida "Números de acceso" en Últimas importaciones | RN-MIG-006 | |
+| A8 | Planilla con socio inexistente, número inválido, repetido o de un staff | Cada fila sale "Con error" con motivo; CSV descargable; no se vincula nada de esas filas | RN-MIG-006 | |
+| A9 | Re-subir la misma planilla de números | Todo "Ya estaba vinculado" (omitidos); sin duplicados | RN-MIG-006 | |
+| A10 | Evento ZKTeco con número importado | Resuelve al socio correcto (mismas reglas que X15) | RN-MIG-006, RN-ACC-011 | |
 
 ---
 

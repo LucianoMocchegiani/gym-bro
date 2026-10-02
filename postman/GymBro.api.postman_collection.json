@@ -5505,6 +5505,34 @@
                     }
                 },
                 {
+                    "name": "Preview access codes (ZKTeco)",
+                    "request": {
+                        "method": "POST",
+                        "header": [{"key": "Content-Type", "value": "application/json"}],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"rows\": [\n    { \"rowNumber\": 2, \"document\": \"30.123.456\", \"externalId\": \"7001\" },\n    { \"rowNumber\": 3, \"email\": \"migrado1@example.com\", \"externalId\": \"7002\" }\n  ]\n}",
+                            "options": {"raw": {"language": "json"}}
+                        },
+                        "url": "{{baseUrl}}/api/member-imports/access-codes/preview",
+                        "description": "RN-MIG-006. Revisa sin escribir: socio por DNI (normalizado) y si no por mail → new / exists (ya vinculado a ese socio) / error (sin socio, número inválido, repetido, de otra persona). 409 si el gym no usa ZKTeco."
+                    }
+                },
+                {
+                    "name": "Import access codes batch (ZKTeco)",
+                    "request": {
+                        "method": "POST",
+                        "header": [{"key": "Content-Type", "value": "application/json"}],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"rows\": [\n    { \"rowNumber\": 2, \"document\": \"30.123.456\", \"externalId\": \"7001\" },\n    { \"rowNumber\": 3, \"email\": \"migrado1@example.com\", \"externalId\": \"7002\" }\n  ]\n}",
+                            "options": {"raw": {"language": "json"}}
+                        },
+                        "url": "{{baseUrl}}/api/member-imports/{{memberImportId}}/access-codes",
+                        "description": "Corrida abierta con kind ACCESS_CODES. Crea los vínculos nuevos en access_identity_links (provider ZKTECO); existentes → skipped; errores → failed. Idempotente."
+                    }
+                },
+                {
                     "name": "Finish import",
                     "request": {
                         "method": "POST",

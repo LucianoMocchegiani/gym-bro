@@ -99,6 +99,7 @@ Para un gym que **ya tiene** socios: migrar **afiliado completo** (ficha + foto 
 
 - **Planilla** (xlsx/csv): el navegador la lee, sugiere el mapeo por nombre de columna (corregible; queda guardado por gym), muestra la vista previa y manda lotes de 200. Sin mail → error en el CSV. Socio existente (mail, DNI o cuenta) → se omite: re-subir el archivo es idempotente.
 - **Fotos y carpeta** (carpeta de la PC o zip): `fotos/{dni o email}.ext` → foto de perfil; `carpeta/{dni o email}/archivo` → carpeta del socio (10 ítems, 5 MB). Socio que ya tiene foto o carpeta → no se le carga nada (avisado como omitido).
+- **Números del aparato ZKTeco** (2026-10-02, solo gyms con acceso ZKTeco): planilla DNI o mail + número del aparato → vínculo de acceso del socio, para que entre con el mismo número que ya usaba. Revisión previa con CSV; ya vinculado → omitido; de otra persona → error (RN-MIG-006).
 - **Contraseña**: altas nuevas con `ChangeMe123!` marcada temporal (aviso en app y web). Quien ya tenía cuenta en otro gym conserva la suya. Vincular Google/Apple borra la temporal. “Crear contraseña” (cuentas solo Google) en app y web; “Cambiar contraseña” también en la app.
 - **Sin job de fondo:** la pestaña tiene que quedar abierta durante la corrida; si se corta, se reintenta el lote o se re-sube el archivo.
 

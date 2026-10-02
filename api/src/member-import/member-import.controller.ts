@@ -20,10 +20,12 @@ import { RequirePermission } from '../roles/decorators/require-permission.decora
 import { CurrentTenant } from '../tenant/decorators/current-tenant.decorator';
 import { RequireTenantAuth } from '../tenant/decorators/require-tenant-auth.decorator';
 import {
+  AccessCodeRowsDto,
   ImportRowsDto,
   MatchFilesDto,
   StartImportDto,
 } from './dto/member-import.dto';
+import { MemberImportAccessCodesService } from './member-import-access-codes.service';
 import { MemberImportService } from './member-import.service';
 import type {
   ImportFileMatch,
@@ -49,7 +51,10 @@ type MulterFile = {
 @RequirePermission('members.import', 'members.write')
 @RequireTenantAuth()
 export class MemberImportController {
-  constructor(private readonly imports: MemberImportService) {}
+  constructor(
+    private readonly imports: MemberImportService,
+    private readonly accessCodes: MemberImportAccessCodesService,
+  ) {}
 
   @Get()
   list(@CurrentTenant() tenantId: string): Promise<MemberImportDetail[]> {
@@ -74,6 +79,16 @@ export class MemberImportController {
     return this.imports.matchFiles(tenantId, dto.keys);
   }
 
+  /** Vista previa de números del aparato (RN-MIG-006). 409 si el gym no es ZKTeco. */
+  @Post('access-codes/preview')
+  @HttpCode(HttpStatus.OK)
+  previewAccessCodes(
+    @CurrentTenant() tenantId: string,
+    @Body() dto: AccessCodeRowsDto,
+  ): Promise<ImportPreviewRow[]> {
+    return this.accessCodes.preview(tenantId, dto.rows);
+  }
+
   @Post()
   start(
     @CurrentTenant() tenantId: string,
@@ -91,6 +106,17 @@ export class MemberImportController {
     @Body() dto: ImportRowsDto,
   ): Promise<ImportItemResult[]> {
     return this.imports.importRows(tenantId, importId, dto.rows, dto.branchId);
+  }
+
+  /** Vincula un lote de números dentro de una corrida `ACCESS_CODES`. */
+  @Post(':importId/access-codes')
+  @HttpCode(HttpStatus.OK)
+  importAccessCodes(
+    @CurrentTenant() tenantId: string,
+    @Param('importId', ParseUUIDPipe) importId: string,
+    @Body() dto: AccessCodeRowsDto,
+  ): Promise<ImportItemResult[]> {
+    return this.accessCodes.importRows(tenantId, importId, dto.rows);
   }
 
   @Post(':importId/members/:memberId/photo')

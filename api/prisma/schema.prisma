@@ -1258,6 +1258,7 @@ model FolderItem {
 enum MemberImportKind {
   ROWS
   FILES
+  ACCESS_CODES
 }
 
 enum MemberImportStatus {

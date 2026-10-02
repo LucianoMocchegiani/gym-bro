@@ -90,6 +90,42 @@ export class StartImportDto {
   mapping?: Record<string, unknown>;
 }
 
+/**
+ * Fila de números del aparato: socio por DNI o mail + número.
+ *
+ * @remarks Igual que las fichas: el formato del número se valida por fila.
+ */
+export class AccessCodeRowDto {
+  @IsInt()
+  @Min(1)
+  rowNumber!: number;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  document?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(320)
+  email?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  externalId?: string;
+}
+
+/** Lote de números del aparato (vista previa o alta). */
+export class AccessCodeRowsDto {
+  @IsArray()
+  @ArrayMinSize(1)
+  @ArrayMaxSize(IMPORT_MAX_ROWS_PER_BATCH)
+  @ValidateNested({ each: true })
+  @Type(() => AccessCodeRowDto)
+  rows!: AccessCodeRowDto[];
+}
+
 /** DNI o mails sacados de los nombres de archivo del zip. */
 export class MatchFilesDto {
   @IsArray()

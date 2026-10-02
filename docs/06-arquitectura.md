@@ -406,10 +406,14 @@ Navegador (parsea xlsx/csv/zip/carpeta)
   │     API por lote: consultas de clasificación (masivas)
   │                   → 1 transacción por fila nueva (en serie)
   │                   → 1 update de contadores
-  └─ Fotos/carpeta: 1 request por archivo, 3 en paralelo
-        foto:    R2 upload → UPDATE member (solo si imageUrl null) → si perdió, delete R2
-        carpeta: cupo → R2 upload → INSERT folder_item → si falla, delete R2
-        + 1 update de contadores por archivo
+  ├─ Fotos/carpeta: 1 request por archivo, 3 en paralelo
+  │     foto:    R2 upload → UPDATE member (solo si imageUrl null) → si perdió, delete R2
+  │     carpeta: cupo → R2 upload → INSERT folder_item → si falla, delete R2
+  │     + 1 update de contadores por archivo
+  └─ Números ZKTeco (solo gym ZKTeco, RN-MIG-006): lotes de 200 ── POST /member-imports/:id/access-codes
+        API por lote: socios por DNI/mail + vínculos existentes (masivas)
+                      → 1 INSERT access_identity_links por fila nueva (único → error si otro lo ganó)
+                      → 1 update de contadores
 ```
 
 - **Sin job en servidor:** la pestaña tiene que quedar abierta. Cortes → Reintentar el lote o re-subir (idempotente: existentes se omiten).
@@ -460,7 +464,7 @@ Prefijo sugerido: `/api/v1`.
 | Chat (servicio `chat-api` :3010) | `GET /health`; `POST /v1/public/session` (landing); `GET/POST /v1/conversations`; `GET/PATCH/DELETE /v1/conversations/:id`; `GET/POST /v1/conversations/:id/messages` (POST = UI Message Stream; OpenRouter + MCP)                                |
 | MCP (servicio `mcp` :3011)       | `GET /health`; `POST /mcp` Streamable HTTP + Bearer. Tools A–D (lectura): operación, reportes/débitos/devoluciones, catálogo/roles/audit slim, `get_help` (`producto`, `guia` + temas)                                                            |
 | Carpeta                          | `/folder-labels`, `/members/:id/folder`, `/staff/:id/folder`, `/me/folder`                                                                                                                                                                        |
-| Migración afiliados              | Staff `members.import` + `members.write`: `/member-imports` (list, preview, match, start, `:id/rows`, `:id/members/:memberId/photo` y `/folder`, `:id/finish`). Auth: `GET /auth/password`, `POST /auth/set-password`. Ver §11b                     |
+| Migración afiliados              | Staff `members.import` + `members.write`: `/member-imports` (list, preview, match, start, `:id/rows`, `:id/members/:memberId/photo` y `/folder`, `access-codes/preview`, `:id/access-codes`, `:id/finish`). Auth: `GET /auth/password`, `POST /auth/set-password`. Ver §11b                     |
 | Notif N1                         | Member `GET /me/notifications` (solo socio). Staff plantillas `/notification-templates`. Avisos de plan Faciliter: mail al Identity dueño, no GET staff.                                                                                          |
 | Afiliados                        | Staff CRUD members + PATCH status (`members.deactivate`); estado de cuenta `GET /members/:id/account` / `GET /me/account?coverage=current                                                                                                         |
 | Sesiones                         | Staff `GET                                                                                                                                                                                                                                        |

@@ -370,7 +370,7 @@ identities ||--o{ platform_signups : self_serve
 | `AccessAttemptResult` | `ALLOWED`, `DENIED` | Resultado de intento de ingreso |
 | `AccessProvider` | `KUATIA`, `ZKTECO` | Sistema de puerta del gym y proveedor de un vínculo (RN-ACC-010/011) |
 | `FolderItemKind` | `NOTE`, `FILE` | Ítem de carpeta socio/staff |
-| `MemberImportKind` | `ROWS`, `FILES` | Corrida de migración: fichas (planilla) o archivos (zip) |
+| `MemberImportKind` | `ROWS`, `FILES`, `ACCESS_CODES` | Corrida de migración: fichas (planilla), archivos (zip) o números del aparato ZKTeco (RN-MIG-006) |
 | `MemberImportStatus` | `RUNNING`, `DONE` | Estado de la corrida |
 | `ExpenseNature` | `FIXED`, `VARIABLE` | Gasto fijo o variable (RN-GAS-002) |
 | `ExpenseMethod` | `CASH`, `TRANSFER`, `MP`, `CARD` | Medio con que se pagó el gasto; solo `CASH` resta en el arqueo (RN-GAS-004) |
@@ -560,7 +560,7 @@ Corrida de migración de afiliados desde otro sistema (RN-MIG). El Admin parsea 
 |---------|------|--------|
 | `id` | uuid PK | |
 | `tenant_id` | uuid FK → `tenants` | ON DELETE CASCADE · index `(tenant_id, created_at)` |
-| `kind` | `MemberImportKind` | ROWS = fichas · FILES = fotos/carpeta |
+| `kind` | `MemberImportKind` | ROWS = fichas · FILES = fotos/carpeta · ACCESS_CODES = números del aparato ZKTeco → `access_identity_links` (§4.15l) |
 | `status` | `MemberImportStatus` | RUNNING → DONE al cerrar (audita `member.import`) |
 | `filename` | text | |
 | `total_rows` | int | filas o archivos a procesar |
@@ -1150,6 +1150,7 @@ Historia incremental (2026-07 / 2026-08) **compactada** en un baseline (`40476fa
 | `20261001120000_member_imports` | `identities.password_temporary`; `member_imports` + enums `MemberImportKind`, `MemberImportStatus` |
 | `20261001200000_expenses` | `expense_labels`, `expenses`, `expense_files` + enums `ExpenseNature`, `ExpenseMethod` |
 | `20261002180000_access_provider_zkteco` | Enum `AccessProvider`; `tenant_settings.access_provider`; `access_attempts.channel` (+ backfill `manual`); tabla `access_identity_links` |
+| `20261002200000_member_import_access_codes` | `MemberImportKind` + `ACCESS_CODES` (importación de números del aparato ZKTeco, RN-MIG-006) |
 
 Comandos y checklist “desde cero”: [13-setup-db-desde-cero.md](./13-setup-db-desde-cero.md).
 

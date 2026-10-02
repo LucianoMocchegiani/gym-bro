@@ -568,7 +568,8 @@ export class MemberImportService {
     };
   }
 
-  private async bumpCounters(
+  /** Suma creados / omitidos / errores de un lote a la corrida. */
+  async bumpCounters(
     importId: string,
     results: ImportItemResult[],
   ): Promise<void> {
@@ -610,7 +611,12 @@ export class MemberImportService {
     return this.defaultHash;
   }
 
-  private async getRunning(
+  /**
+   * Corrida abierta del gym y del tipo esperado.
+   *
+   * @throws {BadRequestException} Si ya terminó o es de otro tipo.
+   */
+  async getRunning(
     tenantId: string,
     importId: string,
     kind: MemberImportKind,

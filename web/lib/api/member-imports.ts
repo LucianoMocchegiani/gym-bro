@@ -1,5 +1,5 @@
 /**
- * Migración de afiliados (`/member-imports`). RN-MIG-001..005.
+ * Migración de afiliados (`/member-imports`). RN-MIG-001..006.
  *
  * Lotes alineados con `api/src/member-import/member-import.constants.ts`.
  */
@@ -9,7 +9,15 @@ import { apiMultipart, apiRequest } from '@/lib/api/client';
 export const IMPORT_ROWS_PER_BATCH = 200;
 export const IMPORT_MATCH_KEYS_PER_BATCH = 1000;
 
-export type ImportKind = 'ROWS' | 'FILES';
+export type ImportKind = 'ROWS' | 'FILES' | 'ACCESS_CODES';
+
+/** Fila de números del aparato: socio por DNI o mail + número (RN-MIG-006). */
+export type AccessCodeRowInput = {
+  rowNumber: number;
+  document?: string;
+  email?: string;
+  externalId?: string;
+};
 
 /** Fila ya mapeada (todo texto; la API valida por fila). */
 export type ImportRowInput = {
@@ -95,6 +103,27 @@ export function importRowsBatch(
     method: 'POST',
     body: { rows },
   });
+}
+
+/** Vista previa de números del aparato (no escribe; 409 si el gym no es ZKTeco). */
+export function previewAccessCodes(
+  rows: AccessCodeRowInput[],
+): Promise<ImportPreviewRow[]> {
+  return apiRequest<ImportPreviewRow[]>('/member-imports/access-codes/preview', {
+    method: 'POST',
+    body: { rows },
+  });
+}
+
+/** Vincula un lote de números dentro de una corrida `ACCESS_CODES`. */
+export function importAccessCodesBatch(
+  importId: string,
+  rows: AccessCodeRowInput[],
+): Promise<ImportItemResult[]> {
+  return apiRequest<ImportItemResult[]>(
+    `/member-imports/${importId}/access-codes`,
+    { method: 'POST', body: { rows } },
+  );
 }
 
 /** Cruza DNI/mails del zip con socios del gym. */
