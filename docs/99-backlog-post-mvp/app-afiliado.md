@@ -24,6 +24,7 @@
 | Crashlytics (Firebase) | En curso | Código listo (solo release, tolerante sin config). Falta crear las apps en Firebase y commitear la config. [publicar-tiendas.md](../mobile/publicar-tiendas.md) |
 | Preparar App Store y Play | En curso | Firma, permisos iOS, entitlements, fichas en borrador. Faltan cuentas y eliminar cuenta. [publicar-tiendas.md](../mobile/publicar-tiendas.md) |
 | Eliminar cuenta | Pendiente | Requisito de Apple y Play (en la app + URL web). Ticket: `local/mis-tickets/ticket-eliminar-cuenta.md` |
+| Versión mínima / aviso de actualización | Hecho | `GET /api/public/app-config` + `APP_MIN_BUILD_*` / `APP_LATEST_BUILD_*`. Bloquea debajo del mínimo, sugiere una vez debajo del último. [publicar-tiendas.md](../mobile/publicar-tiendas.md#7-actualizaciones-y-versión-mínima) |
 | Librerías nativas a 16 KB | Hecho | `isar_community` 3.3.2 + `sodium_libs` 3.4.x; `identity-core-dart` versionado. [isar-wallet.md](../mobile/isar-wallet.md) |
 
 ## Mejoras de UX (charla)

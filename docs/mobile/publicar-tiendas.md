@@ -180,6 +180,34 @@ URLs: privacidad `https://faciliter.xyz/legal/privacidad`, términos `https://fa
 
 ---
 
+## 7. Actualizaciones y versión mínima
+
+Las tiendas actualizan solas a la mayoría de los usuarios, pero no a todos ni enseguida. La app consulta al arrancar `GET /api/public/app-config` (sin auth) y compara su **build number** (`--build-number`, el `+N` de `pubspec.yaml`) con lo que devuelve la API para su plataforma:
+
+| Caso | Qué ve el usuario |
+|------|-------------------|
+| build < `APP_MIN_BUILD_*` | Pantalla bloqueante "Actualizá la app" con botón a la tienda. |
+| build < `APP_LATEST_BUILD_*` | Aviso "Hay una versión nueva" (Más tarde / Actualizar), **una sola vez** por versión nueva. |
+| Al día, sin red, API caída o timeout (4 s) | Nada: la app sigue normal. |
+
+Variables en el `.env` de la API (todas opcionales, `0` = sin control):
+
+| Variable | Para qué |
+|----------|----------|
+| `APP_MIN_BUILD_ANDROID` / `APP_MIN_BUILD_IOS` | Build mínimo soportado. |
+| `APP_LATEST_BUILD_ANDROID` / `APP_LATEST_BUILD_IOS` | Último build publicado (si es menor que el mínimo, se usa el mínimo). |
+| `APP_STORE_URL_ANDROID` / `APP_STORE_URL_IOS` | Link a la ficha. Android tiene default (`play.google.com/...id=com.faciliter.mobile`); iOS queda vacío hasta tener la app en App Store. |
+
+Orden al publicar:
+
+1. Subir la versión nueva y esperar a que esté **disponible** en la tienda (revisión aprobada, rollout al 100 %).
+2. Recién ahí subir `APP_LATEST_BUILD_*` a ese build (aviso suave).
+3. Subir `APP_MIN_BUILD_*` solo cuando la versión vieja deje de funcionar con la API (cambio incompatible en un endpoint o en la wallet). Antes de un cambio así, conviene que la API soporte los dos formatos durante un tiempo.
+
+Cada plataforma tiene su número: Android e iOS pueden ir con builds distintos. Sin `APP_STORE_URL_IOS`, la pantalla bloqueante en iOS se muestra sin botón.
+
+---
+
 ## Problemas conocidos
 
 | Problema | Estado |

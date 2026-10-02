@@ -6,6 +6,8 @@ import 'core/network/api_client.dart';
 import 'core/theme/gymbro_theme.dart';
 import 'core/theme/theme_controller.dart';
 import 'features/account/account_repository.dart';
+import 'features/app_update/app_update_controller.dart';
+import 'features/app_update/app_update_gate.dart';
 import 'features/auth/auth_controller.dart';
 import 'features/folder/folder_repository.dart';
 import 'features/notifications/notifications_repository.dart';
@@ -60,6 +62,7 @@ class _FaciliterAppState extends State<FaciliterApp> {
   late final ChatRepository _chatRepo;
   late final StaffSessionsRepository _staffSessionsRepo;
   late final StaffCajaRepository _staffCajaRepo;
+  late final AppUpdateController _update;
 
   @override
   void initState() {
@@ -83,6 +86,7 @@ class _FaciliterAppState extends State<FaciliterApp> {
     _staffSessionsRepo = StaffSessionsRepository(_api);
     _staffCajaRepo = StaffCajaRepository(_api);
     _auth = AuthController(auth: _authRepo, api: _api, wallet: _wallet);
+    _update = AppUpdateController(api: _api);
     _auth.addListener(_clearCartOnLogout);
     _auth.addListener(_syncCrashUser);
     _bootstrap();
@@ -116,7 +120,7 @@ class _FaciliterAppState extends State<FaciliterApp> {
   }
 
   Future<void> _bootstrap() async {
-    await Future.wait([_theme.load(), _auth.bootstrap()]);
+    await Future.wait([_theme.load(), _auth.bootstrap(), _update.check()]);
   }
 
   @override
@@ -125,6 +129,7 @@ class _FaciliterAppState extends State<FaciliterApp> {
       providers: [
         ChangeNotifierProvider.value(value: _auth),
         ChangeNotifierProvider.value(value: _theme),
+        ChangeNotifierProvider.value(value: _update),
         Provider.value(value: _accountRepo),
         Provider.value(value: _folderRepo),
         Provider.value(value: _notificationsRepo),
@@ -140,8 +145,8 @@ class _FaciliterAppState extends State<FaciliterApp> {
         ChangeNotifierProvider.value(value: _wallet),
         ChangeNotifierProvider.value(value: _cart),
       ],
-      child: Consumer2<ThemeController, AuthController>(
-        builder: (context, theme, auth, _) {
+      child: Consumer3<ThemeController, AuthController, AppUpdateController>(
+        builder: (context, theme, auth, update, _) {
           return MaterialApp(
             key: ValueKey(
               '${auth.session?.userId ?? auth.identity?.identityId ?? 'guest'}-${auth.session?.profileType ?? 'none'}',
@@ -151,11 +156,11 @@ class _FaciliterAppState extends State<FaciliterApp> {
             theme: GymBroTheme.light(),
             darkTheme: GymBroTheme.dark(),
             themeMode: theme.isDark ? ThemeMode.dark : ThemeMode.light,
-            home: !theme.ready
+            home: !theme.ready || !update.ready
                 ? const Scaffold(
                     body: Center(child: CircularProgressIndicator()),
                   )
-                : const AuthGate(),
+                : const AppUpdateGate(child: AuthGate()),
           );
         },
       ),

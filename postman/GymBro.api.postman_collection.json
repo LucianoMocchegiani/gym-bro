@@ -265,6 +265,36 @@
                             }
                         }
                     ]
+                },
+                {
+                    "name": "Public GET app config",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": "{{baseUrl}}/api/public/app-config",
+                        "description": "Sin auth. Versión mínima y última de la app móvil por plataforma (APP_MIN_BUILD_* / APP_LATEST_BUILD_* / APP_STORE_URL_*).",
+                        "auth": {
+                            "type": "noauth"
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('status 200', () => pm.response.to.have.status(200));",
+                                    "const body = pm.response.json();",
+                                    "['android', 'ios'].forEach((p) => {",
+                                    "  pm.test(p + ' policy', () => {",
+                                    "    pm.expect(body[p].minBuild).to.be.a('number');",
+                                    "    pm.expect(body[p].latestBuild).to.be.at.least(body[p].minBuild);",
+                                    "  });",
+                                    "});"
+                                ]
+                            }
+                        }
+                    ]
                 }
             ]
         },
