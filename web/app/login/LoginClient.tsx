@@ -37,8 +37,8 @@ export function LoginClient({
   const router = useRouter();
   const [tenant, setTenant] = useState<PublicTenantSummary | null>(null);
   const [tenantError, setTenantError] = useState<string | null>(null);
-  const [email, setEmail] = useState('admin@gymdeprueba.com');
-  const [password, setPassword] = useState('ChangeMe123!');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [autoLoginDone, setAutoLoginDone] = useState(false);

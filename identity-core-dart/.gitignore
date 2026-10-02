@@ -1,0 +1,32 @@
+# Dart/Flutter
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+pubspec.lock
+build/
+
+# Android
+android/.gradle/
+android/local.properties
+android/app/google-services.json
+
+# iOS
+ios/.symlinks/
+ios/Pods/
+ios/Runner.xcworkspace/
+
+# Rust BBS native
+native/bbs/target/
+native/bbs/Cargo.lock
+native/bbs/testdata/last_created_proof.json
+
+# Spikes: binarios y artefactos locales
+spike/**/native/*.dll
+spike/**/.dart_tool/
+spike/**/.flutter-plugins*
+spike/**/pubspec.lock
+spike/**/build/
+
+# Generado por test/credential/bbs/bbs_dart_mattr_roundtrip_test.dart
+test/fixtures/bbs_ld_dart_messages.json

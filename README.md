@@ -26,7 +26,7 @@ postman/             # Colección Nest + chat-api + mcp + environment
 docker-compose.yml   # postgres + redis + api + web + chat-api + mcp (imágenes de build)
 docker/              # pgAdmin + init Postgres (database `chat`)
 ssi-quark/           # README redirect → identity-core-dart/
-identity-core-dart/  # Package Flutter wallet (gitignore; clon local)
+identity-core-dart/  # Package Flutter wallet (holder SSI; Isar community)
 docs/
 git-hooks/
 ```

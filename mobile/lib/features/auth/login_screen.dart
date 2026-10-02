@@ -14,8 +14,8 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  final _email = TextEditingController(text: 'socio@gymdeprueba.com');
-  final _password = TextEditingController(text: 'ChangeMe123!');
+  final _email = TextEditingController();
+  final _password = TextEditingController();
   final _formKey = GlobalKey<FormState>();
 
   @override
@@ -127,35 +127,6 @@ class _LoginScreenState extends State<LoginScreen> {
                         child: const Text('Continuar con Apple'),
                       ),
                     ],
-                    const SizedBox(height: 16),
-                    Text(
-                      'Demo',
-                      style: Theme.of(context).textTheme.labelLarge,
-                    ),
-                    const SizedBox(height: 8),
-                    Wrap(
-                      spacing: 8,
-                      children: [
-                        ActionChip(
-                          label: const Text('Socio'),
-                          onPressed: () {
-                            _email.text = 'socio@gymdeprueba.com';
-                          },
-                        ),
-                        ActionChip(
-                          label: const Text('Admin'),
-                          onPressed: () {
-                            _email.text = 'admin@gymdeprueba.com';
-                          },
-                        ),
-                        ActionChip(
-                          label: const Text('Entrenador'),
-                          onPressed: () {
-                            _email.text = 'entrenador@gymdeprueba.com';
-                          },
-                        ),
-                      ],
-                    ),
                   ],
                 ),
               ),

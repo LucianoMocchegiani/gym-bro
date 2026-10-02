@@ -53,7 +53,8 @@ Reglas relacionadas
 | [17-roadmap-chat-mcp.md](./17-roadmap-chat-mcp.md) | Tareas ordenadas del asistente (C0–C7); post-MVP | Borrador |
 | [18-prioridades-cierre-mvp.md](./18-prioridades-cierre-mvp.md) | Prioridades para un MVP vendible (molinetes, débito QA, landing/SEO, tokens, migración) | Viva |
 | [19-puerta-molinete-hw-sw.md](./19-puerta-molinete-hw-sw.md) | Molinete: BOM hardware + software (relé, agente, Kuatia nativo, DNI/huella opcionales) | Borrador |
-| [mobile/isar-wallet.md](./mobile/isar-wallet.md) | Wallet local (Isar): VCs en el device, secreto, workaround AGP 8 | Viva |
+| [mobile/isar-wallet.md](./mobile/isar-wallet.md) | Wallet local (Isar community): VCs en el device, secreto, 16 KB, codegen Isar | Viva |
+| [mobile/comandos-flutter.md](./mobile/comandos-flutter.md) | Comandos Flutter: run vs build, release en el celular, AAB, dart-defines | Viva |
 | [mobile/publicar-tiendas.md](./mobile/publicar-tiendas.md) | Publicar en Play / App Store: cuentas, Firebase Crashlytics, firma, Codemagic, Data safety | Viva |
 | [mobile/fichas-tiendas.md](./mobile/fichas-tiendas.md) | Borrador de textos de las fichas de Play y App Store | Borrador |
 | [credenciales-demo.md](./credenciales-demo.md) | Cuentas seed locales (Plataforma `admin` / Staff / Member) | Viva |

@@ -1,12 +1,12 @@
 # Wallet local (Isar) — app móvil
 
-**Fecha:** 2026-08-31  
-**Estado:** viva (workaround AGP 8 en el build Android)
+**Fecha:** 2026-08-31 · actualizado 2026-10-01 (`isar_community`)  
+**Estado:** viva
 
 Isar es el **disco local de la wallet de credenciales** en el celular. No es un servicio de GymBro ni de Kuatia.
 
 Producto / protocolos: [12-acceso-quark-oid4-diseno.md](../12-acceso-quark-oid4-diseno.md).  
-Package holder: `identity-core-dart/` (clon local; [15-kuatia-deuda-rename.md](../15-kuatia-deuda-rename.md)).
+Package holder: `identity-core-dart/` (en el monorepo; [15-kuatia-deuda-rename.md](../15-kuatia-deuda-rename.md)).
 
 ---
 
@@ -41,23 +41,32 @@ Kuatia emite offer
 
 ---
 
-## Por qué se rompe el build Android
+## Versiones y build Android
 
-`identity_core_dart` depende de `isar` + `isar_flutter_libs` **3.1.0** (paquete abandonado; el `build.gradle` del plugin **no declara `namespace`**).
+`identity_core_dart` usa **`isar_community` 3.3.2**, el fork mantenido de Isar 3 (mismo API). Reemplazó a `isar` 3.1 (2026-10-01) porque el original estaba abandonado:
 
-Flutter 3.41.9 trae Android Gradle Plugin **8.11**, que **exige** `namespace`. Sin eso Gradle corta al configurar `:isar_flutter_libs` y no llega a compilar la app.
+- no declaraba `namespace` (AGP 8 corta el build);
+- compilaba con SDK 30 (`android:attr/lStar not found` en release);
+- `libisar.so` venía alineada a 4 KB y Google Play exige 16 KB.
 
-No es un fallo de FVM, del teléfono ni de `pub get`. Es incompatibilidad del plugin nativo de Isar 3.1 con AGP 8.
+Con el fork, `mobile/android/build.gradle.kts` ya no necesita parches.
 
-**No** editar el pub-cache (`…/isar_flutter_libs-3.1.0+1/android/build.gradle`): se pierde al limpiar el cache.
+`sodium` / `sodium_libs` (DIDComm) están en 3.4.x por la misma regla de 16 KB. El tope `<3.4.6` es porque desde ahí piden `freezed_annotation` 3 y el paquete sigue en freezed 2.
 
-### Workaround actual
+### Regenerar los esquemas Isar
 
-En `mobile/android/build.gradle.kts` se inyecta `namespace` a librerías Android que no lo traen, y se fuerza `compileSdk` 36 en `isar_flutter_libs` (con su SDK 30 el release falla con `android:attr/lStar not found`). El modelo de wallet no cambia; solo permite **construir** el plugin viejo.
+`isar_community_generator` 3.3 choca con freezed 2 (versiones de `build`), así que los `.g.dart` de Isar se generan aparte:
 
-`libisar.so` 3.1 está alineada a 4 KB: Google Play la rechaza (exige 16 KB). Ver [publicar-tiendas.md § Problemas conocidos](./publicar-tiendas.md#problemas-conocidos).
+```powershell
+cd identity-core-dart
+.\tool\isar_codegen\generate.ps1
+```
 
-El riesgo a futuro es de **mantenimiento**: cada subida de Flutter/AGP puede volver a romper el plugin. Arreglo de fondo (no hecho): fork `isar_community`, o el SDK oficial de Kuatia cuando reemplace a `identity_core_dart`.
+Los modelos de Freezed / json se siguen generando con `build_runner` en el paquete.
+
+### Datos de wallets viejas
+
+Cambiar de motor puede dejar sin leer una base creada con Isar 3.1. Si Acceso muestra error al abrir la wallet: Ajustes → **Reiniciar wallet** y reemitir las credenciales (no había usuarios en tienda al migrar).
 
 ---
 
@@ -72,7 +81,7 @@ adb devices
 fvm flutter run -d <deviceId>
 ```
 
-Requisito: clon `identity-core-dart/` en la raíz del monorepo.
+`identity-core-dart/` está versionado en el monorepo (path dependency de `mobile`).
 
 ---
 

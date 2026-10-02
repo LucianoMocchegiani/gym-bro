@@ -4,7 +4,7 @@
 **Fecha:** 2026-08-02 (actualizado 2026-08-12)  
 **Contexto:** Acceso en puerta vía OpenID4 (OID4VCI emisión + OID4VP presentación). Stubs de vínculo retirados. Transporte: [Kuatia](https://kuatia.xyz/docs).
 
-**Repos Flutter:** `ssi-quark/quarkid-identity-core-dart` (gitignore). Issuer/verifier = Kuatia en dominio.
+**Repos Flutter:** `identity-core-dart/` (antes `ssi-quark/quarkid-identity-core-dart`; versionado en el monorepo). Issuer/verifier = Kuatia en dominio.
 
 ---
 

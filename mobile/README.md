@@ -7,7 +7,7 @@ Flutter (Material 3). Estilos alineados al Admin web: tema oscuro/lima acid + cl
 - Flutter 3.41+ / Dart 3.11+
 - Device Android por USB con depuración ADB
 - API alcanzable (tunnel o red)
-- Clon local `identity-core-dart/` en la raíz del monorepo (wallet; ver `docs/15-kuatia-deuda-rename.md`)
+- `identity-core-dart/` en la raíz del monorepo (wallet; versionado; ver `docs/mobile/isar-wallet.md`)
 - Issuer/verifier: Kuatia (`KUATIA_*` en API); no hace falta issuer local
 ## API
 
@@ -70,5 +70,6 @@ fvm flutter build appbundle --release --build-number=<N>
 - Crashlytics: solo release y solo si están `android/app/google-services.json` / `ios/Runner/GoogleService-Info.plist`. Crash de prueba: `--dart-define=CRASH_TEST=true` → Ajustes → Desarrolladores.
 - Sign in with Apple: solo iOS.
 - Guía completa: [docs/mobile/publicar-tiendas.md](../docs/mobile/publicar-tiendas.md).
+- Todos los comandos y cuándo usarlos: [docs/mobile/comandos-flutter.md](../docs/mobile/comandos-flutter.md).
 
 Pendiente: Historial fino (comprobante + listado solicitudes), rutinas, avisos.

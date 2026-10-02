@@ -22,9 +22,9 @@
 | Productos en Tienda | Pendiente | Misma `CatalogCard`; módulo shop → [producto.md](./producto.md) |
 | Tickets de reclamo (IA) | Pendiente | Abrir un reclamo desde la app; la IA lleva el hilo (estilo ML/MP). Inbox Admin: [admin.md](./admin.md) |
 | Crashlytics (Firebase) | En curso | Código listo (solo release, tolerante sin config). Falta crear las apps en Firebase y commitear la config. [publicar-tiendas.md](../mobile/publicar-tiendas.md) |
-| Preparar App Store y Play | En curso | Firma, permisos iOS, entitlements, fichas en borrador. Faltan cuentas, eliminar cuenta y 16 KB (Isar/sodium). [publicar-tiendas.md](../mobile/publicar-tiendas.md) |
+| Preparar App Store y Play | En curso | Firma, permisos iOS, entitlements, fichas en borrador. Faltan cuentas y eliminar cuenta. [publicar-tiendas.md](../mobile/publicar-tiendas.md) |
 | Eliminar cuenta | Pendiente | Requisito de Apple y Play (en la app + URL web). Ticket: `local/mis-tickets/ticket-eliminar-cuenta.md` |
-| Librerías nativas a 16 KB | Pendiente | `libisar.so` y `libsodium.so` a 4 KB; Play las rechaza. Ticket: `local/mis-tickets/ticket-16kb-isar-sodium.md` |
+| Librerías nativas a 16 KB | Hecho | `isar_community` 3.3.2 + `sodium_libs` 3.4.x; `identity-core-dart` versionado. [isar-wallet.md](../mobile/isar-wallet.md) |
 
 ## Mejoras de UX (charla)
 

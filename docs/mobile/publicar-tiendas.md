@@ -21,7 +21,7 @@ Textos de las fichas (borrador): [fichas-tiendas.md](./fichas-tiendas.md).
 
 **Bloqueante para el envío:** eliminar cuenta desde la app y desde una URL web (Apple 5.1.1(v), Play "Account deletion"). Va en un ticket aparte.
 
-**Bloqueante para subir a Play:** las librerías nativas de Isar 3.1 y `sodium_libs` 2.2.1 (vía `identity-core-dart`) no están alineadas a 16 KB. Play rechaza los AAB con `targetSdk` 35+ que no cumplen. Ver [Problemas conocidos](#problemas-conocidos).
+**16 KB (Play):** resuelto. Todas las `.so` de 64 bits están alineadas a 16 KB (Isar pasó a `isar_community`, sodium a 3.4.x). Ver [Problemas conocidos](#problemas-conocidos).
 
 ---
 
@@ -138,7 +138,6 @@ Falta (cuando se pague Apple):
    - Code signing automático con una **API key de App Store Connect** (Users and Access → Integrations → Keys, rol App Manager).
    - Build `ipa` en release y publicar a **TestFlight**.
    - El plan gratis da 500 min/mes de macOS; un build ronda 15–25 min.
-   - El clon `identity-core-dart/` no está en git: Codemagic no lo tiene. Antes de iOS hay que resolverlo (ver Problemas conocidos).
 4. **dSYM para Crashlytics:** sumar el script de subida de símbolos en el primer build de Codemagic (Firebase lo documenta para SPM y CocoaPods). Sin dSYM, los crashes de iOS llegan sin símbolos.
 5. **Privacy manifest:** los plugins y Firebase traen el suyo. Si App Store Connect avisa de "required reason API" al subir, agregar `PrivacyInfo.xcprivacy` en Runner.
 
@@ -185,12 +184,12 @@ URLs: privacidad `https://faciliter.xyz/legal/privacidad`, términos `https://fa
 
 | Problema | Estado |
 |----------|--------|
-| `libisar.so` y `libsodium.so` alineadas a 4 KB (Play exige 16 KB) | **Abierto.** Migrar `identity-core-dart` a `isar_community` y subir `sodium_libs`. |
-| `identity-core-dart/` es un clon local fuera de git | **Abierto.** Codemagic y cualquier otra máquina necesitan ese paquete; publicarlo en un repo propio o vendorearlo. |
-| `identity-core-dart/android/build.gradle` fijaba `flutter_embedding_debug:1.0.0-3.10.0` (no existe) | Corregido **en el clon local** (se borró esa dependencia). Repetirlo en cada clon nuevo. |
-| `isar_flutter_libs` compila con SDK 30 (`lStar not found` en release) | Corregido en `mobile/android/build.gradle.kts` (fuerza `compileSdk` 36). |
+| `libisar.so` y `libsodium.so` alineadas a 4 KB (Play exige 16 KB) | Resuelto: `isar_community` 3.3.2 y `sodium_libs` 3.4.x ([isar-wallet.md](./isar-wallet.md)). |
+| `identity-core-dart/` era un clon local fuera de git | Resuelto: versionado en el monorepo (Codemagic lo tiene). |
+| `identity-core-dart/android/build.gradle` fijaba `flutter_embedding_debug:1.0.0-3.10.0` (no existe) | Resuelto: se quitó esa dependencia (el embedding lo agrega Flutter). |
+| `isar_flutter_libs` 3.1 sin `namespace` y con SDK 30 | Resuelto con el fork; `mobile/android/build.gradle.kts` sin parches. |
 
-Cómo chequear 16 KB: ver la guía de prueba local o abrir el AAB en Android Studio (Build → Analyze APK) y revisar el aviso de alineación.
+Cómo chequear 16 KB antes de subir: Android Studio → Build → Analyze APK (avisa si una `.so` no está alineada), o `zipalign -c -P 16 -v 4 app-release.apk` (build-tools) para el zip.
 
 ---
 
