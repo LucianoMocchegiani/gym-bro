@@ -16,6 +16,7 @@ La creación de registros sigue la skill:
 
 ## Índice
 
+- [2026-10-02 — Preview OG 1200×630 y SEO de marca Faciliter](./2026-10-02-seo-og-marca.md)
 - [2026-10-02 — Eliminar cuenta (app y web)](./2026-10-02-eliminar-cuenta.md)
 - [2026-10-02 — App: versión mínima y aviso de actualización](./2026-10-02-version-minima-app.md)
 - [2026-10-02 — App: librerías nativas a 16 KB y wallet en el monorepo](./2026-10-02-16kb-isar-community.md)
