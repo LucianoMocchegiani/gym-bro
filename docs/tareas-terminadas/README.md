@@ -16,6 +16,7 @@ La creación de registros sigue la skill:
 
 ## Índice
 
+- [2026-10-02 — Contrato de puerta por gym y acceso ZKTeco simulado](./2026-10-02-acceso-zkteco-contrato.md)
 - [2026-10-02 — Preview OG 1200×630 y SEO de marca Faciliter](./2026-10-02-seo-og-marca.md)
 - [2026-10-02 — Eliminar cuenta (app y web)](./2026-10-02-eliminar-cuenta.md)
 - [2026-10-02 — App: versión mínima y aviso de actualización](./2026-10-02-version-minima-app.md)
