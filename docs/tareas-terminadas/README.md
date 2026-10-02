@@ -16,6 +16,7 @@ La creación de registros sigue la skill:
 
 ## Índice
 
+- [2026-10-02 — App: librerías nativas a 16 KB y wallet en el monorepo](./2026-10-02-16kb-isar-community.md)
 - [2026-10-01 — App: Crashlytics y preparación de tiendas](./2026-10-01-crashlytics-y-tiendas.md)
 - [2026-10-01 — Gastos del gym y Cierre efectivo/digital](./2026-10-01-gastos-del-gym.md)
 - [2026-10-01 — Migración de afiliados (planilla + zip) y contraseña temporal](./2026-10-01-migracion-afiliados.md)
