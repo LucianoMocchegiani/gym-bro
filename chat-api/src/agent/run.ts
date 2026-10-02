@@ -29,6 +29,23 @@ type LooseStep = {
   toolResults?: LooseTool[];
 };
 
+const BUSINESS_TZ = 'America/Argentina/Buenos_Aires';
+
+/**
+ * El modelo no conoce la fecha: sin esto, "hoy" lo adivina y consulta otro día.
+ */
+function todayContext(now = new Date()): string {
+  const ymd = new Intl.DateTimeFormat('en-CA', { timeZone: BUSINESS_TZ }).format(now);
+  const human = new Intl.DateTimeFormat('es-AR', {
+    timeZone: BUSINESS_TZ,
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  }).format(now);
+  return `Hoy es ${human} (${ymd}), zona Buenos Aires. "Hoy", "ayer", "este mes" se cuentan desde esa fecha; no uses otra.`;
+}
+
 function pickTools(
   listed: Record<string, unknown>,
   allowlist: string[],
@@ -145,7 +162,9 @@ export async function streamAgentTurn(
   const history = await listMessages(conversationId);
   const messages = buildModelMessages(history);
   const system =
-    mode === 'public' ? config.chatPublicSystemPrompt : config.chatSystemPrompt;
+    mode === 'public'
+      ? config.chatPublicSystemPrompt
+      : `${config.chatSystemPrompt}\n\n${todayContext()}`;
 
   let closed = false;
   const closeMcp = async () => {

@@ -36,7 +36,7 @@ export function registerReportsTools(server: McpServer): void {
     {
       title: 'Resumen de reportes',
       description:
-        'Ingresos, devoluciones y snapshot de socios/contratos (timezone Buenos Aires). Si el usuario dice un período, PASÁ period: this_week (esta semana), last_week (semana pasada), this_month (este mes), last_month (mes anterior / el mes pasado), this_year (este año). Solo omití period y from/to cuando no precisó rango: ahí el MCP usa el mes calendario actual. from/to YYYY-MM-DD ganan sobre period. Para comparar dos meses, llamá dos veces. No cobra.',
+        'Ingresos, devoluciones y snapshot de socios/contratos (timezone Buenos Aires). Si el usuario dice un período, PASÁ period: today (hoy), yesterday (ayer), this_week (esta semana), last_week (semana pasada), this_month (este mes), last_month (mes anterior / el mes pasado), this_year (este año). Solo omití period y from/to cuando no precisó rango: ahí el MCP usa el mes calendario actual. from/to YYYY-MM-DD ganan sobre period. Para comparar dos meses, llamá dos veces. No cobra.',
       inputSchema: {
         period: z
           .enum(REPORT_PERIODS)

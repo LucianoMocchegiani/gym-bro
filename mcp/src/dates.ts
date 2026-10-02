@@ -39,6 +39,8 @@ export function sessionsRange(
 }
 
 export const REPORT_PERIODS = [
+  'today',
+  'yesterday',
   'this_week',
   'last_week',
   'this_month',
@@ -73,6 +75,13 @@ function mondayOfWeek(ymd: string): string {
  * @remarks this_month / this_year cortan en hoy. last_week = lun–dom previo.
  */
 export function baReportRange(period: ReportPeriod, today = baYmd()): { from: string; to: string } {
+  if (period === 'today') {
+    return { from: today, to: today };
+  }
+  if (period === 'yesterday') {
+    const ymd = shiftYmd(today, -1);
+    return { from: ymd, to: ymd };
+  }
   const year = Number(today.slice(0, 4));
   const month = Number(today.slice(5, 7));
   if (period === 'this_month') {

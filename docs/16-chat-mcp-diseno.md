@@ -577,7 +577,7 @@ El chat no “sabe de gyms”. Hace de **bandeja + cerebro**: guardar charlas, s
 
 Compartir el hilo con todo el gym, varios MCP a la vez, adjuntos, voz, memoria entre conversaciones, thumbs up, export, Super Admin propio, app afiliado, writes/cobros (eso es MCP, no el drawer).
 
-System prompt: **un texto por instancia** (`CHAT_SYSTEM_PROMPT`: “hablá en español, usá las tools, no inventes ids”). No el documento maestro.
+System prompt: **un texto por instancia** (`CHAT_SYSTEM_PROMPT`: “hablá en español, usá las tools, no inventes ids”). No el documento maestro. En modo staff, el chat-api le agrega en cada turno la **fecha de hoy en BA** (el modelo no la sabe; sin eso "hoy" consultaba otro día). Las tools de reportes y gastos aceptan `period: today | yesterday`.
 
 ### 13.1 Contexto largo: compactar ≠ borrar (**cerrado**, decisión 15)
 

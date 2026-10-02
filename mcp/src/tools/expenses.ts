@@ -20,7 +20,7 @@ const periodSchema = z
   .enum(REPORT_PERIODS)
   .optional()
   .describe(
-    'Atajo BA: this_week, last_week, this_month, last_month (mes pasado), this_year. Se ignora si mandás from/to.',
+    'Atajo BA: today (hoy), yesterday (ayer), this_week, last_week, this_month, last_month (mes pasado), this_year. Se ignora si mandás from/to.',
   );
 
 function slimExpense(value: unknown): Record<string, unknown> | null {
