@@ -315,6 +315,19 @@ class AuthController extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Elimina la cuenta Faciliter, borra la wallet del celular y cierra sesión.
+  ///
+  /// Si la API rechaza (p. ej. 409 dueño de gym) no toca nada local.
+  Future<void> deleteAccount() async {
+    await _auth.deleteAccount();
+    try {
+      await _wallet?.resetWallet();
+    } catch (e) {
+      debugPrint('No se pudo borrar la wallet al eliminar la cuenta: $e');
+    }
+    await logout();
+  }
+
   /// Cierra la cuenta Faciliter y bloquea la wallet.
   Future<void> logout() async {
     await _auth.logout();

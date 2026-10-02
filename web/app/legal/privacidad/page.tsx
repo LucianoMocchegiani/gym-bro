@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import Link from 'next/link';
 import { MarketingShell } from '@/components/marketing/MarketingShell';
 import { MktShell } from '@/components/marketing/MktShell';
 import { MARKETING_MAIL, publicSiteUrl } from '@/lib/site-url';
@@ -40,6 +41,12 @@ export default function PrivacidadPage() {
           datos por su cuenta. El asistente de la landing pública no ve
           datos de un gym: solo explica el producto. Esa prueba guarda un
           hilo anónimo en el servicio de chat (sesión en el navegador).
+        </p>
+        <h2>Eliminar tu cuenta</h2>
+        <p>
+          Podés eliminar tu cuenta desde la app (Ajustes → Eliminar cuenta) o
+          desde la web:{' '}
+          <Link href="/cuenta/eliminar">cómo eliminar tu cuenta</Link>.
         </p>
         <h2>Contacto</h2>
         <p>

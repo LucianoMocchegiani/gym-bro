@@ -882,6 +882,20 @@
                     }
                 },
                 {
+                    "name": "DELETE me identity (eliminar cuenta, DESTRUCTIVO)",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [{"key": "Content-Type", "value": "application/json"}],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"confirm\": \"ELIMINAR\"\n}",
+                            "options": {"raw": {"language": "json"}}
+                        },
+                        "url": "{{baseUrl}}/api/me/identity",
+                        "description": "CU-CTA-001. JWT Identity, Staff o Member. Anonimiza la cuenta (no se puede deshacer): cancela débitos y reservas futuras, desactiva staff, revoca sesiones, borra avisos. 400 sin ELIMINAR, 403 impersonado, 409 si es dueña de un gym activo. No correr con las cuentas seed."
+                    }
+                },
+                {
                     "name": "Refresh",
                     "event": [
                         {

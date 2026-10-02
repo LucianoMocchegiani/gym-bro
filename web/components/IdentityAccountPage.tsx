@@ -1,10 +1,11 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { AccountPanel } from '@/components/AccountPanel';
 import { Panel } from '@/components/AdminUi';
+import { DeleteAccountPanel } from '@/components/DeleteAccountPanel';
 import { MarketingShell } from '@/components/marketing/MarketingShell';
 import { PlanPanel } from '@/components/PlanPanel';
 import { ApiClientError } from '@/lib/api/client';
@@ -20,11 +21,13 @@ import { tenantOrigin } from '@/lib/tenant-host';
 /**
  * Apex `/cuenta`: misma ficha que el gym (`AccountPanel`) + tenants y plan.
  *
- * @remarks Sin sesión redirige a `/login` (mismo patrón que el staff).
+ * @remarks Sin sesión redirige a `/login` (mismo patrón que el staff). Tras
+ * eliminar la cuenta va a `/cuenta/eliminar?hecho=1`.
  */
 export function IdentityAccountPage() {
   const { session, ready, logout } = useIdentityAuth();
   const router = useRouter();
+  const deletedRef = useRef(false);
   const [gyms, setGyms] = useState<IdentityGymRow[] | null>(null);
   const [selected, setSelected] = useState<string | null>(null);
   const [plan, setPlan] = useState<GymPlanView | null>(null);
@@ -34,10 +37,16 @@ export function IdentityAccountPage() {
     if (!ready) {
       return;
     }
-    if (!session) {
+    if (!session && !deletedRef.current) {
       router.replace('/login?next=/cuenta');
     }
   }, [ready, session, router]);
+
+  async function handleDeleted(): Promise<void> {
+    deletedRef.current = true;
+    await logout();
+    router.replace('/cuenta/eliminar?hecho=1');
+  }
 
   useEffect(() => {
     if (!session) {
@@ -154,6 +163,7 @@ export function IdentityAccountPage() {
             ) : null}
           </Panel>
           {plan ? <PlanPanel plan={plan} /> : null}
+          <DeleteAccountPanel onDeleted={handleDeleted} />
         </div>
       </section>
     </MarketingShell>

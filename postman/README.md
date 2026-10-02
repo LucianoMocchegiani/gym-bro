@@ -126,6 +126,8 @@ Carpeta **Member imports**: migración de afiliados desde otro sistema (RN-MIG).
 
 Contraseña (Auth): `GET /auth/password` → `{ hasPassword, temporary }`; `POST /auth/set-password` crea contraseña a cuentas solo Google/Apple (409 si ya tiene). `POST /auth/change-password` sirve para Staff, Member e Identity, desmarca la temporal y revoca todas las sesiones de la persona. Vincular Google/Apple a una cuenta con temporal borra la temporal.
 
+Eliminar cuenta (Auth, **destructivo**): `DELETE /me/identity` con `{ "confirm": "ELIMINAR" }` y cualquier JWT. Anonimiza la cuenta (CU-CTA-001); 409 si es dueña de un gym activo. Probalo con una cuenta creada para eso, no con las seed.
+
 Carpeta **Member catalog**: Catálogo del afiliado (E9 mobile). Member `GET /me/sessions` (sesiones publicadas + `serviceImageUrl`), `GET /me/packs` (packs activos + `imageUrl`), `GET /me/mp-status` (`{ connected }`).
 
 Carpeta **Services**: Staff `catalog.write`. Tipos `ACCESO_LIBRE` y `POR_SESIONES`; `dropInPrice` (ARS) habilita drop-in; desactivar con `active: false`. Soporta `imageUrl` (opcional). El catálogo es tenant-scoped: el del tenant `admin` es el **catálogo de plataforma** (el pack Brain que se vende a los gyms).

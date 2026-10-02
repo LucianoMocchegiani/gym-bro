@@ -368,6 +368,18 @@ class AuthRepository {
     _api.accessToken = identity?.accessToken;
   }
 
+  /// Elimina la cuenta Faciliter (CU-CTA-001). No limpia la sesión local:
+  /// después hay que llamar a [logout].
+  ///
+  /// Lanza [ApiException] 409 si la persona es dueña de un gym activo.
+  Future<void> deleteAccount() async {
+    await _api.deleteJson<void>(
+      '/api/me/identity',
+      body: {'confirm': 'ELIMINAR'},
+      parse: (_) {},
+    );
+  }
+
   /// Cierra identity + gym.
   Future<void> logout() async {
     final gym = await _store.read();

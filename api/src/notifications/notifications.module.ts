@@ -33,6 +33,6 @@ import { StubMailAdapter } from './stub-mail.adapter';
       inject: [ConfigService],
     },
   ],
-  exports: [NotificationDispatcher],
+  exports: [NotificationDispatcher, MAIL_PORT],
 })
 export class NotificationsModule {}

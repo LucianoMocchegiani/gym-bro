@@ -196,6 +196,17 @@ Formato: **RN-MODULO-NNN** — enunciado — excepciones.
 
 ---
 
+## 8b. Cuenta Faciliter (RN-CTA)
+
+| ID | Regla |
+|----|--------|
+| RN-CTA-001 | La persona puede **eliminar su cuenta Faciliter** desde la app (Ajustes) y desde la web (`/cuenta`), escribiendo **ELIMINAR**. La baja es **inmediata** y no se puede deshacer. Requisito de App Store (5.1.1(v)) y Google Play. No se permite desde una impersonación. |
+| RN-CTA-002 | Al eliminar: se cancelan sus **débitos automáticos** y **reservas futuras** en todos los gyms y sale de las listas de espera; lo que quede de packs vigentes se pierde. Sus usuarios staff quedan **inactivos**. Se revocan todas las sesiones y se borran sus avisos y preferencias. |
+| RN-CTA-003 | Si es **dueña de un gym activo**, no puede eliminar la cuenta: primero da de baja o transfiere el gym (409). |
+| RN-CTA-004 | La cuenta se **anonimiza**, no se borra: mail inválido, sin nombre, contraseña ni Google/Apple. Cada gym **conserva** la ficha del socio/staff y su historial (pagos, comprobantes): es su registro comercial; si la persona quiere que el gym también la borre, se lo pide al gym. El mismo mail o Google después crea una **cuenta nueva y vacía** (no hereda gyms). Se audita `identity.delete` y se manda un mail de confirmación. |
+
+---
+
 ## 9. Trazabilidad a documentación
 
 | Documento | Uso de estas reglas |

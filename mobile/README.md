@@ -69,6 +69,7 @@ fvm flutter build appbundle --release --build-number=<N>
 - Firma: `android/key.properties` (copiar de `key.properties.example`; fuera de git). Sin él, firma debug.
 - Crashlytics: solo release y solo si están `android/app/google-services.json` / `ios/Runner/GoogleService-Info.plist`. Crash de prueba: `--dart-define=CRASH_TEST=true` → Ajustes → Desarrolladores.
 - Sign in with Apple: solo iOS.
+- Eliminar cuenta: Ajustes → Eliminar cuenta (escribir ELIMINAR) → `DELETE /api/me/identity`, borra la wallet y cierra sesión. URL web para Play: `faciliter.xyz/cuenta/eliminar`.
 - Versión mínima: al abrir consulta `GET /api/public/app-config` y compara el `--build-number`. Debajo del mínimo bloquea; debajo del último sugiere una vez. Sin red sigue normal (`lib/features/app_update/`).
 - Guía completa: [docs/mobile/publicar-tiendas.md](../docs/mobile/publicar-tiendas.md).
 - Todos los comandos y cuándo usarlos: [docs/mobile/comandos-flutter.md](../docs/mobile/comandos-flutter.md).

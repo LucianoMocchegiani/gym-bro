@@ -63,6 +63,16 @@ class ApiClient {
     return _request<T>('PATCH', path, body: body, parse: parse, auth: auth);
   }
 
+  /// DELETE JSON (con body opcional).
+  Future<T> deleteJson<T>(
+    String path, {
+    Object? body,
+    T Function(Object? json)? parse,
+    bool auth = true,
+  }) async {
+    return _request<T>('DELETE', path, body: body, parse: parse, auth: auth);
+  }
+
   Future<T> _request<T>(
     String method,
     String path, {
@@ -93,6 +103,12 @@ class ApiClient {
           );
         case 'PATCH':
           res = await _http.patch(
+            uri,
+            headers: headers,
+            body: body == null ? null : jsonEncode(body),
+          );
+        case 'DELETE':
+          res = await _http.delete(
             uri,
             headers: headers,
             body: body == null ? null : jsonEncode(body),
@@ -137,9 +153,7 @@ class ApiClient {
   /// GET binario (PDF/imagen de carpeta).
   Future<List<int>> getBytes(String path, {bool retried = false}) async {
     final uri = Uri.parse('${ApiConfig.baseUrl}$path');
-    final headers = <String, String>{
-      'Accept': '*/*',
-    };
+    final headers = <String, String>{'Accept': '*/*'};
     if (accessToken != null) {
       headers['Authorization'] = 'Bearer $accessToken';
     }

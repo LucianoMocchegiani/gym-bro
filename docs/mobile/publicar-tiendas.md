@@ -19,7 +19,7 @@ Textos de las fichas (borrador): [fichas-tiendas.md](./fichas-tiendas.md).
 | Config Firebase | `google-services.json` y `GoogleService-Info.plist` **se commitean** (no son secretos; las reglas de seguridad viven en la consola). |
 | Dispositivos | iPhone + iPad, vertical y horizontal (como hoy). |
 
-**Bloqueante para el envío:** eliminar cuenta desde la app y desde una URL web (Apple 5.1.1(v), Play "Account deletion"). Va en un ticket aparte.
+**Eliminar cuenta:** resuelto. App → Ajustes → Eliminar cuenta; web `https://faciliter.xyz/cuenta/eliminar` (URL para Play). Reglas RN-CTA, [CU-CTA-001](../05-casos-de-uso/cuenta.md). Falta revocar Sign in with Apple (ver §5).
 
 **16 KB (Play):** resuelto. Todas las `.so` de 64 bits están alineadas a 16 KB (Isar pasó a `isar_community`, sodium a 3.4.x). Ver [Problemas conocidos](#problemas-conocidos).
 
@@ -134,6 +134,7 @@ Falta (cuando se pague Apple):
    - `GOOGLE_IOS_REVERSED_CLIENT_ID` = el "iOS URL scheme" (`com.googleusercontent.apps.…`).
    - En la API, sumar ese client id a `GOOGLE_OAUTH_CLIENT_IDS` (coma-separado): en iOS el `aud` del token es el client iOS.
 2. **Apple en la API:** `APPLE_APP_BUNDLE_IDS=com.faciliter.mobile` en el `.env` de prod (el login nativo de iOS trae ese `aud`).
+   - **Revocar Sign in with Apple al eliminar cuenta** (Apple lo pide): crear una key con Sign in with Apple (`.p8`), pedir re-login con Apple en iOS al eliminar, canjear el `authorizationCode` y llamar a `https://appleid.apple.com/auth/revoke`. Hoy la baja anonimiza la cuenta pero no revoca en Apple.
 3. **Codemagic:** [codemagic.io](https://codemagic.io) → conectar el repo de GitHub → app Flutter → workflow iOS.
    - Code signing automático con una **API key de App Store Connect** (Users and Access → Integrations → Keys, rol App Manager).
    - Build `ipa` en release y publicar a **TestFlight**.
@@ -152,7 +153,7 @@ Falta (cuando se pague Apple):
 | Gráfico destacado | 1024×500 | — |
 | Privacidad | URL pública | URL pública |
 | Soporte | Mail | URL |
-| Eliminar cuenta | URL web obligatoria | En la app |
+| Eliminar cuenta | `https://faciliter.xyz/cuenta/eliminar` | En la app (Ajustes → Eliminar cuenta) |
 
 URLs: privacidad `https://faciliter.xyz/legal/privacidad`, términos `https://faciliter.xyz/legal/terminos`. Hoy son **borrador**; alcanzan para enviar, pero conviene revisarlos antes de producción.
 
@@ -175,6 +176,7 @@ URLs: privacidad `https://faciliter.xyz/legal/privacidad`, términos `https://fa
 ### Notas para la revisión
 
 - Cuenta demo: `socio@gymdeprueba.com` / `ChangeMe123!` (verificar que exista en **prod** antes de enviar).
+- El revisor puede probar **Eliminar cuenta** con la demo: después de cada revisión, verificar que siga existiendo y recrearla si hace falta.
 - Qué ver: Inicio → Sesiones / Tienda; Acceso → credenciales; el QR se usa en la puerta del gym, el revisor puede ver la pantalla de escaneo sin un QR real.
 - Pagos con Mercado Pago: servicios presenciales del gym.
 

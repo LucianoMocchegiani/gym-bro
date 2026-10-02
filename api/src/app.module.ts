@@ -8,6 +8,7 @@ import { PaymentRegisterModule } from './payment-register/payment-register.modul
 import { ContractsModule } from './contracts/contracts.module';
 import { HealthModule } from './health/health.module';
 import { MobileAppModule } from './mobile-app/mobile-app.module';
+import { AccountDeletionModule } from './account-deletion/account-deletion.module';
 import { MembersModule } from './members/members.module';
 import { MemberCatalogModule } from './member-catalog/member-catalog.module';
 import { PaymentModule } from './payment/payment.module';
@@ -71,6 +72,7 @@ import { UploadModule } from './upload/upload.module';
     AuditModule,
     HealthModule,
     MobileAppModule,
+    AccountDeletionModule,
     FileStorageModule,
     UploadModule,
     FolderModule,

@@ -9,6 +9,7 @@ import '../../core/theme/theme_controller.dart';
 import '../../core/widgets/confirm_dialog.dart';
 import '../../core/widgets/loading_dialog.dart';
 import '../auth/auth_controller.dart';
+import '../auth/delete_account_screen.dart';
 import '../auth/password_screen.dart';
 import '../credentials/device_wallet_service.dart';
 import '../notifications/notification_prefs_screen.dart';
@@ -258,6 +259,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
         FilledButton.tonal(
           onPressed: () => _logout(context),
           child: const Text('Cerrar sesión'),
+        ),
+        const SizedBox(height: 8),
+        TextButton(
+          style: TextButton.styleFrom(
+            foregroundColor: Theme.of(context).colorScheme.error,
+          ),
+          onPressed: () => Navigator.of(context).push(
+            MaterialPageRoute<void>(
+              builder: (_) => const DeleteAccountScreen(),
+            ),
+          ),
+          child: const Text('Eliminar cuenta'),
         ),
       ],
     );
