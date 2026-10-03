@@ -1,7 +1,11 @@
 # Débito automático
 
-**Débito** = Mercado Pago cobra de nuevo un pack **mensual** (MONTHLY) con una **suscripción** (plan + preapproval) en la cuenta **del gym**. Faciliter no guarda la tarjeta ni dispara el cobro: cuando MP avisa approved, se crea el contrato.
+**Débito** = Mercado Pago cobra solo cada mes un pack **mensual** (MONTHLY) con una **suscripción** (plan + preapproval) en la cuenta **del gym**. Faciliter no guarda la tarjeta ni dispara el cobro: cuando MP avisa que un mes se aprobó, se registra el cobro y el contrato.
 
-Alta en **Caja**: tilde + **link** de checkout MP (`init_point`). El socio completa en Mercado Pago. Pestaña Débitos: pendientes de pagar el link, activos, fallidos; baja; cambio de pack. La ficha solo ataja a `/caja?memberId=&vista=debitos`.
+**Alta:** en Caja → Cobro, con un pack mensual y Mercado Pago, tildar débito automático. Se genera un **link** de checkout MP; el socio autoriza en Mercado Pago (no hay formulario de tarjeta en Faciliter).
 
-El asistente **lista** mandatos. **No enrola ni cancela.** Hace falta permiso de caja y MP conectado en Config (cómo: `get_help` topic `mercadopago`).
+**Pestaña Débitos** (Caja): cola **Pendiente / link**, **Reintentando**, **Fallidos**, **Todos**. Al elegir un socio: estado, próximo cobro y monto. Acciones: **Abrir checkout MP**, **Copiar link** (para mandárselo), **Próximo pack**, **Regenerar link**, **Dar de baja**. MP reintenta si un cobro falla. Dar de baja corta los cobros que vienen; el mes ya pago sigue vigente. La ficha del socio ataja a `/caja?memberId=&vista=debitos`.
+
+Si el débito falla, al socio le llegan los avisos de débito (topic `avisos`) y el pack aparece en **Vencimientos**.
+
+El asistente **lista** mandatos. **No enrola ni cancela.** Hace falta permiso de caja y MP conectado en Config (topic `mercadopago`).

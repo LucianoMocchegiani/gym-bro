@@ -77,7 +77,7 @@ export function StaffCreateForm({
       }
       const created = await createStaff({
         email: email.trim(),
-        password,
+        password: password || undefined,
         name: name.trim() || undefined,
         imageUrl: finalImageUrl ?? undefined,
         roleIds: roleIds.length > 0 ? roleIds : undefined,
@@ -112,14 +112,18 @@ export function StaffCreateForm({
         />
       </label>
       <label>
-        Password inicial
+        Password inicial (opcional)
         <input
           type="password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          required
           minLength={8}
+          autoComplete="new-password"
         />
+        <span className="muted small">
+          Vacío: entra con ChangeMe123! (temporal). Si ya tiene cuenta
+          Faciliter, conserva la suya.
+        </span>
       </label>
       <ImageUpload
         value={imageUrl}

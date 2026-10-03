@@ -49,7 +49,7 @@ export function MemberCreateForm({
       const created = await createMember({
         name: name.trim(),
         email: email.trim(),
-        password,
+        password: password || undefined,
         phone: phone.trim() || undefined,
         document: document.trim() || undefined,
         imageUrl: finalImageUrl ?? undefined,
@@ -87,14 +87,18 @@ export function MemberCreateForm({
         />
       </label>
       <label>
-        Password inicial
+        Password inicial (opcional)
         <input
           type="password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          required
           minLength={8}
+          autoComplete="new-password"
         />
+        <span className="muted small">
+          Vacío: entra con ChangeMe123! y la app le avisa que la cambie. Si
+          ya tiene cuenta Faciliter, conserva la suya.
+        </span>
       </label>
       <label>
         Teléfono

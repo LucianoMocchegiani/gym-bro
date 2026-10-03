@@ -12,6 +12,8 @@ Los **créditos** se gastan al confirmar una reserva de una sesión cubierta por
 
 Pantalla Admin: **Packs** (`/packs`). Los servicios del catálogo están en **Servicios** (`/servicios`). El precio y si está activo se editan ahí.
 
-El asistente lista packs y precios. **No crea ni cambia** el catálogo. Kuatia (credenciales) se configura en el pack, no por chat.
+Un pack ya vendido no se borra: se da de baja.
+
+El asistente lista packs y precios, y puede **proponer** crear o editar servicios y packs (se hace solo si tocás Confirmar). No borra. Kuatia (credenciales) se configura en el pack, no por chat.
 
 Si no ves Packs/Servicios, falta permiso de catálogo.

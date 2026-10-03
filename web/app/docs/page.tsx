@@ -24,8 +24,8 @@ export default function DocsIndexPage() {
         Publicamos lo que ya está; las pantallas que faltan se van sumando.
       </p>
       <p>
-        Fuera de esta guía: Super Admin, rutinas, notificaciones, tienda de
-        productos físicos y noticias del local.
+        Fuera de esta guía: Super Admin. Todavía no existen rutinas por días,
+        notificaciones push, tienda de productos físicos ni noticias del local.
       </p>
       <ul className="mkt-docs-cards">
         {DOCS_PAGES.map((page) => (

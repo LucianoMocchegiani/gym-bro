@@ -1,7 +1,7 @@
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 
-export type DocsSlug = 'que-es' | 'primeros-pasos' | 'modulos';
+export type DocsSlug = 'que-es' | 'primeros-pasos' | 'modulos' | 'cuenta';
 
 export type DocsPageMeta = {
   slug: DocsSlug;
@@ -26,6 +26,12 @@ export const DOCS_PAGES: readonly DocsPageMeta[] = [
     title: 'Módulos de Faciliter',
     description:
       'Config, caja, puerta, app y el resto de Faciliter, con más pantallas.',
+  },
+  {
+    slug: 'cuenta',
+    title: 'Tu cuenta y el plan Faciliter',
+    description:
+      'Cuenta Faciliter, contratar, Mi cuenta, Plan / Uso y eliminar la cuenta.',
   },
 ];
 
@@ -208,6 +214,7 @@ function splitPublishedMarkdown(raw: string): Record<DocsSlug, string> {
     parte1Start >= 0 ? withoutChecklist.slice(parte1Start) : withoutChecklist;
   const parte2Start = fromParte1.search(/^# Parte 2/m);
   const parte3Start = fromParte1.search(/^# Parte 3/m);
+  const parte4Start = fromParte1.search(/^# Parte 4/m);
   const parte1 =
     parte2Start >= 0 ? fromParte1.slice(0, parte2Start) : fromParte1;
   const parte2 =
@@ -217,13 +224,21 @@ function splitPublishedMarkdown(raw: string): Record<DocsSlug, string> {
           parte3Start >= 0 ? parte3Start : undefined,
         )
       : '';
-  const parte3 = parte3Start >= 0 ? fromParte1.slice(parte3Start) : '';
+  const parte3 =
+    parte3Start >= 0
+      ? fromParte1.slice(
+          parte3Start,
+          parte4Start >= 0 ? parte4Start : undefined,
+        )
+      : '';
+  const parte4 = parte4Start >= 0 ? fromParte1.slice(parte4Start) : '';
   const dropParteLine = (chunk: string) =>
     chunk.replace(/^# Parte[^\n]*\n+/, '');
   return {
     'que-es': dropParteLine(parte1),
     'primeros-pasos': dropParteLine(parte2),
     modulos: dropParteLine(parte3),
+    cuenta: dropParteLine(parte4),
   };
 }
 

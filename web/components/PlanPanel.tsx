@@ -2,6 +2,7 @@
 
 import { Panel } from '@/components/AdminUi';
 import type { GymPlanView } from '@/lib/api/plan';
+import { MARKETING_MAIL } from '@/lib/site-url';
 
 function formatWhen(iso: string | null): string {
   if (!iso) {
@@ -30,8 +31,9 @@ function statusLabel(plan: GymPlanView): string {
 /**
  * Plan Faciliter del gym (mismo layout pensado para apex más adelante).
  *
- * @remarks Renovar/cambiar/débito self-serve no están en este corte: el cobro
- * sigue en Caja de plataforma. Baja y alta de gym por la web, después.
+ * @remarks Contratado en faciliter.xyz → débito MP de `admin` (RN-PAG-017).
+ * Alta por plataforma → Caja de `admin`. Cambio de plan y baja del débito
+ * todavía no son self-serve: se piden a Faciliter.
  */
 export function PlanPanel({ plan }: { plan: GymPlanView }) {
   return (
@@ -63,21 +65,29 @@ export function PlanPanel({ plan }: { plan: GymPlanView }) {
       </dl>
       {plan.status === 'trial' ? (
         <p className="muted small">
-          Podés dar de baja antes del {formatWhen(plan.endsAt)}. El débito
-          automático al terminar la prueba se suma después; hoy el mes pago se
-          cobra en Caja de Faciliter.
+          Prueba hasta el {formatWhen(plan.endsAt)}. Si contrataste en
+          faciliter.xyz, al terminar Mercado Pago cobra el primer mes con el
+          débito que autorizaste. Si te dio de alta Faciliter, el mes se paga
+          con Faciliter.
+        </p>
+      ) : null}
+      {plan.status === 'active' ? (
+        <p className="muted small">
+          Si contrataste en faciliter.xyz, se renueva solo con el débito de
+          Mercado Pago. Si no, se renueva pagando con Faciliter.
         </p>
       ) : null}
       {plan.status === 'none' || plan.status === 'expired' ? (
         <p className="muted small">
           Sin plan vigente: hay 3 días de gracia y después el gym queda
-          limitado (solo Plan / Uso). Para contratar, Caja del tenant admin
-          (tilde de prueba, efectivo).
+          limitado (solo Plan / Uso). Para renovar, escribinos a{' '}
+          <a href={`mailto:${MARKETING_MAIL}`}>{MARKETING_MAIL}</a>.
         </p>
       ) : null}
       <p className="muted small">
-        Cambio de plan, renovación por débito y portal en faciliter.xyz entran
-        en el siguiente corte. {plan.isOwner ? 'Sos el dueño de este gym.' : null}
+        Para cambiar de plan o dar de baja el débito, escribinos a{' '}
+        <a href={`mailto:${MARKETING_MAIL}`}>{MARKETING_MAIL}</a>.{' '}
+        {plan.isOwner ? 'Sos el dueño de este gym.' : null}
       </p>
     </Panel>
   );

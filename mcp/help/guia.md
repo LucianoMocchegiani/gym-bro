@@ -1,15 +1,15 @@
 # Guía de vistas (panel y app)
 
-Texto de cómo **se ven y se usan** las pantallas. Las fotos están en el sitio: `/docs` (Qué es, Primeros pasos, Módulos). **No tenés las imágenes:** si piden una captura o “mostrame la pantalla”, mandalos a `/docs`. En el Admin, para abrir una ruta, usá `suggest_nav`.
+Resumen de cómo **se ven y se usan** las pantallas. Es el mismo contenido que la guía del sitio `/docs` (4 capítulos: Qué es, Primeros pasos, Módulos, Tu cuenta y el plan). **No tenés las imágenes:** si piden una captura o “mostrame la pantalla”, mandalos a `/docs`. En el Admin, para abrir una ruta, usá `suggest_nav`.
 
-Fuera de esta guía: Super Admin, rutinas, bandeja operativa de staff, push, tienda de productos físicos.
+Fuera de esta guía: Super Admin. **No existen todavía:** rutinas por días, notificaciones push, tienda de productos físicos, noticias del local, bandeja de avisos del staff.
 
 ## Dos caras
 
 | Cara | Quién | Dónde |
 |------|--------|--------|
 | Panel (web) | Dueño, recepción, profesores (staff) | `{slug}.faciliter.xyz` |
-| App | El afiliado (socio) | App Faciliter en el celular |
+| App | El afiliado (socio) y el staff | App Faciliter en el celular |
 
 El dinero del socio va al Mercado Pago **del negocio** y se registra en caja. Faciliter no se queda con el cobro. Efectivo: solo se registra.
 
@@ -19,94 +19,106 @@ El socio **no ve** el tablero del staff. En la app ve su pack, clases y Acceso.
 
 A la izquierda, agrupado:
 
-- **Operación:** Inicio, Puerta, Caja, Vencimientos, Cierre, Gastos, solicitudes de devolución, Reportes.
+- **Operación:** Inicio, Puerta, Caja, Vencimientos, Cierre, Gastos, Solicitudes de devolución, Reportes.
 - **Personas:** Afiliados, Staff, Roles y permisos.
 - **Catálogo:** Servicios, Packs, Sesiones.
 - **Sistema:** Config, Avisos (plantillas), Plan / Uso, Auditoría.
 
-Abajo a la derecha: burbuja del **asistente** (en el panel consulta datos del gym y propone altas/ediciones que confirmás con un botón; puede equivocarse; no cobra).
+Cada uno ve solo lo que su rol permite. Arriba, el avatar abre **Mi cuenta**. Abajo a la derecha: burbuja del **asistente** (consulta datos del gym y propone altas/ediciones que confirmás con un botón; puede equivocarse; no cobra).
+
+Si el plan Faciliter venció hace más de 3 días, el menú queda limitado a Plan / Uso con un aviso para renovar (topic `plan`).
 
 ## Inicio (panel)
 
-Saludo, tarjetas del día (afiliados activos, ingresos, accesos, socios sin pack, sesiones publicadas). Pueden estar en cero. No es la app del socio.
+Saludo y tarjetas del día (afiliados activos, ingresos, accesos, socios sin pack, sesiones de hoy). Pueden estar en cero. No es la app del socio.
 
 ## Login
 
-- **Staff:** “Acceso staff”, nombre del local, email y contraseña (el gym sale del subdominio).
-- **App:** email y contraseña de la **cuenta** Faciliter (sin slug). Si hay varios gyms, se elige local y socio/staff. Google/Apple después.
-- **Contraseña:** app → Ajustes → Cambiar contraseña (o **Crear contraseña** si la cuenta entró solo con Google/Apple). En el panel, lo mismo en **Cuenta**. Socios importados: temporal `ChangeMe123!` con aviso en Ajustes hasta que la cambien (topic `migracion`).
+- **Staff (panel):** en `{slug}.faciliter.xyz/login`, **Acceso staff**: mail y contraseña o **Continuar con Google**. El gym sale de la URL.
+- **App:** **Faciliter · Tu cuenta**: mail y contraseña de la cuenta Faciliter (sin slug), o Google / Apple si están disponibles. Si la cuenta está en varios gyms (o es socio y staff), elige en **Tus gyms**.
+- No hay registro desde la app ni “olvidé mi contraseña”. Detalle de cuenta y contraseñas: topic `cuenta`.
 
 ## Config
 
-Una pantalla, dos bloques: **Operación** (horas de cancelación, lista de espera, ingreso tardío, tolerancia de deuda, multi-ingreso) y **Mercado Pago** (cuenta del negocio). Cómo crear la app, pegar token y cargar webhooks: `get_help` topic `mercadopago`. El socio no ve Config; nota el efecto (pagar online, cancelar, entrar con deuda).
+Una pantalla, dos bloques:
 
-## Avisos (plantillas)
+- **Operación:** **Puerta** (QR con la app Faciliter, o Acceso ZKTeco opcional), horas de cancelación, modo lista de espera, ingreso tardío, tolerancia de deuda, multi-ingreso por día con tope diario.
+- **Mercado Pago:** cuenta del negocio. Cómo crear la app, pegar token y cargar webhooks: topic `mercadopago`.
 
-Sistema → **Avisos**. Un recuadro por evento (pago, reserva, waitlist, devolución, pack por vencer / tolerancia). Se edita asunto y cuerpo (`{{nombre}}`, `{{gym}}`, etc.) y se puede apagar el evento. Permiso de config. No es la bandeja del socio: eso está en la app, Inicio → Avisos.
+El socio no ve Config; nota el efecto (pagar online, cancelar, entrar con deuda).
 
 ## Servicios
 
-Catálogo de lo que el local ofrece. **Gym** (demo) = acceso libre, sin drop-in. **Funcional** = por sesiones, con precio de clase suelta. Un servicio **inactivo** no se vende ni entra en un pack nuevo. El socio no tiene menú “Servicios”: lo ve dentro de un pack, en el calendario o como clase suelta.
+Catálogo de lo que el local ofrece. **Gym** (en la demo) = acceso libre, sin drop-in. **Funcional** = por sesiones, con precio de clase suelta. Un servicio **inactivo** no se vende ni entra en un pack nuevo. El socio no tiene menú “Servicios”: lo ve dentro de un pack, en el calendario o como clase suelta.
 
 ## Packs
 
-La oferta que se cobra. Puede juntar varios servicios (ej. Gym + Funcional, mixto, mensual). Componentes: se agregan servicios; si es por sesiones, los créditos. Cancelar el pack pierde **todo** el combo. El socio en Tienda → Packs ve el combo, no los ítems sueltos.
+La oferta que se cobra. Puede juntar varios servicios (acceso libre + créditos, mensual o único). Cancelar el pack pierde **todo** el combo. Un pack vendido no se borra: se da de baja. El socio en Tienda → Packs ve el combo, no los ítems sueltos.
 
 ## Sesiones
 
-Solo servicios por sesiones. Pestañas **Calendario** (semana, cupo) y **Recurrencias**. El socio no crea sesiones: reserva. En la app: Sesiones (calendario del mes, día, Reservar / Reservada, Mis clases). Roster = quién reservó esa clase; lista de espera si el cupo está lleno.
+Solo servicios por sesiones. Pestañas **Calendario** y **Recurrencias**. Cada clase tiene **Datos** (horario, cupo, profesor, Ampliar cupo, Cancelar sesión), **Roster** (quién reservó y con qué pagó) y **Lista de espera**. Cancelar una sesión devuelve el crédito y avisa a los que reservaron. Desactivar una recurrencia cancela las sesiones futuras. Topic `sesiones`.
 
 ## Staff y roles
 
-Roles y permisos, después Staff. Admin es de sistema (no se edita). Entrenador se le pueden cambiar permisos (en la demo: no opera Caja). Cada staff también tiene **carpeta** (mismo ícono que en Afiliados): `get_help` topic `carpeta`. El socio no ve Staff.
+Roles y permisos, después Staff. Admin es de sistema (no se edita). Alta de staff: la contraseña es opcional (vacía → `ChangeMe123!` temporal; si ya tiene cuenta Faciliter, conserva la suya). Cada staff tiene **carpeta**: topic `carpeta`. El socio no ve Staff.
 
 ## Afiliados
 
-Alta: nombre, email, password, etc. Entra a la app con ese email + slug. Pack se cobra en Caja o Tienda. Estados Activo / Suspendido / Inactivo. Estado de cuenta: contratos, créditos, deuda, reservas. Credencial: PENDING (espera Aceptar en la app) / ACCEPTED (ya en el celular). **Re-emitir** no cobra: pack vigente hoy. **Carpeta** en la grilla: notas y PDF/imagen; detalle en topic `carpeta`. Botón **Importar**: migración masiva desde Excel/CSV + fotos y carpeta (carpeta de la PC o zip) (topic `migracion`).
+Alta: nombre, mail, documento, etc. La **contraseña inicial es opcional**: vacía → `ChangeMe123!` temporal y la app le avisa que la cambie; si ya tiene cuenta Faciliter, conserva la suya. Entra a la app con ese mail (sin slug). Estados Activo / Suspendido / Inactivo. Estado de cuenta: contratos, créditos, deuda, reservas. Credencial: PENDING (espera Aceptar en la app) / ACCEPTED. **Re-emitir** no cobra. **Carpeta** en la grilla (topic `carpeta`). **Importar**: migración desde Excel/CSV + fotos y carpeta (topic `migracion`).
 
 ## Caja
 
-Mostrador. Pestaña **Cobro** (afiliado, catálogo Packs o Servicios, carrito, efectivo o link MP). Pestaña **Débitos** (autorizar tarjeta para el mes siguiente; no es un cobro ahora; cola Hoy / Reintentando / Fallidos). El asistente lista; **no cobra**.
+Mostrador, dos pestañas:
+
+- **Cobro:** afiliado, catálogo (Packs o Servicios), carrito, **Efectivo** o **Generar link MP** (muestra QR + Copiar / Abrir y espera hasta Aprobado).
+- **Débitos:** débitos automáticos de packs mensuales. Cola **Pendiente / link**, **Reintentando**, **Fallidos**, **Todos**. Por socio: **Abrir checkout MP**, **Copiar link**, **Próximo pack**, **Regenerar link**, **Dar de baja**. No hay formulario de tarjeta: el socio autoriza en Mercado Pago con el link.
+
+El tilde de débito aparece solo con un pack mensual y Mercado Pago. El asistente lista; **no cobra**. Topics `caja`, `debito`.
 
 ## Vencimientos
 
-Lista de packs mensuales por vencer (7 días) o en tolerancia. Filtros débito vs a mano. No envía WhatsApp ni mail. Renovar: Caja. Ver mandato: Débitos.
+Cola de packs mensuales por vencer o en tolerancia. Filtros por días, Tolerancia, Débito, A mano. Atajos Ficha / Caja / Débitos. Los mails de pack por vencer y vencido los manda el sistema según Avisos. Topic `vencimientos`.
 
 ## Cierre
 
-Totales **de ese día** de negocio y arqueo de efectivo. Si cobraste otro día, acá puede aparecer $0. El socio no ve Cierre. Efectivo esperado = cobros en efectivo − devoluciones en efectivo − gastos en efectivo (contra eso se cierra). Digital esperado = lo mismo con MP, transferencia y tarjeta (informativo). Neto del día = los dos sumados.
+Totales **de ese día** de negocio y arqueo de efectivo. Si cobraste otro día, acá puede aparecer $0. Efectivo esperado = cobros − devoluciones − gastos en efectivo (contra eso se cierra, una vez por día). Digital esperado (MP, transferencia, tarjeta) y neto del día: informativos. Desde los movimientos se puede **Devolver** un cobro con permiso.
 
 ## Gastos
 
-Lo que paga el gym (alquiler, luz, mercadería…): fecha, monto, Fijo/Variable, medio, etiqueta del gym, nota y hasta 5 comprobantes. Solo el efectivo resta en el Cierre. Topic `gastos`.
+Lo que paga el gym: fecha, monto, Fijo/Variable, medio, etiqueta del gym, nota y hasta 5 comprobantes. Solo el efectivo resta en el Cierre. Topic `gastos`.
+
+## Solicitudes de devolución
+
+El socio pide desde la app (Historial → Ver comprobante → **Solicitar devolución**). El staff filtra, abre y ejecuta con motivo tipificado escribiendo **DEVOLVER**, o rechaza. Topic `devoluciones`.
 
 ## Reportes
 
-Rango de fechas (no el mostrador): qué se cobró (pack, drop-in, medio, staff). Con permiso de gastos, también gastos y resultado.
+Rango de fechas: qué se cobró (pack, drop-in, medio, staff) y devoluciones. Con permiso de gastos, también gastos y resultado.
 
 ## Puerta
 
-Panel: permitido o denegado + motivo; historial del día. Pase manual si hay permiso.
+Pestañas **Verificar**, **Pase manual**, **Historial**. Con QR: el socio escanea el QR de Verificar desde App → Acceso → Escanear y el panel muestra PERMITIDO / DENEGADO con motivo. ZKTeco es opcional y depende del modelo: se coordina con los técnicos de Faciliter. Topic `puerta`.
 
-App → **Acceso:** primero Aceptar la credencial (oferta del pack); después presentar / escanear. No inventes un QR de un cliente real.
+## Avisos
 
-## App del socio
+Sistema → **Avisos**: una tarjeta por evento (asunto y texto editables, se puede apagar). El socio los ve en App → Inicio → Avisos y por mail según Ajustes. Sin push. Topic `avisos`.
 
-Pestañas: **Inicio | Acceso | Ajustes**.
+## Auditoría
 
-- Inicio: cuenta, pack vigente (ej. Gym + Funcional: acceso libre + créditos), atajos Sesiones, Tienda, Documentos y Avisos, próxima clase.
-- Sesiones: calendario, día, mis clases.
-- Tienda: Packs y Sesiones (drop-in), carrito, Pagar con Mercado Pago, Historial.
-- Acceso: credencial / QR.
-- Ajustes: cuenta, cambiar o crear contraseña, Avisos (correo por tipo, solo socio), tema, salir.
+Quién hizo qué y cuándo, con detalle antes/después. Lo que confirma el asistente también queda.
 
-Staff (mismo binario): Inicio con Sesiones, Caja (si tiene permiso) y **Documentos**.
+## App
 
-La **carpeta** (notas/PDF) sí está; un módulo de rutinas por días **no**. Avisos al socio: bandeja in-app + email; el gym edita textos en Admin → Avisos. Push no.
+Pestañas **Inicio | Acceso | Ajustes**. Inicio con atajos Sesiones, Tienda, Documentos y Avisos. Tienda con carrito y Mercado Pago, Historial → Ver comprobante → Solicitar devolución. Acceso: Escanear / Credenciales. Ajustes: Cambiar gym, contraseña, avisos por mail, Wallet, tema, cerrar sesión, eliminar cuenta. Detalle: topic `app`.
+
+## Cuenta y plan Faciliter
+
+Cuenta Faciliter, Mi cuenta, eliminar cuenta: topic `cuenta`. Contratar Faciliter (`/empezar`), Plan / Uso, renovación y gracia: topic `plan`.
 
 ## Cómo arrancar un local (orden)
 
-Config (MP) → Servicios → Packs → Sesiones si hay clases → Staff/roles → Afiliados (a mano o **Importar** si vienen de otro sistema) → cobrar en Caja o que el socio pague en la app.
+Config (Puerta y MP) → Servicios → Packs → Sesiones si hay clases → Staff/roles → Afiliados (a mano o **Importar**) → cobrar en Caja o que el socio pague en la app.
 
 ## Sitio de capturas
 
@@ -114,5 +126,6 @@ Config (MP) → Servicios → Packs → Sesiones si hay clases → Staff/roles �
 - `/docs/que-es`
 - `/docs/primeros-pasos`
 - `/docs/modulos`
+- `/docs/cuenta`
 
 Si no sabés cómo se ve algo, decilo y mandá a esa guía. No inventes botones que no estén acá.

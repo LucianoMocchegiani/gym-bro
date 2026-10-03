@@ -28,7 +28,8 @@ export type MemberSummary = MemberDetail;
 
 export type CreateMemberInput = {
   email: string;
-  password: string;
+  /** Sin password → `ChangeMe123!` temporal (RN-ASI-003). */
+  password?: string;
   name: string;
   phone?: string;
   document?: string;

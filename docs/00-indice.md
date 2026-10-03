@@ -43,7 +43,7 @@ Reglas relacionadas
 | [11-roadmap-mvp.md](./11-roadmap-mvp.md) | Épicas y tareas título para terminar el MVP | Borrador v1 |
 | [12-acceso-quark-oid4-diseno.md](./12-acceso-quark-oid4-diseno.md) | Acceso Quark / OID4VCI+VP: issuer/verifier por gym, packs, wallet, offers remotos | Cerrado (diseño) |
 | [13-setup-db-desde-cero.md](./13-setup-db-desde-cero.md) | Migraciones + seed al levantar de 0 / tras `down -v` | Viva |
-| [uso/guia-web-y-app.md](./uso/guia-web-y-app.md) | Guía de uso (staff). Sitio público: `/docs` | Viva (se refina) |
+| [uso/guia-web-y-app.md](./uso/guia-web-y-app.md) | Puntero a la guía de uso canónica (`web/content/docs/guia.md`, sitio público `/docs`) | Viva |
 | [uso/probar-debito-suscripcion-mp.md](./uso/probar-debito-suscripcion-mp.md) | Comprobar débito MONTHLY en VPS (suscripción MP, sin Brick) | Viva |
 | [uso/configurar-mercadopago-tenant.md](./uso/configurar-mercadopago-tenant.md) | Guía MP para gyms/clubes: app, credenciales, webhooks y ejemplo `admin` | Viva |
 | [14-auditoria-roadmap-vs-codigo-2026-08-13.md](./14-auditoria-roadmap-vs-codigo-2026-08-13.md) | Contraste roadmap MVP vs API/web/mobile | Viva (corte 2026-08-13) |

@@ -108,7 +108,7 @@ function VencimientosInner() {
       title="Vencimientos"
       subtitle="Packs mensuales por vencer o en tolerancia. El débito lo cobra Mercado Pago; el resto se renueva en Caja."
     >
-      <ListToolbar hint="No envía avisos todavía (E8). Corte 1: ver y cobrar.">
+      <ListToolbar hint="Los mails de pack por vencer y vencido salen solos según Avisos. Acá: ver y cobrar.">
         <div className="cash-tabs" role="tablist">
           <button
             type="button"
