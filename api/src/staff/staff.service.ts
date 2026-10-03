@@ -15,6 +15,7 @@ import {
   resolveOrderField,
   toListResult,
 } from '../common/list';
+import { TEMPORARY_PASSWORD } from '../common/temporary-password';
 import { IdentityService } from '../auth/identity.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { UploadService } from '../upload/upload.service';
@@ -107,7 +108,7 @@ export class StaffService {
   }
 
   /**
-   * Alta de staff con password y roles opcionales.
+   * Alta de staff con password (o `ChangeMe123!` temporal si no viene) y roles opcionales.
    *
    * @throws {ConflictException} Email ya usado en el tenant.
    * @throws {BadRequestException} roleIds de otro tenant.
@@ -123,7 +124,10 @@ export class StaffService {
       await this.assertRolesInTenant(tenantId, uniqueRoleIds);
     }
 
-    const passwordHash = await bcrypt.hash(dto.password, 12);
+    const passwordHash = await bcrypt.hash(
+      dto.password ?? TEMPORARY_PASSWORD,
+      12,
+    );
 
     try {
       const staff = await this.prisma.$transaction(async (tx) => {
@@ -131,6 +135,7 @@ export class StaffService {
           email,
           passwordHash,
           name: dto.name?.trim() || null,
+          passwordTemporary: dto.password === undefined,
         });
         const created = await tx.staffUser.create({
           data: {

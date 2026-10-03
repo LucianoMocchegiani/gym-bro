@@ -18,6 +18,8 @@ const TOOL_DONE: Record<string, string> = {
   get_role: 'Consultó un rol',
   search_audit_events: 'Buscó en auditoría',
   get_help: 'Consultó la ayuda',
+  search_staff: 'Buscó staff',
+  get_assistant_limits: 'Revisó qué puede hacer',
 };
 
 const TOOL_PENDING: Record<string, string> = {
@@ -40,15 +42,18 @@ const TOOL_PENDING: Record<string, string> = {
   get_role: 'Consultando rol…',
   search_audit_events: 'Buscando en auditoría…',
   get_help: 'Consultando la ayuda…',
+  search_staff: 'Buscando staff…',
+  get_assistant_limits: 'Revisando qué puede hacer…',
 };
 
 /**
- * Una línea para el hilo (C5/C6). Sin JSON ni chips (C7).
+ * Una línea para el hilo (C5/C6). Sin JSON ni chips (C7). `propose_*` sin tarjeta = no se armó.
  */
 export function toolLineLabel(toolName: string, pending: boolean): string {
   const key = toolName.trim();
+  const proposal = key.startsWith('propose_') || key.includes('.propose_');
   if (pending) {
-    return TOOL_PENDING[key] ?? `Usando ${key}…`;
+    return TOOL_PENDING[key] ?? (proposal ? 'Armando la propuesta…' : `Usando ${key}…`);
   }
-  return TOOL_DONE[key] ?? `Usó ${key}`;
+  return TOOL_DONE[key] ?? (proposal ? 'No se pudo armar la propuesta' : `Usó ${key}`);
 }

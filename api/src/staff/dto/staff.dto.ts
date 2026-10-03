@@ -9,16 +9,17 @@ import {
 } from 'class-validator';
 
 /**
- * Alta de staff del gym (CU-ROL-004).
+ * Alta de staff del gym (CU-ROL-004). Sin `password` → `ChangeMe123!` temporal (RN-ASI-003).
  */
 export class CreateStaffDto {
   @IsEmail()
   email!: string;
 
+  @IsOptional()
   @IsString()
   @MinLength(8)
   @MaxLength(128)
-  password!: string;
+  password?: string;
 
   @IsOptional()
   @IsString()

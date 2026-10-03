@@ -23,7 +23,7 @@ La UI, el login y las tools viven en el **huésped**. El chat solo pide identida
 
 ## Qué no hace
 
-- No cobra, no enrola débito, no escribe negocio.
+- No cobra, no enrola débito, no escribe negocio por sí mismo: si el MCP ofrece escritura, es el MCP quien la arma; las tools `_meta` `chat/userOnly` solo corren ante un clic (`POST …/user-actions`), nunca por el modelo.
 - No tiene passwords ni `JWT_ACCESS_SECRET`.
 - No mezcla tenants: `tenantId` y `userId` salen del principal autenticado, nunca del body.
 - No implementa las tools: las descubre en runtime (`tools/list` del MCP).

@@ -20,6 +20,8 @@ const staffPassword = process.env.STAFF_PASSWORD?.trim() || 'ChangeMe123!';
 const searchQ = process.env.SEARCH_Q?.trim() || 'socio';
 
 const EXPECTED_TOOLS = [
+  'confirm_proposal',
+  'get_assistant_limits',
   'get_cash_day',
   'get_expenses_summary',
   'get_help',

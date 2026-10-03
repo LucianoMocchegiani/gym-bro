@@ -125,6 +125,18 @@ Une C2 + C3. `chat-api` sigue sin conocer afiliados.
 
 ---
 
+## C8 — Escritura con confirmación (RN-ASI)
+
+- [x] MCP: store de propuestas (2 min, un uso, dueño `tenantId:sub`) + `confirm_proposal` con `_meta` `chat/userOnly`
+- [x] `propose_*`: gastos, afiliados (alta, ficha, estado), servicios, packs, clase puntual, serie semanal (alta), reserva con crédito, lista de espera, staff (alta, datos, roles), roles
+- [x] `search_staff`, `get_assistant_limits` + `instructions` del server (qué no hace y por qué)
+- [x] chat-api: tools `chat/userOnly` fuera del modelo; `POST /v1/conversations/:id/user-actions`; `instructions` MCP al system prompt
+- [x] Drawer: tarjeta Confirmar/Cancelar, peligrosas con CONFIRMAR, vencida, resultado en la tarjeta
+- [x] Nest: alta de socio/staff sin `password` → `ChangeMe123!` temporal (RN-ASI-003)
+- Fuera por seguridad: caja/cobros/links MP, drop-in, devoluciones, débito, pase manual, config/MP, borrar/cancelar, uploads
+
+---
+
 ## Orden de ataque (1 dev)
 
 ```text
@@ -136,11 +148,12 @@ C0 (Nest preview, chico)
   → C5 (drawer)
   → C6 (resto del catálogo)
   → C7
+  → C8 (escritura con confirmación)
 ```
 
 C3 se puede probar sin UI. C5 no tiene sentido antes de C4.
 
-**Out de este roadmap:** writes (cobrar, devolver, reservar, gastos, etc. **con confirmación** — ticket local `mis-tickets/ticket-mcp-writes-confirmacion.md`, **último**), `compare_reports`, `chat-web/` suelto, OpenCode en runtime, summary buffer (v2 contexto), C-producto RN/CU de writes.
+**Out de este roadmap:** writes de dinero y puerta (cobrar, devolver, débito, pase manual), borrar/cancelar vía asistente, `compare_reports`, `chat-web/` suelto, OpenCode en runtime, summary buffer (v2 contexto).
 
 ---
 

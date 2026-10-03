@@ -24,7 +24,7 @@ A la izquierda, agrupado:
 - **Catálogo:** Servicios, Packs, Sesiones.
 - **Sistema:** Config, Avisos (plantillas), Plan / Uso, Auditoría.
 
-Abajo a la derecha: burbuja del **asistente** (en el panel consulta datos del gym; puede equivocarse; no cobra).
+Abajo a la derecha: burbuja del **asistente** (en el panel consulta datos del gym y propone altas/ediciones que confirmás con un botón; puede equivocarse; no cobra).
 
 ## Inicio (panel)
 

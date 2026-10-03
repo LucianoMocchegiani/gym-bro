@@ -84,7 +84,25 @@ Precondiciones: Staff logueado en Admin; el drawer manda `Authorization: Bearer 
    close MCP
 ```
 
-Postcondición: el hilo tiene el mensaje del usuario, filas tool si hubo llamadas, y el texto del asistente. `updated_at` al día. El negocio **no** cambió salvo que una tool del MCP sea de escritura (v1 GymBro: lectura + `get_help` + nav).
+Postcondición: el hilo tiene el mensaje del usuario, filas tool si hubo llamadas, y el texto del asistente. `updated_at` al día. El negocio **no** cambió: en GymBro las escrituras quedan como propuesta hasta el clic (variante siguiente).
+
+### Variante: botón de la UI (confirmar una propuesta)
+
+```text
+1. Turno normal: el modelo llama una tool que devuelve { proposal: {...} } (no escribe)
+   → el drawer pinta una tarjeta Confirmar / Cancelar
+
+2. Clic → POST /v1/conversations/:id/user-actions
+   { "tool": "confirm_proposal", "input": { "proposalId": "…", "decision": "confirm" } }
+
+3. requirePrincipal + dueño del hilo + no archivado
+4. openMcpClient(accessToken) → tools/list
+   el tool tiene que existir y traer _meta chat/userOnly (si no, 400)
+5. execute → MCP → API huésped con el mismo Bearer
+6. INSERT role=tool (args + result) → { message, output }
+```
+
+El modelo nunca tuvo ese tool en su lista: no puede confirmar solo. En el próximo turno ve la fila `tool` con el resultado.
 
 ### Variante: “Parar”
 

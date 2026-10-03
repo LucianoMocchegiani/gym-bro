@@ -48,6 +48,7 @@ docker compose up --build -d chat-api mcp api web
 - Hilos Staff: `GET/POST /v1/conversations` (JWT Staff)
 - Mensajes: `POST /v1/conversations/:id/messages` → UI Message Stream; **Parar** aborta y persiste lo generado
 - Título: primer mensaje recortado; `PATCH` para editar
+- Botones: `POST /v1/conversations/:id/user-actions` ejecuta tools MCP `_meta` `chat/userOnly` (el modelo no las ve); `instructions` del MCP se suman al system prompt Staff
 
 ## Qué no hace
 

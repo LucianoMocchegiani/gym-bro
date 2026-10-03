@@ -24,6 +24,25 @@ export class GymbroApiError extends Error {
     super(`GymBro HTTP ${status}`);
     this.name = 'GymbroApiError';
   }
+
+  /** `message` del error de Nest (string o lista de validación), si vino. */
+  get apiMessage(): string | null {
+    try {
+      const parsed = JSON.parse(this.bodyText) as { message?: unknown };
+      if (typeof parsed.message === 'string' && parsed.message.trim()) {
+        return parsed.message.trim();
+      }
+      if (Array.isArray(parsed.message)) {
+        const parts = parsed.message.filter(
+          (item): item is string => typeof item === 'string',
+        );
+        return parts.length > 0 ? parts.join('; ') : null;
+      }
+    } catch {
+      return null;
+    }
+    return null;
+  }
 }
 
 function buildUrl(
@@ -51,12 +70,43 @@ export async function gymbroGet(
   path: string,
   query?: Record<string, string | number | undefined>,
 ): Promise<unknown> {
+  return gymbroRequest('GET', buildUrl(path, query));
+}
+
+export type GymbroWriteMethod = 'POST' | 'PATCH' | 'PUT';
+
+/**
+ * Write a Nest con el Bearer del request MCP. Solo lo usa la confirmación de propuestas.
+ *
+ * @throws {GymbroApiError} 401/403/4xx/5xx de GymBro.
+ */
+export async function gymbroSend(
+  method: GymbroWriteMethod,
+  path: string,
+  body: unknown,
+): Promise<unknown> {
+  return gymbroRequest(method, buildUrl(path), body);
+}
+
+async function gymbroRequest(
+  method: 'GET' | GymbroWriteMethod,
+  url: URL,
+  body?: unknown,
+): Promise<unknown> {
   const token = getBearer();
-  const url = buildUrl(path, query);
+  const headers: Record<string, string> = {
+    Authorization: `Bearer ${token}`,
+    Accept: 'application/json',
+  };
+  if (body !== undefined) {
+    headers['Content-Type'] = 'application/json';
+  }
   let response: Response;
   try {
     response = await fetch(url, {
-      headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' },
+      method,
+      headers,
+      body: body === undefined ? undefined : JSON.stringify(body),
       signal: AbortSignal.timeout(20_000),
     });
   } catch {

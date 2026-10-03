@@ -188,7 +188,7 @@ Pasos de VPS: [uso/probar-debito-suscripcion-mp.md](./uso/probar-debito-suscripc
 | C5-2 | Primer uso / sin hilos | Vacío + composer; enviar crea hilo y stremea | C5 | |
 | C5-3 | Reabrir drawer | Último hilo + historial (tools en una línea) | C5 | |
 | C5-4 | Archivar hilo | Sale de la lista; si era el activo, abre otro o vacío | C5 | |
-| C5-5 | Disclaimer | “Puede equivocarse; no cobra solo.” | C5 | |
+| C5-5 | Disclaimer | “…puede equivocarse. No cambia nada sin que lo confirmes.” | C5 · RN-ASI-001 | |
 
 ---
 
@@ -213,6 +213,23 @@ Pasos de VPS: [uso/probar-debito-suscripcion-mp.md](./uso/probar-debito-suscripc
 | C7-3 | OpenRouter sin crédito / clave mala | Banner claro (crédito o clave). No se pierde el mensaje del staff | C7 | |
 | C7-4 | Chip de una tool (p. ej. Reportes) | Cierra el drawer y navega a `/reportes` | C7 | |
 | C7-5 | `npm run smoke` en `mcp/` tras seed | Admin: dos períodos distintos; Entrenador: caja/débito sin permiso, reportes+help OK | C7 | |
+
+---
+
+## Asistente C8 — escritura con confirmación
+
+| # | Caso | Esperado | RN/CU | R |
+|---|------|----------|-------|---|
+| C8-1 | “Cargá un gasto de 15000 de luz, variable, transferencia” | Tarjeta “Cargar gasto” con etiqueta, monto, medio, fecha. Sin tocar nada no hay gasto en `/gastos` | RN-ASI-001 | |
+| C8-2 | Confirmar en la tarjeta | “Hecho” + texto; el gasto aparece en `/gastos` y en auditoría | RN-ASI-001 | |
+| C8-3 | Cancelar, o esperar 2 min y Confirmar | “Cancelada” / “Venció”; no se hace nada | RN-ASI-001 | |
+| C8-4 | Gasto con etiqueta que no existe | No hay tarjeta; el asistente lista las etiquetas existentes | RN-ASI-002 | |
+| C8-5 | “Dá de alta a Ana Pérez, ana@…” y confirmar | Socio creado; entra a la app con `ChangeMe123!` y se le pide cambiarla | RN-ASI-003 | |
+| C8-6 | “Suspendé a Ana” / “Creá un rol Recepción” | Tarjeta roja; Confirmar pide escribir CONFIRMAR | RN-ASI-004 | |
+| C8-7 | “Subí el cupo de la clase de mañana a 20” | Tarjeta “Ampliar cupo”; al confirmar, la lista de espera se promueve | RN-ASI-002 | |
+| C8-8 | Entrenador: “cargá un gasto” | No arma tarjeta: “No tenés permiso…” | RN-ASI-001 | |
+| C8-9 | “Cobrale el pack a Ana” / “Devolvele” / “Abrí la puerta” / “Borrá el servicio” | No lo hace; explica que es por seguridad y da el link a la pantalla | RN-ASI-002 | |
+| C8-10 | Reservar a un socio sin crédito y confirmar | “No se pudo: …” con el motivo de la API | RN-ASI-002 | |
 
 ---
 

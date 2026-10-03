@@ -1,8 +1,13 @@
 'use client';
 
 import { Fragment, type ReactNode } from 'react';
+import {
+  ProposalCardView,
+  type ProposalDecision,
+} from '@/components/assistant/ProposalCardView';
 import { toolLineLabel } from '@/lib/chat/tool-label';
 import { mergeLinks, isSafeAdminHref, type ChatNavLink } from '@/lib/chat/links';
+import type { ProposalCard, ProposalOutcome } from '@/lib/chat/proposal';
 import styles from '@/components/assistant/assistant.module.css';
 
 export type ThreadBubble = {
@@ -13,6 +18,15 @@ export type ThreadBubble = {
   pending?: boolean;
   links?: ChatNavLink[];
   at?: string;
+  /** Tool `propose_*`: tarjeta con Confirmar / Cancelar. */
+  proposal?: ProposalCard;
+  /** Resultado de la tarjeta (o de un confirm sin tarjeta visible). */
+  outcome?: ProposalOutcome;
+};
+
+type ProposalHandlers = {
+  busy: boolean;
+  onDecide: (card: ProposalCard, decision: ProposalDecision) => void;
 };
 
 function clockOf(iso?: string): string | null {
@@ -98,7 +112,26 @@ function ChipRow({
 function bubbleNode(
   item: ThreadBubble,
   onOpen: (href: string) => void,
+  proposals: ProposalHandlers,
 ): ReactNode {
+  if (item.role === 'tool' && item.proposal) {
+    return (
+      <ProposalCardView
+        key={item.key}
+        card={item.proposal}
+        outcome={item.outcome}
+        busy={proposals.busy}
+        onDecide={proposals.onDecide}
+      />
+    );
+  }
+  if (item.role === 'tool' && item.outcome) {
+    return (
+      <li key={item.key} className={styles.tool}>
+        {item.outcome.message}
+      </li>
+    );
+  }
   if (item.role === 'tool') {
     const name = item.toolName ?? 'tool';
     return (
@@ -159,13 +192,18 @@ export function MessageThread({
   disclaimer,
   streaming = false,
   onOpenLink,
+  proposalBusy = false,
+  onProposal,
 }: {
   items: ThreadBubble[];
   helloName?: string | null;
   disclaimer?: string;
   streaming?: boolean;
   onOpenLink: (href: string) => void;
+  proposalBusy?: boolean;
+  onProposal: (card: ProposalCard, decision: ProposalDecision) => void;
 }) {
+  const proposals: ProposalHandlers = { busy: proposalBusy || streaming, onDecide: onProposal };
   if (items.length === 0 && !streaming) {
     const greeting = helloName?.trim() ? `¡Hola, ${helloName}!` : '¡Hola!';
     return (
@@ -187,7 +225,7 @@ export function MessageThread({
       {disclaimer ? <li className={styles.disclaimer}>{disclaimer}</li> : null}
       {turns.map((turn) => (
         <Fragment key={turn.key}>
-          {turn.items.map((item) => bubbleNode(item, onOpenLink))}
+          {turn.items.map((item) => bubbleNode(item, onOpenLink, proposals))}
           <ChipRow links={turn.links} onOpen={onOpenLink} />
         </Fragment>
       ))}

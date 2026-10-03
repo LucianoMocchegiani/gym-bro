@@ -12,16 +12,17 @@ import {
 import { ListQueryDto } from '../../common/list';
 
 /**
- * Alta de afiliado (CU-AFI-001). Staff define password inicial.
+ * Alta de afiliado (CU-AFI-001). Sin `password` → `ChangeMe123!` temporal (RN-ASI-003).
  */
 export class CreateMemberDto {
   @IsEmail()
   email!: string;
 
+  @IsOptional()
   @IsString()
   @MinLength(8)
   @MaxLength(128)
-  password!: string;
+  password?: string;
 
   @IsString()
   @MinLength(2)

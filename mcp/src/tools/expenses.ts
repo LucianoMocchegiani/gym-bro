@@ -12,8 +12,8 @@ import {
   toolFromGymbro,
 } from '../slim.js';
 
-const NATURES = ['FIXED', 'VARIABLE'] as const;
-const METHODS = ['CASH', 'TRANSFER', 'MP', 'CARD'] as const;
+export const NATURES = ['FIXED', 'VARIABLE'] as const;
+export const METHODS = ['CASH', 'TRANSFER', 'MP', 'CARD'] as const;
 const LIST_MAX = 15;
 
 const periodSchema = z
@@ -30,6 +30,7 @@ function slimExpense(value: unknown): Record<string, unknown> | null {
   }
   const label = asRecord(row.label);
   return {
+    id: pickString(row, 'id'),
     businessDate: pickString(row, 'businessDate'),
     amount: pickNumber(row, 'amount'),
     nature: pickString(row, 'nature'),
@@ -42,7 +43,7 @@ function slimExpense(value: unknown): Record<string, unknown> | null {
 }
 
 /** Nombre de etiqueta → id (case-insensitive, incluye archivadas). */
-async function resolveLabelId(
+export async function resolveLabelId(
   name: string,
 ): Promise<{ id: string | null; known: string[] }> {
   const raw = await gymbroGet('/api/expense-labels', { includeArchived: 'true' });
@@ -120,7 +121,7 @@ export function registerExpenseTools(server: McpServer): void {
     {
       title: 'Gastos',
       description:
-        'Últimos gastos del gym (máx. 15, más recientes primero) con fecha, monto, fijo/variable, medio, etiqueta y nota. Filtros: period o from/to (default mes actual BA), label (nombre de la etiqueta, p. ej. "alquiler"), nature, method. Para totales usá get_expenses_summary. Requiere permiso de gastos. No carga ni edita.',
+        'Últimos gastos del gym (máx. 15, más recientes primero) con id, fecha, monto, fijo/variable, medio, etiqueta y nota. Filtros: period o from/to (default mes actual BA), label (nombre de la etiqueta, p. ej. "alquiler"), nature, method. Para totales usá get_expenses_summary. Requiere permiso de gastos. Para editar uno, propose_update_expense con el id.',
       inputSchema: {
         period: periodSchema,
         from: z.string().optional().describe('Inicio YYYY-MM-DD (BA).'),

@@ -32,6 +32,7 @@ No es C-producto (sin RN/CU/wireframes). Este archivo fija despliegue, identidad
 | 16 | Catálogo MCP v1 | Lectura: operación + reportes/períodos (2 llamadas) + débitos/devoluciones list + catálogo/roles/audit slim + `get_help` (incluye topic `producto`). Sin writes. Preview ingreso = GET Nest nuevo. Sin tool `compare_reports`. |
 | 17 | Árbol de archivos | **Acercamiento** (§10). No es contrato: al codear se puede mover. Invariantes: `chat-api` sin GymBro; `mcp/` GymBro; drawer en `web/`. |
 | 18 | Landing pública | Misma burbuja/drawer en apex. Tope de turnos/hora. Sin datos de un gym. `CHAT_PUBLIC_ENABLED` (default on). |
+| 19 | Escritura (C8) | Crear/editar por **propuesta + botón** (2 min, un uso, atada al staff). Tool de confirmación oculta al modelo vía `_meta` `chat/userOnly`. Fuera por seguridad: caja, devoluciones, débito, puerta, config, borrar/cancelar. §15. |
 
 ---
 
@@ -153,7 +154,7 @@ Staff (chat-web)
 
 El chat-api impone tope de tool-calls y ventana de contexto (últimos N mensajes). No hay system prompt de dominio GymBro en el núcleo: el MCP aporta descriptions de tools; opcionalmente un `CHAT_SYSTEM_PROMPT` por instancia (env/archivo de config).
 
-Writes peligrosos (devolver, débito, cancelar contrato): **out** de la primera entrega. El MCP GymBro v1 es de **lectura** (+ tal vez `suggest_nav` si se define). Confirmación genérica de mutaciones = fase 2 del MCP, no del núcleo chat.
+Writes peligrosos (devolver, débito, cancelar contrato): **out**. El MCP GymBro v1 fue de **lectura**; crear/editar con confirmación llegó después (§15). El núcleo chat solo aporta lo genérico: no le pasa al modelo las tools `_meta` `chat/userOnly` y las ejecuta ante un clic (`POST …/user-actions`).
 
 ---
 
@@ -182,7 +183,7 @@ Proceso aparte. No agrega controllers a Nest.
 - Multi-MCP en una misma instancia.
 - Usuarios propios del chat.
 - Conversaciones compartidas del gym.
-- Writes / cobros / débito vía agente.
+- Cobros / devoluciones / débito vía agente (crear/editar con confirmación: §15).
 - Super Admin como actor del chat (salvo impersonate Staff, que ya es JWT Staff).
 - App afiliado / Flutter.
 - RN/CU/wireframes C-producto (se escriben al cerrar el cráneo, no en este borrador).
@@ -559,7 +560,7 @@ El chat no “sabe de gyms”. Hace de **bandeja + cerebro**: guardar charlas, s
 | **Cortar generación** | El modelo se va por las ramas; el staff tiene que poder parar. |
 | **Estados: vacío, cargando, error, 401, 403** | 401 → el Admin refresca; 403 afiliado/sin permiso; MCP o OpenRouter caídos ≠ “no hay red”. |
 | **Markdown en respuestas** | Listas y negritas; si no, un muro ilegible. |
-| **Disclaimer** | “Puede equivocarse; no cobra solo.” Expectativa legal/UX. |
+| **Disclaimer** | “Puede equivocarse. No cambia nada sin que lo confirmes.” Expectativa legal/UX. |
 | **Solo STAFF** | Introspección `/me`; el panel no es el chat del socio. |
 | **Ventana de contexto** (últimos N mensajes, no el hilo eterno) | Tokens y costo; un chat de 3 meses no entra en el modelo. |
 | **Tope de uso** (mensajes/min o tokens/día por staff) | OpenRouter se paga; un loop o un abuse tumba la cuenta. |
@@ -626,7 +627,7 @@ Para GymBro/chat-api: v1 = ventana por tokens + tools viejas a una línea. v2 = 
 
 ## 14. Catálogo MCP GymBro (**cerrado** v1)
 
-Reglas: tools de **lectura / intento**, no espejo de REST. JSON recortado. `links: [{ href, label }]` para chips. 403 Nest → “no hay permiso”. **Sin writes** (no cobra, no devuelve, no enrola débito, no edita roles).
+Reglas: tools de **lectura / intento**, no espejo de REST. JSON recortado. `links: [{ href, label }]` para chips. 403 Nest → “no hay permiso”. Las lecturas no escriben; crear/editar va **solo** por propuesta + botón (§15, RN-ASI). Nunca cobra, devuelve ni enrola débito.
 
 Única excepción Nest: `GET /api/members/:memberId/access-preview` (RN de puerta, **sin** `access_attempts`). Permiso `access.verify`.
 
@@ -687,11 +688,57 @@ Topics: `producto` (visión), `guia` (cómo se ven panel y app; fotos en `/docs`
 - roles: name, slug, permission codes
 - audit: sin JSON before/after
 
-### Sigue fuera (writes y ruido)
+### Sigue fuera (writes peligrosos y ruido)
 
-Alta/editar socio, reservar, cobrar, **ejecutar** devolución, enrolar/cancelar débito, pase manual, conectar MP, waitlist, listar `access_attempts` (no confundir con preview).
+Cobrar, **ejecutar** devolución, enrolar/cancelar débito, pase manual, conectar MP, borrar/cancelar, listar `access_attempts` (no confundir con preview). Alta/edición de socio, reservas y lista de espera pasaron a §15 (con confirmación).
 
 Profesor seed: A (sin caja), `get_reports_summary`, `get_help`. No B débitos/devoluciones ni C roles/catálogo/audit. Admin: todo.
+
+---
+
+## 15. Escritura con confirmación (RN-ASI)
+
+El modelo **propone**, el staff **confirma** con un botón. El modelo no puede ejecutar nada por su cuenta.
+
+### Flujo
+
+1. El modelo llama una tool `propose_*` (ej. `propose_create_expense`). El MCP valida permiso (`GET /api/me/permissions`), lee lo que haga falta para mostrar nombres, y guarda la propuesta **en memoria**: `{ method, path, body }` de Nest + título + líneas legibles. Devuelve `{ proposal: { id, title, lines, dangerous, expiresAt, confirmTool }, note }`. No llama a ningún endpoint de escritura.
+2. El drawer ve `proposal` en el resultado y muestra una **tarjeta** (Confirmar / Cancelar). `dangerous` → hay que escribir **CONFIRMAR** (RN-ROL-007).
+3. El clic va a `POST /v1/conversations/:id/user-actions` (chat-api) `{ tool: "confirm_proposal", input: { proposalId, decision: "confirm"|"cancel" } }`.
+4. chat-api abre el MCP con el Bearer del staff y ejecuta la tool **solo si** trae `_meta: { "chat/userOnly": true }`. Persiste el resultado como fila `tool` del hilo (el modelo lo ve en el próximo turno).
+5. `confirm_proposal` saca la propuesta del store (un solo uso), verifica dueño y vencimiento, y recién ahí llama a Nest con el mismo Bearer. Resultado: `done` / `failed` (mensaje de Nest) / `cancelled` / `expired`.
+
+### Garantías
+
+| Qué | Cómo |
+|-----|------|
+| El modelo no se autoconfirma | chat-api **no** le pasa tools con `_meta` `chat/userOnly` (convención MCP genérica; chat-api no conoce GymBro). |
+| Una sola vez | `takeProposal` borra antes de ejecutar; doble clic → `expired`. Reservas además con `idempotencyKey`. |
+| Vence | 2 minutos (`PROPOSAL_TTL_MS`). Restart del MCP = propuestas perdidas. |
+| Dueño | `tenantId:sub` del JWT. Otro staff con el id → `expired`. La firma la valida Nest al ejecutar. |
+| Permisos / auditoría | Los de Nest, igual que la pantalla. Sin permiso la propuesta no se arma. |
+| Límites | `instructions` del server MCP (se suman al system prompt del staff) + tool `get_assistant_limits`: qué no hace y que es **por seguridad**, con link a la pantalla. |
+
+### Tools de propuesta
+
+| Tool | Nest | Permiso | Peligrosa |
+|------|------|---------|-----------|
+| `propose_create_expense` / `propose_update_expense` | `POST`/`PATCH /api/expenses` | `expenses.write` | no |
+| `propose_create_member` / `propose_update_member` | `POST`/`PATCH /api/members` | `members.write` | no |
+| `propose_set_member_status` | `PATCH /api/members/:id/status` | `members.deactivate` | sí |
+| `propose_create_service` / `propose_update_service` | `/api/services` | `catalog.write` | no |
+| `propose_create_pack` / `propose_update_pack` | `/api/packs` | `catalog.write` | no |
+| `propose_create_session` / `propose_update_session` | `/api/sessions` (subir cupo solo → `PATCH …/capacity`) | `sessions.write` | no |
+| `propose_create_recurring_sessions` | `POST /api/session-recurrence-rules` | `sessions.write` | no |
+| `propose_reserve_session` | `POST /api/members/:id/reservations` (`CREDIT`) | `reservations.write` | no |
+| `propose_join_waitlist` | `POST /api/members/:id/waitlist` | `reservations.write` | no |
+| `propose_create_staff` / `propose_update_staff` | `/api/staff` | `staff.write` | con roles |
+| `propose_set_staff_roles` | `PUT /api/staff/:id/roles` | `staff.write` | sí |
+| `propose_create_role` / `propose_update_role` | `/api/roles` | `roles.write` | sí |
+
+Lecturas nuevas: `search_staff` (`staff.read`), `get_assistant_limits`. Gasto con etiqueta inexistente → error + lista de etiquetas. Alta sin contraseña → `ChangeMe123!` temporal (RN-ASI-003).
+
+**Fuera por seguridad:** Caja / cobros / links MP, drop-in, devoluciones, débito, pase manual, configuración / MP, borrar o cancelar (incluye desactivar series), subir archivos.
 
 ---
 

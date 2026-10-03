@@ -225,6 +225,24 @@
         "url": "{{chatApiUrl}}/v1/conversations/{{createdConversationId}}/messages",
         "description": "Historial persistido (user / assistant / tool). Aislado por tenant+user."
       }
+    },
+    {
+      "name": "Staff POST user-action (cancelar propuesta)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"tool\": \"confirm_proposal\",\n  \"input\": {\n    \"proposalId\": \"{{proposalId}}\",\n    \"decision\": \"cancel\"\n  }\n}"
+        },
+        "url": "{{chatApiUrl}}/v1/conversations/{{createdConversationId}}/user-actions",
+        "description": "C8: botón de la tarjeta. Solo tools MCP con _meta chat/userOnly (si no, 400). `proposalId` sale del resultado de una tool propose_* en GET messages. Vence a los 2 min / un uso → status expired. Respuesta { message, output }."
+      }
     }
   ]
 }

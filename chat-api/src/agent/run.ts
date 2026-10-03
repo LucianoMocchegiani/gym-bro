@@ -4,7 +4,7 @@ import { config } from '../config.js';
 import { applyAutomaticTitle } from '../conversations/service.js';
 import { isAbortError, staffFacingLlmError } from '../llm/errors.js';
 import { chatModel } from '../llm/openrouter.js';
-import { openMcpClient } from '../mcp/client.js';
+import { modelTools, openMcpClient } from '../mcp/client.js';
 import {
   insertAssistantMessage,
   insertToolMessage,
@@ -148,7 +148,7 @@ export async function streamAgentTurn(
     tools =
       mode === 'public'
         ? (pickTools(listed as Record<string, unknown>, ['get_help']) as typeof listed)
-        : listed;
+        : modelTools(listed);
   } catch (error) {
     await mcp.close().catch(() => undefined);
     console.error(error);
@@ -161,10 +161,11 @@ export async function streamAgentTurn(
   await applyAutomaticTitle(conversationId, userText);
   const history = await listMessages(conversationId);
   const messages = buildModelMessages(history);
+  const mcpInstructions = mcp.instructions?.trim();
   const system =
     mode === 'public'
       ? config.chatPublicSystemPrompt
-      : `${config.chatSystemPrompt}\n\n${todayContext()}`;
+      : [config.chatSystemPrompt, mcpInstructions, todayContext()].filter(Boolean).join('\n\n');
 
   let closed = false;
   const closeMcp = async () => {

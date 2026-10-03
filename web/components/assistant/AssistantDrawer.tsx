@@ -24,6 +24,7 @@ import {
   createChatConversation,
   listChatConversations,
   listChatMessages,
+  runChatUserAction,
   setChatAccessTokenOverride,
   streamChatTurn,
   type ChatConversation,
@@ -36,26 +37,64 @@ import {
   readLastConversationId,
   writeLastConversationId,
 } from '@/lib/chat/last-conversation';
-import { isSafeAdminHref, parseLinksFromAssistantText, parseToolLinks } from '@/lib/chat/links';
+import {
+  isSafeAdminHref,
+  mergeLinks,
+  parseLinksFromAssistantText,
+  parseToolLinks,
+} from '@/lib/chat/links';
+import {
+  parseProposal,
+  parseProposalOutcome,
+  type ProposalCard,
+  type ProposalOutcome,
+} from '@/lib/chat/proposal';
+import type { ProposalDecision } from '@/components/assistant/ProposalCardView';
 import { titleFromFirstMessage } from '@/lib/chat/title';
 import styles from '@/components/assistant/assistant.module.css';
 
+/** Pone el resultado de Confirmar / Cancelar en su tarjeta (o lo deja suelto si no está). */
+function applyOutcome(bubbles: ThreadBubble[], outcome: ProposalOutcome, key: string): ThreadBubble[] {
+  const idx = bubbles.findIndex((item) => item.proposal?.id === outcome.proposalId);
+  if (idx < 0) {
+    return [...bubbles, { key, role: 'tool', content: outcome.message, outcome, links: outcome.links }];
+  }
+  return bubbles.map((item, index) =>
+    index === idx
+      ? { ...item, outcome, links: mergeLinks(item.links ?? [], outcome.links) }
+      : item,
+  );
+}
+
 function toBubbles(rows: ChatMessage[]): ThreadBubble[] {
-  return rows
-    .filter((row) => row.role === 'user' || row.role === 'assistant' || row.role === 'tool')
-    .map((row) => ({
+  let bubbles: ThreadBubble[] = [];
+  for (const row of rows) {
+    if (row.role !== 'user' && row.role !== 'assistant' && row.role !== 'tool') {
+      continue;
+    }
+    if (row.role === 'tool') {
+      const outcome = parseProposalOutcome(row.toolResult);
+      if (outcome) {
+        bubbles = applyOutcome(bubbles, outcome, row.id);
+        continue;
+      }
+    }
+    bubbles.push({
       key: row.id,
-      role: row.role as 'user' | 'assistant' | 'tool',
+      role: row.role,
       content: row.content,
       at: row.createdAt,
       toolName: row.toolName ?? undefined,
+      proposal: row.role === 'tool' ? (parseProposal(row.toolResult) ?? undefined) : undefined,
       links:
         row.role === 'tool'
           ? parseToolLinks(row.toolResult ?? row.content)
           : row.role === 'assistant'
             ? parseLinksFromAssistantText(row.content)
             : undefined,
-    }));
+    });
+  }
+  return bubbles;
 }
 
 function statusMessage(error: unknown): string {
@@ -116,6 +155,7 @@ export function AssistantLauncher({
   const [archiving, setArchiving] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [expanded, setExpanded] = useState(false);
+  const [proposalBusy, setProposalBusy] = useState(false);
 
   const threadRef = useRef<HTMLDivElement>(null);
   const activeIdRef = useRef<string | null>(null);
@@ -465,6 +505,31 @@ export function AssistantLauncher({
     }
   }
 
+  async function handleProposal(card: ProposalCard, decision: ProposalDecision): Promise<void> {
+    const conversationId = activeIdRef.current;
+    if (!conversationId || variant !== 'staff') {
+      return;
+    }
+    setProposalBusy(true);
+    setError(null);
+    try {
+      const result = await runChatUserAction(conversationId, card.confirmTool, {
+        proposalId: card.id,
+        decision,
+      });
+      const outcome = parseProposalOutcome(result.output);
+      if (!outcome) {
+        setError('El asistente no pudo confirmar. Probá de nuevo.');
+        return;
+      }
+      setBubbles((prev) => applyOutcome(prev, outcome, result.message.id));
+    } catch (err) {
+      setError(statusMessage(err));
+    } finally {
+      setProposalBusy(false);
+    }
+  }
+
   async function handleSend(text: string): Promise<void> {
     setError(null);
     let conversationId = activeId;
@@ -530,10 +595,11 @@ export function AssistantLauncher({
           },
           onToolDone: (toolCallId, toolName, output) => {
             const links = parseToolLinks(output);
+            const proposal = parseProposal(output) ?? undefined;
             setBubbles((prev) =>
               prev.map((item) =>
                 item.key === toolCallId
-                  ? { ...item, toolName, pending: false, links }
+                  ? { ...item, toolName, pending: false, links, proposal }
                   : item,
               ),
             );
@@ -574,7 +640,9 @@ export function AssistantLauncher({
   const helloName = session?.name?.trim().split(/\s+/)[0];
   const isEmpty = !listLoading && !threadLoading && bubbles.length === 0;
   const disclaimer =
-    'Este asistente usa inteligencia artificial para responderte.';
+    variant === 'staff'
+      ? 'Este asistente usa inteligencia artificial y puede equivocarse. No cambia nada sin que lo confirmes.'
+      : 'Este asistente usa inteligencia artificial para responderte.';
 
   const overlay = (
     <>
@@ -686,6 +754,10 @@ export function AssistantLauncher({
                     helloName={variant === 'staff' ? helloName : undefined}
                     disclaimer={disclaimer}
                     onOpenLink={handleOpenLink}
+                    proposalBusy={proposalBusy}
+                    onProposal={(card, decision) => {
+                      void handleProposal(card, decision);
+                    }}
                   />
                 )}
               </div>

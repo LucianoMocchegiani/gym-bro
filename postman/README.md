@@ -67,7 +67,7 @@ Carpeta **Tenants (plataforma)**: CRUD completo desde el tenant `admin` (crear, 
 
 Carpeta **Audit**: `GET /audit-events` (Staff, `audit.read`). La plataforma ve solo los eventos de su propio tenant: para auditar un gym, impersonalo. Generá eventos con mutaciones de tenant/roles/staff roles.
 
-Carpeta **Members**: Staff `members.read` / `members.write` / `members.deactivate` (status). Ficha `GET /members/:id`. Estado de cuenta: `GET /members/:id/account` y `GET /me/account` (default `coverage=current`; `coverage=all` para historial completo). Admin seed los tiene. La plataforma no expone este módulo (impersoná).
+Carpeta **Members**: Staff `members.read` / `members.write` / `members.deactivate` (status). En el alta (`POST /members`, igual `POST /staff`) `password` es opcional: sin ella, persona nueva → `ChangeMe123!` marcada temporal (RN-ASI-003); quien ya tenía cuenta conserva la suya. Ficha `GET /members/:id`. Estado de cuenta: `GET /members/:id/account` y `GET /me/account` (default `coverage=current`; `coverage=all` para historial completo). Admin seed los tiene. La plataforma no expone este módulo (impersoná).
 
 Carpeta **Sessions**: Staff `sessions.write`. Servicio `POR_SESIONES` + `instructorId` opcional (`userId` del Staff). Ampliar cupo: `PATCH .../sessions/:id/capacity`. Incluye reglas semanales con hora local y timezone.
 

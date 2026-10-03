@@ -1,6 +1,6 @@
 # gymbro-mcp
 
-Sidecar Faciliter: traduce tools MCP → `GET` de Nest con el Bearer del staff. **No** es el agente (eso es `chat-api`). Sin writes.
+Sidecar Faciliter: traduce tools MCP → Nest con el Bearer del staff. **No** es el agente (eso es `chat-api`). Lecturas directas; crear/editar solo por **propuesta + botón** (C8, RN-ASI).
 
 Diseño: [`docs/16-chat-mcp-diseno.md`](../docs/16-chat-mcp-diseno.md) · roadmap: [`docs/17-roadmap-chat-mcp.md`](../docs/17-roadmap-chat-mcp.md).
 
@@ -42,7 +42,11 @@ docker compose up --build -d api mcp
 
 Cada pantalla o flujo nuevo del producto lleva **artículo `mcp/help/{topic}.md`**, topic en `get_help`, y una línea en `guia.md` / `producto.md`. El chat no adivina features: lee help.
 
-403 de Nest → texto de tool “No hay permiso para esta consulta.” Preview de ingreso **no** escribe `access_attempts`. Sin writes.
+**Staff:** `search_staff`.
+
+**Escritura (C8):** `propose_*` (gastos, afiliados, servicios, packs, clases, series, reservas, lista de espera, staff, roles) **no escriben**: guardan una propuesta en memoria (2 min, un uso, atada a `tenantId:sub`) y devuelven la tarjeta. `confirm_proposal` (con `_meta` `chat/userOnly`, el modelo no la ve) la ejecuta ante el clic del staff vía `chat-api` `POST …/user-actions`. `get_assistant_limits` + `instructions` del server: qué no hace (caja, devoluciones, débito, puerta, config, borrar/cancelar, uploads) y que es por seguridad. Detalle: [`docs/16` §15](../docs/16-chat-mcp-diseno.md).
+
+403 de Nest → texto de tool “No hay permiso para esta consulta.” Preview de ingreso **no** escribe `access_attempts`.
 
 `get_reports_summary` sin `period` ni fechas → mes calendario actual (BA) y manda `from`/`to` a Nest.
 
@@ -57,6 +61,6 @@ npm run smoke
 
 Login automático a `http://localhost:3001` (`admin@gymdeprueba.com` y `entrenador@gymdeprueba.com`). Overrides: `ACCESS_TOKEN`, `ACCESS_TOKEN_ENTRENADOR`, `GYMBRO_API_URL`, `TENANT_SLUG`.
 
-Esperado: 19 tools; reportes `this_month` ≠ `last_month`; Admin puede caja y gastos; Entrenador recibe “no hay permiso” en caja/débitos/gastos y sí reportes + help.
+Esperado: tools de lectura + `confirm_proposal` / `get_assistant_limits`; reportes `this_month` ≠ `last_month`; Admin puede caja y gastos; Entrenador recibe “no hay permiso” en caja/débitos/gastos y sí reportes + help.
 
 Colección Postman aparte: `postman/GymBro.mcp.postman_collection.json` (health + initialize). El flujo completo de tools es el smoke.

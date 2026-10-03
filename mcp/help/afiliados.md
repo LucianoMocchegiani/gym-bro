@@ -8,7 +8,7 @@ La **credencial de puerta** se emite al cobrar el pack. **Re-emitir** (ficha del
 
 **Carpeta** (ícono en la grilla): notas y PDF/imagen (rutina, estudios, etc.). Etiquetas las define el gym. El socio las ve en la app → Inicio → Documentos. Cómo usarla: `get_help` topic `carpeta`. El asistente **no** sube archivos.
 
-El alta, la baja y la edición son en esa pantalla. El asistente puede buscar y resumir la cuenta, pero **no da de alta** ni edita datos.
+El alta, la baja y la edición son en esa pantalla. El asistente busca y resume la cuenta, y puede **proponer** el alta, editar la ficha o cambiar el estado (se hace solo si tocás Confirmar; el estado pide escribir CONFIRMAR). Alta sin contraseña → `ChangeMe123!` temporal. No vende packs: eso es en Caja.
 
 **Importar** (botón en Afiliados, `/afiliados/importar`): carga masiva desde otro sistema con un Excel/CSV (fichas) y un zip (fotos y carpeta). Los socios nuevos entran a la app con `ChangeMe123!` y la cambian en Ajustes. Detalle: `get_help` topic `migracion`. Requiere `members.import` + `members.write`.
 

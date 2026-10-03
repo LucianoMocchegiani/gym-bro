@@ -67,7 +67,7 @@ Servicios:
 | chat-api mensajes | `GET/POST /v1/conversations/:id/messages` (stream + historial; C4) |
 | Admin asistente | Burbuja abajo a la derecha en Staff (`NEXT_PUBLIC_CHAT_API_URL`; C5) |
 | mcp health | http://localhost:3011/health |
-| mcp tools | `POST /mcp` Streamable HTTP (JWT Staff; C3+C6, lectura A–D) |
+| mcp tools | `POST /mcp` Streamable HTTP (JWT Staff; C3+C6 lectura A–D; C8 propuestas con confirmación) |
 | Kuatia | URLs públicas del producto (ver `KUATIA_*_BASE_URL` en `api/.env`) |
 | Postman | [`postman/`](./postman/) |
 | Postgres | `localhost:5433` → contenedor `5432` (user/pass `gymbro`; databases `gymbro` y `chat`; solo loopback) |
@@ -135,7 +135,7 @@ Mensajes (C4/C7): `POST /v1/conversations/:id/messages` body `{ "text" }` → UI
 
 Drawer Admin (C5/C7): burbuja Asistente abajo a la derecha (no va en el topbar). Título automático (editable), Parar, chips de `links` hacia pantallas Admin. `NEXT_PUBLIC_CHAT_API_URL` se bakea en el build de web. Panel por túnel (`https://{slug}.faciliter.xyz`): `CORS_APP_DOMAIN` en `chat-api/.env` (mismo criterio que Nest) y recrear `chat-api`.
 
-MCP Faciliter (C3+C6): sidecar `mcp/` en Compose (`:3011`). `GET /health` (sin auth). Tools de lectura A–D vía `POST /mcp` con el mismo JWT Staff. Nest sigue autorizando. README: [`mcp/README.md`](./mcp/README.md). Smoke: `cd mcp; npm run smoke` (Admin + Entrenador seed).
+MCP Faciliter (C3+C6+C8): sidecar `mcp/` en Compose (`:3011`). `GET /health` (sin auth). Tools de lectura A–D vía `POST /mcp` con el mismo JWT Staff; crear/editar solo por propuesta que el staff confirma con un botón (`POST /v1/conversations/:id/user-actions` en chat-api, RN-ASI). Nest sigue autorizando. README: [`mcp/README.md`](./mcp/README.md). Smoke: `cd mcp; npm run smoke` (Admin + Entrenador seed).
 
 ### Auth (JWT + refresh)
 

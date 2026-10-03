@@ -27,6 +27,7 @@ export type ChatMessage = {
   role: string;
   content: string;
   toolName: string | null;
+  toolArgs?: unknown;
   toolResult?: unknown;
   createdAt: string;
 };
@@ -203,6 +204,26 @@ export async function listChatMessages(id: string): Promise<ChatMessage[]> {
     `/v1/conversations/${id}/messages`,
   );
   return data.items ?? [];
+}
+
+/**
+ * Acto del usuario sobre una tarjeta (Confirmar / Cancelar). El modelo no puede hacerlo.
+ *
+ * @returns Fila `tool` guardada y la salida del tool MCP.
+ */
+export async function runChatUserAction(
+  conversationId: string,
+  tool: string,
+  input: Record<string, unknown>,
+): Promise<{ message: ChatMessage; output: unknown }> {
+  return chatJson<{ message: ChatMessage; output: unknown }>(
+    `/v1/conversations/${conversationId}/user-actions`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ tool, input }),
+    },
+  );
 }
 
 export type ChatStreamHandlers = {

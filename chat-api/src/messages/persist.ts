@@ -50,8 +50,8 @@ export async function insertToolMessage(input: {
   toolArgs: Prisma.InputJsonValue | undefined;
   toolResult: Prisma.InputJsonValue | undefined;
   content: string;
-}): Promise<void> {
-  await prisma.message.create({
+}): Promise<Message> {
+  return prisma.message.create({
     data: {
       conversationId: input.conversationId,
       role: 'tool',

@@ -608,7 +608,7 @@ Rutinas y avisos todavía no están en este corte.
 
 ## Asistente
 
-En el Admin, la burbuja consulta **datos del gym** (puede equivocarse; no cobra). En la landing pública, la misma burbuja solo explica el producto.
+En el Admin, la burbuja consulta **datos del gym** (puede equivocarse; no cobra). También puede **proponer** altas y ediciones (un gasto, un afiliado, una clase, un pack…): muestra una tarjeta con el detalle y no hace nada hasta que tocás **Confirmar** (vence a los 2 minutos; lo peligroso pide escribir CONFIRMAR). Cobros, devoluciones, débito, puerta, configuración y borrados se hacen en sus pantallas, por seguridad. En la landing pública, la misma burbuja solo explica el producto.
 
 **Captura:** `web-asistente-drawer.png`  
 **Dónde:** Admin, drawer abierto, una pregunta tipo “¿está al día Socio de Prueba?”.  

@@ -210,6 +210,17 @@ Formato: **RN-MODULO-NNN** — enunciado — excepciones.
 
 ---
 
+## 8c. Asistente del Admin (RN-ASI)
+
+| ID | Regla |
+|----|--------|
+| RN-ASI-001 | El asistente **nunca cambia nada solo**: arma una **propuesta** (tarjeta con el detalle) y recién se ejecuta cuando el staff toca **Confirmar**. La propuesta vence a los **2 minutos**, sirve **una sola vez** y solo la puede confirmar el mismo staff que la pidió. Se ejecuta con sus permisos (sin permiso → no se arma) y queda en auditoría igual que desde la pantalla. |
+| RN-ASI-002 | Puede proponer **crear y editar**: gastos, afiliados (alta, ficha, estado), servicios, packs, clases puntuales, series semanales (solo alta), reservas con crédito y lista de espera, staff (alta, datos, roles) y roles. **No** hace, por seguridad: cobros / Caja / links de pago, clase suelta (drop-in), devoluciones, débito automático, pase manual de puerta, configuración / Mercado Pago, borrar o cancelar, subir archivos. Si se lo piden, lo explica y lleva a la pantalla. |
+| RN-ASI-003 | Alta de afiliado o staff desde el asistente (y desde la API sin contraseña): persona sin cuenta Faciliter → `ChangeMe123!` **temporal** (igual que RN-MIG-003). Si ya tenía cuenta, conserva la suya. |
+| RN-ASI-004 | Acciones peligrosas (estado del afiliado, staff con roles, asignar roles, crear o editar roles) piden además escribir **CONFIRMAR** (RN-ROL-007). El chat público de la landing nunca escribe. |
+
+---
+
 ## 9. Trazabilidad a documentación
 
 | Documento | Uso de estas reglas |

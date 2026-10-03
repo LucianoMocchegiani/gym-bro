@@ -39,6 +39,14 @@ JWT Staff **o** token `pub1.` de session. El middleware aplica a todo `/v1` exce
 
 `Message`: `id`, `conversationId`, `role`, `content`, `toolName`, `toolArgs`, `toolResult`, `createdAt`.
 
+### Acciones del usuario (botones)
+
+| Método | Ruta | Body | Respuesta |
+|--------|------|------|-----------|
+| `POST` | `/v1/conversations/:id/user-actions` | `{ tool: string, input: object }` | `{ message: Message, output }`. |
+
+Ejecuta un tool MCP marcado `_meta: { "chat/userOnly": true }` (p. ej. Confirmar/Cancelar de una propuesta). El modelo nunca recibe esos tools. Se guarda como fila `tool` del hilo. Tool inexistente o sin la marca → 400 “Acción no permitida”. Landing (`pub1.`) → 403. Conversación archivada → 409. MCP caído → 502.
+
 Errores JSON: `{ "error": "…" }` con status 400 | 401 | 403 | 404 | 409 | 429 | 502 | 503 | 500.
 
 [← Flujos](./03-flujos.md) · [Índice](./00-indice.md)

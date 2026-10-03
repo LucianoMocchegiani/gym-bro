@@ -20,6 +20,7 @@ import {
   resolveOrderField,
   toListResult,
 } from '../common/list';
+import { TEMPORARY_PASSWORD } from '../common/temporary-password';
 import { ContractsService } from '../contracts/contracts.service';
 import { ContractDetail } from '../contracts/contracts.types';
 import { IdentityService } from '../auth/identity.service';
@@ -233,7 +234,7 @@ export class MembersService {
   }
 
   /**
-   * Alta de afiliado activo con password inicial.
+   * Alta de afiliado activo con password inicial (o `ChangeMe123!` temporal si no viene).
    */
   async create(
     tenantId: string,
@@ -250,7 +251,10 @@ export class MembersService {
       await this.assertBranchInTenant(tenantId, branchId);
     }
 
-    const passwordHash = await bcrypt.hash(dto.password, 12);
+    const passwordHash = await bcrypt.hash(
+      dto.password ?? TEMPORARY_PASSWORD,
+      12,
+    );
 
     try {
       const member = await this.prisma.$transaction(async (tx) => {
@@ -258,6 +262,7 @@ export class MembersService {
           email,
           passwordHash,
           name: dto.name.trim(),
+          passwordTemporary: dto.password === undefined,
         });
         return tx.member.create({
           data: {

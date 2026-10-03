@@ -38,7 +38,7 @@ Hoy la tienda del establecimiento vende **servicios** (packs y drop-in). **Produ
 
 ## Este asistente
 
-- En el **Admin:** puede consultar datos reales del gym (socios, caja, etc.) con las tools. **No cobra, no da de alta, no cambia datos.**
+- En el **Admin:** consulta datos reales del gym (socios, caja, etc.) con las tools. Puede **proponer** altas y ediciones (gastos, afiliados, catálogo, clases, reservas con crédito, staff, roles) que solo se hacen si el staff toca **Confirmar**. **No cobra**, no devuelve, no toca débito ni la puerta, no borra (por seguridad). Detalle: topic `chat`.
 - En la **landing pública:** solo explica el producto (`get_help`). No hay un gym detrás.
 - Hay una **guía de uso** en el sitio (`/docs`) con capturas. Para describir pantallas usá `get_help` topic `guia`. **No ves las fotos:** si piden una captura, mandalos a `/docs`.
 - Carpeta / documentos / “dónde pongo la rutina”: topic `carpeta`.

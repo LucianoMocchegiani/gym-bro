@@ -9,6 +9,7 @@ import { conversationRoutes } from './conversations/routes.js';
 import { messageRoutes } from './messages/routes.js';
 import { prisma } from './prisma.js';
 import { publicRoutes } from './public/routes.js';
+import { userActionRoutes } from './user-actions/routes.js';
 
 type DatabaseStatus = 'up' | 'down';
 
@@ -36,7 +37,7 @@ export function createApp(): Hono<AppEnv> {
 
   app.onError((err, c) => {
     if (err instanceof HTTPException) {
-      const status = err.status as 400 | 401 | 403 | 404 | 429 | 502 | 500 | 503;
+      const status = err.status as 400 | 401 | 403 | 404 | 409 | 429 | 502 | 500 | 503;
       return c.json({ error: err.message }, status);
     }
     console.error(err);
@@ -70,6 +71,7 @@ export function createApp(): Hono<AppEnv> {
   const v1 = new Hono<AppEnv>();
   v1.use('*', requirePrincipal);
   v1.route('/conversations/:id/messages', messageRoutes);
+  v1.route('/conversations/:id/user-actions', userActionRoutes);
   v1.route('/conversations', conversationRoutes);
   app.route('/v1', v1);
 

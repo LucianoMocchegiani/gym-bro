@@ -17,6 +17,7 @@ src/
   mcp/              cliente hacia el sidecar
   llm/              OpenRouter + errores para humanos
   public/           sesión landing + rate limit
+  user-actions/     botones de la UI → tool MCP `chat/userOnly`
 ```
 
 ## Arranque y HTTP
@@ -67,14 +68,18 @@ El `POST` no espera un JSON de respuesta de chat: **devuelve el stream** del AI 
 
 | Archivo | Qué hace |
 |---------|----------|
-| `run.ts` | Abre MCP con el Bearer del request, lista tools (staff: todas; public: solo `get_help`), persiste el user, título automático, arma historial, `streamText`, persiste tools + assistant al terminar / abortar / error. Cierra el cliente MCP una vez. |
+| `run.ts` | Abre MCP con el Bearer del request, lista tools (staff: todas menos las `chat/userOnly`; public: solo `get_help`), persiste el user, título automático, arma historial, `streamText` (system staff = env + `instructions` del MCP + fecha), persiste tools + assistant al terminar / abortar / error. Cierra el cliente MCP una vez. |
 | `window.ts` | Recorte de prompt (tokens + shrink de tools viejas). |
 
 Abort del cliente (`AbortSignal` del request): corta el LLM y **guarda lo ya generado** (`onAbort` / `onError`).
 
 ## `mcp/` — puerto al huésped
 
-`client.ts`: `createMCPClient` HTTP a `CHAT_MCP_URL` con `Authorization: Bearer <token del request>`. `clientName: chat-api`. Sin token fijo de servicio.
+`client.ts`: `createMCPClient` HTTP a `CHAT_MCP_URL` con `Authorization: Bearer <token del request>`. `clientName: chat-api`. Sin token fijo de servicio. `modelTools` saca las tools con `_meta: { "chat/userOnly": true }` (convención genérica: solo las dispara un clic del usuario).
+
+## `user-actions/` — botones
+
+`routes.ts`: `POST /v1/conversations/:id/user-actions` `{ tool, input }`. Solo staff (landing 403), hilo no archivado (409). Ejecuta el tool si existe y es `chat/userOnly` (si no, 400), guarda una fila `tool` y devuelve `{ message, output }`. El MCP decide qué hace la acción (p. ej. confirmar una propuesta).
 
 Si MCP no arranca o `tools()` falla → **502** (texto distinto staff vs landing).
 

@@ -1,5 +1,7 @@
+import { TEMPORARY_PASSWORD } from '../common/temporary-password';
+
 /** Password inicial de los socios migrados sin cuenta Faciliter previa (RN-MIG-003). */
-export const IMPORT_DEFAULT_PASSWORD = 'ChangeMe123!';
+export const IMPORT_DEFAULT_PASSWORD = TEMPORARY_PASSWORD;
 
 /** Filas por request. El body JSON de Express corta en 100 kB. */
 export const IMPORT_MAX_ROWS_PER_BATCH = 200;

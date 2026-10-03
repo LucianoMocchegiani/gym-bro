@@ -15,7 +15,7 @@ export class IdentityService {
    * Garantiza una `identities` para el mail. No pisa password si ya existía.
    *
    * @param db Transacción opcional (alta tenant/staff/afiliado).
-   * @param input.passwordTemporary Solo aplica si se crea (migración de afiliados).
+   * @param input.passwordTemporary Solo aplica si se crea (migración, alta sin password).
    * @returns `created` en true si la persona no existía.
    */
   async ensure(
