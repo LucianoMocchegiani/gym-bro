@@ -35,7 +35,7 @@ Si cancelás en MP o tardás más de 10 minutos, Config avisa y hay que tocar el
 
 Queda escondida en Config (**Conexión manual (avanzado)**) como respaldo mientras se prueba la conexión normal. Se usa solo si lo pide soporte, o si el servidor no tiene configurada la app de plataforma (el botón no aparece y el bloque manual se ve abierto).
 
-1. Con la cuenta del gym, en [developers.mercadopago.com](https://www.mercadopago.com/developers), creá una aplicación propia con **Checkout Pro** y **Suscripciones**.
+1. Con la cuenta del gym, en [developers.mercadopago.com](https://www.mercadopago.com/developers), creá una aplicación propia con producto **Checkout Pro** (las suscripciones no se activan aparte: se crean por API con el mismo token).
 2. Copiá **Access Token** y **Public Key** de **producción** y pegalos en Config → **Conexión manual (avanzado)** → **Guardar token manual**. Faciliter valida con `GET /users/me`.
 3. Este token **no** se renueva solo. Si lo regenerás en MP, hay que pegarlo de nuevo.
 4. Webhooks (opcional; Faciliter ya manda `notification_url`): en la app → **Webhooks**, URL `https://api.faciliter.xyz/api/webhooks/payment?tenantId={UUID_DEL_TENANT}`, con los topics `payment`, `topic_merchant_order_wh`, `subscription_preapproval` y `subscription_authorized_payment`.
@@ -47,7 +47,8 @@ Queda escondida en Config (**Conexión manual (avanzado)**) como respaldo mientr
 
 El botón necesita una **aplicación de plataforma** de Faciliter en MP Developers. Los gyms la autorizan; no la ven.
 
-1. Con la cuenta MP de Faciliter, creá una aplicación **aparte** (p. ej. «Faciliter Conectar») con **Checkout Pro** y **Suscripciones**.
+1. Con la cuenta MP de Faciliter, creá una aplicación **aparte** con nombre y logo de Faciliter (es lo que ve el gym al autorizar) y producto **Checkout Pro**. MP deja elegir un solo producto; las suscripciones no se activan aparte, se crean por API con el token del gym.
+   - Permisos: todos los que ofrezca, sobre todo acceso sin conexión (`offline_access`): sin eso MP no entrega el refresh token.
    - **No** le configures webhooks en el panel. Los avisos llegan por la `notification_url` de cada cobro. Un webhook de panel con el `tenantId` de `admin` recibiría también los pagos de los gyms, y fallarían con reintentos.
    - No reutilices la app de cobros de plataforma (`facilitermp`) por ese motivo.
 2. En la app → **Editar**:

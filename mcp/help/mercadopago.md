@@ -32,7 +32,7 @@ Si cancela en MP o tarda más de 10 minutos, Config avisa y hay que tocar el bot
 
 Escondida en Config (**Conexión manual (avanzado)**). Solo si lo pide soporte o si el servidor no tiene la app de plataforma (el botón no aparece y el bloque manual se ve abierto).
 
-1. Con la cuenta del gym: app propia en [developers.mercadopago.com](https://www.mercadopago.com/developers) con **Checkout Pro** y **Suscripciones**.
+1. Con la cuenta del gym: app propia en [developers.mercadopago.com](https://www.mercadopago.com/developers) con producto **Checkout Pro** (las suscripciones no se activan aparte; se crean por API con el mismo token).
 2. Access Token + Public Key de **producción** → **Guardar token manual** (valida `GET /users/me`).
 3. No se renueva solo: si se regenera en MP, hay que pegarlo de nuevo.
 4. Webhooks opcionales en esa app: `https://api.faciliter.xyz/api/webhooks/payment?tenantId={UUID_DEL_TENANT}` con `payment`, `topic_merchant_order_wh`, `subscription_preapproval`, `subscription_authorized_payment`. El UUID es el id interno del gym (no el App ID ni el slug).

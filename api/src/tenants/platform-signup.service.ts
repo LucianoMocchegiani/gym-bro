@@ -8,19 +8,26 @@ import {
   forwardRef,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { Cron, CronExpression } from '@nestjs/schedule';
 import {
   BillingPeriod,
   NotificationEventCode,
+  PlatformSignup,
   PlatformSignupStatus,
   TenantStatus,
 } from '@prisma/client';
+import { MpRemotePreapproval } from '../payment/mp-account.port';
 import { MpWebhookProcessResult } from '../payment/payment.types';
 import { MercadoPagoAccountService } from '../payment/mercadopago-account.service';
 import { MP_ACCOUNT_PORT, MpAccountPort } from '../payment/mp-account.port';
 import { CashPaymentService } from '../payment/cash-payment.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { NotificationDispatcher } from '../notifications/notifications.service';
-import { addCalendarDays, PLATFORM_ADMIN_SLUG, PLATFORM_TRIAL_DAYS } from './platform-trial';
+import {
+  addCalendarDays,
+  PLATFORM_ADMIN_SLUG,
+  PLATFORM_TRIAL_DAYS,
+} from './platform-trial';
 import { PlatformTrialService } from './platform-trial.service';
 import { TenantsService } from './tenants.service';
 import { assertValidTenantSlug, normalizeTenantSlug } from './tenant-slug';
@@ -39,6 +46,9 @@ export type PlatformSignupView = {
   tenantSlug: string | null;
 };
 
+/** Un intento sin autorizar en MP libera el subdominio después de esto. */
+const PENDING_SIGNUP_TTL_MS = 60 * 60 * 1000;
+
 export type IdentityGymRow = {
   tenantId: string;
   name: string;
@@ -50,7 +60,9 @@ export type IdentityGymRow = {
  * Self-serve Faciliter: checkout MP y nacimiento del gym en el webhook.
  *
  * @remarks Con prueba el gym nace al autorizar el preapproval. Sin prueba,
- * nace en el primer cobro approved. RN-PAG-017.
+ * nace en el primer cobro approved. RN-PAG-017. Además del webhook, se
+ * consulta el preapproval en MP al listar los gyms del dueño y cada hora;
+ * un intento sin autorizar en 1 h vence, libera el slug y se cancela en MP.
  */
 @Injectable()
 export class PlatformSignupService {
@@ -72,6 +84,16 @@ export class PlatformSignupService {
    * Gyms cuya Identity es dueña.
    */
   async listOwnedGyms(identityId: string): Promise<IdentityGymRow[]> {
+    const pending = await this.prisma.platformSignup.findMany({
+      where: {
+        identityId,
+        status: PlatformSignupStatus.PENDING,
+        mpPreapprovalId: { not: null },
+      },
+    });
+    for (const signup of pending) {
+      await this.reconcileSafely(signup);
+    }
     const rows = await this.prisma.tenant.findMany({
       where: {
         ownerIdentityId: identityId,
@@ -133,6 +155,8 @@ export class PlatformSignupService {
     if (gymName.length < 2) {
       throw new BadRequestException('gymName must be at least 2 characters');
     }
+
+    await this.releaseSlug(slug, identityId);
 
     const taken = await this.prisma.tenant.findUnique({
       where: { slug },
@@ -251,7 +275,10 @@ export class PlatformSignupService {
   ): Promise<PlatformSignupView> {
     const row = await this.prisma.platformSignup.findFirst({
       where: { id: signupId, identityId },
-      include: { pack: { select: { name: true } }, tenant: { select: { slug: true } } },
+      include: {
+        pack: { select: { name: true } },
+        tenant: { select: { slug: true } },
+      },
     });
     if (!row) {
       throw new NotFoundException(`Signup ${signupId} not found`);
@@ -283,20 +310,123 @@ export class PlatformSignupService {
         reservationId: null,
       };
     }
-    const authorized =
-      remote.status === 'authorized' || remote.status === 'active';
-    if (!authorized) {
+    await this.applyPreapproval(signup, remote, admin.id);
+    return this.emptyWebhook(remote.status);
+  }
+
+  /**
+   * Cada hora: consulta en MP los intentos PENDING (por si el webhook no
+   * llegó) y vence los que pasaron 1 h sin autorizar.
+   */
+  @Cron(CronExpression.EVERY_HOUR)
+  async reconcilePendingSignups(): Promise<void> {
+    const rows = await this.prisma.platformSignup.findMany({
+      where: { status: PlatformSignupStatus.PENDING },
+    });
+    for (const signup of rows) {
+      const authorized = await this.reconcileSafely(signup);
+      if (!authorized && isStale(signup)) {
+        await this.expire(signup, 'Vencido: no se autorizó en Mercado Pago');
+      }
+    }
+  }
+
+  /**
+   * Libera el slug de intentos abiertos que ya no cuentan: los PENDING del
+   * mismo dueño (reintento) o vencidos de cualquiera.
+   *
+   * @remarks Antes de descartar, consulta MP: si ya estaba autorizado, se
+   * procesa (y el slug queda tomado de verdad).
+   */
+  private async releaseSlug(slug: string, identityId: string): Promise<void> {
+    const open = await this.prisma.platformSignup.findMany({
+      where: { slug, status: PlatformSignupStatus.PENDING },
+    });
+    for (const signup of open) {
+      if (signup.identityId !== identityId && !isStale(signup)) {
+        continue;
+      }
+      const authorized = await this.reconcileSafely(signup);
+      if (!authorized) {
+        await this.expire(
+          signup,
+          signup.identityId === identityId
+            ? 'Reemplazado por un intento nuevo'
+            : 'Vencido: no se autorizó en Mercado Pago',
+        );
+      }
+    }
+  }
+
+  /**
+   * Consulta el preapproval en MP y aplica su estado.
+   *
+   * @returns true si MP ya lo tiene autorizado. Nunca lanza.
+   */
+  private async reconcileSafely(signup: PlatformSignup): Promise<boolean> {
+    if (!signup.mpPreapprovalId) {
+      return false;
+    }
+    try {
+      const admin = await this.requireAdminTenant();
+      const accessToken = await this.accounts.getDecryptedAccessToken(admin.id);
+      const remote = await this.mp.getPreapproval(
+        accessToken,
+        signup.mpPreapprovalId,
+      );
+      await this.applyPreapproval(signup, remote, admin.id);
+      return isAuthorized(remote.status);
+    } catch (err) {
+      this.logger.warn(
+        `Reconcile signup ${signup.id}: ${err instanceof Error ? err.message : String(err)}`,
+      );
+      return false;
+    }
+  }
+
+  /**
+   * Marca el intento como fallido (libera el slug) y cancela el preapproval
+   * en MP para que nunca se cobre.
+   */
+  private async expire(signup: PlatformSignup, reason: string): Promise<void> {
+    const released = await this.prisma.platformSignup.updateMany({
+      where: { id: signup.id, status: PlatformSignupStatus.PENDING },
+      data: { status: PlatformSignupStatus.FAILED, lastError: reason },
+    });
+    if (released.count === 0 || !signup.mpPreapprovalId) {
+      return;
+    }
+    try {
+      const admin = await this.requireAdminTenant();
+      const accessToken = await this.accounts.getDecryptedAccessToken(admin.id);
+      await this.mp.cancelPreapproval(accessToken, signup.mpPreapprovalId);
+    } catch (err) {
+      this.logger.warn(
+        `Cancel preapproval signup ${signup.id}: ${err instanceof Error ? err.message : String(err)}`,
+      );
+    }
+  }
+
+  /**
+   * Aplica el estado remoto del preapproval (webhook o consulta directa).
+   */
+  private async applyPreapproval(
+    signup: PlatformSignup,
+    remote: MpRemotePreapproval,
+    adminTenantId: string,
+  ): Promise<void> {
+    if (!isAuthorized(remote.status)) {
       const failed =
         remote.status === 'cancelled' ||
         remote.status === 'paused' ||
         remote.status === 'rejected';
-      if (failed) {
+      if (failed && signup.status !== PlatformSignupStatus.FAILED) {
         const pack = await this.prisma.pack.findUnique({
           where: { id: signup.packId },
           select: { name: true },
         });
         await this.notifications.notifyPlatformOwner({
-          tenantId: signup.tenantId ?? admin.id,
+          tenantId: signup.tenantId ?? adminTenantId,
           identityId: signup.identityId,
           event: NotificationEventCode.PLATFORM_DEBIT_MANDATE_FAILED,
           idempotencyKey: `PLATFORM_DEBIT_MANDATE_FAILED:${signup.id}`,
@@ -307,7 +437,7 @@ export class PlatformSignupService {
           payload: { signupId: signup.id, status: remote.status },
         });
       }
-      return this.emptyWebhook(remote.status);
+      return;
     }
     if (signup.applyTrial) {
       await this.fulfill(signup.id);
@@ -317,7 +447,6 @@ export class PlatformSignupService {
         data: { status: PlatformSignupStatus.AWAITING_PAYMENT },
       });
     }
-    return this.emptyWebhook(remote.status);
   }
 
   /**
@@ -391,6 +520,13 @@ export class PlatformSignupService {
       this.logger.warn(
         `Fulfill signup ${signup.id}: ${err instanceof Error ? err.message : String(err)}`,
       );
+      const current = await this.prisma.platformSignup.findUnique({
+        where: { id: signup.id },
+        select: { status: true },
+      });
+      if (current?.status === PlatformSignupStatus.COMPLETED) {
+        return;
+      }
       await this.prisma.platformSignup.update({
         where: { id: signup.id },
         data: {
@@ -481,4 +617,12 @@ export class PlatformSignupService {
       reservationId: null,
     };
   }
+}
+
+function isAuthorized(status: string): boolean {
+  return status === 'authorized' || status === 'active';
+}
+
+function isStale(signup: PlatformSignup): boolean {
+  return signup.createdAt.getTime() < Date.now() - PENDING_SIGNUP_TTL_MS;
 }

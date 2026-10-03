@@ -774,7 +774,9 @@ API: Member `GET /api/me/receipts`; Staff `GET /api/receipts/:id`, `GET /api/tra
 
 ### 4.15h3 `platform_signups`
 
-Alta self-serve de gym (Identity en apex). El tenant no existe hasta el webhook de MP (`subscription_preapproval` / cobro).
+Alta self-serve de gym (Identity en apex). El tenant no existe hasta que MP autoriza el preapproval (con prueba) o aprueba el primer cobro (sin prueba). Se entera por webhook (`subscription_preapproval` / `subscription_authorized_payment`; también acepta el formato viejo `preapproval` / `authorized_payment`) o consultando el preapproval: al listar `GET /identity/tenants` (vuelta a `/cuenta`) y en un job cada hora.
+
+Liberación del slug: un `PENDING` sin autorizar en **1 h** pasa a `FAILED` en la siguiente pasada del job (entre 1 y 2 h) («Vencido…») y se cancela el preapproval en MP. Si el mismo dueño reintenta el mismo slug, el `PENDING` anterior pasa a `FAILED` («Reemplazado…»). Antes de descartar se consulta MP: si ya estaba autorizado, se procesa.
 
 | Columna | Tipo | Notas |
 |---------|------|--------|
@@ -782,7 +784,8 @@ Alta self-serve de gym (Identity en apex). El tenant no existe hasta el webhook 
 | `identity_id` / `pack_id` | uuid FK | pack del tenant `admin` |
 | `gym_name` / `slug` | text | unique parcial de slug en intentos abiertos |
 | `apply_trial` | boolean | |
-| `status` | `PENDING` \| `AWAITING_PAYMENT` \| `COMPLETED` \| `FAILED` | |
+| `status` | `PENDING` \| `AWAITING_PAYMENT` \| `COMPLETED` \| `FAILED` | Solo `PENDING` / `AWAITING_PAYMENT` reservan el slug |
+| `last_error` | text nullable | Motivo del `FAILED` (error de MP, vencido, reemplazado) |
 | `mp_preapproval_id` | text UK nullable | |
 | `tenant_id` | uuid UK nullable | gym nacido |
 | `init_point` | text nullable | |

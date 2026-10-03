@@ -29,6 +29,18 @@ import { PlatformSignupService } from '../tenants/platform-signup.service';
 import { DebitService } from '../debit/debit.service';
 import { NotificationDispatcher } from '../notifications/notifications.service';
 
+/**
+ * Formato IPN viejo (`?topic=preapproval&id=`) → nombre del webhook nuevo.
+ */
+const LEGACY_TOPICS: Record<string, string> = {
+  preapproval: 'subscription_preapproval',
+  authorized_payment: 'subscription_authorized_payment',
+};
+
+function normalizeTopic(topic: string | undefined): string | undefined {
+  return topic ? (LEGACY_TOPICS[topic] ?? topic) : topic;
+}
+
 type CartWithItems = Transaction & {
   transactionItems: Array<{
     id: string;
@@ -85,7 +97,7 @@ export class WebhookPaymentService {
     },
     query: { topic?: string; id?: string },
   ): Promise<MpWebhookProcessResult> {
-    const type = payload.type ?? query.topic ?? payload.topic;
+    const type = normalizeTopic(payload.type ?? query.topic ?? payload.topic);
     const dataId = payload.data?.id ?? query.id ?? payload.id;
 
     this.logger.log(
@@ -245,8 +257,7 @@ export class WebhookPaymentService {
         'Could not fetch Mercado Pago authorized_payment',
       );
     }
-    const paid =
-      remote.status === 'approved' || remote.status === 'processed';
+    const paid = remote.status === 'approved' || remote.status === 'processed';
     const signupRow = remote.externalReference
       ? await this.prisma.platformSignup.findUnique({
           where: { id: remote.externalReference },
