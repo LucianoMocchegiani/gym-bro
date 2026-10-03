@@ -40,7 +40,7 @@ export async function proposeWrite(
       return {
         error:
           'No tenés permiso para hacer esto. Pedile a un admin que lo habilite en Roles y permisos.',
-        links: [{ href: '/roles', label: 'Roles y permisos' }],
+        links: [{ href: '/dashboard/roles', label: 'Roles y permisos' }],
       };
     }
     try {

@@ -40,7 +40,7 @@ function conceptLabel(row: LedgerMovementRow): string {
 /**
  * Grilla de cobros y devoluciones (ingreso = cart; egreso = ejecución).
  *
- * @remarks Misma tabla en `/reportes` y `/arqueo` (CU-PAG-003 / E11).
+ * @remarks Misma tabla en `/dashboard/reportes` y `/dashboard/arqueo` (CU-PAG-003 / E11).
  * Devolver solo se ofrece en Arqueo (`allowRefund`).
  */
 export function MoneyMovementsTable({

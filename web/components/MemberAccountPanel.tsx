@@ -220,7 +220,7 @@ export function MemberAccountPanel({
 
       <div className="form-actions">
         <Link
-          href={`/reportes?memberId=${encodeURIComponent(memberId)}`}
+          href={`/dashboard/reportes?memberId=${encodeURIComponent(memberId)}`}
           className="btn ghost"
         >
           Ver reportes de este afiliado

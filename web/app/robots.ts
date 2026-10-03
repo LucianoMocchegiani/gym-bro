@@ -2,31 +2,16 @@ import type { MetadataRoute } from 'next';
 import { publicSiteUrl } from '@/lib/site-url';
 
 /**
- * robots.txt del apex. El panel Staff se marca noindex por host/ruta.
+ * robots.txt (mismo para el apex y los gyms). El panel vive bajo `/dashboard`;
+ * además se marca noindex por host/ruta en el middleware.
  */
 export default function robots(): MetadataRoute.Robots {
   const site = publicSiteUrl();
   return {
     rules: {
       userAgent: '*',
-      allow: ['/', '/legal/', '/docs', '/docs/'],
-      disallow: [
-        '/login',
-        '/caja',
-        '/vencimientos',
-        '/afiliados',
-        '/packs',
-        '/servicios',
-        '/sesiones',
-        '/roles',
-        '/staff',
-        '/config',
-        '/avisos',
-        '/devoluciones',
-        '/reportes',
-        '/puerta',
-        '/tenants',
-      ],
+      allow: ['/', '/legal/', '/docs', '/docs/', '/cuenta/eliminar'],
+      disallow: ['/login', '/dashboard', '/cuenta', '/comprar'],
     },
     sitemap: `${site}/sitemap.xml`,
   };

@@ -31,7 +31,7 @@ export function registerAccessTools(server: McpServer): void {
           sessionId: body.sessionId ?? null,
           overdueDays: body.overdueDays ?? null,
           debtToleranceDays: body.debtToleranceDays ?? null,
-          links: [{ href: '/puerta', label: 'Puerta' }],
+          links: [{ href: '/dashboard/puerta', label: 'Puerta' }],
         };
       }),
   );

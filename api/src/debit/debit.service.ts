@@ -22,6 +22,7 @@ import { AUDIT_ACTIONS, AuditActor } from '../audit/audit.types';
 import { AuditService } from '../audit/audit.service';
 import { NotificationDispatcher } from '../notifications/notifications.service';
 import { ListResult, normalizeListQuery, toListResult } from '../common/list';
+import { publicWebOrigin } from '../common/web-urls';
 import { MercadoPagoAccountService } from '../payment/mercadopago-account.service';
 import { MP_ACCOUNT_PORT, MpAccountPort } from '../payment/mp-account.port';
 import { MpWebhookProcessResult } from '../payment/payment.types';
@@ -839,9 +840,6 @@ export class DebitService {
   }
 
   private webBackUrl(): string {
-    const web =
-      this.config.get<string>('PUBLIC_WEB_BASE_URL')?.replace(/\/$/, '') ||
-      'http://localhost:3002';
-    return `${web}/caja`;
+    return `${publicWebOrigin(this.config)}/dashboard/caja`;
   }
 }

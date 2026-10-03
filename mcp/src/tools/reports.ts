@@ -96,7 +96,7 @@ export function registerReportsTools(server: McpServer): void {
             compact(asArray(income?.transactions).map(slimReportMove)),
             15,
           ),
-          links: [{ href: '/reportes', label: 'Reportes' }],
+          links: [{ href: '/dashboard/reportes', label: 'Reportes' }],
         };
       }),
   );

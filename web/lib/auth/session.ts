@@ -1,7 +1,5 @@
 import type { StaffLoginResponse } from '@/lib/api/auth';
-
-const STORAGE_KEY = 'gymbro.staff.session';
-const SESSION_EVENT = 'gymbro-staff-session';
+import { createTokenStore } from '@/lib/auth/token-store';
 
 /**
  * Sesión Staff persistida en localStorage (panel puerta / Admin).
@@ -21,85 +19,19 @@ export type StaffSession = {
   platformAccess?: 'ok' | 'limited';
 };
 
-/** Snapshot cacheado: misma referencia si el JSON no cambió (useSyncExternalStore). */
-let cachedRaw: string | null | undefined;
-let cachedSession: StaffSession | null = null;
+const store = createTokenStore<StaffSession>({
+  storageKey: 'gymbro.staff.session',
+  eventName: 'gymbro-staff-session',
+  normalize: (parsed) => ({ ...parsed, tenantSlug: parsed.tenantSlug ?? null }),
+});
 
-function notifySessionListeners(): void {
-  if (typeof window === 'undefined') {
-    return;
-  }
-  window.dispatchEvent(new Event(SESSION_EVENT));
-}
-
-/**
- * Suscripción para `useSyncExternalStore` (cambios de sesión Staff).
- */
-export function subscribeStaffSession(onStoreChange: () => void): () => void {
-  if (typeof window === 'undefined') {
-    return () => undefined;
-  }
-  window.addEventListener(SESSION_EVENT, onStoreChange);
-  window.addEventListener('storage', onStoreChange);
-  return () => {
-    window.removeEventListener(SESSION_EVENT, onStoreChange);
-    window.removeEventListener('storage', onStoreChange);
-  };
-}
-
-function parseSession(raw: string): StaffSession | null {
-  try {
-    const parsed = JSON.parse(raw) as StaffSession;
-    if (!parsed.accessToken) {
-      return null;
-    }
-    return {
-      ...parsed,
-      tenantSlug: parsed.tenantSlug ?? null,
-    };
-  } catch {
-    return null;
-  }
-}
-
-/**
- * Lee la sesión Staff del storage del browser.
- *
- * @remarks Devuelve referencia estable mientras el valor en localStorage no cambie.
- */
-export function readStaffSession(): StaffSession | null {
-  if (typeof window === 'undefined') {
-    return null;
-  }
-  const raw = window.localStorage.getItem(STORAGE_KEY);
-  if (raw === cachedRaw) {
-    return cachedSession;
-  }
-  cachedRaw = raw;
-  cachedSession = raw ? parseSession(raw) : null;
-  return cachedSession;
-}
-
-/**
- * Snapshot SSR: sin sesión.
- */
-export function getStaffSessionServerSnapshot(): null {
-  return null;
-}
-
-function persist(session: StaffSession | null): void {
-  if (session) {
-    const raw = JSON.stringify(session);
-    window.localStorage.setItem(STORAGE_KEY, raw);
-    cachedRaw = raw;
-    cachedSession = session;
-  } else {
-    window.localStorage.removeItem(STORAGE_KEY);
-    cachedRaw = null;
-    cachedSession = null;
-  }
-  notifySessionListeners();
-}
+/** Suscripción para `useSyncExternalStore` (cambios de sesión Staff). */
+export const subscribeStaffSession = store.subscribe;
+/** Lee la sesión Staff del storage del browser. */
+export const readStaffSession = store.read;
+export const getStaffSessionServerSnapshot = store.serverSnapshot;
+/** Cierra sesión Staff en el browser. */
+export const clearStaffSession = store.clear;
 
 /**
  * Persiste tokens y datos de usuario tras login Staff.
@@ -116,7 +48,7 @@ export function writeStaffSession(
   if (!tenantId && login.profileType === 'STAFF') {
     throw new Error('Se requiere login Staff con tenantId');
   }
-  const session: StaffSession = {
+  return store.write({
     accessToken: login.accessToken,
     refreshToken: login.refreshToken,
     tenantId,
@@ -128,63 +60,27 @@ export function writeStaffSession(
     permissionCodes: null,
     impersonating,
     platformAccess: undefined,
-  };
-  persist(session);
-  return session;
+  });
 }
 
-/**
- * Actualiza el recorte de plan Faciliter (tras `GET /auth/me`).
- */
+/** Actualiza el recorte de plan Faciliter (tras `GET /auth/me`). */
 export function updateStaffPlatformAccess(
   platformAccess: 'ok' | 'limited',
 ): StaffSession | null {
-  const current = readStaffSession();
-  if (!current) {
-    return null;
-  }
-  const next: StaffSession = { ...current, platformAccess };
-  persist(next);
-  return next;
+  return store.update({ platformAccess });
 }
 
-/**
- * Guarda permisos efectivos del staff (nav gated).
- */
+/** Guarda permisos efectivos del staff (nav gated). */
 export function updateStaffPermissions(
   permissionCodes: string[],
 ): StaffSession | null {
-  const current = readStaffSession();
-  if (!current) {
-    return null;
-  }
-  const next: StaffSession = { ...current, permissionCodes };
-  persist(next);
-  return next;
+  return store.update({ permissionCodes });
 }
 
-/**
- * Actualiza solo los tokens (tras refresh).
- */
+/** Actualiza solo los tokens (tras refresh). */
 export function updateStaffTokens(
   accessToken: string,
   refreshToken: string,
 ): StaffSession | null {
-  const current = readStaffSession();
-  if (!current) {
-    return null;
-  }
-  const next: StaffSession = { ...current, accessToken, refreshToken };
-  persist(next);
-  return next;
-}
-
-/**
- * Cierra sesión Staff en el browser.
- */
-export function clearStaffSession(): void {
-  if (typeof window === 'undefined') {
-    return;
-  }
-  persist(null);
+  return store.update({ accessToken, refreshToken });
 }

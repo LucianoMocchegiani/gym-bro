@@ -117,10 +117,10 @@ function labelForHref(href: string, fallback?: string): string {
   if (fallback?.trim()) {
     return fallback.trim();
   }
-  if (href === '/') {
+  if (href === '/dashboard') {
     return 'Inicio';
   }
-  const slug = href.replace(/^\//, '').split('/')[0] ?? href;
+  const slug = href.replace(/^\/dashboard\//, '').split('/')[0] ?? href;
   if (!slug) {
     return href;
   }
@@ -128,7 +128,7 @@ function labelForHref(href: string, fallback?: string): string {
 }
 
 /**
- * Rutas Admin escritas en el texto del asistente (`/afiliados` o `[Afiliados](/afiliados)`).
+ * Rutas Admin escritas en el texto del asistente (`/dashboard/afiliados` o `[Afiliados](/dashboard/afiliados)`).
  */
 export function parseLinksFromAssistantText(text: string): ChatNavLink[] {
   if (!text.trim()) {
@@ -144,7 +144,7 @@ export function parseLinksFromAssistantText(text: string): ChatNavLink[] {
     found.push({ href, label: labelForHref(href, match[1]) });
   }
   for (const href of ADMIN_HREF) {
-    if (href === '/') {
+    if (href === '/dashboard') {
       continue;
     }
     const escaped = href.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');

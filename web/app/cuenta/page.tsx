@@ -1,7 +1,10 @@
 import { headers } from 'next/headers';
+import { notFound } from 'next/navigation';
 import { extractTenantSlugFromHost } from '@/lib/tenant-host';
+import { fetchPublicTenantCatalog } from '@/lib/api/public-tenant-catalog';
 import { IdentityAccountPage } from '@/components/IdentityAccountPage';
-import { StaffCuentaPage } from '@/components/StaffCuentaPage';
+import { GymSiteShell } from '@/components/gym-site/GymSiteShell';
+import { MemberPortal } from '@/components/gym-site/MemberPortal';
 
 export const metadata = {
   title: 'Cuenta',
@@ -9,13 +12,39 @@ export const metadata = {
 };
 
 /**
- * Apex: gyms de la Identity. Slug de gym: cuenta staff.
+ * Apex: gyms de la Identity. Slug de gym: portal del socio (la cuenta staff
+ * vive en `/dashboard/cuenta`).
  */
-export default async function CuentaPage() {
+export default async function CuentaPage({
+  searchParams,
+}: {
+  searchParams: Promise<{
+    compra?: string;
+    status?: string;
+    collection_status?: string;
+  }>;
+}) {
   const h = await headers();
-  const host = h.get('x-forwarded-host') ?? h.get('host') ?? '';
-  if (!extractTenantSlugFromHost(host)) {
+  const slug = extractTenantSlugFromHost(
+    h.get('x-forwarded-host') ?? h.get('host') ?? '',
+  );
+  if (!slug) {
     return <IdentityAccountPage />;
   }
-  return <StaffCuentaPage />;
+  const catalog = await fetchPublicTenantCatalog(slug);
+  if (!catalog) {
+    notFound();
+  }
+  const query = await searchParams;
+  const purchase = query.compra
+    ? {
+        id: query.compra,
+        status: query.collection_status ?? query.status ?? null,
+      }
+    : null;
+  return (
+    <GymSiteShell slug={slug} gymName={catalog.tenant.name}>
+      <MemberPortal slug={slug} purchase={purchase} />
+    </GymSiteShell>
+  );
 }

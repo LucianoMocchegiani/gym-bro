@@ -49,3 +49,13 @@ export type MemberPackDetail = {
 export type MpStatus = {
   connected: boolean;
 };
+
+/**
+ * Tienda pública del gym (`{slug}/`, sin auth).
+ */
+export type PublicTenantCatalog = {
+  tenant: { name: string; slug: string };
+  /** true = MP conectado: se puede comprar online. */
+  onlineCheckout: boolean;
+  packs: MemberPackDetail[];
+};

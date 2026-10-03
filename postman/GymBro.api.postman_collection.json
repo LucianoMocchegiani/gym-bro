@@ -271,6 +271,32 @@
                     ]
                 },
                 {
+                    "name": "Public GET tenant packs (web del gym)",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": "{{baseUrl}}/api/public/tenants/by-slug/{{tenantSlug}}/packs",
+                        "description": "Sin auth. Vidriera de {slug}/ (RN-CTA-005): tenant {name, slug}, packs activos con componentes y onlineCheckout (true si el gym conectó Mercado Pago, RN-CTA-008). Slug inexistente → 404; gym suspendido → 403.",
+                        "auth": {
+                            "type": "noauth"
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('status 200', () => pm.response.to.have.status(200));",
+                                    "const body = pm.response.json();",
+                                    "pm.test('packs array', () => pm.expect(body.packs).to.be.an('array'));",
+                                    "pm.test('onlineCheckout boolean', () => pm.expect(body.onlineCheckout).to.be.a('boolean'));"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
                     "name": "Public GET app config",
                     "request": {
                         "method": "GET",
@@ -670,6 +696,32 @@
                         "url": "{{baseUrl}}/api/identity/tenants",
                         "description": "Gyms cuyo ownerIdentityId es la cuenta."
                     }
+                },
+                {
+                    "name": "Identity POST memberships (alta self-service en un gym)",
+                    "request": {
+                        "method": "POST",
+                        "header": [{ "key": "Content-Type", "value": "application/json" }],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"tenantSlug\": \"{{tenantSlug}}\",\n  \"name\": \"Socia Web\",\n  \"document\": \"40111222\",\n  \"phone\": \"0981 123 456\"\n}"
+                        },
+                        "url": "{{baseUrl}}/api/identity/memberships",
+                        "description": "JWT Identity. CU-AFI-007 / RN-CTA-007: crea el socio ACTIVE en el gym (auditoría member.self_join) o devuelve el existente (created=false). Socio suspendido o gym suspendido → 403; DNI de otro socio → 409. Después: POST /auth/select-context MEMBER."
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('status 200/201', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]));",
+                                    "const body = pm.response.json();",
+                                    "pm.test('memberId', () => pm.expect(body.memberId).to.be.a('string'));"
+                                ]
+                            }
+                        }
+                    ]
                 },
                 {
                     "name": "Login Google",
@@ -4427,7 +4479,7 @@
                     "request": {
                         "method": "POST",
                         "header": [],
-                        "description": "«Conectar Mercado Pago» (CU-PAG-006, `mp.connect`). Devuelve `authorizationUrl`: abrila en el navegador y autorizá con la cuenta MP del gym. MP vuelve a `GET /api/mercadopago/oauth/callback` (público) y de ahí a `{slug}.<web>/config?mp=connected|error`. 503 si el API no tiene `MP_OAUTH_CLIENT_ID` / `MP_OAUTH_CLIENT_SECRET`.",
+                        "description": "«Conectar Mercado Pago» (CU-PAG-006, `mp.connect`). Devuelve `authorizationUrl`: abrila en el navegador y autorizá con la cuenta MP del gym. MP vuelve a `GET /api/mercadopago/oauth/callback` (público) y de ahí a `{slug}.<web>/dashboard/config?mp=connected|error`. 503 si el API no tiene `MP_OAUTH_CLIENT_ID` / `MP_OAUTH_CLIENT_SECRET`.",
                         "url": "{{baseUrl}}/api/mercadopago/account/oauth/start"
                     }
                 },
@@ -4502,7 +4554,7 @@
                             "raw": "{\n  \"items\": [\n    { \"kind\": \"PACK\", \"id\": \"{{createdPackId}}\" },\n    { \"kind\": \"DROP_IN\", \"id\": \"{{createdSessionId}}\" }\n  ],\n  \"idempotencyKey\": \"mp-member-cart-{{$timestamp}}\"\n}"
                         },
                         "url": "{{baseUrl}}/api/me/transaction-items/mp/cart",
-                        "description": "JWT Member (login afiliado). Mismo body que Caja. Staff -> 403. Pack activo y/o sesion publicada con dropInPrice."
+                        "description": "JWT Member (login afiliado). Mismo body que Caja. Staff -> 403. Pack activo y/o sesion publicada con dropInPrice. Opcional \"returnToWeb\": true (web del gym) → MP vuelve a {slug}/cuenta?compra=<id>; la app no lo manda."
                     }
                 },
                 {

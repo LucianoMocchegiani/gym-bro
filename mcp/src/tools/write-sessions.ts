@@ -17,7 +17,7 @@ import {
   ymdHuman,
 } from './write-support.js';
 
-const LINKS = [{ href: '/sesiones', label: 'Sesiones' }];
+const LINKS = [{ href: '/dashboard/sesiones', label: 'Sesiones' }];
 const YMD = /^\d{4}-\d{2}-\d{2}$/;
 const HHMM = /^([01]\d|2[0-3]):[0-5]\d$/;
 const WEEKDAYS = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY'] as const;

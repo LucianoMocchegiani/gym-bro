@@ -17,7 +17,7 @@ const STATUS_LABEL: Record<string, string> = {
   SUSPENDED: 'Suspendido',
   INACTIVE: 'Baja',
 };
-const LINKS = [{ href: '/afiliados', label: 'Afiliados' }];
+const LINKS = [{ href: '/dashboard/afiliados', label: 'Afiliados' }];
 const TEMP_PASSWORD_LINE = {
   label: 'Contraseña',
   value: 'ChangeMe123! temporal (se le pide cambiarla al entrar; si ya tenía cuenta Faciliter, conserva la suya)',
@@ -68,7 +68,7 @@ export function registerMemberWriteTools(server: McpServer): void {
             }),
           },
           doneText: `Afiliado creado: ${name.trim()}. Para que pueda entrar, vendele un pack en Caja.`,
-          links: [...LINKS, { href: '/caja', label: 'Caja' }],
+          links: [...LINKS, { href: '/dashboard/caja', label: 'Caja' }],
         };
       }),
   );

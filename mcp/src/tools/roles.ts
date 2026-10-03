@@ -59,7 +59,7 @@ export function registerRoleTools(server: McpServer): void {
         return {
           items,
           total: typeof body.total === 'number' ? body.total : items.length,
-          links: [{ href: '/roles', label: 'Roles y permisos' }],
+          links: [{ href: '/dashboard/roles', label: 'Roles y permisos' }],
         };
       }),
   );
@@ -79,7 +79,7 @@ export function registerRoleTools(server: McpServer): void {
         const raw = await gymbroGet(`/api/roles/${roleId}`);
         return {
           role: slimRole(raw),
-          links: [{ href: '/roles', label: 'Roles y permisos' }],
+          links: [{ href: '/dashboard/roles', label: 'Roles y permisos' }],
         };
       }),
   );

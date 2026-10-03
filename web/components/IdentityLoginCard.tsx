@@ -9,12 +9,20 @@ import { ThemeToggle } from '@/components/ThemeToggle';
 import { useIdentityAuth } from '@/lib/auth/IdentityAuthProvider';
 
 /**
- * Login / alta Identity en el apex.
+ * Login / alta con la cuenta Faciliter (Identity): apex y web del gym.
+ *
+ * @param nextPath Destino tras entrar. Sin él, el padre reacciona a la sesión.
  */
 export function IdentityLoginCard({
   nextPath,
+  brand = 'Faciliter',
+  title,
+  subtitle = 'Para contratar un tenant o ver los que ya tenés.',
 }: {
-  nextPath: string;
+  nextPath?: string;
+  brand?: string;
+  title?: string;
+  subtitle?: string;
 }) {
   const { session, ready, login, register, loginFromCookie } =
     useIdentityAuth();
@@ -28,7 +36,7 @@ export function IdentityLoginCard({
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    if (session) {
+    if (session && nextPath) {
       router.replace(nextPath);
     }
   }, [session, nextPath, router]);
@@ -68,7 +76,9 @@ export function IdentityLoginCard({
       } else {
         await login(email.trim(), password);
       }
-      router.replace(nextPath);
+      if (nextPath) {
+        router.replace(nextPath);
+      }
     } catch (err) {
       setError(
         err instanceof ApiClientError
@@ -90,11 +100,9 @@ export function IdentityLoginCard({
         <ThemeToggle />
       </div>
       <form className="login-card" onSubmit={(e) => void onSubmit(e)}>
-        <p className="brand">Faciliter</p>
-        <h1>{mode === 'register' ? 'Crear cuenta' : 'Tu cuenta'}</h1>
-        <p className="muted">
-          Para contratar un tenant o ver los que ya tenés.
-        </p>
+        <p className="brand">{brand}</p>
+        <h1>{mode === 'register' ? 'Crear cuenta' : (title ?? 'Tu cuenta')}</h1>
+        <p className="muted">{subtitle}</p>
         {error ? <p className="error">{error}</p> : null}
         {mode === 'register' ? (
           <label>

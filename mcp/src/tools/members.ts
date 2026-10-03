@@ -111,7 +111,7 @@ export function registerMemberTools(server: McpServer): void {
         return {
           items,
           total: typeof body.total === 'number' ? body.total : items.length,
-          links: [{ href: '/afiliados', label: 'Afiliados' }],
+          links: [{ href: '/dashboard/afiliados', label: 'Afiliados' }],
         };
       }),
   );
@@ -158,8 +158,8 @@ export function registerMemberTools(server: McpServer): void {
             8,
           ),
           links: [
-            { href: '/afiliados', label: name },
-            { href: '/caja', label: 'Caja' },
+            { href: '/dashboard/afiliados', label: name },
+            { href: '/dashboard/caja', label: 'Caja' },
           ],
         };
       }),

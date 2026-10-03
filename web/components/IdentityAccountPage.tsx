@@ -155,7 +155,7 @@ export function IdentityAccountPage() {
                         onChange={() => setSelected(gym.tenantId)}
                       />{' '}
                       {gym.name} ({gym.slug}){' '}
-                      <a href={tenantOrigin(gym.slug)}>Abrir panel</a>
+                      <a href={`${tenantOrigin(gym.slug)}/dashboard`}>Abrir panel</a>
                     </label>
                   </li>
                 ))}

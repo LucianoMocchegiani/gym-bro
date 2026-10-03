@@ -47,6 +47,7 @@ export const AUDIT_ACTIONS = {
   staffUpdate: 'staff.update',
   staffRolesSet: 'staff.roles.set',
   memberCreate: 'member.create',
+  memberSelfJoin: 'member.self_join',
   memberUpdate: 'member.update',
   memberStatus: 'member.status',
   memberImport: 'member.import',

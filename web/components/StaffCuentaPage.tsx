@@ -34,7 +34,7 @@ function StaffCuentaInner() {
           isImpersonating
             ? () => {
                 void logout().then(() => {
-                  window.location.replace(tenantOrigin('admin'));
+                  window.location.replace(`${tenantOrigin('admin')}/dashboard`);
                 });
               }
             : undefined

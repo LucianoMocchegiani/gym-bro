@@ -56,7 +56,7 @@ export type MemberAccountDetail = {
     status: 'AL_DIA' | 'EN_DEUDA';
   };
   contracts: ContractDetail[];
-  recentPayments: {
+  recentTransactionItems: {
     id: string;
     amount: number;
     status: string;

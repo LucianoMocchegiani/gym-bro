@@ -18,8 +18,16 @@ Pestañas: **Inicio | Acceso | Ajustes**.
 
 Al elegir el perfil staff en Tus gyms: Sesiones, **Caja** (si tiene permiso) y Documentos. Lo demás se hace en el panel web.
 
+## Web del gym
+
+Además de la app, cada gym tiene su web pública en `{slug}.faciliter.xyz`:
+
+- **Planes:** los packs activos con precio. **Comprar** aparece solo si el gym conectó Mercado Pago; si no, dice que se contrata en el gym.
+- **Comprar:** entra o crea su cuenta Faciliter (mail o Google). Si no es socio, completa nombre, DNI y teléfono (opcional) y queda **activo** al toque (alta self-service). Paga con el Mercado Pago del gym y vuelve a **Mi cuenta**; el pack se activa cuando el pago se aprueba.
+- **Mi cuenta** (`/cuenta`): packs vigentes con créditos y vencimiento, resultado del pago y comprobantes. Reservas y calendario siguen en la app.
+
 ## Lo que no existe
 
-Registro desde la app, “olvidé mi contraseña”, notificaciones push, rutinas por días (la rutina va como archivo en la carpeta), tienda de productos físicos, noticias del local, QR del socio generado por la app.
+Registro desde la app (sí desde la web del gym al comprar), “olvidé mi contraseña”, notificaciones push, rutinas por días (la rutina va como archivo en la carpeta), tienda de productos físicos, noticias del local, QR del socio generado por la app.
 
 Si piden capturas: `/docs/modulos` (App del socio). El asistente no ve la app del socio.

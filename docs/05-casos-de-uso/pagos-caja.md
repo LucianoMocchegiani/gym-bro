@@ -15,7 +15,7 @@
 - Concepto: mensualidad/pack/drop-in, o **carrito de Caja** (pack + drop-in en un solo link).
 
 **Flujo principal:**
-1. Actor inicia cobro con `idempotencyKey` de negocio (afiliado self-service en la app con `POST /me/transaction-items/mp/cart`, o Staff en Admin `/caja` con medio Mercado Pago: pack, drop-in, o **carrito** con `items[]`).
+1. Actor inicia cobro con `idempotencyKey` de negocio (afiliado self-service en la app con `POST /me/transaction-items/mp/cart`, o Staff en Admin `/dashboard/caja` con medio Mercado Pago: pack, drop-in, o **carrito** con `items[]`).
 2. Sistema crea Pago `pendiente` (carrito: `transactions` + un TransactionItem por ítem, todos con el mismo `transaction_id`).
 3. Muestra el checkout MP del gym (**sin redirect automático**). En Caja (web y app staff): QR + URL recortada, copiar, abrir; **Cancelar y limpiar** vacía link, carrito y afiliado en la UI (no anula la preference: si ya pagaron, el webhook puede aprobar). Carrito afiliado: mismo QR/copiar. Carrito → **un solo link** con el total. Los ítems de la Preference usan el mismo copy que el comprobante GymBro: pack = nombre + servicios/créditos; drop-in = servicio + sede + horario (la vigencia del contrato aún no existe al crear el link).
 4. Webhook/confirmación MP → sistema marca `aprobado` o `rechazado` (idempotente; carrito: `externalReference` = `cart_id`).
@@ -57,7 +57,7 @@
 **Precondiciones:** Fecha operativa.
 
 **Flujo principal:**
-1. Staff abre **Cierre** (`/arqueo`): listado de movimientos (1 fila por cobro o devolución; misma grilla que Reportes, con categoría Venta/Devolución y tipo Ingreso/Egreso) y totales.
+1. Staff abre **Cierre** (`/dashboard/arqueo`): listado de movimientos (1 fila por cobro o devolución; misma grilla que Reportes, con categoría Venta/Devolución y tipo Ingreso/Egreso) y totales.
 2. Staff declara monto contado.
 3. Sistema calcula el efectivo esperado (cobros en efectivo − devoluciones en efectivo − gastos en efectivo del día) vs declarado → diferencia.
 4. Guarda ArqueoCaja + auditoría.
@@ -157,7 +157,7 @@
 
 **Flujo alternativo (solo autorización, mes ya pagado):**
 1. MONTHLY vigente (p. ej. efectivo) y no hay mandato abierto.
-2. Pestaña Débitos (`/caja?memberId=&vista=debitos`): “Generar link de suscripción”.
+2. Pestaña Débitos (`/dashboard/caja?memberId=&vista=debitos`): “Generar link de suscripción”.
 3. Mismo `init_point` con `start_date` = `endsAt` del contrato. Autoriza ahora; el primer cobro lo hace MP en esa fecha (CU-PAG-009).
 
 **Errores:**
@@ -221,7 +221,7 @@
 **Flujo principal:**
 1. Staff inicia sesión (login OK).
 2. `GET /auth/me` devuelve `platformAccess: "limited"`.
-3. El panel muestra banner fijo y un popup una vez por pestaña; la nav queda en Plan / Uso; el resto redirige a `/plan`.
+3. El panel muestra banner fijo y un popup una vez por pestaña; la nav queda en Plan / Uso; el resto redirige a `/dashboard/plan`.
 4. APIs de operación (`@RequireTenantAuth` sin `@AllowWhenLimited`) responden 403. `GET /plan` y `GET /me/permissions` responden 200.
 5. Impersonación desde `admin`: el gym se usa completo (sin recorte). El afiliado (MEMBER) no entra en este recorte.
 
@@ -236,7 +236,7 @@
 **Precondiciones:** Sesión staff del tenant.
 
 **Flujo principal:**
-1. Staff abre **Gastos** (`/gastos`) y toca **+ Nuevo**.
+1. Staff abre **Gastos** (`/dashboard/gastos`) y toca **+ Nuevo**.
 2. Carga fecha (hoy o pasada), monto, Fijo/Variable, medio, etiqueta (elige una o crea una nueva en el momento) y nota opcional.
 3. Opcional: adjunta hasta 5 comprobantes (PDF o imagen ≤ 5 MB).
 4. Sistema guarda el gasto + auditoría (`expense.create`) y sube los comprobantes a R2 privado.

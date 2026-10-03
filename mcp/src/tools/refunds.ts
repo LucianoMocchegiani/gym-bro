@@ -58,7 +58,7 @@ export function registerRefundTools(server: McpServer): void {
         return {
           items,
           total: typeof body.total === 'number' ? body.total : items.length,
-          links: [{ href: '/devoluciones', label: 'Devoluciones' }],
+          links: [{ href: '/dashboard/devoluciones', label: 'Devoluciones' }],
         };
       }),
   );

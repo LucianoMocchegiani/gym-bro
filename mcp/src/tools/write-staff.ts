@@ -22,8 +22,8 @@ import {
   requireSomeChange,
 } from './write-support.js';
 
-const STAFF_LINKS = [{ href: '/staff', label: 'Staff' }];
-const ROLE_LINKS = [{ href: '/roles', label: 'Roles y permisos' }];
+const STAFF_LINKS = [{ href: '/dashboard/staff', label: 'Staff' }];
+const ROLE_LINKS = [{ href: '/dashboard/roles', label: 'Roles y permisos' }];
 const SEARCH_SIZE = 10;
 
 function roleNames(staff: Record<string, unknown>): string[] {

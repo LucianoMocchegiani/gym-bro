@@ -18,6 +18,17 @@ export type MemberDetail = {
 };
 
 /**
+ * Resultado del alta self-service. Con `tenantId` el cliente pide el JWT de
+ * socio (`POST /auth/select-context`).
+ */
+export type SelfJoinResult = {
+  tenantId: string;
+  memberId: string;
+  /** false = ya era socio activo del gym. */
+  created: boolean;
+};
+
+/**
  * Resumen de deuda (placeholder hasta E5 / RN-TEN-004).
  */
 export type MemberAccountDebt = {

@@ -93,8 +93,8 @@ export function registerRegisterTools(server: McpServer): void {
               }
             : null,
           links: [
-            { href: '/caja', label: 'Caja' },
-            { href: '/arqueo', label: 'Arqueo' },
+            { href: '/dashboard/caja', label: 'Caja' },
+            { href: '/dashboard/arqueo', label: 'Arqueo' },
           ],
         };
       }),

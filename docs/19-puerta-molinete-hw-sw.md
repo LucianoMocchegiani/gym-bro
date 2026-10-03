@@ -38,7 +38,7 @@ Cierra `OPEN` + `COM` **0,5–2 s**. No alimenta el motor (220 V). Solo el trigg
 
 | | Cuándo | Cómo |
 |--|--------|------|
-| A. Tablet + USB-relay | Verificador SSI pegado al torno | Un dispositivo: `/puerta` + pulso |
+| A. Tablet + USB-relay | Verificador SSI pegado al torno | Un dispositivo: `/dashboard/puerta` + pulso |
 | B. Box en el torno | La tablet está en recepción, el hierro lejos | Tablet/API → agente en LAN → relé |
 
 Pulso típico de industria: **0,5–2 s**, no buffered (un `allow` = un giro). Configurable por gym.
@@ -49,7 +49,7 @@ Pulso típico de industria: **0,5–2 s**, no buffered (un `allow` = un giro). C
 
 | Pieza | Qué | Ya tenemos |
 |--------|-----|------------|
-| Tablet o celular en la puerta | Pantalla + cámara no hace falta en modo B | `/puerta` muestra QR `requestUri` |
+| Tablet o celular en la puerta | Pantalla + cámara no hace falta en modo B | `/dashboard/puerta` muestra QR `requestUri` |
 | App afiliado | Wallet escanea el QR | Flutter + Kuatia |
 
 Modo B: el **socio** escanea. El scanner del molinete no hace falta para Kuatia.
@@ -73,7 +73,7 @@ ZKTeco F22/MA300/etc. + USB de enrolamiento (ZK9500) + **PC en el gym**. No hay 
 ### 1.6 BOM mínimo piloto (Kuatia + relé)
 
 ```text
-1 × tablet (Android/Chrome) en `/puerta`
+1 × tablet (Android/Chrome) en `/dashboard/puerta`
 1 × USB-relay contacto seco   (o 1 box Pi/ESP + relé)
 2 × cables a OPEN/COM
 Internet
@@ -93,7 +93,7 @@ DNI: sumar el lector existente + documento en fichas. Huella: no en el piloto sa
 | Evaluate + persistir intento | `api` `evaluateAndPersist` | Pack, deuda, reserva, multi-ingreso |
 | Preview | `GET /members/:id/access-preview` | Misma decisión, sin historial |
 | OID4VP modo B | `POST /access/oid4vp/request` + poll sesión | Kuatia → `memberId` |
-| UI puerta | `web` `/puerta` | QR + resultado |
+| UI puerta | `web` `/dashboard/puerta` | QR + resultado |
 | Wallet | `mobile` | Escanea y presenta VP |
 | Pase manual | Staff | Sin hierro |
 | Documento en ficha | `members.document` | Unique por tenant |
@@ -123,7 +123,7 @@ Sugerencia de repo (al codear): `gate-agent/` o servicio en el box. No meter GPI
 
 | Necesidad | Corte | Notas |
 |----------|-------|--------|
-| Tras `allow` en OID4VP / preview, disparar pulso | P1 | `/puerta` llama al agente (URL LAN configurable) **o** el agente poll-ea la sesión |
+| Tras `allow` en OID4VP / preview, disparar pulso | P1 | `/dashboard/puerta` llama al agente (URL LAN configurable) **o** el agente poll-ea la sesión |
 | Identidad por DNI | Módulo DNI | Hecho para ZKTeco (número = `document` si no hay vínculo). Lector DNI propio: mismo camino con otro adapter |
 | Config tenant | Canales | Hecho: un sistema por gym (`KUATIA` / `ZKTECO`). Varios a la vez (gym pass): después |
 | Intento | Motivo + canal | Hecho: `access_attempts.channel` `kuatia` \| `zkteco` \| `manual`; `scan_mode` `member_at_device` para aparato |
@@ -135,7 +135,7 @@ Un evaluate. Varios *quién*. Un pulso.
 
 | Superficie | Cambio |
 |------------|--------|
-| `/puerta` | Si hay agente configurado y resultado allow → pedir pulso. Deny → no |
+| `/dashboard/puerta` | Si hay agente configurado y resultado allow → pedir pulso. Deny → no |
 | Config gym | URL del agente, canales de identidad, `pulseMs` |
 | DNI | Pantalla o agente leyendo HID: mostrar allow/deny (opcional; el relé basta) |
 
@@ -162,7 +162,7 @@ Kuatia no se “apaga”. Un gym DNI puede igual tener app para el que no trajo 
 
 | # | Entrega | HW | SW |
 |---|---------|----|----|
-| **P1a** | Abre el hierro con SSI | Tablet + USB-relay o box | Agente pulso + `/puerta` allow→pulse |
+| **P1a** | Abre el hierro con SSI | Tablet + USB-relay o box | Agente pulso + `/dashboard/puerta` allow→pulse |
 | **P1b** | Gyms con scanner DNI | Lector existente | Lookup `document` + mismo agente |
 | **P1c** | Huella | Equipo ZK + PC | Bridge; relé sigue siendo P1a |
 

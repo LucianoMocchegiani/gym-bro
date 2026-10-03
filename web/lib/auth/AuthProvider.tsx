@@ -10,10 +10,10 @@ import {
   useSyncExternalStore,
   type ReactNode,
 } from 'react';
-import { fetchAuthMe, staffLogin, staffGoogleLogin, staffLogout } from '@/lib/api/auth';
+import { fetchAuthMe, staffLogin, staffGoogleLogin } from '@/lib/api/auth';
 import { getMyPermissions } from '@/lib/api/permissions';
+import { signOutOfGym } from '@/lib/auth/gym-context';
 import {
-  clearStaffSession,
   getStaffSessionServerSnapshot,
   readStaffSession,
   subscribeStaffSession,
@@ -112,11 +112,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 
   const logout = useCallback(async () => {
-    const current = readStaffSession();
-    if (current?.refreshToken) {
-      await staffLogout(current.refreshToken);
-    }
-    clearStaffSession();
+    await signOutOfGym();
   }, []);
 
   const refreshPermissions = useCallback(async () => {

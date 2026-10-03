@@ -124,7 +124,7 @@ Pasos de VPS: [uso/probar-debito-suscripcion-mp.md](./uso/probar-debito-suscripc
 | P9e | MP rechaza y deja fallido | Mandato fallido; tolerancia/deuda como hoy | RN-PAG-015 | |
 | P9f | Baja débito | Cancela preapproval; contrato vigente sigue | CU-PAG-010 | |
 | P9g | Devolver cobro que inscribió | Mandato a baja + cancel en MP | RN-PAG-016 | |
-| P9h | Ficha → Caja débitos | `/caja?memberId=&vista=debitos`; no hay UI de mandato en la ficha | CU-AFI-004 | |
+| P9h | Ficha → Caja débitos | `/dashboard/caja?memberId=&vista=debitos`; no hay UI de mandato en la ficha | CU-AFI-004 | |
 | P9i | Cambio de pack A→B | Cancela A; alta B para el próximo cobro; sin prorrateo | RN-PAG-016 | |
 | P9j | Cambio de precio del pack | Las suscripciones activas siguen con su monto; Regenerar link o Próximo pack toma el precio nuevo | RN-PAG-013 | |
 | P9k | Socio con otro mail en MP | Cargar el mail de su cuenta MP al tildar débito (o en Débitos + Regenerar link): MP deja autorizar; vacío = mail del afiliado; el mail queda en el mandato | RN-PAG-013 | |
@@ -146,13 +146,13 @@ Pasos de VPS: [uso/probar-debito-suscripcion-mp.md](./uso/probar-debito-suscripc
 | X5 | Credencial revocada | Deny | CU-AFI-003/006 | |
 | X6 | Historial muestra motivos | Lista ok/deny | CU-ACC-005 | |
 | X13 | GET access-preview (allow/deny) | 200 + `reasonCode`; **sin** fila nueva en historial | C0 chat/MCP | |
-| X14 | Config → Puerta = Acceso ZKTeco | `/puerta` sin QR: "Este gym usa acceso ZKTeco" + últimos ingresos; `POST /access/oid4vp/request` 409; emitir credencial socio/staff 409 | RN-ACC-010 | |
+| X14 | Config → Puerta = Acceso ZKTeco | `/dashboard/puerta` sin QR: "Este gym usa acceso ZKTeco" + últimos ingresos; `POST /access/oid4vp/request` 409; emitir credencial socio/staff 409 | RN-ACC-010 | |
 | X15 | Evento ZKTeco con DNI del socio (sin vínculo) | Misma decisión que con la app (p.ej. `sin_derecho` / `ok_acceso_libre`); historial canal "ZKTeco" | RN-ACC-011, CU-ACC-008 | |
 | X16 | Evento ZKTeco con número vinculado a staff activo | ALLOWED `ok_staff`, `open=true`; log "Abrir puerta (simulado)" | RN-ACC-011 | |
 | X17 | Evento ZKTeco con número desconocido | DENIED `sin_vinculo`; Quién = "Nº … (sin vincular)" | RN-ACC-011 | |
 | X18 | Mismo evento ZKTeco dos veces | `duplicate=true`, `open=false`, una sola fila en historial | RN-ACC-011 | |
 | X19 | Vincular número ya usado por otra persona | 409 | CU-ACC-009 | |
-| X20 | Volver Config → Puerta = Kuatia | QR de `/puerta` vuelve; evento ZKTeco → 409 | RN-ACC-010 | |
+| X20 | Volver Config → Puerta = Kuatia | QR de `/dashboard/puerta` vuelve; evento ZKTeco → 409 | RN-ACC-010 | |
 | X7 | Ingreso tardío si política ON | Paga/crédito + entra | CU-RES-006 | |
 | X8 | Renovar MONTHLY a tiempo | `startsAt` = día después de `endsAt` previo | RN-CON-001 | |
 | X9 | Renovar tras hueco sin ingresos | `startsAt` ≈ día de pago | RN-CON-001 | |
@@ -214,7 +214,7 @@ Pasos de VPS: [uso/probar-debito-suscripcion-mp.md](./uso/probar-debito-suscripc
 | C7-1 | Nuevo chat + primer mensaje | Sidebar deja de decir “Sin título”; recorta el texto. Se puede editar y Enter/blur guarda | C7 | |
 | C7-2 | Parar a mitad de stream | Enviar → Parar; queda lo generado (texto/tools). Se puede seguir el hilo | C7 | |
 | C7-3 | OpenRouter sin crédito / clave mala | Banner claro (crédito o clave). No se pierde el mensaje del staff | C7 | |
-| C7-4 | Chip de una tool (p. ej. Reportes) | Cierra el drawer y navega a `/reportes` | C7 | |
+| C7-4 | Chip de una tool (p. ej. Reportes) | Cierra el drawer y navega a `/dashboard/reportes` | C7 | |
 | C7-5 | `npm run smoke` en `mcp/` tras seed | Admin: dos períodos distintos; Entrenador: caja/débito sin permiso, reportes+help OK | C7 | |
 
 ---
@@ -223,8 +223,8 @@ Pasos de VPS: [uso/probar-debito-suscripcion-mp.md](./uso/probar-debito-suscripc
 
 | # | Caso | Esperado | RN/CU | R |
 |---|------|----------|-------|---|
-| C8-1 | “Cargá un gasto de 15000 de luz, variable, transferencia” | Tarjeta “Cargar gasto” con etiqueta, monto, medio, fecha. Sin tocar nada no hay gasto en `/gastos` | RN-ASI-001 | |
-| C8-2 | Confirmar en la tarjeta | “Hecho” + texto; el gasto aparece en `/gastos` y en auditoría | RN-ASI-001 | |
+| C8-1 | “Cargá un gasto de 15000 de luz, variable, transferencia” | Tarjeta “Cargar gasto” con etiqueta, monto, medio, fecha. Sin tocar nada no hay gasto en `/dashboard/gastos` | RN-ASI-001 | |
+| C8-2 | Confirmar en la tarjeta | “Hecho” + texto; el gasto aparece en `/dashboard/gastos` y en auditoría | RN-ASI-001 | |
 | C8-3 | Cancelar, o esperar 2 min y Confirmar | “Cancelada” / “Venció”; no se hace nada | RN-ASI-001 | |
 | C8-4 | Gasto con etiqueta que no existe | No hay tarjeta; el asistente lista las etiquetas existentes | RN-ASI-002 | |
 | C8-5 | “Dá de alta a Ana Pérez, ana@…” y confirmar | Socio creado; entra a la app con `ChangeMe123!` y se le pide cambiarla | RN-ASI-003 | |
@@ -268,7 +268,7 @@ Pasos de VPS: [uso/probar-debito-suscripcion-mp.md](./uso/probar-debito-suscripc
 | N1 | Pago aprobado (caja o MP) | Email (si MAIL_DRIVER=resend) + fila in-app | E1 | |
 | N2 | Gym apaga evento (Admin Avisos o `active=false`) | No envía ni in-app | RN-NOT-003 | |
 | N3 | Afiliado apaga email en Avisos | Siguiente pago: bandeja sí, mail no | CU-NOT-003 | |
-| N4 | Editar plantilla en Admin `/avisos` | Siguiente envío usa texto nuevo | CU-NOT-002 | |
+| N4 | Editar plantilla en Admin `/dashboard/avisos` | Siguiente envío usa texto nuevo | CU-NOT-002 | |
 | N5 | Branding nombre gym | Visible en asunto/cuerpo | RN-NOT-004 | |
 | N6 | Mismo pago webhook 2 veces | Un solo aviso (idempotencia) | | |
 | N7 | Reserva confirmada / cancelada | Aviso in-app (y mail si ON) | E4 E5 | |
@@ -286,8 +286,8 @@ Pasos de VPS: [uso/probar-debito-suscripcion-mp.md](./uso/probar-debito-suscripc
 
 | # | Caso | Esperado | RN/CU | R |
 |---|------|----------|-------|---|
-| V1 | Staff Admin, `/vencimientos` | Lista MONTHLY por vencer (0–7 días) o en tolerancia; pills 7 días / tolerancia / débito / a mano; stats En cola | RN-CON-001, RN-ACC-005 | |
-| V2 | Fila a mano + permiso caja | Caja abre `/caja?memberId=`; Débitos no aparece | CU-PAG-002 | |
+| V1 | Staff Admin, `/dashboard/vencimientos` | Lista MONTHLY por vencer (0–7 días) o en tolerancia; pills 7 días / tolerancia / débito / a mano; stats En cola | RN-CON-001, RN-ACC-005 | |
+| V2 | Fila a mano + permiso caja | Caja abre `/dashboard/caja?memberId=`; Débitos no aparece | CU-PAG-002 | |
 | V3 | Fila débito o débito fallido | Caja y Débitos (`vista=debitos`) | CU-AFI-004 | |
 | V4 | Entrenador (`members.read`, sin caja) | Ve la lista; no ve Caja/Débitos | RN-ROL-007 | |
 | V5 | `GET /expirations` sin `members.read` | 403 | — | |
@@ -321,14 +321,35 @@ Pasos de VPS: [uso/probar-debito-suscripcion-mp.md](./uso/probar-debito-suscripc
 | # | Caso | Esperado | RN/CU | R |
 |---|------|----------|-------|---|
 | M1 | Apex `http://localhost:3002/` | Landing Faciliter (no pide login) | P3 | |
-| M2 | Tenant `http://demo.localhost:3002/` | Dashboard Admin (RequireStaff) | — | |
+| M2 | Tenant `http://demo.localhost:3002/` | Web del gym: nombre y packs; no pide login. El panel está en `/dashboard` (RequireStaff) | RN-CTA-005 | |
 | M3 | View-source apex | `<title>` empieza con “Faciliter \|”, description, canonical, JSON-LD `Organization` + `SoftwareApplication` | P3 | |
 | M3b | `/opengraph-image` y preview al compartir | PNG 1200×630: isotipo + FACILITER + tagline; `og:image:width` 1200 / `height` 630 | P3 | |
 | M4 | `/sitemap.xml` y `/robots.txt` | URLs públicas; Admin en disallow | P3 | |
 | M5 | `/legal/terminos` y `/legal/privacidad` | Borrador visible; no 404 | P3 | |
-| M6 | Host tenant: header `X-Robots-Tag` | `noindex, nofollow` | P3 | |
+| M6 | Host tenant: header `X-Robots-Tag` | `/` sin header (indexable, canonical al host del gym); `/dashboard`, `/login`, `/cuenta`, `/comprar` con `noindex, nofollow` | RN-CTA-005 | |
 | M7 | Apex burbuja `#asistente` | Abre el mismo drawer que el Admin; responde pack/caja/puerta; no pide login | P3 | |
 | M8 | Widget no lista socios de un gym | Sin tools de operación; solo ayuda de producto | C7/landing | |
+
+---
+
+## Web del gym (vidriera, login único, compra, portal)
+
+| # | Caso | Esperado | RN/CU | R |
+|---|------|----------|-------|---|
+| G1 | `{slug}/caja?memberId=X`, `{slug}/puerta/pase-manual`, `{slug}/config?mp=connected` | 308 a `/dashboard/...` conservando el query | RN-CTA-005 | |
+| G2 | `admin.{dominio}/` | 308 al apex; `admin.{dominio}/dashboard` abre el panel de plataforma | RN-CTA-005 | |
+| G3 | Gym con MP conectado | Cada pack con botón **Comprar**; sin MP: «Se contrata en el gym» | RN-CTA-008 | |
+| G4 | `{slug}/login` con cuenta solo staff | Entra directo a `/dashboard` | RN-CTA-006 | |
+| G5 | `{slug}/login` con cuenta solo socio | Entra a `/cuenta` (packs vigentes, comprobantes) | RN-CTA-006 | |
+| G6 | `{slug}/login` con cuenta socio y staff | Pregunta «Panel del gym» o «Mi cuenta de socio» | RN-CTA-006 | |
+| G7 | `{slug}/login` con cuenta que no es parte del gym | «Todavía no es socia» + Ver planes / Usar otra cuenta | RN-CTA-006 | |
+| G8 | Comprar con cuenta nueva (sin ser socio) | Login/registro → datos (nombre, DNI, teléfono) → socio ACTIVE en Afiliados; auditoría `member.self_join` → resumen → Mercado Pago | CU-AFI-007, RN-CTA-007 | |
+| G9 | Comprar con DNI de otro socio del gym | 409, no crea | RN-CTA-007 | |
+| G10 | Comprar con socio suspendido | 403, no llega a Mercado Pago | RN-CTA-007 | |
+| G11 | Pagar en MP (sandbox) y volver | Aterriza en `/cuenta?compra=…`: «Pago aprobado»; tras el webhook, el pack aparece en vigentes y el comprobante en la lista | CU-AFI-007 | |
+| G12 | Cerrar sesión en el panel y volver a `/login` | Pide la cuenta otra vez (se cerraron las sesiones staff, socio e Identity) | RN-CTA-006 | |
+| G13 | Impersonar un gym desde plataforma | Entra a `{slug}/dashboard` como antes | RN-CTA-006 | |
+| G14 | App: comprar un pack (sin `returnToWeb`) | Igual que antes; MP no redirige a la web | CU-PAG-001 | |
 
 ---
 

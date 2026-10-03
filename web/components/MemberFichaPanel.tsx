@@ -163,7 +163,7 @@ export function MemberFichaPanel({
   return (
     <div className="admin-stack">
       <p className="muted small">
-        <Link href={`/caja?memberId=${encodeURIComponent(memberId)}&vista=debitos`}>
+        <Link href={`/dashboard/caja?memberId=${encodeURIComponent(memberId)}&vista=debitos`}>
           Débito automático en Caja
         </Link>
       </p>

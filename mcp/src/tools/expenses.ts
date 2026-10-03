@@ -111,7 +111,7 @@ export function registerExpenseTools(server: McpServer): void {
             ),
             20,
           ),
-          links: [{ href: '/gastos', label: 'Gastos' }],
+          links: [{ href: '/dashboard/gastos', label: 'Gastos' }],
         };
       }),
   );
@@ -169,7 +169,7 @@ export function registerExpenseTools(server: McpServer): void {
           to: range.to,
           items,
           total: typeof body.total === 'number' ? body.total : items.length,
-          links: [{ href: '/gastos', label: 'Gastos' }],
+          links: [{ href: '/dashboard/gastos', label: 'Gastos' }],
         };
       }),
   );

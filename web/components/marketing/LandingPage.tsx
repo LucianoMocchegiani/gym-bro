@@ -7,9 +7,9 @@ import {
 import { CheckList } from '@/components/marketing/CheckList';
 import { MarketingShell } from '@/components/marketing/MarketingShell';
 import { MktShell } from '@/components/marketing/MktShell';
+import { PackPlanCard } from '@/components/marketing/PackPlanCard';
 import { ProductPreviewCard } from '@/components/marketing/ProductPreviewCard';
 import { fetchPublicPlatformPacks } from '@/lib/api/public-platform';
-import { formatMoney } from '@/lib/cash-labels';
 import { BOOKING_URL, publicSiteUrl } from '@/lib/site-url';
 
 const PILLARS: {
@@ -268,27 +268,22 @@ export async function LandingPage() {
         ) : (
           <div className="mkt-plans">
             {packs.map((pack) => (
-              <div key={pack.id} className="mkt-plan">
-                <p className="eyebrow">Incluye</p>
-                <h3>{pack.name}</h3>
-                <p className="mkt-price">
-                  {pack.price < 1
-                    ? 'A convenir'
-                    : `${formatMoney(pack.price)}${
-                        pack.billingPeriod === 'MONTHLY' ? ' / mes' : ''
-                      }`}
-                </p>
-                {pack.description ? (
-                  <p className="muted">{pack.description}</p>
-                ) : null}
-                <CheckList items={pack.services.map((s) => s.name)} />
-                <a
-                  className="mkt-btn-primary"
-                  href={`/empezar?pack=${encodeURIComponent(pack.id)}`}
-                >
-                  Contratar
-                </a>
-              </div>
+              <PackPlanCard
+                key={pack.id}
+                name={pack.name}
+                price={pack.price}
+                billingPeriod={pack.billingPeriod}
+                description={pack.description}
+                items={pack.services.map((s) => s.name)}
+                action={
+                  <a
+                    className="mkt-btn-primary"
+                    href={`/empezar?pack=${encodeURIComponent(pack.id)}`}
+                  >
+                    Contratar
+                  </a>
+                }
+              />
             ))}
           </div>
         )}

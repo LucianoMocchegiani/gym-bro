@@ -90,6 +90,19 @@ export class HttpMpAccountAdapter extends MpAccountPort {
         external_reference: input.externalReference,
         notification_url: input.notificationUrl,
         payer: input.payerEmail ? { email: input.payerEmail } : undefined,
+        ...(input.backUrl
+          ? {
+              back_urls: {
+                success: input.backUrl,
+                pending: input.backUrl,
+                failure: input.backUrl,
+              },
+              // MP rechaza auto_return con back_urls que no son https.
+              ...(input.backUrl.startsWith('https://')
+                ? { auto_return: 'approved' }
+                : {}),
+            }
+          : {}),
         metadata: {
           gymbro_external_reference: input.externalReference,
         },

@@ -58,7 +58,7 @@ Términos usados en dominio, reglas y casos de uso. Una sola palabra canónica p
 | **Mercado Pago (MP)** | Medio online; la cuenta es **del gym** (tenant). |
 | **Caja** | Cobros presenciales (efectivo u otros habilitados) operados por staff. También es la **única UI** del débito automático (cobro + pestaña Débitos). |
 | **Caja del día** | Conjunto de movimientos de caja de una fecha + arqueo. |
-| **Cierre** | Pantalla Admin (`/arqueo`) del cierre del día: totales, arqueo y grilla de movimientos. |
+| **Cierre** | Pantalla Admin (`/dashboard/arqueo`) del cierre del día: totales, arqueo y grilla de movimientos. |
 | **Categoría (caja)** | Rubro del asiento, distinto de ingreso/egreso. Hoy: Venta o Devolución, **derivada** de `cash_movements.kind` (no hay columna). Los gastos no son movimientos de caja: van en su propia tabla (ver **Gasto**). |
 | **Gasto** | Plata que paga el gym (alquiler, luz, mercadería). Fijo o variable, con **etiqueta** definida por el gym y hasta 5 comprobantes. Solo el efectivo resta en el arqueo (RN-GAS). |
 | **Arqueo** | Control de lo esperado vs lo declarado en caja del día. |

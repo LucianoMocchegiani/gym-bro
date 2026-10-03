@@ -6,7 +6,7 @@
 
 **Mail de la cuenta MP:** Mercado Pago solo deja autorizar el link a la cuenta logueada con el mail de la suscripción. Si el socio usa otro mail en MP, cargarlo en **Mail de la cuenta Mercado Pago del socio** (vacío = el mail del afiliado). Si MP dice «tu email no coincide», corregir ese mail en la pestaña Débitos y **Regenerar link**.
 
-**Pestaña Débitos** (Caja): cola **Pendiente / link**, **Reintentando**, **Fallidos**, **Todos**. Al elegir un socio: estado, próximo cobro y monto. Acciones: **Abrir checkout MP**, **Copiar link** (para mandárselo), **Próximo pack**, **Regenerar link**, **Dar de baja**. MP reintenta si un cobro falla. Dar de baja corta los cobros que vienen; el mes ya pago sigue vigente. La ficha del socio ataja a `/caja?memberId=&vista=debitos`.
+**Pestaña Débitos** (Caja): cola **Pendiente / link**, **Reintentando**, **Fallidos**, **Todos**. Al elegir un socio: estado, próximo cobro y monto. Acciones: **Abrir checkout MP**, **Copiar link** (para mandárselo), **Próximo pack**, **Regenerar link**, **Dar de baja**. MP reintenta si un cobro falla. Dar de baja corta los cobros que vienen; el mes ya pago sigue vigente. La ficha del socio ataja a `/dashboard/caja?memberId=&vista=debitos`.
 
 Si el débito falla, al socio le llegan los avisos de débito (topic `avisos`) y el pack aparece en **Vencimientos**.
 

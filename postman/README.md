@@ -55,7 +55,7 @@ Query params comunes (ya incluidos en cada request, algunos deshabilitados por d
 
 Los filtros de dominio existentes (`status`, `active`, `type`, `from`, `to`, `memberId`, `result`, etc.) se mantienen sin cambios. Se quitó `limit` de `audit-events` y `access-attempts`: usá `pageSize`.
 
-Carpeta **Health**: `GET /health`, `GET /public/platform/packs` (landing), `GET /public/tenants/by-slug/{{tenantSlug}}` y `GET /public/app-config` (versión mínima de la app móvil) (sin auth).
+Carpeta **Health**: `GET /health`, `GET /public/platform/packs` (landing), `GET /public/tenants/by-slug/{{tenantSlug}}`, `GET /public/tenants/by-slug/{{tenantSlug}}/packs` (vidriera de la web del gym + `onlineCheckout`) y `GET /public/app-config` (versión mínima de la app móvil) (sin auth).
 
 ## Manual
 
@@ -83,7 +83,7 @@ Carpeta **Payment register**: `GET /payment-register/day` + `POST /payment-regis
 
 Carpeta **Expenses**: gastos del gym (RN-GAS). `expenses.read` (GET) / `expenses.write` (resto). Etiquetas `GET|POST /expense-labels`, `PATCH|DELETE /expense-labels/:id` (con gastos → 409, archivar). Gastos `GET|POST /expenses`, `GET /expenses/summary`, `GET|PATCH|DELETE /expenses/:id`. Comprobantes `POST /expenses/:id/files` (multipart `file`, PDF/imagen 5 MB, máx. 5), `GET|DELETE .../files/:fileId`. Gasto `CASH` en un día con arqueo cerrado → 409 al editar/borrar. Variables `expenseLabelId`, `expenseId`, `expenseFileId`.
 
-Carpeta **Mercado Pago**: cuenta `GET|PUT|DELETE /mercadopago/account` + test + `POST /mercadopago/account/oauth/start` (`mp.connect`; devuelve `authorizationUrl` para abrir en el navegador; la vuelta `GET /mercadopago/oauth/callback` la hace MP, no Postman) + `GET /mercadopago/account/public-key` (`cashier.operate`, Checkout Pro). Débito MONTHLY: `GET /debit-mandates`, `GET /members/:id/debit-mandate`, `POST /members/:id/debit-mandates` (`packId` + `chargeNow` → `checkoutUrl`), `PATCH` pack, `POST .../cancel`. **No** hay `POST .../charge`. Caja: Staff `POST /members/:id/transaction-items/mp/cart` (`items[]` → 1 link) y `POST .../cash/cart`. Afiliado: `POST /me/transaction-items/mp/cart`. Webhook `POST /webhooks/payment?tenantId=` (`payment`, `subscription_preapproval`, `subscription_authorized_payment`).
+Carpeta **Mercado Pago**: cuenta `GET|PUT|DELETE /mercadopago/account` + test + `POST /mercadopago/account/oauth/start` (`mp.connect`; devuelve `authorizationUrl` para abrir en el navegador; la vuelta `GET /mercadopago/oauth/callback` la hace MP, no Postman) + `GET /mercadopago/account/public-key` (`cashier.operate`, Checkout Pro). Débito MONTHLY: `GET /debit-mandates`, `GET /members/:id/debit-mandate`, `POST /members/:id/debit-mandates` (`packId` + `chargeNow` → `checkoutUrl`), `PATCH` pack, `POST .../cancel`. **No** hay `POST .../charge`. Caja: Staff `POST /members/:id/transaction-items/mp/cart` (`items[]` → 1 link) y `POST .../cash/cart`. Afiliado: `POST /me/transaction-items/mp/cart` (`returnToWeb: true` desde la web del gym → MP vuelve a `{slug}/cuenta?compra=`). Webhook `POST /webhooks/payment?tenantId=` (`payment`, `subscription_preapproval`, `subscription_authorized_payment`).
 
 ### Caja de plataforma (tenant `admin` → gym)
 
@@ -175,7 +175,7 @@ Un staff de un gym normal da 403 en estos endpoints (`PlatformTenantGuard` exige
 
 El flujo web completo pide **HTTPS** (`SameSite=None; Secure`). En `http://*.localhost` la cookie no cruza subdominios (igual que Google). `COOKIE_PARENT_DOMAIN` o `CORS_APP_DOMAIN` arma el `Domain` de la cookie.
 
-Self-serve apex: `POST /auth/identity/register`, `POST /identity/signups` (JWT Identity), `GET /identity/tenants`.
+Self-serve apex: `POST /auth/identity/register`, `POST /identity/signups` (JWT Identity), `GET /identity/tenants`. Web del gym: `POST /identity/memberships` (JWT Identity; alta del socio con nombre + DNI, CU-AFI-007) y después select-context MEMBER.
 
 ## ⚠️ Orden de decorators en controllers (bug ya corregido)
 

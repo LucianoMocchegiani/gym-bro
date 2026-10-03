@@ -25,14 +25,14 @@ function DoorTabsNav() {
     <PageTabs
       label="Secciones de puerta"
       tabs={[
-        { href: '/puerta', label: 'Verificar', active: tab === 'verificar' },
+        { href: '/dashboard/puerta', label: 'Verificar', active: tab === 'verificar' },
         {
-          href: '/puerta?tab=pase',
+          href: '/dashboard/puerta?tab=pase',
           label: 'Pase manual',
           active: tab === 'pase',
         },
         {
-          href: '/puerta?tab=historial',
+          href: '/dashboard/puerta?tab=historial',
           label: 'Historial',
           active: tab === 'historial',
         },

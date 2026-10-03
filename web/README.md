@@ -8,7 +8,7 @@ Next.js App Router — sitio público, panel staff y Super Admin.
 
 El panel Staff **no** vive en el apex: hace falta el subdominio del gym.
 
-## Rutas Staff (tenant por subdominio)
+## Web del gym (tenant por subdominio)
 
 Entrar por **`http://{slug}.localhost:3002`** (demo: `http://demo.localhost:3002`).
 
@@ -16,19 +16,24 @@ Con tunnel: `{slug}.{NEXT_PUBLIC_APP_DOMAIN}` (ej. `https://demo.pruebasaproducc
 
 | Ruta | Uso |
 |------|-----|
-| `/login` | Login Staff (slug desde el Host; sin UUID) |
-| `/` | Dashboard: KPIs del día (solo con slug de tenant) |
-| `/afiliados` | Listado / alta / ficha + estado de cuenta |
-| `/servicios` | Catálogo de servicios |
-| `/packs` | Packs + componentes |
-| `/sesiones` | Sesiones puntuales + roster / reserva CREDIT |
-| `/roles` / `/staff` | Roles y staff |
-| `/config` | Settings + Mercado Pago |
-| `/caja` | Caja del día |
-| `/devoluciones` | Cola de solicitudes + ejecutar reembolso (`transaction_items.refund`) |
-| `/reportes` | Ingresos del período (detalle nominado) + snapshot packs/activos |
-| `/puerta` | Tabs: Verificar (OID4VP) · Pase manual · Historial; `/puerta/pase-manual` → `?tab=pase` |
+| `/` | Vidriera pública: packs del gym; **Comprar** solo si el gym conectó Mercado Pago (indexable) |
+| `/login` | Login único con la cuenta Faciliter: staff → `/dashboard`, socio → `/cuenta`, ambos → elige |
+| `/comprar?pack=` | Alta self-service (nombre, DNI, teléfono) si hace falta → checkout MP (`returnToWeb`) |
+| `/cuenta` | Portal del socio: packs vigentes, créditos, resultado del pago y comprobantes |
+| `/dashboard` | Panel staff: KPIs del día |
+| `/dashboard/afiliados` | Listado / alta / ficha + estado de cuenta |
+| `/dashboard/servicios` | Catálogo de servicios |
+| `/dashboard/packs` | Packs + componentes |
+| `/dashboard/sesiones` | Sesiones puntuales + roster / reserva CREDIT |
+| `/dashboard/roles` / `/dashboard/staff` | Roles y staff |
+| `/dashboard/config` | Settings + Mercado Pago |
+| `/dashboard/caja` | Caja del día |
+| `/dashboard/devoluciones` | Cola de solicitudes + ejecutar reembolso (`transaction_items.refund`) |
+| `/dashboard/reportes` | Ingresos del período (detalle nominado) + snapshot packs/activos |
+| `/dashboard/puerta` | Tabs: Verificar (OID4VP) · Pase manual · Historial; `/dashboard/puerta/pase-manual` → `?tab=pase` |
 | Asistente | Drawer (topbar); no hay ruta `/asistente` |
+
+Las rutas viejas del panel en la raíz (`/caja`, `/puerta/...`, `/config?mp=...`) redirigen con 308 a `/dashboard/...` (`middleware.ts`). En `admin.{dominio}` la raíz va al apex.
 
 ## Rutas Super (apex, bajo `/super`)
 
@@ -53,7 +58,7 @@ Credenciales: `docs/credenciales-demo.md`.
 
 ## Notas
 
-- Staff: sesión `gymbro.staff.session`; Super: `gymbro.super.session` (separadas).
+- Sesiones por origen (`lib/auth/token-store.ts`): staff `gymbro.staff.session`, socio `gymbro.member.session`, cuenta Faciliter (Identity) aparte. Cerrar sesión en el gym limpia las tres.
 - Tema claro/oscuro: `data-theme` + `localStorage` clave `gymbro.theme` (default oscuro).
 - Marca del Admin = slug del tenant (sidebar); Super = `SUPER`.
 - CORS API acepta `*.localhost` además de `CORS_ORIGIN`.

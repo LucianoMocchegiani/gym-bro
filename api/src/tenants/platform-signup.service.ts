@@ -22,6 +22,7 @@ import { MercadoPagoAccountService } from '../payment/mercadopago-account.servic
 import { MP_ACCOUNT_PORT, MpAccountPort } from '../payment/mp-account.port';
 import { CashPaymentService } from '../payment/cash-payment.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { publicWebOrigin } from '../common/web-urls';
 import { NotificationDispatcher } from '../notifications/notifications.service';
 import {
   addCalendarDays,
@@ -598,10 +599,7 @@ export class PlatformSignupService {
   }
 
   private webBackUrl(): string {
-    const web =
-      this.config.get<string>('PUBLIC_WEB_BASE_URL')?.replace(/\/$/, '') ||
-      'http://localhost:3002';
-    return `${web}/cuenta`;
+    return `${publicWebOrigin(this.config)}/cuenta`;
   }
 
   private toView(row: {

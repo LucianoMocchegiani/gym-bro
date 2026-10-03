@@ -85,7 +85,7 @@ La credencial de puerta **no** se emite en el alta: sale al cobrar un pack (CU-C
 **Flujo principal:**
 1. Staff abre “estado de cuenta”.
 2. Sistema muestra contrataciones, créditos, deuda, pagos recientes, reservas próximas.
-3. Si hay (o se quiere) débito automático: atajo a Caja `/caja?memberId={id}&vista=debitos` — no se gestiona el mandato en la ficha (CU-PAG-010).
+3. Si hay (o se quiere) débito automático: atajo a Caja `/dashboard/caja?memberId={id}&vista=debitos` — no se gestiona el mandato en la ficha (CU-PAG-010).
 
 **Postcondiciones:** Solo lectura.
 
@@ -131,6 +131,35 @@ La credencial de puerta **no** se emite en el alta: sale al cobrar un pack (CU-C
 
 **Reglas relacionadas:** RN-ACC-001, RN-ACC-002, RN-PAG-004
 **API:** Staff `POST /api/members/:memberId/credential-offers` (`packId` opcional). Listado `GET …/credential-offers`. Socio: `GET /me/credential-offers` + accept/fail.
+
+---
+
+## CU-AFI-007 Hacerse socio y comprar desde la web del gym
+
+**Actor:** Persona con (o sin) cuenta Faciliter
+
+**Precondiciones:** El gym está activo, tiene packs publicados y Mercado Pago conectado (RN-CTA-008).
+
+**Flujo principal:**
+1. La persona entra a `{slug}.{dominio}` y ve los planes del gym.
+2. Toca **Comprar** en un pack → `/comprar?pack={id}`.
+3. Entra con su cuenta Faciliter (mail y contraseña o Google) o la crea.
+4. Si no es socia del gym, completa nombre, DNI y teléfono (opcional). Sistema crea el Afiliado **ACTIVE** con el mail de la cuenta y audita `member.self_join` (RN-CTA-007).
+5. Sistema emite el JWT de socio (`select-context`) y muestra el resumen del pack.
+6. **Pagar con Mercado Pago** → carrito MP del socio con `returnToWeb` → checkout del gym.
+7. Mercado Pago vuelve a `/cuenta?compra={transactionId}`: se muestra el resultado del pago, los packs vigentes, créditos y comprobantes (CU-AFI-005).
+
+**Flujos alternativos / errores:**
+- Ya era socia activa → salta el paso 4.
+- Socia suspendida o dada de baja → 403, no puede comprar online.
+- DNI ya usado por otro socio del gym → 409.
+- Gym sin Mercado Pago → no hay botón Comprar; «se contrata en el gym».
+- Pago pendiente o rechazado → el portal lo informa; el pack se activa solo cuando el webhook llega aprobado.
+
+**Postcondiciones:** Afiliado existente (nuevo o previo); transacción MP PENDING hasta el webhook.
+
+**Reglas relacionadas:** RN-CTA-006, RN-CTA-007, RN-CTA-008, RN-PAG-009
+**API:** `GET /public/tenants/by-slug/:slug/packs` (público) · `POST /identity/memberships` (JWT Identity) · `POST /auth/select-context` · `POST /me/transaction-items/mp/cart` con `returnToWeb: true` · `GET /me/account` · `GET /me/receipts`.
 
 ---
 

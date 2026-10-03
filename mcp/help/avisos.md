@@ -2,7 +2,7 @@
 
 Dos lados de lo mismo:
 
-- **Panel → Sistema → Avisos** (`/avisos`): una tarjeta por evento. Cada una se puede **apagar** y tiene asunto y texto editables, con variables como `{{nombre}}` o `{{gym}}`. Requiere permiso de configuración.
+- **Panel → Sistema → Avisos** (`/dashboard/avisos`): una tarjeta por evento. Cada una se puede **apagar** y tiene asunto y texto editables, con variables como `{{nombre}}` o `{{gym}}`. Requiere permiso de configuración.
 - **App → Inicio → Avisos:** la bandeja del socio (nuevos arriba). En **Ajustes → Avisos → Correo por tipo** elige qué le llega también por mail. La bandeja de la app no se apaga.
 
 Eventos:

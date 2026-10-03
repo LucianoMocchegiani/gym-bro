@@ -573,7 +573,7 @@ API: `/api/member-imports*` (`members.import` + `members.write`).
 
 ### 4.9c `notification_templates` / `notification_preferences` / `notifications`
 
-N1 (CU-NOT). Unique `(tenant_id, idempotency_key)`. Socio: `member_id`. Dueño plan Faciliter: `identity_id` (XOR). Eventos socio: `PAYMENT_APPROVED`, `RESERVATION_*`, `WAITLIST_PROMOTED`, `REFUND_EXECUTED`, `CONTRACT_EXPIRING`, `CONTRACT_EXPIRING_DEBIT`, `CONTRACT_IN_TOLERANCE`, `DEBIT_CHARGE_FAILED`, `DEBIT_MANDATE_FAILED`. Eventos plan (no aparecen en Admin `/avisos` del gym): `PLATFORM_PLAN_PAID`, `PLATFORM_PLAN_EXPIRING`, `PLATFORM_PLAN_EXPIRING_DEBIT`, `PLATFORM_PLAN_IN_TOLERANCE`, `PLATFORM_DEBIT_CHARGE_FAILED`, `PLATFORM_DEBIT_MANDATE_FAILED`. Cron 12:00 ART. Débito socio: cobro rechazado → `RETRYING`; preapproval caído → `FAILED`.
+N1 (CU-NOT). Unique `(tenant_id, idempotency_key)`. Socio: `member_id`. Dueño plan Faciliter: `identity_id` (XOR). Eventos socio: `PAYMENT_APPROVED`, `RESERVATION_*`, `WAITLIST_PROMOTED`, `REFUND_EXECUTED`, `CONTRACT_EXPIRING`, `CONTRACT_EXPIRING_DEBIT`, `CONTRACT_IN_TOLERANCE`, `DEBIT_CHARGE_FAILED`, `DEBIT_MANDATE_FAILED`. Eventos plan (no aparecen en Admin `/dashboard/avisos` del gym): `PLATFORM_PLAN_PAID`, `PLATFORM_PLAN_EXPIRING`, `PLATFORM_PLAN_EXPIRING_DEBIT`, `PLATFORM_PLAN_IN_TOLERANCE`, `PLATFORM_DEBIT_CHARGE_FAILED`, `PLATFORM_DEBIT_MANDATE_FAILED`. Cron 12:00 ART. Débito socio: cobro rechazado → `RETRYING`; preapproval caído → `FAILED`.
 
 | Tabla | Notas |
 |-------|--------|

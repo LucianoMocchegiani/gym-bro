@@ -1,6 +1,32 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
-import { extractTenantSlugFromHost } from '@/lib/tenant-host';
+import {
+  extractTenantSlugFromHost,
+  platformOrigin,
+  PLATFORM_TENANT_SLUG,
+} from '@/lib/tenant-host';
+
+/** Rutas del panel que antes vivían en la raíz del host del gym. */
+const LEGACY_PANEL_SEGMENTS = new Set([
+  'afiliados',
+  'arqueo',
+  'auditoria',
+  'avisos',
+  'caja',
+  'config',
+  'devoluciones',
+  'gastos',
+  'packs',
+  'plan',
+  'puerta',
+  'reportes',
+  'roles',
+  'servicios',
+  'sesiones',
+  'staff',
+  'tenants',
+  'vencimientos',
+]);
 
 function isPublicMarketingPath(pathname: string): boolean {
   return (
@@ -13,22 +39,45 @@ function isPublicMarketingPath(pathname: string): boolean {
   );
 }
 
+/** Origin público (detrás del proxy `nextUrl` trae el host interno). */
+function publicOrigin(request: NextRequest): string {
+  const host =
+    request.headers.get('x-forwarded-host') ?? request.headers.get('host') ?? '';
+  const proto =
+    request.headers.get('x-forwarded-proto') ??
+    request.nextUrl.protocol.replace(':', '');
+  return `${proto}://${host}`;
+}
+
 /**
- * Middleware: noindex del panel + redirect de la sesión al host correcto.
+ * Middleware: rutas viejas del panel → `/dashboard`, raíz de `admin` → apex y
+ * noindex de todo lo que no es público.
  *
  * @remarks La sesión vive en `localStorage` (por origen), así que este middleware
- * no puede leerla. Solo marca noindex y redirige por **pathname**: si alguien
- * pide una ruta de plataforma desde un host que no corresponde, lo manda a su
- * subdominio. La reconciliación real host↔sesión la hace `RequireStaff` en el
- * cliente (ver `lib/auth/AuthProvider.tsx`), que sí tiene la sesión.
+ * no puede leerla. La reconciliación host↔sesión la hace `RequireStaff` en el
+ * cliente. En el host de un gym solo su landing (`/`) se indexa.
  */
 export function middleware(request: NextRequest) {
-  const host = request.headers.get('host') ?? '';
+  const host =
+    request.headers.get('x-forwarded-host') ?? request.headers.get('host') ?? '';
   const slug = extractTenantSlugFromHost(host);
-  const pathname = request.nextUrl.pathname;
+  const { pathname, search } = request.nextUrl;
+
+  const firstSegment = pathname.split('/')[1] ?? '';
+  if (LEGACY_PANEL_SEGMENTS.has(firstSegment)) {
+    return NextResponse.redirect(
+      new URL(`/dashboard${pathname}${search}`, publicOrigin(request)),
+      308,
+    );
+  }
+
+  if (slug === PLATFORM_TENANT_SLUG && pathname === '/') {
+    return NextResponse.redirect(new URL('/', platformOrigin()), 308);
+  }
 
   const response = NextResponse.next();
-  if (slug || !isPublicMarketingPath(pathname)) {
+  const indexable = slug ? pathname === '/' : isPublicMarketingPath(pathname);
+  if (!indexable) {
     response.headers.set('X-Robots-Tag', 'noindex, nofollow');
   }
   return response;

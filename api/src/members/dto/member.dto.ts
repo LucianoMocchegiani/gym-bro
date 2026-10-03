@@ -49,6 +49,32 @@ export class CreateMemberDto {
 }
 
 /**
+ * Alta self-service desde la web del gym (CU-AFI-007). El email es el de la
+ * cuenta Faciliter.
+ */
+export class SelfJoinMemberDto {
+  @IsString()
+  @MinLength(2)
+  @MaxLength(40)
+  tenantSlug!: string;
+
+  @IsString()
+  @MinLength(2)
+  @MaxLength(120)
+  name!: string;
+
+  @IsString()
+  @MinLength(6)
+  @MaxLength(40)
+  document!: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(40)
+  phone?: string;
+}
+
+/**
  * Edición de ficha (CU-AFI-002). No cambia status ni password.
  */
 export class UpdateMemberDto {

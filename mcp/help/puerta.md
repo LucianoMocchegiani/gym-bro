@@ -2,7 +2,7 @@
 
 La **puerta** es el control de ingreso al establecimiento. Las reglas son las mismas con cualquier sistema: pack vigente, deuda dentro de la tolerancia, reserva si es una clase, y reglas del local (ingreso tardío, multi-ingreso por día). Si se deniega, el motivo tiene que ser legible.
 
-Pantalla Admin: **Puerta** (`/puerta`), pestañas **Verificar**, **Pase manual** e **Historial**. Qué sistema usa el local se elige en Config → Operación → **Puerta**.
+Pantalla Admin: **Puerta** (`/dashboard/puerta`), pestañas **Verificar**, **Pase manual** e **Historial**. Qué sistema usa el local se elige en Config → Operación → **Puerta**.
 
 ## Con QR (app Faciliter)
 

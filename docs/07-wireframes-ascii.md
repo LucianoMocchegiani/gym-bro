@@ -298,7 +298,7 @@ Sin sesión / 401 sin refresh → `/login` (RequireStaff + `GET /auth/me`). Plat
 +----------------------------------------------------------------+
 ```
 
-Devolver un cobro (picker de ítems del cart) vive en **Cierre** (`/arqueo`), no en Caja. Reportes usa la misma grilla sin esa acción. Columna **Categoría** (Venta / Devolución) aparte de Tipo (Ingreso / Egreso). La cola del afiliado es **Solicitudes de devolución**.
+Devolver un cobro (picker de ítems del cart) vive en **Cierre** (`/dashboard/arqueo`), no en Caja. Reportes usa la misma grilla sin esa acción. Columna **Categoría** (Venta / Devolución) aparte de Tipo (Ingreso / Egreso). La cola del afiliado es **Solicitudes de devolución**.
 
 ---
 
@@ -323,7 +323,7 @@ Caja **plataforma** (`admin`): picker de gym; packs del catálogo Faciliter. Til
 
 Con tilde débito: el botón es **Generar link de suscripción** (`init_point` del preapproval), no Preference de carrito ni Brick.
 
-Pestaña **Débitos** (CU-PAG-008..010). Ficha: `/caja?memberId=&vista=debitos`.
+Pestaña **Débitos** (CU-PAG-008..010). Ficha: `/dashboard/caja?memberId=&vista=debitos`.
 
 ```text
 +----------------------------------------------------------------+

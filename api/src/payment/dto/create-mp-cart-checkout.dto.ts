@@ -52,6 +52,14 @@ export class CreateMpCartCheckoutDto {
   idempotencyKey?: string;
 
   /**
+   * Web del gym: al terminar, MP vuelve a `{slug}/cuenta?compra={transactionId}`.
+   * La app no lo manda.
+   */
+  @IsOptional()
+  @IsBoolean()
+  returnToWeb?: boolean;
+
+  /**
    * Caja plataforma: no soportado en MP todavía (usar efectivo + prueba).
    */
   @IsOptional()

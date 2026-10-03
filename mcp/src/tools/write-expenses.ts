@@ -23,7 +23,7 @@ const METHOD_LABEL: Record<string, string> = {
   MP: 'Mercado Pago',
   CARD: 'Tarjeta',
 };
-const LINKS = [{ href: '/gastos', label: 'Gastos' }];
+const LINKS = [{ href: '/dashboard/gastos', label: 'Gastos' }];
 const YMD = /^\d{4}-\d{2}-\d{2}$/;
 
 const amountSchema = z.number().int().min(1).max(2_000_000_000).describe('Monto en pesos, entero.');

@@ -572,7 +572,7 @@ El chat no “sabe de gyms”. Hace de **bandeja + cerebro**: guardar charlas, s
 |---------|---------|
 | Archivar / borrar conversación | Sidebar vivo; sin esto se pudre. Se puede ir en el primer corte usable. |
 | Reintentar el último turno | OpenRouter a veces falla; no obligar a copiar el texto. |
-| Links/chips si el MCP devuelve `href` | “Abrí la ficha” sin que el chat conozca `/afiliados`. Contrato genérico `{ href, label }`. |
+| Links/chips si el MCP devuelve `href` | “Abrí la ficha” sin que el chat conozca `/dashboard/afiliados`. Contrato genérico `{ href, label }`. |
 
 ### No va en v1 (el chat sigue siendo genérico)
 
@@ -655,7 +655,7 @@ Comparar semanas/meses: **la misma tool dos veces** (`get_reports_summary` con `
 | `list_refund_requests` | Solicitudes de devolución | `GET /api/refund-requests` slim | `transaction_items.refund` |
 | `list_debit_mandates` | Mandatos ACTIVE/FAILED… | `GET /api/debit-mandates` slim | `cashier.operate` |
 
-`get_reports_summary` args: `{ period?: this_week\|last_week\|this_month\|last_month\|this_year, from?, to?, memberId? }`. El MCP resuelve `period` a YYYY-MM-DD (BA). Slim: `members`, `contracts`, `income.totalApproved`, `totalRefunded`, `byMethod`, `transactionCount` + **máx. 15** filas de movimientos (cobro o egreso de devolución). Link `/reportes`.
+`get_reports_summary` args: `{ period?: this_week\|last_week\|this_month\|last_month\|this_year, from?, to?, memberId? }`. El MCP resuelve `period` a YYYY-MM-DD (BA). Slim: `members`, `contracts`, `income.totalApproved`, `totalRefunded`, `byMethod`, `transactionCount` + **máx. 15** filas de movimientos (cobro o egreso de devolución). Link `/dashboard/reportes`.
 
 Comparación: dos llamadas (ej. `last_month` y `this_month`). El modelo arma la tabla. No ejecutar devoluciones ni cargos.
 
@@ -668,7 +668,7 @@ Comparación: dos llamadas (ej. `last_month` y `this_month`). El modelo arma la 
 | `list_roles` / `get_role` | Roles y permisos | `GET /api/roles` / `:id` | `roles.write` |
 | `search_audit_events` | “¿Quién canceló el contrato?” | `GET /api/audit-events?q=` slim | `audit.read` |
 
-Auditoría slim: `id, action, entityType, entityId, actorId, createdAt` — **sin** `before`/`after` enteros (revientan tokens). Si hace falta el detalle: `get_audit_event` v1.1. Link `/auditoria`.
+Auditoría slim: `id, action, entityType, entityId, actorId, createdAt` — **sin** `before`/`after` enteros (revientan tokens). Si hace falta el detalle: `get_audit_event` v1.1. Link `/dashboard/auditoria`.
 
 ### D — Cómo usar el sistema
 
@@ -682,8 +682,8 @@ Topics: `producto` (visión), `guia` (cómo se ven panel y app; fotos en `/docs`
 
 - search / account / preview / sessions / cash: igual que antes
 - reports: totales + 15 movimientos; no el ledger completo
-- refunds: `id, memberName, status, amount, createdAt` + `/devoluciones`
-- débitos: `id, memberName, status, packName, nextChargeDate?` + `/caja`
+- refunds: `id, memberName, status, amount, createdAt` + `/dashboard/devoluciones`
+- débitos: `id, memberName, status, packName, nextChargeDate?` + `/dashboard/caja`
 - packs/servicios: id, name, price/active — sin metadata Kuatia
 - roles: name, slug, permission codes
 - audit: sin JSON before/after

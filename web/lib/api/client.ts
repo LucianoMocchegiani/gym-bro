@@ -12,6 +12,11 @@ import {
   readIdentitySession,
   updateIdentityTokens,
 } from '@/lib/auth/identity-session';
+import {
+  clearMemberSession,
+  readMemberSession,
+  updateMemberTokens,
+} from '@/lib/auth/member-session';
 
 export type ApiErrorBody = {
   message?: string | string[];
@@ -47,25 +52,51 @@ function apiBaseUrl(): string {
   return `${base}/api`;
 }
 
-type AuthMode = false | 'staff' | 'identity';
+/** Sesión que firma el request: staff (panel), identity (cuenta Faciliter) o member (socio en la web del gym). */
+export type SessionKind = 'staff' | 'identity' | 'member';
+
+type AuthMode = false | SessionKind;
 
 type RequestOptions = {
   method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
   body?: unknown;
-  /** `true`/`'staff'` (default), `'identity'` (apex), o `false` sin Bearer. */
-  auth?: boolean | 'staff' | 'identity';
+  /** `true`/`'staff'` (default), `'identity'`, `'member'`, o `false` sin Bearer. */
+  auth?: boolean | SessionKind;
   /** Evita loop infinito en refresh. */
   _retried?: boolean;
 };
 
-function resolveAuthMode(
-  auth: boolean | 'staff' | 'identity' | undefined,
-): AuthMode {
+const SESSIONS: Record<
+  SessionKind,
+  {
+    read: () => { accessToken: string; refreshToken: string } | null;
+    updateTokens: (accessToken: string, refreshToken: string) => unknown;
+    clear: () => void;
+  }
+> = {
+  staff: {
+    read: readStaffSession,
+    updateTokens: updateStaffTokens,
+    clear: clearStaffSession,
+  },
+  identity: {
+    read: readIdentitySession,
+    updateTokens: updateIdentityTokens,
+    clear: clearIdentitySession,
+  },
+  member: {
+    read: readMemberSession,
+    updateTokens: updateMemberTokens,
+    clear: clearMemberSession,
+  },
+};
+
+function resolveAuthMode(auth: boolean | SessionKind | undefined): AuthMode {
   if (auth === false) {
     return false;
   }
-  if (auth === 'identity') {
-    return 'identity';
+  if (auth === 'identity' || auth === 'member') {
+    return auth;
   }
   return 'staff';
 }
@@ -87,14 +118,8 @@ export async function apiRequest<T>(
   if (body !== undefined) {
     headers['Content-Type'] = 'application/json';
   }
-  if (authMode === 'staff') {
-    const session = readStaffSession();
-    if (session?.accessToken) {
-      headers.Authorization = `Bearer ${session.accessToken}`;
-    }
-  }
-  if (authMode === 'identity') {
-    const session = readIdentitySession();
+  if (authMode) {
+    const session = SESSIONS[authMode].read();
     if (session?.accessToken) {
       headers.Authorization = `Bearer ${session.accessToken}`;
     }
@@ -112,12 +137,7 @@ export async function apiRequest<T>(
     if (refreshed) {
       return apiRequest<T>(path, { ...options, _retried: true });
     }
-    if (authMode === 'staff') {
-      clearStaffSession();
-    }
-    if (authMode === 'identity') {
-      clearIdentitySession();
-    }
+    SESSIONS[authMode].clear();
   }
 
   if (res.status === 204) {
@@ -196,11 +216,8 @@ export async function refreshStaffAccess(): Promise<boolean> {
   return tryRefresh('staff');
 }
 
-async function tryRefresh(mode: 'staff' | 'identity'): Promise<boolean> {
-  const refreshToken =
-    mode === 'identity'
-      ? readIdentitySession()?.refreshToken
-      : readStaffSession()?.refreshToken;
+async function tryRefresh(mode: SessionKind): Promise<boolean> {
+  const refreshToken = SESSIONS[mode].read()?.refreshToken;
   if (!refreshToken) {
     return false;
   }
@@ -220,11 +237,7 @@ async function tryRefresh(mode: 'staff' | 'identity'): Promise<boolean> {
       accessToken: string;
       refreshToken: string;
     };
-    if (mode === 'identity') {
-      updateIdentityTokens(data.accessToken, data.refreshToken);
-    } else {
-      updateStaffTokens(data.accessToken, data.refreshToken);
-    }
+    SESSIONS[mode].updateTokens(data.accessToken, data.refreshToken);
     return true;
   } catch {
     return false;

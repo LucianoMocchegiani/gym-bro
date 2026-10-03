@@ -5,7 +5,7 @@ Cuando pregunten cómo conectar o configurar MP: explicá primero la **forma nor
 **Para quién:** dueño o staff con permiso `mp.connect` en **su** tenant (no el de plataforma).  
 **Plataforma (`admin`):** ya tiene un ejemplo; ver el anexo al final.
 
-Faciliter cobra **en la cuenta Mercado Pago del local**. Pantalla: **Config** (`/config`). Débito MONTHLY: topic `debito`.
+Faciliter cobra **en la cuenta Mercado Pago del local**. Pantalla: **Config** (`/dashboard/config`). Débito MONTHLY: topic `debito`.
 
 ## 1. Forma normal: «Conectar Mercado Pago»
 

@@ -76,7 +76,7 @@ export function registerCatalogTools(server: McpServer): void {
         return {
           items,
           total: typeof body.total === 'number' ? body.total : items.length,
-          links: [{ href: '/servicios', label: 'Servicios' }],
+          links: [{ href: '/dashboard/servicios', label: 'Servicios' }],
         };
       }),
   );
@@ -104,7 +104,7 @@ export function registerCatalogTools(server: McpServer): void {
         return {
           items,
           total: typeof body.total === 'number' ? body.total : items.length,
-          links: [{ href: '/packs', label: 'Packs' }],
+          links: [{ href: '/dashboard/packs', label: 'Packs' }],
         };
       }),
   );
@@ -126,7 +126,7 @@ export function registerCatalogTools(server: McpServer): void {
         const pack = slimPack(raw);
         return {
           pack,
-          links: [{ href: '/packs', label: 'Packs' }],
+          links: [{ href: '/dashboard/packs', label: 'Packs' }],
         };
       }),
   );

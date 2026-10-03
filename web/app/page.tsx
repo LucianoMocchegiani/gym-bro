@@ -1,25 +1,50 @@
 import type { Metadata } from 'next';
 import { headers } from 'next/headers';
+import { notFound } from 'next/navigation';
+import { GymLandingPage } from '@/components/gym-site/GymLandingPage';
 import { LandingPage } from '@/components/marketing/LandingPage';
-import { extractTenantSlugFromHost } from '@/lib/tenant-host';
+import { fetchPublicTenantCatalog } from '@/lib/api/public-tenant-catalog';
+import { extractTenantSlugFromHost, tenantOrigin } from '@/lib/tenant-host';
 import { publicSiteUrl } from '@/lib/site-url';
-import { DashboardHome } from './dashboard-home';
 
 const LANDING_TITLE =
   'Faciliter | Software de afiliaciones para gyms, clubes y estudios';
 const LANDING_DESCRIPTION =
   'Faciliter es el sistema de afiliaciones para gyms, clubes y estudios en Argentina: cobros en línea y en efectivo, app del socio, puerta QR y asistente.';
 
+async function hostSlug(): Promise<string | null> {
+  const h = await headers();
+  return extractTenantSlugFromHost(h.get('x-forwarded-host') ?? h.get('host') ?? '');
+}
+
 /**
- * Apex de plataforma → landing. Host con slug de gym → dashboard Staff.
+ * Apex de plataforma → landing Faciliter. Host con slug → web del gym.
  */
 export async function generateMetadata(): Promise<Metadata> {
-  const h = await headers();
-  const host = h.get('x-forwarded-host') ?? h.get('host') ?? '';
-  if (extractTenantSlugFromHost(host)) {
+  const slug = await hostSlug();
+  if (slug) {
+    const catalog = await fetchPublicTenantCatalog(slug);
+    if (!catalog) {
+      return { robots: { index: false, follow: false } };
+    }
+    const title = `${catalog.tenant.name} | Planes y precios`;
+    const description = `Planes de ${catalog.tenant.name}: elegí el tuyo${
+      catalog.onlineCheckout ? ' y pagalo online' : ''
+    }.`;
+    const url = tenantOrigin(slug);
     return {
-      title: 'Inicio',
-      robots: { index: false, follow: false },
+      title: { absolute: title },
+      description,
+      openGraph: {
+        type: 'website',
+        locale: 'es_AR',
+        url,
+        siteName: catalog.tenant.name,
+        title,
+        description,
+      },
+      alternates: { canonical: url },
+      robots: { index: true, follow: true },
     };
   }
 
@@ -53,10 +78,13 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function RootPage() {
-  const h = await headers();
-  const host = h.get('x-forwarded-host') ?? h.get('host') ?? '';
-  if (!extractTenantSlugFromHost(host)) {
+  const slug = await hostSlug();
+  if (!slug) {
     return <LandingPage />;
   }
-  return <DashboardHome />;
+  const catalog = await fetchPublicTenantCatalog(slug);
+  if (!catalog) {
+    notFound();
+  }
+  return <GymLandingPage catalog={catalog} />;
 }

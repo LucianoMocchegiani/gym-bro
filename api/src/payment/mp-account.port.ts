@@ -64,6 +64,8 @@ export type CreateMpPreferenceInput = {
   externalReference: string;
   notificationUrl: string;
   payerEmail?: string;
+  /** Vuelta del navegador (success / pending / failure). Sin esto MP no redirige. */
+  backUrl?: string;
 };
 
 /**

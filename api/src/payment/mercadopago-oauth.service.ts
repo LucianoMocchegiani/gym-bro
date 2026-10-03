@@ -10,6 +10,7 @@ import { MercadoPagoAccount, MpConnectionMode } from '@prisma/client';
 import { createHash, randomBytes } from 'crypto';
 import { AuditActor, AUDIT_ACTIONS } from '../audit/audit.types';
 import { AuditService } from '../audit/audit.service';
+import { tenantWebOrigin } from '../common/web-urls';
 import { PrismaService } from '../prisma/prisma.service';
 import { maskPublicKey } from './mercadopago-account.service';
 import { MercadoPagoOAuthStartResult } from './mercadopago-account.types';
@@ -274,16 +275,8 @@ export class MercadoPagoOAuthService {
     return oauth;
   }
 
-  /**
-   * `https://{slug}.{dominio}/config` a partir de `PUBLIC_WEB_BASE_URL`.
-   */
   private tenantConfigUrl(slug: string): string {
-    const base = new URL(
-      this.config.get<string>('PUBLIC_WEB_BASE_URL')?.trim() ||
-        'http://localhost:3002',
-    );
-    base.hostname = `${slug}.${base.hostname.replace(/^www\./, '')}`;
-    return `${base.origin}/config`;
+    return `${tenantWebOrigin(this.config, slug)}/dashboard/config`;
   }
 }
 

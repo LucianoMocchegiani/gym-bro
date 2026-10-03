@@ -59,7 +59,7 @@ export function registerAuditTools(server: McpServer): void {
         return {
           items,
           total: typeof body.total === 'number' ? body.total : items.length,
-          links: [{ href: '/auditoria', label: 'Auditoría' }],
+          links: [{ href: '/dashboard/auditoria', label: 'Auditoría' }],
         };
       }),
   );

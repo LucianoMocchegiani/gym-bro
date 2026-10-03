@@ -2,7 +2,7 @@
 
 Para un gym que **ya tiene** socios en otro sistema (o en un Excel). Trae a la persona: **ficha + foto de perfil + carpeta**. Packs, contratos, deudas, pagos y credenciales **no** se migran: se arman en Faciliter (Caja, Packs).
 
-Pantalla Admin: **Afiliados → botón Importar** (`/afiliados/importar`). Permisos: `members.import` (peligroso) **y** `members.write`. El Admin los tiene; a otro rol hay que dárselos en Roles y permisos. Sin los dos, el botón no aparece.
+Pantalla Admin: **Afiliados → botón Importar** (`/dashboard/afiliados/importar`). Permisos: `members.import` (peligroso) **y** `members.write`. El Admin los tiene; a otro rol hay que dárselos en Roles y permisos. Sin los dos, el botón no aparece.
 
 ## Paso 1 — Planilla (fichas)
 

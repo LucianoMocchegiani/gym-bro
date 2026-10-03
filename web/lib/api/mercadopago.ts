@@ -50,7 +50,7 @@ export function getMercadoPagoAccount(): Promise<MercadoPagoAccountStatus> {
 
 /**
  * URL de MP para «Conectar Mercado Pago» (OAuth). El navegador navega ahí y
- * MP vuelve a `/config?mp=connected|error`.
+ * MP vuelve a `/dashboard/config?mp=connected|error`.
  */
 export function startMercadoPagoOAuth(): Promise<{ authorizationUrl: string }> {
   return apiRequest<{ authorizationUrl: string }>(

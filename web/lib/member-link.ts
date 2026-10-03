@@ -4,7 +4,7 @@
  */
 export function memberFichaHref(memberId: string, search: string): string {
   const q = search.trim();
-  return `/afiliados?ficha=${encodeURIComponent(memberId)}${
+  return `/dashboard/afiliados?ficha=${encodeURIComponent(memberId)}${
     q ? `&q=${encodeURIComponent(q)}` : ''
   }`;
 }

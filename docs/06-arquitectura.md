@@ -93,7 +93,7 @@ Estructura lógica interna:
 
 ```text
 api/                    # NestJS (módulos por dominio dentro de src/)
-web/                    # Next.js — landing (apex) + Admin (slug.localhost) 
+web/                    # Next.js — landing (apex) + web del gym (slug.localhost/) + Admin (/dashboard)
 mobile/                 # Flutter
 # Dominios Nest (api/src):
 #   auth, tenants, members, staff, roles, services, packs, sessions,
@@ -158,8 +158,10 @@ Identity: `GET /api/auth/memberships` + `POST /api/auth/select-context`. Alta we
 
 También: `POST /api/auth/refresh`, `POST /api/auth/logout`, `GET /api/auth/me` (incluye `tenantId` y `platformAccess` `ok`|`limited` para recorte de plan Faciliter), `POST /api/auth/change-password` (JWT STAFF o IDENTITY; verifica la actual con bcrypt y revoca refresh → re-login).
 
+**Web del gym** (`{slug}.{dominio}`, RN-CTA-005/006): `/` vidriera pública (SSR, `GET /public/tenants/by-slug/:slug/packs`, indexable), `/comprar?pack=` (CU-AFI-007), `/cuenta` portal del socio, `/login` único y el panel staff en `/dashboard/...`. El middleware redirige con 308 las rutas viejas del panel (`/caja` → `/dashboard/caja`, también OAuth MP `/config?mp=`) y la raíz de `admin` al apex; solo `/` del gym (y el marketing del apex) se indexa. El login usa la cuenta Faciliter (mail/contraseña o Google vía `from-cookie` sin slug) → `GET /auth/memberships` filtrado por el slug → `POST /auth/select-context` STAFF o MEMBER. Sesiones en `localStorage` por origen con una factory común (`web/lib/auth/token-store.ts`): `gymbro.staff.session`, `gymbro.member.session`, `gymbro.identity.session`; `apiRequest({ auth: 'staff' | 'member' | 'identity' })`. Logout en el gym cierra las tres. Alta self-service: `POST /api/identity/memberships` (JWT Identity; nombre, DNI, teléfono) → Member ACTIVE + auditoría `member.self_join`.
+
 Rutas de negocio del gym: `@RequireTenantAuth()` = JWT + `TenantGuard` + `PlatformAccessGuard` (RN-PAG-018). Staff limitado: 403 salvo `@AllowWhenLimited()` (`GET /plan`, `GET /me/permissions`). Impersonación y MEMBER no se recortan.
-Rutas de plataforma: tenant `admin` + `platform.*`. Operar un gym: `POST /api/auth/super/impersonate` setea cookie `impersonation_handoff` (un uso, ~60 s, `SameSite=None; Secure`, `Domain` = `COOKIE_PARENT_DOMAIN` o `.` + `CORS_APP_DOMAIN`) y **no** devuelve JWT; el browser va a `{slug}/login?handoff=1` y canjea con `POST /api/auth/from-handoff` (JWT Staff 4h, borra cookie). Store en memoria (`ImpersonationHandoffStore`), como el proxy Google (`central_session`); restart de API mata handoffs pendientes. Sin tabla Prisma. QA web en HTTPS: `http://*.localhost` no comparte esa cookie. Volver: `/cuenta` → logout del gym; la sesión de plataforma sigue en el origen `admin`. No hay espejos nested de negocio.
+Rutas de plataforma: tenant `admin` + `platform.*`. Operar un gym: `POST /api/auth/super/impersonate` setea cookie `impersonation_handoff` (un uso, ~60 s, `SameSite=None; Secure`, `Domain` = `COOKIE_PARENT_DOMAIN` o `.` + `CORS_APP_DOMAIN`) y **no** devuelve JWT; el browser va a `{slug}/login?handoff=1` y canjea con `POST /api/auth/from-handoff` (JWT Staff 4h, borra cookie). Store en memoria (`ImpersonationHandoffStore`), como el proxy Google (`central_session`); restart de API mata handoffs pendientes. Sin tabla Prisma. QA web en HTTPS: `http://*.localhost` no comparte esa cookie. Volver: `/dashboard/cuenta` → logout del gym; la sesión de plataforma sigue en el origen `admin`. No hay espejos nested de negocio.
 Autorización fina staff: `@RequirePermission('code')` (unión de roles; permisos `dangerous` = flags RN-ROL-007).
 
 Afiliado y staff **nunca** comparten el mismo perfil de sesión (RN-ROL-005).
@@ -228,8 +230,8 @@ Implementado: `POST /access/oid4vp/request` + `GET /access/oid4vp/session/:id` (
 
 ### 6.4 Modos de escaneo
 
-- Gym Kuatia: **modo B** (afiliado escanea QR de puerta = `requestUri` OID4VP). Admin: `/puerta`. App: hub Acceso → Escanear.
-- Gym ZKTeco: `member_at_device` (la persona se identifica en el aparato). `/puerta` muestra "Este gym usa acceso ZKTeco" + últimos ingresos.
+- Gym Kuatia: **modo B** (afiliado escanea QR de puerta = `requestUri` OID4VP). Admin: `/dashboard/puerta`. App: hub Acceso → Escanear.
+- Gym ZKTeco: `member_at_device` (la persona se identifica en el aparato). `/dashboard/puerta` muestra "Este gym usa acceso ZKTeco" + últimos ingresos.
 
 ### 6.5 Contrato de sistemas de puerta (RN-ACC-010)
 
@@ -277,7 +279,7 @@ Admin POST /mercadopago/account/oauth/start
 MP → GET /mercadopago/oauth/callback?code&state   (público, sin JWT)
   → consume state → POST api.mercadopago.com/oauth/token (code + code_verifier)
   → cifra access + refresh token → upsert mercadopago_accounts (OAUTH, expira 180 d)
-  → audita mp.account.connect → 302 a {slug}.<PUBLIC_WEB_BASE_URL>/config?mp=connected|error
+  → audita mp.account.connect → 302 a {slug}.<PUBLIC_WEB_BASE_URL>/dashboard/config?mp=connected|error
 Job diario 04:00 BA: refresh_token (rota) si vence en < 30 d; falla → last_refresh_error → «Reconectar»
 
 Conexión manual (avanzado):
@@ -295,7 +297,7 @@ Checkout/webhook implementados (stub local + modo live). Pendiente en roadmap: v
 ### 7.2 Flujo MP
 
 ```text
-Member POST /me/transaction-items/mp/cart { items[], idempotencyKey }
+Member POST /me/transaction-items/mp/cart { items[], idempotencyKey, returnToWeb? }
 Staff POST /members/:id/transaction-items/mp/cart   (mismo body; members.write)
   → Transaction PENDING + Preference (cuenta del gym; 1 link con el total)
   → Webhook POST /webhooks/payment?tenantId=… (o /simulate en stub)
@@ -305,14 +307,16 @@ Staff POST /members/:id/transaction-items/mp/cart   (mismo body; members.write)
 
 Env: `MP_CHECKOUT_MODE=stub|live`, `PUBLIC_API_BASE_URL` (notification_url).
 
+`returnToWeb: true` (web del gym): la Preference lleva `back_urls` armadas en el servidor hacia `{slug}.<PUBLIC_WEB_BASE_URL>/cuenta?compra={transactionId}` (`auto_return=approved` solo con https). La app no lo manda. Las URLs web del tenant salen de `api/src/common/web-urls.ts` (también el retorno del OAuth MP y del débito).
+
 Ítems de la Preference (`title` / `description`): mismo criterio que el comprobante interno (pack = nombre + servicios/créditos; drop-in = servicio · sede · horario). El modal de MP lista sobre todo `title`.
 
 ### 7.3 Caja
 
 - `MovimientoCaja` ligado a `Pago`.
 - `ArqueoCaja` por fecha (+ sucursal cuando multi-sede UI).
-- Admin: `/arqueo` = **Cierre**; `/devoluciones` = **Solicitudes de devolución** (`refund_requests`). Grilla: `kind` (ingreso/egreso) + `category` (`SALE` / `REFUND`) **derivada de** `kind` en `buildLedgerRows`. El arqueo cuenta solo efectivo: `expected` = INCOME CASH − OUTCOME CASH − gastos CASH.
-- Gastos: módulo `expenses` (`/gastos`), tablas propias (no `cash_movements`). Comprobantes en R2 privado vía `FileStoragePort`. `GET /expenses/summary` alimenta Reportes (resultado = ingresos − devoluciones − gastos). RN-GAS.
+- Admin: `/dashboard/arqueo` = **Cierre**; `/dashboard/devoluciones` = **Solicitudes de devolución** (`refund_requests`). Grilla: `kind` (ingreso/egreso) + `category` (`SALE` / `REFUND`) **derivada de** `kind` en `buildLedgerRows`. El arqueo cuenta solo efectivo: `expected` = INCOME CASH − OUTCOME CASH − gastos CASH.
+- Gastos: módulo `expenses` (`/dashboard/gastos`), tablas propias (no `cash_movements`). Comprobantes en R2 privado vía `FileStoragePort`. `GET /expenses/summary` alimenta Reportes (resultado = ingresos − devoluciones − gastos). RN-GAS.
 
 
 
@@ -470,7 +474,8 @@ Prefijo sugerido: `/api/v1`.
 | Auth                             | `POST /auth/login`, refresh                                                                                                                                                                                                                       |
 | Plataforma | Staff del tenant `admin` + `platform.*`. CRUD `/tenants`, `GET /tenants/:id/staff`, `POST /auth/super/impersonate` (nombre histórico) + `POST /auth/from-handoff`, `POST /tenants/:id/quark/provision`. Operar el gym = impersonar (rutas Staff). |
 | Afiliados                        | CRUD `/members` (Staff JWT)                                                                                                                                                                                                                       |
-| Catálogo                         | `/services`, `/packs`, `/sessions`; landing `GET /public/platform/packs`                                                                                                                                                                          |
+| Catálogo                         | `/services`, `/packs`, `/sessions`; landing `GET /public/platform/packs`; web del gym `GET /public/tenants/by-slug/:slug/packs` (`onlineCheckout` = MP conectado)                                                                                 |
+| Web del gym                      | `POST /identity/memberships` (JWT Identity, alta self-service CU-AFI-007); luego `select-context` MEMBER y cart MP con `returnToWeb`                                                                                                              |
 | Reservas                         | `/sessions/:id/reservations`, waitlist                                                                                                                                                                                                            |
 | Billing                          | cart MP `/me                                                                                                                                                                                                                                      |
 | Access                           | `/access/oid4vp/request`, `/access/oid4vp/session/:id`, `/access-attempts`, `GET /members/:id/access-preview`, manual-pass                                                                                                                        |
@@ -491,7 +496,7 @@ Prefijo sugerido: `/api/v1`.
 | Catálogo                         | Staff CRUD services + packs (`catalog.write`; kind inferido; `creditsExpireAt`; `imageUrl`). Member `GET /me/packs` (`imageUrl`) y `GET /me/sessions` (`serviceImageUrl`)                                                                         |
 | Contrataciones                   | Alta de pack: Caja o MP; `POST /members/:id/contracts` con STUB → 400; re-oferta `POST /members/:id/credential-offers` (`packId` opcional); `PATCH /contracts/:id/status` → `CANCELLED` (pierde derechos, RN-SER-009); Member `GET /me/contracts` |
 | Roles                            | Staff list-get-create-patch roles; `PUT /staff/:id/roles`; `GET /me/permissions` (UI nav). Super: `GET /tenants/:id/staff` + impersonate                                                                                                          |
-| Auditoría                        | Staff `/auditoria` → `GET /audit-events` (`audit.read`); Super impersona; escritura en mutaciones                                                                                                                                                 |
+| Auditoría                        | Staff `/dashboard/auditoria` → `GET /audit-events` (`audit.read`); Super impersona; escritura en mutaciones                                                                                                                                                 |
 | Reportes                         | Staff `GET /reports/summary?from&to` (`reports.read`); ingresos $ + devoluciones + snapshot; `transactions[]` misma fila que caja                                                                                                                 |
 | Vencimientos                     | Staff `GET /expirations?view&pay` (`members.read`); cola MONTHLY por vencer (7 días) o en tolerancia; no es reporte                                                                                                                               |
 | Caja                             | `/cash/day`, `/cash/close`                                                                                                                                                                                                                        |
@@ -514,7 +519,7 @@ Todas las rutas de tenant validan membership/permiso + `tenant_id` del token.
 | Webhooks      | Inbox de eventos MP con dedup por id MP + idempotencyKey                                                                                                                                                                                               |
 | Jobs          | Cron Nest 12:00 ART: avisos pack por vencer / tolerancia (E2/E3). Recurrencias de sesiones aparte.                                                                                                                                                     |
 | Archivos      | R2: fotos `tenants/{tenantId}/…` (`POST /upload` URL pública). Al quitar o reemplazar foto de ficha/staff/servicio/pack (y al borrar físico) se llama `delete` del objeto viejo. Carpeta `folder/{tenantId}/…` + GET JWT (delete de FILE ya borra R2). |
-| Notif N1      | Dispatcher + `MailPort`. Socio: in-app + mail. Dueño gym: mail + fila `identity_id` (plan Faciliter). Plantillas gym `/avisos` solo eventos socio. Push y cola: post-MVP.                                                                              |
+| Notif N1      | Dispatcher + `MailPort`. Socio: in-app + mail. Dueño gym: mail + fila `identity_id` (plan Faciliter). Plantillas gym `/dashboard/avisos` solo eventos socio. Push y cola: post-MVP.                                                                              |
 
 
 ---

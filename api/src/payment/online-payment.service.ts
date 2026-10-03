@@ -13,6 +13,7 @@ import {
   Transaction,
 } from '@prisma/client';
 import { randomBytes } from 'node:crypto';
+import { tenantWebOrigin } from '../common/web-urls';
 import { PrismaService } from '../prisma/prisma.service';
 import { MercadoPagoAccountService } from './mercadopago-account.service';
 import { PacksService } from '../packs/packs.service';
@@ -168,6 +169,9 @@ export class OnlinePaymentService {
         externalReference: cart.id,
         notificationUrl,
         payerEmail: member.email,
+        backUrl: dto.returnToWeb
+          ? await this.memberWebBackUrl(tenantId, cart.id)
+          : undefined,
       });
 
       const updated = await this.prisma.transaction.update({
@@ -562,6 +566,17 @@ export class OnlinePaymentService {
       this.config.get<string>('PUBLIC_API_BASE_URL')?.replace(/\/$/, '') ||
       'http://localhost:3001';
     return `${publicBase}/api/webhooks/payment?tenantId=${tenantId}`;
+  }
+
+  private async memberWebBackUrl(
+    tenantId: string,
+    transactionId: string,
+  ): Promise<string> {
+    const tenant = await this.prisma.tenant.findUniqueOrThrow({
+      where: { id: tenantId },
+      select: { slug: true },
+    });
+    return `${tenantWebOrigin(this.config, tenant.slug)}/cuenta?compra=${transactionId}`;
   }
 
   private async requireActiveMember(

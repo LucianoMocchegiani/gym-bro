@@ -1,6 +1,7 @@
 import {
   BadRequestException,
   ConflictException,
+  ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -10,6 +11,7 @@ import {
   MemberStatus,
   Prisma,
   ReservationStatus,
+  TenantStatus,
 } from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
 import { AUDIT_ACTIONS, AuditActor } from '../audit/audit.types';
@@ -25,14 +27,23 @@ import { ContractsService } from '../contracts/contracts.service';
 import { ContractDetail } from '../contracts/contracts.types';
 import { IdentityService } from '../auth/identity.service';
 import { PrismaService } from '../prisma/prisma.service';
+import {
+  assertValidTenantSlug,
+  normalizeTenantSlug,
+} from '../tenants/tenant-slug';
 import { UploadService } from '../upload/upload.service';
 import {
   CreateMemberDto,
   ListMembersQueryDto,
+  SelfJoinMemberDto,
   UpdateMemberDto,
   UpdateMemberStatusDto,
 } from './dto/member.dto';
-import { MemberAccountDetail, MemberDetail } from './members.types';
+import {
+  MemberAccountDetail,
+  MemberDetail,
+  SelfJoinResult,
+} from './members.types';
 
 /** Cantidad de pagos recientes en estado de cuenta. */
 const RECENT_PAYMENTS_LIMIT = 20;
@@ -289,6 +300,78 @@ export class MembersService {
         after: this.auditSnapshot(detail),
       });
       return detail;
+    } catch (error: unknown) {
+      this.rethrowUniqueConflict(error);
+      throw error;
+    }
+  }
+
+  /**
+   * La persona logueada se hace socia del gym desde la web (CU-AFI-007).
+   *
+   * @remarks Idempotente: si ya es socio activo devuelve esa fila. Queda ACTIVE
+   * sin pasar por staff (RN-CTA-007).
+   * @throws {NotFoundException} Gym inexistente.
+   * @throws {ForbiddenException} Gym suspendido o socio dado de baja/suspendido.
+   * @throws {ConflictException} DNI ya usado por otro socio del gym.
+   */
+  async selfJoin(
+    identityId: string,
+    dto: SelfJoinMemberDto,
+  ): Promise<SelfJoinResult> {
+    const slug = normalizeTenantSlug(dto.tenantSlug);
+    assertValidTenantSlug(slug);
+    const tenant = await this.prisma.tenant.findUnique({
+      where: { slug },
+      select: { id: true, status: true },
+    });
+    if (!tenant) {
+      throw new NotFoundException(`Tenant slug "${slug}" not found`);
+    }
+    if (tenant.status !== TenantStatus.ACTIVE) {
+      throw new ForbiddenException('Tenant is suspended');
+    }
+
+    const existing = await this.prisma.member.findUnique({
+      where: { tenantId_identityId: { tenantId: tenant.id, identityId } },
+    });
+    if (existing) {
+      if (existing.status !== MemberStatus.ACTIVE) {
+        throw new ForbiddenException('Membership is not active');
+      }
+      return { tenantId: tenant.id, memberId: existing.id, created: false };
+    }
+
+    const identity = await this.prisma.identity.findUnique({
+      where: { id: identityId },
+      select: { email: true },
+    });
+    if (!identity) {
+      throw new NotFoundException('Identity not found');
+    }
+
+    try {
+      const member = await this.prisma.member.create({
+        data: {
+          tenantId: tenant.id,
+          identityId,
+          email: identity.email,
+          name: dto.name.trim(),
+          phone: this.normalizeOptional(dto.phone),
+          document: dto.document.trim(),
+          status: MemberStatus.ACTIVE,
+        },
+      });
+      await this.audit.record({
+        tenantId: tenant.id,
+        actor: { profileType: 'IDENTITY', userId: identityId },
+        action: AUDIT_ACTIONS.memberSelfJoin,
+        entityType: 'member',
+        entityId: member.id,
+        before: null,
+        after: this.auditSnapshot(this.toDetail(member)),
+      });
+      return { tenantId: tenant.id, memberId: member.id, created: true };
     } catch (error: unknown) {
       this.rethrowUniqueConflict(error);
       throw error;

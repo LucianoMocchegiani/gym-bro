@@ -121,6 +121,38 @@ export function fromCookie(tenantSlug?: string): Promise<StaffLoginResponse> {
   });
 }
 
+export type MembershipRow = {
+  tenantId: string;
+  tenantSlug: string;
+  tenantName: string;
+  profile: 'MEMBER' | 'STAFF';
+  memberId?: string;
+  staffUserId?: string;
+};
+
+/**
+ * Gyms donde la cuenta Faciliter es socio y/o staff (JWT Identity).
+ */
+export function listMemberships(): Promise<{ items: MembershipRow[] }> {
+  return apiRequest<{ items: MembershipRow[] }>('/auth/memberships', {
+    auth: 'identity',
+  });
+}
+
+/**
+ * Canjea el JWT Identity por uno de socio o staff de un gym.
+ */
+export function selectContext(input: {
+  tenantId: string;
+  profile: 'MEMBER' | 'STAFF';
+}): Promise<StaffLoginResponse> {
+  return apiRequest<StaffLoginResponse>('/auth/select-context', {
+    method: 'POST',
+    body: input,
+    auth: 'identity',
+  });
+}
+
 /**
  * Canjea cookie de impersonación por JWT del staff destino.
  */

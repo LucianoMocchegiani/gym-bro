@@ -8,7 +8,8 @@ Fuera de esta guía: Super Admin. **No existen todavía:** rutinas por días, no
 
 | Cara | Quién | Dónde |
 |------|--------|--------|
-| Panel (web) | Dueño, recepción, profesores (staff) | `{slug}.faciliter.xyz` |
+| Panel (web) | Dueño, recepción, profesores (staff) | `{slug}.faciliter.xyz/dashboard` |
+| Web del gym | Público y socios | `{slug}.faciliter.xyz`: planes, comprar online, **Mi cuenta** del socio |
 | App | El afiliado (socio) y el staff | App Faciliter en el celular |
 
 El dinero del socio va al Mercado Pago **del negocio** y se registra en caja. Faciliter no se queda con el cobro. Efectivo: solo se registra.
@@ -34,9 +35,9 @@ Saludo y tarjetas del día (afiliados activos, ingresos, accesos, socios sin pac
 
 ## Login
 
-- **Staff (panel):** en `{slug}.faciliter.xyz/login`, **Acceso staff**: mail y contraseña o **Continuar con Google**. El gym sale de la URL.
+- **Web del gym (socios y staff):** en `{slug}.faciliter.xyz/login`, con la **cuenta Faciliter** (mail y contraseña o **Continuar con Google**). El gym sale de la URL. Staff va al panel (`/dashboard`), socio a **Mi cuenta** (`/cuenta`); si es las dos cosas, elige. Las rutas viejas del panel (`/caja`, `/puerta`…) redirigen solas a `/dashboard/...`.
 - **App:** **Faciliter · Tu cuenta**: mail y contraseña de la cuenta Faciliter (sin slug), o Google / Apple si están disponibles. Si la cuenta está en varios gyms (o es socio y staff), elige en **Tus gyms**.
-- No hay registro desde la app ni “olvidé mi contraseña”. Detalle de cuenta y contraseñas: topic `cuenta`.
+- No hay registro desde la app (sí en la web del gym al comprar) ni “olvidé mi contraseña”. Detalle de cuenta y contraseñas: topic `cuenta`.
 
 ## Config
 

@@ -60,7 +60,7 @@ export function registerDebitTools(server: McpServer): void {
         return {
           items,
           total: typeof body.total === 'number' ? body.total : items.length,
-          links: [{ href: '/caja', label: 'Caja' }],
+          links: [{ href: '/dashboard/caja', label: 'Caja' }],
         };
       }),
   );

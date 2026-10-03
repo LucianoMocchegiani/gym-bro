@@ -4,7 +4,7 @@ import { z } from 'zod';
 import { pickNumber, pickString } from '../slim.js';
 import { dateTimeHuman, getRecord, nameOf, ProposalError, proposeWrite } from './write-support.js';
 
-const LINKS = [{ href: '/sesiones', label: 'Sesiones' }];
+const LINKS = [{ href: '/dashboard/sesiones', label: 'Sesiones' }];
 
 async function memberAndSession(memberId: string, sessionId: string) {
   const member = await getRecord(`/api/members/${memberId}`);

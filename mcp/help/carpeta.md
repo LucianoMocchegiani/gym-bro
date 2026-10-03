@@ -24,7 +24,7 @@ Los files **no** son la foto de ficha. La foto de perfil sigue en la ficha (`POS
 
 ## Panel (cómo se usa)
 
-1. **Afiliados** (`/afiliados`) o **Staff** (`/staff`).
+1. **Afiliados** (`/dashboard/afiliados`) o **Staff** (`/dashboard/staff`).
 2. En la fila, ícono de **carpeta** (junto a ficha / credencial).
 3. Modal: etiqueta → **Guardar nota** (Markdown: `#` títulos, `-` listas) o recuadro **Elegir archivo** → **Subir archivo**.
 4. **Contenido:** solo título o nombre de file y fecha. **Abrir** nota = visor Markdown; **Abrir** file = descarga autenticada. Eliminar con permiso de escritura.

@@ -4,15 +4,16 @@ import { AuthModule } from '../auth/auth.module';
 import { ContractsModule } from '../contracts/contracts.module';
 import { RolesModule } from '../roles/roles.module';
 import { UploadModule } from '../upload/upload.module';
+import { IdentityMembersController } from './identity-members.controller';
 import { MembersController } from './members.controller';
 import { MembersService } from './members.service';
 
 /**
- * Afiliados: alta, ficha, status, estado de cuenta (E2).
+ * Afiliados: alta (staff o self-service), ficha, status, estado de cuenta (E2).
  */
 @Module({
   imports: [AuthModule, RolesModule, AuditModule, ContractsModule, UploadModule],
-  controllers: [MembersController],
+  controllers: [MembersController, IdentityMembersController],
   providers: [MembersService],
   exports: [MembersService],
 })

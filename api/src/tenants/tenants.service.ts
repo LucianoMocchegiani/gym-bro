@@ -81,7 +81,6 @@ export class TenantsService {
    */
   async findPublicBySlug(rawSlug: string): Promise<PublicTenantSummary> {
     const slug = normalizeTenantSlug(rawSlug);
-    assertValidTenantSlug(slug);
     const tenant = await this.prisma.tenant.findUnique({ where: { slug } });
     if (!tenant) {
       throw new NotFoundException(`Tenant slug "${slug}" not found`);

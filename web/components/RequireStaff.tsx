@@ -27,7 +27,8 @@ export function RequireStaff({ children }: { children: React.ReactNode }) {
       return;
     }
     if (!session) {
-      router.replace('/login');
+      const here = `${window.location.pathname}${window.location.search}`;
+      router.replace(`/login?next=${encodeURIComponent(here)}`);
       return;
     }
 

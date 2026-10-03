@@ -10,7 +10,7 @@ Puede ser:
 
 Los **créditos** se gastan al confirmar una reserva de una sesión cubierta por el pack. **Drop-in** es comprar una clase suelta, sin pack de créditos.
 
-Pantalla Admin: **Packs** (`/packs`). Los servicios del catálogo están en **Servicios** (`/servicios`). El precio y si está activo se editan ahí.
+Pantalla Admin: **Packs** (`/dashboard/packs`). Los servicios del catálogo están en **Servicios** (`/dashboard/servicios`). El precio y si está activo se editan ahí.
 
 Un pack ya vendido no se borra: se da de baja.
 

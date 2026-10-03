@@ -14,13 +14,13 @@ export const ASSISTANT_CAN_WRITE = [
 
 /** Fuera por seguridad: se hace en el panel. RN-ASI-002. */
 export const ASSISTANT_CANNOT_WRITE = [
-  { action: 'Cobrar, caja, links o QR de Mercado Pago, reservas pagadas en el momento (drop-in)', href: '/caja', label: 'Caja' },
-  { action: 'Devoluciones', href: '/devoluciones', label: 'Devoluciones' },
-  { action: 'Débito automático (alta o baja)', href: '/caja', label: 'Caja' },
-  { action: 'Pase manual o abrir la puerta', href: '/puerta', label: 'Puerta' },
-  { action: 'Configuración del gym y Mercado Pago', href: '/config', label: 'Configuración' },
-  { action: 'Borrar o cancelar (gastos, socios, servicios, packs, sesiones, series, reservas, staff, roles)', href: '/', label: 'Inicio' },
-  { action: 'Subir archivos (comprobantes, fotos, documentos)', href: '/gastos', label: 'Gastos' },
+  { action: 'Cobrar, caja, links o QR de Mercado Pago, reservas pagadas en el momento (drop-in)', href: '/dashboard/caja', label: 'Caja' },
+  { action: 'Devoluciones', href: '/dashboard/devoluciones', label: 'Devoluciones' },
+  { action: 'Débito automático (alta o baja)', href: '/dashboard/caja', label: 'Caja' },
+  { action: 'Pase manual o abrir la puerta', href: '/dashboard/puerta', label: 'Puerta' },
+  { action: 'Configuración del gym y Mercado Pago', href: '/dashboard/config', label: 'Configuración' },
+  { action: 'Borrar o cancelar (gastos, socios, servicios, packs, sesiones, series, reservas, staff, roles)', href: '/dashboard', label: 'Inicio' },
+  { action: 'Subir archivos (comprobantes, fotos, documentos)', href: '/dashboard/gastos', label: 'Gastos' },
 ] as const;
 
 const SECURITY_REASON =
@@ -58,7 +58,7 @@ export function registerLimitsTools(server: McpServer): void {
         reason: SECURITY_REASON,
         howItWorks:
           'Todo cambio se propone en una tarjeta y recién se hace cuando el usuario toca Confirmar (vence en 2 minutos). Los permisos son los mismos que en el panel.',
-        links: ASSISTANT_CANNOT_WRITE.filter((item) => item.href !== '/').map(({ href, label }) => ({
+        links: ASSISTANT_CANNOT_WRITE.filter((item) => item.href !== '/dashboard').map(({ href, label }) => ({
           href,
           label,
         })),

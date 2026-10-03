@@ -76,7 +76,7 @@ export function registerSessionTools(server: McpServer): void {
           to: range.to,
           items,
           total: typeof body.total === 'number' ? body.total : items.length,
-          links: [{ href: '/sesiones', label: 'Sesiones' }],
+          links: [{ href: '/dashboard/sesiones', label: 'Sesiones' }],
         };
       }),
   );
@@ -98,7 +98,7 @@ export function registerSessionTools(server: McpServer): void {
         const slim = slimSession(raw);
         return {
           ...slim,
-          links: [{ href: '/sesiones', label: 'Sesiones' }],
+          links: [{ href: '/dashboard/sesiones', label: 'Sesiones' }],
         };
       }),
   );

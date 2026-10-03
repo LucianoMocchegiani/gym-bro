@@ -190,8 +190,18 @@ export function platformHostname(): string {
 }
 
 /**
- * URL del Admin de un tenant por slug.
+ * Origin del host de un tenant por slug: landing pública en `/`, panel en `/dashboard`.
  */
 export function tenantOrigin(slug: string, fromHost?: string): string {
   return originForHostname(tenantHostname(slug, fromHost));
+}
+
+/** Slug del tenant de plataforma: su vidriera es el apex, no `{slug}/`. */
+export const PLATFORM_TENANT_SLUG = 'admin';
+
+/**
+ * Origin del apex (landing oficial de Faciliter).
+ */
+export function platformOrigin(): string {
+  return originForHostname(platformHostname());
 }

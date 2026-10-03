@@ -115,7 +115,7 @@
 2. Confirma (el diálogo avisa qué deja de funcionar).
 3. Se guarda `tenant_settings.access_provider` (auditado con el resto de la config).
 
-**Postcondiciones:** Kuatia → CU-ACC-001 por QR. ZKTeco → CU-ACC-008; la app no recibe credenciales nuevas y `/puerta` muestra "Este gym usa acceso ZKTeco" + últimos ingresos en lugar del QR. Parámetros de conexión por proveedor (endpoints, token de dispositivo): post-MVP.
+**Postcondiciones:** Kuatia → CU-ACC-001 por QR. ZKTeco → CU-ACC-008; la app no recibe credenciales nuevas y `/dashboard/puerta` muestra "Este gym usa acceso ZKTeco" + últimos ingresos en lugar del QR. Parámetros de conexión por proveedor (endpoints, token de dispositivo): post-MVP.
 
 **Reglas relacionadas:** RN-ACC-001, RN-ACC-010
 
@@ -153,7 +153,7 @@
 - Evento repetido (misma serie + número + hora) → mismo resultado, `duplicate = true`, `open = false`.
 - Gym no ZKTeco → 409.
 
-**Postcondiciones:** Intento visible en `/puerta` → Historial con canal "ZKTeco".
+**Postcondiciones:** Intento visible en `/dashboard/puerta` → Historial con canal "ZKTeco".
 
 **Reglas relacionadas:** RN-ACC-007, RN-ACC-010, RN-ACC-011
 

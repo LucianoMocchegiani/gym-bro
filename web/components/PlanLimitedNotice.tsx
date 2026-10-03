@@ -34,10 +34,10 @@ export function PlanLimitedNotice({
     <>
       <div className="app-plan-banner" role="status">
         Las funciones están limitadas hasta que renueves el plan Faciliter.
-        {pathname !== '/plan' ? (
+        {pathname !== '/dashboard/plan' ? (
           <>
             {' '}
-            <Link href="/plan">Ir a Plan / Uso</Link>
+            <Link href="/dashboard/plan">Ir a Plan / Uso</Link>
           </>
         ) : null}
       </div>
@@ -49,7 +49,7 @@ export function PlanLimitedNotice({
         footer={
           <div className="admin-modal-actions">
             <Link
-              href="/plan"
+              href="/dashboard/plan"
               className="btn primary"
               onClick={() => setPopupOpen(false)}
             >

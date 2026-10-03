@@ -4,7 +4,7 @@ Una **sesión** es una clase o turno con fecha, hora, cupo y (si aplica) profeso
 
 El afiliado reserva desde la app (con crédito del pack o comprando drop-in). En puerta, si entra para esa clase, el ingreso queda ligado a la sesión.
 
-Pantalla Admin: **Sesiones** (`/sesiones`), pestañas **Calendario** y **Recurrencias**. Cada clase tiene:
+Pantalla Admin: **Sesiones** (`/dashboard/sesiones`), pestañas **Calendario** y **Recurrencias**. Cada clase tiene:
 
 - **Datos:** horario, cupo, profesor, **Ampliar cupo** (promueve a la lista de espera) y **Cancelar sesión**.
 - **Roster:** quién reservó y con qué pagó; reservar a alguien con su crédito.

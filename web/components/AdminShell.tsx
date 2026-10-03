@@ -50,40 +50,40 @@ const NAV_GROUPS: NavGroup[] = [
   {
     label: 'Operación',
     items: [
-      { href: '/', label: 'Inicio' },
-      { href: '/puerta', label: 'Puerta' },
-      { href: '/caja', label: 'Caja' },
-      { href: '/vencimientos', label: 'Vencimientos' },
-      { href: '/arqueo', label: 'Cierre' },
-      { href: '/gastos', label: 'Gastos' },
-      { href: '/devoluciones', label: 'Solicitudes de devolución' },
-      { href: '/reportes', label: 'Reportes' },
+      { href: '/dashboard', label: 'Inicio' },
+      { href: '/dashboard/puerta', label: 'Puerta' },
+      { href: '/dashboard/caja', label: 'Caja' },
+      { href: '/dashboard/vencimientos', label: 'Vencimientos' },
+      { href: '/dashboard/arqueo', label: 'Cierre' },
+      { href: '/dashboard/gastos', label: 'Gastos' },
+      { href: '/dashboard/devoluciones', label: 'Solicitudes de devolución' },
+      { href: '/dashboard/reportes', label: 'Reportes' },
     ],
   },
   {
     label: 'Personas',
     items: [
-      { href: '/afiliados', label: 'Afiliados' },
-      { href: '/tenants', label: 'Tenants' },
-      { href: '/staff', label: 'Staff' },
-      { href: '/roles', label: 'Roles y permisos' },
+      { href: '/dashboard/afiliados', label: 'Afiliados' },
+      { href: '/dashboard/tenants', label: 'Tenants' },
+      { href: '/dashboard/staff', label: 'Staff' },
+      { href: '/dashboard/roles', label: 'Roles y permisos' },
     ],
   },
   {
     label: 'Catálogo',
     items: [
-      { href: '/servicios', label: 'Servicios' },
-      { href: '/packs', label: 'Packs' },
-      { href: '/sesiones', label: 'Sesiones' },
+      { href: '/dashboard/servicios', label: 'Servicios' },
+      { href: '/dashboard/packs', label: 'Packs' },
+      { href: '/dashboard/sesiones', label: 'Sesiones' },
     ],
   },
   {
     label: 'Sistema',
     items: [
-      { href: '/config', label: 'Config' },
-      { href: '/avisos', label: 'Avisos' },
-      { href: '/plan', label: 'Plan / Uso' },
-      { href: '/auditoria', label: 'Auditoría' },
+      { href: '/dashboard/config', label: 'Config' },
+      { href: '/dashboard/avisos', label: 'Avisos' },
+      { href: '/dashboard/plan', label: 'Plan / Uso' },
+      { href: '/dashboard/auditoria', label: 'Auditoría' },
     ],
   },
 ];
@@ -94,12 +94,12 @@ function navGroupsForTenant(slug: string | null): NavGroup[] {
     ...group,
     items: group.items.filter((item) => {
       if (isAdmin) {
-        if (item.href === '/puerta') return false;
-        if (item.href === '/sesiones') return false;
-        if (item.href === '/afiliados') return false;
-        if (item.href === '/plan') return false;
-        if (item.href === '/avisos') return false;
-      } else if (item.href === '/tenants') {
+        if (item.href === '/dashboard/puerta') return false;
+        if (item.href === '/dashboard/sesiones') return false;
+        if (item.href === '/dashboard/afiliados') return false;
+        if (item.href === '/dashboard/plan') return false;
+        if (item.href === '/dashboard/avisos') return false;
+      } else if (item.href === '/dashboard/tenants') {
         return false;
       }
       return true;
@@ -150,10 +150,10 @@ export function AdminShell({
     if (!limited) {
       return;
     }
-    if (pathname === '/plan' || pathname === '/cuenta') {
+    if (pathname === '/dashboard/plan' || pathname === '/dashboard/cuenta') {
       return;
     }
-    router.replace('/plan');
+    router.replace('/dashboard/plan');
   }, [limited, pathname, router]);
 
   const visibleGroups = useMemo(() => {
@@ -172,8 +172,8 @@ export function AdminShell({
 
   function navClass(href: string): string {
     const active =
-      href === '/'
-        ? pathname === '/'
+      href === '/dashboard'
+        ? pathname === '/dashboard'
         : pathname === href || pathname.startsWith(`${href}/`);
     return `app-nav-link${active ? ' active' : ''}`;
   }
@@ -195,7 +195,7 @@ export function AdminShell({
 
       <aside className="app-sidebar" id="admin-sidebar" aria-label="Navegación">
         <div className="app-sidebar-brand">
-          <Link href="/" className="brand-row" onClick={closeNav}>
+          <Link href="/dashboard" className="brand-row" onClick={closeNav}>
             <span className="brand-mark" aria-hidden="true">
               <NavIconDumbbell />
             </span>
@@ -252,7 +252,7 @@ export function AdminShell({
             <div className="app-topbar-right">
               <ThemeToggle />
               <Link
-                href="/cuenta"
+                href="/dashboard/cuenta"
                 className="account-avatar-btn"
                 title={session?.email ?? 'Mi cuenta'}
                 aria-label="Mi cuenta"

@@ -20,8 +20,8 @@ const TYPE_LABEL: Record<string, string> = {
   POR_SESIONES: 'Por sesiones (clases con cupo)',
 };
 const PERIOD_LABEL: Record<string, string> = { MONTHLY: 'Mensual', ONE_TIME: 'Pago único' };
-const SERVICE_LINKS = [{ href: '/servicios', label: 'Servicios' }];
-const PACK_LINKS = [{ href: '/packs', label: 'Packs' }];
+const SERVICE_LINKS = [{ href: '/dashboard/servicios', label: 'Servicios' }];
+const PACK_LINKS = [{ href: '/dashboard/packs', label: 'Packs' }];
 
 const componentSchema = z.object({
   serviceId: z.string().uuid().describe('id de list_services'),

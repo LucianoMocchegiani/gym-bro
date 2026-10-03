@@ -2,7 +2,8 @@
  * Mapa nav/atajos Admin → permisos requeridos (cualquiera de la lista).
  *
  * @remarks Ocultar link ≠ seguridad: la API sigue con `@RequirePermission`.
- * Inicio (`/`) no exige permiso.
+ * Inicio (`/dashboard`) no exige permiso. El panel vive bajo `/dashboard`;
+ * la raíz del host del gym es su landing pública.
  */
 
 export type NavPermissionRule = {
@@ -12,32 +13,32 @@ export type NavPermissionRule = {
 };
 
 export const ADMIN_NAV_PERMISSIONS: readonly NavPermissionRule[] = [
-  { href: '/', anyOf: [] },
-  { href: '/puerta', anyOf: ['access.verify', 'access.manual_pass'] },
-  { href: '/caja', anyOf: ['cashier.operate'] },
-  { href: '/vencimientos', anyOf: ['members.read'] },
-  { href: '/arqueo', anyOf: ['cashier.operate'] },
-  { href: '/gastos', anyOf: ['expenses.read'] },
-  { href: '/devoluciones', anyOf: ['transaction_items.refund'] },
-  { href: '/reportes', anyOf: ['reports.read'] },
-  { href: '/afiliados', anyOf: ['members.read'] },
-  { href: '/staff', anyOf: ['staff.read'] },
-  { href: '/roles', anyOf: ['roles.write'] },
-  { href: '/servicios', anyOf: ['catalog.write'] },
-  { href: '/packs', anyOf: ['catalog.write'] },
-  { href: '/sesiones', anyOf: ['sessions.write'] },
+  { href: '/dashboard', anyOf: [] },
+  { href: '/dashboard/puerta', anyOf: ['access.verify', 'access.manual_pass'] },
+  { href: '/dashboard/caja', anyOf: ['cashier.operate'] },
+  { href: '/dashboard/vencimientos', anyOf: ['members.read'] },
+  { href: '/dashboard/arqueo', anyOf: ['cashier.operate'] },
+  { href: '/dashboard/gastos', anyOf: ['expenses.read'] },
+  { href: '/dashboard/devoluciones', anyOf: ['transaction_items.refund'] },
+  { href: '/dashboard/reportes', anyOf: ['reports.read'] },
+  { href: '/dashboard/afiliados', anyOf: ['members.read'] },
+  { href: '/dashboard/staff', anyOf: ['staff.read'] },
+  { href: '/dashboard/roles', anyOf: ['roles.write'] },
+  { href: '/dashboard/servicios', anyOf: ['catalog.write'] },
+  { href: '/dashboard/packs', anyOf: ['catalog.write'] },
+  { href: '/dashboard/sesiones', anyOf: ['sessions.write'] },
   {
-    href: '/config',
+    href: '/dashboard/config',
     anyOf: ['tenant.settings.read', 'tenant.settings.write', 'mp.connect'],
   },
   {
-    href: '/avisos',
+    href: '/dashboard/avisos',
     anyOf: ['tenant.settings.read', 'tenant.settings.write'],
   },
-  { href: '/plan', anyOf: ['tenant.settings.read'] },
-  { href: '/auditoria', anyOf: ['audit.read'] },
+  { href: '/dashboard/plan', anyOf: ['tenant.settings.read'] },
+  { href: '/dashboard/auditoria', anyOf: ['audit.read'] },
   // Gestión de gyms: solo el tenant `admin` (además la API exige el slug).
-  { href: '/tenants', anyOf: ['platform.tenants.read'] },
+  { href: '/dashboard/tenants', anyOf: ['platform.tenants.read'] },
 ] as const;
 
 /**
@@ -51,7 +52,7 @@ export function canAccessNavHref(
   platformAccess?: 'ok' | 'limited' | null,
 ): boolean {
   if (platformAccess === 'limited') {
-    return href === '/plan';
+    return href === '/dashboard/plan';
   }
   if (permissionCodes === null || permissionCodes === undefined) {
     return true;
