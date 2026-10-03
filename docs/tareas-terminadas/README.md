@@ -16,6 +16,7 @@ La creación de registros sigue la skill:
 
 ## Índice
 
+- [2026-10-03 - Texto de Débitos en la app sin Card Brick](./2026-10-03-texto-debitos-app.md)
 - [2026-10-02 - Mail de la cuenta Mercado Pago en alta y débito](./2026-10-02-mail-cuenta-mp.md)
 - [2026-10-02 - Suscripción Mercado Pago sin plan](./2026-10-02-suscripcion-mp-sin-plan.md)
 - [2026-10-02 - Guía /docs en 4 capítulos y get_help alineado](./2026-10-02-guia-docs-y-get-help.md)
