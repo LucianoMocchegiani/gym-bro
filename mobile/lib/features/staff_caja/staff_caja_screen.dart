@@ -594,8 +594,9 @@ class _StaffCajaScreenState extends State<StaffCajaScreen> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Text(
-          'El alta con tarjeta (Card Brick) se hace en el panel web. '
-          'Acá ves la cola, el mandato del afiliado y la baja.',
+          'El alta del débito (link de suscripción de Mercado Pago) se hace '
+          'en Caja del panel web. Acá ves la cola, el mandato del afiliado y '
+          'la baja.',
           style: Theme.of(context).textTheme.bodySmall,
         ),
         const SizedBox(height: 12),
