@@ -203,15 +203,8 @@ export class PlatformSignupService {
       : undefined;
 
     try {
-      const plan = await this.mp.createPreapprovalPlan({
-        accessToken,
-        reason: `Faciliter ${pack.name}`,
-        amount: pack.price,
-        backUrl,
-      });
       const sub = await this.mp.createPreapproval({
         accessToken,
-        planId: plan.id,
         reason: `Faciliter ${pack.name} · ${gymName}`,
         externalReference: signup.id,
         payerEmail: identity.email,
@@ -223,7 +216,6 @@ export class PlatformSignupService {
       const updated = await this.prisma.platformSignup.update({
         where: { id: signup.id },
         data: {
-          mpPreapprovalPlanId: plan.id,
           mpPreapprovalId: sub.id,
           initPoint: sub.initPoint,
         },

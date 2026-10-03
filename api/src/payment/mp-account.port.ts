@@ -119,14 +119,10 @@ export abstract class MpAccountPort {
   ): Promise<{ ok: boolean; manualPending: boolean }>;
 
   /**
-   * Plan de suscripción MP (preapproval_plan).
-   */
-  abstract createPreapprovalPlan(
-    input: CreateMpPreapprovalPlanInput,
-  ): Promise<{ id: string }>;
-
-  /**
    * Checkout de suscripción (`init_point`).
+   *
+   * @remarks Sin `preapproval_plan_id`: MP exige `card_token_id` y status
+   * `authorized` en suscripciones con plan; el link requiere `pending` sin plan.
    */
   abstract createPreapproval(
     input: CreateMpPreapprovalInput,
@@ -157,18 +153,9 @@ export abstract class MpAccountPort {
   ): Promise<MpRemoteAuthorizedPayment>;
 }
 
-/** Alta de plan de suscripción MP. */
-export type CreateMpPreapprovalPlanInput = {
-  accessToken: string;
-  reason: string;
-  amount: number;
-  backUrl: string;
-};
-
 /** Alta de preapproval (link de autorización). */
 export type CreateMpPreapprovalInput = {
   accessToken: string;
-  planId: string;
   reason: string;
   externalReference: string;
   payerEmail: string;

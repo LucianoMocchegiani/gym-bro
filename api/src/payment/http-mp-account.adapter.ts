@@ -1,7 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import {
   CreateMpPreapprovalInput,
-  CreateMpPreapprovalPlanInput,
   CreateMpPreferenceInput,
   MpAccountPort,
   MpAccountValidation,
@@ -16,7 +15,6 @@ import {
 const MP_USERS_ME = 'https://api.mercadopago.com/users/me';
 const MP_PREFERENCES = 'https://api.mercadopago.com/checkout/preferences';
 const MP_PAYMENTS = 'https://api.mercadopago.com/v1/payments';
-const MP_PREAPPROVAL_PLANS = 'https://api.mercadopago.com/preapproval_plan';
 const MP_PREAPPROVALS = 'https://api.mercadopago.com/preapproval';
 const MP_AUTHORIZED_PAYMENTS =
   'https://api.mercadopago.com/authorized_payments';
@@ -262,41 +260,6 @@ export class HttpMpAccountAdapter extends MpAccountPort {
   /**
    * @inheritdoc
    */
-  async createPreapprovalPlan(
-    input: CreateMpPreapprovalPlanInput,
-  ): Promise<{ id: string }> {
-    const response = await fetch(MP_PREAPPROVAL_PLANS, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${input.accessToken}`,
-        'Content-Type': 'application/json',
-        Accept: 'application/json',
-      },
-      body: JSON.stringify({
-        reason: input.reason,
-        auto_recurring: {
-          frequency: 1,
-          frequency_type: 'months',
-          transaction_amount: input.amount,
-          currency_id: 'ARS',
-        },
-        back_url: input.backUrl,
-      }),
-    });
-    if (!response.ok) {
-      const body = await response.text().catch(() => '');
-      this.throwMpFailure('preapproval_plan', response.status, body);
-    }
-    const data = (await response.json()) as { id?: string };
-    if (!data.id) {
-      throw new Error('Mercado Pago preapproval_plan missing id');
-    }
-    return { id: data.id };
-  }
-
-  /**
-   * @inheritdoc
-   */
   async createPreapproval(
     input: CreateMpPreapprovalInput,
   ): Promise<MpPreapprovalResult> {
@@ -317,7 +280,6 @@ export class HttpMpAccountAdapter extends MpAccountPort {
         Accept: 'application/json',
       },
       body: JSON.stringify({
-        preapproval_plan_id: input.planId,
         reason: input.reason,
         external_reference: input.externalReference,
         payer_email: input.payerEmail,

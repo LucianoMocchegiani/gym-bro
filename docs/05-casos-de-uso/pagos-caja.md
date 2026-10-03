@@ -142,8 +142,8 @@
 
 **Flujo principal (primer mes + suscripción):**
 1. En Caja, afiliado elegido, carrito = **un** pack MONTHLY, medio **Mercado Pago**, tilde de débito (consentimiento).
-2. Sistema asegura un `preapproval_plan` del pack (lo crea o actualiza al precio de catálogo).
-3. Crea `preapproval` `pending` (cuenta del gym) y muestra **link** `init_point` (copiar / abrir; **sin** Brick ni PAN en Faciliter). Mandato `pendiente_checkout`.
+2. Sistema toma el precio de catálogo del pack.
+3. Crea `preapproval` `pending` **sin plan asociado** (cuenta del gym; MP exige tarjeta tokenizada si hay plan) con ese monto y muestra **link** `init_point` (copiar / abrir; **sin** Brick ni PAN en Faciliter). Mandato `pendiente_checkout`.
 4. El socio completa el checkout en Mercado Pago. Webhook: suscripción `authorized` + primer cobro approved → Transaction PACK → contrato (CU-PAG-001 / RN-CON-001). Mandato `activo`.
 5. Auditoría: quién tildó, cuándo, pack, afiliado, id de preapproval.
 
@@ -174,7 +174,7 @@
 1. MP cobra un ciclo (o reintenta). Llega `subscription_authorized_payment` y/o `payment`.
 2. GymBro consulta el recurso por id (no confía solo en el body). Si no está **approved**, no crea contrato; guarda error en el mandato si aplica.
 3. Idempotencia: mismo cobro MP / mismo ciclo → no duplica Transaction ni contrato (RN-PAG-005).
-4. Approved → Transaction PACK (monto del plan) → mismo pipeline que Caja (comprobante, RN-CON-001). Mandato `activo`; próximo cobro = el que informe MP.
+4. Approved → Transaction PACK (monto de la suscripción) → mismo pipeline que Caja (comprobante, RN-CON-001). Mandato `activo`; próximo cobro = el que informe MP.
 5. Si MP deja la suscripción fallida/cancelada por impago → mandato `fallido`; aplica RN-ACC-005.
 
 **Errores:** Webhook perdido → reconciliar después (fuera del happy path). No hay job que dispare Payment ni botón “Cobrar ahora”.
@@ -194,7 +194,7 @@
 2. Panel: estado, pack, link si sigue pendiente, último error MP, “Dar de baja”, “Próximo pack” (B).
 3. Baja → `cancelled` en MP + mandato `baja`; contrato vigente no se toca.
 4. Cambio de pack A→B: cancelar preapproval A; alta de B (CU-PAG-008) para el **próximo** cobro; A se deja vencer (sin prorrateo, sin dos MONTHLY).
-5. Precio de catálogo del pack: actualizar el `preapproval_plan` (suscriptores del mismo pack).
+5. Precio de catálogo del pack: cada suscripción guarda el monto de su alta. Un precio nuevo aplica al **Regenerar link** o con **Próximo pack** (nueva suscripción); las activas no se actualizan solas.
 6. Ficha: no duplica esta UI; atajo (CU-AFI-004).
 
 **Errores:** Sin permiso → denegado. MP no cancela → error visible; reintentar baja.

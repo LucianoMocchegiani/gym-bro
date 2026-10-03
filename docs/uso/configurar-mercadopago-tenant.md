@@ -25,7 +25,7 @@ El token de Config tiene que ser el de **esa misma** aplicación (producción).
 2. Creá una aplicación (nombre libre, p. ej. el del local).
 3. Productos a habilitar:
    - **Checkout Pro** (links de Caja / packs / drop-in).
-   - **Suscripciones** (débito MONTHLY: plan + preapproval, sin guardar tarjeta en Faciliter).
+   - **Suscripciones** (débito MONTHLY: preapproval sin plan, sin guardar tarjeta en Faciliter).
 4. Copiá:
    - **Public Key** (producción)
    - **Access Token** (producción)

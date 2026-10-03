@@ -46,7 +46,7 @@ Necesidades HW/SW: [19-puerta-molinete-hw-sw.md](./19-puerta-molinete-hw-sw.md).
 
 ## P2 — Débito automático (suscripción MP)
 
-En código (no es tarjeta+job): Mercado Pago cobra con **plan + preapproval**; Caja genera `init_point`; contrato al webhook. UI `/caja?memberId=&vista=debitos`. RN-PAG-013..016, CU-PAG-008..010.
+En código (no es tarjeta+job): Mercado Pago cobra con un **preapproval sin plan** (`pending`); Caja genera `init_point`; contrato al webhook. UI `/caja?memberId=&vista=debitos`. RN-PAG-013..016, CU-PAG-008..010.
 
 **Pendiente:** QA en live (P9…P9j). Guía: `docs/uso/probar-debito-suscripcion-mp.md` y `local/en-testeo/probar-debito-y-asistente.md`.
 

@@ -223,18 +223,10 @@ export class DebitService {
           },
         });
 
-    let plan;
     let sub;
     try {
-      plan = await this.mp.createPreapprovalPlan({
-        accessToken,
-        reason: pack.name,
-        amount: pack.price,
-        backUrl,
-      });
       sub = await this.mp.createPreapproval({
         accessToken,
-        planId: plan.id,
         reason: `${pack.name} · ${member.email}`,
         externalReference: seeded.id,
         payerEmail: member.email,
@@ -251,7 +243,6 @@ export class DebitService {
       where: { id: seeded.id },
       data: {
         mpPreapprovalId: sub.id,
-        mpPreapprovalPlanId: plan.id,
         initPoint: sub.initPoint,
       },
       include: {
@@ -588,15 +579,8 @@ export class DebitService {
       : undefined;
     const backUrl = this.webBackUrl();
     const notificationUrl = this.buildNotificationUrl(tenantId);
-    const plan = await this.mp.createPreapprovalPlan({
-      accessToken,
-      reason: pack.name,
-      amount: pack.price,
-      backUrl,
-    });
     const sub = await this.mp.createPreapproval({
       accessToken,
-      planId: plan.id,
       reason: `${pack.name} · ${member.email}`,
       externalReference: mandate.id,
       payerEmail: member.email,
@@ -610,7 +594,7 @@ export class DebitService {
       data: {
         packId,
         mpPreapprovalId: sub.id,
-        mpPreapprovalPlanId: plan.id,
+        mpPreapprovalPlanId: null,
         initPoint: sub.initPoint,
         status: DebitMandateStatus.PENDING_CHECKOUT,
         lastError: null,

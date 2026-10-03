@@ -319,15 +319,14 @@ Staff POST /transactions/:id/refunds (transaction_items.refund)
 
 ### 7.5 Débito automático MONTHLY
 
-Suscripción Mercado Pago (plan + preapproval) en la cuenta del gym. GymBro no guarda tarjeta ni corre un cron de cobro. El contrato sigue al cobro approved de MP.
+Suscripción Mercado Pago (`preapproval` sin plan asociado, `pending`) en la cuenta del gym. Con plan, MP exige `card_token_id` y `authorized`; sin plan devuelve `init_point` y el socio carga el medio en MP. GymBro no guarda tarjeta ni corre un cron de cobro. El contrato sigue al cobro approved de MP.
 
 **Código (2026-09-15):** aún Customer+Card+Payments+job. Este § es el **diseño a implementar**.
 
 ```text
 Alta cobro (CU-PAG-008):
   Caja carrito = 1 MONTHLY + MP + tilde débito
-  → preapproval_plan del pack (precio catálogo)
-  → POST /preapproval pending → init_point (copiar/abrir)
+  → POST /preapproval pending, sin plan, monto = precio catálogo → init_point (copiar/abrir)
   → mandato PENDIENTE_CHECKOUT
   → socio paga en MP
   → webhook subscription_preapproval + authorized_payment/payment

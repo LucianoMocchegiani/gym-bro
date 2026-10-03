@@ -1,6 +1,6 @@
 # Débito automático
 
-**Débito** = Mercado Pago cobra solo cada mes un pack **mensual** (MONTHLY) con una **suscripción** (plan + preapproval) en la cuenta **del gym**. Faciliter no guarda la tarjeta ni dispara el cobro: cuando MP avisa que un mes se aprobó, se registra el cobro y el contrato.
+**Débito** = Mercado Pago cobra solo cada mes un pack **mensual** (MONTHLY) con una **suscripción** (preapproval sin plan) en la cuenta **del gym**. Cada suscripción guarda el precio del pack de su alta; si cambia el precio, aplica al **Regenerar link** o con **Próximo pack**. Faciliter no guarda la tarjeta ni dispara el cobro: cuando MP avisa que un mes se aprobó, se registra el cobro y el contrato.
 
 **Alta:** en Caja → Cobro, con un pack mensual y Mercado Pago, tildar débito automático. Se genera un **link** de checkout MP; el socio autoriza en Mercado Pago (no hay formulario de tarjeta en Faciliter).
 

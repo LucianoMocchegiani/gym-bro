@@ -3,7 +3,7 @@
 **Dónde:** VPS / live. No alcanza un typecheck local.  
 **Reglas:** RN-PAG-013..016 · CU-PAG-008..010. Checklist corto: `docs/08-casos-prueba-manuales.md` (P9…P9j).
 
-Faciliter **no guarda la tarjeta**. El cobro lo dispara Mercado Pago (plan + preapproval). Caja solo genera el `init_point`.
+Faciliter **no guarda la tarjeta**. El cobro lo dispara Mercado Pago (preapproval sin plan, `pending`). Caja solo genera el `init_point`.
 
 ## Antes
 

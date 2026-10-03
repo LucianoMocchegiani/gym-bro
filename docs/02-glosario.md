@@ -66,9 +66,8 @@ Términos usados en dominio, reglas y casos de uso. Una sola palabra canónica p
 | **Comprobante interno** | Recibo GymBro (no factura AFIP). AFIP = post-MVP. |
 | **Devolución / Reembolso** | Reverso de un pago según política del gym o decisión del admin. |
 | **Tolerancia** | Días de atraso de deuda con los que aún se permite ingreso. Default 15; por gym. |
-| **Débito automático** | Cobro recurrente de un pack **MONTHLY** vía **suscripción Mercado Pago** (plan + preapproval) en la cuenta del gym. Faciliter no cobra el mes 2+ ni guarda la tarjeta: aplica contrato cuando MP avisa approved. Post-MVP (diseño 2026-09-15). |
-| **Mandato de débito** | Espejo local de esa suscripción: afiliado + pack + ids MP (`preapproval` / plan) + estado. Alta (link), baja y cola se gestionan en Caja. |
-| **Plan MP (preapproval_plan)** | Plantilla de cobro (monto, 1 mes, ARS) asociada a un pack MONTHLY. Actualizar el precio del pack actualiza el plan. |
+| **Débito automático** | Cobro recurrente de un pack **MONTHLY** vía **suscripción Mercado Pago** (`preapproval` sin plan asociado) en la cuenta del gym. Faciliter no cobra el mes 2+ ni guarda la tarjeta: aplica contrato cuando MP avisa approved. Post-MVP (diseño 2026-09-15). |
+| **Mandato de débito** | Espejo local de esa suscripción: afiliado + pack + id MP (`preapproval`) + estado. Alta (link), baja y cola se gestionan en Caja. |
 | **Pestaña Débitos** | Vista de Caja: cola (a debitar / reintentos / fallidos) y panel del afiliado. |
 
 ---

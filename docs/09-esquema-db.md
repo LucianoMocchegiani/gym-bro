@@ -842,7 +842,7 @@ Mandato MONTHLY = espejo de **suscripción MP** (RN-PAG-013..016 / CU-PAG-008..0
 | `pack_id` | uuid FK | pack del próximo cobro; RESTRICT |
 | `enrolled_transaction_item_id` | uuid FK nullable unique | primer cobro que inscribió; SET NULL; devolverlo → baja MP |
 | `mp_preapproval_id` | text unique nullable | id `/preapproval` |
-| `mp_preapproval_plan_id` | text nullable | plan del pack |
+| `mp_preapproval_plan_id` | text nullable | legado: altas nuevas no crean plan (queda null) |
 | `init_point` | text nullable | link de checkout mientras `PENDING_CHECKOUT` |
 | `status` | `DebitMandateStatus` | `PENDING_CHECKOUT` \| `ACTIVE` \| `RETRYING` \| `FAILED` \| `CANCELLED` (`RETRYING` legado) |
 | `attempt_count` | int | legado (el cobro lo hace MP) |
