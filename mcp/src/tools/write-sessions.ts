@@ -51,6 +51,37 @@ function minutesBetween(fromIso: string, toIso: string): number {
   return Math.round((Date.parse(toIso) - Date.parse(fromIso)) / 60_000);
 }
 
+const WEEKDAY_BY_UTC_DAY = ['SUNDAY', 'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY'] as const;
+
+/** Días (YYYY-MM-DD) que la serie genera, igual que Nest: sin las clases que ya empezaron. */
+function seriesDays(
+  from: string,
+  to: string,
+  weekdays: readonly (typeof WEEKDAYS)[number][],
+  startTime: string,
+): string[] {
+  const selected = new Set<string>(weekdays);
+  const days: string[] = [];
+  const end = Date.parse(`${to}T00:00:00Z`);
+  for (let t = Date.parse(`${from}T00:00:00Z`); t <= end; t += 86_400_000) {
+    const date = new Date(t);
+    const ymd = date.toISOString().slice(0, 10);
+    if (selected.has(WEEKDAY_BY_UTC_DAY[date.getUTCDay()]) && Date.parse(baLocalToIso(ymd, startTime)) > Date.now()) {
+      days.push(ymd);
+    }
+  }
+  return days;
+}
+
+/** `lun 12/10` */
+function ymdShort(ymd: string): string {
+  const weekday = new Intl.DateTimeFormat('es-AR', { timeZone: 'UTC', weekday: 'short' })
+    .format(new Date(`${ymd}T12:00:00Z`))
+    .replace('.', '');
+  const [, m, d] = ymd.split('-');
+  return `${weekday} ${d}/${m}`;
+}
+
 /**
  * Propuestas de calendario (CU-SER-003..005). Nest: `sessions.write`. No cancela.
  */
@@ -192,14 +223,16 @@ export function registerSessionWriteTools(server: McpServer): void {
     {
       title: 'Proponer serie semanal',
       description:
-        'Arma una serie de clases semanales (servicio por sesiones) para que el usuario la confirme: días de la semana, hora, duración, desde/hasta y cupo. Crea todas las clases del rango. Revisá bien los días con el usuario.',
+        'Arma una serie de clases semanales (servicio por sesiones) para que el usuario la confirme: días de la semana, hora, duración, desde/hasta y cupo. Crea todas las clases del rango. Revisá bien los días con el usuario. Si el usuario no dijo hasta cuándo se repite, preguntáselo antes de llamar: no inventes "hasta" ni repitas "desde".',
       inputSchema: {
         serviceId: z.string().uuid(),
         weekdays: z.array(z.enum(WEEKDAYS)).min(1),
         startTime: timeSchema,
         durationMinutes: durationSchema,
-        startsOn: dateSchema.optional().describe('Desde YYYY-MM-DD. Default hoy.'),
-        endsOn: dateSchema.describe('Hasta YYYY-MM-DD (inclusive).'),
+        startsOn: dateSchema.optional().describe('Desde YYYY-MM-DD (primer día de la serie). Default hoy.'),
+        endsOn: dateSchema.describe(
+          'Hasta YYYY-MM-DD (inclusive): último día en que se repite, la fecha que dijo el usuario. No es el mismo día que "desde" salvo que lo pida.',
+        ),
         capacity: capacitySchema,
         instructorId: instructorSchema.optional(),
       },
@@ -211,13 +244,29 @@ export function registerSessionWriteTools(server: McpServer): void {
         if (endsOn < from) {
           throw new ProposalError('La fecha "hasta" es anterior a "desde".');
         }
-        const service = await getRecord(`/api/services/${serviceId}`);
         const days = [...new Set(weekdays)];
+        const dayNames = days.map((day) => WEEKDAY_LABEL[day]).join(', ');
+        const classDays = seriesDays(from, endsOn, days, startTime);
+        if (classDays.length === 0) {
+          throw new ProposalError(
+            `Del ${ymdHuman(from)} al ${ymdHuman(endsOn)} no queda ninguna clase de ${dayNames} a las ${startTime}. Preguntale al usuario hasta qué fecha va la serie (o desde cuándo) y volvé a proponer.`,
+          );
+        }
+        const service = await getRecord(`/api/services/${serviceId}`);
+        const first = classDays[0];
+        const last = classDays[classDays.length - 1];
         const lines: ProposalLine[] = [
           { label: 'Servicio', value: nameOf(service) },
-          { label: 'Días', value: days.map((day) => WEEKDAY_LABEL[day]).join(', ') },
+          { label: 'Días', value: dayNames },
           { label: 'Hora', value: `${startTime} (${durationMinutes} min)` },
           { label: 'Desde / hasta', value: `${ymdHuman(from)} al ${ymdHuman(endsOn)}` },
+          {
+            label: 'Clases',
+            value:
+              classDays.length === 1
+                ? `1 (${ymdShort(first)})`
+                : `${classDays.length} (${ymdShort(first)} → ${ymdShort(last)})`,
+          },
           { label: 'Cupo', value: String(capacity) },
         ];
         if (instructorId) {
@@ -241,7 +290,7 @@ export function registerSessionWriteTools(server: McpServer): void {
               instructorId,
             }),
           },
-          doneText: `Serie creada: ${nameOf(service)} ${days.map((day) => WEEKDAY_LABEL[day]).join(', ')} ${startTime}.`,
+          doneText: `Serie creada: ${nameOf(service)} ${dayNames} ${startTime} (${classDays.length} clases).`,
           links: LINKS,
         };
       }),

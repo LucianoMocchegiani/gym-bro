@@ -77,7 +77,7 @@ export function registerConfirmTools(server: McpServer): void {
           status: 'failed',
           proposalId,
           title: proposal.title,
-          message: `No se pudo: ${failureText(error)}`,
+          message: failureText(error),
           links: proposal.links,
         });
       }
