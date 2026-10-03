@@ -202,14 +202,18 @@ Guardar con **Guardar operación**.
 
 ### Mercado Pago
 
-La cuenta es **del negocio**. Access token y public key de **tu** aplicación MP. Sin esto, el socio no puede pagar desde la app ni el staff cobrar con link o débito en Caja.
+La cuenta es **del negocio**. Sin esto, el socio no puede pagar desde la app ni el staff cobrar con link o débito en Caja.
 
-Cuando está conectada, los campos quedan vacíos (no se re-pegan las keys). El estado muestra la key **enmascarada** y el último test. **Conectar / reemplazar** solo si cambiaste las credenciales. **Probar** verifica la cuenta. **Desconectar** corta los cobros online.
+Tocá **Conectar Mercado Pago**, iniciá sesión en Mercado Pago con la cuenta **del gym** y autorizá. Volvés solo a Config con la cuenta conectada. No hace falta crear nada en MP Developers ni copiar claves.
+
+El estado muestra **Conectada con Mercado Pago**, la key **enmascarada** y el último test. Faciliter renueva la conexión solo; si alguna vez no puede, aparece **Reconectar Mercado Pago**. **Reconectar** también sirve para cambiar de cuenta. **Probar** verifica la cuenta. **Desconectar** corta los cobros online.
+
+**Conexión manual (avanzado)** queda plegada abajo: pegar access token y public key de una app MP propia. Usala solo si te lo pide soporte.
 
 **Qué ve el socio:** nada de Config. Sí nota el efecto: puede (o no) pagar online, cancelar reservas, entrar con deuda.
 
 **Captura:** `web-config.png` — rehacer.  
-**Dónde:** Config, MP **conectado**, token **no** pegado en claro.  
+**Dónde:** Config, MP **conectado** con el botón (estado «Conectada con Mercado Pago»).  
 **Por qué rehacer:** la foto actual no tiene el selector **Puerta** ni el tope diario de multi-ingreso.  
 **Qué se ve:** los dos paneles: Operación (con Puerta = QR con la app) y Mercado Pago conectado.
 
@@ -511,7 +515,7 @@ Operación del local, sistema de puerta y Mercado Pago. Sin MP conectado no hay 
 
 **Captura:** `web-config-desconectado-mp.png` — falta.  
 **Dónde:** Config, Mercado Pago sin conectar.  
-**Qué se ve:** el bloque Mercado Pago vacío, con Access token, Public key y **Conectar / reemplazar**.
+**Qué se ve:** el bloque Mercado Pago sin conectar, con el botón **Conectar Mercado Pago** y **Conexión manual (avanzado)** plegada.
 
 ## Servicios
 

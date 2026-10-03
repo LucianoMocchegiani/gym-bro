@@ -74,7 +74,7 @@ Formato: **RN-MODULO-NNN** — enunciado — excepciones.
 
 | ID | Regla |
 |----|--------|
-| RN-PAG-001 | Mercado Pago utiliza la **cuenta del gym** (tenant). |
+| RN-PAG-001 | Mercado Pago utiliza la **cuenta del gym** (tenant). El gym la conecta autorizando a la app de plataforma Faciliter (OAuth); la plata va directo a su cuenta. El token pegado a mano es un respaldo avanzado. |
 | RN-PAG-002 | En MVP se pueden pagar: mensualidades, packs y drop-in. Medios nuevos: Caja (efectivo) o Mercado Pago. `STUB` es legado: no se crean cobros. |
 | RN-PAG-003 | Estados de pago: `pendiente`, `aprobado`, `rechazado`, `reembolsado`. |
 | RN-PAG-004 | Una contratación o reserva solo se confirma cuando el pago queda `aprobado`. |

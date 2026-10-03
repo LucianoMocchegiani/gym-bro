@@ -211,6 +211,7 @@ model Tenant {
   receipts        Receipt[]
   receiptSequence ReceiptSequence?
   mercadoPagoAccount MercadoPagoAccount?
+  mpOauthStates   MpOauthState[]
   refundRequests  RefundRequest[]
   accessCredentials AccessCredential[]
   accessAttempts  AccessAttempt[]
@@ -238,21 +239,55 @@ model Tenant {
 /// Cuenta Mercado Pago del gym (CU-PAG-006 / RN-PAG-001).
 ///
 /// @remarks 1:1 con tenant. `access_token` cifrado en reposo; nunca se expone en GET.
+/// Cómo se obtuvo el access_token de la cuenta MP del gym.
+enum MpConnectionMode {
+  /// Token pegado a mano en Config (avanzado).
+  MANUAL
+  /// «Conectar Mercado Pago» (OAuth authorization code + PKCE).
+  OAUTH
+}
+
 model MercadoPagoAccount {
-  tenantId              String    @id @map("tenant_id") @db.Uuid
+  tenantId               String           @id @map("tenant_id") @db.Uuid
   /// AES-256-GCM del access_token (formato v1:iv:tag:ciphertext).
-  accessTokenCiphertext String    @map("access_token_ciphertext")
-  publicKey             String    @map("public_key")
+  accessTokenCiphertext  String           @map("access_token_ciphertext")
+  publicKey              String           @map("public_key")
   /// `id` de GET /users/me tras validación exitosa.
-  mpUserId              String?   @map("mp_user_id")
-  lastValidatedAt       DateTime? @map("last_validated_at")
-  lastValidationOk      Boolean?  @map("last_validation_ok")
-  createdAt             DateTime  @default(now()) @map("created_at")
-  updatedAt             DateTime  @updatedAt @map("updated_at")
+  mpUserId               String?          @map("mp_user_id")
+  lastValidatedAt        DateTime?        @map("last_validated_at")
+  lastValidationOk       Boolean?         @map("last_validation_ok")
+  connectionMode         MpConnectionMode @default(MANUAL) @map("connection_mode")
+  /// Solo OAUTH. Cifrado igual que el access_token; rota en cada renovación.
+  refreshTokenCiphertext String?          @map("refresh_token_ciphertext")
+  /// Solo OAUTH. Vencimiento del access_token (180 días desde emisión).
+  tokenExpiresAt         DateTime?        @map("token_expires_at")
+  /// Último error al renovar (OAUTH); null si la última renovación anduvo.
+  lastRefreshError       String?          @map("last_refresh_error")
+  createdAt              DateTime         @default(now()) @map("created_at")
+  updatedAt              DateTime         @updatedAt @map("updated_at")
 
   tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   @@map("mercadopago_accounts")
+}
+
+/// Intento de «Conectar Mercado Pago» en curso (state OAuth + PKCE). Un solo uso.
+model MpOauthState {
+  /// SHA-256 (hex) del `state` enviado a MP.
+  stateHash              String    @id @map("state_hash")
+  tenantId               String    @map("tenant_id") @db.Uuid
+  /// `userId` del staff (JWT) que inició la conexión; actor de auditoría.
+  actorUserId            String    @map("actor_user_id")
+  /// `code_verifier` PKCE cifrado.
+  codeVerifierCiphertext String    @map("code_verifier_ciphertext")
+  expiresAt              DateTime  @map("expires_at")
+  usedAt                 DateTime? @map("used_at")
+  createdAt              DateTime  @default(now()) @map("created_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([expiresAt])
+  @@map("mp_oauth_states")
 }
 
 /// Configuración operativa del gym (RN-TEN-005 / RN-TEN-006).

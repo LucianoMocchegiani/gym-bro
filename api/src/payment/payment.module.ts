@@ -17,6 +17,8 @@ import { HttpMpAccountAdapter } from './http-mp-account.adapter';
 import { PaymentController } from './payment.controller';
 import { PaymentWebhookController } from './payment-webhook.controller';
 import { MercadoPagoAccountController } from './mercadopago-account.controller';
+import { MercadoPagoOAuthController } from './mercadopago-oauth.controller';
+import { MercadoPagoOAuthService } from './mercadopago-oauth.service';
 import { TenantsModule } from '../tenants/tenants.module';
 import { DebitModule } from '../debit/debit.module';
 import { NotificationsModule } from '../notifications/notifications.module';
@@ -39,6 +41,7 @@ import { NotificationsModule } from '../notifications/notifications.module';
     PaymentController,
     PaymentWebhookController,
     MercadoPagoAccountController,
+    MercadoPagoOAuthController,
   ],
   providers: [
     TransactionService,
@@ -46,6 +49,7 @@ import { NotificationsModule } from '../notifications/notifications.module';
     OnlinePaymentService,
     WebhookPaymentService,
     MercadoPagoAccountService,
+    MercadoPagoOAuthService,
     HttpMpAccountAdapter,
     {
       provide: MP_ACCOUNT_PORT,

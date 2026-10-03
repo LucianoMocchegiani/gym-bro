@@ -5,12 +5,14 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { MercadoPagoAccount, MpConnectionMode } from '@prisma/client';
 import { AuditActor, AUDIT_ACTIONS } from '../audit/audit.types';
 import { AuditService } from '../audit/audit.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { UpsertMercadoPagoAccountDto } from './dto/upsert-mercadopago-account.dto';
 import { MpCredentialsCrypto } from './mp-credentials-crypto';
 import { MP_ACCOUNT_PORT, MpAccountPort } from './mp-account.port';
+import { readMpOAuthConfig } from './mp-oauth.config';
 import {
   MercadoPagoAccountStatus,
   MercadoPagoAccountTestResult,
@@ -19,8 +21,9 @@ import {
 /**
  * Cuenta Mercado Pago por tenant (CU-PAG-006 / RN-PAG-001).
  *
- * @remarks Credenciales pegadas (access_token + public_key). Token cifrado.
- * GET nunca expone secretos. Permiso `mp.connect`.
+ * @remarks Alta normal por OAuth ({@link MercadoPagoOAuthService}); `upsert`
+ * es la conexión manual (token pegado). Tokens cifrados. GET nunca expone
+ * secretos. Permiso `mp.connect`.
  */
 @Injectable()
 export class MercadoPagoAccountService {
@@ -32,10 +35,7 @@ export class MercadoPagoAccountService {
     private readonly config: ConfigService,
     @Inject(MP_ACCOUNT_PORT) private readonly mp: MpAccountPort,
   ) {
-    const secret =
-      this.config.get<string>('MP_CREDENTIALS_SECRET')?.trim() ||
-      'dev-mp-credentials-secret-change-me';
-    this.crypto = new MpCredentialsCrypto(secret);
+    this.crypto = MpCredentialsCrypto.fromConfig(this.config);
   }
 
   /**
@@ -46,14 +46,7 @@ export class MercadoPagoAccountService {
       where: { tenantId },
     });
     if (!row) {
-      return {
-        connected: false,
-        publicKeyMasked: null,
-        mpUserId: null,
-        lastValidatedAt: null,
-        lastValidationOk: null,
-        updatedAt: null,
-      };
+      return this.disconnectedStatus();
     }
     return this.toStatus(row);
   }
@@ -97,23 +90,21 @@ export class MercadoPagoAccountService {
       where: { tenantId },
     });
 
+    const manual = {
+      accessTokenCiphertext: ciphertext,
+      publicKey,
+      mpUserId,
+      lastValidatedAt,
+      lastValidationOk,
+      connectionMode: MpConnectionMode.MANUAL,
+      refreshTokenCiphertext: null,
+      tokenExpiresAt: null,
+      lastRefreshError: null,
+    };
     const row = await this.prisma.mercadoPagoAccount.upsert({
       where: { tenantId },
-      create: {
-        tenantId,
-        accessTokenCiphertext: ciphertext,
-        publicKey,
-        mpUserId,
-        lastValidatedAt,
-        lastValidationOk,
-      },
-      update: {
-        accessTokenCiphertext: ciphertext,
-        publicKey,
-        mpUserId,
-        lastValidatedAt,
-        lastValidationOk,
-      },
+      create: { tenantId, ...manual },
+      update: manual,
     });
 
     await this.audit.record({
@@ -127,12 +118,14 @@ export class MercadoPagoAccountService {
             connected: true,
             publicKeyMasked: maskPublicKey(before.publicKey),
             mpUserId: before.mpUserId,
+            connectionMode: before.connectionMode,
           }
         : null,
       after: {
         connected: true,
         publicKeyMasked: maskPublicKey(row.publicKey),
         mpUserId: row.mpUserId,
+        connectionMode: row.connectionMode,
         validated: shouldValidate,
       },
     });
@@ -245,18 +238,12 @@ export class MercadoPagoAccountService {
         connected: true,
         publicKeyMasked: maskPublicKey(before.publicKey),
         mpUserId: before.mpUserId,
+        connectionMode: before.connectionMode,
       },
       after: { connected: false },
     });
 
-    return {
-      connected: false,
-      publicKeyMasked: null,
-      mpUserId: null,
-      lastValidatedAt: null,
-      lastValidationOk: null,
-      updatedAt: null,
-    };
+    return this.disconnectedStatus();
   }
 
   /**
@@ -295,13 +282,24 @@ export class MercadoPagoAccountService {
     }
   }
 
-  private toStatus(row: {
-    publicKey: string;
-    mpUserId: string | null;
-    lastValidatedAt: Date | null;
-    lastValidationOk: boolean | null;
-    updatedAt: Date;
-  }): MercadoPagoAccountStatus {
+  private disconnectedStatus(): MercadoPagoAccountStatus {
+    return {
+      connected: false,
+      publicKeyMasked: null,
+      mpUserId: null,
+      lastValidatedAt: null,
+      lastValidationOk: null,
+      updatedAt: null,
+      connectionMode: null,
+      tokenExpiresAt: null,
+      needsReconnect: false,
+      oauthAvailable: readMpOAuthConfig(this.config) !== null,
+    };
+  }
+
+  private toStatus(row: MercadoPagoAccount): MercadoPagoAccountStatus {
+    const expired =
+      row.tokenExpiresAt !== null && row.tokenExpiresAt.getTime() <= Date.now();
     return {
       connected: true,
       publicKeyMasked: maskPublicKey(row.publicKey),
@@ -309,6 +307,12 @@ export class MercadoPagoAccountService {
       lastValidatedAt: row.lastValidatedAt?.toISOString() ?? null,
       lastValidationOk: row.lastValidationOk,
       updatedAt: row.updatedAt.toISOString(),
+      connectionMode: row.connectionMode,
+      tokenExpiresAt: row.tokenExpiresAt?.toISOString() ?? null,
+      needsReconnect:
+        row.connectionMode === MpConnectionMode.OAUTH &&
+        (row.lastRefreshError !== null || expired),
+      oauthAvailable: readMpOAuthConfig(this.config) !== null,
     };
   }
 }
@@ -316,7 +320,7 @@ export class MercadoPagoAccountService {
 /**
  * Enmascara public_key para respuestas API.
  */
-function maskPublicKey(publicKey: string): string {
+export function maskPublicKey(publicKey: string): string {
   if (publicKey.length <= 12) {
     return `${publicKey.slice(0, 2)}…${publicKey.slice(-2)}`;
   }

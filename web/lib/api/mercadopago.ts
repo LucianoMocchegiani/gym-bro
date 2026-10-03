@@ -11,6 +11,13 @@ export type MercadoPagoAccountStatus = {
   lastValidatedAt: string | null;
   lastValidationOk: boolean | null;
   updatedAt: string | null;
+  /** `OAUTH` = «Conectar Mercado Pago»; `MANUAL` = token pegado. */
+  connectionMode: 'MANUAL' | 'OAUTH' | null;
+  tokenExpiresAt: string | null;
+  /** La renovación automática falló o el token venció: reconectar. */
+  needsReconnect: boolean;
+  /** El servidor tiene configurada la app de plataforma Faciliter. */
+  oauthAvailable: boolean;
 };
 
 export type MercadoPagoAccountTestResult = {
@@ -42,7 +49,18 @@ export function getMercadoPagoAccount(): Promise<MercadoPagoAccountStatus> {
 }
 
 /**
- * Conectar o reemplazar cuenta MP.
+ * URL de MP para «Conectar Mercado Pago» (OAuth). El navegador navega ahí y
+ * MP vuelve a `/config?mp=connected|error`.
+ */
+export function startMercadoPagoOAuth(): Promise<{ authorizationUrl: string }> {
+  return apiRequest<{ authorizationUrl: string }>(
+    '/mercadopago/account/oauth/start',
+    { method: 'POST' },
+  );
+}
+
+/**
+ * Conexión manual (avanzado): pegar access token y public key.
  */
 export function upsertMercadoPagoAccount(
   input: UpsertMercadoPagoAccountInput,

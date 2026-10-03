@@ -1,99 +1,58 @@
 # Configurar Mercado Pago (gyms y clubes)
 
-Cuando pregunten cómo conectar o configurar MP: **no achiques la respuesta**. Recorré app, credenciales, URL de webhook, los **cuatro** topics, qué hace Faciliter solo, checklist y errores. El asistente **explica**; no pega tokens ni llama a MP. El staff pega credenciales en **Config**.
+Cuando pregunten cómo conectar o configurar MP: explicá primero la **forma normal** (botón «Conectar Mercado Pago»), qué hace Faciliter solo, renovación y errores. La conexión manual es avanzada: mencionala solo si preguntan o si el botón no aparece. El asistente **explica**; no pega tokens ni llama a MP.
 
 **Para quién:** dueño o staff con permiso `mp.connect` en **su** tenant (no el de plataforma).  
 **Plataforma (`admin`):** ya tiene un ejemplo; ver el anexo al final.
 
-Faciliter cobra **en la cuenta Mercado Pago del local**. Cada gym/club usa **su propia aplicación** de Developers y **su** `tenantId` en la URL de webhook. Pantalla: **Config** (`/config`). Débito MONTHLY: topic `debito`.
+Faciliter cobra **en la cuenta Mercado Pago del local**. Pantalla: **Config** (`/config`). Débito MONTHLY: topic `debito`.
 
-## Tres piezas (no mezclarlas)
+## 1. Forma normal: «Conectar Mercado Pago»
 
-| Pieza | Dónde | Qué es |
-|--------|--------|--------|
-| **Aplicación** | [developers.mercadopago.com](https://www.mercadopago.com/developers) | App del local (nombre, Client ID). Ahí se activan productos y webhooks **de esa app**. |
-| **Credenciales** | Faciliter → **Config** | `access_token` (producción) + `public_key`. Faciliter las guarda cifradas y prueba `GET /users/me`. |
-| **Webhooks** | Misma app en Developers → Webhooks | MP avisa a Faciliter cuando hay un pago o un ciclo de suscripción. **Una URL por app**, con el UUID **de ese tenant**. |
+El gym **no** crea aplicación en MP Developers, no copia tokens y no configura webhooks.
 
-El token de Config tiene que ser el de **esa misma** aplicación (producción).
+1. Panel del local (`{slug}.faciliter.xyz`) con un usuario con `mp.connect`.
+2. **Config** → **Mercado Pago** → **Conectar Mercado Pago**.
+3. En Mercado Pago: iniciar sesión con la cuenta **del gym** (la que cobra) → **Autorizar**.
+4. Vuelve solo a Config: «Cuenta de Mercado Pago conectada». Estado: **Conectada con Mercado Pago**.
+5. **Probar**: devuelve el usuario MP (`mpUserId`).
 
-## 1. Crear la aplicación en Mercado Pago
+Si cancela en MP o tarda más de 10 minutos, Config avisa y hay que tocar el botón otra vez.
 
-1. Entrá a Developers con la cuenta **del gym/club** (la que cobra).
-2. Creá una aplicación (nombre libre, p. ej. el del local).
-3. Productos a habilitar:
-   - **Checkout Pro** (links de Caja / packs / drop-in).
-   - **Suscripciones** (débito MONTHLY: preapproval sin plan, sin guardar tarjeta en Faciliter).
-4. Copiá:
-   - **Public Key** (producción)
-   - **Access Token** (producción)
+**Qué hace Faciliter solo:**
 
-No uses credenciales de prueba en el gym live.
+- Guarda cifrados el token y el código de renovación.
+- El token dura 180 días; Faciliter lo **renueva solo** cuando faltan menos de 30. Si MP no deja renovar (se quitó el permiso), Config muestra **Reconectar Mercado Pago**.
+- Cada link de cobro y de débito lleva `notification_url` con el `tenantId` del local: MP avisa pagos y suscripciones sin configurar webhooks.
 
-## 2. Pegar token y key en Faciliter
+**Cambiar de cuenta MP:** **Reconectar Mercado Pago** con la otra cuenta.  
+**Desconectar:** en Config corta los cobros. Para quitar el permiso también en MP: cuenta MP del gym → aplicaciones conectadas.
 
-1. Entrá al panel del local (`{slug}.faciliter.xyz`) con un usuario que tenga `mp.connect`.
-2. **Config** → cuenta Mercado Pago.
-3. Pegá access token y public key → guardar.
-4. **Probar**: tiene que devolver un usuario MP (`mpUserId`). Si falla, el token no es de esa cuenta o está cortado.
+## 2. Conexión manual (avanzado)
 
-## 3. Webhooks en Developers (esto es lo que hay que copiar)
+Escondida en Config (**Conexión manual (avanzado)**). Solo si lo pide soporte o si el servidor no tiene la app de plataforma (el botón no aparece y el bloque manual se ve abierto).
 
-En la app → **Webhooks** (o Notificaciones):
+1. Con la cuenta del gym: app propia en [developers.mercadopago.com](https://www.mercadopago.com/developers) con **Checkout Pro** y **Suscripciones**.
+2. Access Token + Public Key de **producción** → **Guardar token manual** (valida `GET /users/me`).
+3. No se renueva solo: si se regenera en MP, hay que pegarlo de nuevo.
+4. Webhooks opcionales en esa app: `https://api.faciliter.xyz/api/webhooks/payment?tenantId={UUID_DEL_TENANT}` con `payment`, `topic_merchant_order_wh`, `subscription_preapproval`, `subscription_authorized_payment`. El UUID es el id interno del gym (no el App ID ni el slug).
 
-**URL de producción (y, si te pide, la de prueba/sandbox):**
+## 3. Errores típicos
 
-```text
-https://api.faciliter.xyz/api/webhooks/payment?tenantId={UUID_DEL_TENANT}
-```
-
-- `{UUID_DEL_TENANT}` es el id interno del gym en Faciliter (**no** el App ID de MP, **no** el slug).
-- Lo entrega la plataforma al dar de alta el local, o un Super Admin en la ficha del tenant. Si usás el UUID de **otro** gym, los cobros se acreditan mal o no entran.
-- HTTPS obligatorio. No uses `localhost`.
-
-**Eventos / topics a tildar** (los mismos que usa Faciliter):
-
-| Topic (nombre técnico) | Para qué |
-|------------------------|----------|
-| `payment` | Pagos (Checkout Pro y, a veces, el cobro de un ciclo). |
-| `topic_merchant_order_wh` | Órdenes comerciales (carrito MP). |
-| `subscription_preapproval` | El socio autorizó / canceló / pausó la suscripción (débito). |
-| `subscription_authorized_payment` | MP cobró un mes de la suscripción. |
-
-En el panel a veces se ven como **Pagos**, **Órdenes comerciales** y **Planes y suscripciones** (preapproval + authorized payment). Tildá los cuatro equivalentes.
-
-MP genera un **secret** para firmar notificaciones. Faciliter **hoy no lo pide** en Config; no hace falta pegarlo. Guardalo en el panel por si más adelante validamos firma.
-
-## 4. Qué hace Faciliter solo (no lo cargás a mano)
-
-En cada link de checkout o de débito, la API manda también `notification_url` con **el mismo patrón** y el `tenantId` de **ese** local. Eso refuerza el aviso aunque el panel falle. **Igual hay que cargar el webhook de la app**: las suscripciones dependen de esos topics.
-
-## 5. Checklist
-
-- [ ] App propia del local (no reutilizar la de otro gym).
-- [ ] Checkout Pro + Suscripciones.
-- [ ] Token + public key de **producción** en Config; test OK.
-- [ ] Webhook HTTPS con **su** `tenantId`.
-- [ ] Topics: `payment`, `topic_merchant_order_wh`, `subscription_preapproval`, `subscription_authorized_payment`.
-- [ ] Probar: un cobro MP en Caja y, si aplica, un débito MONTHLY (Caja / topic `debito`).
-
-## 6. Errores típicos
-
-- URL sin `tenantId` o con el UUID de **admin** / de otro local.
-- Token de **test** en un gym live (o al revés).
-- Una sola app MP para todos los gyms: el webhook del panel solo puede llevar **un** `tenantId`. Cada local = una app (o al menos un webhook distinto).
-- Falta producto Suscripciones: el link de débito no se crea.
-- Webhook a un host que no es `api.faciliter.xyz` (o el API público que use esa instalación).
+- «La conexión con un toque no está habilitada»: el servidor no tiene configurada la app de plataforma (lo resuelve Faciliter).
+- «Mercado Pago no aceptó la conexión»: problema de configuración del servidor (URL de redireccionamiento o PKCE). Escribir a soporte.
+- Autorizó con la cuenta equivocada: **Reconectar** con la del gym.
+- Aparece «Reconectar»: se quitó el permiso desde MP o el token venció. Reconectar.
+- Manual: token de **test** en un gym live, o webhook con el UUID de **admin** / de otro local.
 
 ## Anexo: tenant plataforma (`admin`)
 
-Esto **no** lo copia un gym. Ejemplo de Faciliter Admin (app **facilitermp**, App ID `8990673938056290`), 2026-09-29.
+Esto **no** lo copia un gym. Conexión manual de Faciliter Admin (app **facilitermp**, App ID `8990673938056290`), 2026-09-29.
 
 | Campo | Valor |
 |--------|--------|
 | URL producción | `https://api.faciliter.xyz/api/webhooks/payment?tenantId=00000000-0000-4000-8000-000000000002` |
-| URL sandbox | La misma (solo hay un API público). |
-| `tenantId` | `00000000-0000-4000-8000-000000000002` (seed de `admin`; si la VPS usó otro id, hay que alinearlo). |
+| `tenantId` | `00000000-0000-4000-8000-000000000002` (seed de `admin`). |
 | Topics | `payment`, `topic_merchant_order_wh`, `subscription_preapproval`, `subscription_authorized_payment` |
 
-Sirve para cobros y suscripciones **de plataforma** (planes Faciliter, Caja `admin`). Un gym debe repetir el mismo **formato** con **su** UUID y **su** aplicación.
+La app de «Conectar Mercado Pago» es **otra** app de Faciliter, sin webhooks de panel (detalle para operadores en `docs/uso/configurar-mercadopago-tenant.md`).

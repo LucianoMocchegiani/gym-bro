@@ -109,6 +109,7 @@
 
 - [x] Conectar cuenta MP del gym
   - `mercadopago_accounts` 1:1; access_token cifrado; PUT/GET/DELETE + test (`mp.connect`); sin checkout
+  - «Conectar Mercado Pago» (OAuth + PKCE, app de plataforma): `POST .../oauth/start` + callback público; renovación diaria del token; manual queda como «avanzado»
 - [x] Checkout MP (pack / mensualidad / drop-in)
   - Cart: Member `POST /me/transaction-items/mp/cart`; Staff `POST /members/:id/transaction-items/mp/cart` (`items[]` PACK|DROP_IN → 1 Preference)
   - Derechos al APPROVED; CASH de Caja: `POST .../cash/cart` (APPROVED inmediato)

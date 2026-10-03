@@ -1,3 +1,4 @@
+import type { ConfigService } from '@nestjs/config';
 import {
   createCipheriv,
   createDecipheriv,
@@ -15,6 +16,14 @@ const PREFIX = 'v1';
  * con SHA-256 de `MP_CREDENTIALS_SECRET`.
  */
 export class MpCredentialsCrypto {
+  /** Instancia con `MP_CREDENTIALS_SECRET` (o el default de desarrollo). */
+  static fromConfig(config: ConfigService): MpCredentialsCrypto {
+    return new MpCredentialsCrypto(
+      config.get<string>('MP_CREDENTIALS_SECRET')?.trim() ||
+        'dev-mp-credentials-secret-change-me',
+    );
+  }
+
   constructor(private readonly secret: string) {
     if (!secret || secret.length < 16) {
       throw new Error('MP_CREDENTIALS_SECRET must be at least 16 characters');

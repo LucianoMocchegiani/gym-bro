@@ -10,6 +10,7 @@ import { ApiClientError } from '@/lib/api/client';
 import {
   disconnectMercadoPagoAccount,
   getMercadoPagoAccount,
+  startMercadoPagoOAuth,
   testMercadoPagoAccount,
   upsertMercadoPagoAccount,
 } from '@/lib/api/mercadopago';
@@ -23,6 +24,42 @@ import type {
   TenantSettingsDetail,
   WaitlistMode,
 } from '@/lib/api/tenant-settings';
+
+const MP_RETURN_ERRORS: Record<string, string> = {
+  denied: 'Cancelaste la autorización en Mercado Pago. La cuenta no se conectó.',
+  expired:
+    'El intento de conexión venció o ya se usó. Tocá «Conectar Mercado Pago» otra vez.',
+  exchange:
+    'Mercado Pago no aceptó la conexión. Probá de nuevo; si sigue fallando, escribinos.',
+};
+
+/**
+ * Lee `?mp=connected|error&reason=` (vuelta de «Conectar Mercado Pago») y lo
+ * saca de la URL.
+ */
+function consumeMpReturnParam(): { ok: string | null; error: string | null } {
+  const params = new URLSearchParams(window.location.search);
+  const result = params.get('mp');
+  if (!result) {
+    return { ok: null, error: null };
+  }
+  const reason = params.get('reason') ?? '';
+  params.delete('mp');
+  params.delete('reason');
+  const query = params.toString();
+  window.history.replaceState(
+    null,
+    '',
+    `${window.location.pathname}${query ? `?${query}` : ''}`,
+  );
+  if (result === 'connected') {
+    return { ok: 'Cuenta de Mercado Pago conectada.', error: null };
+  }
+  return {
+    ok: null,
+    error: MP_RETURN_ERRORS[reason] ?? MP_RETURN_ERRORS.exchange,
+  };
+}
 
 /**
  * Config operativa del gym + cuenta Mercado Pago.
@@ -63,7 +100,12 @@ function ConfigInner() {
 
   useEffect(() => {
     let cancelled = false;
+    const mpReturn = consumeMpReturnParam();
     void (async () => {
+      if (!cancelled) {
+        setMpOk(mpReturn.ok);
+        setMpError(mpReturn.error);
+      }
       const errors: string[] = [];
       try {
         const s = await getTenantSettings();
@@ -170,7 +212,7 @@ function ConfigInner() {
       setMp(status);
       setAccessToken('');
       setPublicKey('');
-      setMpOk('Cuenta conectada.');
+      setMpOk('Cuenta conectada con token manual.');
     } catch (err) {
       setMpError(
         err instanceof ApiClientError
@@ -178,6 +220,23 @@ function ConfigInner() {
           : 'No se pudo conectar Mercado Pago',
       );
     } finally {
+      setMpBusy(false);
+    }
+  }
+
+  async function onStartMpOAuth() {
+    setMpBusy(true);
+    setMpError(null);
+    setMpOk(null);
+    try {
+      const { authorizationUrl } = await startMercadoPagoOAuth();
+      window.location.assign(authorizationUrl);
+    } catch (err) {
+      setMpError(
+        err instanceof ApiClientError
+          ? err.message
+          : 'No se pudo iniciar la conexión con Mercado Pago',
+      );
       setMpBusy(false);
     }
   }
@@ -343,68 +402,107 @@ function ConfigInner() {
             <Panel title="Mercado Pago" className="form-panel">
               <p className="muted small">
                 {mp.connected
-                  ? `Conectada · key ${mp.publicKeyMasked ?? '—'} · user ${mp.mpUserId ?? '—'}`
-                  : 'Sin cuenta conectada'}
+                  ? `${mp.connectionMode === 'OAUTH' ? 'Conectada con Mercado Pago' : 'Conectada con token manual'} · key ${mp.publicKeyMasked ?? '—'} · user ${mp.mpUserId ?? '—'}`
+                  : 'Sin cuenta conectada. Tocá «Conectar Mercado Pago», iniciá sesión con la cuenta del gym y autorizá a Faciliter.'}
                 {mp.lastValidatedAt
                   ? ` · último test ${new Date(mp.lastValidatedAt).toLocaleString('es-AR')}${mp.lastValidationOk === false ? ' (falló)' : ''}`
                   : ''}
               </p>
+              {mp.needsReconnect ? (
+                <p className="error">
+                  La conexión con Mercado Pago venció o no se pudo renovar.
+                  Tocá «Reconectar Mercado Pago».
+                </p>
+              ) : null}
+              {!mp.oauthAvailable ? (
+                <p className="muted small">
+                  La conexión con un toque no está habilitada en este servidor.
+                  Usá la conexión manual.
+                </p>
+              ) : null}
 
-              <form
-                className="admin-form"
-                onSubmit={(e) => void onConnectMp(e)}
-              >
-                <label>
-                  Access token
-                  <input
-                    type="password"
-                    value={accessToken}
-                    onChange={(e) => setAccessToken(e.target.value)}
-                    required
-                    minLength={10}
-                    autoComplete="off"
-                  />
-                </label>
-                <label>
-                  Public key
-                  <input
-                    value={publicKey}
-                    onChange={(e) => setPublicKey(e.target.value)}
-                    required
-                    minLength={8}
-                    autoComplete="off"
-                  />
-                </label>
+              {mpError ? <p className="error">{mpError}</p> : null}
+              {mpOk ? <p className="ok-msg">{mpOk}</p> : null}
 
-                {mpError ? <p className="error">{mpError}</p> : null}
-                {mpOk ? <p className="ok-msg">{mpOk}</p> : null}
-
-                <div className="form-actions">
-                  <button type="submit" className="primary" disabled={mpBusy}>
-                    {mpBusy ? 'Procesando…' : 'Conectar / reemplazar'}
+              <div className="form-actions">
+                {mp.oauthAvailable ? (
+                  <button
+                    type="button"
+                    className="primary"
+                    disabled={mpBusy}
+                    onClick={() => void onStartMpOAuth()}
+                  >
+                    {mpBusy
+                      ? 'Procesando…'
+                      : mp.connected
+                        ? 'Reconectar Mercado Pago'
+                        : 'Conectar Mercado Pago'}
                   </button>
-                  {mp.connected ? (
-                    <>
-                      <button
-                        type="button"
-                        className="btn ghost"
-                        disabled={mpBusy}
-                        onClick={() => void onTestMp()}
-                      >
-                        Probar
-                      </button>
-                      <button
-                        type="button"
-                        className="btn danger"
-                        disabled={mpBusy}
-                        onClick={() => setConfirmMpDisconnect(true)}
-                      >
-                        Desconectar
-                      </button>
-                    </>
-                  ) : null}
-                </div>
-              </form>
+                ) : null}
+                {mp.connected ? (
+                  <>
+                    <button
+                      type="button"
+                      className="btn ghost"
+                      disabled={mpBusy}
+                      onClick={() => void onTestMp()}
+                    >
+                      Probar
+                    </button>
+                    <button
+                      type="button"
+                      className="btn danger"
+                      disabled={mpBusy}
+                      onClick={() => setConfirmMpDisconnect(true)}
+                    >
+                      Desconectar
+                    </button>
+                  </>
+                ) : null}
+              </div>
+
+              <details
+                className="advanced-details"
+                open={!mp.oauthAvailable}
+              >
+                <summary>Conexión manual (avanzado)</summary>
+                <p className="muted small">
+                  Solo si te lo pide soporte: pegá el access token y la public
+                  key de producción de tu cuenta MP. Reemplaza la conexión
+                  actual.
+                </p>
+                <form
+                  className="admin-form"
+                  onSubmit={(e) => void onConnectMp(e)}
+                >
+                  <label>
+                    Access token
+                    <input
+                      type="password"
+                      value={accessToken}
+                      onChange={(e) => setAccessToken(e.target.value)}
+                      required
+                      minLength={10}
+                      autoComplete="off"
+                    />
+                  </label>
+                  <label>
+                    Public key
+                    <input
+                      value={publicKey}
+                      onChange={(e) => setPublicKey(e.target.value)}
+                      required
+                      minLength={8}
+                      autoComplete="off"
+                    />
+                  </label>
+                  <div className="form-actions">
+                    <button type="submit" className="btn ghost" disabled={mpBusy}>
+                      {mpBusy ? 'Procesando…' : 'Guardar token manual'}
+                    </button>
+                  </div>
+                </form>
+              </details>
             </Panel>
           ) : null}
         </AdminGrid>
@@ -430,7 +528,7 @@ function ConfigInner() {
       <ConfirmDialog
         open={confirmMpDisconnect}
         title="Desconectar Mercado Pago"
-        description="¿Desconectar la cuenta Mercado Pago? Los cobros MP dejan de funcionar hasta conectar otra cuenta."
+        description="¿Desconectar la cuenta Mercado Pago? Los cobros MP dejan de funcionar hasta conectar otra cuenta. Para quitarle el permiso a Faciliter también en Mercado Pago, hacelo desde tu cuenta MP, en las aplicaciones conectadas."
         confirmLabel="Desconectar"
         tone="danger"
         busy={mpBusy}

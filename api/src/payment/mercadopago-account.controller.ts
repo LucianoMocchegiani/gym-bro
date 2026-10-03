@@ -19,7 +19,9 @@ import { MercadoPagoAccountService } from './mercadopago-account.service';
 import {
   MercadoPagoAccountStatus,
   MercadoPagoAccountTestResult,
+  MercadoPagoOAuthStartResult,
 } from './mercadopago-account.types';
+import { MercadoPagoOAuthService } from './mercadopago-oauth.service';
 
 /**
  * Cuenta Mercado Pago del gym (staff).
@@ -29,7 +31,10 @@ import {
 @Controller('mercadopago/account')
 @RequireTenantAuth()
 export class MercadoPagoAccountController {
-  constructor(private readonly accounts: MercadoPagoAccountService) {}
+  constructor(
+    private readonly accounts: MercadoPagoAccountService,
+    private readonly oauth: MercadoPagoOAuthService,
+  ) {}
 
   @Get()
   @RequirePermission('mp.connect')
@@ -69,6 +74,19 @@ export class MercadoPagoAccountController {
     @CurrentUser() user: AuthUser,
   ): Promise<MercadoPagoAccountTestResult> {
     return this.accounts.test(tenantId, toAuditActor(user));
+  }
+
+  /**
+   * URL de MP para «Conectar Mercado Pago» (el navegador navega ahí).
+   */
+  @Post('oauth/start')
+  @HttpCode(HttpStatus.OK)
+  @RequirePermission('mp.connect')
+  startOAuth(
+    @CurrentTenant() tenantId: string,
+    @CurrentUser() user: AuthUser,
+  ): Promise<MercadoPagoOAuthStartResult> {
+    return this.oauth.start(tenantId, toAuditActor(user));
   }
 
   @Delete()

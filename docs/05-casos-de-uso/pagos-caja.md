@@ -111,9 +111,17 @@
 **Actor:** Admin
 
 **Flujo principal:**
-1. Admin conecta/credencializa MP del gym.
-2. Sistema guarda CuentaMercadoPago.
-3. Prueba opcional.
+1. Admin toca «Conectar Mercado Pago» en Config.
+2. Sistema arma la autorización (state de un uso, 10 min, PKCE) y lo lleva a Mercado Pago.
+3. Admin inicia sesión con la cuenta MP del gym y autoriza a Faciliter.
+4. Sistema canjea el código, guarda CuentaMercadoPago (tokens cifrados, modo OAUTH), audita y vuelve a Config.
+5. Prueba opcional.
+
+**Flujos alternativos:**
+- Cancela en MP, vence el intento o MP rechaza el canje: vuelve a Config con el aviso; no se guarda nada.
+- Renovación: el sistema renueva el token solo antes de que venza. Si no puede, Config pide «Reconectar».
+- Conexión manual (avanzado): pega access token y public key de una app MP propia; el sistema valida y guarda (modo MANUAL, sin renovación).
+- Servidor sin app de plataforma configurada: solo está la conexión manual.
 
 **Reglas relacionadas:** RN-PAG-001
 

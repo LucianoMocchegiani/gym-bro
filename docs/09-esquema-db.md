@@ -798,11 +798,31 @@ Cuenta Mercado Pago del gym (CU-PAG-006 / RN-PAG-001). 1:1 con tenant.
 | `tenant_id` | uuid PK FK → `tenants` | CASCADE |
 | `access_token_ciphertext` | text | AES-256-GCM (`v1:iv:tag:data`); nunca en API GET |
 | `public_key` | text | expuesto solo enmascarado |
-| `mp_user_id` | text nullable | id de `/users/me` tras validación |
+| `mp_user_id` | text nullable | id de `/users/me` tras validación (o `user_id` de OAuth) |
 | `last_validated_at` / `last_validation_ok` | timestamptz / bool nullable | |
+| `connection_mode` | enum `MpConnectionMode` | `MANUAL` (token pegado) / `OAUTH` («Conectar Mercado Pago»); default `MANUAL` |
+| `refresh_token_ciphertext` | text nullable | Solo OAUTH; cifrado igual que el access token; rota en cada renovación |
+| `token_expires_at` | timestamptz nullable | Solo OAUTH; vencimiento del access token (180 días) |
+| `last_refresh_error` | text nullable | Último error de renovación; no null → Config pide «Reconectar» |
 | `created_at` / `updated_at` | timestamptz | |
 
-API Staff: `GET|PUT|DELETE /api/mercadopago/account`, `POST .../test` (`mp.connect`). Env: `MP_CREDENTIALS_SECRET`, `MP_ACCOUNT_VALIDATE_MODE=live|stub`.
+API Staff: `GET|PUT|DELETE /api/mercadopago/account`, `POST .../test`, `POST .../oauth/start` (`mp.connect`). Callback público `GET /api/mercadopago/oauth/callback`. Job diario 04:00 BA renueva tokens OAUTH que vencen en < 30 días. Env: `MP_CREDENTIALS_SECRET`, `MP_ACCOUNT_VALIDATE_MODE=live|stub`, `MP_OAUTH_CLIENT_ID`, `MP_OAUTH_CLIENT_SECRET`, `MP_OAUTH_REDIRECT_URI`, `MP_OAUTH_PKCE`.
+
+### 4.15e-bis `mp_oauth_states`
+
+Intento de «Conectar Mercado Pago» en curso (CU-PAG-006). Un solo uso; vence a los 10 min.
+
+| Columna | Tipo | Notas |
+|---------|------|--------|
+| `state_hash` | text PK | SHA-256 hex del `state` enviado a MP (el valor en claro no se guarda) |
+| `tenant_id` | uuid FK → `tenants` | CASCADE |
+| `actor_user_id` | text | `userId` del staff que inició; actor de la auditoría `mp.account.connect` |
+| `code_verifier_ciphertext` | text | PKCE `code_verifier` cifrado |
+| `expires_at` | timestamptz | índice; los vencidos se borran al iniciar otro intento |
+| `used_at` | timestamptz nullable | se marca al volver de MP (evita reuso) |
+| `created_at` | timestamptz | |
+
+Migración: `20261003120000_mp_oauth`.
 
 ### 4.15f `transaction_items` (campos MP)
 

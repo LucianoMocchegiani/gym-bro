@@ -43,7 +43,7 @@ Saludo y tarjetas del día (afiliados activos, ingresos, accesos, socios sin pac
 Una pantalla, dos bloques:
 
 - **Operación:** **Puerta** (QR con la app Faciliter, o Acceso ZKTeco opcional), horas de cancelación, modo lista de espera, ingreso tardío, tolerancia de deuda, multi-ingreso por día con tope diario.
-- **Mercado Pago:** cuenta del negocio. Cómo crear la app, pegar token y cargar webhooks: topic `mercadopago`.
+- **Mercado Pago:** cuenta del negocio. **Conectar Mercado Pago** → autorizar en MP con la cuenta del gym; sin crear app ni pegar claves. Detalle, reconexión y conexión manual: topic `mercadopago`.
 
 El socio no ve Config; nota el efecto (pagar online, cancelar, entrar con deuda).
 

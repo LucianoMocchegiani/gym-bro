@@ -2,14 +2,17 @@ import { Injectable, Logger } from '@nestjs/common';
 import {
   CreateMpPreapprovalInput,
   CreateMpPreferenceInput,
+  ExchangeMpOAuthCodeInput,
   MpAccountPort,
   MpAccountValidation,
+  MpOAuthTokens,
   MpPreapprovalResult,
   MpPreferenceResult,
   MpRemoteAuthorizedPayment,
   MpRemoteMerchantOrder,
   MpRemotePayment,
   MpRemotePreapproval,
+  RefreshMpOAuthTokenInput,
 } from './mp-account.port';
 
 const MP_USERS_ME = 'https://api.mercadopago.com/users/me';
@@ -18,6 +21,7 @@ const MP_PAYMENTS = 'https://api.mercadopago.com/v1/payments';
 const MP_PREAPPROVALS = 'https://api.mercadopago.com/preapproval';
 const MP_AUTHORIZED_PAYMENTS =
   'https://api.mercadopago.com/authorized_payments';
+const MP_OAUTH_TOKEN = 'https://api.mercadopago.com/oauth/token';
 
 /**
  * Adapter HTTP Mercado Pago (cuenta, Preference, suscripciones, pagos).
@@ -412,6 +416,73 @@ export class HttpMpAccountAdapter extends MpAccountPort {
     };
   }
 
+  /**
+   * @inheritdoc
+   */
+  exchangeOAuthCode(input: ExchangeMpOAuthCodeInput): Promise<MpOAuthTokens> {
+    return this.requestOAuthToken('oauth code', {
+      client_id: input.clientId,
+      client_secret: input.clientSecret,
+      grant_type: 'authorization_code',
+      code: input.code,
+      redirect_uri: input.redirectUri,
+      ...(input.codeVerifier ? { code_verifier: input.codeVerifier } : {}),
+    });
+  }
+
+  /**
+   * @inheritdoc
+   */
+  refreshOAuthToken(input: RefreshMpOAuthTokenInput): Promise<MpOAuthTokens> {
+    return this.requestOAuthToken('oauth refresh', {
+      client_id: input.clientId,
+      client_secret: input.clientSecret,
+      grant_type: 'refresh_token',
+      refresh_token: input.refreshToken,
+    });
+  }
+
+  private async requestOAuthToken(
+    operation: string,
+    body: Record<string, string>,
+  ): Promise<MpOAuthTokens> {
+    const response = await fetch(MP_OAUTH_TOKEN, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        Accept: 'application/json',
+      },
+      body: new URLSearchParams(body).toString(),
+    });
+    if (!response.ok) {
+      const text = await response.text().catch(() => '');
+      this.throwMpFailure(operation, response.status, text);
+    }
+    const data = (await response.json()) as {
+      access_token?: string;
+      refresh_token?: string;
+      public_key?: string;
+      user_id?: number | string;
+      expires_in?: number;
+    };
+    if (
+      !data.access_token ||
+      !data.refresh_token ||
+      !data.public_key ||
+      data.user_id === undefined ||
+      data.user_id === null
+    ) {
+      throw new Error(`Mercado Pago ${operation} response incomplete`);
+    }
+    return {
+      accessToken: data.access_token,
+      refreshToken: data.refresh_token,
+      publicKey: data.public_key,
+      userId: String(data.user_id),
+      expiresIn:
+        typeof data.expires_in === 'number' ? data.expires_in : 15_552_000,
+    };
+  }
 
   /**
    * Falla una llamada MP con el detalle de `cause` (sin secretos).

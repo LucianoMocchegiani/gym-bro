@@ -151,7 +151,52 @@ export abstract class MpAccountPort {
     accessToken: string,
     authorizedPaymentId: string,
   ): Promise<MpRemoteAuthorizedPayment>;
+
+  /**
+   * Canjea el `code` de «Conectar Mercado Pago» por tokens del gym.
+   *
+   * @throws {Error} Si MP rechaza el código (vencido, usado, redirect distinto).
+   */
+  abstract exchangeOAuthCode(
+    input: ExchangeMpOAuthCodeInput,
+  ): Promise<MpOAuthTokens>;
+
+  /**
+   * Renueva el access_token con el refresh_token (que rota en cada uso).
+   *
+   * @throws {Error} Si MP rechaza el refresh_token (revocado o vencido).
+   */
+  abstract refreshOAuthToken(
+    input: RefreshMpOAuthTokenInput,
+  ): Promise<MpOAuthTokens>;
 }
+
+/** Credenciales de la aplicación de plataforma Faciliter en MP. */
+export type MpOAuthClient = {
+  clientId: string;
+  clientSecret: string;
+};
+
+export type ExchangeMpOAuthCodeInput = MpOAuthClient & {
+  code: string;
+  redirectUri: string;
+  /** Solo si la app MP tiene PKCE habilitado. */
+  codeVerifier?: string;
+};
+
+export type RefreshMpOAuthTokenInput = MpOAuthClient & {
+  refreshToken: string;
+};
+
+/** Respuesta de `POST /oauth/token`. */
+export type MpOAuthTokens = {
+  accessToken: string;
+  refreshToken: string;
+  publicKey: string;
+  userId: string;
+  /** Segundos hasta el vencimiento del access_token. */
+  expiresIn: number;
+};
 
 /** Alta de preapproval (link de autorización). */
 export type CreateMpPreapprovalInput = {

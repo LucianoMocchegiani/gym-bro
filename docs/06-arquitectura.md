@@ -261,7 +261,7 @@ El puente ZKTeco se autentica como staff (`access.verify`) en este corte; token 
 
 ### 7.1 Principios
 
-- Credenciales MP **por tenant** (`mercadopago_accounts`; access_token cifrado; permiso `mp.connect`).
+- Credenciales MP **por tenant** (`mercadopago_accounts`; access y refresh token cifrados; permiso `mp.connect`). Alta normal por OAuth («Conectar Mercado Pago»); token pegado como respaldo avanzado.
 - Derechos (contratación/reserva) solo tras `aprobado` (RN-PAG-004).
 - Toda intención de cobro: `idempotency_key` única de negocio (RN-PAG-005).
 
@@ -270,11 +270,25 @@ El puente ZKTeco se autentica como staff (`access.verify`) en este corte; token 
 ### 7.1b Cuenta MP (CU-PAG-006)
 
 ```text
+Forma normal (OAuth, app de plataforma Faciliter):
+Admin POST /mercadopago/account/oauth/start
+  → state aleatorio + PKCE (code_verifier cifrado) en mp_oauth_states (10 min, 1 uso)
+  → { authorizationUrl } → navegador a auth.mercadopago.com (gym autoriza)
+MP → GET /mercadopago/oauth/callback?code&state   (público, sin JWT)
+  → consume state → POST api.mercadopago.com/oauth/token (code + code_verifier)
+  → cifra access + refresh token → upsert mercadopago_accounts (OAUTH, expira 180 d)
+  → audita mp.account.connect → 302 a {slug}.<PUBLIC_WEB_BASE_URL>/config?mp=connected|error
+Job diario 04:00 BA: refresh_token (rota) si vence en < 30 d; falla → last_refresh_error → «Reconectar»
+
+Conexión manual (avanzado):
 Admin PUT /mercadopago/account { accessToken, publicKey }
   → (opcional) MpAccountPort.validateAccessToken → /users/me
-  → cifra token → upsert mercadopago_accounts
-  → GET status sin secretos; POST test; DELETE desconecta
+  → cifra token → upsert mercadopago_accounts (MANUAL)
+
+GET status sin secretos (connectionMode, needsReconnect, oauthAvailable); POST test; DELETE desconecta
 ```
+
+Avisos de pago con OAuth: llegan por la `notification_url` (con `tenantId`) de cada Preference y preapproval. La app de plataforma de OAuth **no** lleva webhook de panel.
 
 Checkout/webhook implementados (stub local + modo live). Pendiente en roadmap: validación E2E con cuenta MP real.
 

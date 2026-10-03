@@ -4266,7 +4266,7 @@
         },
         {
             "name": "Mercado Pago",
-            "description": "CU-PAG-001/006/008. Cuenta `GET|PUT|DELETE /api/mercadopago/account` + test (`mp.connect`) + `GET .../public-key`. Débito MONTHLY: `GET /debit-mandates`, `POST /members/:id/debit-mandates` (packId + chargeNow + payerEmail opcional = mail de la cuenta MP que autoriza), `PATCH`, `POST .../cancel`. Sin `.../charge`. Caja cart MP/CASH. Webhook `POST /webhooks/payment?tenantId=` (payment + subscription_*).",
+            "description": "CU-PAG-001/006/008. Cuenta `GET|PUT|DELETE /api/mercadopago/account` + test + `POST .../oauth/start` (`mp.connect`; «Conectar Mercado Pago», PUT = manual avanzado) + `GET .../public-key`. Débito MONTHLY: `GET /debit-mandates`, `POST /members/:id/debit-mandates` (packId + chargeNow + payerEmail opcional = mail de la cuenta MP que autoriza), `PATCH`, `POST .../cancel`. Sin `.../charge`. Caja cart MP/CASH. Webhook `POST /webhooks/payment?tenantId=` (payment + subscription_*).",
             "item": [
                 {
                     "name": "Staff GET MP account status",
@@ -4404,6 +4404,31 @@
                         "method": "POST",
                         "header": [],
                         "url": "{{baseUrl}}/api/mercadopago/account/test"
+                    }
+                },
+                {
+                    "name": "Staff POST MP OAuth start",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "if (pm.response.code === 503) {",
+                                    "  pm.test('OAuth no configurado en este servidor (503)', () => true);",
+                                    "  return;",
+                                    "}",
+                                    "pm.test('status 200', () => pm.response.to.have.status(200));",
+                                    "pm.test('authorizationUrl de MP', () => pm.expect(pm.response.json().authorizationUrl).to.include('auth.mercadopago.com/authorization'));"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [],
+                        "description": "«Conectar Mercado Pago» (CU-PAG-006, `mp.connect`). Devuelve `authorizationUrl`: abrila en el navegador y autorizá con la cuenta MP del gym. MP vuelve a `GET /api/mercadopago/oauth/callback` (público) y de ahí a `{slug}.<web>/config?mp=connected|error`. 503 si el API no tiene `MP_OAUTH_CLIENT_ID` / `MP_OAUTH_CLIENT_SECRET`.",
+                        "url": "{{baseUrl}}/api/mercadopago/account/oauth/start"
                     }
                 },
                 {
