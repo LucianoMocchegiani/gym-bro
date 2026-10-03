@@ -2,7 +2,7 @@
 
 Una **sesión** es una clase o turno con fecha, hora, cupo y (si aplica) profesor: pilates, funcional, lo que el local arme.
 
-El afiliado reserva desde la app (con crédito del pack o comprando drop-in). En puerta, si entra para esa clase, el ingreso queda ligado a la sesión.
+El afiliado reserva desde la app o desde **Mi cuenta → Clases** en la web del gym (con crédito del pack o comprando drop-in; en la web la clase suelta va al carrito). En puerta, si entra para esa clase, el ingreso queda ligado a la sesión.
 
 Pantalla Admin: **Sesiones** (`/dashboard/sesiones`), pestañas **Calendario** y **Recurrencias**. Cada clase tiene:
 

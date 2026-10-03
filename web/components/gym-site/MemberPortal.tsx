@@ -1,20 +1,16 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { ApiClientError } from '@/lib/api/client';
 import type { ContractDetail } from '@/lib/api/contracts';
-import { getMyAccount, listMyReceipts } from '@/lib/api/member-portal';
-import type { MemberAccountDetail } from '@/lib/api/members';
-import type { ReceiptDetail } from '@/lib/api/receipts';
 import { CheckList } from '@/components/marketing/CheckList';
-import { formatMoney } from '@/lib/cash-labels';
-import { signOutOfGym } from '@/lib/auth/gym-context';
-import { useMemberSession } from '@/lib/auth/useMemberSession';
+import { formatSessionWhen } from '@/lib/format-session';
+import { MemberArea, useMemberArea } from './portal/MemberArea';
+import { BookingFeedback, useMemberBooking } from './portal/useMemberBooking';
 
 /** Vuelta de Mercado Pago: `?compra={transactionId}&status=…`. */
 export type PurchaseReturn = { id: string; status: string | null };
+
+const UPCOMING_ON_HOME = 3;
 
 function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString('es-AR');
@@ -35,84 +31,31 @@ function PurchaseBanner({ purchase }: { purchase: PurchaseReturn }) {
   if (purchase.status === 'approved') {
     return (
       <p className="success">
-        Pago aprobado. El plan aparece acá apenas Mercado Pago lo acredita (unos
-        segundos).
+        Pago aprobado. Tus planes y clases aparecen acá apenas Mercado Pago lo
+        acredita (unos segundos).
       </p>
     );
   }
   if (purchase.status === 'pending' || purchase.status === 'in_process') {
     return (
       <p className="muted">
-        El pago quedó pendiente. Cuando Mercado Pago lo apruebe, el plan se
-        activa solo.
+        El pago quedó pendiente. Cuando Mercado Pago lo apruebe, se activa solo.
       </p>
     );
   }
   return (
     <p className="error">
-      El pago no se completó. Podés intentarlo de nuevo desde los planes.
+      El pago no se completó. Podés intentarlo de nuevo desde el carrito.
     </p>
   );
 }
 
-/**
- * Portal mínimo del socio en la web del gym: planes vigentes, créditos,
- * resultado del pago y comprobantes.
- */
-export function MemberPortal({
-  slug,
-  purchase,
-}: {
-  slug: string;
-  purchase: PurchaseReturn | null;
-}) {
-  const router = useRouter();
-  const { session, ready } = useMemberSession(slug);
-  const [account, setAccount] = useState<MemberAccountDetail | null>(null);
-  const [receipts, setReceipts] = useState<ReceiptDetail[]>([]);
-  const [error, setError] = useState<string | null>(null);
-
-  const [reloadKey, setReloadKey] = useState(0);
-
-  useEffect(() => {
-    if (!ready) {
-      return;
-    }
-    if (!session) {
-      const here = `${window.location.pathname}${window.location.search}`;
-      router.replace(`/login?next=${encodeURIComponent(here)}`);
-      return;
-    }
-    let cancelled = false;
-    void (async () => {
-      try {
-        const [acc, recs] = await Promise.all([
-          getMyAccount(),
-          listMyReceipts(),
-        ]);
-        if (!cancelled) {
-          setAccount(acc);
-          setReceipts(recs.items);
-          setError(null);
-        }
-      } catch (err) {
-        if (!cancelled) {
-          setError(
-            err instanceof ApiClientError
-              ? err.message
-              : 'No se pudo cargar tu cuenta',
-          );
-        }
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [ready, session, router, reloadKey]);
-
-  if (!ready || !session) {
-    return <p className="muted mkt-inner mkt-section">Cargando tu cuenta…</p>;
-  }
+/** Inicio del portal: planes vigentes, próximas reservas y accesos. */
+function MemberHome({ purchase }: { purchase: PurchaseReturn | null }) {
+  const { session } = useMemberArea();
+  const booking = useMemberBooking();
+  const account = booking.data?.account ?? null;
+  const upcoming = account?.reservations.slice(0, UPCOMING_ON_HOME) ?? [];
 
   return (
     <>
@@ -120,25 +63,63 @@ export function MemberPortal({
         <p className="eyebrow">Mi cuenta</p>
         <h2 className="mkt-h2">Hola, {session.name ?? session.email}</h2>
         {purchase ? <PurchaseBanner purchase={purchase} /> : null}
-        {error ? <p className="error">{error}</p> : null}
+        {booking.loadError ? (
+          <p className="error">{booking.loadError}</p>
+        ) : null}
+        <BookingFeedback booking={booking} />
         <div className="mkt-hero-actions">
+          <Link className="mkt-btn-primary" href="/cuenta/clases">
+            Reservar una clase
+          </Link>
+          <Link className="mkt-btn-ghost" href="/cuenta/tienda">
+            Ver planes
+          </Link>
           <button
             type="button"
             className="mkt-btn-ghost"
-            onClick={() => setReloadKey((k) => k + 1)}
+            onClick={booking.reload}
           >
             Actualizar
           </button>
-          <button
-            type="button"
-            className="mkt-btn-ghost"
-            onClick={() => {
-              void signOutOfGym().then(() => router.replace('/'));
-            }}
-          >
-            Salir
-          </button>
         </div>
+      </section>
+
+      <section className="mkt-inner mkt-section">
+        <h2 className="mkt-h2">Próximas clases</h2>
+        {!account ? (
+          <p className="muted">Cargando…</p>
+        ) : upcoming.length === 0 ? (
+          <p className="muted">
+            No tenés clases reservadas.{' '}
+            <Link href="/cuenta/clases">Ver el calendario</Link>
+          </p>
+        ) : (
+          <>
+            <ul className="portal-slots">
+              {upcoming.map((r) => (
+                <li key={r.id} className="portal-slot is-reserved">
+                  <div>
+                    <p className="portal-slot-when">
+                      {formatSessionWhen(r.startsAt)}
+                    </p>
+                    <p className="portal-slot-name">{r.serviceName}</p>
+                  </div>
+                  <button
+                    type="button"
+                    className="btn ghost"
+                    disabled={booking.busyId === r.id}
+                    onClick={() => booking.askCancel(r)}
+                  >
+                    Cancelar reserva
+                  </button>
+                </li>
+              ))}
+            </ul>
+            <p className="small">
+              <Link href="/cuenta/mis-clases">Ver todas mis clases</Link>
+            </p>
+          </>
+        )}
       </section>
 
       <section className="mkt-inner mkt-section">
@@ -147,7 +128,8 @@ export function MemberPortal({
           <p className="muted">Cargando…</p>
         ) : account.contracts.length === 0 ? (
           <p className="muted">
-            No tenés planes vigentes. <Link href="/#planes">Ver planes</Link>
+            No tenés planes vigentes.{' '}
+            <Link href="/cuenta/tienda">Ver planes</Link>
           </p>
         ) : (
           <div className="mkt-plans">
@@ -159,40 +141,25 @@ export function MemberPortal({
             ))}
           </div>
         )}
-        <p className="muted small">
-          Reservas y calendario de clases: desde la app de Faciliter.
-        </p>
-      </section>
-
-      <section className="mkt-inner mkt-section">
-        <h2 className="mkt-h2">Comprobantes</h2>
-        {receipts.length === 0 ? (
-          <p className="muted">Todavía no hay comprobantes.</p>
-        ) : (
-          <div className="table-wrap">
-            <table className="data-table">
-              <thead>
-                <tr>
-                  <th>Comprobante</th>
-                  <th>Fecha</th>
-                  <th>Detalle</th>
-                  <th>Importe</th>
-                </tr>
-              </thead>
-              <tbody>
-                {receipts.map((r) => (
-                  <tr key={r.id}>
-                    <td>{r.code}</td>
-                    <td>{formatDate(r.createdAt)}</td>
-                    <td>{r.description ?? '—'}</td>
-                    <td>{formatMoney(r.amount)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
       </section>
     </>
+  );
+}
+
+/**
+ * Inicio del portal del socio en la web del gym (`/cuenta`), con el resultado
+ * del pago si vuelve de Mercado Pago.
+ */
+export function MemberPortal({
+  slug,
+  purchase,
+}: {
+  slug: string;
+  purchase: PurchaseReturn | null;
+}) {
+  return (
+    <MemberArea slug={slug}>
+      <MemberHome purchase={purchase} />
+    </MemberArea>
   );
 }

@@ -2,38 +2,15 @@ import type {
   PaymentLineDetail,
   PaymentLineService,
 } from '@/lib/api/payment-lines';
-
-const TZ = 'America/Argentina/Buenos_Aires';
+import { formatSessionRange, GYM_TZ } from '@/lib/format-session';
 
 function formatDay(iso: string): string {
   return new Intl.DateTimeFormat('es-AR', {
     day: '2-digit',
     month: '2-digit',
     year: 'numeric',
-    timeZone: TZ,
+    timeZone: GYM_TZ,
   }).format(new Date(iso));
-}
-
-function formatSessionRange(startsAt: string, endsAt: string): string {
-  const start = new Date(startsAt);
-  const end = new Date(endsAt);
-  const day = new Intl.DateTimeFormat('es-AR', {
-    weekday: 'short',
-    day: '2-digit',
-    month: '2-digit',
-    timeZone: TZ,
-  }).format(start);
-  const t1 = new Intl.DateTimeFormat('es-AR', {
-    hour: '2-digit',
-    minute: '2-digit',
-    timeZone: TZ,
-  }).format(start);
-  const t2 = new Intl.DateTimeFormat('es-AR', {
-    hour: '2-digit',
-    minute: '2-digit',
-    timeZone: TZ,
-  }).format(end);
-  return `${day} ${t1}–${t2}`;
 }
 
 /**

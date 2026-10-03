@@ -2,20 +2,9 @@ import { GymSiteShell } from '@/components/gym-site/GymSiteShell';
 import { MktShell } from '@/components/marketing/MktShell';
 import { PackPlanCard } from '@/components/marketing/PackPlanCard';
 import {
-  storeComponentLabel,
+  storePackItems,
   type PublicTenantCatalog,
-  type StorePack,
 } from '@/lib/api/public-tenant-catalog';
-
-function packItems(pack: StorePack): string[] {
-  const items = pack.components.map(storeComponentLabel);
-  if (pack.creditsExpireAt) {
-    items.push(
-      `Créditos vencen el ${new Date(pack.creditsExpireAt).toLocaleDateString('es-AR')}`,
-    );
-  }
-  return items;
-}
 
 /**
  * Vidriera del gym: nombre y packs. Comprar online solo si tiene Mercado Pago.
@@ -57,7 +46,7 @@ export function GymLandingPage({ catalog }: { catalog: PublicTenantCatalog }) {
                 price={pack.price}
                 billingPeriod={pack.billingPeriod}
                 description={pack.description}
-                items={packItems(pack)}
+                items={storePackItems(pack)}
                 action={
                   onlineCheckout ? (
                     <a

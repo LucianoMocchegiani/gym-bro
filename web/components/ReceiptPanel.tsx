@@ -1,11 +1,13 @@
 'use client';
 
+import type { ReactNode } from 'react';
 import { AdminModal } from '@/components/AdminModal';
 import { PaymentLineCopy } from '@/components/PaymentLineCopy';
+import type { PaymentLineDetail } from '@/lib/api/payment-lines';
 import type { ReceiptDetail } from '@/lib/api/receipts';
 import { formatMoney } from '@/lib/cash-labels';
 
-function formatMethod(method: ReceiptDetail['method']): string {
+export function formatReceiptMethod(method: ReceiptDetail['method']): string {
   switch (method) {
     case 'CASH':
       return 'Efectivo';
@@ -22,6 +24,8 @@ type ReceiptPanelProps = {
   receipt: ReceiptDetail;
   onClose: () => void;
   title?: string;
+  /** Acción bajo cada línea (p. ej. «Solicitar devolución» del socio). */
+  lineAction?: (line: PaymentLineDetail) => ReactNode;
 };
 
 /**
@@ -33,6 +37,7 @@ export function ReceiptPanel({
   receipt,
   onClose,
   title = 'Comprobante',
+  lineAction,
 }: ReceiptPanelProps) {
   const lines = receipt.lines ?? [];
   return (
@@ -50,7 +55,7 @@ export function ReceiptPanel({
         </div>
         <div>
           <dt>Medio</dt>
-          <dd>{formatMethod(receipt.method)}</dd>
+          <dd>{formatReceiptMethod(receipt.method)}</dd>
         </div>
         <div>
           <dt>Emitido</dt>
@@ -66,7 +71,14 @@ export function ReceiptPanel({
         <ul className="receipt-lines">
           {lines.map((line) => (
             <li key={line.id} className="cart-line">
-              <PaymentLineCopy line={line} />
+              {lineAction ? (
+                <div>
+                  <PaymentLineCopy line={line} />
+                  {lineAction(line)}
+                </div>
+              ) : (
+                <PaymentLineCopy line={line} />
+              )}
               <p>{formatMoney(line.amount)}</p>
             </li>
           ))}

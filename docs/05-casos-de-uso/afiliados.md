@@ -147,10 +147,12 @@ La credencial de puerta **no** se emite en el alta: sale al cobrar un pack (CU-C
 4. Si no es socia del gym, ve el resumen del pack y completa nombre, DNI y teléfono (opcional). Sistema valida que el DNI y el mail estén libres y guarda una **solicitud de alta** (todavía no hay Afiliado).
 5. **Pagar con Mercado Pago** → checkout del gym; la referencia del pago es la solicitud.
 6. Al llegar el webhook **aprobado**, Sistema crea el Afiliado **ACTIVE** con el mail de la cuenta, audita `member.self_join`, crea el cobro del pack, lo confirma (contrato, caja, comprobante) y marca la solicitud COMPLETED (RN-CTA-007).
-7. Mercado Pago vuelve a `/cuenta?alta={solicitud}`: la web espera la confirmación, emite el JWT de socio (`select-context`) y muestra el portal con el resultado del pago, los packs vigentes, créditos y comprobantes (CU-AFI-005).
+7. Mercado Pago vuelve a `/cuenta?alta={solicitud}`: la web espera la confirmación, emite el JWT de socio (`select-context`) y muestra el portal con el resultado del pago (CU-AFI-005).
+
+**Portal del socio** (`/cuenta/*`, mismo alcance que la app): inicio con planes vigentes, créditos y próximas 3 reservas; **Clases** (calendario, CU-RES-001/003/004); **Mis clases** (reservas próximas, lista de espera y pasadas/canceladas); **Tienda** y **Carrito** (packs y drop-ins en un solo pago, CU-PAG-001); **Historial** (todos los comprobantes, con detalle y devolución, CU-PAG-004). Sin sesión de socio → `/login?next=`.
 
 **Flujos alternativos / errores:**
-- Ya era socia activa → salta el alta: resumen del pack, **Pagar** con el carrito MP del socio (`returnToWeb`) y vuelve a `/cuenta?compra={transactionId}`.
+- Ya era socia activa → salta el alta: el pack se suma al **carrito** del portal y va a `/cuenta/carrito`; al pagar, MP vuelve a `/cuenta?compra={transactionId}`.
 - Socia suspendida o dada de baja → 403, no puede comprar online.
 - DNI o mail ya usados por otro socio del gym → 409 antes de cobrar.
 - Pago rechazado, cancelado o abandonado → no se crea el Afiliado; la solicitud queda pendiente y se reutiliza si vuelve a intentar.
@@ -161,7 +163,7 @@ La credencial de puerta **no** se emite en el alta: sale al cobrar un pack (CU-C
 **Postcondiciones:** Afiliado nuevo solo si el pago se aprobó, con su pack activo y comprobante.
 
 **Reglas relacionadas:** RN-CTA-006, RN-CTA-007, RN-CTA-008, RN-PAG-009
-**API:** `GET /public/tenants/by-slug/:slug/packs` (público) · `POST /identity/member-signups` y `GET /identity/member-signups/:id` (JWT Identity) · `POST /auth/select-context` · socio: `POST /me/transaction-items/mp/cart` con `returnToWeb: true` · `GET /me/account` · `GET /me/receipts`.
+**API:** `GET /public/tenants/by-slug/:slug/packs` (público) · `POST /identity/member-signups` y `GET /identity/member-signups/:id` (JWT Identity) · `POST /auth/select-context` · socio: `POST /me/transaction-items/mp/cart` con `returnToWeb: true` · `GET /me/account` · `GET /me/packs` · `GET /me/mp-status` · `GET /me/sessions` · `GET|POST /me/reservations` · `PATCH /me/reservations/:id/status` · `GET|POST /me/waitlist` · `PATCH /me/waitlist/:id/status` · `GET /me/receipts` · `GET /me/refund-requests` · `POST /me/transaction-items/:id/refund-requests`.
 
 ---
 

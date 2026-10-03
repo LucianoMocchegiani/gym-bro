@@ -50,3 +50,14 @@ export function storeComponentLabel(c: StorePackComponent): string {
   const n = c.creditAmount ?? 0;
   return `${n} ${n === 1 ? 'clase' : 'clases'} de ${c.serviceName}`;
 }
+
+/** Ítems de la tarjeta del plan: componentes y vencimiento de créditos. */
+export function storePackItems(pack: StorePack): string[] {
+  const items = pack.components.map(storeComponentLabel);
+  if (pack.creditsExpireAt) {
+    items.push(
+      `Créditos vencen el ${new Date(pack.creditsExpireAt).toLocaleDateString('es-AR')}`,
+    );
+  }
+  return items;
+}

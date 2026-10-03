@@ -13,6 +13,7 @@ import {
   readStaffSession,
   writeStaffSession,
 } from '@/lib/auth/session';
+import { clearMemberCart } from '@/lib/member-cart';
 
 export type GymProfile = 'STAFF' | 'MEMBER';
 
@@ -74,6 +75,7 @@ export function profileForPath(path: string | null): GymProfile | null {
   if (
     path === '/cuenta' ||
     path.startsWith('/cuenta?') ||
+    path.startsWith('/cuenta/') ||
     path.startsWith('/comprar')
   ) {
     return 'MEMBER';
@@ -95,4 +97,5 @@ export async function signOutOfGym(): Promise<void> {
   clearStaffSession();
   clearMemberSession();
   clearIdentitySession();
+  clearMemberCart();
 }

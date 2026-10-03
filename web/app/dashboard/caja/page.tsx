@@ -3,6 +3,7 @@
 import { FormEvent, Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { CajaDebitPanel } from '@/components/CajaDebitPanel';
+import { CartLineList } from '@/components/CartLineList';
 import { ListToolbar } from '@/components/AdminList';
 import { AdminShell } from '@/components/AdminShell';
 import { Panel } from '@/components/AdminUi';
@@ -739,38 +740,11 @@ function CajaInner() {
           {cart.length === 0 ? (
             <p className="muted small">Carrito vacío. Agregá servicios o packs.</p>
           ) : (
-            <>
-              <ul className="plain-list">
-                {cart.map((item) => (
-                  <li key={item.key} className="cart-line">
-                    <div>
-                      <p className="cart-name">{item.label}</p>
-                      <p className="muted small">{item.sub}</p>
-                      <p className="small">
-                        {item.price === 0 ? (
-                          <span className="muted">Sin precio</span>
-                        ) : (
-                          formatMoney(item.price)
-                        )}
-                      </p>
-                    </div>
-                    <button
-                      type="button"
-                      className="cart-remove"
-                      title="Quitar del carrito"
-                      aria-label={`Quitar ${item.label} del carrito`}
-                      onClick={() => removeItem(item.key)}
-                    >
-                      ✕
-                    </button>
-                  </li>
-                ))}
-              </ul>
-              <div className="cart-total">
-                <span>Total</span>
-                <strong>{formatMoney(chargeTotal)}</strong>
-              </div>
-            </>
+            <CartLineList
+              items={cart}
+              total={chargeTotal}
+              onRemove={removeItem}
+            />
           )}
 
           <form className="admin-form" onSubmit={(e) => void onCobro(e)}>

@@ -1,7 +1,6 @@
-import { headers } from 'next/headers';
 import { notFound } from 'next/navigation';
-import { extractTenantSlugFromHost } from '@/lib/tenant-host';
 import { fetchPublicTenantCatalog } from '@/lib/api/public-tenant-catalog';
+import { requestTenantSlug } from '@/lib/gym-site';
 import { IdentityAccountPage } from '@/components/IdentityAccountPage';
 import { GymSiteShell } from '@/components/gym-site/GymSiteShell';
 import { MemberPortal } from '@/components/gym-site/MemberPortal';
@@ -13,8 +12,8 @@ export const metadata = {
 };
 
 /**
- * Apex: gyms de la Identity. Slug de gym: portal del socio (la cuenta staff
- * vive en `/dashboard/cuenta`); con `?alta=` espera el alta pagada.
+ * Apex: gyms de la Identity. Slug de gym: inicio del portal del socio (la
+ * cuenta staff vive en `/dashboard/cuenta`); con `?alta=` espera el alta pagada.
  */
 export default async function CuentaPage({
   searchParams,
@@ -26,10 +25,7 @@ export default async function CuentaPage({
     collection_status?: string;
   }>;
 }) {
-  const h = await headers();
-  const slug = extractTenantSlugFromHost(
-    h.get('x-forwarded-host') ?? h.get('host') ?? '',
-  );
+  const slug = await requestTenantSlug();
   if (!slug) {
     return <IdentityAccountPage />;
   }

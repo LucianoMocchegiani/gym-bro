@@ -1,13 +1,9 @@
 'use client';
 
-import Link from 'next/link';
 import { FormEvent, useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { ApiClientError } from '@/lib/api/client';
-import { pickMpCartCheckoutUrl } from '@/lib/api/mercadopago';
-import {
-  startMemberSignup,
-  startMyPackCheckout,
-} from '@/lib/api/member-portal';
+import { startMemberSignup } from '@/lib/api/member-portal';
 import {
   storeComponentLabel,
   type StorePack,
@@ -21,6 +17,8 @@ import { ThemeToggle } from '@/components/ThemeToggle';
 import { enterGym, resolveGymProfiles } from '@/lib/auth/gym-context';
 import { useIdentityAuth } from '@/lib/auth/IdentityAuthProvider';
 import { useMemberSession } from '@/lib/auth/useMemberSession';
+import { addToMemberCart, packCartLine } from '@/lib/member-cart';
+import { mpCheckoutErrorText, redirectToMpCheckout } from '@/lib/mp-checkout';
 
 type Props = { slug: string; gymName: string; pack: StorePack };
 
@@ -29,9 +27,9 @@ function errorText(err: unknown, fallback: string): string {
 }
 
 /**
- * Comprar un pack desde la web del gym: cuenta Faciliter → checkout Mercado
- * Pago. El socio paga directo (vuelve a `/cuenta?compra=`); quien no es socio
- * carga sus datos y se da de alta recién con el pago aprobado (`/cuenta?alta=`).
+ * Comprar un pack desde la web del gym. El socio lo suma al carrito del portal
+ * (`/cuenta/carrito`); quien no es socio carga sus datos y se da de alta recién
+ * con el pago aprobado (`/cuenta?alta=`).
  */
 export function GymCheckoutClient({ slug, gymName, pack }: Props) {
   const { session: identity, ready } = useIdentityAuth();
@@ -42,7 +40,12 @@ export function GymCheckoutClient({ slug, gymName, pack }: Props) {
     return <LoginPending message="Cargando…" />;
   }
   if (member) {
-    return <PayStep slug={slug} gymName={gymName} pack={pack} />;
+    return (
+      <AddToCartStep
+        owner={`${member.tenantId}:${member.memberId}`}
+        pack={pack}
+      />
+    );
   }
   if (!identity) {
     return (
@@ -62,22 +65,6 @@ export function GymCheckoutClient({ slug, gymName, pack }: Props) {
       email={identity.email}
     />
   );
-}
-
-function redirectToCheckout(
-  result: Parameters<typeof pickMpCartCheckoutUrl>[0],
-): void {
-  const url = pickMpCartCheckoutUrl(result);
-  if (!url) {
-    throw new Error('Mercado Pago no devolvió el link de pago');
-  }
-  window.location.assign(url);
-}
-
-function checkoutErrorText(err: unknown): string {
-  return err instanceof ApiClientError || err instanceof Error
-    ? err.message
-    : 'No se pudo iniciar el pago';
 }
 
 function PackSummary({ pack }: { pack: StorePack }) {
@@ -116,8 +103,9 @@ function CheckoutCard({
 }
 
 /**
- * Si ya es socio entra directo a pagar; si no, nombre, DNI y teléfono y va a
- * Mercado Pago. El alta se completa con el pago aprobado (RN-CTA-007).
+ * Si ya es socio entra al gym (y el pack va al carrito); si no, nombre, DNI y
+ * teléfono y va a Mercado Pago. El alta se completa con el pago aprobado
+ * (RN-CTA-007).
  */
 function JoinStep({
   slug,
@@ -174,9 +162,9 @@ function JoinStep({
         document: document.trim(),
         phone: phone.trim() || undefined,
       });
-      redirectToCheckout(checkout);
+      redirectToMpCheckout(checkout);
     } catch (err) {
-      setError(checkoutErrorText(err));
+      setError(mpCheckoutErrorText(err));
       setSubmitting(false);
     }
   }
@@ -236,39 +224,14 @@ function JoinStep({
   );
 }
 
-function PayStep({ slug, gymName, pack }: Props) {
-  const { session } = useMemberSession(slug);
-  const [error, setError] = useState<string | null>(null);
-  const [paying, setPaying] = useState(false);
+/** Socio: el pack va al carrito del portal y se paga junto con lo demás. */
+function AddToCartStep({ owner, pack }: { owner: string; pack: StorePack }) {
+  const router = useRouter();
 
-  async function pay() {
-    setError(null);
-    setPaying(true);
-    try {
-      redirectToCheckout(await startMyPackCheckout(pack.id));
-    } catch (err) {
-      setError(checkoutErrorText(err));
-      setPaying(false);
-    }
-  }
+  useEffect(() => {
+    addToMemberCart(owner, packCartLine(pack));
+    router.replace('/cuenta/carrito');
+  }, [owner, pack, router]);
 
-  return (
-    <CheckoutCard gymName={gymName} title={pack.name}>
-      <PackSummary pack={pack} />
-      <p className="muted small">Socio: {session?.name ?? session?.email}</p>
-      {error ? <p className="error">{error}</p> : null}
-      <button
-        type="button"
-        className="btn primary"
-        disabled={paying}
-        onClick={() => void pay()}
-      >
-        {paying ? 'Abriendo Mercado Pago…' : 'Pagar con Mercado Pago'}
-      </button>
-      <p className="muted small">
-        <Link href="/">Ver otros planes</Link>
-      </p>
-      <SwitchAccountButton />
-    </CheckoutCard>
-  );
+  return <LoginPending message="Agregando al carrito…" />;
 }

@@ -9,7 +9,7 @@ Fuera de esta guía: Super Admin. **No existen todavía:** rutinas por días, no
 | Cara | Quién | Dónde |
 |------|--------|--------|
 | Panel (web) | Dueño, recepción, profesores (staff) | `{slug}.faciliter.xyz/dashboard` |
-| Web del gym | Público y socios | `{slug}.faciliter.xyz`: planes, comprar online, **Mi cuenta** del socio |
+| Web del gym | Público y socios | `{slug}.faciliter.xyz`: planes, comprar online, **Mi cuenta** del socio (clases, carrito, historial) |
 | App | El afiliado (socio) y el staff | App Faciliter en el celular |
 
 El dinero del socio va al Mercado Pago **del negocio** y se registra en caja. Faciliter no se queda con el cobro. Efectivo: solo se registra.
@@ -91,7 +91,7 @@ Lo que paga el gym: fecha, monto, Fijo/Variable, medio, etiqueta del gym, nota y
 
 ## Solicitudes de devolución
 
-El socio pide desde la app (Historial → Ver comprobante → **Solicitar devolución**). El staff filtra, abre y ejecuta con motivo tipificado escribiendo **DEVOLVER**, o rechaza. Topic `devoluciones`.
+El socio pide desde la app o la web del gym (Historial → Ver comprobante → **Solicitar devolución**). El staff filtra, abre y ejecuta con motivo tipificado escribiendo **DEVOLVER**, o rechaza. Topic `devoluciones`.
 
 ## Reportes
 

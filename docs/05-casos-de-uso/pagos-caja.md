@@ -15,9 +15,9 @@
 - Concepto: mensualidad/pack/drop-in, o **carrito de Caja** (pack + drop-in en un solo link).
 
 **Flujo principal:**
-1. Actor inicia cobro con `idempotencyKey` de negocio (afiliado self-service en la app con `POST /me/transaction-items/mp/cart`, o Staff en Admin `/dashboard/caja` con medio Mercado Pago: pack, drop-in, o **carrito** con `items[]`).
+1. Actor inicia cobro con `idempotencyKey` de negocio (afiliado self-service con `POST /me/transaction-items/mp/cart` desde el carrito de la app o de la web del gym `/cuenta/carrito`, o Staff en Admin `/dashboard/caja` con medio Mercado Pago: pack, drop-in, o **carrito** con `items[]`). El carrito del socio junta packs (Tienda) y drop-ins (calendario), una línea por ítem sin repetir; en la web vive en el navegador hasta pagar o salir.
 2. Sistema crea Pago `pendiente` (carrito: `transactions` + un TransactionItem por ítem, todos con el mismo `transaction_id`).
-3. Muestra el checkout MP del gym (**sin redirect automático**). En Caja (web y app staff): QR + URL recortada, copiar, abrir; **Cancelar y limpiar** vacía link, carrito y afiliado en la UI (no anula la preference: si ya pagaron, el webhook puede aprobar). Carrito afiliado: mismo QR/copiar. Carrito → **un solo link** con el total. Los ítems de la Preference usan el mismo copy que el comprobante GymBro: pack = nombre + servicios/créditos; drop-in = servicio + sede + horario (la vigencia del contrato aún no existe al crear el link).
+3. Muestra el checkout MP del gym (**sin redirect automático**). En Caja (web y app staff): QR + URL recortada, copiar, abrir; **Cancelar y limpiar** vacía link, carrito y afiliado en la UI (no anula la preference: si ya pagaron, el webhook puede aprobar). Carrito afiliado: mismo QR/copiar. Carrito → **un solo link** con el total. Excepción: la web del gym (`returnToWeb`) sí redirige a Mercado Pago y MP vuelve a `/cuenta?compra=`. Los ítems de la Preference usan el mismo copy que el comprobante GymBro: pack = nombre + servicios/créditos; drop-in = servicio + sede + horario (la vigencia del contrato aún no existe al crear el link).
 4. Webhook/confirmación MP → sistema marca `aprobado` o `rechazado` (idempotente; carrito: `externalReference` = `cart_id`).
 5. Si `aprobado`: confirma Contratacion y/o Reserva (carrito: **una por cada payment**); **un comprobante interno por Transaction** (total del cart + líneas: pack → contrato/vigencia + servicios del pack; drop-in → reserva/horario); registra quién inició el cobro (staff de Caja); N1 E1.
 6. Si `rechazado`: no confirma derechos.
@@ -80,6 +80,8 @@
 3. Si cumple → SolicitudDevolucion `pendiente` o auto-aprobable según config (MVP: **pendiente de staff** recomendado).
 4. Notifica admin (N1).
 5. Si no cumple política → rechaza solicitud con motivo (admin igual puede devolver por CU-PAG-005).
+
+**Canales:** app (Historial → Ver comprobante) y web del gym (`/cuenta/historial` → Ver → **Solicitar devolución** por línea, motivo opcional). Con una solicitud pendiente la línea muestra «Devolución solicitada».
 
 **Reglas relacionadas:** RN-PAG-012
 
