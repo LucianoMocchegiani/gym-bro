@@ -16,6 +16,7 @@ La creación de registros sigue la skill:
 
 ## Índice
 
+- [2026-10-03 - Alta web del socio recién con el pago aprobado](./2026-10-03-alta-socio-con-pago.md)
 - [2026-10-03 - Web del gym: vidriera, login único, compra y portal del socio](./2026-10-03-web-del-gym-portal-socio.md)
 - [2026-10-03 - Chat: serie semanal sin clases no se propone](./2026-10-03-chat-serie-semanal.md)
 - [2026-10-03 - Pack Brain de 100 sin mes de prueba](./2026-10-03-pack-100-sin-prueba.md)
