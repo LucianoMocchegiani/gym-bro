@@ -16,6 +16,8 @@ La creación de registros sigue la skill:
 
 ## Índice
 
+- [2026-10-03 - Pack Brain de 100 sin mes de prueba](./2026-10-03-pack-100-sin-prueba.md)
+- [2026-10-03 - Altas de plataforma colgadas (slug y gym sin webhook)](./2026-10-03-altas-plataforma-colgadas.md)
 - [2026-10-03 - Conectar Mercado Pago por OAuth](./2026-10-03-mp-oauth.md)
 - [2026-10-03 - Texto de Débitos en la app sin Card Brick](./2026-10-03-texto-debitos-app.md)
 - [2026-10-02 - Mail de la cuenta Mercado Pago en alta y débito](./2026-10-02-mail-cuenta-mp.md)
