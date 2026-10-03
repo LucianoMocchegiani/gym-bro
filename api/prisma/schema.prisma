@@ -222,6 +222,7 @@ model Tenant {
   transactions    Transaction[]
   debitMandates   DebitMandate[]
   platformSignups PlatformSignup[]
+  memberSignups   MemberSignup[]
   folderLabels    FolderLabel[]
   folderItems     FolderItem[]
   memberImports   MemberImport[]
@@ -362,6 +363,7 @@ model Identity {
   refreshTokens RefreshToken[]
   ownedTenants  Tenant[] @relation("TenantOwner")
   platformSignups PlatformSignup[]
+  memberSignups   MemberSignup[]
   notifications   Notification[]
 
   @@map("identities")
@@ -442,6 +444,7 @@ model Member {
   folderItems   FolderItem[]   @relation("FolderItemMemberOwner")
   notificationPreferences NotificationPreference[]
   notifications           Notification[]
+  signup                  MemberSignup?
 
   @@unique([tenantId, email])
   @@unique([tenantId, document])
@@ -606,6 +609,7 @@ model Pack {
   credentialOffers CredentialOffer[]
   debitMandates DebitMandate[]
   platformSignups PlatformSignup[]
+  memberSignups MemberSignup[]
 
   @@index([tenantId])
   @@map("packs")
@@ -782,6 +786,7 @@ model Transaction {
   recordedByStaff StaffUser? @relation("TransactionRecorder", fields: [recordedByStaffId], references: [id], onDelete: SetNull)
   transactionItems TransactionItem[]
   receipts Receipt[]
+  memberSignup MemberSignup?
 
   @@unique([tenantId, idempotencyKey])
   @@index([tenantId])
@@ -867,6 +872,42 @@ model PlatformSignup {
   @@index([identityId, status])
   @@index([slug])
   @@map("platform_signups")
+}
+
+enum MemberSignupStatus {
+  PENDING
+  COMPLETED
+  FAILED
+}
+
+/// Alta web de un socio que todavía no pagó (RN-CTA-007). El socio nace en el webhook del pago aprobado.
+model MemberSignup {
+  id             String             @id @default(uuid()) @db.Uuid
+  tenantId       String             @map("tenant_id") @db.Uuid
+  identityId     String             @map("identity_id") @db.Uuid
+  packId         String             @map("pack_id") @db.Uuid
+  /// Precio del pack al iniciar el checkout (lo que se cobra en MP).
+  amount         Int
+  name           String
+  document       String
+  phone          String?
+  status         MemberSignupStatus @default(PENDING)
+  mpPreferenceId String?            @map("mp_preference_id")
+  memberId       String?            @unique @map("member_id") @db.Uuid
+  transactionId  String?            @unique @map("transaction_id") @db.Uuid
+  /// Pago aprobado pero el socio no se pudo crear (p. ej. DNI tomado en el medio).
+  lastError      String?            @map("last_error")
+  createdAt      DateTime           @default(now()) @map("created_at")
+  updatedAt      DateTime           @updatedAt @map("updated_at")
+
+  tenant      Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  identity    Identity     @relation(fields: [identityId], references: [id], onDelete: Cascade)
+  pack        Pack         @relation(fields: [packId], references: [id], onDelete: Cascade)
+  member      Member?      @relation(fields: [memberId], references: [id], onDelete: SetNull)
+  transaction Transaction? @relation(fields: [transactionId], references: [id], onDelete: SetNull)
+
+  @@index([tenantId, identityId, status])
+  @@map("member_signups")
 }
 
 /// Contratación de un pack por un afiliado o tenant.

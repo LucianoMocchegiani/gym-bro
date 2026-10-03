@@ -123,6 +123,10 @@
             "value": ""
         },
         {
+            "key": "memberSignupId",
+            "value": ""
+        },
+        {
             "key": "createdMonthlyPackId",
             "value": ""
         },
@@ -698,16 +702,16 @@
                     }
                 },
                 {
-                    "name": "Identity POST memberships (alta self-service en un gym)",
+                    "name": "Identity POST member-signups (alta web con pago previo)",
                     "request": {
                         "method": "POST",
                         "header": [{ "key": "Content-Type", "value": "application/json" }],
                         "body": {
                             "mode": "raw",
-                            "raw": "{\n  \"tenantSlug\": \"{{tenantSlug}}\",\n  \"name\": \"Socia Web\",\n  \"document\": \"40111222\",\n  \"phone\": \"0981 123 456\"\n}"
+                            "raw": "{\n  \"tenantSlug\": \"{{tenantSlug}}\",\n  \"packId\": \"{{createdPackId}}\",\n  \"name\": \"Socia Web\",\n  \"document\": \"40111222\",\n  \"phone\": \"0981 123 456\"\n}"
                         },
-                        "url": "{{baseUrl}}/api/identity/memberships",
-                        "description": "JWT Identity. CU-AFI-007 / RN-CTA-007: crea el socio ACTIVE en el gym (auditoría member.self_join) o devuelve el existente (created=false). Socio suspendido o gym suspendido → 403; DNI de otro socio → 409. Después: POST /auth/select-context MEMBER."
+                        "url": "{{baseUrl}}/api/identity/member-signups",
+                        "description": "JWT Identity. CU-AFI-007 / RN-CTA-007: valida (ya socio → 409; DNI/mail de otro socio → 409; socio o gym suspendido → 403), guarda la solicitud y devuelve el checkout MP del gym. NO crea el socio: nace con el webhook del pago aprobado (member.self_join + pack + comprobante). MP vuelve a {slug}/cuenta?alta=<signupId>."
                     },
                     "event": [
                         {
@@ -715,13 +719,22 @@
                             "script": {
                                 "type": "text/javascript",
                                 "exec": [
-                                    "pm.test('status 200/201', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]));",
+                                    "pm.test('status 201', () => pm.response.to.have.status(201));",
                                     "const body = pm.response.json();",
-                                    "pm.test('memberId', () => pm.expect(body.memberId).to.be.a('string'));"
+                                    "pm.test('signupId', () => pm.expect(body.signupId).to.be.a('string'));",
+                                    "pm.collectionVariables.set('memberSignupId', body.signupId);"
                                 ]
                             }
                         }
                     ]
+                },
+                {
+                    "name": "Identity GET member-signup (estado del alta)",
+                    "request": {
+                        "method": "GET",
+                        "url": "{{baseUrl}}/api/identity/member-signups/{{memberSignupId}}",
+                        "description": "JWT Identity. PENDING hasta el pago aprobado; COMPLETED = socio creado (seguir con POST /auth/select-context MEMBER y tenantId); FAILED = pagó pero el DNI/mail fue tomado en el medio."
+                    }
                 },
                 {
                     "name": "Login Google",

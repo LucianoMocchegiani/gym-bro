@@ -175,7 +175,7 @@ Un staff de un gym normal da 403 en estos endpoints (`PlatformTenantGuard` exige
 
 El flujo web completo pide **HTTPS** (`SameSite=None; Secure`). En `http://*.localhost` la cookie no cruza subdominios (igual que Google). `COOKIE_PARENT_DOMAIN` o `CORS_APP_DOMAIN` arma el `Domain` de la cookie.
 
-Self-serve apex: `POST /auth/identity/register`, `POST /identity/signups` (JWT Identity), `GET /identity/tenants`. Web del gym: `POST /identity/memberships` (JWT Identity; alta del socio con nombre + DNI, CU-AFI-007) y después select-context MEMBER.
+Self-serve apex: `POST /auth/identity/register`, `POST /identity/signups` (JWT Identity), `GET /identity/tenants`. Web del gym: `POST /identity/member-signups` (JWT Identity; pack + nombre + DNI → checkout MP; el socio nace con el pago aprobado, CU-AFI-007) y `GET /identity/member-signups/:id` (PENDING / COMPLETED / FAILED); con COMPLETED, select-context MEMBER.
 
 ## ⚠️ Orden de decorators en controllers (bug ya corregido)
 

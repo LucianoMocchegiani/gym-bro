@@ -22,6 +22,7 @@ import { MercadoPagoOAuthService } from './mercadopago-oauth.service';
 import { TenantsModule } from '../tenants/tenants.module';
 import { DebitModule } from '../debit/debit.module';
 import { NotificationsModule } from '../notifications/notifications.module';
+import { MembersModule } from '../members/members.module';
 
 @Module({
   imports: [
@@ -36,6 +37,7 @@ import { NotificationsModule } from '../notifications/notifications.module';
     forwardRef(() => TenantsModule),
     forwardRef(() => DebitModule),
     NotificationsModule,
+    forwardRef(() => MembersModule),
   ],
   controllers: [
     PaymentController,

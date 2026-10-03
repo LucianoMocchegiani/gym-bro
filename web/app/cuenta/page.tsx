@@ -5,6 +5,7 @@ import { fetchPublicTenantCatalog } from '@/lib/api/public-tenant-catalog';
 import { IdentityAccountPage } from '@/components/IdentityAccountPage';
 import { GymSiteShell } from '@/components/gym-site/GymSiteShell';
 import { MemberPortal } from '@/components/gym-site/MemberPortal';
+import { MemberSignupReturn } from '@/components/gym-site/MemberSignupReturn';
 
 export const metadata = {
   title: 'Cuenta',
@@ -13,13 +14,14 @@ export const metadata = {
 
 /**
  * Apex: gyms de la Identity. Slug de gym: portal del socio (la cuenta staff
- * vive en `/dashboard/cuenta`).
+ * vive en `/dashboard/cuenta`); con `?alta=` espera el alta pagada.
  */
 export default async function CuentaPage({
   searchParams,
 }: {
   searchParams: Promise<{
     compra?: string;
+    alta?: string;
     status?: string;
     collection_status?: string;
   }>;
@@ -36,15 +38,19 @@ export default async function CuentaPage({
     notFound();
   }
   const query = await searchParams;
-  const purchase = query.compra
-    ? {
-        id: query.compra,
-        status: query.collection_status ?? query.status ?? null,
-      }
-    : null;
+  const mpStatus = query.collection_status ?? query.status ?? null;
+  const purchase = query.compra ? { id: query.compra, status: mpStatus } : null;
   return (
     <GymSiteShell slug={slug} gymName={catalog.tenant.name}>
-      <MemberPortal slug={slug} purchase={purchase} />
+      {query.alta ? (
+        <MemberSignupReturn
+          slug={slug}
+          signupId={query.alta}
+          mpStatus={mpStatus}
+        />
+      ) : (
+        <MemberPortal slug={slug} purchase={purchase} />
+      )}
     </GymSiteShell>
   );
 }

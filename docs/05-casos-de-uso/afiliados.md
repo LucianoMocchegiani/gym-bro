@@ -144,22 +144,24 @@ La credencial de puerta **no** se emite en el alta: sale al cobrar un pack (CU-C
 1. La persona entra a `{slug}.{dominio}` y ve los planes del gym.
 2. Toca **Comprar** en un pack → `/comprar?pack={id}`.
 3. Entra con su cuenta Faciliter (mail y contraseña o Google) o la crea.
-4. Si no es socia del gym, completa nombre, DNI y teléfono (opcional). Sistema crea el Afiliado **ACTIVE** con el mail de la cuenta y audita `member.self_join` (RN-CTA-007).
-5. Sistema emite el JWT de socio (`select-context`) y muestra el resumen del pack.
-6. **Pagar con Mercado Pago** → carrito MP del socio con `returnToWeb` → checkout del gym.
-7. Mercado Pago vuelve a `/cuenta?compra={transactionId}`: se muestra el resultado del pago, los packs vigentes, créditos y comprobantes (CU-AFI-005).
+4. Si no es socia del gym, ve el resumen del pack y completa nombre, DNI y teléfono (opcional). Sistema valida que el DNI y el mail estén libres y guarda una **solicitud de alta** (todavía no hay Afiliado).
+5. **Pagar con Mercado Pago** → checkout del gym; la referencia del pago es la solicitud.
+6. Al llegar el webhook **aprobado**, Sistema crea el Afiliado **ACTIVE** con el mail de la cuenta, audita `member.self_join`, crea el cobro del pack, lo confirma (contrato, caja, comprobante) y marca la solicitud COMPLETED (RN-CTA-007).
+7. Mercado Pago vuelve a `/cuenta?alta={solicitud}`: la web espera la confirmación, emite el JWT de socio (`select-context`) y muestra el portal con el resultado del pago, los packs vigentes, créditos y comprobantes (CU-AFI-005).
 
 **Flujos alternativos / errores:**
-- Ya era socia activa → salta el paso 4.
+- Ya era socia activa → salta el alta: resumen del pack, **Pagar** con el carrito MP del socio (`returnToWeb`) y vuelve a `/cuenta?compra={transactionId}`.
 - Socia suspendida o dada de baja → 403, no puede comprar online.
-- DNI ya usado por otro socio del gym → 409.
+- DNI o mail ya usados por otro socio del gym → 409 antes de cobrar.
+- Pago rechazado, cancelado o abandonado → no se crea el Afiliado; la solicitud queda pendiente y se reutiliza si vuelve a intentar.
+- Pago pendiente → la web espera; el alta se completa cuando el webhook llega aprobado.
+- Pago aprobado pero el DNI fue tomado en el medio → la solicitud queda FAILED con el motivo, el pago sigue aprobado y la web le pide escribir al gym; el gym lo resuelve a mano.
 - Gym sin Mercado Pago → no hay botón Comprar; «se contrata en el gym».
-- Pago pendiente o rechazado → el portal lo informa; el pack se activa solo cuando el webhook llega aprobado.
 
-**Postcondiciones:** Afiliado existente (nuevo o previo); transacción MP PENDING hasta el webhook.
+**Postcondiciones:** Afiliado nuevo solo si el pago se aprobó, con su pack activo y comprobante.
 
 **Reglas relacionadas:** RN-CTA-006, RN-CTA-007, RN-CTA-008, RN-PAG-009
-**API:** `GET /public/tenants/by-slug/:slug/packs` (público) · `POST /identity/memberships` (JWT Identity) · `POST /auth/select-context` · `POST /me/transaction-items/mp/cart` con `returnToWeb: true` · `GET /me/account` · `GET /me/receipts`.
+**API:** `GET /public/tenants/by-slug/:slug/packs` (público) · `POST /identity/member-signups` y `GET /identity/member-signups/:id` (JWT Identity) · `POST /auth/select-context` · socio: `POST /me/transaction-items/mp/cart` con `returnToWeb: true` · `GET /me/account` · `GET /me/receipts`.
 
 ---
 

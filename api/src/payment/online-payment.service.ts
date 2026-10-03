@@ -23,7 +23,11 @@ import {
   MpCartItemDto,
 } from './dto/create-mp-cart-checkout.dto';
 import { TransactionService } from './transaction.service';
-import { MpCartLine, MpCartCheckoutResult } from './payment.types';
+import {
+  MpCartLine,
+  MpCartCheckoutResult,
+  MpSignupPreference,
+} from './payment.types';
 import { MP_ACCOUNT_PORT, MpAccountPort } from './mp-account.port';
 import { mpCopyForDropIn, mpCopyForPack } from './mp-item-copy';
 
@@ -170,7 +174,7 @@ export class OnlinePaymentService {
         notificationUrl,
         payerEmail: member.email,
         backUrl: dto.returnToWeb
-          ? await this.memberWebBackUrl(tenantId, cart.id)
+          ? await this.memberWebBackUrl(tenantId, `compra=${cart.id}`)
           : undefined,
       });
 
@@ -210,6 +214,56 @@ export class OnlinePaymentService {
           return this.toCartResult(again, again.transactionItems);
         }
       }
+      if (error instanceof Error && error.message.includes('Mercado Pago')) {
+        throw new BadRequestException(error.message);
+      }
+      throw error;
+    }
+  }
+
+  /**
+   * Preference MP de un pack para el alta web de un socio que todavía no
+   * existe (RN-CTA-007). `externalReference` es la solicitud; el cart nace en
+   * el webhook cuando el pago se aprueba.
+   */
+  async createSignupPreference(input: {
+    tenantId: string;
+    packId: string;
+    signupId: string;
+    payerEmail: string;
+  }): Promise<MpSignupPreference> {
+    await this.requireMpConnected(input.tenantId);
+    const item: MpCartItemDto = { kind: 'PACK', id: input.packId };
+    const [line] = await this.resolveCartLines(input.tenantId, [item]);
+    const accessToken = await this.accounts.getDecryptedAccessToken(
+      input.tenantId,
+    );
+    try {
+      const preference = await this.mp.createPreference({
+        accessToken,
+        items: [
+          {
+            title: line.title ?? '',
+            description: line.description,
+            quantity: 1,
+            unit_price: line.amount,
+          },
+        ],
+        externalReference: input.signupId,
+        notificationUrl: this.buildNotificationUrl(input.tenantId),
+        payerEmail: input.payerEmail,
+        backUrl: await this.memberWebBackUrl(
+          input.tenantId,
+          `alta=${input.signupId}`,
+        ),
+      });
+      return {
+        amount: line.amount,
+        preferenceId: preference.preferenceId,
+        checkoutUrl: preference.initPoint,
+        sandboxCheckoutUrl: preference.sandboxInitPoint,
+      };
+    } catch (error: unknown) {
       if (error instanceof Error && error.message.includes('Mercado Pago')) {
         throw new BadRequestException(error.message);
       }
@@ -570,13 +624,13 @@ export class OnlinePaymentService {
 
   private async memberWebBackUrl(
     tenantId: string,
-    transactionId: string,
+    query: string,
   ): Promise<string> {
     const tenant = await this.prisma.tenant.findUniqueOrThrow({
       where: { id: tenantId },
       select: { slug: true },
     });
-    return `${tenantWebOrigin(this.config, tenant.slug)}/cuenta?compra=${transactionId}`;
+    return `${tenantWebOrigin(this.config, tenant.slug)}/cuenta?${query}`;
   }
 
   private async requireActiveMember(

@@ -28,6 +28,7 @@ import { MpWebhookProcessResult } from './payment.types';
 import { PlatformSignupService } from '../tenants/platform-signup.service';
 import { DebitService } from '../debit/debit.service';
 import { NotificationDispatcher } from '../notifications/notifications.service';
+import { MemberSignupService } from '../members/member-signup.service';
 
 /**
  * Formato IPN viejo (`?topic=preapproval&id=`) → nombre del webhook nuevo.
@@ -81,6 +82,8 @@ export class WebhookPaymentService {
     @Inject(forwardRef(() => DebitService))
     private readonly debit: DebitService,
     private readonly notifications: NotificationDispatcher,
+    @Inject(forwardRef(() => MemberSignupService))
+    private readonly memberSignups: MemberSignupService,
   ) {}
 
   /**
@@ -217,6 +220,16 @@ export class WebhookPaymentService {
         contractId: null,
         reservationId: null,
       };
+    }
+
+    const memberSignup = await this.applyMemberSignup(
+      tenantId,
+      refId,
+      mpPaymentId,
+      remote.status,
+    );
+    if (memberSignup) {
+      return memberSignup;
     }
 
     const mandate = await this.prisma.debitMandate.findFirst({
@@ -407,11 +420,62 @@ export class WebhookPaymentService {
       };
     }
 
+    const memberSignup = await this.applyMemberSignup(
+      tenantId,
+      refId,
+      approved.id,
+      approved.status,
+    );
+    if (memberSignup) {
+      return memberSignup;
+    }
+
     return this.applyRemoteStatus(
       tenantId,
       refId,
       approved.id,
       approved.status,
+    );
+  }
+
+  /**
+   * `externalReference` de un alta web de socio (RN-CTA-007): con el pago
+   * aprobado nacen el socio y su cart, que se confirma como cualquier cart MP.
+   *
+   * @returns null si la referencia no es un alta.
+   */
+  private async applyMemberSignup(
+    tenantId: string,
+    refId: string,
+    mpPaymentId: string,
+    remoteStatus: string,
+  ): Promise<MpWebhookProcessResult | null> {
+    const signup = await this.prisma.memberSignup.findFirst({
+      where: { id: refId, tenantId },
+      select: { id: true },
+    });
+    if (!signup) {
+      return null;
+    }
+    const transactionId =
+      remoteStatus === 'approved'
+        ? await this.memberSignups.fulfillPaid(tenantId, signup.id)
+        : null;
+    if (!transactionId) {
+      return {
+        handled: true,
+        transactionItemId: null,
+        transactionId: null,
+        status: remoteStatus,
+        contractId: null,
+        reservationId: null,
+      };
+    }
+    return this.applyRemoteStatusCart(
+      tenantId,
+      transactionId,
+      mpPaymentId,
+      remoteStatus,
     );
   }
 

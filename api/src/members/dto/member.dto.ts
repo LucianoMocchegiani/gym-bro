@@ -49,14 +49,17 @@ export class CreateMemberDto {
 }
 
 /**
- * Alta self-service desde la web del gym (CU-AFI-007). El email es el de la
- * cuenta Faciliter.
+ * Alta self-service desde la web del gym (CU-AFI-007): datos del socio + pack
+ * a pagar. El email es el de la cuenta Faciliter.
  */
-export class SelfJoinMemberDto {
+export class StartMemberSignupDto {
   @IsString()
   @MinLength(2)
   @MaxLength(40)
   tenantSlug!: string;
+
+  @IsUUID()
+  packId!: string;
 
   @IsString()
   @MinLength(2)

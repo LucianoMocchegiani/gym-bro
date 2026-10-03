@@ -18,8 +18,8 @@ Con tunnel: `{slug}.{NEXT_PUBLIC_APP_DOMAIN}` (ej. `https://demo.pruebasaproducc
 |------|-----|
 | `/` | Vidriera pública: packs del gym; **Comprar** solo si el gym conectó Mercado Pago (indexable) |
 | `/login` | Login único con la cuenta Faciliter: staff → `/dashboard`, socio → `/cuenta`, ambos → elige |
-| `/comprar?pack=` | Alta self-service (nombre, DNI, teléfono) si hace falta → checkout MP (`returnToWeb`) |
-| `/cuenta` | Portal del socio: packs vigentes, créditos, resultado del pago y comprobantes |
+| `/comprar?pack=` | Socio: checkout MP (`returnToWeb`). No socio: nombre, DNI, teléfono → checkout MP; el socio nace con el pago aprobado |
+| `/cuenta` | Portal del socio: packs vigentes, créditos, resultado del pago y comprobantes. `?alta=` espera el alta pagada |
 | `/dashboard` | Panel staff: KPIs del día |
 | `/dashboard/afiliados` | Listado / alta / ficha + estado de cuenta |
 | `/dashboard/servicios` | Catálogo de servicios |

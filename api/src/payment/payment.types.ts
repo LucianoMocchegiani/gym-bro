@@ -39,6 +39,16 @@ export type MpCartCheckoutResult = {
 };
 
 /**
+ * Preference MP del alta web de un socio (sin cart todavía).
+ */
+export type MpSignupPreference = {
+  amount: number;
+  preferenceId: string;
+  checkoutUrl: string | null;
+  sandboxCheckoutUrl: string | null;
+};
+
+/**
  * Resultado procesado del webhook.
  */
 export type MpWebhookProcessResult = {

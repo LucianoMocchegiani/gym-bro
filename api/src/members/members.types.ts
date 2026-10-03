@@ -18,14 +18,22 @@ export type MemberDetail = {
 };
 
 /**
- * Resultado del alta self-service. Con `tenantId` el cliente pide el JWT de
- * socio (`POST /auth/select-context`).
+ * Alta web iniciada: link de Mercado Pago. El socio nace al aprobarse el pago.
  */
-export type SelfJoinResult = {
+export type MemberSignupCheckout = {
+  signupId: string;
+  checkoutUrl: string | null;
+  sandboxCheckoutUrl: string | null;
+};
+
+/**
+ * Estado del alta web. Con COMPLETED el cliente pide el JWT de socio
+ * (`POST /auth/select-context` con `tenantId`).
+ */
+export type MemberSignupView = {
+  id: string;
   tenantId: string;
-  memberId: string;
-  /** false = ya era socio activo del gym. */
-  created: boolean;
+  status: 'PENDING' | 'COMPLETED' | 'FAILED';
 };
 
 /**

@@ -144,7 +144,7 @@ export function startStaffMpCartCheckout(
  * según el entorno del token.
  */
 export function pickMpCartCheckoutUrl(
-  result: MpCartCheckoutResult,
+  result: Pick<MpCartCheckoutResult, 'checkoutUrl' | 'sandboxCheckoutUrl'>,
 ): string | null {
   return result.checkoutUrl ?? result.sandboxCheckoutUrl;
 }

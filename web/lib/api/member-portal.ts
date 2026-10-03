@@ -1,5 +1,5 @@
 /**
- * Web del gym para el socio: alta self-service, compra y cuenta (JWT de socio).
+ * Web del gym para el socio: alta con pago previo, compra y cuenta.
  */
 
 import { apiRequest, newIdempotencyKey } from '@/lib/api/client';
@@ -9,27 +9,43 @@ import type { MpCartCheckoutResult } from '@/lib/api/mercadopago';
 import type { StorePack } from '@/lib/api/public-tenant-catalog';
 import type { ReceiptDetail } from '@/lib/api/receipts';
 
-export type SelfJoinResult = {
+export type MemberSignupCheckout = {
+  signupId: string;
+  checkoutUrl: string | null;
+  sandboxCheckoutUrl: string | null;
+};
+
+export type MemberSignupStatus = 'PENDING' | 'COMPLETED' | 'FAILED';
+
+export type MemberSignupView = {
+  id: string;
   tenantId: string;
-  memberId: string;
-  /** false = ya era socio activo. */
-  created: boolean;
+  status: MemberSignupStatus;
 };
 
 /**
- * La cuenta Faciliter se hace socia del gym (JWT Identity). Queda ACTIVE.
+ * Alta web (JWT Identity): guarda los datos y devuelve el link de Mercado
+ * Pago. El socio nace recién con el pago aprobado; MP vuelve a `/cuenta?alta=`.
  */
-export function selfJoinGym(input: {
+export function startMemberSignup(input: {
   tenantSlug: string;
+  packId: string;
   name: string;
   document: string;
   phone?: string;
-}): Promise<SelfJoinResult> {
-  return apiRequest<SelfJoinResult>('/identity/memberships', {
+}): Promise<MemberSignupCheckout> {
+  return apiRequest<MemberSignupCheckout>('/identity/member-signups', {
     method: 'POST',
     body: input,
     auth: 'identity',
   });
+}
+
+export function getMemberSignup(id: string): Promise<MemberSignupView> {
+  return apiRequest<MemberSignupView>(
+    `/identity/member-signups/${encodeURIComponent(id)}`,
+    { auth: 'identity' },
+  );
 }
 
 export function listMyStorePacks(): Promise<StorePack[]> {

@@ -343,10 +343,12 @@ Pasos de VPS: [uso/probar-debito-suscripcion-mp.md](./uso/probar-debito-suscripc
 | G5 | `{slug}/login` con cuenta solo socio | Entra a `/cuenta` (packs vigentes, comprobantes) | RN-CTA-006 | |
 | G6 | `{slug}/login` con cuenta socio y staff | Pregunta «Panel del gym» o «Mi cuenta de socio» | RN-CTA-006 | |
 | G7 | `{slug}/login` con cuenta que no es parte del gym | «Todavía no es socia» + Ver planes / Usar otra cuenta | RN-CTA-006 | |
-| G8 | Comprar con cuenta nueva (sin ser socio) | Login/registro → datos (nombre, DNI, teléfono) → socio ACTIVE en Afiliados; auditoría `member.self_join` → resumen → Mercado Pago | CU-AFI-007, RN-CTA-007 | |
-| G9 | Comprar con DNI de otro socio del gym | 409, no crea | RN-CTA-007 | |
+| G8 | Comprar con cuenta nueva (sin ser socio) y **no pagar** (cerrar MP o volver) | Login/registro → resumen + datos (nombre, DNI, teléfono) → Mercado Pago. Al cancelar: «El pago no se completó»; **no** aparece en Afiliados | CU-AFI-007, RN-CTA-007 | |
+| G9 | Comprar con DNI de otro socio del gym | 409 antes de ir a Mercado Pago, no crea nada | RN-CTA-007 | |
 | G10 | Comprar con socio suspendido | 403, no llega a Mercado Pago | RN-CTA-007 | |
-| G11 | Pagar en MP (sandbox) y volver | Aterriza en `/cuenta?compra=…`: «Pago aprobado»; tras el webhook, el pack aparece en vigentes y el comprobante en la lista | CU-AFI-007 | |
+| G11 | Cuenta nueva: pagar en MP (sandbox) y volver | Aterriza en `/cuenta?alta=…`: «Confirmando tu pago…» → al llegar el webhook entra al portal con el pack vigente y el comprobante. En Afiliados: socio ACTIVE + auditoría `member.self_join`; en Caja: el cobro MP | CU-AFI-007, RN-CTA-007 | |
+| G11b | Socio existente: comprar en la web | Salta los datos: resumen → Pagar → `/cuenta?compra=…` «Pago aprobado»; pack activo tras el webhook | CU-AFI-007 | |
+| G11c | Webhook repetido del mismo pago de un alta | Un solo socio, un solo cobro y un solo comprobante | RN-CTA-007 | |
 | G12 | Cerrar sesión en el panel y volver a `/login` | Pide la cuenta otra vez (se cerraron las sesiones staff, socio e Identity) | RN-CTA-006 | |
 | G13 | Impersonar un gym desde plataforma | Entra a `{slug}/dashboard` como antes | RN-CTA-006 | |
 | G14 | App: comprar un pack (sin `returnToWeb`) | Igual que antes; MP no redirige a la web | CU-PAG-001 | |

@@ -6,7 +6,7 @@ Cada persona tiene **una** cuenta Faciliter: su mail. Con esa cuenta entra a la 
 
 - **Panel (staff):** `{slug}.faciliter.xyz/login` → **Acceso staff**: mail y contraseña o **Continuar con Google**. El gym sale de la URL.
 - **App:** **Faciliter · Tu cuenta**: mail y contraseña, o Google / Apple si están disponibles. No pide el local: si está en varios (o es socio y staff), elige en **Tus gyms**; después cambia en Ajustes → **Cambiar gym**.
-- **No hay registro desde la app:** el socio aparece cuando el local lo da de alta (Afiliados o Importar) o cuando compra un plan en la web del gym (`{slug}.faciliter.xyz`, alta self-service con nombre y DNI; topic `app`). El dueño crea su cuenta al contratar en faciliter.xyz (topic `plan`).
+- **No hay registro desde la app:** el socio aparece cuando el local lo da de alta (Afiliados o Importar) o cuando compra un plan en la web del gym (`{slug}.faciliter.xyz`, alta self-service con nombre y DNI que se completa al aprobarse el pago; topic `app`). El dueño crea su cuenta al contratar en faciliter.xyz (topic `plan`).
 
 ## Contraseña
 

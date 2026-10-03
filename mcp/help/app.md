@@ -23,7 +23,7 @@ Al elegir el perfil staff en Tus gyms: Sesiones, **Caja** (si tiene permiso) y D
 Además de la app, cada gym tiene su web pública en `{slug}.faciliter.xyz`:
 
 - **Planes:** los packs activos con precio. **Comprar** aparece solo si el gym conectó Mercado Pago; si no, dice que se contrata en el gym.
-- **Comprar:** entra o crea su cuenta Faciliter (mail o Google). Si no es socio, completa nombre, DNI y teléfono (opcional) y queda **activo** al toque (alta self-service). Paga con el Mercado Pago del gym y vuelve a **Mi cuenta**; el pack se activa cuando el pago se aprueba.
+- **Comprar:** entra o crea su cuenta Faciliter (mail o Google). Si no es socio, completa nombre, DNI y teléfono (opcional) y paga con el Mercado Pago del gym; **queda dado de alta recién cuando el pago se aprueba** (si no paga, no aparece en Afiliados). Si ya es socio, solo paga. Vuelve a **Mi cuenta** con el pack activo cuando el pago se aprueba.
 - **Mi cuenta** (`/cuenta`): packs vigentes con créditos y vencimiento, resultado del pago y comprobantes. Reservas y calendario siguen en la app.
 
 ## Lo que no existe

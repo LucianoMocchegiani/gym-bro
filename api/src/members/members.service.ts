@@ -35,15 +35,10 @@ import { UploadService } from '../upload/upload.service';
 import {
   CreateMemberDto,
   ListMembersQueryDto,
-  SelfJoinMemberDto,
   UpdateMemberDto,
   UpdateMemberStatusDto,
 } from './dto/member.dto';
-import {
-  MemberAccountDetail,
-  MemberDetail,
-  SelfJoinResult,
-} from './members.types';
+import { MemberAccountDetail, MemberDetail } from './members.types';
 
 /** Cantidad de pagos recientes en estado de cuenta. */
 const RECENT_PAYMENTS_LIMIT = 20;
@@ -307,19 +302,19 @@ export class MembersService {
   }
 
   /**
-   * La persona logueada se hace socia del gym desde la web (CU-AFI-007).
+   * Antes de cobrar el alta web (CU-AFI-007): gym activo, la persona todavía
+   * no es socia y su DNI/email están libres en el gym (RN-CTA-007).
    *
-   * @remarks Idempotente: si ya es socio activo devuelve esa fila. Queda ACTIVE
-   * sin pasar por staff (RN-CTA-007).
    * @throws {NotFoundException} Gym inexistente.
    * @throws {ForbiddenException} Gym suspendido o socio dado de baja/suspendido.
-   * @throws {ConflictException} DNI ya usado por otro socio del gym.
+   * @throws {ConflictException} Ya es socio, o DNI/email de otro socio del gym.
    */
-  async selfJoin(
+  async assertCanSelfJoin(
     identityId: string,
-    dto: SelfJoinMemberDto,
-  ): Promise<SelfJoinResult> {
-    const slug = normalizeTenantSlug(dto.tenantSlug);
+    tenantSlug: string,
+    document: string,
+  ): Promise<{ tenantId: string; email: string }> {
+    const slug = normalizeTenantSlug(tenantSlug);
     assertValidTenantSlug(slug);
     const tenant = await this.prisma.tenant.findUnique({
       where: { slug },
@@ -334,36 +329,73 @@ export class MembersService {
 
     const existing = await this.prisma.member.findUnique({
       where: { tenantId_identityId: { tenantId: tenant.id, identityId } },
+      select: { status: true },
     });
     if (existing) {
       if (existing.status !== MemberStatus.ACTIVE) {
         throw new ForbiddenException('Membership is not active');
       }
-      return { tenantId: tenant.id, memberId: existing.id, created: false };
+      throw new ConflictException('Already a member of this gym');
     }
 
-    const identity = await this.prisma.identity.findUnique({
-      where: { id: identityId },
-      select: { email: true },
+    const email = await this.requireIdentityEmail(identityId);
+    const taken = await this.prisma.member.findFirst({
+      where: {
+        tenantId: tenant.id,
+        OR: [{ document: document.trim() }, { email }],
+      },
+      select: { id: true },
     });
-    if (!identity) {
-      throw new NotFoundException('Identity not found');
+    if (taken) {
+      throw new ConflictException(
+        'Member email or document already exists in tenant',
+      );
+    }
+    return { tenantId: tenant.id, email };
+  }
+
+  /**
+   * Crea el socio de un alta web ya pagada (CU-AFI-007, RN-CTA-007). Queda
+   * ACTIVE sin pasar por staff.
+   *
+   * @remarks Idempotente: si la persona ya es socia activa devuelve esa fila.
+   * @throws {ForbiddenException} Socio dado de baja/suspendido.
+   * @throws {ConflictException} DNI/email tomados por otro socio en el medio.
+   */
+  async createFromPaidSignup(input: {
+    tenantId: string;
+    identityId: string;
+    name: string;
+    document: string;
+    phone: string | null;
+  }): Promise<string> {
+    const { tenantId, identityId } = input;
+    const existing = await this.prisma.member.findUnique({
+      where: { tenantId_identityId: { tenantId, identityId } },
+      select: { id: true, status: true },
+    });
+    if (existing) {
+      if (existing.status !== MemberStatus.ACTIVE) {
+        throw new ForbiddenException('Membership is not active');
+      }
+      return existing.id;
     }
 
+    const email = await this.requireIdentityEmail(identityId);
     try {
       const member = await this.prisma.member.create({
         data: {
-          tenantId: tenant.id,
+          tenantId,
           identityId,
-          email: identity.email,
-          name: dto.name.trim(),
-          phone: this.normalizeOptional(dto.phone),
-          document: dto.document.trim(),
+          email,
+          name: input.name.trim(),
+          phone: this.normalizeOptional(input.phone),
+          document: input.document.trim(),
           status: MemberStatus.ACTIVE,
         },
       });
       await this.audit.record({
-        tenantId: tenant.id,
+        tenantId,
         actor: { profileType: 'IDENTITY', userId: identityId },
         action: AUDIT_ACTIONS.memberSelfJoin,
         entityType: 'member',
@@ -371,11 +403,22 @@ export class MembersService {
         before: null,
         after: this.auditSnapshot(this.toDetail(member)),
       });
-      return { tenantId: tenant.id, memberId: member.id, created: true };
+      return member.id;
     } catch (error: unknown) {
       this.rethrowUniqueConflict(error);
       throw error;
     }
+  }
+
+  private async requireIdentityEmail(identityId: string): Promise<string> {
+    const identity = await this.prisma.identity.findUnique({
+      where: { id: identityId },
+      select: { email: true },
+    });
+    if (!identity) {
+      throw new NotFoundException('Identity not found');
+    }
+    return identity.email;
   }
 
   /**

@@ -31,6 +31,9 @@ erDiagram
 identities ||--o{ platform_signups : self_serve
   packs ||--o{ platform_signups : offer
   tenants ||--o| platform_signups : born
+  identities ||--o{ member_signups : web_join
+  tenants ||--o{ member_signups : has
+  members ||--o| member_signups : born
   identities ||--o{ refresh_tokens : sessions
   tenants ||--o{ staff_users : has
   tenants ||--o{ members : has
@@ -350,6 +353,7 @@ identities ||--o{ platform_signups : self_serve
 | `CredentialOfferStatus` | `PENDING`, `FAILED`, `ACCEPTED` | Offer OID4VCI (soft-fail + accept wallet) |
 | `AuthProfileType` | `STAFF`, `MEMBER`, `IDENTITY` | Dueño del refresh token. IDENTITY = persona (picker), sin tenant. `SUPER` se dropeó. |
 | `MemberStatus` | `ACTIVE`, `SUSPENDED`, `INACTIVE` | Estado del afiliado (CU-AFI-003) |
+| `MemberSignupStatus` | `PENDING`, `COMPLETED`, `FAILED` | Alta web del socio con pago previo (RN-CTA-007) |
 | `ServiceType` | `ACCESO_LIBRE`, `POR_SESIONES` | Tipo de servicio (RN-SER-001) |
 | `BillingPeriod` | `MONTHLY`, `ONE_TIME` | Periodicidad de cobro del pack |
 | `DebitMandateStatus` | `PENDING_CHECKOUT`, `ACTIVE`, `RETRYING`, `FAILED`, `CANCELLED` | Mandato / suscripción MP |
@@ -795,6 +799,24 @@ Liberación del slug: un `PENDING` sin autorizar en **1 h** pasa a `FAILED` en l
 
 API Identity: `POST /auth/identity/register`, `POST /identity/signups`, `GET /identity/signups/:id`, `GET /identity/tenants`, `GET /identity/tenants/:id/plan`.
 
+### 4.15h4 `member_signups`
+
+Alta web de un socio en la web del gym (CU-AFI-007, RN-CTA-007). El `members` no existe hasta que el webhook trae el pago **aprobado** (`payment` o `merchant_order`, `external_reference` = `id`): ahí se crea el socio ACTIVE (`member.self_join`), el cart del pack (`transactions.idempotency_key` = `member-signup:{id}`) y se confirma como cualquier cart MP. Reintentos del webhook son idempotentes. Sin pago queda `PENDING` y se reutiliza si la misma cuenta vuelve a intentar en ese gym.
+
+| Columna | Tipo | Notas |
+|---------|------|--------|
+| `id` | uuid PK | `external_reference` de la preference |
+| `tenant_id` / `identity_id` | uuid FK | gym y cuenta Faciliter (cascade) |
+| `pack_id` | uuid FK | pack a cobrar (cascade) |
+| `amount` | int | precio al iniciar el checkout |
+| `name` / `document` / `phone` | text | datos del futuro socio; `phone` nullable |
+| `status` | `PENDING` \| `COMPLETED` \| `FAILED` | `FAILED` = pagó pero el DNI/mail fue tomado en el medio (lo resuelve el gym) |
+| `mp_preference_id` | text nullable | |
+| `member_id` / `transaction_id` | uuid UK nullable | socio y cart nacidos (set null) |
+| `last_error` | text nullable | motivo del `FAILED` |
+
+Índice `(tenant_id, identity_id, status)`. API Identity: `POST /identity/member-signups`, `GET /identity/member-signups/:id`.
+
 ### 4.15e `mercadopago_accounts`
 
 Cuenta Mercado Pago del gym (CU-PAG-006 / RN-PAG-001). 1:1 con tenant.
@@ -1178,6 +1200,7 @@ Historia incremental (2026-07 / 2026-08) **compactada** en un baseline (`40476fa
 | `20261001200000_expenses` | `expense_labels`, `expenses`, `expense_files` + enums `ExpenseNature`, `ExpenseMethod` |
 | `20261002180000_access_provider_zkteco` | Enum `AccessProvider`; `tenant_settings.access_provider`; `access_attempts.channel` (+ backfill `manual`); tabla `access_identity_links` |
 | `20261002200000_member_import_access_codes` | `MemberImportKind` + `ACCESS_CODES` (importación de números del aparato ZKTeco, RN-MIG-006) |
+| `20261003200000_member_signups` | Enum `MemberSignupStatus` + `member_signups` (alta web del socio con pago previo, RN-CTA-007) |
 
 Comandos y checklist “desde cero”: [13-setup-db-desde-cero.md](./13-setup-db-desde-cero.md).
 

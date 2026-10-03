@@ -4,7 +4,10 @@ import Link from 'next/link';
 import { FormEvent, useEffect, useState } from 'react';
 import { ApiClientError } from '@/lib/api/client';
 import { pickMpCartCheckoutUrl } from '@/lib/api/mercadopago';
-import { selfJoinGym, startMyPackCheckout } from '@/lib/api/member-portal';
+import {
+  startMemberSignup,
+  startMyPackCheckout,
+} from '@/lib/api/member-portal';
 import {
   storeComponentLabel,
   type StorePack,
@@ -26,8 +29,9 @@ function errorText(err: unknown, fallback: string): string {
 }
 
 /**
- * Comprar un pack desde la web del gym: cuenta Faciliter → socio (alta si
- * hace falta) → checkout Mercado Pago → vuelve a `/cuenta?compra=`.
+ * Comprar un pack desde la web del gym: cuenta Faciliter → checkout Mercado
+ * Pago. El socio paga directo (vuelve a `/cuenta?compra=`); quien no es socio
+ * carga sus datos y se da de alta recién con el pago aprobado (`/cuenta?alta=`).
  */
 export function GymCheckoutClient({ slug, gymName, pack }: Props) {
   const { session: identity, ready } = useIdentityAuth();
@@ -53,9 +57,38 @@ export function GymCheckoutClient({ slug, gymName, pack }: Props) {
     <JoinStep
       slug={slug}
       gymName={gymName}
+      pack={pack}
       defaultName={identity.name ?? ''}
       email={identity.email}
     />
+  );
+}
+
+function redirectToCheckout(
+  result: Parameters<typeof pickMpCartCheckoutUrl>[0],
+): void {
+  const url = pickMpCartCheckoutUrl(result);
+  if (!url) {
+    throw new Error('Mercado Pago no devolvió el link de pago');
+  }
+  window.location.assign(url);
+}
+
+function checkoutErrorText(err: unknown): string {
+  return err instanceof ApiClientError || err instanceof Error
+    ? err.message
+    : 'No se pudo iniciar el pago';
+}
+
+function PackSummary({ pack }: { pack: StorePack }) {
+  return (
+    <>
+      <p className="mkt-price">
+        {formatPackPrice(pack.price, pack.billingPeriod)}
+      </p>
+      {pack.description ? <p className="muted">{pack.description}</p> : null}
+      <CheckList items={pack.components.map(storeComponentLabel)} />
+    </>
   );
 }
 
@@ -83,16 +116,19 @@ function CheckoutCard({
 }
 
 /**
- * Si ya es socio entra directo; si no, alta con nombre, DNI y teléfono.
+ * Si ya es socio entra directo a pagar; si no, nombre, DNI y teléfono y va a
+ * Mercado Pago. El alta se completa con el pago aprobado (RN-CTA-007).
  */
 function JoinStep({
   slug,
   gymName,
+  pack,
   defaultName,
   email,
 }: {
   slug: string;
   gymName: string;
+  pack: StorePack;
   defaultName: string;
   email: string;
 }) {
@@ -131,15 +167,16 @@ function JoinStep({
     setError(null);
     setSubmitting(true);
     try {
-      const joined = await selfJoinGym({
+      const checkout = await startMemberSignup({
         tenantSlug: slug,
+        packId: pack.id,
         name: name.trim(),
         document: document.trim(),
         phone: phone.trim() || undefined,
       });
-      await enterGym({ slug, tenantId: joined.tenantId, profile: 'MEMBER' });
+      redirectToCheckout(checkout);
     } catch (err) {
-      setError(errorText(err, 'No se pudo completar el alta'));
+      setError(checkoutErrorText(err));
       setSubmitting(false);
     }
   }
@@ -149,10 +186,12 @@ function JoinStep({
   }
 
   return (
-    <CheckoutCard gymName={gymName} title="Tus datos de socio">
+    <CheckoutCard gymName={gymName} title={pack.name}>
+      <PackSummary pack={pack} />
       <form onSubmit={(e) => void onSubmit(e)}>
         <p className="muted">
-          Te damos de alta en {gymName} con {email}.
+          Tus datos de socio. Te damos de alta en {gymName} con {email} cuando
+          se apruebe el pago.
         </p>
         {error ? <p className="error">{error}</p> : null}
         <label>
@@ -189,7 +228,7 @@ function JoinStep({
           />
         </label>
         <button type="submit" className="btn primary" disabled={submitting}>
-          {submitting ? 'Un momento…' : 'Continuar'}
+          {submitting ? 'Abriendo Mercado Pago…' : 'Pagar con Mercado Pago'}
         </button>
       </form>
       <SwitchAccountButton />
@@ -206,29 +245,16 @@ function PayStep({ slug, gymName, pack }: Props) {
     setError(null);
     setPaying(true);
     try {
-      const checkout = await startMyPackCheckout(pack.id);
-      const url = pickMpCartCheckoutUrl(checkout);
-      if (!url) {
-        throw new Error('Mercado Pago no devolvió el link de pago');
-      }
-      window.location.assign(url);
+      redirectToCheckout(await startMyPackCheckout(pack.id));
     } catch (err) {
-      setError(
-        err instanceof ApiClientError || err instanceof Error
-          ? err.message
-          : 'No se pudo iniciar el pago',
-      );
+      setError(checkoutErrorText(err));
       setPaying(false);
     }
   }
 
   return (
     <CheckoutCard gymName={gymName} title={pack.name}>
-      <p className="mkt-price">
-        {formatPackPrice(pack.price, pack.billingPeriod)}
-      </p>
-      {pack.description ? <p className="muted">{pack.description}</p> : null}
-      <CheckList items={pack.components.map(storeComponentLabel)} />
+      <PackSummary pack={pack} />
       <p className="muted small">Socio: {session?.name ?? session?.email}</p>
       {error ? <p className="error">{error}</p> : null}
       <button
