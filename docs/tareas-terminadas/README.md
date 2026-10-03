@@ -16,6 +16,7 @@ La creación de registros sigue la skill:
 
 ## Índice
 
+- [2026-10-02 — Asistente: crear y editar con confirmación](./2026-10-02-asistente-escritura-confirmacion.md)
 - [2026-10-02 — Importar números del aparato ZKTeco](./2026-10-02-importar-numeros-zkteco.md)
 - [2026-10-02 — Contrato de puerta por gym y acceso ZKTeco simulado](./2026-10-02-acceso-zkteco-contrato.md)
 - [2026-10-02 — Preview OG 1200×630 y SEO de marca Faciliter](./2026-10-02-seo-og-marca.md)
