@@ -660,12 +660,15 @@ Pack vendible (CU-SER-002). `price` = pesos enteros ARS. `kind` (`ACCESS`|`CREDI
 | `billing_period` | `BillingPeriod` | MONTHLY / ONE_TIME |
 | `credits_expire_at` | timestamptz nullable | null = sin vencimiento de catálogo |
 | `active` | boolean | default true |
+| `offers_platform_trial` | boolean | default true. Solo packs de `admin`: si el alta self-serve / Caja puede dar el mes de prueba (RN-PAG-017). El pack de prueba `…016` (100 ARS) va en false |
 | `kuatia_configuration_id` | text nullable | clave OID4VCI `pack_{id}` |
 | `kuatia_vct` | text nullable | `urn:faciliter:pack:{id}` |
 | `kuatia_synced_at` | timestamptz nullable | último PATCH metadata OK |
 | `kuatia_last_error` | text nullable | soft-fail de sync Kuatia |
 | `origin_service_id` | uuid FK unique nullable | Pack espejo drop-in (1 crédito ONE_TIME); null = catálogo |
 | `created_at` / `updated_at` | timestamptz | |
+
+`offers_platform_trial`: migración `20261003180000_pack_offers_platform_trial` (también pone en false el pack `…016`).
 
 Al create/update de pack (API Staff) se hace `PATCH` metadata del issuer Kuatia compartido (soft-fail).
 
@@ -774,7 +777,7 @@ API: Member `GET /api/me/receipts`; Staff `GET /api/receipts/:id`, `GET /api/tra
 
 ### 4.15h3 `platform_signups`
 
-Alta self-serve de gym (Identity en apex). El tenant no existe hasta que MP autoriza el preapproval (con prueba) o aprueba el primer cobro (sin prueba). Se entera por webhook (`subscription_preapproval` / `subscription_authorized_payment`; también acepta el formato viejo `preapproval` / `authorized_payment`) o consultando el preapproval: al listar `GET /identity/tenants` (vuelta a `/cuenta`) y en un job cada hora.
+Alta self-serve de gym (Identity en apex). El tenant no existe hasta que MP autoriza el preapproval (con prueba) o aprueba el primer cobro (sin prueba). Se entera por webhook (`subscription_preapproval` / `subscription_authorized_payment`; también acepta el formato viejo `preapproval` / `authorized_payment`) o consultando el preapproval (y, sin prueba, sus cobros en `authorized_payments/search`): al listar `GET /identity/tenants` (vuelta a `/cuenta`) y en un job cada hora, para los `PENDING` y `AWAITING_PAYMENT`. `apply_trial` solo es true si el pack ofrece la prueba y la cuenta no la usó.
 
 Liberación del slug: un `PENDING` sin autorizar en **1 h** pasa a `FAILED` en la siguiente pasada del job (entre 1 y 2 h) («Vencido…») y se cancela el preapproval en MP. Si el mismo dueño reintenta el mismo slug, el `PENDING` anterior pasa a `FAILED` («Reemplazado…»). Antes de descartar se consulta MP: si ya estaba autorizado, se procesa.
 

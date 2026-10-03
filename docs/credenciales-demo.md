@@ -102,7 +102,7 @@ El seed crea en el tenant `admin` lo que la Caja de plataforma vende:
 |---------|--------|-----|
 | Service | `Faciliter Brain` | `00000000-0000-4000-8000-000000000010` |
 | Pack | `Faciliter Brain Basic` — 60000 ARS, `MONTHLY` | `00000000-0000-4000-8000-000000000011` |
-| Pack | `Faciliter Brain Basic de prueba` — 100 ARS, `MONTHLY` | `00000000-0000-4000-8000-000000000016` |
+| Pack | `Faciliter Brain Basic de prueba` — 100 ARS, `MONTHLY`, sin mes de prueba (se cobra al autorizar) | `00000000-0000-4000-8000-000000000016` |
 
 ---
 

@@ -153,6 +153,15 @@ export abstract class MpAccountPort {
   ): Promise<MpRemoteAuthorizedPayment>;
 
   /**
+   * Si la suscripción ya tiene al menos un cobro aprobado (por si el webhook
+   * del ciclo no llegó).
+   */
+  abstract hasApprovedAuthorizedPayment(
+    accessToken: string,
+    preapprovalId: string,
+  ): Promise<boolean>;
+
+  /**
    * Canjea el `code` de «Conectar Mercado Pago» por tokens del gym.
    *
    * @throws {Error} Si MP rechaza el código (vencido, usado, redirect distinto).

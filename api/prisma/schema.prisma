@@ -584,6 +584,8 @@ model Pack {
   billingPeriod   BillingPeriod @map("billing_period")
   creditsExpireAt DateTime?     @map("credits_expire_at")
   active          Boolean       @default(true)
+  /// Solo packs de plataforma: si el alta self-serve / Caja puede dar el mes de prueba.
+  offersPlatformTrial Boolean   @default(true) @map("offers_platform_trial")
   /// Servicio POR_SESIONES cuyo drop-in espeja este pack. Null = pack de catálogo.
   originServiceId String?       @unique @map("origin_service_id") @db.Uuid
   /// Clave en `credentialConfigurationsSupported` del issuer Kuatia (`pack_{id}`).

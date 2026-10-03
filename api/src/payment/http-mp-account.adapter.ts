@@ -419,6 +419,37 @@ export class HttpMpAccountAdapter extends MpAccountPort {
   /**
    * @inheritdoc
    */
+  async hasApprovedAuthorizedPayment(
+    accessToken: string,
+    preapprovalId: string,
+  ): Promise<boolean> {
+    const response = await fetch(
+      `${MP_AUTHORIZED_PAYMENTS}/search?preapproval_id=${encodeURIComponent(preapprovalId)}`,
+      {
+        method: 'GET',
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          Accept: 'application/json',
+        },
+      },
+    );
+    if (!response.ok) {
+      const body = await response.text().catch(() => '');
+      this.throwMpFailure('search authorized_payments', response.status, body);
+    }
+    const data = (await response.json()) as {
+      results?: Array<{ status?: string; payment?: { status?: string } }>;
+    };
+    return (data.results ?? []).some((row) =>
+      row.payment?.status
+        ? row.payment.status === 'approved'
+        : row.status === 'approved' || row.status === 'processed',
+    );
+  }
+
+  /**
+   * @inheritdoc
+   */
   exchangeOAuthCode(input: ExchangeMpOAuthCodeInput): Promise<MpOAuthTokens> {
     return this.requestOAuthToken('oauth code', {
       client_id: input.clientId,

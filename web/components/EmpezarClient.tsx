@@ -121,6 +121,11 @@ export function EmpezarClient({
           {pack ? (
             <p className="muted small">{pack.description}</p>
           ) : null}
+          {pack && !pack.offersPlatformTrial ? (
+            <p className="muted small">
+              Este plan no tiene prueba: el primer mes se cobra al autorizar.
+            </p>
+          ) : null}
           <label>
             Nombre del gym
             <input

@@ -268,12 +268,13 @@ function CajaInner() {
     [cart],
   );
 
+  const trialPackOffers =
+    cart.length === 1 &&
+    cart[0]?.kind === 'PACK' &&
+    packs.find((p) => p.id === cart[0].refId)?.offersPlatformTrial !== false;
+
   const trialCanApply = Boolean(
-    isPlatform &&
-      cobroMedio === 'CASH' &&
-      trialEligible &&
-      cart.length === 1 &&
-      cart[0]?.kind === 'PACK',
+    isPlatform && cobroMedio === 'CASH' && trialEligible && trialPackOffers,
   );
 
   const chargeTotal = applyTrial && trialCanApply ? 0 : total;
@@ -812,7 +813,8 @@ function CajaInner() {
                 ) : null}
                 {trialEligible && !trialCanApply ? (
                   <p className="muted small">
-                    La prueba es un solo pack, en efectivo.
+                    La prueba es un solo pack, en efectivo, y el pack tiene que
+                    ofrecerla.
                   </p>
                 ) : null}
               </fieldset>

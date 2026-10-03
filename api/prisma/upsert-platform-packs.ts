@@ -71,6 +71,7 @@ async function main(): Promise<void> {
       price: 100,
       billingPeriod: BillingPeriod.MONTHLY,
       active: true,
+      offersPlatformTrial: false,
     },
     create: {
       id: BRAIN_TRIAL_PACK_ID,
@@ -81,6 +82,7 @@ async function main(): Promise<void> {
       price: 100,
       billingPeriod: BillingPeriod.MONTHLY,
       active: true,
+      offersPlatformTrial: false,
     },
   });
 

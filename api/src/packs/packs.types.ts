@@ -27,6 +27,8 @@ export type PackDetail = {
   billingPeriod: 'MONTHLY' | 'ONE_TIME';
   creditsExpireAt: Date | null;
   active: boolean;
+  /** Solo packs de plataforma: el alta / Caja puede dar el mes de prueba. */
+  offersPlatformTrial: boolean;
   kind: PackKind;
   components: PackComponentDetail[];
   /** Clave en `credentialConfigurationsSupported` (`pack_{id}`). */
@@ -49,5 +51,7 @@ export type PublicPlatformPack = {
   description: string | null;
   price: number;
   billingPeriod: 'MONTHLY' | 'ONE_TIME';
+  /** false = se cobra desde el primer mes (sin prueba). */
+  offersPlatformTrial: boolean;
   services: { id: string; name: string }[];
 };

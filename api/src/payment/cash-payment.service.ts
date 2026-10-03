@@ -411,13 +411,24 @@ export class CashPaymentService {
           active: true,
           originServiceId: null,
         },
-        select: { id: true, name: true, price: true, components: true },
+        select: {
+          id: true,
+          name: true,
+          price: true,
+          offersPlatformTrial: true,
+          components: true,
+        },
       });
       if (!pack) {
         throw new NotFoundException(`Pack ${item.id} not found or inactive`);
       }
       if (pack.components.length === 0) {
         throw new BadRequestException(`Pack ${pack.name} has no components`);
+      }
+      if (dto.applyTrial && !pack.offersPlatformTrial) {
+        throw new BadRequestException(
+          `Pack ${pack.name} does not offer the platform trial`,
+        );
       }
       if (!dto.applyTrial && pack.price < 1) {
         throw new BadRequestException('Pack price must be at least 1');

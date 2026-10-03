@@ -26,6 +26,8 @@ export type PackDetail = {
   billingPeriod: 'MONTHLY' | 'ONE_TIME';
   creditsExpireAt: string | null;
   active: boolean;
+  /** Solo packs de plataforma: la Caja puede dar el mes de prueba. */
+  offersPlatformTrial: boolean;
   kind: PackKind;
   components: PackComponentDetail[];
   /** Clave OID4VCI (`pack_{id}`); null si aún no se intentó sync. */
@@ -40,7 +42,13 @@ export type PackDetail = {
 /** Alias para selects de cobro. */
 export type PackSummary = Pick<
   PackDetail,
-  'id' | 'name' | 'price' | 'active' | 'kind' | 'billingPeriod'
+  | 'id'
+  | 'name'
+  | 'price'
+  | 'active'
+  | 'kind'
+  | 'billingPeriod'
+  | 'offersPlatformTrial'
 >;
 
 export type PackComponentInput = {

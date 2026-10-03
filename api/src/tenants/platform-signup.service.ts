@@ -49,6 +49,11 @@ export type PlatformSignupView = {
 /** Un intento sin autorizar en MP libera el subdominio después de esto. */
 const PENDING_SIGNUP_TTL_MS = 60 * 60 * 1000;
 
+const OPEN_SIGNUP_STATUSES: PlatformSignupStatus[] = [
+  PlatformSignupStatus.PENDING,
+  PlatformSignupStatus.AWAITING_PAYMENT,
+];
+
 export type IdentityGymRow = {
   tenantId: string;
   name: string;
@@ -61,8 +66,9 @@ export type IdentityGymRow = {
  *
  * @remarks Con prueba el gym nace al autorizar el preapproval. Sin prueba,
  * nace en el primer cobro approved. RN-PAG-017. Además del webhook, se
- * consulta el preapproval en MP al listar los gyms del dueño y cada hora;
- * un intento sin autorizar en 1 h vence, libera el slug y se cancela en MP.
+ * consulta en MP el preapproval (y, sin prueba, sus cobros) al listar los
+ * gyms del dueño y cada hora; un intento sin autorizar en 1 h vence, libera
+ * el slug y se cancela en MP. La prueba solo aplica si el pack la ofrece.
  */
 @Injectable()
 export class PlatformSignupService {
@@ -87,7 +93,7 @@ export class PlatformSignupService {
     const pending = await this.prisma.platformSignup.findMany({
       where: {
         identityId,
-        status: PlatformSignupStatus.PENDING,
+        status: { in: OPEN_SIGNUP_STATUSES },
         mpPreapprovalId: { not: null },
       },
     });
@@ -188,8 +194,9 @@ export class PlatformSignupService {
       throw new BadRequestException('Pack price must be at least 1');
     }
 
-    const eligibility = await this.trial.evaluateForIdentity(identityId);
-    const applyTrial = eligibility.eligible;
+    const applyTrial =
+      pack.offersPlatformTrial &&
+      (await this.trial.evaluateForIdentity(identityId)).eligible;
 
     const identity = await this.prisma.identity.findUnique({
       where: { id: identityId },
@@ -315,17 +322,21 @@ export class PlatformSignupService {
   }
 
   /**
-   * Cada hora: consulta en MP los intentos PENDING (por si el webhook no
-   * llegó) y vence los que pasaron 1 h sin autorizar.
+   * Cada hora: consulta en MP los intentos abiertos (por si el webhook no
+   * llegó) y vence los PENDING que pasaron 1 h sin autorizar.
    */
   @Cron(CronExpression.EVERY_HOUR)
   async reconcilePendingSignups(): Promise<void> {
     const rows = await this.prisma.platformSignup.findMany({
-      where: { status: PlatformSignupStatus.PENDING },
+      where: { status: { in: OPEN_SIGNUP_STATUSES } },
     });
     for (const signup of rows) {
       const authorized = await this.reconcileSafely(signup);
-      if (!authorized && isStale(signup)) {
+      if (
+        !authorized &&
+        signup.status === PlatformSignupStatus.PENDING &&
+        isStale(signup)
+      ) {
         await this.expire(signup, 'Vencido: no se autorizó en Mercado Pago');
       }
     }
@@ -359,7 +370,8 @@ export class PlatformSignupService {
   }
 
   /**
-   * Consulta el preapproval en MP y aplica su estado.
+   * Consulta el preapproval en MP y aplica su estado. Sin prueba, además
+   * busca el primer cobro aprobado para que nazca el gym.
    *
    * @returns true si MP ya lo tiene autorizado. Nunca lanza.
    */
@@ -375,7 +387,18 @@ export class PlatformSignupService {
         signup.mpPreapprovalId,
       );
       await this.applyPreapproval(signup, remote, admin.id);
-      return isAuthorized(remote.status);
+      const authorized = isAuthorized(remote.status);
+      if (
+        authorized &&
+        !signup.applyTrial &&
+        (await this.mp.hasApprovedAuthorizedPayment(
+          accessToken,
+          signup.mpPreapprovalId,
+        ))
+      ) {
+        await this.fulfill(signup.id);
+      }
+      return authorized;
     } catch (err) {
       this.logger.warn(
         `Reconcile signup ${signup.id}: ${err instanceof Error ? err.message : String(err)}`,

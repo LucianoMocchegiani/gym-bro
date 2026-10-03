@@ -155,6 +155,7 @@ export class PacksService {
           description: pack.description,
           price: pack.price,
           billingPeriod: pack.billingPeriod,
+          offersPlatformTrial: pack.offersPlatformTrial,
           services,
         };
       })
@@ -729,6 +730,7 @@ export class PacksService {
       billingPeriod: pack.billingPeriod,
       creditsExpireAt: pack.creditsExpireAt,
       active: pack.active,
+      offersPlatformTrial: pack.offersPlatformTrial,
       kind: this.inferKind(pack.components),
       components,
       kuatiaConfigurationId: pack.kuatiaConfigurationId,

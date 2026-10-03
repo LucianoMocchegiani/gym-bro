@@ -8,6 +8,8 @@ export type PublicPlatformPack = {
   description: string | null;
   price: number;
   billingPeriod: 'MONTHLY' | 'ONE_TIME';
+  /** false = se cobra desde el primer mes (sin prueba). */
+  offersPlatformTrial: boolean;
   services: { id: string; name: string }[];
 };
 
