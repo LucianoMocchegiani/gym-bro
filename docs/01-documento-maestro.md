@@ -143,7 +143,7 @@ Destacados: **tienda/e-commerce**, white label, push/WhatsApp, AFIP, offline en 
 - Idempotencia anti doble cobro; si ocurre → reembolso admin.
 - Devolución pedida por afiliado (defaults configurables); admin siempre puede devolver.
 - Comprobante interno + N1 + visible en app.
-- **Débito automático MONTHLY** (diseño 2026-09-15, en código): suscripción Mercado Pago (plan + `preapproval`) en la cuenta del gym; alta en Caja por **link** `init_point`; cobros y reintentos los hace MP; contrato al webhook approved. Ver RN-PAG-013..016 / CU-PAG-008..010. Fuera: Stripe, CBU/DEBIN, alta en la app, Brick/PAN en Faciliter. QA live pendiente.
+- **Débito automático MONTHLY** (diseño 2026-09-15, en código): suscripción Mercado Pago (`preapproval` sin plan) en la cuenta del gym; alta en Caja por **link** `init_point`; cobros y reintentos los hace MP; contrato al webhook approved. Ver RN-PAG-013..016 / CU-PAG-008..010. Fuera: Stripe, CBU/DEBIN, alta en la app, Brick/PAN en Faciliter. QA live pendiente.
 
 ### 9.4 Rutinas
 

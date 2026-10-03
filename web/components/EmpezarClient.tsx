@@ -25,6 +25,8 @@ export function EmpezarClient({
   const [packId, setPackId] = useState(initialPackId ?? packs[0]?.id ?? '');
   const [gymName, setGymName] = useState('');
   const [slug, setSlug] = useState('');
+  /** `null` = todavía no lo tocó: se muestra el mail de la sesión. */
+  const [payerEmail, setPayerEmail] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
@@ -57,6 +59,7 @@ export function EmpezarClient({
         packId,
         slug,
         gymName,
+        payerEmail: (payerEmail ?? session?.email ?? '').trim() || undefined,
       });
       if (signup.checkoutUrl) {
         window.location.assign(signup.checkoutUrl);
@@ -144,6 +147,20 @@ export function EmpezarClient({
           </label>
           <p className="muted small">
             Dirección: {slug ? tenantOrigin(slug) : 'https://tu-slug…'}
+          </p>
+          <label>
+            Mail de tu cuenta de Mercado Pago
+            <input
+              type="email"
+              value={payerEmail ?? session.email}
+              onChange={(e) => setPayerEmail(e.target.value)}
+              required
+              autoComplete="email"
+            />
+          </label>
+          <p className="muted small">
+            Mercado Pago solo deja autorizar el débito a la cuenta con este
+            mail. Si pagás con otra cuenta de MP, cambialo acá.
           </p>
           <button type="submit" className="btn primary" disabled={submitting}>
             {submitting ? 'Creando checkout…' : 'Continuar a Mercado Pago'}

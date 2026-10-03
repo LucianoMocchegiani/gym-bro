@@ -125,6 +125,7 @@ Pasos de VPS: [uso/probar-debito-suscripcion-mp.md](./uso/probar-debito-suscripc
 | P9h | Ficha → Caja débitos | `/caja?memberId=&vista=debitos`; no hay UI de mandato en la ficha | CU-AFI-004 | |
 | P9i | Cambio de pack A→B | Cancela A; alta B para el próximo cobro; sin prorrateo | RN-PAG-016 | |
 | P9j | Cambio de precio del pack | Las suscripciones activas siguen con su monto; Regenerar link o Próximo pack toma el precio nuevo | RN-PAG-013 | |
+| P9k | Socio con otro mail en MP | Cargar el mail de su cuenta MP al tildar débito (o en Débitos + Regenerar link): MP deja autorizar; vacío = mail del afiliado; el mail queda en el mandato | RN-PAG-013 | |
 
 ---
 

@@ -18,6 +18,8 @@ export type DebitMandateDetail = {
   memberId: string;
   memberName: string | null;
   memberEmail: string;
+  /** Mail de la cuenta MP que tiene que autorizar el link. */
+  payerEmail: string;
   packId: string;
   packName: string;
   packPrice: number;
@@ -52,6 +54,8 @@ export type DebitEnrollResult = {
 export type EnrollDebitInput = {
   packId: string;
   chargeNow: boolean;
+  /** Vacío = el del mandato o el del afiliado. */
+  payerEmail?: string;
   idempotencyKey?: string;
 };
 
@@ -112,9 +116,10 @@ export function cancelDebitMandate(
 export function updateDebitMandatePack(
   mandateId: string,
   packId: string,
+  payerEmail?: string,
 ): Promise<DebitMandateDetail> {
   return apiRequest<DebitMandateDetail>(`/debit-mandates/${mandateId}`, {
     method: 'PATCH',
-    body: { packId },
+    body: { packId, payerEmail },
   });
 }

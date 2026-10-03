@@ -141,7 +141,7 @@
 **Precondiciones:** Cuenta MP del gym. Pack `MONTHLY`. Staff Caja. App MP con Suscripciones + webhooks.
 
 **Flujo principal (primer mes + suscripción):**
-1. En Caja, afiliado elegido, carrito = **un** pack MONTHLY, medio **Mercado Pago**, tilde de débito (consentimiento).
+1. En Caja, afiliado elegido, carrito = **un** pack MONTHLY, medio **Mercado Pago**, tilde de débito (consentimiento). Opcional: **mail de la cuenta MP del socio** (vacío = mail del afiliado); MP solo deja autorizar a la cuenta con ese mail.
 2. Sistema toma el precio de catálogo del pack.
 3. Crea `preapproval` `pending` **sin plan asociado** (cuenta del gym; MP exige tarjeta tokenizada si hay plan) con ese monto y muestra **link** `init_point` (copiar / abrir; **sin** Brick ni PAN en Faciliter). Mandato `pendiente_checkout`.
 4. El socio completa el checkout en Mercado Pago. Webhook: suscripción `authorized` + primer cobro approved → Transaction PACK → contrato (CU-PAG-001 / RN-CON-001). Mandato `activo`.
@@ -157,6 +157,7 @@
 - Medio efectivo → no hay tilde.
 - MP no configurado / link rechazado → no hay mandato; si no hubo tilde, el cobro sigue CU-PAG-001.
 - Checkout abandonado → mandato `pendiente_checkout`; se puede regenerar link.
+- MP dice que el mail no coincide con el de la suscripción → en Débitos, corregir el mail de la cuenta MP y **Regenerar link**.
 
 **Postcondiciones:** Mandato pendiente o activo. Contrato del mes solo si hubo cobro MP approved.
 
@@ -191,7 +192,7 @@
 
 **Flujo principal:**
 1. Pestaña **Débitos**: cola por estado (pendiente de checkout, activos, fallidos). Elegir fila abre el panel (`?memberId=&vista=debitos`).
-2. Panel: estado, pack, link si sigue pendiente, último error MP, “Dar de baja”, “Próximo pack” (B).
+2. Panel: estado, pack, link si sigue pendiente, último error MP, mail de la cuenta MP que autoriza (editable; aplica al regenerar o cambiar pack), “Dar de baja”, “Próximo pack” (B).
 3. Baja → `cancelled` en MP + mandato `baja`; contrato vigente no se toca.
 4. Cambio de pack A→B: cancelar preapproval A; alta de B (CU-PAG-008) para el **próximo** cobro; A se deja vencer (sin prorrateo, sin dos MONTHLY).
 5. Precio de catálogo del pack: cada suscripción guarda el monto de su alta. Un precio nuevo aplica al **Regenerar link** o con **Próximo pack** (nueva suscripción); las activas no se actualizan solas.

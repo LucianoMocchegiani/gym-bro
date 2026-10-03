@@ -766,6 +766,7 @@ model DebitMandate {
   enrolledTransactionItemId  String?            @unique @map("enrolled_transaction_item_id") @db.Uuid
   mpPreapprovalId            String?            @unique @map("mp_preapproval_id")
   mpPreapprovalPlanId        String?            @map("mp_preapproval_plan_id")
+  mpPayerEmail               String?            @map("mp_payer_email")
   initPoint                  String?            @map("init_point")
   status                     DebitMandateStatus
   attemptCount               Int                @default(0) @map("attempt_count")

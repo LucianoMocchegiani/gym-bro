@@ -101,6 +101,7 @@ function CajaInner() {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [cobroMedio, setCobroMedio] = useState<'CASH' | 'MP'>('CASH');
   const [debitWanted, setDebitWanted] = useState(false);
+  const [debitPayerEmail, setDebitPayerEmail] = useState('');
   const [applyTrial, setApplyTrial] = useState(false);
   const [trialEligible, setTrialEligible] = useState(false);
   const [trialHint, setTrialHint] = useState<string | null>(null);
@@ -371,6 +372,7 @@ function CajaInner() {
     setReceipt(null);
     setReceiptError(null);
     setDebitWanted(false);
+    setDebitPayerEmail('');
     setApplyTrial(false);
     setMpClearConfirm(false);
     setCopyKey(null);
@@ -430,6 +432,7 @@ function CajaInner() {
         const result = await enrollDebitMandate(memberId, {
           packId: cart[0].refId,
           chargeNow: true,
+          payerEmail: debitPayerEmail.trim() || undefined,
           idempotencyKey: newIdempotencyKey('debit-enroll'),
         });
         const url = result.checkoutUrl;
@@ -838,10 +841,22 @@ function CajaInner() {
             ) : null}
 
             {debitWanted && debitEligible ? (
-              <p className="muted small">
-                Se genera un link de suscripción Mercado Pago (no se guarda la
-                tarjeta en Faciliter). El primer cobro es al autorizar.
-              </p>
+              <>
+                <label>
+                  Mail de la cuenta Mercado Pago del socio
+                  <input
+                    type="email"
+                    value={debitPayerEmail}
+                    onChange={(e) => setDebitPayerEmail(e.target.value)}
+                    placeholder="Vacío: el mail del afiliado"
+                  />
+                </label>
+                <p className="muted small">
+                  Se genera un link de suscripción Mercado Pago (no se guarda
+                  la tarjeta en Faciliter). Solo lo puede autorizar la cuenta
+                  de MP con ese mail. El primer cobro es al autorizar.
+                </p>
+              </>
             ) : null}
 
             {cobroError ? <p className="error">{cobroError}</p> : null}

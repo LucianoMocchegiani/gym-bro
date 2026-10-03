@@ -22,9 +22,10 @@ Los mandatos que existían con **tarjeta + job** quedan `CANCELLED` al migrar. H
 ### 1. Alta con cobro al autorizar
 
 1. Caja → afiliado → un pack MONTHLY en el carrito → medio Mercado Pago → tilde débito.
-2. **Generar link de débito** (no es Preference de carrito ni Brick).
-3. Copiar / abrir el link. El socio autoriza en Mercado Pago.
-4. **OK:** mandato `ACTIVE`; contrato del primer ciclo; movimiento/comprobante por webhook.  
+2. **Mail de la cuenta Mercado Pago del socio:** el mail con el que el socio entra a MP (vacío = el del afiliado). MP rechaza con «tu email no coincide» si autoriza otra cuenta.
+3. **Generar link de débito** (no es Preference de carrito ni Brick).
+4. Copiar / abrir el link. El socio autoriza en Mercado Pago.
+5. **OK:** mandato `ACTIVE`; contrato del primer ciclo; movimiento/comprobante por webhook.  
    **Error:** link vacío → token MP / Suscripciones; webhook sin contrato → URL pública y topics.
 
 ### 2. Alta sin cobro ahora

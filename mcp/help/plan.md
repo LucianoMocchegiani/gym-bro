@@ -6,7 +6,7 @@ El **plan Faciliter** es lo que el gym le paga a Faciliter por usar el sistema. 
 
 Dos caminos:
 
-- **Self-serve en faciliter.xyz:** en la landing, elegir un plan y tocar **Contratar**. Entrar o crear la cuenta Faciliter (mail y contraseña o Google). En **Tu gym en Faciliter** (`/empezar`): plan, nombre del gym y **subdominio** (la dirección del panel). **Continuar a Mercado Pago** para autorizar el débito mensual del plan.
+- **Self-serve en faciliter.xyz:** en la landing, elegir un plan y tocar **Contratar**. Entrar o crear la cuenta Faciliter (mail y contraseña o Google). En **Tu gym en Faciliter** (`/empezar`): plan, nombre del gym, **subdominio** (la dirección del panel) y **mail de la cuenta de Mercado Pago** (viene el de la cuenta Faciliter; si en MP usan otro, cambiarlo, porque MP solo deja autorizar a esa cuenta). **Continuar a Mercado Pago** para autorizar el débito mensual del plan.
 - **Reunión:** desde la landing se puede **agendar una reunión** y Faciliter da de alta el gym.
 
 Si el plan tiene **30 días de prueba**, el gym se crea apenas se autoriza el débito y el primer cobro es al terminar la prueba (una prueba por persona y por gym). Sin prueba, el gym se crea con el primer cobro aprobado. Después: entrar a `{subdominio}.faciliter.xyz` y seguir con Primeros pasos (topic `guia`).

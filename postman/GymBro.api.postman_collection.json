@@ -657,7 +657,7 @@
                         "header": [{ "key": "Content-Type", "value": "application/json" }],
                         "body": {
                             "mode": "raw",
-                            "raw": "{\n  \"packId\": \"{{packId}}\",\n  \"slug\": \"mi-gym\",\n  \"gymName\": \"Mi Gym\"\n}"
+                            "raw": "{\n  \"packId\": \"{{packId}}\",\n  \"slug\": \"mi-gym\",\n  \"gymName\": \"Mi Gym\",\n  \"payerEmail\": \"dueno@ejemplo.com\"\n}"
                         },
                         "url": "{{baseUrl}}/api/identity/signups",
                         "description": "Checkout preapproval MP (JWT Identity). El gym nace en el webhook."
@@ -4266,7 +4266,7 @@
         },
         {
             "name": "Mercado Pago",
-            "description": "CU-PAG-001/006/008. Cuenta `GET|PUT|DELETE /api/mercadopago/account` + test (`mp.connect`) + `GET .../public-key`. Débito MONTHLY: `GET /debit-mandates`, `POST /members/:id/debit-mandates` (packId + chargeNow), `PATCH`, `POST .../cancel`. Sin `.../charge`. Caja cart MP/CASH. Webhook `POST /webhooks/payment?tenantId=` (payment + subscription_*).",
+            "description": "CU-PAG-001/006/008. Cuenta `GET|PUT|DELETE /api/mercadopago/account` + test (`mp.connect`) + `GET .../public-key`. Débito MONTHLY: `GET /debit-mandates`, `POST /members/:id/debit-mandates` (packId + chargeNow + payerEmail opcional = mail de la cuenta MP que autoriza), `PATCH`, `POST .../cancel`. Sin `.../charge`. Caja cart MP/CASH. Webhook `POST /webhooks/payment?tenantId=` (payment + subscription_*).",
             "item": [
                 {
                     "name": "Staff GET MP account status",
@@ -4324,7 +4324,7 @@
                         ],
                         "body": {
                             "mode": "raw",
-                            "raw": "{\n  \"packId\": \"{{createdPackId}}\",\n  \"chargeNow\": true\n}"
+                            "raw": "{\n  \"packId\": \"{{createdPackId}}\",\n  \"chargeNow\": true,\n  \"payerEmail\": \"socio-mp@ejemplo.com\"\n}"
                         },
                         "url": "{{baseUrl}}/api/members/{{createdMemberId}}/debit-mandates"
                     }

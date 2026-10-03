@@ -833,7 +833,7 @@ API: Member `POST /api/me/transaction-items/mp/cart` (JWT Member); Staff `POST /
 
 ### 4.15h2 `debit_mandates`
 
-Mandato MONTHLY = espejo de **suscripción MP** (RN-PAG-013..016 / CU-PAG-008..010). Plan + preapproval en la cuenta del gym; cobro por webhook. Faciliter no guarda tarjeta ni corre cron de cobro.
+Mandato MONTHLY = espejo de **suscripción MP** (RN-PAG-013..016 / CU-PAG-008..010). Preapproval sin plan en la cuenta del gym; cobro por webhook. Faciliter no guarda tarjeta ni corre cron de cobro.
 
 | Columna | Tipo | Notas |
 |---------|------|--------|
@@ -843,6 +843,7 @@ Mandato MONTHLY = espejo de **suscripción MP** (RN-PAG-013..016 / CU-PAG-008..0
 | `enrolled_transaction_item_id` | uuid FK nullable unique | primer cobro que inscribió; SET NULL; devolverlo → baja MP |
 | `mp_preapproval_id` | text unique nullable | id `/preapproval` |
 | `mp_preapproval_plan_id` | text nullable | legado: altas nuevas no crean plan (queda null) |
+| `mp_payer_email` | text nullable | `payer_email` del preapproval (cuenta MP que autoriza); null = mail del afiliado |
 | `init_point` | text nullable | link de checkout mientras `PENDING_CHECKOUT` |
 | `status` | `DebitMandateStatus` | `PENDING_CHECKOUT` \| `ACTIVE` \| `RETRYING` \| `FAILED` \| `CANCELLED` (`RETRYING` legado) |
 | `attempt_count` | int | legado (el cobro lo hace MP) |

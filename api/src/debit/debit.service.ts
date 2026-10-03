@@ -190,6 +190,12 @@ export class DebitService {
       await this.tryCancelRemote(accessToken, existing.mpPreapprovalId);
     }
 
+    const payerEmail = this.resolvePayerEmail(
+      dto.payerEmail,
+      existing?.mpPayerEmail,
+      member.email,
+    );
+
     const seed = {
       tenantId,
       memberId,
@@ -203,6 +209,7 @@ export class DebitService {
       cancelledByStaffId: null,
       mpPreapprovalId: null as string | null,
       mpPreapprovalPlanId: null as string | null,
+      mpPayerEmail: payerEmail,
       initPoint: null as string | null,
     };
 
@@ -229,7 +236,7 @@ export class DebitService {
         accessToken,
         reason: `${pack.name} · ${member.email}`,
         externalReference: seeded.id,
-        payerEmail: member.email,
+        payerEmail,
         backUrl,
         notificationUrl,
         amount: pack.price,
@@ -563,6 +570,7 @@ export class DebitService {
     mandateId: string,
     packId: string,
     actor: AuditActor,
+    payerEmailInput?: string,
   ): Promise<DebitMandateDetail> {
     const mandate = await this.requireMandate(tenantId, mandateId);
     if (mandate.status === DebitMandateStatus.CANCELLED) {
@@ -577,13 +585,18 @@ export class DebitService {
     const startDate = mandate.nextChargeOn
       ? mandate.nextChargeOn.toISOString()
       : undefined;
+    const payerEmail = this.resolvePayerEmail(
+      payerEmailInput,
+      mandate.mpPayerEmail,
+      member.email,
+    );
     const backUrl = this.webBackUrl();
     const notificationUrl = this.buildNotificationUrl(tenantId);
     const sub = await this.mp.createPreapproval({
       accessToken,
       reason: `${pack.name} · ${member.email}`,
       externalReference: mandate.id,
-      payerEmail: member.email,
+      payerEmail,
       backUrl,
       notificationUrl,
       amount: pack.price,
@@ -595,6 +608,7 @@ export class DebitService {
         packId,
         mpPreapprovalId: sub.id,
         mpPreapprovalPlanId: null,
+        mpPayerEmail: payerEmail,
         initPoint: sub.initPoint,
         status: DebitMandateStatus.PENDING_CHECKOUT,
         lastError: null,
@@ -762,6 +776,7 @@ export class DebitService {
       memberId: row.memberId,
       memberName: row.member?.name ?? null,
       memberEmail: row.member?.email ?? '',
+      payerEmail: row.mpPayerEmail ?? row.member?.email ?? '',
       packId: row.packId,
       packName: row.pack.name,
       packPrice: row.pack.price,
@@ -775,6 +790,17 @@ export class DebitService {
       createdAt: row.createdAt.toISOString(),
       updatedAt: row.updatedAt.toISOString(),
     };
+  }
+
+  /**
+   * MP solo deja autorizar al usuario logueado con `payer_email`.
+   */
+  private resolvePayerEmail(
+    input: string | undefined,
+    saved: string | null | undefined,
+    memberEmail: string,
+  ): string {
+    return (input?.trim() || saved || memberEmail).toLowerCase();
   }
 
   private businessDate(at: Date): Date {

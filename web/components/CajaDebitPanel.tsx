@@ -45,6 +45,7 @@ export function CajaDebitPanel({
   const [error, setError] = useState<string | null>(null);
   const [confirmCancel, setConfirmCancel] = useState(false);
   const [nextPackId, setNextPackId] = useState('');
+  const [payerEmail, setPayerEmail] = useState('');
   const [copyKey, setCopyKey] = useState<string | null>(null);
 
   const loadQueue = useCallback(async () => {
@@ -75,6 +76,7 @@ export function CajaDebitPanel({
       const v = await getMemberDebitView(memberId);
       setView(v);
       setNextPackId(v.mandate?.packId ?? v.currentMonthly?.packId ?? '');
+      setPayerEmail(v.mandate?.payerEmail ?? '');
       setViewError(null);
     } catch (err) {
       setViewError(
@@ -129,6 +131,7 @@ export function CajaDebitPanel({
       const result = await enrollDebitMandate(memberId, {
         packId: enrollPackId,
         chargeNow,
+        payerEmail: payerEmail.trim() || undefined,
         idempotencyKey: newIdempotencyKey('debit-enroll'),
       });
       setMessage(
@@ -175,7 +178,11 @@ export function CajaDebitPanel({
     setBusy(true);
     setError(null);
     try {
-      await updateDebitMandatePack(mandate.id, nextPackId);
+      await updateDebitMandatePack(
+        mandate.id,
+        nextPackId,
+        payerEmail.trim() || undefined,
+      );
       setMessage('Nuevo link para el próximo pack. El socio tiene que autorizar de nuevo.');
       await refreshAll();
     } catch (err) {
@@ -190,6 +197,24 @@ export function CajaDebitPanel({
   }
 
   const shareUrl = mandate?.initPoint ?? null;
+
+  const payerField = (
+    <>
+      <label>
+        Mail de la cuenta Mercado Pago del socio
+        <input
+          type="email"
+          value={payerEmail}
+          onChange={(e) => setPayerEmail(e.target.value)}
+          placeholder="Vacío: el mail del afiliado"
+        />
+      </label>
+      <p className="muted small">
+        Solo la cuenta de MP con este mail puede autorizar el link. Si lo
+        cambiás, regenerá el link.
+      </p>
+    </>
+  );
 
   return (
     <div className="cash-layout">
@@ -303,6 +328,7 @@ export function CajaDebitPanel({
                 ))}
               </select>
             </label>
+            {payerField}
             <div className="row-actions">
               {nextPackId && nextPackId !== mandate.packId ? (
                 <button
@@ -359,6 +385,7 @@ export function CajaDebitPanel({
                 ))}
               </select>
             </label>
+            {payerField}
             <button
               type="button"
               className="btn primary"
@@ -389,6 +416,7 @@ export function CajaDebitPanel({
                 ))}
               </select>
             </label>
+            {payerField}
             <button
               type="button"
               className="btn primary"

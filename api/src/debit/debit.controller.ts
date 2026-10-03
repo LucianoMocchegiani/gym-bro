@@ -101,6 +101,7 @@ export class DebitController {
       mandateId,
       dto.packId,
       toAuditActor(user),
+      dto.payerEmail,
     );
   }
 }

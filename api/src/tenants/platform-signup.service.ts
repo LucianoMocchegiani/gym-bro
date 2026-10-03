@@ -117,7 +117,12 @@ export class PlatformSignupService {
    */
   async startCheckout(
     identityId: string,
-    input: { packId: string; slug: string; gymName: string },
+    input: {
+      packId: string;
+      slug: string;
+      gymName: string;
+      payerEmail?: string;
+    },
   ): Promise<PlatformSignupView> {
     const slug = normalizeTenantSlug(input.slug);
     assertValidTenantSlug(slug);
@@ -207,7 +212,7 @@ export class PlatformSignupService {
         accessToken,
         reason: `Faciliter ${pack.name} · ${gymName}`,
         externalReference: signup.id,
-        payerEmail: identity.email,
+        payerEmail: (input.payerEmail?.trim() || identity.email).toLowerCase(),
         backUrl,
         notificationUrl,
         amount: pack.price,

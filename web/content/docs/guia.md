@@ -574,7 +574,7 @@ Quién entra al **panel** y qué puede hacer. Un profesor sin permiso de Caja no
 El mostrador, con dos pestañas:
 
 - **Cobro:** afiliado + catálogo + carrito, en efectivo o con link de Mercado Pago (ver Primeros pasos → Cobrar).
-- **Débitos:** los débitos automáticos de packs mensuales. La cola se filtra en **Pendiente / link**, **Reintentando**, **Fallidos** y **Todos**. Al elegir un socio ves el estado, el próximo cobro y el monto. Si falta que autorice: **Abrir checkout MP** o **Copiar link** para mandárselo. También podés cambiar el **próximo pack**, **Regenerar link** o **Dar de baja**.
+- **Débitos:** los débitos automáticos de packs mensuales. La cola se filtra en **Pendiente / link**, **Reintentando**, **Fallidos** y **Todos**. Al elegir un socio ves el estado, el próximo cobro y el monto. Si falta que autorice: **Abrir checkout MP** o **Copiar link** para mandárselo. También podés cambiar el **próximo pack**, **Regenerar link** o **Dar de baja**. Mercado Pago solo deja autorizar a la cuenta con el **mail de la cuenta Mercado Pago del socio** (vacío = el mail del afiliado): si el socio entra a MP con otro mail, cargalo ahí (o al tildar el débito en el cobro) y regenerá el link.
 
 Mercado Pago cobra solo cada mes y reintenta si falla; Faciliter registra cada cobro aprobado. Dar de baja corta los cobros que vienen; el mes ya pago sigue vigente. El asistente puede listar débitos, pero no cobra ni los toca.
 
@@ -726,7 +726,8 @@ Desde faciliter.xyz:
 1. En la landing elegís un plan y tocás **Contratar** (también podés **agendar una reunión**).
 2. Entrás o creás tu cuenta Faciliter (mail y contraseña o Google).
 3. En **Tu gym en Faciliter** elegís el plan, el nombre del gym y el **subdominio** (la dirección de tu panel).
-4. **Continuar a Mercado Pago**: autorizás el débito mensual del plan.
+4. **Mail de tu cuenta de Mercado Pago**: viene con el mail de tu cuenta Faciliter. Si en Mercado Pago entrás con otro mail, cambialo: Mercado Pago solo deja autorizar a la cuenta con ese mail.
+5. **Continuar a Mercado Pago**: autorizás el débito mensual del plan.
 
 Si el plan tiene **30 días de prueba**, el gym se crea apenas autorizás y el primer cobro es al terminar la prueba. La prueba es una vez por persona y una vez por gym. Sin prueba, el gym se crea con el primer cobro aprobado.
 
@@ -734,7 +735,7 @@ Después entrás a tu panel (`{subdominio}.faciliter.xyz`) y seguís con **Prime
 
 **Captura:** `web-empezar.png` — falta.  
 **Dónde:** faciliter.xyz/empezar, logueado, con un plan elegido.  
-**Qué se ve:** plan, nombre del gym, subdominio con la dirección resultante y **Continuar a Mercado Pago**.
+**Qué se ve:** plan, nombre del gym, subdominio con la dirección resultante, mail de la cuenta de Mercado Pago y **Continuar a Mercado Pago**.
 
 ## Mi cuenta
 

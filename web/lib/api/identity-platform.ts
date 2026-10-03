@@ -37,6 +37,8 @@ export function startPlatformSignup(input: {
   packId: string;
   slug: string;
   gymName: string;
+  /** Vacío = el mail de la cuenta Faciliter. */
+  payerEmail?: string;
 }): Promise<PlatformSignupView> {
   return apiRequest<PlatformSignupView>('/identity/signups', {
     method: 'POST',

@@ -8,6 +8,8 @@ export type DebitMandateDetail = {
   memberId: string;
   memberName: string | null;
   memberEmail: string;
+  /** Mail de la cuenta MP que tiene que autorizar el link. */
+  payerEmail: string;
   packId: string;
   packName: string;
   packPrice: number;
