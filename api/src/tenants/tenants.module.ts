@@ -1,6 +1,7 @@
 import { Module, forwardRef } from '@nestjs/common';
 import { AuditModule } from '../audit/audit.module';
 import { AuthModule } from '../auth/auth.module';
+import { ContractsModule } from '../contracts/contracts.module';
 import { PaymentModule } from '../payment/payment.module';
 import { NotificationsModule } from '../notifications/notifications.module';
 import { RolesModule } from '../roles/roles.module';
@@ -22,6 +23,7 @@ import { TenantsService } from './tenants.service';
     RolesModule,
     StaffModule,
     AuditModule,
+    ContractsModule,
     NotificationsModule,
     forwardRef(() => PaymentModule),
   ],

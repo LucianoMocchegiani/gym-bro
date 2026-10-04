@@ -12,7 +12,6 @@ import {
   NotificationEventCode,
   PaymentMethod,
   PaymentStatus,
-  PlatformSignupStatus,
   Prisma,
   ReceiptConcept,
   Transaction,
@@ -176,25 +175,10 @@ export class WebhookPaymentService {
       },
     });
     if (signup && remote.status === 'approved') {
-      const wasComplete = signup.status === PlatformSignupStatus.COMPLETED;
-      const result = await this.platformSignups.handlePaidSignup(
-        tenantId,
-        signup.id,
-      );
-      if (wasComplete && signup.tenantId) {
-        await this.notifications.notifyPlatformOwner({
-          tenantId: signup.tenantId,
-          identityId: signup.identityId,
-          event: NotificationEventCode.PLATFORM_PLAN_PAID,
-          idempotencyKey: `PLATFORM_PLAN_PAID:${mpPaymentId}`,
-          extraVars: {
-            pack: signup.pack.name,
-            monto: 'Mercado Pago',
-          },
-          payload: { signupId: signup.id, mpPaymentId },
-        });
-      }
-      return result;
+      return this.platformSignups.handlePaidSignup(tenantId, signup.id, {
+        paymentId: mpPaymentId,
+        amount: remote.transactionAmount,
+      });
     }
     if (
       signup &&
@@ -301,25 +285,21 @@ export class WebhookPaymentService {
     const signup = signupRow ?? signupByPre;
     if (signup) {
       if (paid) {
-        const wasComplete = signup.status === PlatformSignupStatus.COMPLETED;
-        const result = await this.platformSignups.handlePaidSignup(
-          tenantId,
-          signup.id,
-        );
-        if (wasComplete && signup.tenantId && remote.paymentId) {
-          await this.notifications.notifyPlatformOwner({
-            tenantId: signup.tenantId,
-            identityId: signup.identityId,
-            event: NotificationEventCode.PLATFORM_PLAN_PAID,
-            idempotencyKey: `PLATFORM_PLAN_PAID:${remote.paymentId}`,
-            extraVars: {
-              pack: signup.pack.name,
-              monto: 'débito Mercado Pago',
-            },
-            payload: { signupId: signup.id, paymentId: remote.paymentId },
-          });
+        if (!remote.paymentId) {
+          // Sin pago asociado todavía: lo aplica el webhook `payment` o el chequeo horario.
+          return {
+            handled: true,
+            transactionItemId: null,
+            transactionId: null,
+            status: remote.status,
+            contractId: null,
+            reservationId: null,
+          };
         }
-        return result;
+        return this.platformSignups.handlePaidSignup(tenantId, signup.id, {
+          paymentId: remote.paymentId,
+          amount: remote.transactionAmount,
+        });
       }
       await this.notifications.notifyPlatformOwner({
         tenantId: signup.tenantId ?? tenantId,

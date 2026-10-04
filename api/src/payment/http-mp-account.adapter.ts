@@ -12,6 +12,7 @@ import {
   MpRemoteMerchantOrder,
   MpRemotePayment,
   MpRemotePreapproval,
+  MpSubscriptionPayment,
   RefreshMpOAuthTokenInput,
 } from './mp-account.port';
 
@@ -412,6 +413,7 @@ export class HttpMpAccountAdapter extends MpAccountPort {
       status?: string;
       preapproval_id?: string;
       external_reference?: string;
+      transaction_amount?: number;
       payment?: { id?: string | number };
     };
     if (data.id === undefined || data.id === null || !data.status) {
@@ -426,38 +428,69 @@ export class HttpMpAccountAdapter extends MpAccountPort {
         data.payment?.id !== undefined && data.payment?.id !== null
           ? String(data.payment.id)
           : null,
+      transactionAmount: data.transaction_amount ?? null,
     };
   }
 
   /**
    * @inheritdoc
    */
-  async hasApprovedAuthorizedPayment(
+  async listApprovedAuthorizedPayments(
     accessToken: string,
     preapprovalId: string,
-  ): Promise<boolean> {
-    const response = await fetch(
-      `${MP_AUTHORIZED_PAYMENTS}/search?preapproval_id=${encodeURIComponent(preapprovalId)}`,
-      {
-        method: 'GET',
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-          Accept: 'application/json',
-        },
-      },
-    );
-    if (!response.ok) {
-      const body = await response.text().catch(() => '');
-      this.throwMpFailure('search authorized_payments', response.status, body);
-    }
-    const data = (await response.json()) as {
-      results?: Array<{ status?: string; payment?: { status?: string } }>;
+  ): Promise<MpSubscriptionPayment[]> {
+    type Row = {
+      status?: string;
+      date_created?: string;
+      transaction_amount?: number;
+      payment?: { id?: string | number; status?: string };
     };
-    return (data.results ?? []).some((row) =>
-      row.payment?.status
-        ? row.payment.status === 'approved'
-        : row.status === 'approved' || row.status === 'processed',
-    );
+    const rows: Row[] = [];
+    for (let page = 0; page < 20; page++) {
+      const response = await fetch(
+        `${MP_AUTHORIZED_PAYMENTS}/search?preapproval_id=${encodeURIComponent(preapprovalId)}&offset=${rows.length}`,
+        {
+          method: 'GET',
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            Accept: 'application/json',
+          },
+        },
+      );
+      if (!response.ok) {
+        const body = await response.text().catch(() => '');
+        this.throwMpFailure(
+          'search authorized_payments',
+          response.status,
+          body,
+        );
+      }
+      const data = (await response.json()) as {
+        results?: Row[];
+        paging?: { total?: number };
+      };
+      const results = data.results ?? [];
+      rows.push(...results);
+      if (results.length === 0 || rows.length >= (data.paging?.total ?? 0)) {
+        break;
+      }
+    }
+    return rows
+      .filter((row) =>
+        row.payment?.status
+          ? row.payment.status === 'approved'
+          : row.status === 'approved' || row.status === 'processed',
+      )
+      .filter(
+        (row) => row.payment?.id !== undefined && row.payment?.id !== null,
+      )
+      .sort((a, b) =>
+        (a.date_created ?? '').localeCompare(b.date_created ?? ''),
+      )
+      .map((row) => ({
+        paymentId: String(row.payment?.id),
+        amount: row.transaction_amount ?? null,
+      }));
   }
 
   /**

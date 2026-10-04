@@ -11,12 +11,22 @@ import { ConfigService } from '@nestjs/config';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import {
   BillingPeriod,
+  ContractStatus,
+  ContractType,
   NotificationEventCode,
+  PaymentMethod,
+  PaymentStatus,
   PlatformSignup,
   PlatformSignupStatus,
+  Prisma,
   TenantStatus,
 } from '@prisma/client';
-import { MpRemotePreapproval } from '../payment/mp-account.port';
+import type { AuditActor } from '../audit/audit.types';
+import { ContractsService } from '../contracts/contracts.service';
+import {
+  MpRemotePreapproval,
+  MpSubscriptionPayment,
+} from '../payment/mp-account.port';
 import { MpWebhookProcessResult } from '../payment/payment.types';
 import { MercadoPagoAccountService } from '../payment/mercadopago-account.service';
 import { MP_ACCOUNT_PORT, MpAccountPort } from '../payment/mp-account.port';
@@ -50,6 +60,13 @@ export type PlatformSignupView = {
 /** Un intento sin autorizar en MP libera el subdominio después de esto. */
 const PENDING_SIGNUP_TTL_MS = 60 * 60 * 1000;
 
+/**
+ * Ventana del chequeo de renovación: plan que vence en estos días o que
+ * venció hace menos que esto (gracia + modo limitado).
+ */
+const RENEWAL_CHECK_BEFORE_DAYS = 3;
+const RENEWAL_CHECK_AFTER_DAYS = 30;
+
 const OPEN_SIGNUP_STATUSES: PlatformSignupStatus[] = [
   PlatformSignupStatus.PENDING,
   PlatformSignupStatus.AWAITING_PAYMENT,
@@ -63,13 +80,17 @@ export type IdentityGymRow = {
 };
 
 /**
- * Self-serve Faciliter: checkout MP y nacimiento del gym en el webhook.
+ * Self-serve Faciliter: checkout MP, nacimiento del gym y renovación del plan.
  *
  * @remarks Con prueba el gym nace al autorizar el preapproval. Sin prueba,
- * nace en el primer cobro approved. RN-PAG-017. Además del webhook, se
- * consulta en MP el preapproval (y, sin prueba, sus cobros) al listar los
- * gyms del dueño y cada hora; un intento sin autorizar en 1 h vence, libera
- * el slug y se cancela en MP. La prueba solo aplica si el pack la ofrece.
+ * nace en el primer cobro approved. Cada cobro approved (incluido el
+ * primero sin prueba) es una Transaction MP del gym sin movimiento de caja y
+ * un contrato TENANT encadenado; se registra una sola vez por id de pago.
+ * RN-PAG-017. Además del webhook, se consulta MP al listar los gyms del
+ * dueño y cada hora: los intentos abiertos y, para los gyms con el plan por
+ * vencer o vencido hace poco, los cobros de la suscripción. Un intento sin
+ * autorizar en 1 h vence, libera el slug y se cancela en MP. La prueba solo
+ * aplica si el pack la ofrece.
  */
 @Injectable()
 export class PlatformSignupService {
@@ -81,6 +102,7 @@ export class PlatformSignupService {
     private readonly tenants: TenantsService,
     @Inject(forwardRef(() => CashPaymentService))
     private readonly cash: CashPaymentService,
+    private readonly contracts: ContractsService,
     private readonly accounts: MercadoPagoAccountService,
     private readonly config: ConfigService,
     @Inject(MP_ACCOUNT_PORT) private readonly mp: MpAccountPort,
@@ -101,6 +123,7 @@ export class PlatformSignupService {
     for (const signup of pending) {
       await this.reconcileSafely(signup);
     }
+    await this.reconcileRenewals({ identityId });
     const rows = await this.prisma.tenant.findMany({
       where: {
         ownerIdentityId: identityId,
@@ -323,8 +346,9 @@ export class PlatformSignupService {
   }
 
   /**
-   * Cada hora: consulta en MP los intentos abiertos (por si el webhook no
-   * llegó) y vence los PENDING que pasaron 1 h sin autorizar.
+   * Cada hora: consulta en MP los intentos abiertos y los cobros de los
+   * planes por vencer (por si el webhook no llegó), y vence los PENDING que
+   * pasaron 1 h sin autorizar.
    */
   @Cron(CronExpression.EVERY_HOUR)
   async reconcilePendingSignups(): Promise<void> {
@@ -341,6 +365,104 @@ export class PlatformSignupService {
         await this.expire(signup, 'Vencido: no se autorizó en Mercado Pago');
       }
     }
+    await this.reconcileRenewals({});
+  }
+
+  /**
+   * Aplica los cobros de la suscripción que no llegaron por webhook, solo en
+   * gyms con el plan por vencer o vencido hace poco. Nunca lanza.
+   */
+  private async reconcileRenewals(
+    where: Prisma.PlatformSignupWhereInput,
+  ): Promise<void> {
+    const signups = await this.prisma.platformSignup.findMany({
+      where: {
+        ...where,
+        status: PlatformSignupStatus.COMPLETED,
+        tenantId: { not: null },
+        mpPreapprovalId: { not: null },
+      },
+    });
+    if (signups.length === 0) {
+      return;
+    }
+    try {
+      const admin = await this.requireAdminTenant();
+      const accessToken = await this.accounts.getDecryptedAccessToken(admin.id);
+      for (const signup of signups) {
+        if (!signup.tenantId || !signup.mpPreapprovalId) {
+          continue;
+        }
+        if (!(await this.planNeedsRenewalCheck(signup.tenantId))) {
+          continue;
+        }
+        try {
+          const payments = await this.mp.listApprovedAuthorizedPayments(
+            accessToken,
+            signup.mpPreapprovalId,
+          );
+          const pending = (await this.hasLegacyPaidStart(signup))
+            ? payments.slice(1)
+            : payments;
+          for (const payment of pending) {
+            await this.applyPlanPayment(signup, signup.tenantId, payment);
+          }
+        } catch (err) {
+          this.logger.warn(
+            `Reconcile renewal signup ${signup.id}: ${err instanceof Error ? err.message : String(err)}`,
+          );
+        }
+      }
+    } catch (err) {
+      this.logger.warn(
+        `Reconcile renewals: ${err instanceof Error ? err.message : String(err)}`,
+      );
+    }
+  }
+
+  /**
+   * Si el último plan del gym vence en los próximos días o venció hace poco
+   * (o no tiene ninguno).
+   */
+  private async planNeedsRenewalCheck(tenantId: string): Promise<boolean> {
+    const last = await this.prisma.contract.findFirst({
+      where: {
+        tenantId,
+        contractType: ContractType.TENANT,
+        status: { in: [ContractStatus.ACTIVE, ContractStatus.EXPIRED] },
+        endsAt: { not: null },
+      },
+      orderBy: { endsAt: 'desc' },
+      select: { endsAt: true },
+    });
+    if (!last?.endsAt) {
+      return true;
+    }
+    const now = new Date();
+    return (
+      last.endsAt <= addCalendarDays(now, RENEWAL_CHECK_BEFORE_DAYS) &&
+      last.endsAt >= addCalendarDays(now, -RENEWAL_CHECK_AFTER_DAYS)
+    );
+  }
+
+  /**
+   * Altas sin prueba anteriores al registro por id de pago: el primer cobro
+   * quedó como cart de Caja (`platform-signup-{id}`), sin id de MP.
+   */
+  private async hasLegacyPaidStart(signup: PlatformSignup): Promise<boolean> {
+    if (signup.applyTrial || !signup.tenantId) {
+      return false;
+    }
+    const legacy = await this.prisma.transaction.findUnique({
+      where: {
+        tenantId_idempotencyKey: {
+          tenantId: signup.tenantId,
+          idempotencyKey: `platform-signup-${signup.id}`,
+        },
+      },
+      select: { id: true },
+    });
+    return legacy !== null;
   }
 
   /**
@@ -389,15 +511,14 @@ export class PlatformSignupService {
       );
       await this.applyPreapproval(signup, remote, admin.id);
       const authorized = isAuthorized(remote.status);
-      if (
-        authorized &&
-        !signup.applyTrial &&
-        (await this.mp.hasApprovedAuthorizedPayment(
+      if (authorized && !signup.applyTrial) {
+        const [first] = await this.mp.listApprovedAuthorizedPayments(
           accessToken,
           signup.mpPreapprovalId,
-        ))
-      ) {
-        await this.fulfill(signup.id);
+        );
+        if (first) {
+          await this.fulfill(signup.id, first);
+        }
       }
       return authorized;
     } catch (err) {
@@ -474,11 +595,16 @@ export class PlatformSignupService {
   }
 
   /**
-   * Webhook `subscription_authorized_payment` o pago MP con external_reference = signup.
+   * Cobro approved de la suscripción (webhook `subscription_authorized_payment`
+   * o pago MP con external_reference = signup).
+   *
+   * @remarks Sin prueba, el primer cobro hace nacer el gym; cualquier otro
+   * cobro renueva el plan (RN-PAG-017). Idempotente por id de pago.
    */
   async handlePaidSignup(
     tenantId: string,
     signupId: string,
+    payment: MpSubscriptionPayment,
   ): Promise<MpWebhookProcessResult> {
     const admin = await this.requireAdminTenant();
     if (admin.id !== tenantId) {
@@ -490,16 +616,148 @@ export class PlatformSignupService {
     if (!signup) {
       return this.emptyWebhook(null);
     }
-    if (!signup.applyTrial) {
-      await this.fulfill(signup.id);
+    if (signup.status !== PlatformSignupStatus.COMPLETED) {
+      await this.fulfill(signup.id, signup.applyTrial ? undefined : payment);
+      if (!signup.applyTrial) {
+        return this.emptyWebhook('approved');
+      }
+    }
+    const current = await this.prisma.platformSignup.findUnique({
+      where: { id: signupId },
+    });
+    if (
+      current?.status === PlatformSignupStatus.COMPLETED &&
+      current.tenantId
+    ) {
+      await this.applyPlanPayment(current, current.tenantId, payment);
     }
     return this.emptyWebhook('approved');
   }
 
   /**
-   * Crea el gym + contrato TENANT (idempotente).
+   * Registra un cobro del plan y avisa al dueño (una vez por pago).
    */
-  async fulfill(signupId: string): Promise<void> {
+  private async applyPlanPayment(
+    signup: PlatformSignup,
+    tenantId: string,
+    payment: MpSubscriptionPayment,
+  ): Promise<void> {
+    const transactionId = await this.recordPlanPayment(
+      signup,
+      tenantId,
+      payment,
+    );
+    if (transactionId) {
+      await this.notifications.notifyPaymentApproved(tenantId, transactionId);
+    }
+  }
+
+  /**
+   * Cobro del plan por Mercado Pago: Transaction MP aprobada en el gym (sin
+   * movimiento de caja: es plata que el gym pagó) + contrato TENANT
+   * encadenado al anterior.
+   *
+   * @remarks Idempotente por id de pago (`transaction_items.mp_payment_id`):
+   * MP avisa cada cobro por `payment` y por `subscription_authorized_payment`.
+   * @returns La Transaction creada, o null si ese pago ya estaba registrado.
+   */
+  private async recordPlanPayment(
+    signup: PlatformSignup,
+    tenantId: string,
+    payment: MpSubscriptionPayment,
+  ): Promise<string | null> {
+    const actor: AuditActor = {
+      profileType: 'IDENTITY',
+      userId: signup.identityId,
+    };
+    const existing = await this.prisma.transactionItem.findUnique({
+      where: { mpPaymentId: payment.paymentId },
+      select: { id: true, tenantId: true },
+    });
+    if (existing) {
+      await this.contracts.confirmFromApprovedPayment(
+        existing.tenantId,
+        existing.id,
+        actor,
+      );
+      return null;
+    }
+
+    const pack = await this.prisma.pack.findUniqueOrThrow({
+      where: { id: signup.packId },
+      select: { price: true },
+    });
+    const amount =
+      payment.amount !== null && payment.amount >= 1
+        ? Math.round(payment.amount)
+        : pack.price;
+    const idempotencyKey = `platform-plan-mp:${payment.paymentId}`;
+
+    let transactionId: string;
+    let itemId: string;
+    try {
+      const transaction = await this.prisma.transaction.create({
+        data: {
+          tenantId,
+          memberId: null,
+          amount,
+          status: PaymentStatus.APPROVED,
+          idempotencyKey,
+          mpPaymentId: payment.paymentId,
+          transactionItems: {
+            create: {
+              tenantId,
+              memberId: null,
+              packId: signup.packId,
+              amount,
+              status: PaymentStatus.APPROVED,
+              method: PaymentMethod.MP,
+              idempotencyKey: `${idempotencyKey}:0`,
+              mpPaymentId: payment.paymentId,
+            },
+          },
+        },
+        include: { transactionItems: { select: { id: true } } },
+      });
+      const [item] = transaction.transactionItems;
+      if (!item) {
+        throw new Error(`Plan payment ${payment.paymentId} without item`);
+      }
+      transactionId = transaction.id;
+      itemId = item.id;
+    } catch (error: unknown) {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2002'
+      ) {
+        const again = await this.prisma.transactionItem.findUnique({
+          where: { mpPaymentId: payment.paymentId },
+          select: { id: true, tenantId: true },
+        });
+        if (again) {
+          await this.contracts.confirmFromApprovedPayment(
+            again.tenantId,
+            again.id,
+            actor,
+          );
+          return null;
+        }
+      }
+      throw error;
+    }
+
+    await this.contracts.confirmFromApprovedPayment(tenantId, itemId, actor);
+    return transactionId;
+  }
+
+  /**
+   * Crea el gym y su primer contrato TENANT (idempotente): con prueba, el
+   * de $0 a 30 días; sin prueba, el del primer cobro (`payment`).
+   */
+  private async fulfill(
+    signupId: string,
+    payment?: MpSubscriptionPayment,
+  ): Promise<void> {
     const signup = await this.prisma.platformSignup.findUnique({
       where: { id: signupId },
     });
@@ -513,6 +771,9 @@ export class PlatformSignupService {
     const admin = await this.requireAdminTenant();
     let tenantId = signup.tenantId;
     try {
+      if (!signup.applyTrial && !payment) {
+        throw new Error('Paid signup without Mercado Pago payment');
+      }
       if (!tenantId) {
         const provisioned = await this.tenants.provisionFromIdentity(
           signup.identityId,
@@ -521,16 +782,20 @@ export class PlatformSignupService {
         tenantId = provisioned.tenantId;
       }
 
-      await this.cash.startTenantCashCart(
-        admin.id,
-        tenantId,
-        { profileType: 'IDENTITY', userId: signup.identityId },
-        {
-          items: [{ kind: 'PACK', id: signup.packId, quantity: 1 }],
-          applyTrial: signup.applyTrial,
-          idempotencyKey: `platform-signup-${signup.id}`,
-        },
-      );
+      if (payment) {
+        await this.applyPlanPayment(signup, tenantId, payment);
+      } else {
+        await this.cash.startTenantCashCart(
+          admin.id,
+          tenantId,
+          { profileType: 'IDENTITY', userId: signup.identityId },
+          {
+            items: [{ kind: 'PACK', id: signup.packId, quantity: 1 }],
+            applyTrial: true,
+            idempotencyKey: `platform-signup-${signup.id}`,
+          },
+        );
+      }
 
       await this.prisma.platformSignup.update({
         where: { id: signup.id },

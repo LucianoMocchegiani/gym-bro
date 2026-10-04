@@ -17,7 +17,7 @@ Para sumar otro gym: faciliter.xyz/cuenta → **Mis tenants** → **+ Nuevo tena
 
 Sistema → **Plan / Uso**: pack Faciliter del gym, estado (**Prueba**, **Vigente**, **Vencido**, **Sin pack Faciliter**) con fecha, y qué incluye. También se ve en faciliter.xyz/cuenta.
 
-- **Contratado en faciliter.xyz:** se renueva solo con el débito de Mercado Pago que se autorizó.
+- **Contratado en faciliter.xyz:** se renueva solo con el débito de Mercado Pago que se autorizó: cada cobro aprobado suma un mes desde el vencimiento anterior. Ese pago no aparece en la Caja del gym (es lo que el gym paga a Faciliter). Si el aviso de Mercado Pago se demora, se aplica al abrir faciliter.xyz/cuenta o en menos de una hora.
 - **Dado de alta por Faciliter:** se renueva pagando con Faciliter.
 - **Cambiar de plan o dar de baja el débito:** por mail a soporte (topic `soporte`). No hay botón en el panel.
 

@@ -779,6 +779,8 @@ Desde faciliter.xyz:
 
 Si el plan tiene **30 días de prueba**, el gym se crea apenas autorizás y el primer cobro es al terminar la prueba. La prueba es una vez por persona y una vez por gym. Sin prueba, el gym se crea con el primer cobro aprobado. Si el plan no ofrece prueba, lo avisa debajo del plan elegido y el primer mes se cobra al autorizar.
 
+Después, cada mes Mercado Pago cobra el plan y se renueva solo: el plan nuevo arranca cuando vence el anterior y te llega el mail de plan acreditado. Ese pago no aparece en la Caja de tu gym, porque es lo que le pagás a Faciliter, no un cobro tuyo. Si un cobro no se acredita, te avisamos por mail y, cuando el plan vence, tenés 3 días de gracia.
+
 Después entrás a tu panel (`{subdominio}.faciliter.xyz`) y seguís con **Primeros pasos**.
 
 **Captura:** `web-empezar.png` — falta.  

@@ -99,6 +99,9 @@ Leyenda resultado: `P` pass · `F` fail · `B` bloqueado · `-` no aplica
 | P3j | Apex: pack → cuenta → slug → MP autoriza (prueba) | Nace el gym; Plan prueba; staff entra en el slug | RN-PAG-017 | |
 | P3k | Apex: iniciar alta, abandonar en MP y reintentar el mismo slug | El reintento sigue (el intento viejo queda «Reemplazado»); otro usuario recién puede usar el slug entre 1 y 2 h después | RN-PAG-017 | |
 | P3l | Alta autorizada pero sin webhook | Al volver a `/cuenta` (o en ≤ 1 h) nace el gym | RN-PAG-017 | |
+| P3m | Apex sin prueba (pack de 100): MP cobra el primer mes | Nace el gym; contrato TENANT de 1 mes; la Transaction es **MP** (no efectivo) y **no** aparece en Caja/Arqueo del gym; aviso «plan pagado» | RN-PAG-017 | |
+| P3n | Gym self-serve: MP cobra el mes siguiente (o el primero tras la prueba) | Contrato TENANT nuevo que arranca el día después del vencimiento anterior; Plan / Uso muestra la fecha nueva; aviso «plan pagado»; el mismo cobro avisado dos veces (`payment` y `subscription_authorized_payment`) crea un solo contrato | RN-PAG-017 | |
+| P3o | Cobro de renovación aprobado sin webhook, plan por vencer (≤ 3 días) o vencido hace < 30 días | Al abrir `/cuenta` (o en ≤ 1 h) se aplica el cobro y el plan se renueva; si ya estaba en modo limitado, vuelve a operar | RN-PAG-017, RN-PAG-018 | |
 | P4 | Comprobante tras pago | Visible app + email E1; en reportes y cierres, “Ver comprobante” abre el panel (pack incluye servicios) | RN-PAG-009 | |
 | P5 | Devolución afiliado dentro de política | Solicitud OK | CU-PAG-004 | |
 | P6 | Devolución afiliado fuera de política | Rechazo; admin aún puede | RN-PAG-012/011 | |

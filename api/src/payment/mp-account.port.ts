@@ -155,13 +155,15 @@ export abstract class MpAccountPort {
   ): Promise<MpRemoteAuthorizedPayment>;
 
   /**
-   * Si la suscripción ya tiene al menos un cobro aprobado (por si el webhook
-   * del ciclo no llegó).
+   * Cobros aprobados de una suscripción, del más viejo al más nuevo (por si
+   * el webhook del ciclo no llegó).
+   *
+   * @remarks Solo los que ya tienen pago asociado (`payment.id`).
    */
-  abstract hasApprovedAuthorizedPayment(
+  abstract listApprovedAuthorizedPayments(
     accessToken: string,
     preapprovalId: string,
-  ): Promise<boolean>;
+  ): Promise<MpSubscriptionPayment[]>;
 
   /**
    * Canjea el `code` de «Conectar Mercado Pago» por tokens del gym.
@@ -240,6 +242,13 @@ export type MpRemoteAuthorizedPayment = {
   preapprovalId: string | null;
   externalReference: string | null;
   paymentId: string | null;
+  transactionAmount: number | null;
+};
+
+/** Cobro aprobado de un ciclo de suscripción. */
+export type MpSubscriptionPayment = {
+  paymentId: string;
+  amount: number | null;
 };
 
 /** Token de inyección Nest para el adapter concreto. */
