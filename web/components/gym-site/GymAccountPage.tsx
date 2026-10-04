@@ -5,37 +5,21 @@ import { useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { AccountPanel } from '@/components/AccountPanel';
 import { Panel } from '@/components/AdminUi';
-import type { SessionKind } from '@/lib/api/client';
-import { useAuth } from '@/lib/auth/AuthProvider';
-import { useIdentityAuth } from '@/lib/auth/IdentityAuthProvider';
 import { signOutOfGym } from '@/lib/auth/gym-context';
-import { useMemberSession } from '@/lib/auth/useMemberSession';
+import { useGymAccountPerson } from '@/lib/auth/useGymAccountPerson';
 import { PLATFORM_TENANT_SLUG, tenantOrigin } from '@/lib/tenant-host';
 
 /**
  * `{slug}/cuenta`: única pantalla de cuenta del gym (socio y staff): datos,
  * contraseña, cerrar sesión y accesos al portal del socio y al panel.
  *
- * @remarks La persona sale de la sesión de la cuenta Faciliter, o si no de la
- * del socio o la del staff. En una impersonación manda la sesión staff y se
- * ofrece volver a plataforma. Sin sesión, `/login`. Cerrar sesión cierra las
- * tres sesiones del gym y vacía el carrito.
+ * @remarks En una impersonación se ofrece volver a plataforma. Sin sesión,
+ * `/login`. Cerrar sesión cierra las tres sesiones del gym y vacía el carrito.
  */
 export function GymAccountPage({ slug }: { slug: string }) {
   const router = useRouter();
-  const { session: identity, ready: identityReady } = useIdentityAuth();
-  const { session: member, ready: memberReady } = useMemberSession(slug);
-  const { session: staff, ready: staffReady } = useAuth();
-  const ready = identityReady && memberReady && staffReady;
-  const impersonating = staff?.impersonating === true;
-  const person = impersonating ? staff : (identity ?? member ?? staff);
-  const passwordAuth: SessionKind = impersonating
-    ? 'staff'
-    : identity
-      ? 'identity'
-      : member
-        ? 'member'
-        : 'staff';
+  const { ready, identity, member, staff, impersonating, person, sessionKind } =
+    useGymAccountPerson(slug);
   const leavingRef = useRef(false);
 
   useEffect(() => {
@@ -50,7 +34,7 @@ export function GymAccountPage({ slug }: { slug: string }) {
     await signOutOfGym();
   }
 
-  if (!ready || !person) {
+  if (!ready || !person || !sessionKind) {
     return <p className="muted mkt-inner mkt-section">Cargando tu cuenta…</p>;
   }
 
@@ -95,13 +79,13 @@ export function GymAccountPage({ slug }: { slug: string }) {
               : undefined
           }
           hasPassword={
-            passwordAuth === 'identity'
+            sessionKind === 'identity'
               ? identity?.hasPassword
-              : passwordAuth === 'staff'
+              : sessionKind === 'staff'
                 ? staff?.hasPassword
                 : true
           }
-          passwordAuth={passwordAuth}
+          passwordAuth={sessionKind}
         />
       </div>
     </section>

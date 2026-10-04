@@ -19,6 +19,7 @@ import {
 } from '@/components/AdminNavIcons';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { useAuth } from '@/lib/auth/AuthProvider';
+import { useGymAccountPerson } from '@/lib/auth/useGymAccountPerson';
 import { canAccessNavHref } from '@/lib/nav-permissions';
 import { extractTenantSlugFromHost } from '@/lib/tenant-host';
 
@@ -131,6 +132,7 @@ export function AdminShell({
     getServerHostSlug,
   );
   const brandSlug = hostSlug ?? session?.tenantSlug?.trim() ?? '…';
+  const { person } = useGymAccountPerson(hostSlug ?? '');
   const permissionCodes = session?.permissionCodes ?? null;
   const platformAccess = session?.platformAccess ?? 'ok';
   const limited = platformAccess === 'limited';
@@ -243,8 +245,8 @@ export function AdminShell({
               <ThemeToggle />
               <AccountAvatarLink
                 href="/cuenta"
-                name={session?.name}
-                email={session?.email}
+                name={person?.name}
+                email={person?.email}
               />
             </div>
           </div>

@@ -1,13 +1,14 @@
 import Link from 'next/link';
 import type { ReactNode } from 'react';
-import { ThemeToggle } from '@/components/ThemeToggle';
-import { GymAccountLink } from '@/components/gym-site/GymAccountLink';
+import { GymHeaderActions } from '@/components/gym-site/GymHeaderActions';
 import { MarketingFrame } from '@/components/marketing/MarketingFrame';
 import { MktShell } from '@/components/marketing/MktShell';
 import { platformOrigin } from '@/lib/tenant-host';
 
 /**
  * Header + footer de la web pública de un gym (`{slug}/`, `/comprar`, `/portal`, `/cuenta`).
+ * El header ocupa todo el ancho, como el topbar del panel, para que tema y
+ * avatar no salten de lugar al pasar del panel a la web.
  */
 export function GymSiteShell({
   slug,
@@ -20,7 +21,7 @@ export function GymSiteShell({
 }) {
   return (
     <MarketingFrame>
-      <MktShell as="header" className="mkt-header">
+      <header className="mkt-header mkt-header-bar">
         <Link href="/" className="mkt-brand">
           <span className="brand-mark" aria-hidden="true">
             {gymName.trim().slice(0, 1).toUpperCase()}
@@ -30,11 +31,8 @@ export function GymSiteShell({
         <nav className="mkt-nav-links" aria-label="Secciones">
           <Link href="/#planes">Planes</Link>
         </nav>
-        <div className="mkt-header-actions">
-          <ThemeToggle />
-          <GymAccountLink slug={slug} />
-        </div>
-      </MktShell>
+        <GymHeaderActions slug={slug} />
+      </header>
       {children}
       <footer className="mkt-footer">
         <MktShell className="mkt-footer-grid">

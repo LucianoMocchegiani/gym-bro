@@ -105,6 +105,25 @@
   gap: 0.75rem;
 }
 
+/* Header de la web del gym: mismo alto, márgenes y barra que `.app-topbar`
+   del panel (sale del padding lateral de `.mkt-front`). */
+.mkt-header-bar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  flex-wrap: nowrap;
+  margin-inline: calc(-1 * max(2.5rem, 6vw));
+  padding: 0.75rem clamp(1rem, 2.5vw, 1.5rem);
+  border-bottom: 1px solid var(--line);
+  background: var(--bg-topbar);
+  backdrop-filter: blur(10px);
+}
+
+.mkt-header-bar .mkt-header-actions {
+  gap: 0.55rem;
+  flex-shrink: 0;
+}
+
 .mkt-header-login {
   color: var(--muted);
   font-size: 0.95rem;
