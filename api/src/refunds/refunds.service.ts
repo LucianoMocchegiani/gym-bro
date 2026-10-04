@@ -273,6 +273,7 @@ export class RefundsService {
               },
             },
             reservation: true,
+            pack: { select: { tenantId: true } },
           },
         },
       },
@@ -285,6 +286,15 @@ export class RefundsService {
     if (transaction.transactionItems.length !== itemIds.length) {
       throw new BadRequestException(
         'All transactionItemIds must belong to this transaction',
+      );
+    }
+    if (
+      transaction.transactionItems.some(
+        (i) => i.pack && i.pack.tenantId !== tenantId,
+      )
+    ) {
+      throw new ForbiddenException(
+        'Faciliter plan payments can only be refunded by the platform',
       );
     }
 

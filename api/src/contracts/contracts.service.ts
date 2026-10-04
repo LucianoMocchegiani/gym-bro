@@ -306,6 +306,7 @@ export class ContractsService {
             components: { include: { service: true } },
           },
         },
+        transaction: { select: { billedTenantId: true } },
       },
     });
     if (!transactionItem) {
@@ -344,8 +345,10 @@ export class ContractsService {
     const contractType = transactionItem.memberId
       ? ContractType.MEMBER
       : ContractType.TENANT;
+    const contractTenantId =
+      transactionItem.transaction?.billedTenantId ?? tenantId;
     const plan = await this.resolveContractPlan(
-      tenantId,
+      contractTenantId,
       transactionItem.memberId,
       pack,
       options?.applyTrial ? { applyTrial: true } : undefined,
@@ -354,7 +357,7 @@ export class ContractsService {
     try {
       const contract = await this.prisma.$transaction(async (tx) => {
         const created = await this.createContractInTx(tx, {
-          tenantId,
+          tenantId: contractTenantId,
           memberId: transactionItem.memberId ?? undefined,
           packId: pack.id,
           transactionItemId: transactionItem.id,
@@ -363,7 +366,7 @@ export class ContractsService {
           isPlatformTrial: Boolean(options?.applyTrial),
         });
         if (contractType === ContractType.TENANT) {
-          await this.markPlatformPlanUsageInTx(tx, tenantId, {
+          await this.markPlatformPlanUsageInTx(tx, contractTenantId, {
             applyTrial: Boolean(options?.applyTrial),
           });
         }
@@ -372,7 +375,7 @@ export class ContractsService {
 
       const detail = this.toDetail(contract);
       await this.audit.record({
-        tenantId,
+        tenantId: contractTenantId,
         actor,
         action: AUDIT_ACTIONS.contractCreate,
         entityType: 'contract',
@@ -433,6 +436,7 @@ export class ContractsService {
           },
         },
         contract: { include: this.contractInclude() },
+        transaction: { select: { billedTenantId: true } },
       },
     });
 
@@ -464,8 +468,10 @@ export class ContractsService {
     const contractType = transactionItem.memberId
       ? ContractType.MEMBER
       : ContractType.TENANT;
+    const contractTenantId =
+      transactionItem.transaction?.billedTenantId ?? tenantId;
     const plan = await this.resolveContractPlan(
-      tenantId,
+      contractTenantId,
       transactionItem.memberId,
       pack,
       options?.applyTrial ? { applyTrial: true } : undefined,
@@ -473,7 +479,7 @@ export class ContractsService {
 
     const contract = await this.prisma.$transaction(async (tx) => {
       const created = await this.createContractInTx(tx, {
-        tenantId,
+        tenantId: contractTenantId,
         memberId: transactionItem.memberId ?? undefined,
         packId: pack.id,
         transactionItemId: transactionItem.id,
@@ -482,7 +488,7 @@ export class ContractsService {
         isPlatformTrial: Boolean(options?.applyTrial),
       });
       if (contractType === ContractType.TENANT) {
-        await this.markPlatformPlanUsageInTx(tx, tenantId, {
+        await this.markPlatformPlanUsageInTx(tx, contractTenantId, {
           applyTrial: Boolean(options?.applyTrial),
         });
       }
@@ -491,7 +497,7 @@ export class ContractsService {
 
     const detail = this.toDetail(contract);
     await this.audit.record({
-      tenantId,
+      tenantId: contractTenantId,
       actor,
       action: AUDIT_ACTIONS.contractCreate,
       entityType: 'contract',

@@ -11,6 +11,7 @@ import { ConfigService } from '@nestjs/config';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import {
   BillingPeriod,
+  CashMovementConcept,
   ContractStatus,
   ContractType,
   NotificationEventCode,
@@ -19,6 +20,7 @@ import {
   PlatformSignup,
   PlatformSignupStatus,
   Prisma,
+  ReceiptConcept,
   TenantStatus,
 } from '@prisma/client';
 import type { AuditActor } from '../audit/audit.types';
@@ -31,7 +33,9 @@ import { MpWebhookProcessResult } from '../payment/payment.types';
 import { MercadoPagoAccountService } from '../payment/mercadopago-account.service';
 import { MP_ACCOUNT_PORT, MpAccountPort } from '../payment/mp-account.port';
 import { CashPaymentService } from '../payment/cash-payment.service';
+import { PaymentRegisterService } from '../payment-register/register.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { ReceiptsService } from '../receipts/receipts.service';
 import { publicWebOrigin } from '../common/web-urls';
 import { NotificationDispatcher } from '../notifications/notifications.service';
 import {
@@ -84,8 +88,9 @@ export type IdentityGymRow = {
  *
  * @remarks Con prueba el gym nace al autorizar el preapproval. Sin prueba,
  * nace en el primer cobro approved. Cada cobro approved (incluido el
- * primero sin prueba) es una Transaction MP del gym sin movimiento de caja y
- * un contrato TENANT encadenado; se registra una sola vez por id de pago.
+ * primero sin prueba) es una venta de `admin` (ingreso MP + comprobante,
+ * `billedTenantId` = gym) y un contrato TENANT encadenado en el gym; se
+ * registra una sola vez por id de pago.
  * RN-PAG-017. Además del webhook, se consulta MP al listar los gyms del
  * dueño y cada hora: los intentos abiertos y, para los gyms con el plan por
  * vencer o vencido hace poco, los cobros de la suscripción. Un intento sin
@@ -107,6 +112,8 @@ export class PlatformSignupService {
     private readonly config: ConfigService,
     @Inject(MP_ACCOUNT_PORT) private readonly mp: MpAccountPort,
     private readonly notifications: NotificationDispatcher,
+    private readonly register: PaymentRegisterService,
+    private readonly receipts: ReceiptsService,
   ) {}
 
   /**
@@ -642,27 +649,31 @@ export class PlatformSignupService {
     tenantId: string,
     payment: MpSubscriptionPayment,
   ): Promise<void> {
+    const admin = await this.requireAdminTenant();
     const transactionId = await this.recordPlanPayment(
       signup,
+      admin.id,
       tenantId,
       payment,
     );
     if (transactionId) {
-      await this.notifications.notifyPaymentApproved(tenantId, transactionId);
+      await this.notifications.notifyPaymentApproved(admin.id, transactionId);
     }
   }
 
   /**
-   * Cobro del plan por Mercado Pago: Transaction MP aprobada en el gym (sin
-   * movimiento de caja: es plata que el gym pagó) + contrato TENANT
-   * encadenado al anterior.
+   * Cobro del plan por Mercado Pago: venta de `admin` (Transaction MP
+   * aprobada con `billedTenantId` = gym, ingreso en su caja y comprobante) +
+   * contrato TENANT del gym encadenado al anterior.
    *
    * @remarks Idempotente por id de pago (`transaction_items.mp_payment_id`):
    * MP avisa cada cobro por `payment` y por `subscription_authorized_payment`.
+   * Los cobros viejos registrados en el gym siguen ahí.
    * @returns La Transaction creada, o null si ese pago ya estaba registrado.
    */
   private async recordPlanPayment(
     signup: PlatformSignup,
+    adminTenantId: string,
     tenantId: string,
     payment: MpSubscriptionPayment,
   ): Promise<string | null> {
@@ -685,7 +696,11 @@ export class PlatformSignupService {
 
     const pack = await this.prisma.pack.findUniqueOrThrow({
       where: { id: signup.packId },
-      select: { price: true },
+      select: { name: true, price: true },
+    });
+    const gym = await this.prisma.tenant.findUniqueOrThrow({
+      where: { id: tenantId },
+      select: { name: true },
     });
     const amount =
       payment.amount !== null && payment.amount >= 1
@@ -696,35 +711,60 @@ export class PlatformSignupService {
     let transactionId: string;
     let itemId: string;
     try {
-      const transaction = await this.prisma.transaction.create({
-        data: {
-          tenantId,
-          memberId: null,
-          amount,
-          status: PaymentStatus.APPROVED,
-          idempotencyKey,
-          mpPaymentId: payment.paymentId,
-          transactionItems: {
-            create: {
-              tenantId,
+      const created = await this.prisma.$transaction(
+        async (tx) => {
+          const transaction = await tx.transaction.create({
+            data: {
+              tenantId: adminTenantId,
               memberId: null,
-              packId: signup.packId,
+              billedTenantId: tenantId,
               amount,
               status: PaymentStatus.APPROVED,
-              method: PaymentMethod.MP,
-              idempotencyKey: `${idempotencyKey}:0`,
+              idempotencyKey,
               mpPaymentId: payment.paymentId,
+              transactionItems: {
+                create: {
+                  tenantId: adminTenantId,
+                  memberId: null,
+                  packId: signup.packId,
+                  amount,
+                  status: PaymentStatus.APPROVED,
+                  method: PaymentMethod.MP,
+                  idempotencyKey: `${idempotencyKey}:0`,
+                  mpPaymentId: payment.paymentId,
+                },
+              },
             },
-          },
+            include: { transactionItems: { select: { id: true } } },
+          });
+          const [item] = transaction.transactionItems;
+          if (!item) {
+            throw new Error(`Plan payment ${payment.paymentId} without item`);
+          }
+          await this.register.recordIncome(tx, {
+            tenantId: adminTenantId,
+            transactionItemId: item.id,
+            memberId: null,
+            amount,
+            method: PaymentMethod.MP,
+            concept: CashMovementConcept.PACK_CONTRACT,
+            recordedByStaffId: null,
+          });
+          await this.receipts.issueForApprovedPayment(tx, {
+            tenantId: adminTenantId,
+            transactionId: transaction.id,
+            memberId: null,
+            amount,
+            method: PaymentMethod.MP,
+            concept: ReceiptConcept.PACK_CONTRACT,
+            description: `${pack.name} — ${gym.name}`,
+          });
+          return { transactionId: transaction.id, itemId: item.id };
         },
-        include: { transactionItems: { select: { id: true } } },
-      });
-      const [item] = transaction.transactionItems;
-      if (!item) {
-        throw new Error(`Plan payment ${payment.paymentId} without item`);
-      }
-      transactionId = transaction.id;
-      itemId = item.id;
+        { timeout: 15000 },
+      );
+      transactionId = created.transactionId;
+      itemId = created.itemId;
     } catch (error: unknown) {
       if (
         error instanceof Prisma.PrismaClientKnownRequestError &&
@@ -746,7 +786,11 @@ export class PlatformSignupService {
       throw error;
     }
 
-    await this.contracts.confirmFromApprovedPayment(tenantId, itemId, actor);
+    await this.contracts.confirmFromApprovedPayment(
+      adminTenantId,
+      itemId,
+      actor,
+    );
     return transactionId;
   }
 

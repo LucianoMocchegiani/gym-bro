@@ -20,9 +20,13 @@ export type LedgerMovementRow = {
   /** Ausente solo si el payload es anterior al campo. */
   category?: LedgerCategory;
   createdAt: string;
-  memberId: string;
+  memberId: string | null;
   memberName: string | null;
   memberEmail: string;
+  /** Venta de plataforma (Caja de `admin`): gym al que se le vendió el plan. */
+  billedTenantName: string | null;
+  /** False en planes de Faciliter viejos cobrados en el gym: solo los devuelve `admin`. */
+  refundable: boolean;
   recordedByStaffName: string | null;
   mpPaymentId: string | null;
   items: PaymentLineDetail[];

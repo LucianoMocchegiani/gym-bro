@@ -23,6 +23,7 @@ function slimReportMove(value: unknown): Record<string, unknown> | null {
     kind: pickString(row, 'kind'),
     category: pickString(row, 'category'),
     memberName: pickString(row, 'memberName'),
+    billedTenantName: pickString(row, 'billedTenantName'),
     createdAt: row.createdAt ?? null,
   };
 }

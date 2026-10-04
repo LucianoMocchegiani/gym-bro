@@ -105,7 +105,9 @@ export function MoneyMovementsTable({
         header={
           <>
             <th>Fecha y hora</th>
-            <th>Afiliado</th>
+            <th>
+              {rows.some((r) => r.billedTenantName) ? 'Cliente' : 'Afiliado'}
+            </th>
             <th>Concepto</th>
             <th>Categoría</th>
             <th>Tipo</th>
@@ -130,7 +132,10 @@ export function MoneyMovementsTable({
                   {row.memberName?.trim() || row.memberEmail}
                 </Link>
               ) : (
-                row.memberName?.trim() || row.memberEmail || '—'
+                row.billedTenantName ||
+                row.memberName?.trim() ||
+                row.memberEmail ||
+                '—'
               )}
             </td>
             <td>
@@ -169,6 +174,7 @@ export function MoneyMovementsTable({
             <td className="row-actions">
               {canRefund &&
               row.kind === 'INCOME' &&
+              row.refundable !== false &&
               row.items.some((i) => (i.status ?? 'APPROVED') === 'APPROVED') ? (
                 <RowIconButton
                   label="Devolver"

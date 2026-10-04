@@ -46,7 +46,9 @@
 
 **Errores:** Sin permiso → denegado.
 
-**Reglas relacionadas:** RN-PAG-007, RN-PAG-008, RN-PAG-004
+**Caja de plataforma (`admin`):** el «afiliado» es un gym (picker) y el concepto, un pack Faciliter. Cobro (efectivo o MP con la cuenta de `admin`), caja y comprobante quedan en `admin`; el gym recibe solo el contrato TENANT y el aviso «plan pagado» al dueño (RN-PAG-019).
+
+**Reglas relacionadas:** RN-PAG-007, RN-PAG-008, RN-PAG-004, RN-PAG-019
 
 ---
 
@@ -104,7 +106,9 @@
 4. Si se devuelve el cobro que **inscribió** un mandato de débito → baja automática del mandato (RN-PAG-016).
 5. Auditoría.
 
-**Reglas relacionadas:** RN-PAG-011, RN-PAG-006, RN-SER-009, RN-ROL-007
+**Errores:** Plan Faciliter cobrado en el gym (ventas viejas) → el gym no lo puede devolver (sin botón; API 403). Solo `admin` devuelve planes, desde su Cierre y con su MP; el contrato TENANT del gym queda devuelto (RN-PAG-019).
+
+**Reglas relacionadas:** RN-PAG-011, RN-PAG-006, RN-SER-009, RN-ROL-007, RN-PAG-019
 
 ---
 

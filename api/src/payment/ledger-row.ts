@@ -16,9 +16,12 @@ import {
  *
  * @remarks Recibo de cobro vive en `transaction.receipts` (`concept <> REFUND`);
  * el de devolución, en `cash_movements.receipt_id` (1 por ejecución).
+ * `pack.tenantId` distinto del ítem = plan de Faciliter viejo cobrado en el gym.
  */
 export const LEDGER_ITEM_INCLUDE = {
-  pack: PAYMENT_LINE_INCLUDE.pack,
+  pack: {
+    select: { ...PAYMENT_LINE_INCLUDE.pack.select, tenantId: true },
+  },
   session: PAYMENT_LINE_INCLUDE.session,
   contract: PAYMENT_LINE_INCLUDE.contract,
   reservation: PAYMENT_LINE_INCLUDE.reservation,
@@ -27,6 +30,7 @@ export const LEDGER_ITEM_INCLUDE = {
     select: {
       id: true,
       mpPaymentId: true,
+      billedTenant: { select: { name: true } },
       receipts: {
         where: { concept: { not: ReceiptConcept.REFUND } },
         select: { id: true },
@@ -44,13 +48,16 @@ export const LEDGER_MOVEMENT_INCLUDE = {
 } satisfies Prisma.CashMovementInclude;
 
 type LedgerItemSource = PaymentLineSource & {
+  tenantId: string;
   method: PaymentMethod;
   mpPaymentId: string | null;
   transactionId: string;
+  pack: { tenantId: string } | null;
   receipt: { id: string } | null;
   transaction: {
     id: string;
     mpPaymentId: string | null;
+    billedTenant: { name: string } | null;
     receipts: Array<{ id: string }>;
   } | null;
 };
@@ -93,6 +100,10 @@ export type LedgerMovementRow = {
   memberId: string | null;
   memberName: string | null;
   memberEmail: string;
+  /** Venta de plataforma: gym al que se le vendió el plan. */
+  billedTenantName: string | null;
+  /** False en planes de Faciliter viejos cobrados en el gym: solo los devuelve `admin`. */
+  refundable: boolean;
   recordedByStaffName: string | null;
   mpPaymentId: string | null;
   items: PaymentLineDetail[];
@@ -138,6 +149,9 @@ export function buildLedgerRows(
     if (existing) {
       existing.amount += row.amount;
       existing.items.push(line);
+      if (item.pack && item.pack.tenantId !== item.tenantId) {
+        existing.refundable = false;
+      }
       if (!existing.receiptId && receiptId) {
         existing.receiptId = receiptId;
       }
@@ -166,6 +180,8 @@ export function buildLedgerRows(
       memberId: row.member?.id ?? null,
       memberName: row.member?.name ?? null,
       memberEmail: row.member?.email ?? '',
+      billedTenantName: item.transaction?.billedTenant?.name ?? null,
+      refundable: !item.pack || item.pack.tenantId === item.tenantId,
       recordedByStaffName: row.recordedByStaff?.name ?? null,
       mpPaymentId: item.transaction?.mpPaymentId ?? item.mpPaymentId,
       items: [line],

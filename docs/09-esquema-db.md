@@ -141,6 +141,7 @@ identities ||--o{ platform_signups : self_serve
     uuid tenant_id FK
     uuid member_id FK
     uuid recorded_by_staff_id FK
+    uuid billed_tenant_id FK
     int amount
     enum status
     int refunded_amount
@@ -782,7 +783,7 @@ API: Member `GET /api/me/receipts`; Staff `GET /api/receipts/:id`, `GET /api/tra
 
 ### 4.15h3 `platform_signups`
 
-Alta self-serve de gym (Identity en apex). El tenant no existe hasta que MP autoriza el preapproval (con prueba) o aprueba el primer cobro (sin prueba). Se entera por webhook (`subscription_preapproval` / `subscription_authorized_payment`; también acepta el formato viejo `preapproval` / `authorized_payment`) o consultando el preapproval (y, sin prueba, sus cobros en `authorized_payments/search`): al listar `GET /identity/tenants` (vuelta a `/cuenta`) y en un job cada hora, para los `PENDING` y `AWAITING_PAYMENT`. Ya `COMPLETED`, cada cobro aprobado de la suscripción (incluido el primero sin prueba) es una `transactions` MP del gym (`idempotency_key` `platform-plan-mp:{mpPaymentId}`, `transaction_items.mp_payment_id` = id del pago, sin `cash_movements`) + contrato TENANT encadenado; los mismos dos disparadores consultan `authorized_payments/search` para gyms con el plan que vence en ≤ 3 días o venció hace < 30. Las altas sin prueba anteriores registraron el primer cobro como cart de Caja (`platform-signup-{id}`). `apply_trial` solo es true si el pack ofrece la prueba y la cuenta no la usó.
+Alta self-serve de gym (Identity en apex). El tenant no existe hasta que MP autoriza el preapproval (con prueba) o aprueba el primer cobro (sin prueba). Se entera por webhook (`subscription_preapproval` / `subscription_authorized_payment`; también acepta el formato viejo `preapproval` / `authorized_payment`) o consultando el preapproval (y, sin prueba, sus cobros en `authorized_payments/search`): al listar `GET /identity/tenants` (vuelta a `/cuenta`) y en un job cada hora, para los `PENDING` y `AWAITING_PAYMENT`. Ya `COMPLETED`, cada cobro aprobado de la suscripción (incluido el primero sin prueba) es una `transactions` MP de `admin` con `billed_tenant_id` = gym (`idempotency_key` `platform-plan-mp:{mpPaymentId}`, `transaction_items.mp_payment_id` = id del pago, ingreso MP en `cash_movements` y comprobante de `admin`) + contrato TENANT del gym encadenado (RN-PAG-019; los cobros anteriores quedaron en el gym sin caja); los mismos dos disparadores consultan `authorized_payments/search` para gyms con el plan que vence en ≤ 3 días o venció hace < 30. Las altas sin prueba anteriores registraron el primer cobro como cart de Caja (`platform-signup-{id}`). `apply_trial` solo es true si el pack ofrece la prueba y la cuenta no la usó.
 
 Liberación del slug: un `PENDING` sin autorizar en **1 h** pasa a `FAILED` en la siguiente pasada del job (entre 1 y 2 h) («Vencido…») y se cancela el preapproval en MP. Si el mismo dueño reintenta el mismo slug, el `PENDING` anterior pasa a `FAILED` («Reemplazado…»). Antes de descartar se consulta MP: si ya estaba autorizado, se procesa.
 
@@ -874,6 +875,7 @@ Carrito de Caja (CASH y MP, CU-PAG-001 / modelo MercadoLibre): 1 cart → N íte
 | `mp_payment_id` | text nullable | id del pago MP del cart (dedup webhook) |
 | `refunded_amount` | int | default 0; tracking de devoluciones |
 | `recorded_by_staff_id` | uuid FK nullable | staff que inició el cobro (Caja); SET NULL; null si el afiliado paga solo |
+| `billed_tenant_id` | uuid FK nullable → `tenants` | venta de plan Faciliter (RN-PAG-019): la transacción es de `admin` y este es el gym que recibe el contrato TENANT; SET NULL; index. Null en ventas a socios y en ventas de plan viejas (quedaron en el gym) |
 | `created_at` / `updated_at` | timestamptz | |
 
 Cada `transaction_item` tiene `transaction_id` **obligatorio**. Devolución de carrito MP: `POST /transactions/:id/refunds` (refund parcial o del saldo contra `transactions.mp_payment_id`).
@@ -1216,6 +1218,7 @@ Historia incremental (2026-07 / 2026-08) **compactada** en un baseline (`40476fa
 | `20261002200000_member_import_access_codes` | `MemberImportKind` + `ACCESS_CODES` (importación de números del aparato ZKTeco, RN-MIG-006) |
 | `20261003200000_member_signups` | Enum `MemberSignupStatus` + `member_signups` (alta web del socio con pago previo, RN-CTA-007) |
 | `20261004150000_tenant_sites` | `tenant_sites` (web pública editable del gym, RN-CTA-010) |
+| `20261004200000_transactions_billed_tenant` | `transactions.billed_tenant_id` (gym facturado en ventas de plan Faciliter de `admin`, RN-PAG-019) |
 
 Comandos y checklist “desde cero”: [13-setup-db-desde-cero.md](./13-setup-db-desde-cero.md).
 

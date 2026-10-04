@@ -317,6 +317,7 @@ Env: `MP_CHECKOUT_MODE=stub|live`, `PUBLIC_API_BASE_URL` (notification_url).
 - `MovimientoCaja` ligado a `Pago`.
 - `ArqueoCaja` por fecha (+ sucursal cuando multi-sede UI).
 - Admin: `/dashboard/arqueo` = **Cierre**; `/dashboard/devoluciones` = **Solicitudes de devolución** (`refund_requests`). Grilla: `kind` (ingreso/egreso) + `category` (`SALE` / `REFUND`) **derivada de** `kind` en `buildLedgerRows`. El arqueo cuenta solo efectivo: `expected` = INCOME CASH − OUTCOME CASH − gastos CASH.
+- Ventas de planes Faciliter (RN-PAG-019): `transactions.tenant_id` = `admin` y `billed_tenant_id` = gym. Caja, comprobante, webhook MP y devolución usan `admin`; `ContractsService` crea el contrato TENANT en `billed_tenant_id` y `notifyPaymentApproved` avisa a su dueño. En la grilla, `billedTenantName` va en la columna Cliente y `refundable` = false oculta Devolver en planes viejos que quedaron en el gym (pack de otro tenant; la API también lo rechaza).
 - Gastos: módulo `expenses` (`/dashboard/gastos`), tablas propias (no `cash_movements`). Comprobantes en R2 privado vía `FileStoragePort`. `GET /expenses/summary` alimenta Reportes (resultado = ingresos − devoluciones − gastos). RN-GAS.
 
 

@@ -4725,7 +4725,7 @@
                             "mode": "raw",
                             "raw": "{\n  \"items\": [\n    {\n      \"kind\": \"PACK\",\n      \"id\": \"{{createdPackId}}\"\n    }\n  ],\n  \"idempotencyKey\": \"platform-cash-cart-{{$timestamp}}\",\n  \"applyTrial\": false\n}"
                         },
-                        "description": "Caja de plataforma (Caja del tenant `admin`). Requiere JWT Staff del tenant `admin` + `platform.tenants.write`. Solo PACK. `applyTrial: true` = 30 días $0 si el gym y el dueño no usaron la prueba (RN-PAG-017); crea Contract TENANT. Sin prueba: cobro + contrato TENANT. `{{billingTenantId}}` = gym que paga (NO admin). Pack del tenant admin."
+                        "description": "Caja de plataforma (Caja del tenant `admin`). Requiere JWT Staff del tenant `admin` + `platform.tenants.write`. Solo PACK. `applyTrial: true` = 30 días $0 si el gym y el dueño no usaron la prueba (RN-PAG-017); crea Contract TENANT. Sin prueba: cobro + contrato TENANT. `{{billingTenantId}}` = gym que paga (NO admin). Pack del tenant admin. Transaccion, caja y comprobante quedan en admin (billedTenantId = gym); el gym solo recibe el contrato TENANT (RN-PAG-019)."
                     },
                     "event": [
                         {
@@ -4758,7 +4758,7 @@
                             "mode": "raw",
                             "raw": "{\n  \"items\": [\n    {\n      \"kind\": \"PACK\",\n      \"id\": \"{{createdPackId}}\"\n    }\n  ],\n  \"idempotencyKey\": \"platform-mp-cart-{{$timestamp}}\"\n}"
                         },
-                        "description": "Genera el link de Mercado Pago para que el gym pague. Mismos guards que la versión CASH (`platform.tenants.write` + tenant admin). Requiere MP conectado en el tenant admin (el de la plataforma), no en el gym. payerEmail = staff activo más antiguo del gym facturado. Devuelve PENDING + checkoutUrl; el contrato TENANT se emite al aprobarse el webhook."
+                        "description": "Genera el link de Mercado Pago para que el gym pague. Mismos guards que la versión CASH (`platform.tenants.write` + tenant admin). Requiere MP conectado en el tenant admin (el de la plataforma), no en el gym. payerEmail = staff activo más antiguo del gym facturado. Devuelve PENDING + checkoutUrl. La transaccion es del tenant admin (billedTenantId = gym) y el webhook va a admin; al aprobarse: ingreso + comprobante en admin, contrato TENANT en el gym (RN-PAG-019)."
                     },
                     "event": [
                         {

@@ -52,6 +52,7 @@ export class NotificationDispatcher {
         memberId: true,
         amount: true,
         tenant: { select: { name: true, ownerIdentityId: true } },
+        billedTenant: { select: { id: true, ownerIdentityId: true } },
         transactionItems: {
           take: 1,
           select: { pack: { select: { name: true } } },
@@ -72,12 +73,16 @@ export class NotificationDispatcher {
       });
       return;
     }
-    if (!tx.tenant.ownerIdentityId) {
+    const ownerTenantId = tx.billedTenant?.id ?? tenantId;
+    const ownerIdentityId = tx.billedTenant
+      ? tx.billedTenant.ownerIdentityId
+      : tx.tenant.ownerIdentityId;
+    if (!ownerIdentityId) {
       return;
     }
     await this.notifyPlatformOwner({
-      tenantId,
-      identityId: tx.tenant.ownerIdentityId,
+      tenantId: ownerTenantId,
+      identityId: ownerIdentityId,
       event: NotificationEventCode.PLATFORM_PLAN_PAID,
       idempotencyKey: `PLATFORM_PLAN_PAID:${transactionId}`,
       extraVars: {

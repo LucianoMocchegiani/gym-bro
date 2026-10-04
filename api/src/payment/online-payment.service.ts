@@ -276,12 +276,12 @@ export class OnlinePaymentService {
    * propio a otro gym.
    *
    * @description
-   * Reusa el mismo flujo que {@link startCartCheckout} con `memberId: null`: el
-   * pagador es el propio `tenantId` de la transacción (`billingTenantId`). El
-   * pagador en MP es el staff más antiguo del gym facturado.
+   * Reusa el mismo flujo que {@link startCartCheckout} con `memberId: null`: la
+   * transacción y el webhook son de `catalogTenantId` (la plataforma, con su
+   * cuenta MP) y `billedTenantId` = `billingTenantId`. El pagador en MP es el
+   * staff más antiguo del gym facturado.
    *
    * @remarks
-   * `catalogTenantId` es el tenant dueño del pack (la plataforma).
    * Solo packs: el drop-in es por sesiones de un gym y no aplica a plataforma.
    */
   async startTenantCartCheckout(
@@ -333,14 +333,18 @@ export class OnlinePaymentService {
     const existing = await this.prisma.transaction.findUnique({
       where: {
         tenantId_idempotencyKey: {
-          tenantId: billingTenantId,
+          tenantId: catalogTenantId,
           idempotencyKey,
         },
       },
       include: { transactionItems: { orderBy: { createdAt: 'asc' } } },
     });
 
-    if (existing && existing.memberId !== null) {
+    if (
+      existing &&
+      (existing.memberId !== null ||
+        existing.billedTenantId !== billingTenantId)
+    ) {
       throw new BadRequestException(
         'Idempotency key already used for a different checkout',
       );
@@ -378,8 +382,9 @@ export class OnlinePaymentService {
     if (!cart) {
       cart = await this.prisma.transaction.create({
         data: {
-          tenantId: billingTenantId,
+          tenantId: catalogTenantId,
           memberId: null,
+          billedTenantId: billingTenantId,
           amount: total,
           status: PaymentStatus.PENDING,
           idempotencyKey,
@@ -392,7 +397,7 @@ export class OnlinePaymentService {
         for (let n = 0; n < line.quantity; n++) {
           const transactionItem = await this.prisma.transactionItem.create({
             data: {
-              tenantId: billingTenantId,
+              tenantId: catalogTenantId,
               memberId: null,
               packId: line.kind === 'PACK' ? line.refId : null,
               sessionId: null,
@@ -410,7 +415,7 @@ export class OnlinePaymentService {
 
     const accessToken =
       await this.accounts.getDecryptedAccessToken(catalogTenantId);
-    const notificationUrl = this.buildNotificationUrl(billingTenantId);
+    const notificationUrl = this.buildNotificationUrl(catalogTenantId);
 
     try {
       const preference = await this.mp.createPreference({
@@ -453,7 +458,7 @@ export class OnlinePaymentService {
         const again = await this.prisma.transaction.findUnique({
           where: {
             tenantId_idempotencyKey: {
-              tenantId: billingTenantId,
+              tenantId: catalogTenantId,
               idempotencyKey,
             },
           },

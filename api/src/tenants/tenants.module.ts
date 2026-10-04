@@ -3,7 +3,9 @@ import { AuditModule } from '../audit/audit.module';
 import { AuthModule } from '../auth/auth.module';
 import { ContractsModule } from '../contracts/contracts.module';
 import { PaymentModule } from '../payment/payment.module';
+import { PaymentRegisterModule } from '../payment-register/payment-register.module';
 import { NotificationsModule } from '../notifications/notifications.module';
+import { ReceiptsModule } from '../receipts/receipts.module';
 import { RolesModule } from '../roles/roles.module';
 import { StaffModule } from '../staff/staff.module';
 import { IdentityPlatformController } from './identity-platform.controller';
@@ -25,6 +27,8 @@ import { TenantsService } from './tenants.service';
     AuditModule,
     ContractsModule,
     NotificationsModule,
+    PaymentRegisterModule,
+    ReceiptsModule,
     forwardRef(() => PaymentModule),
   ],
   controllers: [

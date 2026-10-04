@@ -221,6 +221,7 @@ model Tenant {
   credentialOffers CredentialOffer[]
   staffCredentialOffers StaffCredentialOffer[]
   transactions    Transaction[]
+  billedTransactions Transaction[] @relation("TransactionBilledTenant")
   debitMandates   DebitMandate[]
   platformSignups PlatformSignup[]
   memberSignups   MemberSignup[]
@@ -794,10 +795,14 @@ model Transaction {
   refundedAmount     Int           @default(0) @map("refunded_amount")
   /// Staff que inició el cobro (Caja). Null si el afiliado paga solo.
   recordedByStaffId  String?       @map("recorded_by_staff_id") @db.Uuid
+  /// Venta de plataforma: gym al que `admin` le vendió el plan. La transacción
+  /// (caja, comprobante, devolución) es de `admin`; el contrato TENANT, del gym.
+  billedTenantId     String?       @map("billed_tenant_id") @db.Uuid
   createdAt          DateTime      @default(now()) @map("created_at")
   updatedAt          DateTime      @updatedAt @map("updated_at")
 
   tenant   Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  billedTenant Tenant? @relation("TransactionBilledTenant", fields: [billedTenantId], references: [id], onDelete: SetNull)
   member   Member?   @relation(fields: [memberId], references: [id], onDelete: Cascade)
   recordedByStaff StaffUser? @relation("TransactionRecorder", fields: [recordedByStaffId], references: [id], onDelete: SetNull)
   transactionItems TransactionItem[]
@@ -808,6 +813,7 @@ model Transaction {
   @@index([tenantId])
   @@index([memberId])
   @@index([recordedByStaffId])
+  @@index([billedTenantId])
   @@map("transactions")
 }
 

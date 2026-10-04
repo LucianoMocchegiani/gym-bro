@@ -795,6 +795,7 @@ export class WebhookPaymentService {
       id: string;
       memberId: string | null;
       recordedByStaffId: string | null;
+      billedTenantId: string | null;
       transactionItems: Array<{
         id: string;
         memberId: string | null;
@@ -958,6 +959,7 @@ export class WebhookPaymentService {
     confirmed: {
       id: string;
       memberId: string | null;
+      billedTenantId?: string | null;
       transactionItems: Array<{ packId: string | null; amount: number }>;
     },
   ): Promise<void> {
@@ -969,6 +971,18 @@ export class WebhookPaymentService {
       confirmed.transactionItems.length > 0 &&
       confirmed.transactionItems.every((item) => item.packId);
     const firstItem = confirmed.transactionItems[0];
+    const label =
+      confirmed.transactionItems.length <= 1
+        ? firstItem?.packId
+          ? 'Pack'
+          : 'Drop-in'
+        : `${confirmed.transactionItems.length} items`;
+    const billed = confirmed.billedTenantId
+      ? await tx.tenant.findUnique({
+          where: { id: confirmed.billedTenantId },
+          select: { name: true },
+        })
+      : null;
     await this.receiptsService.issueForApprovedPayment(tx, {
       tenantId,
       transactionId: confirmed.id,
@@ -976,12 +990,7 @@ export class WebhookPaymentService {
       amount: total,
       method: PaymentMethod.MP,
       concept: packOnly ? ReceiptConcept.PACK_CONTRACT : ReceiptConcept.DROP_IN,
-      description:
-        confirmed.transactionItems.length <= 1
-          ? firstItem?.packId
-            ? 'Pack'
-            : 'Drop-in'
-          : `${confirmed.transactionItems.length} items`,
+      description: billed ? `${label} — ${billed.name}` : label,
     });
   }
 

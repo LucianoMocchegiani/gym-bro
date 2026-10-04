@@ -30,10 +30,12 @@ import { Prisma } from '@prisma/client';
 type Tx = Prisma.TransactionClient;
 
 export interface ProcessPaymentParams {
-  /** Tenant que abona: el dueño del cobro o el gym facturado por la plataforma. */
+  /** Tenant dueño del cobro (en ventas de plataforma, `admin`). */
   tenantId: string;
   /** Afiliado cobrador. Null cuando el tenant mismo abona. */
   memberId: string | null;
+  /** Venta de plataforma: gym que recibe el contrato TENANT. */
+  billedTenantId?: string | null;
   items: TransactionItemInput[];
   idempotencyKey: string;
   method: PaymentMethod;
@@ -89,6 +91,7 @@ export class CashPaymentService {
     const {
       tenantId,
       memberId,
+      billedTenantId,
       items,
       idempotencyKey,
       method,
@@ -107,6 +110,7 @@ export class CashPaymentService {
     const transaction = await this.transactionService.initiateTransaction({
       tenantId,
       memberId,
+      billedTenantId: billedTenantId ?? null,
       method,
       items,
       recordedByStaffId: recordedByStaffId ?? null,
@@ -351,13 +355,12 @@ export class CashPaymentService {
    * un pack propio a otro gym.
    *
    * @description
-   * Reusa {@link processPayment} con `memberId: null`: el pagador es el propio
-   * `tenantId` de la transacción (`billingTenantId`). Crea contrato `TENANT`.
+   * Reusa {@link processPayment} con `memberId: null`: la transacción, la caja
+   * y el comprobante quedan en `catalogTenantId` (la plataforma) con
+   * `billedTenantId` = `billingTenantId`; el contrato `TENANT` va al gym.
    * `applyTrial`: 30 días, $0, candados por gym y por cuenta dueña.
    *
    * @remarks
-   * `catalogTenantId` es el tenant dueño del pack (la plataforma); la
-   * transacción se emite contra `billingTenantId` (el gym que paga).
    * Solo packs: el drop-in es por sesiones de un gym, no aplica a plataforma.
    */
   async startTenantCashCart(
@@ -462,8 +465,9 @@ export class CashPaymentService {
 
     const { transaction } = await this.prisma.$transaction(async (tx) => {
       return this.processPayment(tx, {
-        tenantId: billingTenantId,
+        tenantId: catalogTenantId,
         memberId: null,
+        billedTenantId: billingTenantId,
         items: allItems,
         idempotencyKey,
         method: PaymentMethod.CASH,
@@ -484,7 +488,7 @@ export class CashPaymentService {
       }
       usedItemIds.add(item.id);
       await this.contracts.createFromTransactionItem(
-        billingTenantId,
+        catalogTenantId,
         item.id,
         actor,
         { applyTrial: Boolean(dto.applyTrial) },
@@ -494,7 +498,7 @@ export class CashPaymentService {
     let receipt: ReceiptDetail | null = null;
     try {
       receipt = await this.receiptsService.findByTransactionId(
-        billingTenantId,
+        catalogTenantId,
         transaction.id,
       );
     } catch {
@@ -504,7 +508,7 @@ export class CashPaymentService {
     }
 
     await this.notifications.notifyPaymentApproved(
-      billingTenantId,
+      catalogTenantId,
       transaction.id,
     );
 

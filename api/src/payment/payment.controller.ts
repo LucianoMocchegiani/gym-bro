@@ -103,7 +103,8 @@ export class PaymentController {
    * otro gym.
    *
    * @remarks `platform.tenants.write` + tenant `admin` (PlatformTenantGuard).
-   * La transacción se emite contra `billingTenantId` con `memberId: null`.
+   * La transacción es de `admin` (webhook y cuenta MP de `admin`) con
+   * `billedTenantId` = `billingTenantId` y `memberId: null`.
    */
   @Post('tenants/:billingTenantId/transaction-items/mp/cart')
   @HttpCode(HttpStatus.CREATED)

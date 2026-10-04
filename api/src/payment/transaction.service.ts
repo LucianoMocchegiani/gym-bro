@@ -11,10 +11,12 @@ export interface TransactionItemInput {
 }
 
 export interface InitiatePaymentParams {
-  /** Tenant que abona: el dueño del cobro o el gym facturado por la plataforma. */
+  /** Tenant dueño del cobro (en ventas de plataforma, `admin`). */
   tenantId: string;
   /** Afiliado cobrador. Null cuando el tenant mismo abona. */
   memberId: string | null;
+  /** Venta de plataforma: gym que recibe el contrato TENANT. */
+  billedTenantId?: string | null;
   method: PaymentMethod;
   items: TransactionItemInput[];
   recordedByStaffId?: string | null;
@@ -53,6 +55,7 @@ export class TransactionService {
     const {
       tenantId,
       memberId,
+      billedTenantId,
       method,
       items,
       recordedByStaffId,
@@ -72,6 +75,7 @@ export class TransactionService {
         status: PaymentStatus.PENDING,
         idempotencyKey: firstItem.idempotencyKey,
         recordedByStaffId: recordedByStaffId ?? null,
+        billedTenantId: billedTenantId ?? null,
         mpPreferenceId,
         mpInitPoint,
         mpSandboxInitPoint,
