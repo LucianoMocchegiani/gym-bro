@@ -24,11 +24,11 @@ Además de la app, cada gym tiene su web pública en `{slug}.faciliter.xyz`:
 
 - **Planes:** los packs activos con precio. **Comprar** aparece solo si el gym conectó Mercado Pago; si no, dice que se contrata en el gym.
 - **Comprar:** entra o crea su cuenta Faciliter (mail o Google). Si no es socio, completa nombre, DNI y teléfono (opcional) y paga con el Mercado Pago del gym; **queda dado de alta recién cuando el pago se aprueba** (si no paga, no aparece en Afiliados). Si ya es socio, el pack se suma a su **carrito**. Vuelve al **portal** con el pack activo cuando el pago se aprueba.
-- **Portal** (`/portal`, botón «Mi portal» del header), lo mismo que la app para sesiones y compras: **Inicio** (próximas clases y planes vigentes), **Clases** (calendario del mes: reservar con crédito; sin crédito, la clase suelta va al carrito; lista de espera si está llena), **Mis clases** (cancelar o salir de la espera), **Tienda** y **Carrito** (packs y clases sueltas en un solo pago de Mercado Pago) e **Historial** (todos los comprobantes y pedir devolución). Documentos, avisos y ajustes siguen solo en la app.
+- **Portal** (`/portal`, botón «Mi portal» del header), lo mismo que la app para sesiones y compras: **Inicio** (próximas clases y planes vigentes), **Clases** (calendario del mes: reservar con crédito; sin crédito, la clase suelta va al carrito; lista de espera si está llena), **Mis clases** (cancelar o salir de la espera), **Tienda** y **Carrito** (packs y clases sueltas en un solo pago de Mercado Pago), **Historial** (todos los comprobantes y pedir devolución), **Documentos** (su carpeta, solo lectura; topic `carpeta`) y **Avisos** (bandeja con contador de no leídos en el menú y «Avisos por correo»; topic `avisos`). La credencial y el escaneo en la puerta siguen solo en la app.
 - **Mi cuenta** (`/cuenta`, avatar con las iniciales junto al tema): datos, cambiar o crear contraseña y **Cerrar sesión** (vacía el carrito).
 
 ## Lo que no existe
 
 Registro desde la app (sí desde la web del gym al comprar), “olvidé mi contraseña”, notificaciones push, rutinas por días (la rutina va como archivo en la carpeta), tienda de productos físicos, noticias del local, QR del socio generado por la app.
 
-Si piden capturas: `/docs/modulos` (App del socio). El asistente no ve la app del socio.
+Si piden capturas: `/docs/modulos` (App del socio y Portal web del socio). El asistente no ve la app ni el portal del socio.

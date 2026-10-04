@@ -2,7 +2,7 @@
 
 **Estado:** Publicada en `/docs`. Este archivo es el **texto canónico**: el sitio lo parte en capítulos y el asistente (`mcp/help/*`) tiene que decir lo mismo.  
 **Sitio:** `web/content/docs/guia.md` + capturas en `web/public/docs/`.  
-**Para quién:** dueño y staff del local. El socio no lee esto: lo vive en la app.  
+**Para quién:** dueño y staff del local. El socio no lee esto: lo vive en la app y en el portal web del gym.  
 **Fuera de esta guía:** Super Admin (plataforma), rutinas por días, notificaciones push, tienda de productos físicos, noticias del local, bandeja de avisos del staff.
 
 Este archivo es el **playbook de capturas** además del texto (qué foto falta, dónde sacarla). El sitio oculta las líneas de captura y muestra solo las fotos que existen.
@@ -41,7 +41,7 @@ Primeros pasos       /docs/primeros-pasos   ← el orden para arrancar un local
 Módulos              /docs/modulos
   Config · Servicios · Packs · Sesiones · Afiliados · Carpeta · Importar
   Staff y roles · Caja · Vencimientos · Cierre · Gastos · Devoluciones
-  Reportes · Puerta · Avisos · Auditoría · App · Asistente
+  Reportes · Puerta · Avisos · Auditoría · App · Portal web · Asistente
 
 Tu cuenta y el plan  /docs/cuenta
   Cuenta Faciliter · Contratar · Mi cuenta · Plan / Uso · Eliminar cuenta · Soporte
@@ -545,7 +545,7 @@ Cada afiliado y cada staff tiene una **carpeta** (ícono en la grilla): **notas*
 
 La foto de la ficha no es la carpeta: es la foto de perfil.
 
-**Qué ve el socio:** App → Inicio → **Documentos**: sus notas y archivos, solo lectura.
+**Qué ve el socio:** App → Inicio → **Documentos**, o en la web del gym **Mi portal → Documentos**: sus notas y archivos, solo lectura. En la web, las notas y las imágenes se abren ahí mismo y el PDF se descarga.
 
 **Captura:** `web-carpeta.png` — falta.  
 **Dónde:** Afiliados → ícono Carpeta de un socio con una nota y un PDF.  
@@ -667,6 +667,7 @@ Dos lados de lo mismo:
 
 - **Panel → Sistema → Avisos:** una tarjeta por evento (pago acreditado, reserva confirmada o cancelada, lugar en lista de espera, devolución, pack por vencer, pack vencido, débito no acreditado o fallido). Cada una se puede **apagar** y tiene asunto y texto editables, con variables como el nombre del socio o del gym.
 - **App → Inicio → Avisos:** la bandeja del socio, con los nuevos arriba. En **Ajustes → Avisos → Correo por tipo** elige qué le llega también por mail. La bandeja de la app no se apaga.
+- **Web del gym → Mi portal → Avisos:** la misma bandeja (el menú muestra cuántos hay sin leer) y, abajo, **Avisos por correo** con los mismos tildes que la app. Lo que lee en un lado queda leído en el otro.
 
 No hay notificaciones push todavía: el aviso llega por mail y a la bandeja.
 
@@ -699,6 +700,28 @@ El staff usa la misma app: al elegir su perfil en **Tus gyms** ve Sesiones, Caja
 **Captura:** `app-ajustes.png` — falta.  
 **Dónde:** App → Ajustes de un socio.  
 **Qué se ve:** cuenta, Cambiar gym, contraseña, Avisos, tema, Cerrar sesión y Eliminar cuenta.
+
+## Portal web del socio
+
+En la web del gym (`{slug}.faciliter.xyz`), el socio entra con su cuenta Faciliter y va a **Mi portal** (`/portal`). Es lo mismo que la app, sin instalar nada:
+
+- **Inicio:** saludo, próximas clases, planes vigentes y, si hay, «Tenés n avisos nuevos».
+- **Clases:** calendario del mes. Con créditos reserva; sin créditos, la clase suelta va al carrito; si está llena, lista de espera.
+- **Mis clases:** próximas reservas y listas de espera (cancelar o salir), y las pasadas.
+- **Tienda** y **Carrito:** packs y clases sueltas en un solo pago de Mercado Pago (solo si el gym conectó Mercado Pago).
+- **Historial:** todos sus comprobantes (app, web y caja) y **Solicitar devolución** por línea.
+- **Documentos:** su carpeta, solo lectura.
+- **Avisos:** su bandeja y qué le llega por mail.
+
+Datos, contraseña y cerrar sesión están en **Mi cuenta** (el avatar de arriba a la derecha). La credencial y el escaneo en la puerta siguen siendo de la app.
+
+**Captura:** `web-portal-inicio.png` — falta.  
+**Dónde:** `{slug}.faciliter.xyz/portal` con un socio de prueba con pack, una reserva y un aviso sin leer.  
+**Qué se ve:** el menú del portal (Avisos con el contador), «Tenés 1 aviso nuevo», próximas clases y planes vigentes.
+
+**Captura:** `web-portal-avisos.png` — falta.  
+**Dónde:** Mi portal → Avisos, con uno nuevo y uno leído.  
+**Qué se ve:** Nuevos, Anteriores y Avisos por correo con los tildes.
 
 ## Asistente
 
@@ -807,10 +830,11 @@ Faltan o hay que rehacer (un gym de prueba, datos de prueba):
 14. `app-ajustes.png`
 15. `web-asistente-propuesta.png`
 16. `web-empezar.png` + `web-cuenta.png` + `web-plan.png`
+17. `web-portal-inicio.png` + `web-portal-avisos.png`
 
 Repetir (ya publicadas; reemplazar el archivo con el mismo nombre). Las del panel tienen el menú viejo (sin Vencimientos, Gastos, Avisos ni Plan / Uso) y la «N» de Next abajo a la izquierda:
 
-17. Todas las `web-….png` marcadas **lista (repetir)**: Inicio, Servicios (lista, alta, editar), Packs (lista, editar, componentes), Sesiones (calendario, recurrencias, alta, recurrencia), Roles (lista, flags, alta), Staff (lista, alta, editar, roles), Afiliados (lista, alta, ficha, ficha al día, credencial, credencial pendiente), Caja (afiliado, carrito, carrito drop-in) y Reportes.
-18. `app-inicio-con-pack.png`: le faltan los atajos Documentos y Avisos.
+18. Todas las `web-….png` marcadas **lista (repetir)**: Inicio, Servicios (lista, alta, editar), Packs (lista, editar, componentes), Sesiones (calendario, recurrencias, alta, recurrencia), Roles (lista, flags, alta), Staff (lista, alta, editar, roles), Afiliados (lista, alta, ficha, ficha al día, credencial, credencial pendiente), Caja (afiliado, carrito, carrito drop-in) y Reportes.
+19. `app-inicio-con-pack.png`: le faltan los atajos Documentos y Avisos.
 
 Las demás (app) están **listas** en `web/public/docs/`.

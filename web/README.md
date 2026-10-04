@@ -25,6 +25,8 @@ Con tunnel: `{slug}.{NEXT_PUBLIC_APP_DOMAIN}` (ej. `https://demo.pruebasaproducc
 | `/portal/mis-clases` | Próximas reservas y lista de espera (cancelar / salir) + pasadas y canceladas |
 | `/portal/tienda` · `/portal/carrito` | Planes al carrito; carrito de packs y clases sueltas, un solo pago MP (`returnToWeb`) |
 | `/portal/historial` | Todos los comprobantes con detalle y pedido de devolución por línea |
+| `/portal/documentos` | Carpeta del socio, solo lectura: nota / imagen en modal, PDF se descarga |
+| `/portal/avisos` | Bandeja (Nuevos / Anteriores, contador en el menú) + correo por tipo de aviso |
 | `/dashboard` | Panel staff: KPIs del día |
 | `/dashboard/afiliados` | Listado / alta / ficha + estado de cuenta |
 | `/dashboard/servicios` | Catálogo de servicios |

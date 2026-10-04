@@ -52,7 +52,7 @@ function PurchaseBanner({ purchase }: { purchase: PurchaseReturn }) {
 
 /** Inicio del portal: planes vigentes, próximas reservas y accesos. */
 function MemberHome({ purchase }: { purchase: PurchaseReturn | null }) {
-  const { session } = useMemberArea();
+  const { session, notices } = useMemberArea();
   const booking = useMemberBooking();
   const account = booking.data?.account ?? null;
   const upcoming = account?.reservations.slice(0, UPCOMING_ON_HOME) ?? [];
@@ -67,6 +67,14 @@ function MemberHome({ purchase }: { purchase: PurchaseReturn | null }) {
           <p className="error">{booking.loadError}</p>
         ) : null}
         <BookingFeedback booking={booking} />
+        {notices.unread > 0 ? (
+          <p className="success">
+            {notices.unread === 1
+              ? 'Tenés 1 aviso nuevo.'
+              : `Tenés ${notices.unread} avisos nuevos.`}{' '}
+            <Link href="/portal/avisos">Ver avisos</Link>
+          </p>
+        ) : null}
         <div className="mkt-hero-actions">
           <Link className="mkt-btn-primary" href="/portal/clases">
             Reservar una clase

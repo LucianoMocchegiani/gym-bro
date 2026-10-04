@@ -4,8 +4,7 @@
  * Topes alineados con `api/src/folder/folder.constants.ts` (RN-FOL-006).
  */
 
-import { apiRequest } from '@/lib/api/client';
-import { readStaffSession } from '@/lib/auth/session';
+import { apiBlob, apiMultipart, apiRequest } from '@/lib/api/client';
 
 export const FOLDER_MAX_ITEMS = 10;
 export const FOLDER_MAX_FILE_BYTES = 5 * 1024 * 1024;
@@ -36,25 +35,11 @@ function ownerPath(kind: FolderOwnerKind, id: string): string {
   return kind === 'member' ? `/members/${id}/folder` : `/staff/${id}/folder`;
 }
 
-function apiBase(): string {
-  const base = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, '') ?? '';
-  if (!base) {
-    throw new Error('NEXT_PUBLIC_API_URL no está configurada');
-  }
-  return `${base}/api`;
-}
-
-function staffToken(): string | null {
-  try {
-    const raw = localStorage.getItem('gymbro.staff.session');
-    if (!raw) {
-      return readStaffSession()?.accessToken ?? null;
-    }
-    const session = JSON.parse(raw) as { accessToken?: string };
-    return session.accessToken ?? null;
-  } catch {
-    return null;
-  }
+/** Nombre visible: título de la nota o nombre original del archivo. */
+export function folderItemName(item: FolderItemDetail): string {
+  return item.kind === 'NOTE'
+    ? item.title?.trim() || 'Nota'
+    : (item.originalFilename ?? 'Archivo');
 }
 
 /**
@@ -101,7 +86,7 @@ export function createFolderNote(
 /**
  * Alta de PDF o imagen (multipart).
  */
-export async function createFolderFile(
+export function createFolderFile(
   kind: FolderOwnerKind,
   id: string,
   file: File,
@@ -115,29 +100,7 @@ export async function createFolderFile(
   if (input.labelId) {
     formData.append('labelId', input.labelId);
   }
-  const headers: Record<string, string> = {};
-  const token = staffToken();
-  if (token) {
-    headers.Authorization = `Bearer ${token}`;
-  }
-  const res = await fetch(`${apiBase()}${ownerPath(kind, id)}/files`, {
-    method: 'POST',
-    headers,
-    credentials: 'include',
-    body: formData,
-  });
-  const parsed = (await res.json().catch(() => null)) as
-    | FolderItemDetail
-    | { message?: string }
-    | null;
-  if (!res.ok) {
-    const msg =
-      parsed && 'message' in parsed && typeof parsed.message === 'string'
-        ? parsed.message
-        : 'Error al subir archivo';
-    throw new Error(msg);
-  }
-  return parsed as FolderItemDetail;
+  return apiMultipart<FolderItemDetail>(`${ownerPath(kind, id)}/files`, formData);
 }
 
 /**
@@ -154,24 +117,12 @@ export function deleteFolderItem(
 }
 
 /**
- * Descarga autenticada (blob).
+ * Descarga autenticada (blob) desde el panel.
  */
-export async function downloadFolderFile(
+export function downloadFolderFile(
   kind: FolderOwnerKind,
   ownerId: string,
   itemId: string,
 ): Promise<Blob> {
-  const headers: Record<string, string> = {};
-  const token = staffToken();
-  if (token) {
-    headers.Authorization = `Bearer ${token}`;
-  }
-  const res = await fetch(
-    `${apiBase()}${ownerPath(kind, ownerId)}/${itemId}/file`,
-    { headers, credentials: 'include' },
-  );
-  if (!res.ok) {
-    throw new Error('No se pudo descargar el archivo');
-  }
-  return res.blob();
+  return apiBlob(`${ownerPath(kind, ownerId)}/${itemId}/file`);
 }

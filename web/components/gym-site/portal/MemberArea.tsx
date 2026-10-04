@@ -12,12 +12,14 @@ import {
 import type { MemberSession } from '@/lib/auth/member-session';
 import { useMemberSession } from '@/lib/auth/useMemberSession';
 import { useMemberCart } from '@/lib/member-cart';
+import { useMemberNotices, type MemberNotices } from './useMemberNotices';
 
 type MemberAreaValue = {
   slug: string;
   session: MemberSession;
   /** Dueño del carrito: `tenantId:memberId`. */
   cartOwner: string;
+  notices: MemberNotices;
 };
 
 const MemberAreaContext = createContext<MemberAreaValue | null>(null);
@@ -32,6 +34,7 @@ export function useMemberArea(): MemberAreaValue {
 }
 
 const CART_HREF = '/portal/carrito';
+const NOTICES_HREF = '/portal/avisos';
 
 const LINKS = [
   { href: '/portal', label: 'Inicio' },
@@ -40,11 +43,28 @@ const LINKS = [
   { href: '/portal/tienda', label: 'Tienda' },
   { href: CART_HREF, label: 'Carrito' },
   { href: '/portal/historial', label: 'Historial' },
+  { href: '/portal/documentos', label: 'Documentos' },
+  { href: NOTICES_HREF, label: 'Avisos' },
 ];
 
-function PortalNav({ cartOwner }: { cartOwner: string }) {
+/** Burbuja de contador (carrito, avisos sin leer). */
+function PortalCount({ value }: { value: number }) {
+  return value > 0 ? <span className="mkt-portal-count">{value}</span> : null;
+}
+
+function PortalNav({
+  cartOwner,
+  unread,
+}: {
+  cartOwner: string;
+  unread: number;
+}) {
   const pathname = usePathname();
   const cart = useMemberCart(cartOwner);
+  const counts: Record<string, number> = {
+    [CART_HREF]: cart.count,
+    [NOTICES_HREF]: unread,
+  };
   return (
     <nav className="mkt-inner mkt-portal-nav" aria-label="Portal del socio">
       {LINKS.map((link) => (
@@ -54,9 +74,7 @@ function PortalNav({ cartOwner }: { cartOwner: string }) {
           className={pathname === link.href ? 'is-on' : undefined}
         >
           {link.label}
-          {link.href === CART_HREF && cart.count > 0 ? (
-            <span className="mkt-portal-count">{cart.count}</span>
-          ) : null}
+          <PortalCount value={counts[link.href] ?? 0} />
         </Link>
       ))}
     </nav>
@@ -65,7 +83,8 @@ function PortalNav({ cartOwner }: { cartOwner: string }) {
 
 /**
  * Portal del socio (`/portal/*`): exige sesión de socio del gym del host
- * (si no, `/login?next=`), muestra el menú y expone la sesión por contexto.
+ * (si no, `/login?next=`), muestra el menú y expone por contexto la sesión,
+ * el carrito y la bandeja de avisos (un solo fetch para menú, inicio y avisos).
  * Cerrar sesión está en la cuenta (`/cuenta`, avatar del header).
  */
 export function MemberArea({
@@ -77,6 +96,7 @@ export function MemberArea({
 }) {
   const router = useRouter();
   const { session, ready } = useMemberSession(slug);
+  const notices = useMemberNotices(Boolean(session));
 
   useEffect(() => {
     if (ready && !session) {
@@ -88,9 +108,14 @@ export function MemberArea({
   const value = useMemo(
     () =>
       session
-        ? { slug, session, cartOwner: `${session.tenantId}:${session.memberId}` }
+        ? {
+            slug,
+            session,
+            cartOwner: `${session.tenantId}:${session.memberId}`,
+            notices,
+          }
         : null,
-    [slug, session],
+    [slug, session, notices],
   );
 
   if (!value) {
@@ -98,7 +123,7 @@ export function MemberArea({
   }
   return (
     <MemberAreaContext.Provider value={value}>
-      <PortalNav cartOwner={value.cartOwner} />
+      <PortalNav cartOwner={value.cartOwner} unread={notices.unread} />
       {children}
     </MemberAreaContext.Provider>
   );

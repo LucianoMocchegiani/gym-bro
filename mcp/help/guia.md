@@ -103,7 +103,7 @@ Pestañas **Verificar**, **Pase manual**, **Historial**. Con QR: el socio escane
 
 ## Avisos
 
-Sistema → **Avisos**: una tarjeta por evento (asunto y texto editables, se puede apagar). El socio los ve en App → Inicio → Avisos y por mail según Ajustes. Sin push. Topic `avisos`.
+Sistema → **Avisos**: una tarjeta por evento (asunto y texto editables, se puede apagar). El socio los ve en App → Inicio → Avisos o en el portal web (Mi portal → Avisos), y por mail según sus preferencias. Sin push. Topic `avisos`.
 
 ## Auditoría
 

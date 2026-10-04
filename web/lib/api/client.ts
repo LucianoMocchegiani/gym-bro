@@ -166,6 +166,34 @@ export async function apiRequest<T>(
 }
 
 /**
+ * GET autenticado que devuelve el cuerpo como Blob (archivos), con refresh y
+ * reintento en 401 como {@link apiRequest}.
+ */
+export async function apiBlob(
+  path: string,
+  auth: SessionKind = 'staff',
+  _retried = false,
+): Promise<Blob> {
+  const headers: Record<string, string> = {};
+  const session = SESSIONS[auth].read();
+  if (session?.accessToken) {
+    headers.Authorization = `Bearer ${session.accessToken}`;
+  }
+  const res = await fetch(`${apiBaseUrl()}${path}`, {
+    headers,
+    credentials: 'include',
+  });
+  if (res.status === 401 && !_retried && (await tryRefresh(auth))) {
+    return apiBlob(path, auth, true);
+  }
+  if (!res.ok) {
+    const body = (await res.json().catch(() => null)) as ApiErrorBody | null;
+    throw new ApiClientError(res.status, body, 'No se pudo descargar el archivo');
+  }
+  return res.blob();
+}
+
+/**
  * POST multipart con Bearer staff (refresh y reintento en 401).
  */
 export async function apiMultipart<T>(

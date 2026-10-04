@@ -20,6 +20,7 @@ Los files **no** son la foto de ficha. La foto de perfil sigue en la ficha (`POS
 | Ver la carpeta de un socio | Grilla **Afiliados** | `members.read` |
 | Ver la carpeta de un staff | Grilla **Staff** | `staff.read` |
 | Ver **la propia** carpeta | App → **Inicio** → **Documentos** | El socio o el staff logueado |
+| Ver **la propia** carpeta en la web | `{slug}.faciliter.xyz` → **Mi portal** → **Documentos** (`/portal/documentos`) | El socio logueado |
 | Subir desde la app | — | **No.** Solo el panel. |
 
 ## Panel (cómo se usa)
@@ -39,6 +40,10 @@ Pestañas del socio: Inicio · Acceso · Ajustes. Staff: Inicio · Acceso · Aju
 
 Si está vacío: el gym todavía no cargó nada en el panel.
 
+## Portal web del socio
+
+**Mi portal → Documentos**: la misma lista (nombre, etiqueta y fecha), solo lectura. **Ver** abre la nota o la imagen ahí mismo; un PDF se **Descarga** con su nombre original. Vacía: «Todavía no tenés documentos».
+
 ## Qué no es
 
 - No hay plantilla de rutina por días, catálogo de ejercicios ni “asignar rutina” como módulo aparte.
@@ -47,5 +52,5 @@ Si está vacío: el gym todavía no cargó nada en el panel.
 
 ## Permisos (resumen)
 
-- Socio: solo su carpeta en la app.
+- Socio: solo su carpeta, en la app o en el portal web.
 - Staff: según `members.read`/`write` y `staff.read`/`write` (como ficha).

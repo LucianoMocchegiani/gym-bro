@@ -16,18 +16,23 @@
 5. En **Contenido** solo se listan título/nombre y fecha; **Abrir** muestra el visor (nota) o el file.
 6. Si ya hay **10 ítems**, hay que borrar uno para cargar otro.
 
-**Postcondición:** Ítem visible en Admin y en **Documentos** del dueño (app).
+**Postcondición:** Ítem visible en Admin y en **Documentos** del dueño (app y, si es socio, portal web).
 **Errores:** 400 si se supera cupo o peso.
 
 ## CU-FOL-002 Ver / borrar carpeta ajena (staff)
 
 **Flujo:** Lista y abre files con JWT. Borrar con permiso write del tipo de dueño.
 
-## CU-FOL-003 Ver mi carpeta (app)
+## CU-FOL-003 Ver mi carpeta (app y web)
 
-**Actor:** Afiliado o staff autenticado.
+**Actor:** Afiliado o staff autenticado (en la web, solo el socio).
 
-**Flujo:** Inicio → Documentos. Lista título/nombre y fecha. Nota → visor Markdown. Files por `GET /me/folder/:id/file`.
+**Canales:**
+
+- **App:** Inicio → Documentos.
+- **Web del gym:** `/portal/documentos` (menú del portal). Notas e imágenes se ven en un modal; el PDF se descarga con su nombre original.
+
+**Flujo:** Lista título/nombre, etiqueta y fecha (solo lectura). Nota → visor Markdown. Files por `GET /me/folder/:id/file`. Vacía: «Todavía no tenés documentos».
 
 ---
 

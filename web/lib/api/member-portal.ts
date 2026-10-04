@@ -1,12 +1,15 @@
 /**
- * Web del gym para el socio: alta con pago previo, sesiones, carrito y cuenta.
+ * Web del gym para el socio: alta con pago previo, sesiones, carrito, cuenta,
+ * documentos y avisos.
  *
  * @remarks Mismos endpoints `/me/*` que la app (JWT de socio, `auth: 'member'`).
  */
 
-import { apiRequest, newIdempotencyKey } from '@/lib/api/client';
+import { apiBlob, apiRequest, newIdempotencyKey } from '@/lib/api/client';
+import type { FolderItemDetail } from '@/lib/api/folder';
 import type { ListResult } from '@/lib/api/list';
 import type { MemberAccountDetail } from '@/lib/api/members';
+import type { NotificationEventCode } from '@/lib/api/notification-templates';
 import type {
   MpCartCheckoutResult,
   MpCartItemInput,
@@ -29,6 +32,22 @@ export type MemberSignupView = {
   id: string;
   tenantId: string;
   status: MemberSignupStatus;
+};
+
+/** Aviso de la bandeja del socio (`GET /me/notifications`, CU-NOT-005). */
+export type MemberNotification = {
+  id: string;
+  eventCode: NotificationEventCode;
+  title: string;
+  body: string;
+  inAppRead: boolean;
+  createdAt: string;
+};
+
+/** Mail por evento (CU-NOT-003); la bandeja no se apaga. */
+export type NotificationEmailPref = {
+  eventCode: NotificationEventCode;
+  emailEnabled: boolean;
 };
 
 /** Sesión publicada para el socio (`GET /me/sessions`). */
@@ -222,4 +241,45 @@ export function requestMyRefund(
       auth: 'member',
     },
   );
+}
+
+/** Mi carpeta: notas y archivos que carga el staff (CU-FOL-003, solo lectura). */
+export function listMyFolder(): Promise<FolderItemDetail[]> {
+  return apiRequest<FolderItemDetail[]>('/me/folder', { auth: 'member' });
+}
+
+/** Descarga autenticada de un archivo de mi carpeta. */
+export function downloadMyFolderFile(itemId: string): Promise<Blob> {
+  return apiBlob(`/me/folder/${encodeURIComponent(itemId)}/file`, 'member');
+}
+
+/** Bandeja de avisos, del más nuevo al más viejo (máx. 50). */
+export function listMyNotifications(): Promise<MemberNotification[]> {
+  return apiRequest<MemberNotification[]>('/me/notifications', {
+    auth: 'member',
+  });
+}
+
+export function markMyNotificationRead(id: string): Promise<MemberNotification> {
+  return apiRequest<MemberNotification>(
+    `/me/notifications/${encodeURIComponent(id)}/read`,
+    { method: 'PATCH', auth: 'member' },
+  );
+}
+
+export function listMyNotificationPrefs(): Promise<NotificationEmailPref[]> {
+  return apiRequest<NotificationEmailPref[]>('/me/notification-preferences', {
+    auth: 'member',
+  });
+}
+
+export function setMyNotificationPref(
+  eventCode: NotificationEventCode,
+  emailEnabled: boolean,
+): Promise<NotificationEmailPref> {
+  return apiRequest<NotificationEmailPref>('/me/notification-preferences', {
+    method: 'PATCH',
+    body: { eventCode, emailEnabled },
+    auth: 'member',
+  });
 }

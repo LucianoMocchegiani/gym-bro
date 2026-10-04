@@ -45,12 +45,14 @@
 
 **Actor:** Afiliado
 
+**Canales:** app (Avisos → preferencias) y web del gym (`/portal/avisos` → «Avisos por correo»).
+
 **Flujo principal:**
 1. Abre configuración de avisos.
-2. Activa/desactiva eventos que quiera.
+2. Activa/desactiva el **correo** de los eventos que quiera (`PATCH /me/notification-preferences`).
 3. Guarda PreferenciaNotificacion.
 
-**Nota:** Producto prioriza que el usuario no desinstale; puede apagar todos los que quiera.
+**Nota:** Producto prioriza que el usuario no desinstale; puede apagar todos los mails que quiera. La bandeja in-app no se apaga.
 
 **Reglas relacionadas:** RN-NOT-005
 
@@ -72,7 +74,9 @@
 
 **Actor:** Usuario autenticado
 
-**Flujo principal:** Abre notificación → `inAppLeida = true`.
+**Canales:** app (Avisos) y web del gym (`/portal/avisos`, socio). Bandeja con «Nuevos» y «Anteriores»; el menú del portal y el inicio muestran cuántos hay sin leer.
+
+**Flujo principal:** Abre notificación → `inAppLeida = true` (`PATCH /me/notifications/:id/read`) y ve título y texto.
 
 **Reglas relacionadas:** RN-NOT-001
 

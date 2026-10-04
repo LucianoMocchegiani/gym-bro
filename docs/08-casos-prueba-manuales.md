@@ -352,7 +352,7 @@ Pasos de VPS: [uso/probar-debito-suscripcion-mp.md](./uso/probar-debito-suscripc
 | G12 | Cerrar sesión en el panel y volver a `/login` | Pide la cuenta otra vez (se cerraron las sesiones staff, socio e Identity) | RN-CTA-006 | |
 | G13 | Impersonar un gym desde plataforma | Entra a `{slug}/dashboard` como antes | RN-CTA-006 | |
 | G14 | App: comprar un pack (sin `returnToWeb`) | Igual que antes; MP no redirige a la web | CU-PAG-001 | |
-| G15 | Sin sesión, abrir `{slug}/portal/clases` (o mis-clases, tienda, carrito, historial) | Va a `/login?next=…` y tras entrar vuelve a esa sección | RN-CTA-009 | |
+| G15 | Sin sesión, abrir `{slug}/portal/clases` (o mis-clases, tienda, carrito, historial, documentos, avisos) | Va a `/login?next=…` y tras entrar vuelve a esa sección | RN-CTA-009 | |
 | G16 | Portal → **Clases** con créditos del servicio | Calendario del mes (sin días pasados, punto en días con clases); **Reservar** → «Reserva confirmada»; aparece en Mis clases e Inicio; créditos −1 | RN-CTA-009, CU-RES-001 | |
 | G17 | Clases sin créditos, sesión con drop-in y MP conectado | Botón **Al carrito ($X)** → «En el carrito»; contador del menú +1 | RN-CTA-009 | |
 | G18 | Sin créditos, sesión sin drop-in / gym sin MP | «Esta clase no se vende suelta» / botón **Al carrito** deshabilitado; en el carrito, Pagar avisa que el pago online no está disponible | RN-CTA-009 | |
@@ -366,6 +366,10 @@ Pasos de VPS: [uso/probar-debito-suscripcion-mp.md](./uso/probar-debito-suscripc
 | G26 | Abrir `{slug}/cuenta?compra=X` (link viejo de MP) | Redirige a `/portal?compra=X` | RN-CTA-008 | |
 | G27 | Panel: tocar el avatar; abrir `{slug}/dashboard/cuenta` | Ambos llevan a `{slug}/cuenta` (308 el segundo): datos, contraseña, cerrar sesión y «Ir al panel» | RN-CTA-006 | |
 | G28 | Impersonando un gym: avatar → `/cuenta` | «Impersonando (plataforma)» + **Volver a plataforma** → `admin/dashboard` | RN-CTA-006 | |
+| G29 | Portal → **Documentos** con una nota, una imagen y un PDF cargados por el staff | Lista con nombre, etiqueta y fecha; nota e imagen se ven en un modal; el PDF se descarga con su nombre. Sin ítems: «Todavía no tenés documentos» | CU-FOL-003, RN-CTA-009 | |
+| G30 | Socio con avisos sin leer | El menú muestra **Avisos (n)** y el inicio «Tenés n avisos nuevos» | CU-NOT-005, RN-CTA-009 | |
+| G31 | Portal → **Avisos** → Ver un aviso nuevo | Modal con título y texto; pasa a «Anteriores» y el contador baja (también en la app) | CU-NOT-005 | |
+| G32 | Avisos → **Avisos por correo**: destildar «Pago acreditado» y pagar | Bandeja sí, mail no; recargar mantiene el tilde (mismo dato que la app) | CU-NOT-003 | |
 
 ---
 

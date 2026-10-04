@@ -16,6 +16,20 @@ export type NotificationEventCode =
   | 'DEBIT_CHARGE_FAILED'
   | 'DEBIT_MANDATE_FAILED';
 
+/** Nombre del evento para el socio (mismos textos que la app). */
+export const NOTIFICATION_EVENT_LABELS: Record<NotificationEventCode, string> = {
+  PAYMENT_APPROVED: 'Pago acreditado',
+  RESERVATION_CONFIRMED: 'Reserva confirmada',
+  RESERVATION_CANCELLED: 'Reserva cancelada',
+  WAITLIST_PROMOTED: 'Lugar en lista de espera',
+  REFUND_EXECUTED: 'Devolución',
+  CONTRACT_EXPIRING: 'Pack por vencer (caja)',
+  CONTRACT_EXPIRING_DEBIT: 'Pack por vencer (débito)',
+  CONTRACT_IN_TOLERANCE: 'Pack vencido (tolerancia)',
+  DEBIT_CHARGE_FAILED: 'Débito: cobro no acreditado',
+  DEBIT_MANDATE_FAILED: 'Débito: mandato fallido',
+};
+
 export type NotificationTemplateDetail = {
   eventCode: NotificationEventCode;
   label: string;

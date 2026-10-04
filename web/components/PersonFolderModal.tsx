@@ -18,6 +18,7 @@ import {
   createFolderNote,
   deleteFolderItem,
   downloadFolderFile,
+  folderItemName,
   listFolderItems,
   listFolderLabels,
   FOLDER_MAX_FILE_BYTES,
@@ -449,10 +450,7 @@ export function PersonFolderModal({
         ) : (
           <ul className="folder-item-list">
             {items.map((it) => {
-              const name =
-                it.kind === 'NOTE'
-                  ? it.title?.trim() || 'Nota'
-                  : it.originalFilename ?? 'Archivo';
+              const name = folderItemName(it);
               return (
                 <li key={it.id} className="folder-item">
                   <strong>{name}</strong>
