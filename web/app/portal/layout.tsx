@@ -3,14 +3,14 @@ import type { ReactNode } from 'react';
 import { notFound } from 'next/navigation';
 import { resolveGymSite } from '@/lib/gym-site';
 import { GymSiteShell } from '@/components/gym-site/GymSiteShell';
-import { MemberArea } from '@/components/gym-site/portal/MemberArea';
 
 export const metadata: Metadata = {
+  title: 'Portal',
   robots: { index: false, follow: false },
 };
 
-/** Secciones del portal del socio (`/cuenta/clases`, `/cuenta/carrito`, …). */
-export default async function MemberPortalLayout({
+/** Portal del socio en la web del gym (`{slug}/portal/*`); 404 en el apex. */
+export default async function PortalLayout({
   children,
 }: {
   children: ReactNode;
@@ -21,7 +21,7 @@ export default async function MemberPortalLayout({
   }
   return (
     <GymSiteShell slug={site.slug} gymName={site.catalog.tenant.name}>
-      <MemberArea slug={site.slug}>{children}</MemberArea>
+      {children}
     </GymSiteShell>
   );
 }

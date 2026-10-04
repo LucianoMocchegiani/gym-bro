@@ -28,8 +28,8 @@ function errorText(err: unknown, fallback: string): string {
 
 /**
  * Comprar un pack desde la web del gym. El socio lo suma al carrito del portal
- * (`/cuenta/carrito`); quien no es socio carga sus datos y se da de alta recién
- * con el pago aprobado (`/cuenta?alta=`).
+ * (`/portal/carrito`); quien no es socio carga sus datos y se da de alta recién
+ * con el pago aprobado (`/portal?alta=`).
  */
 export function GymCheckoutClient({ slug, gymName, pack }: Props) {
   const { session: identity, ready } = useIdentityAuth();
@@ -230,7 +230,7 @@ function AddToCartStep({ owner, pack }: { owner: string; pack: StorePack }) {
 
   useEffect(() => {
     addToMemberCart(owner, packCartLine(pack));
-    router.replace('/cuenta/carrito');
+    router.replace('/portal/carrito');
   }, [owner, pack, router]);
 
   return <LoginPending message="Agregando al carrito…" />;

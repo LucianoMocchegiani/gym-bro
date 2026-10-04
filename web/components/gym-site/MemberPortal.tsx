@@ -68,10 +68,10 @@ function MemberHome({ purchase }: { purchase: PurchaseReturn | null }) {
         ) : null}
         <BookingFeedback booking={booking} />
         <div className="mkt-hero-actions">
-          <Link className="mkt-btn-primary" href="/cuenta/clases">
+          <Link className="mkt-btn-primary" href="/portal/clases">
             Reservar una clase
           </Link>
-          <Link className="mkt-btn-ghost" href="/cuenta/tienda">
+          <Link className="mkt-btn-ghost" href="/portal/tienda">
             Ver planes
           </Link>
           <button
@@ -91,7 +91,7 @@ function MemberHome({ purchase }: { purchase: PurchaseReturn | null }) {
         ) : upcoming.length === 0 ? (
           <p className="muted">
             No tenés clases reservadas.{' '}
-            <Link href="/cuenta/clases">Ver el calendario</Link>
+            <Link href="/portal/clases">Ver el calendario</Link>
           </p>
         ) : (
           <>
@@ -116,7 +116,7 @@ function MemberHome({ purchase }: { purchase: PurchaseReturn | null }) {
               ))}
             </ul>
             <p className="small">
-              <Link href="/cuenta/mis-clases">Ver todas mis clases</Link>
+              <Link href="/portal/mis-clases">Ver todas mis clases</Link>
             </p>
           </>
         )}
@@ -129,7 +129,7 @@ function MemberHome({ purchase }: { purchase: PurchaseReturn | null }) {
         ) : account.contracts.length === 0 ? (
           <p className="muted">
             No tenés planes vigentes.{' '}
-            <Link href="/cuenta/tienda">Ver planes</Link>
+            <Link href="/portal/tienda">Ver planes</Link>
           </p>
         ) : (
           <div className="mkt-plans">
@@ -147,7 +147,7 @@ function MemberHome({ purchase }: { purchase: PurchaseReturn | null }) {
 }
 
 /**
- * Inicio del portal del socio en la web del gym (`/cuenta`), con el resultado
+ * Inicio del portal del socio en la web del gym (`/portal`), con el resultado
  * del pago si vuelve de Mercado Pago.
  */
 export function MemberPortal({

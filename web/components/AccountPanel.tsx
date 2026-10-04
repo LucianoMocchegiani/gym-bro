@@ -2,12 +2,13 @@
 
 import { FormEvent, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { ApiClientError } from '@/lib/api/client';
+import { ApiClientError, type SessionKind } from '@/lib/api/client';
 import {
   changePassword,
   getPasswordStatus,
   setPassword,
 } from '@/lib/api/auth';
+import { accountInitials } from '@/components/AccountAvatarLink';
 import { AdminModal } from '@/components/AdminModal';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { Panel } from '@/components/AdminUi';
@@ -24,25 +25,15 @@ type AccountPanelProps = {
   /** Impersonación: vuelve al tenant `admin` (sesión de plataforma sigue en ese origen). */
   onReturnToPlatform?: () => void;
   hasPassword?: boolean;
-  /** Apex Identity usa Bearer de cuenta, no staff. */
-  passwordAuth?: 'staff' | 'identity';
+  /** Sesión con la que se consulta y cambia la contraseña. */
+  passwordAuth?: SessionKind;
 };
-
-function initials(name: string | null, email: string): string {
-  const src = name?.trim();
-  if (!src) {
-    return email.slice(0, 1).toUpperCase();
-  }
-  const parts = src.split(/\s+/);
-  const first = parts[0]?.[0] ?? '';
-  const last = parts.length > 1 ? (parts[parts.length - 1][0] ?? '') : '';
-  return (first + last).toUpperCase();
-}
 
 /**
  * Pantalla de cuenta (avatar → datos, cerrar sesión y contraseña).
  *
- * @remarks Usado en el panel Staff (`/dashboard/cuenta`) y en el apex Identity.
+ * @remarks Usado en el panel Staff (`/dashboard/cuenta`), en `/cuenta` del
+ * gym (cuenta Faciliter del socio) y en el apex Identity.
  * Con contraseña: cambiarla revoca todos los refresh → re-login. Sin
  * contraseña (Google/Apple): "Crear contraseña", sin cerrar sesiones.
  * El estado real sale de `GET /auth/password`. En apex Identity, `passwordAuth`.
@@ -153,7 +144,7 @@ export function AccountPanel({
       <Panel title="Mi cuenta" description="Usuario con sesión activa">
         <div className="account-summary">
           <span className="account-avatar-lg" aria-hidden="true">
-            {initials(name, email)}
+            {accountInitials(name, email)}
           </span>
           <div>
             <p className="account-name">

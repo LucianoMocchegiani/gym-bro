@@ -19,7 +19,7 @@ const PAID_OR_PENDING = new Set(['approved', 'pending', 'in_process']);
 type Phase = 'waiting' | 'failed' | 'timeout' | 'error';
 
 /**
- * Vuelta de Mercado Pago de un alta web (`/cuenta?alta={signupId}`): el socio
+ * Vuelta de Mercado Pago de un alta web (`/portal?alta={signupId}`): el socio
  * nace con el webhook del pago aprobado, así que se consulta la solicitud
  * hasta que esté lista y recién ahí se entra al portal (RN-CTA-007).
  */

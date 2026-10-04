@@ -747,7 +747,7 @@ html.mkt-docs-lightbox-open body {
   overscroll-behavior: none;
 }
 
-/* Portal del socio (`/cuenta/*` en la web del gym). */
+/* Portal del socio (`/portal/*` en la web del gym). */
 
 .mkt-portal-nav {
   display: flex;
@@ -757,8 +757,7 @@ html.mkt-docs-lightbox-open body {
   padding-top: 0.5rem;
 }
 
-.mkt-portal-nav a,
-.mkt-portal-exit {
+.mkt-portal-nav a {
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
@@ -772,8 +771,7 @@ html.mkt-docs-lightbox-open body {
   text-decoration: none;
 }
 
-.mkt-portal-nav a:hover,
-.mkt-portal-exit:hover {
+.mkt-portal-nav a:hover {
   border-color: var(--accent);
   color: var(--ink);
 }
@@ -783,11 +781,6 @@ html.mkt-docs-lightbox-open body {
   border-color: var(--accent);
   color: var(--accent-ink);
   font-weight: 600;
-}
-
-.mkt-portal-exit {
-  margin-left: auto;
-  font-weight: 500;
 }
 
 .mkt-portal-count {

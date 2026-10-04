@@ -81,7 +81,7 @@ function GymLoginClient({
       : memberSession && preferred !== 'STAFF'
         ? preferred === 'MEMBER' && nextPath
           ? nextPath
-          : '/cuenta'
+          : '/portal'
         : null;
 
   useEffect(() => {

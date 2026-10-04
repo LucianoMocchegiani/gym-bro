@@ -26,7 +26,7 @@ export function GymLandingPage({ catalog }: { catalog: PublicTenantCatalog }) {
             <a className="mkt-btn-primary" href="#planes">
               Ver planes
             </a>
-            <a className="mkt-btn-ghost" href="/login?next=/cuenta">
+            <a className="mkt-btn-ghost" href="/login?next=/portal">
               Ya soy socio
             </a>
           </div>

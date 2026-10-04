@@ -2,7 +2,7 @@
  * Auth API (módulo `auth`).
  */
 
-import { apiRequest } from '@/lib/api/client';
+import { apiRequest, type SessionKind } from '@/lib/api/client';
 
 export type PlatformAccessState = 'ok' | 'limited';
 
@@ -174,7 +174,7 @@ export function changePassword(
     currentPassword: string;
     newPassword: string;
   },
-  auth: 'staff' | 'identity' = 'staff',
+  auth: SessionKind = 'staff',
 ): Promise<{ ok: true }> {
   return apiRequest<{ ok: true }>('/auth/change-password', {
     method: 'POST',
@@ -193,7 +193,7 @@ export type PasswordStatus = {
  * Estado real de la contraseña de la persona (no el del login).
  */
 export function getPasswordStatus(
-  auth: 'staff' | 'identity' = 'staff',
+  auth: SessionKind = 'staff',
 ): Promise<PasswordStatus> {
   return apiRequest<PasswordStatus>('/auth/password', { auth });
 }
@@ -205,7 +205,7 @@ export function getPasswordStatus(
  */
 export function setPassword(
   newPassword: string,
-  auth: 'staff' | 'identity' = 'staff',
+  auth: SessionKind = 'staff',
 ): Promise<{ ok: true }> {
   return apiRequest<{ ok: true }>('/auth/set-password', {
     method: 'POST',

@@ -1,10 +1,8 @@
-import { notFound } from 'next/navigation';
-import { fetchPublicTenantCatalog } from '@/lib/api/public-tenant-catalog';
-import { requestTenantSlug } from '@/lib/gym-site';
+import { notFound, redirect } from 'next/navigation';
+import { resolveGymSite, requestTenantSlug } from '@/lib/gym-site';
 import { IdentityAccountPage } from '@/components/IdentityAccountPage';
+import { GymAccountPage } from '@/components/gym-site/GymAccountPage';
 import { GymSiteShell } from '@/components/gym-site/GymSiteShell';
-import { MemberPortal } from '@/components/gym-site/MemberPortal';
-import { MemberSignupReturn } from '@/components/gym-site/MemberSignupReturn';
 
 export const metadata = {
   title: 'Cuenta',
@@ -12,41 +10,37 @@ export const metadata = {
 };
 
 /**
- * Apex: gyms de la Identity. Slug de gym: inicio del portal del socio (la
- * cuenta staff vive en `/dashboard/cuenta`); con `?alta=` espera el alta pagada.
+ * Apex: cuenta Faciliter con sus gyms. Gym: cuenta de quien entró (datos,
+ * contraseña, cerrar sesión); el portal del socio vive en `/portal`.
+ *
+ * @remarks Las vueltas de Mercado Pago viejas (`?compra=` / `?alta=`) se
+ * reenvían a `/portal` con el mismo query.
  */
 export default async function CuentaPage({
   searchParams,
 }: {
-  searchParams: Promise<{
-    compra?: string;
-    alta?: string;
-    status?: string;
-    collection_status?: string;
-  }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  const slug = await requestTenantSlug();
-  if (!slug) {
+  if (!(await requestTenantSlug())) {
     return <IdentityAccountPage />;
   }
-  const catalog = await fetchPublicTenantCatalog(slug);
-  if (!catalog) {
+  const query = await searchParams;
+  if (query.compra || query.alta) {
+    const params = new URLSearchParams();
+    for (const [key, value] of Object.entries(query)) {
+      if (typeof value === 'string') {
+        params.set(key, value);
+      }
+    }
+    redirect(`/portal?${params.toString()}`);
+  }
+  const site = await resolveGymSite();
+  if (!site) {
     notFound();
   }
-  const query = await searchParams;
-  const mpStatus = query.collection_status ?? query.status ?? null;
-  const purchase = query.compra ? { id: query.compra, status: mpStatus } : null;
   return (
-    <GymSiteShell slug={slug} gymName={catalog.tenant.name}>
-      {query.alta ? (
-        <MemberSignupReturn
-          slug={slug}
-          signupId={query.alta}
-          mpStatus={mpStatus}
-        />
-      ) : (
-        <MemberPortal slug={slug} purchase={purchase} />
-      )}
+    <GymSiteShell slug={site.slug} gymName={site.catalog.tenant.name}>
+      <GymAccountPage slug={site.slug} />
     </GymSiteShell>
   );
 }

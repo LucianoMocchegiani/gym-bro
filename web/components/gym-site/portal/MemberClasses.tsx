@@ -125,7 +125,7 @@ export function MemberClasses() {
           )}
           {booking.cart.count > 0 ? (
             <p className="small">
-              <Link href="/cuenta/carrito">
+              <Link href="/portal/carrito">
                 Ir al carrito ({booking.cart.count})
               </Link>
             </p>

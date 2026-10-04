@@ -52,7 +52,7 @@ export class CreateMpCartCheckoutDto {
   idempotencyKey?: string;
 
   /**
-   * Web del gym: al terminar, MP vuelve a `{slug}/cuenta?compra={transactionId}`.
+   * Web del gym: al terminar, MP vuelve a `{slug}/portal?compra={transactionId}`.
    * La app no lo manda.
    */
   @IsOptional()

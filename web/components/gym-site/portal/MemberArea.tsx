@@ -9,7 +9,6 @@ import {
   useMemo,
   type ReactNode,
 } from 'react';
-import { signOutOfGym } from '@/lib/auth/gym-context';
 import type { MemberSession } from '@/lib/auth/member-session';
 import { useMemberSession } from '@/lib/auth/useMemberSession';
 import { useMemberCart } from '@/lib/member-cart';
@@ -32,21 +31,22 @@ export function useMemberArea(): MemberAreaValue {
   return value;
 }
 
+const CART_HREF = '/portal/carrito';
+
 const LINKS = [
-  { href: '/cuenta', label: 'Inicio' },
-  { href: '/cuenta/clases', label: 'Clases' },
-  { href: '/cuenta/mis-clases', label: 'Mis clases' },
-  { href: '/cuenta/tienda', label: 'Tienda' },
-  { href: '/cuenta/carrito', label: 'Carrito' },
-  { href: '/cuenta/historial', label: 'Historial' },
+  { href: '/portal', label: 'Inicio' },
+  { href: '/portal/clases', label: 'Clases' },
+  { href: '/portal/mis-clases', label: 'Mis clases' },
+  { href: '/portal/tienda', label: 'Tienda' },
+  { href: CART_HREF, label: 'Carrito' },
+  { href: '/portal/historial', label: 'Historial' },
 ];
 
-function CuentaNav({ cartOwner }: { cartOwner: string }) {
+function PortalNav({ cartOwner }: { cartOwner: string }) {
   const pathname = usePathname();
-  const router = useRouter();
   const cart = useMemberCart(cartOwner);
   return (
-    <nav className="mkt-inner mkt-portal-nav" aria-label="Mi cuenta">
+    <nav className="mkt-inner mkt-portal-nav" aria-label="Portal del socio">
       {LINKS.map((link) => (
         <Link
           key={link.href}
@@ -54,27 +54,19 @@ function CuentaNav({ cartOwner }: { cartOwner: string }) {
           className={pathname === link.href ? 'is-on' : undefined}
         >
           {link.label}
-          {link.href === '/cuenta/carrito' && cart.count > 0 ? (
+          {link.href === CART_HREF && cart.count > 0 ? (
             <span className="mkt-portal-count">{cart.count}</span>
           ) : null}
         </Link>
       ))}
-      <button
-        type="button"
-        className="mkt-portal-exit"
-        onClick={() => {
-          void signOutOfGym().then(() => router.replace('/'));
-        }}
-      >
-        Salir
-      </button>
     </nav>
   );
 }
 
 /**
- * Portal del socio (`/cuenta/*`): exige sesión de socio del gym del host
+ * Portal del socio (`/portal/*`): exige sesión de socio del gym del host
  * (si no, `/login?next=`), muestra el menú y expone la sesión por contexto.
+ * Cerrar sesión está en la cuenta (`/cuenta`, avatar del header).
  */
 export function MemberArea({
   slug,
@@ -106,7 +98,7 @@ export function MemberArea({
   }
   return (
     <MemberAreaContext.Provider value={value}>
-      <CuentaNav cartOwner={value.cartOwner} />
+      <PortalNav cartOwner={value.cartOwner} />
       {children}
     </MemberAreaContext.Provider>
   );

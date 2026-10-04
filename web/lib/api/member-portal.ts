@@ -51,7 +51,7 @@ export type MemberSessionSlot = {
 
 /**
  * Alta web (JWT Identity): guarda los datos y devuelve el link de Mercado
- * Pago. El socio nace recién con el pago aprobado; MP vuelve a `/cuenta?alta=`.
+ * Pago. El socio nace recién con el pago aprobado; MP vuelve a `/portal?alta=`.
  */
 export function startMemberSignup(input: {
   tenantSlug: string;
@@ -88,7 +88,7 @@ export async function getMyGymMpConnected(): Promise<boolean> {
 
 /**
  * Checkout MP del carrito (packs y drop-ins, un solo pago). Al terminar MP
- * vuelve a `/cuenta?compra=`; el webhook aprobado crea contratos y reservas.
+ * vuelve a `/portal?compra=`; el webhook aprobado crea contratos y reservas.
  */
 export function startMyCartCheckout(
   items: MpCartItemInput[],

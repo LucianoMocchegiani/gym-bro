@@ -630,7 +630,7 @@ export class OnlinePaymentService {
       where: { id: tenantId },
       select: { slug: true },
     });
-    return `${tenantWebOrigin(this.config, tenant.slug)}/cuenta?${query}`;
+    return `${tenantWebOrigin(this.config, tenant.slug)}/portal?${query}`;
   }
 
   private async requireActiveMember(

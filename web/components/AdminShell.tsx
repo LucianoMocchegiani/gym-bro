@@ -9,6 +9,7 @@ import {
   type ReactNode,
 } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
+import { AccountAvatarLink } from '@/components/AccountAvatarLink';
 import { AssistantLauncher } from '@/components/assistant/AssistantDrawer';
 import { PlanLimitedNotice } from '@/components/PlanLimitedNotice';
 import {
@@ -20,17 +21,6 @@ import { ThemeToggle } from '@/components/ThemeToggle';
 import { useAuth } from '@/lib/auth/AuthProvider';
 import { canAccessNavHref } from '@/lib/nav-permissions';
 import { extractTenantSlugFromHost } from '@/lib/tenant-host';
-
-function accountInitials(name: string | null, email: string): string {
-  const src = name?.trim();
-  if (!src) {
-    return email.slice(0, 1).toUpperCase();
-  }
-  const parts = src.split(/\s+/);
-  const first = parts[0]?.[0] ?? '';
-  const last = parts.length > 1 ? (parts[parts.length - 1][0] ?? '') : '';
-  return (first + last).toUpperCase();
-}
 
 type AdminShellProps = {
   title: ReactNode;
@@ -251,14 +241,11 @@ export function AdminShell({
             </div>
             <div className="app-topbar-right">
               <ThemeToggle />
-              <Link
+              <AccountAvatarLink
                 href="/dashboard/cuenta"
-                className="account-avatar-btn"
-                title={session?.email ?? 'Mi cuenta'}
-                aria-label="Mi cuenta"
-              >
-                {accountInitials(session?.name ?? null, session?.email ?? '')}
-              </Link>
+                name={session?.name}
+                email={session?.email}
+              />
             </div>
           </div>
           {limited ? (

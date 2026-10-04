@@ -13,7 +13,7 @@ import { useMemberArea } from './MemberArea';
 
 /**
  * Carrito del socio: packs y clases sueltas en un solo pago de Mercado Pago
- * (CU-PAG-001). MP vuelve a `/cuenta?compra=`; el webhook activa todo.
+ * (CU-PAG-001). MP vuelve a `/portal?compra=`; el webhook activa todo.
  */
 export function MemberCartView() {
   const { cartOwner } = useMemberArea();
@@ -48,8 +48,8 @@ export function MemberCartView() {
       {error ? <p className="error">{error}</p> : null}
       {cart.count === 0 ? (
         <p className="muted">
-          Tu carrito está vacío. Sumá un <Link href="/cuenta/tienda">plan</Link>{' '}
-          o una <Link href="/cuenta/clases">clase suelta</Link>.
+          Tu carrito está vacío. Sumá un <Link href="/portal/tienda">plan</Link>{' '}
+          o una <Link href="/portal/clases">clase suelta</Link>.
         </p>
       ) : (
         <div className="portal-cart">

@@ -7,7 +7,7 @@ import { MktShell } from '@/components/marketing/MktShell';
 import { platformOrigin } from '@/lib/tenant-host';
 
 /**
- * Header + footer de la web pública de un gym (`{slug}/`, `/comprar`, `/cuenta`).
+ * Header + footer de la web pública de un gym (`{slug}/`, `/comprar`, `/portal`, `/cuenta`).
  */
 export function GymSiteShell({
   slug,

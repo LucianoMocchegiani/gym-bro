@@ -56,7 +56,7 @@ export function MemberStore() {
     }
     if (cart.has('PACK', pack.id)) {
       return (
-        <Link className="mkt-btn-ghost" href="/cuenta/carrito">
+        <Link className="mkt-btn-ghost" href="/portal/carrito">
           En el carrito
         </Link>
       );
@@ -103,7 +103,7 @@ export function MemberStore() {
       )}
       {cart.count > 0 ? (
         <p className="small">
-          <Link href="/cuenta/carrito">Ir al carrito ({cart.count})</Link>
+          <Link href="/portal/carrito">Ir al carrito ({cart.count})</Link>
         </p>
       ) : null}
     </section>

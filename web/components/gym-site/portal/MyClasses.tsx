@@ -45,7 +45,7 @@ export function MyClasses() {
       {upcoming.length === 0 && data.waitlist.length === 0 ? (
         <p className="muted">
           Todavía no tenés clases reservadas ni en espera.{' '}
-          <Link href="/cuenta/clases">Reservá una clase</Link>
+          <Link href="/portal/clases">Reservá una clase</Link>
         </p>
       ) : (
         <ul className="portal-slots">

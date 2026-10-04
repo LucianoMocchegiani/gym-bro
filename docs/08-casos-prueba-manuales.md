@@ -326,7 +326,7 @@ Pasos de VPS: [uso/probar-debito-suscripcion-mp.md](./uso/probar-debito-suscripc
 | M3b | `/opengraph-image` y preview al compartir | PNG 1200×630: isotipo + FACILITER + tagline; `og:image:width` 1200 / `height` 630 | P3 | |
 | M4 | `/sitemap.xml` y `/robots.txt` | URLs públicas; Admin en disallow | P3 | |
 | M5 | `/legal/terminos` y `/legal/privacidad` | Borrador visible; no 404 | P3 | |
-| M6 | Host tenant: header `X-Robots-Tag` | `/` sin header (indexable, canonical al host del gym); `/dashboard`, `/login`, `/cuenta`, `/comprar` con `noindex, nofollow` | RN-CTA-005 | |
+| M6 | Host tenant: header `X-Robots-Tag` | `/` sin header (indexable, canonical al host del gym); `/dashboard`, `/login`, `/cuenta`, `/portal`, `/comprar` con `noindex, nofollow` | RN-CTA-005 | |
 | M7 | Apex burbuja `#asistente` | Abre el mismo drawer que el Admin; responde pack/caja/puerta; no pide login | P3 | |
 | M8 | Widget no lista socios de un gym | Sin tools de operación; solo ayuda de producto | C7/landing | |
 
@@ -340,28 +340,30 @@ Pasos de VPS: [uso/probar-debito-suscripcion-mp.md](./uso/probar-debito-suscripc
 | G2 | `admin.{dominio}/` | 308 al apex; `admin.{dominio}/dashboard` abre el panel de plataforma | RN-CTA-005 | |
 | G3 | Gym con MP conectado | Cada pack con botón **Comprar**; sin MP: «Se contrata en el gym» | RN-CTA-008 | |
 | G4 | `{slug}/login` con cuenta solo staff | Entra directo a `/dashboard` | RN-CTA-006 | |
-| G5 | `{slug}/login` con cuenta solo socio | Entra a `/cuenta` (próximas clases, planes vigentes y menú del portal) | RN-CTA-006 | |
+| G5 | `{slug}/login` con cuenta solo socio | Entra a `/portal` (próximas clases, planes vigentes y menú del portal) | RN-CTA-006 | |
 | G6 | `{slug}/login` con cuenta socio y staff | Pregunta «Panel del gym» o «Mi cuenta de socio» | RN-CTA-006 | |
 | G7 | `{slug}/login` con cuenta que no es parte del gym | «Todavía no es socia» + Ver planes / Usar otra cuenta | RN-CTA-006 | |
 | G8 | Comprar con cuenta nueva (sin ser socio) y **no pagar** (cerrar MP o volver) | Login/registro → resumen + datos (nombre, DNI, teléfono) → Mercado Pago. Al cancelar: «El pago no se completó»; **no** aparece en Afiliados | CU-AFI-007, RN-CTA-007 | |
 | G9 | Comprar con DNI de otro socio del gym | 409 antes de ir a Mercado Pago, no crea nada | RN-CTA-007 | |
 | G10 | Comprar con socio suspendido | 403, no llega a Mercado Pago | RN-CTA-007 | |
-| G11 | Cuenta nueva: pagar en MP (sandbox) y volver | Aterriza en `/cuenta?alta=…`: «Confirmando tu pago…» → al llegar el webhook entra al portal con el pack vigente y el comprobante. En Afiliados: socio ACTIVE + auditoría `member.self_join`; en Caja: el cobro MP | CU-AFI-007, RN-CTA-007 | |
-| G11b | Socio existente: **Comprar** un pack en la vidriera | Salta los datos: el pack se suma al carrito y abre `/cuenta/carrito`. Pagar → MP → `/cuenta?compra=…` «Pago aprobado»; pack activo tras el webhook | CU-AFI-007, RN-CTA-009 | |
+| G11 | Cuenta nueva: pagar en MP (sandbox) y volver | Aterriza en `/portal?alta=…`: «Confirmando tu pago…» → al llegar el webhook entra al portal con el pack vigente y el comprobante. En Afiliados: socio ACTIVE + auditoría `member.self_join`; en Caja: el cobro MP | CU-AFI-007, RN-CTA-007 | |
+| G11b | Socio existente: **Comprar** un pack en la vidriera | Salta los datos: el pack se suma al carrito y abre `/portal/carrito`. Pagar → MP → `/portal?compra=…` «Pago aprobado»; pack activo tras el webhook | CU-AFI-007, RN-CTA-009 | |
 | G11c | Webhook repetido del mismo pago de un alta | Un solo socio, un solo cobro y un solo comprobante | RN-CTA-007 | |
 | G12 | Cerrar sesión en el panel y volver a `/login` | Pide la cuenta otra vez (se cerraron las sesiones staff, socio e Identity) | RN-CTA-006 | |
 | G13 | Impersonar un gym desde plataforma | Entra a `{slug}/dashboard` como antes | RN-CTA-006 | |
 | G14 | App: comprar un pack (sin `returnToWeb`) | Igual que antes; MP no redirige a la web | CU-PAG-001 | |
-| G15 | Sin sesión, abrir `{slug}/cuenta/clases` (o mis-clases, tienda, carrito, historial) | Va a `/login?next=…` y tras entrar vuelve a esa sección | RN-CTA-009 | |
+| G15 | Sin sesión, abrir `{slug}/portal/clases` (o mis-clases, tienda, carrito, historial) | Va a `/login?next=…` y tras entrar vuelve a esa sección | RN-CTA-009 | |
 | G16 | Portal → **Clases** con créditos del servicio | Calendario del mes (sin días pasados, punto en días con clases); **Reservar** → «Reserva confirmada»; aparece en Mis clases e Inicio; créditos −1 | RN-CTA-009, CU-RES-001 | |
 | G17 | Clases sin créditos, sesión con drop-in y MP conectado | Botón **Al carrito ($X)** → «En el carrito»; contador del menú +1 | RN-CTA-009 | |
 | G18 | Sin créditos, sesión sin drop-in / gym sin MP | «Esta clase no se vende suelta» / botón **Al carrito** deshabilitado; en el carrito, Pagar avisa que el pago online no está disponible | RN-CTA-009 | |
 | G19 | Sesión llena | **Anotarme en la lista de espera** → en Mis clases figura «En lista de espera»; Salir de la lista con confirmación | RN-CTA-009, CU-RES-003 | |
 | G20 | Cancelar reserva desde Inicio, Clases o Mis clases | Confirmación → «Reserva cancelada»; fuera de plazo muestra el error de la API; pasa a «Pasadas y canceladas» | RN-CTA-009, CU-RES-004 | |
 | G21 | Carrito con un pack (Tienda) + un drop-in: recargar la página y volver | El carrito sigue; quitar una línea actualiza el total. **Pagar con Mercado Pago** → un solo pago; al aprobar: pack activo + reserva del drop-in; carrito vacío | RN-CTA-009, CU-PAG-001 | |
-| G22 | Salir del portal con ítems en el carrito y entrar con otro socio | Carrito vacío | RN-CTA-009 | |
+| G22 | Avatar → `/cuenta` → **Cerrar sesión** con ítems en el carrito y entrar con otro socio | Vuelve a la vidriera; carrito vacío | RN-CTA-009 | |
 | G23 | **Historial** | Todos los comprobantes (app, web, caja, devoluciones) con Ver más; Ver → detalle con líneas | RN-CTA-009, CU-PAG-004 | |
 | G24 | Historial → Ver → **Solicitar devolución** en una línea aprobada | Motivo opcional → la línea muestra «Devolución solicitada»; el staff la ve en Devoluciones | RN-CTA-009, CU-PAG-004 | |
+| G25 | Logueado en el gym: header | Tema + avatar con iniciales; socio ve también «Mi portal», staff «Panel». Avatar → `/cuenta`: datos, contraseña, cerrar sesión y accesos | RN-CTA-006 | |
+| G26 | Abrir `{slug}/cuenta?compra=X` (link viejo de MP) | Redirige a `/portal?compra=X` | RN-CTA-008 | |
 
 ---
 

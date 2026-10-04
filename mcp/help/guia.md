@@ -35,7 +35,7 @@ Saludo y tarjetas del día (afiliados activos, ingresos, accesos, socios sin pac
 
 ## Login
 
-- **Web del gym (socios y staff):** en `{slug}.faciliter.xyz/login`, con la **cuenta Faciliter** (mail y contraseña o **Continuar con Google**). El gym sale de la URL. Staff va al panel (`/dashboard`), socio a **Mi cuenta** (`/cuenta`); si es las dos cosas, elige. Las rutas viejas del panel (`/caja`, `/puerta`…) redirigen solas a `/dashboard/...`.
+- **Web del gym (socios y staff):** en `{slug}.faciliter.xyz/login`, con la **cuenta Faciliter** (mail y contraseña o **Continuar con Google**). El gym sale de la URL. Staff va al panel (`/dashboard`), socio a su **portal** (`/portal`); si es las dos cosas, elige. El avatar arriba a la derecha abre **Mi cuenta** (`/cuenta`): datos, contraseña y **Cerrar sesión**. Las rutas viejas del panel (`/caja`, `/puerta`…) redirigen solas a `/dashboard/...`.
 - **App:** **Faciliter · Tu cuenta**: mail y contraseña de la cuenta Faciliter (sin slug), o Google / Apple si están disponibles. Si la cuenta está en varios gyms (o es socio y staff), elige en **Tus gyms**.
 - No hay registro desde la app (sí en la web del gym al comprar) ni “olvidé mi contraseña”. Detalle de cuenta y contraseñas: topic `cuenta`.
 

@@ -2,7 +2,7 @@ import type { StaffLoginResponse } from '@/lib/api/auth';
 import { createTokenStore } from '@/lib/auth/token-store';
 
 /**
- * Sesión de socio en la web del gym (`{slug}/cuenta`, `{slug}/comprar`).
+ * Sesión de socio en la web del gym (`{slug}/portal`, `{slug}/comprar`).
  */
 export type MemberSession = {
   accessToken: string;

@@ -17,13 +17,14 @@ Con tunnel: `{slug}.{NEXT_PUBLIC_APP_DOMAIN}` (ej. `https://demo.pruebasaproducc
 | Ruta | Uso |
 |------|-----|
 | `/` | Vidriera pública: packs del gym; **Comprar** solo si el gym conectó Mercado Pago (indexable) |
-| `/login` | Login único con la cuenta Faciliter: staff → `/dashboard`, socio → `/cuenta`, ambos → elige |
-| `/comprar?pack=` | Socio: suma el pack al carrito y va a `/cuenta/carrito`. No socio: nombre, DNI, teléfono → checkout MP; el socio nace con el pago aprobado |
-| `/cuenta` | Portal del socio, inicio: próximas clases, planes vigentes y resultado del pago. `?alta=` espera el alta pagada |
-| `/cuenta/clases` | Calendario del mes: reservar con créditos, drop-in al carrito sin créditos, lista de espera |
-| `/cuenta/mis-clases` | Próximas reservas y lista de espera (cancelar / salir) + pasadas y canceladas |
-| `/cuenta/tienda` · `/cuenta/carrito` | Planes al carrito; carrito de packs y clases sueltas, un solo pago MP (`returnToWeb`) |
-| `/cuenta/historial` | Todos los comprobantes con detalle y pedido de devolución por línea |
+| `/login` | Login único con la cuenta Faciliter: staff → `/dashboard`, socio → `/portal`, ambos → elige |
+| `/comprar?pack=` | Socio: suma el pack al carrito y va a `/portal/carrito`. No socio: nombre, DNI, teléfono → checkout MP; el socio nace con el pago aprobado |
+| `/cuenta` | Cuenta de quien entró (avatar del header): datos, contraseña, cerrar sesión y accesos al portal / panel. En el apex: cuenta Faciliter con tenants y plan |
+| `/portal` | Portal del socio, inicio: próximas clases, planes vigentes y resultado del pago (`?compra=`). `?alta=` espera el alta pagada |
+| `/portal/clases` | Calendario del mes: reservar con créditos, drop-in al carrito sin créditos, lista de espera |
+| `/portal/mis-clases` | Próximas reservas y lista de espera (cancelar / salir) + pasadas y canceladas |
+| `/portal/tienda` · `/portal/carrito` | Planes al carrito; carrito de packs y clases sueltas, un solo pago MP (`returnToWeb`) |
+| `/portal/historial` | Todos los comprobantes con detalle y pedido de devolución por línea |
 | `/dashboard` | Panel staff: KPIs del día |
 | `/dashboard/afiliados` | Listado / alta / ficha + estado de cuenta |
 | `/dashboard/servicios` | Catálogo de servicios |

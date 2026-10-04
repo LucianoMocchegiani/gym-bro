@@ -11,7 +11,7 @@ export default function robots(): MetadataRoute.Robots {
     rules: {
       userAgent: '*',
       allow: ['/', '/legal/', '/docs', '/docs/', '/cuenta/eliminar'],
-      disallow: ['/login', '/dashboard', '/cuenta', '/comprar'],
+      disallow: ['/login', '/dashboard', '/cuenta', '/portal', '/comprar'],
     },
     sitemap: `${site}/sitemap.xml`,
   };

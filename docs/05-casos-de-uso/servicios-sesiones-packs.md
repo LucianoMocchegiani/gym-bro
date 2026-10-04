@@ -125,7 +125,7 @@
 
 **Postcondiciones:** Reserva `confirmada` solo con pago aprobado o crédito consumido válidamente.
 
-**Canales:** app (Sesiones) y web del gym (`/cuenta/clases`: mes → día → sesiones), con la misma lógica. Con créditos del servicio → **Reservar** (`POST /me/reservations`). Sin créditos y con drop-in → **Al carrito** y se paga con el carrito (CU-PAG-001; requiere MP conectado). Sin créditos ni drop-in → «Esta clase no se vende suelta» y link a la tienda.
+**Canales:** app (Sesiones) y web del gym (`/portal/clases`: mes → día → sesiones), con la misma lógica. Con créditos del servicio → **Reservar** (`POST /me/reservations`). Sin créditos y con drop-in → **Al carrito** y se paga con el carrito (CU-PAG-001; requiere MP conectado). Sin créditos ni drop-in → «Esta clase no se vende suelta» y link a la tienda.
 
 **Reglas relacionadas:** RN-RES-001, RN-PAG-004, RN-PAG-005, RN-SER-008
 
@@ -164,7 +164,7 @@
 
 **Errores:** Fuera de ventana → no cancela (o solo con staff).
 
-**Canales:** app y web del gym (calendario, «Mis clases» `/cuenta/mis-clases` e inicio de `/cuenta`), con confirmación.
+**Canales:** app y web del gym (calendario, «Mis clases» `/portal/mis-clases` e inicio de `/cuenta`), con confirmación.
 
 **Reglas relacionadas:** RN-RES-003, RN-TEN-005
 
@@ -183,7 +183,7 @@
 
 **Postcondiciones:** Item `en_cola`.
 
-**Canales:** app y web del gym (`/cuenta/clases` en una sesión llena; salir desde el calendario o «Mis clases», con confirmación).
+**Canales:** app y web del gym (`/portal/clases` en una sesión llena; salir desde el calendario o «Mis clases», con confirmación).
 
 **Reglas relacionadas:** RN-RES-004
 

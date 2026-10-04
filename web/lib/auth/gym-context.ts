@@ -61,7 +61,7 @@ export async function enterGym(input: {
 
 /** Destino por defecto según perfil. */
 export function homeForProfile(profile: GymProfile): string {
-  return profile === 'STAFF' ? '/dashboard' : '/cuenta';
+  return profile === 'STAFF' ? '/dashboard' : '/portal';
 }
 
 /** `?next=` del panel staff vs. del socio. */
@@ -73,9 +73,9 @@ export function profileForPath(path: string | null): GymProfile | null {
     return 'STAFF';
   }
   if (
-    path === '/cuenta' ||
-    path.startsWith('/cuenta?') ||
-    path.startsWith('/cuenta/') ||
+    path === '/portal' ||
+    path.startsWith('/portal?') ||
+    path.startsWith('/portal/') ||
     path.startsWith('/comprar')
   ) {
     return 'MEMBER';
