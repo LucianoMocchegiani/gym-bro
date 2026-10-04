@@ -16,6 +16,7 @@ La creación de registros sigue la skill:
 
 ## Índice
 
+- [2026-10-04 - Web del gym editable: colores para tema claro y tema oscuro](./2026-10-04-web-gym-tema-claro-oscuro.md)
 - [2026-10-04 - Web del gym editable: portada y sliders desde el panel](./2026-10-04-web-gym-editable.md)
 - [2026-10-04 - El asistente sabe que la app solo es necesaria con la puerta Kuatia](./2026-10-04-app-solo-con-kuatia.md)
 - [2026-10-04 - Landing Faciliter con slider y «Más información» en el asistente](./2026-10-04-landing-slider.md)
