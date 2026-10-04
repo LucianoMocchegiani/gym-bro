@@ -50,7 +50,8 @@ function publicOrigin(request: NextRequest): string {
 }
 
 /**
- * Middleware: rutas viejas del panel → `/dashboard`, raíz de `admin` → apex y
+ * Middleware: rutas viejas del panel → `/dashboard`, `/dashboard/cuenta` →
+ * `/cuenta` (única cuenta del gym), raíz de `admin` → apex y
  * noindex de todo lo que no es público.
  *
  * @remarks La sesión vive en `localStorage` (por origen), así que este middleware
@@ -67,6 +68,13 @@ export function middleware(request: NextRequest) {
   if (LEGACY_PANEL_SEGMENTS.has(firstSegment)) {
     return NextResponse.redirect(
       new URL(`/dashboard${pathname}${search}`, publicOrigin(request)),
+      308,
+    );
+  }
+
+  if (pathname === '/dashboard/cuenta') {
+    return NextResponse.redirect(
+      new URL(`/cuenta${search}`, publicOrigin(request)),
       308,
     );
   }

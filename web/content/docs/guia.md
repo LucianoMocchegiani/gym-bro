@@ -750,7 +750,7 @@ En faciliter.xyz/cuenta:
 - **Plan Faciliter** del gym elegido.
 - **Eliminar cuenta.**
 
-Dentro del panel de un local, tu avatar (arriba) abre **Mi cuenta** con tus datos, la contraseña y cerrar sesión.
+En un local (`{slug}.faciliter.xyz`), tu avatar (arriba, en el panel o en la web del gym) abre **Mi cuenta** en `/cuenta`, la misma para socios y staff: tus datos, la contraseña, cerrar sesión y los accesos al portal de socio o al panel.
 
 **Captura:** `web-cuenta.png` — falta.  
 **Dónde:** faciliter.xyz/cuenta con un gym de prueba.  

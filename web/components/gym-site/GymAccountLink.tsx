@@ -38,7 +38,7 @@ export function GymAccountLink({ slug }: { slug: string }) {
         </Link>
       ) : null}
       <AccountAvatarLink
-        href={identity || member ? '/cuenta' : '/dashboard/cuenta'}
+        href="/cuenta"
         name={person.name}
         email={person.email}
       />

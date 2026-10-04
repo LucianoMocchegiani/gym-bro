@@ -140,7 +140,7 @@ export function AdminShell({
     if (!limited) {
       return;
     }
-    if (pathname === '/dashboard/plan' || pathname === '/dashboard/cuenta') {
+    if (pathname === '/dashboard/plan') {
       return;
     }
     router.replace('/dashboard/plan');
@@ -242,7 +242,7 @@ export function AdminShell({
             <div className="app-topbar-right">
               <ThemeToggle />
               <AccountAvatarLink
-                href="/dashboard/cuenta"
+                href="/cuenta"
                 name={session?.name}
                 email={session?.email}
               />

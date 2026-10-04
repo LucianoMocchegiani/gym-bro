@@ -5,18 +5,21 @@ import { useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { AccountPanel } from '@/components/AccountPanel';
 import { Panel } from '@/components/AdminUi';
+import type { SessionKind } from '@/lib/api/client';
 import { useAuth } from '@/lib/auth/AuthProvider';
 import { useIdentityAuth } from '@/lib/auth/IdentityAuthProvider';
 import { signOutOfGym } from '@/lib/auth/gym-context';
 import { useMemberSession } from '@/lib/auth/useMemberSession';
+import { PLATFORM_TENANT_SLUG, tenantOrigin } from '@/lib/tenant-host';
 
 /**
- * `{slug}/cuenta`: cuenta Faciliter de quien entró al gym (datos, contraseña y
- * cerrar sesión), con accesos al portal del socio y al panel.
+ * `{slug}/cuenta`: única pantalla de cuenta del gym (socio y staff): datos,
+ * contraseña, cerrar sesión y accesos al portal del socio y al panel.
  *
- * @remarks Usa la sesión de la cuenta Faciliter y, si no está, la del socio.
- * Solo staff (p. ej. impersonación) va a `/dashboard/cuenta`; sin sesión, a
- * `/login`. Cerrar sesión cierra las tres sesiones del gym y vacía el carrito.
+ * @remarks La persona sale de la sesión de la cuenta Faciliter, o si no de la
+ * del socio o la del staff. En una impersonación manda la sesión staff y se
+ * ofrece volver a plataforma. Sin sesión, `/login`. Cerrar sesión cierra las
+ * tres sesiones del gym y vacía el carrito.
  */
 export function GymAccountPage({ slug }: { slug: string }) {
   const router = useRouter();
@@ -24,15 +27,23 @@ export function GymAccountPage({ slug }: { slug: string }) {
   const { session: member, ready: memberReady } = useMemberSession(slug);
   const { session: staff, ready: staffReady } = useAuth();
   const ready = identityReady && memberReady && staffReady;
-  const person = identity ?? member;
+  const impersonating = staff?.impersonating === true;
+  const person = impersonating ? staff : (identity ?? member ?? staff);
+  const passwordAuth: SessionKind = impersonating
+    ? 'staff'
+    : identity
+      ? 'identity'
+      : member
+        ? 'member'
+        : 'staff';
   const leavingRef = useRef(false);
 
   useEffect(() => {
     if (!ready || person || leavingRef.current) {
       return;
     }
-    router.replace(staff ? '/dashboard/cuenta' : '/login?next=/cuenta');
-  }, [ready, person, staff, router]);
+    router.replace('/login?next=/cuenta');
+  }, [ready, person, router]);
 
   async function handleLogout(): Promise<void> {
     leavingRef.current = true;
@@ -57,7 +68,7 @@ export function GymAccountPage({ slug }: { slug: string }) {
               ) : null}
               {staff ? (
                 <Link className="btn ghost" href="/dashboard">
-                  Ir al panel del gym
+                  Ir al panel
                 </Link>
               ) : null}
             </div>
@@ -66,11 +77,31 @@ export function GymAccountPage({ slug }: { slug: string }) {
         <AccountPanel
           name={person.name}
           email={person.email}
-          subtitle="Cuenta Faciliter"
+          subtitle={
+            impersonating ? 'Impersonando (plataforma)' : 'Cuenta Faciliter'
+          }
           onLogout={handleLogout}
           loginHref="/"
-          hasPassword={identity?.hasPassword ?? true}
-          passwordAuth={identity ? 'identity' : 'member'}
+          onReturnToPlatform={
+            impersonating
+              ? () => {
+                  leavingRef.current = true;
+                  void signOutOfGym().then(() => {
+                    window.location.replace(
+                      `${tenantOrigin(PLATFORM_TENANT_SLUG)}/dashboard`,
+                    );
+                  });
+                }
+              : undefined
+          }
+          hasPassword={
+            passwordAuth === 'identity'
+              ? identity?.hasPassword
+              : passwordAuth === 'staff'
+                ? staff?.hasPassword
+                : true
+          }
+          passwordAuth={passwordAuth}
         />
       </div>
     </section>

@@ -17,7 +17,7 @@ Cada persona tiene **una** cuenta Faciliter: su mail. Con esa cuenta entra a la 
 ## Mi cuenta
 
 - **faciliter.xyz/cuenta:** datos, cambiar o crear contraseña, cerrar sesión, **Mis tenants** (sus gyms con **Abrir panel** y **+ Nuevo tenant**), **Plan Faciliter** del gym elegido y **Eliminar cuenta**.
-- **Panel del local:** el avatar abre **Mi cuenta** con datos, contraseña y cerrar sesión.
+- **Panel y web del local:** el avatar abre **Mi cuenta** (`{slug}.faciliter.xyz/cuenta`, la misma para socios y staff) con datos, contraseña, cerrar sesión y accesos al portal o al panel.
 
 ## Eliminar la cuenta
 

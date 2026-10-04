@@ -19,7 +19,7 @@ Con tunnel: `{slug}.{NEXT_PUBLIC_APP_DOMAIN}` (ej. `https://demo.pruebasaproducc
 | `/` | Vidriera pública: packs del gym; **Comprar** solo si el gym conectó Mercado Pago (indexable) |
 | `/login` | Login único con la cuenta Faciliter: staff → `/dashboard`, socio → `/portal`, ambos → elige |
 | `/comprar?pack=` | Socio: suma el pack al carrito y va a `/portal/carrito`. No socio: nombre, DNI, teléfono → checkout MP; el socio nace con el pago aprobado |
-| `/cuenta` | Cuenta de quien entró (avatar del header): datos, contraseña, cerrar sesión y accesos al portal / panel. En el apex: cuenta Faciliter con tenants y plan |
+| `/cuenta` | Única cuenta del gym, para socio y staff (avatar del header y del panel): datos, contraseña, cerrar sesión, accesos al portal / panel y «Volver a plataforma» si es impersonación. `/dashboard/cuenta` redirige acá. En el apex: cuenta Faciliter con tenants y plan |
 | `/portal` | Portal del socio, inicio: próximas clases, planes vigentes y resultado del pago (`?compra=`). `?alta=` espera el alta pagada |
 | `/portal/clases` | Calendario del mes: reservar con créditos, drop-in al carrito sin créditos, lista de espera |
 | `/portal/mis-clases` | Próximas reservas y lista de espera (cancelar / salir) + pasadas y canceladas |

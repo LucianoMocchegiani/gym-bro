@@ -364,6 +364,8 @@ Pasos de VPS: [uso/probar-debito-suscripcion-mp.md](./uso/probar-debito-suscripc
 | G24 | Historial → Ver → **Solicitar devolución** en una línea aprobada | Motivo opcional → la línea muestra «Devolución solicitada»; el staff la ve en Devoluciones | RN-CTA-009, CU-PAG-004 | |
 | G25 | Logueado en el gym: header | Tema + avatar con iniciales; socio ve también «Mi portal», staff «Panel». Avatar → `/cuenta`: datos, contraseña, cerrar sesión y accesos | RN-CTA-006 | |
 | G26 | Abrir `{slug}/cuenta?compra=X` (link viejo de MP) | Redirige a `/portal?compra=X` | RN-CTA-008 | |
+| G27 | Panel: tocar el avatar; abrir `{slug}/dashboard/cuenta` | Ambos llevan a `{slug}/cuenta` (308 el segundo): datos, contraseña, cerrar sesión y «Ir al panel» | RN-CTA-006 | |
+| G28 | Impersonando un gym: avatar → `/cuenta` | «Impersonando (plataforma)» + **Volver a plataforma** → `admin/dashboard` | RN-CTA-006 | |
 
 ---
 

@@ -32,8 +32,7 @@ type AccountPanelProps = {
 /**
  * Pantalla de cuenta (avatar → datos, cerrar sesión y contraseña).
  *
- * @remarks Usado en el panel Staff (`/dashboard/cuenta`), en `/cuenta` del
- * gym (cuenta Faciliter del socio) y en el apex Identity.
+ * @remarks Usado en `/cuenta` del gym (socio y staff) y en el apex Identity.
  * Con contraseña: cambiarla revoca todos los refresh → re-login. Sin
  * contraseña (Google/Apple): "Crear contraseña", sin cerrar sesiones.
  * El estado real sale de `GET /auth/password`. En apex Identity, `passwordAuth`.
