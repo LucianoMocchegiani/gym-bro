@@ -16,6 +16,7 @@ La creación de registros sigue la skill:
 
 ## Índice
 
+- [2026-10-04 - El asistente sabe que la app solo es necesaria con la puerta Kuatia](./2026-10-04-app-solo-con-kuatia.md)
 - [2026-10-04 - Landing Faciliter con slider y «Más información» en el asistente](./2026-10-04-landing-slider.md)
 - [2026-10-03 - Documentos y avisos en el portal web del socio](./2026-10-03-portal-documentos-avisos.md)
 - [2026-10-03 - Header del gym con la misma disposición que el panel](./2026-10-03-header-gym-como-panel.md)
