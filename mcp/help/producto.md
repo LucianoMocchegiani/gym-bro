@@ -5,7 +5,7 @@ Faciliter Brain es el sistema de **afiliaciones**. Sirve a gyms, clubes, estudio
 ## Qué ve cada quien
 
 - **Staff (tu equipo):** dueño, recepción, profesores. Entran al **panel Admin** con su usuario. Cada rol ve lo que su permiso deja.
-- **Afiliado (socio):** otra cuenta. Usa la **app**: estado de cuenta, packs contratados, pagos, calendario y credencial para la puerta.
+- **Afiliado (socio):** otra cuenta. Usa la **app** o el **portal web** del gym: estado de cuenta, packs contratados, pagos, calendario y (en la app) credencial para la puerta.
 - La misma persona en la vida real puede ser profesor y socio: en el sistema son **dos perfiles**, con la misma **cuenta Faciliter** (su mail). Esa cuenta sirve para varios locales (topic `cuenta`).
 
 ## Contratar Faciliter
@@ -28,22 +28,27 @@ Brain **cobra y puede debitar** afiliados en línea (Mercado Pago de la **cuenta
 
 Lo que **paga** el gym (alquiler, luz, mercadería) se carga en **Gastos**, con etiqueta y comprobantes; Reportes muestra el resultado. Topic `gastos`.
 
-## Puerta
+## Puerta (opcional)
 
-La app es la **credencial**: el socio escanea el QR de la puerta. El personal ve permitido o denegado y el motivo (deuda, sin pack vigente, sin reserva). Ejemplo: clase de pilates o funcional; el afiliado entra con la app para esa clase y queda en los registros de puerta. Un aparato **ZKTeco** (huella, tarjeta, PIN) es opcional: depende del modelo y se coordina con los técnicos de Faciliter (topic `puerta`).
+El control de acceso es **opcional** y tiene dos formas; el local elige en Config → Operación → Puerta:
+
+- **Kuatia (app):** la app es la **credencial**: el socio escanea el QR de la puerta y el personal ve permitido o denegado con el motivo (deuda, sin pack vigente, sin reserva). Alcanza una tablet en la puerta.
+- **ZKTeco:** molinete o puerta con huella, tarjeta o PIN. Depende del modelo y se coordina con los técnicos de Faciliter.
+
+Con cualquiera de las dos queda el registro de cada ingreso. Ejemplo: clase de pilates o funcional; el afiliado entra para esa clase y queda en los registros de puerta. Detalle: topic `puerta`.
 
 En el panel, cada socio y cada staff tiene una **carpeta** (notas, PDF, imágenes: rutina o papeles del local). Cómo: `get_help` topic `carpeta`. No hay catálogo de ejercicios ni rutina por días.
 
 Solo entra quien tiene un **servicio activo**, o quien el personal **autoriza a mano** (pase manual).
 
-## App (tienda y lo que falta)
+## App y portal web del socio (tienda y lo que falta)
 
-Hoy la tienda del establecimiento vende **servicios** (packs y drop-in). El socio recibe **avisos** automáticos (pago, reserva, vencimiento, débito) en la bandeja de la app y por mail; el gym edita los textos (topic `avisos`). **Productos físicos**, **noticias del local** y **notificaciones push** no están todavía: no los presentes como si ya anduvieran. Recorrido de la app: topic `app`.
+El socio se gestiona solo desde la **app** o desde el **portal web** del gym (`{slug}.faciliter.xyz/portal`): reserva clases, compra packs, ve pagos, documentos y avisos (topic `app`). Hoy la tienda del establecimiento vende **servicios** (packs y drop-in). El socio recibe **avisos** automáticos (pago, reserva, vencimiento, débito) en la bandeja de la app y por mail; el gym edita los textos (topic `avisos`). **Productos físicos**, **noticias del local** y **notificaciones push** no están todavía: no los presentes como si ya anduvieran. Recorrido de la app: topic `app`.
 
 ## Este asistente
 
 - En el **Admin:** consulta datos reales del gym (socios, caja, etc.) con las tools. Puede **proponer** altas y ediciones (gastos, afiliados, catálogo, clases, reservas con crédito, staff, roles) que solo se hacen si el staff toca **Confirmar**. **No cobra**, no devuelve, no toca débito ni la puerta, no borra (por seguridad). Detalle: topic `chat`.
-- En la **landing pública:** solo explica el producto (`get_help`). No hay un gym detrás.
+- En la **landing pública:** solo explica el producto (`get_help`). No hay un gym detrás. Los botones «Más información» de la landing te mandan «Quiero más información de …» (servicios y packs, cobros, app y portal del socio, puerta de acceso, asistente): respondé corto, con lo principal y cómo seguir (guía `/docs`, Contratar o agendar una reunión).
 - Hay una **guía de uso** en el sitio (`/docs`: Qué es, Primeros pasos, Módulos, Tu cuenta y el plan) con capturas. Para describir pantallas usá `get_help` topic `guia`. **No ves las fotos:** si piden una captura, mandalos a `/docs`.
 - Carpeta / documentos / “dónde pongo la rutina”: topic `carpeta`.
 - Traer socios de otro sistema (Excel, CSV, fotos, carpeta) y contraseña de los importados: topic `migracion`. Packs y pagos viejos no se migran.

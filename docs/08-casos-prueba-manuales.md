@@ -329,6 +329,9 @@ Pasos de VPS: [uso/probar-debito-suscripcion-mp.md](./uso/probar-debito-suscripc
 | M6 | Host tenant: header `X-Robots-Tag` | `/` sin header (indexable, canonical al host del gym); `/dashboard`, `/login`, `/cuenta`, `/portal`, `/comprar` con `noindex, nofollow` | RN-CTA-005 | |
 | M7 | Apex burbuja `#asistente` | Abre el mismo drawer que el Admin; responde pack/caja/puerta; no pide login | P3 | |
 | M8 | Widget no lista socios de un gym | Sin tools de operación; solo ayuda de producto | C7/landing | |
+| M9 | Apex: slider de producto | Rota solo cada ~6 s; se pausa con el mouse encima o con foco; flechas, puntos y swipe en el celular. Con «reducir movimiento» del sistema no rota solo | P3 | |
+| M10 | Slider → **Más información** (ej. Puerta) | Abre la burbuja y envía «Quiero más información de la puerta de acceso»; responde corto (Kuatia o ZKTeco, opcional) | P3 | |
+| M11 | Apex: estructura | Solo hero, slider, Planes y «Empezá a utilizar Faciliter Brain»; links del header Producto / Precio bajan a su bloque y Asistente abre la burbuja | P3 | |
 
 ---
 

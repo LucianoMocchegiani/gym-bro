@@ -448,23 +448,28 @@ Sin ruta `/asistente`. Burbuja abajo a la derecha (estilo Mercado Libre); Caja s
 
 ## 17. Landing pública (apex)
 
-Misma composición que Kuatia (`identity-kuatia` marketing): contenedor ancho, hero de una columna (sin mock de teléfono), franja de 3 pilares, casos, un plan.
+Poco texto: hero, un slider que rota los temas y planes. El detalle lo da el asistente: cada slide tiene **Más información**, que abre la burbuja y envía «Quiero más información de {tema}».
 
 ```text
 +------------------------------------------------------------------+
-| Faciliter          Producto  Asistente  Precio                  [tema]
+| Faciliter      Producto  Guía  Asistente  Precio      [tema] [AF]
 +------------------------------------------------------------------+
-| Faciliter Brain                                                   |
-| El cerebro de tus afiliados                                      |
-| Afiliados, cobros, puerta y app                                   |
+| Software de afiliaciones · Argentina                              |
+| Faciliter: el cerebro de tus afiliados.                          |
+| Afiliados, cobros, puerta y app en un solo sistema               |
 | [Agendá una reunión]  [Guía de uso]                             |
 +------------------------------------------------------------------+
-| [Cobrar] | [Entrar] | [Consultar]
+| (#producto) slider, rota cada 6 s                                |
+|  [icono] SERVICIOS                                               |
+|  Armás tu oferta. El sistema se adapta.                          |
+|  una línea                                                       |
+|  [Más información] → asistente                                   |
+|  ‹      ● ━━ ● ● ●      ›                                        |
+|  slides: Servicios · Cobros · App y portal · Puerta (opcional:   |
+|  Kuatia / ZKTeco) · Asistente                                    |
 +------------------------------------------------------------------+
-| Un solo producto — 3 columnas (mostrador, puerta, app)          |
-| Probá el asistente (burbuja, misma UI que Admin)                |
-| Plan · A convenir                                                |
-| Empezá con tu operación (panel CTA) |
+| (#precio) Planes — cards con Contratar                           |
+| Empezá a utilizar Faciliter Brain (panel CTA) [Agendá]           |
 +------------------------------------------------------------------+
 | Faciliter | Producto | Legal | Contacto                          |
 +------------------------------------------------------------------+

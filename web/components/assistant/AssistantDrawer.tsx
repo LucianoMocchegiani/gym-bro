@@ -31,6 +31,7 @@ import {
   type ChatMessage,
 } from '@/lib/api/chat';
 import { ensurePublicChatSession, resetPublicChatSession } from '@/lib/api/public-chat';
+import { ASSISTANT_ASK_EVENT, type AssistantAskDetail } from '@/lib/assistant-ask';
 import { useAuth } from '@/lib/auth/AuthProvider';
 import {
   clearLastConversationId,
@@ -130,7 +131,8 @@ function isNearBottom(el: HTMLElement): boolean {
  * Botón burbuja + drawer del asistente. Caja y el resto siguen detrás.
  *
  * @remarks `staff`: JWT Staff. `public`: sesión anónima de la landing (solo
- * get_help). Misma UI. Tools en una línea. Archivar = DELETE C2.
+ * get_help). Misma UI. Tools en una línea. Archivar = DELETE C2. En `public`
+ * se abre con `#asistente` o con `askAssistant` (abre y envía).
  */
 export function AssistantLauncher({
   variant = 'staff',
@@ -335,6 +337,7 @@ export function AssistantLauncher({
 
   const selectConversation = useCallback(
     async (id: string, title?: string | null) => {
+      activeIdRef.current = id;
       setActiveId(id);
       if (tenantId && userId) {
         writeLastConversationId(tenantId, userId, id);
@@ -363,6 +366,7 @@ export function AssistantLauncher({
           const picked = items.find((item) => item.id === pick);
           await selectConversation(pick, picked?.title);
         } else {
+          activeIdRef.current = null;
           setActiveId(null);
           setBubbles([]);
         }
@@ -382,6 +386,7 @@ export function AssistantLauncher({
             const picked = items.find((item) => item.id === pick);
             await selectConversation(pick, picked?.title);
           } else {
+            activeIdRef.current = null;
             setActiveId(null);
             setBubbles([]);
           }
@@ -389,6 +394,7 @@ export function AssistantLauncher({
         }
         setError(statusMessage(err));
         setConversations([]);
+        activeIdRef.current = null;
         setActiveId(null);
         setBubbles([]);
       } finally {
@@ -424,6 +430,11 @@ export function AssistantLauncher({
     await loadList();
   }, [loadList, variant]);
 
+  const sendRef = useRef(handleSend);
+  useEffect(() => {
+    sendRef.current = handleSend;
+  });
+
   useEffect(() => {
     if (variant !== 'public') {
       return;
@@ -433,9 +444,19 @@ export function AssistantLauncher({
         void handleOpen();
       }
     }
+    function onAsk(event: Event): void {
+      const message = (event as CustomEvent<AssistantAskDetail>).detail?.message?.trim();
+      if (message) {
+        void handleOpen().then(() => sendRef.current(message));
+      }
+    }
     maybeOpen();
     window.addEventListener('hashchange', maybeOpen);
-    return () => window.removeEventListener('hashchange', maybeOpen);
+    window.addEventListener(ASSISTANT_ASK_EVENT, onAsk);
+    return () => {
+      window.removeEventListener('hashchange', maybeOpen);
+      window.removeEventListener(ASSISTANT_ASK_EVENT, onAsk);
+    };
   }, [handleOpen, variant]);
 
   function handleClose(): void {
@@ -490,6 +511,7 @@ export function AssistantLauncher({
             next.find((item) => item.id === fallback)?.title,
           );
         } else {
+          activeIdRef.current = null;
           setActiveId(null);
           setBubbles([]);
           if (tenantId && userId) {
@@ -532,7 +554,7 @@ export function AssistantLauncher({
 
   async function handleSend(text: string): Promise<void> {
     setError(null);
-    let conversationId = activeId;
+    let conversationId = activeIdRef.current;
     abortRef.current?.abort();
     const controller = new AbortController();
     abortRef.current = controller;
@@ -541,6 +563,7 @@ export function AssistantLauncher({
         const created = await createChatConversation();
         conversationId = created.id;
         setConversations((prev) => [created, ...prev]);
+        activeIdRef.current = created.id;
         setActiveId(created.id);
         if (tenantId && userId) {
           writeLastConversationId(tenantId, userId, created.id);
