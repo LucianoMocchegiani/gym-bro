@@ -99,7 +99,7 @@ Rango de fechas: qué se cobró (pack, drop-in, medio, staff) y devoluciones. Co
 
 ## Puerta
 
-Pestañas **Verificar**, **Pase manual**, **Historial**. Con QR: el socio escanea el QR de Verificar desde App → Acceso → Escanear y el panel muestra PERMITIDO / DENEGADO con motivo. ZKTeco es opcional y depende del modelo: se coordina con los técnicos de Faciliter. Topic `puerta`.
+Pestañas **Verificar**, **Pase manual**, **Historial**. Con QR: el socio escanea el QR de Verificar desde App → Acceso → Escanear y el panel muestra PERMITIDO / DENEGADO con motivo. ZKTeco es opcional y depende del modelo: se coordina con los técnicos de Faciliter. La puerta en sí es opcional; solo con Kuatia (QR) el socio necesita la app; con ZKTeco o sin puerta le alcanza el portal web. Topic `puerta`.
 
 ## Avisos
 

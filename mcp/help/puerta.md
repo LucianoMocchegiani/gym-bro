@@ -6,6 +6,8 @@ Pantalla Admin: **Puerta** (`/dashboard/puerta`), pestañas **Verificar**, **Pas
 
 El control de acceso es **opcional**: un local puede usar Faciliter sin puerta. Si la usa, elige una de dos formas: **Kuatia** (QR con la app) o **ZKTeco** (aparato).
 
+**¿El socio necesita la app?** Solo con **Kuatia**: la credencial vive en la app del celular y con ella escanea el QR de la puerta. Con **ZKTeco** (huella, tarjeta o PIN) o **sin control de acceso**, la app no hace falta: el socio puede hacer todo desde el **portal web** del gym (`{slug}.faciliter.xyz/portal`: reservas, compras, historial, documentos y avisos). La app es una comodidad en el teléfono; si no la quiere descargar, está bien.
+
 ## Con QR (Kuatia, app Faciliter)
 
 Verificar muestra un QR. El socio lo escanea desde App → **Acceso** → Escanear, con su credencial ya aceptada (Acceso → Credenciales), y el panel muestra **PERMITIDO** o **DENEGADO** con el motivo. Una tablet en la puerta con esa pantalla alcanza: quien atiende ve el resultado y deja pasar. No es una captura de pantalla: es la credencial en la app. No inventes un QR de un cliente real.

@@ -641,9 +641,11 @@ Rango de fechas, no el mostrador. Sirve para ver qué se cobró (pack, drop-in, 
 
 Operación → **Puerta**, con tres pestañas: **Verificar**, **Pase manual** e **Historial**. Las reglas de ingreso son las mismas con cualquier sistema: pack vigente, deuda dentro de la tolerancia, reserva si es una clase.
 
-**Con QR (app Faciliter):** la pantalla Verificar muestra un QR. El socio lo escanea desde App → **Acceso** → Escanear, con su credencial ya aceptada, y el panel muestra **PERMITIDO** o **DENEGADO** con el motivo. Una tablet en la puerta con esta pantalla abierta alcanza: quien atiende ve el resultado y deja pasar. Si querés que un molinete se destrabe solo, coordinalo con nuestros técnicos.
+La puerta es **opcional** y tiene dos formas: **Kuatia** (QR con la app) o **ZKTeco** (aparato). Solo con Kuatia el socio necesita la app; con ZKTeco o sin control de acceso le alcanza con el portal web.
 
-**Con ZKTeco (opcional):** el socio se identifica en el aparato (huella, tarjeta o PIN). El número de cada persona se vincula en Afiliados / Staff → **Acceso ZKTeco**; si no hay vínculo, el aparato puede usar el DNI. Verificar muestra los últimos ingresos. La instalación depende del modelo del aparato: coordinala con nuestros técnicos antes de activarlo en Config.
+**Con QR (Kuatia, app Faciliter):** la pantalla Verificar muestra un QR. El socio lo escanea desde App → **Acceso** → Escanear, con su credencial ya aceptada, y el panel muestra **PERMITIDO** o **DENEGADO** con el motivo. Una tablet en la puerta con esta pantalla abierta alcanza: quien atiende ve el resultado y deja pasar. Si querés que un molinete se destrabe solo, coordinalo con nuestros técnicos.
+
+**Con ZKTeco:** el socio se identifica en el aparato (huella, tarjeta o PIN), sin necesidad de la app. El número de cada persona se vincula en Afiliados / Staff → **Acceso ZKTeco**; si no hay vínculo, el aparato puede usar el DNI. Verificar muestra los últimos ingresos. La instalación depende del modelo del aparato: coordinala con nuestros técnicos antes de activarlo en Config.
 
 **Pase manual:** el personal con permiso deja pasar a alguien que la regla no dejaría (deuda, olvidó el celular, cortesía), con un motivo. Queda en el historial.
 
@@ -714,6 +716,8 @@ En la web del gym (`{slug}.faciliter.xyz`), el socio entra con su cuenta Facilit
 - **Avisos:** su bandeja y qué le llega por mail.
 
 Datos, contraseña y cerrar sesión están en **Mi cuenta** (el avatar de arriba a la derecha). La credencial y el escaneo en la puerta siguen siendo de la app.
+
+**¿El socio tiene que bajar la app?** Solo si la puerta usa **Kuatia** (QR con la credencial del celular). Con **ZKTeco** o sin control de acceso, le alcanza con el portal; la app es una comodidad.
 
 **Captura:** `web-portal-inicio.png` — falta.  
 **Dónde:** `{slug}.faciliter.xyz/portal` con un socio de prueba con pack, una reserva y un aviso sin leer.  

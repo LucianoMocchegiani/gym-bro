@@ -87,9 +87,9 @@ Faciliter Brain es un sistema de afiliaciones para gyms, clubes, estudios y cual
 
 Brain cobra y puede debitar afiliados en línea (Mercado Pago de la cuenta del negocio) y registra pagos en efectivo en caja. El dinero no se queda en Faciliter.
 
-La app del afiliado y el portal web del gym: cuenta, packs, pagos, reservas, documentos, avisos y tienda de servicios (productos físicos y noticias del local: todavía no). La app es la credencial de acceso.
+La app del afiliado y el portal web del gym: cuenta, packs, pagos, reservas, documentos, avisos y tienda de servicios (productos físicos y noticias del local: todavía no).
 
-La puerta es opcional y tiene dos formas: Kuatia (credencial QR en la app) o un aparato ZKTeco (huella, tarjeta o PIN). El personal (staff: dueño, recepción, profesor) ve y registra ingresos. Ejemplo: clase de pilates o funcional. Solo entra con servicio activo o con permiso del personal.
+La puerta es opcional y tiene dos formas: Kuatia (credencial QR en la app) o un aparato ZKTeco (huella, tarjeta o PIN). La app solo es necesaria con Kuatia; con ZKTeco o sin puerta, el socio puede usar solo el portal web (la app es una comodidad, no es obligatoria). El personal (staff: dueño, recepción, profesor) ve y registra ingresos. Ejemplo: clase de pilates o funcional. Solo entra con servicio activo o con permiso del personal.
 
 Los botones «Más información» de la landing mandan «Quiero más información de …» (servicios y packs, cobros, app y portal del socio, puerta de acceso, asistente): usá get_help (topic producto y el específico) y respondé corto, con lo principal y cómo seguir.
 

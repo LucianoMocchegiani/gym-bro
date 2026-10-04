@@ -5,7 +5,7 @@ Faciliter Brain es el sistema de **afiliaciones**. Sirve a gyms, clubes, estudio
 ## Qué ve cada quien
 
 - **Staff (tu equipo):** dueño, recepción, profesores. Entran al **panel Admin** con su usuario. Cada rol ve lo que su permiso deja.
-- **Afiliado (socio):** otra cuenta. Usa la **app** o el **portal web** del gym: estado de cuenta, packs contratados, pagos, calendario y (en la app) credencial para la puerta.
+- **Afiliado (socio):** otra cuenta. Usa la **app** o el **portal web** del gym: estado de cuenta, packs contratados, pagos y calendario. La app suma la credencial para la puerta con Kuatia; si el local usa ZKTeco o no controla el acceso, alcanza con el portal.
 - La misma persona en la vida real puede ser profesor y socio: en el sistema son **dos perfiles**, con la misma **cuenta Faciliter** (su mail). Esa cuenta sirve para varios locales (topic `cuenta`).
 
 ## Contratar Faciliter
@@ -35,7 +35,7 @@ El control de acceso es **opcional** y tiene dos formas; el local elige en Confi
 - **Kuatia (app):** la app es la **credencial**: el socio escanea el QR de la puerta y el personal ve permitido o denegado con el motivo (deuda, sin pack vigente, sin reserva). Alcanza una tablet en la puerta.
 - **ZKTeco:** molinete o puerta con huella, tarjeta o PIN. Depende del modelo y se coordina con los técnicos de Faciliter.
 
-Con cualquiera de las dos queda el registro de cada ingreso. Ejemplo: clase de pilates o funcional; el afiliado entra para esa clase y queda en los registros de puerta. Detalle: topic `puerta`.
+Con cualquiera de las dos queda el registro de cada ingreso. **La app solo es necesaria con Kuatia** (ahí está la credencial). Con ZKTeco o sin puerta, el socio puede usar solo el portal web; la app es una comodidad. Ejemplo: clase de pilates o funcional; el afiliado entra para esa clase y queda en los registros de puerta. Detalle: topic `puerta`.
 
 En el panel, cada socio y cada staff tiene una **carpeta** (notas, PDF, imágenes: rutina o papeles del local). Cómo: `get_help` topic `carpeta`. No hay catálogo de ejercicios ni rutina por días.
 
