@@ -1183,10 +1183,41 @@ button.row-icon-btn:disabled {
   color: var(--muted);
 }
 
+/* `data-theme` en la vista previa = fondo y colores del tema elegido. */
 .site-preview {
   display: grid;
   gap: 0.75rem;
-  margin-bottom: 0.75rem;
+  margin: 0.75rem 0;
+  padding: 0.75rem;
+  border: 1px solid var(--line);
+  border-radius: 1rem;
+  background: var(--bg);
+  color: var(--ink);
+}
+
+.site-theme-box {
+  display: grid;
+  gap: 0.75rem;
+  padding: 0.85rem;
+  border: 1px solid var(--line);
+  border-radius: 0.75rem;
+}
+
+.site-theme-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.site-theme-box .muted.small {
+  margin: 0;
+}
+
+.site-theme-alert {
+  color: var(--danger);
+  font-weight: 700;
 }
 
 .site-preview .site-hero,

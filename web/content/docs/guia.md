@@ -689,8 +689,8 @@ Sistema → **Web del gym** arma la página pública de tu local (`{tu-local}.fa
 - **Portada:** título (10 a 80 caracteres), subtítulo opcional (hasta 200) e imagen de fondo opcional.
 - **Sliders:** hasta 5, cada uno con 1 a 10 slides. Cada slide tiene título (hasta 60), texto (hasta 180), fondo y, si querés, un **botón**: a los planes, a reservar clases, a comprar un pack o a un link (https). En la web rotan solos cada 6 segundos; se agregan, quitan y reordenan desde el editor.
 - **Imágenes:** JPG, PNG o WebP de al menos **1200 px de ancho**. Sumale una descripción corta (la leen quienes no ven la imagen) y elegí el **enfoque** para que no se corte lo importante.
-- **Que se lea:** elegí **texto claro u oscuro**, la **capa** sobre la imagen (suave, media o fuerte) y, si querés, otro **color para el título**. Si el título no se va a leer, el editor avisa en rojo y no deja publicar hasta que lo cambies.
-- A la derecha está la **vista previa** de la portada y del slide que estás editando. **Publicar** lo deja visible al instante. **Volver a la vidriera por defecto** borra todo, imágenes incluidas.
+- **Que se lea, en los dos temas:** cada visitante ve tu web en tema claro u oscuro (el de su navegador o el que elija). La imagen es la misma, pero en el recuadro **Tema claro / Tema oscuro** elegís para cada tema **texto claro u oscuro**, la **capa** sobre la imagen (suave, media o fuerte) y, si querés, otro **color para el título**. «Copiar del otro tema» copia esos colores. Si el título no se va a leer en algún tema, el editor avisa en rojo, marca esa pestaña con «!» y no deja publicar hasta que lo cambies.
+- A la derecha está la **vista previa** de la portada y del slide que estás editando, en el tema que elijas arriba de ella. **Publicar** lo deja visible al instante. **Volver a la vidriera por defecto** borra todo, imágenes incluidas.
 
 Debajo de los sliders la web siempre muestra los **planes**. Si un pack del botón se desactiva, ese botón deja de aparecer. Si el gym no tiene Mercado Pago, «Comprar un pack» lleva a los planes.
 

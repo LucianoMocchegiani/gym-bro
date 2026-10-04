@@ -1,4 +1,8 @@
-import type { SiteOverlay, SiteTone, SiteVisual } from '@/lib/api/tenant-site';
+import type {
+  SiteOverlay,
+  SiteThemeColors,
+  SiteTone,
+} from '@/lib/api/tenant-site';
 
 /**
  * Colores de la web del gym y chequeo de legibilidad (RN-CTA-010).
@@ -57,31 +61,40 @@ function contrast(a: Rgb, b: Rgb): number {
 }
 
 /** Fondo contra el que se mide el título: el liso o el peor caso con imagen. */
-function worstBackground(visual: SiteVisual): Rgb {
-  if (!visual.image) {
-    return toRgb(SITE_BASE[visual.tone]);
+function worstBackground(colors: SiteThemeColors, hasImage: boolean): Rgb {
+  if (!hasImage) {
+    return toRgb(SITE_BASE[colors.tone]);
   }
-  const alpha = SITE_OVERLAY_ALPHA[visual.overlay];
+  const alpha = SITE_OVERLAY_ALPHA[colors.overlay];
   const channel =
-    visual.tone === 'LIGHT'
+    colors.tone === 'LIGHT'
       ? Math.round(255 * (1 - alpha))
       : Math.round(255 * alpha);
   return [channel, channel, channel];
 }
 
 /** Contraste del título (acento o color del texto) contra su peor fondo. */
-export function siteTitleContrast(visual: SiteVisual): number {
-  const color = visual.accent ?? SITE_TEXT[visual.tone];
-  return contrast(toRgb(color), worstBackground(visual));
+export function siteTitleContrast(
+  colors: SiteThemeColors,
+  hasImage: boolean,
+): number {
+  const color = colors.accent ?? SITE_TEXT[colors.tone];
+  return contrast(toRgb(color), worstBackground(colors, hasImage));
 }
 
-/** Mensaje para el staff si el título no se va a leer; null si está bien. */
-export function siteContrastIssue(visual: SiteVisual): string | null {
-  if (visual.accent && !isSiteHex(visual.accent)) {
+/**
+ * Mensaje para el staff si el título no se va a leer en un tema; null si está
+ * bien.
+ */
+export function siteContrastIssue(
+  colors: SiteThemeColors,
+  hasImage: boolean,
+): string | null {
+  if (colors.accent && !isSiteHex(colors.accent)) {
     return 'El color del título tiene que ser #rrggbb';
   }
-  if (siteTitleContrast(visual) < SITE_MIN_TITLE_CONTRAST) {
-    return visual.image
+  if (siteTitleContrast(colors, hasImage) < SITE_MIN_TITLE_CONTRAST) {
+    return hasImage
       ? 'El color del título no se va a leer sobre la imagen: probá otro color, otro tono o una capa más fuerte'
       : 'El color del título no se va a leer sobre el fondo: probá otro color u otro tono';
   }

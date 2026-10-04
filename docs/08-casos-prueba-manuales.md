@@ -376,13 +376,14 @@ Pasos de VPS: [uso/probar-debito-suscripcion-mp.md](./uso/probar-debito-suscripc
 | G33 | Panel → **Sistema → Web del gym** sin haber editado nunca | Portada base («Entrená a tu ritmo con nosotros»), sin sliders; la web sigue con la vidriera por defecto hasta publicar | CU-CTA-010 | |
 | G34 | Portada con imagen, título y subtítulo → **Publicar** → abrir `{slug}/` | Portada con la imagen, la capa y los textos; debajo los planes. El `<title>` es «Gym \| título» y la descripción, el subtítulo | RN-CTA-010 | |
 | G35 | Elegir una imagen GIF o una de menos de 1200 px de ancho | No la toma y avisa (formato no permitido / «mide N px…») | RN-CTA-010 | |
-| G36 | Texto oscuro + color de título amarillo, o capa suave + acento azul sobre imagen | Aviso de contraste en rojo y **Publicar** deshabilitado; con capa fuerte o color que se lea, se habilita | RN-CTA-010 | |
+| G36 | En **Tema claro**: texto oscuro + color de título amarillo, o capa suave + acento azul sobre imagen | Aviso de contraste en rojo (con el tema), «!» en la pestaña de ese tema y **Publicar** deshabilitado; con capa fuerte o color que se lea, se habilita | RN-CTA-010 | |
 | G37 | 2 sliders (uno con 3 slides) con botones: Planes, Reservar, Pack y link https → Publicar | En la web rotan cada 6 s; Planes baja a `#planes`, Reservar va a `/portal/clases`, Pack a `/comprar?pack=` (sin MP: a los planes), el link abre en otra pestaña | RN-CTA-010 | |
 | G38 | Desactivar el pack de un botón y recargar la web | Ese botón no aparece; el resto igual | RN-CTA-010 | |
 | G39 | Reordenar slides y sliders, quitar uno con imagen → Publicar | La web respeta el orden; la imagen quitada se borra de R2. Auditoría: `tenant.site.update` | RN-CTA-010 | |
 | G40 | **Volver a la vidriera por defecto** (confirmar) | La web vuelve a nombre + planes; se borran las imágenes; auditoría `tenant.site.reset` | RN-CTA-010 | |
 | G41 | Staff con solo `tenant.settings.read` | Ve el editor y la vista previa con todo deshabilitado; sin `tenant.settings.*` no ve el ítem del menú | RN-CTA-010 | |
 | G42 | `PUT /api/tenant-site` con una URL de imagen de otro dominio o de otro gym | 400 «la imagen tiene que subirse desde el panel» | RN-CTA-010 | |
+| G43 | Portada con imagen: en **Tema claro** texto oscuro + capa fuerte; en **Tema oscuro** texto claro + título amarillo; probar «Copiar del tema claro» y volver a dejarlo → Publicar. Abrir `{slug}/` y cambiar el tema de la web | Misma imagen; cada tema muestra sus colores sin parpadeo al recargar; la vista previa del editor cambia con sus pestañas de tema. Un sitio guardado antes del cambio se ve igual en los dos temas | RN-CTA-010 | |
 
 ---
 

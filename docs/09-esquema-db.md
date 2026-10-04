@@ -1161,7 +1161,7 @@ Web pública editable del gym, 1:1 con tenant (RN-CTA-010). Sin fila = vidriera 
 | Columna | Tipo | Notas |
 |---------|------|--------|
 | `tenant_id` | uuid PK FK → `tenants` | CASCADE |
-| `content` | jsonb | `{ hero, sliders[] }`: textos, imagen (URL R2 `tenants/{id}/site/…`, alt, enfoque), tono, acento, capa y botón por slide. Forma en `api/src/tenant-site/tenant-site.types.ts` |
+| `content` | jsonb | `{ hero, sliders[] }`: textos, imagen compartida (URL R2 `tenants/{id}/site/…`, alt, enfoque), `light` y `dark` (`{ tone, accent, overlay }` por tema) en hero y cada slide, y botón por slide. Filas con el formato anterior (tono, acento y capa sueltos) se leen copiando esos valores a los dos temas. Forma en `api/src/tenant-site/tenant-site.types.ts` |
 | `updated_by_staff_id` | uuid null | staff que publicó (sin FK) |
 | `created_at` / `updated_at` | timestamptz | |
 

@@ -13,6 +13,7 @@ import {
   SITE_IMAGE_FOLDER,
   SITE_LIMITS,
   type SiteButtonTarget,
+  type SiteTheme,
   type TenantSiteDetail,
 } from '@/lib/api/tenant-site';
 import { CountedField, SiteVisualFields } from './SiteFields';
@@ -25,6 +26,7 @@ import {
   newSlider,
   pendingImages,
   previewUrl,
+  SITE_THEME_LABELS,
   type DraftButton,
   type DraftHero,
   type DraftImage,
@@ -80,6 +82,7 @@ export function SiteEditor({
     draftFromContent(detail.content),
   );
   const [selected, setSelected] = useState<Selection>(null);
+  const [theme, setTheme] = useState<SiteTheme>('dark');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [confirmReset, setConfirmReset] = useState(false);
@@ -218,6 +221,8 @@ export function SiteEditor({
             <SiteVisualFields
               value={draft.hero}
               disabled={disabled}
+              theme={theme}
+              onThemeChange={setTheme}
               onImageError={setError}
               onChange={(visual) => setHero(visual)}
             />
@@ -298,6 +303,8 @@ export function SiteEditor({
                   count={slider.slides.length}
                   packs={packs}
                   disabled={disabled}
+                  theme={theme}
+                  onThemeChange={setTheme}
                   onImageError={setError}
                   onChange={(fn) => updateSlide(si, selected.slide, fn)}
                   onMove={(to) => moveSlide(si, selected.slide, to)}
@@ -326,7 +333,20 @@ export function SiteEditor({
 
       <div className="site-editor-side">
         <Panel title="Vista previa">
-          <div className="site-preview">
+          <div className="site-slide-tabs" role="group" aria-label="Tema de la vista previa">
+            {(['light', 'dark'] as const).map((t) => (
+              <button
+                key={t}
+                type="button"
+                className="site-slide-tab"
+                aria-pressed={t === theme}
+                onClick={() => setTheme(t)}
+              >
+                {SITE_THEME_LABELS[t]}
+              </button>
+            ))}
+          </div>
+          <div className="site-preview" data-theme={theme} data-site-theme={theme}>
             <SiteHeroView
               hero={preview.hero}
               actions={
@@ -422,6 +442,8 @@ function SlideForm({
   count,
   packs,
   disabled,
+  theme,
+  onThemeChange,
   onImageError,
   onChange,
   onMove,
@@ -432,6 +454,8 @@ function SlideForm({
   count: number;
   packs: PackSummary[];
   disabled: boolean;
+  theme: SiteTheme;
+  onThemeChange: (theme: SiteTheme) => void;
   onImageError: (message: string) => void;
   onChange: (fn: (s: DraftSlide) => DraftSlide) => void;
   onMove: (to: number) => void;
@@ -490,6 +514,8 @@ function SlideForm({
       <SiteVisualFields
         value={slide}
         disabled={disabled}
+        theme={theme}
+        onThemeChange={onThemeChange}
         onImageError={onImageError}
         onChange={(visual) => onChange((s) => ({ ...s, ...visual }))}
       />

@@ -47,13 +47,8 @@ export class SiteImageDto {
   focusY!: SiteFocusY;
 }
 
-/** Fondo y colores comunes a hero y slide. */
-class SiteVisualDto {
-  @IsOptional()
-  @ValidateNested()
-  @Type(() => SiteImageDto)
-  image?: SiteImageDto | null;
-
+/** Colores de un bloque en un tema (claro u oscuro). */
+export class SiteThemeColorsDto {
   @IsIn(SITE_TONES)
   tone!: SiteTone;
 
@@ -63,6 +58,22 @@ class SiteVisualDto {
 
   @IsIn(SITE_OVERLAYS)
   overlay!: SiteOverlay;
+}
+
+/** Fondo comunes a hero y slide: imagen compartida y colores por tema. */
+class SiteVisualDto {
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => SiteImageDto)
+  image?: SiteImageDto | null;
+
+  @ValidateNested()
+  @Type(() => SiteThemeColorsDto)
+  light!: SiteThemeColorsDto;
+
+  @ValidateNested()
+  @Type(() => SiteThemeColorsDto)
+  dark!: SiteThemeColorsDto;
 }
 
 export class SiteButtonDto {

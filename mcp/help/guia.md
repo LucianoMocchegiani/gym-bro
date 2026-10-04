@@ -112,8 +112,8 @@ Sistema → **Web del gym** (`/dashboard/web`): el gym arma la página pública 
 - **Portada:** título (10 a 80 caracteres), subtítulo (hasta 200) e imagen de fondo opcional.
 - **Sliders:** hasta 5, cada uno con 1 a 10 slides (título hasta 60, texto hasta 180). Rotan solos cada 6 segundos. Cada slide puede tener un **botón**: a los planes, a reservar clases (portal), a comprar un pack o a un link https.
 - **Imágenes:** JPG, PNG o WebP de al menos 1200 px de ancho, con descripción y enfoque (izquierda, centro, derecha / arriba, abajo).
-- **Colores:** texto claro u oscuro, capa sobre la imagen (suave, media, fuerte) y color del título. Si el título no se va a leer, avisa y no deja publicar: probar otro color, otro tono o una capa más fuerte.
-- **Publicar** se ve al instante; a la derecha hay vista previa. **Volver a la vidriera por defecto** borra todo (la web vuelve a nombre del gym y planes).
+- **Colores por tema:** la imagen es una sola, pero el recuadro **Tema claro / Tema oscuro** define para cada tema texto claro u oscuro, capa sobre la imagen (suave, media, fuerte) y color del título; «Copiar del otro tema» los copia. El visitante ve los de su tema. Si el título no se va a leer en algún tema, avisa (la pestaña lleva «!») y no deja publicar: probar otro color, otro tono o una capa más fuerte.
+- **Publicar** se ve al instante; a la derecha hay vista previa, con pestañas para verla en tema claro u oscuro. **Volver a la vidriera por defecto** borra todo (la web vuelve a nombre del gym y planes).
 
 Se necesita el permiso de editar la configuración (con el de ver, solo mira). Abajo de los sliders la web siempre muestra los planes. Logo y colores de la marca todavía no se editan.
 

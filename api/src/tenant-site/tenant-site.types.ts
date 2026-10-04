@@ -31,13 +31,23 @@ export type SiteImage = {
   focusY: SiteFocusY;
 };
 
-/** Fondo y colores compartidos por hero y slides. */
-export type SiteVisual = {
-  image: SiteImage | null;
+/** Colores de un bloque en un tema de la web (claro u oscuro). */
+export type SiteThemeColors = {
   tone: SiteTone;
   /** `#rrggbb` para el título; null = mismo color que el texto. */
   accent: string | null;
   overlay: SiteOverlay;
+};
+
+/** Temas de la web: el visitante ve uno u otro según su preferencia. */
+export const SITE_THEMES = ['light', 'dark'] as const;
+export type SiteTheme = (typeof SITE_THEMES)[number];
+
+/** Fondo de hero y slides: una imagen y colores para cada tema. */
+export type SiteVisual = {
+  image: SiteImage | null;
+  light: SiteThemeColors;
+  dark: SiteThemeColors;
 };
 
 export type SiteButton = {

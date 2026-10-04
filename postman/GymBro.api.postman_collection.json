@@ -4157,7 +4157,7 @@
         },
         {
             "name": "Tenant site (web del gym)",
-            "description": "RN-CTA-010 / CU-CTA-010. Staff GET (tenant.settings.read), PUT y DELETE (tenant.settings.write) /tenant-site. PUT reemplaza y publica { hero, sliders }: hero título 10–80, subtítulo ≤200; hasta 5 sliders de 1–10 slides (título 3–60, body ≤180, botón PLANS|BOOK|PACK|URL). Imagen: URL de POST /upload con folder=site del mismo tenant (otra → 400). Título ilegible (contraste < 3:1) → 400. DELETE vuelve a la vidriera por defecto y borra las imágenes.",
+            "description": "RN-CTA-010 / CU-CTA-010. Staff GET (tenant.settings.read), PUT y DELETE (tenant.settings.write) /tenant-site. PUT reemplaza y publica { hero, sliders }: hero título 10–80, subtítulo ≤200; hasta 5 sliders de 1–10 slides (título 3–60, body ≤180, botón PLANS|BOOK|PACK|URL). Imagen: URL de POST /upload con folder=site del mismo tenant (otra → 400). Hero y cada slide: image compartida + light y dark { tone LIGHT|DARK, accent #rrggbb|null, overlay } (colores por tema del visitante). Título ilegible (contraste < 3:1) en cualquiera de los dos temas → 400. DELETE vuelve a la vidriera por defecto y borra las imágenes.",
             "item": [
                 {
                     "name": "Staff GET tenant site",
@@ -4205,7 +4205,7 @@
                         ],
                         "body": {
                             "mode": "raw",
-                            "raw": "{\n  \"hero\": {\n    \"title\": \"Entrená a tu ritmo con nosotros\",\n    \"subtitle\": \"Musculación, funcional y clases todos los días.\",\n    \"image\": null,\n    \"tone\": \"LIGHT\",\n    \"accent\": \"#ffe600\",\n    \"overlay\": \"MEDIUM\"\n  },\n  \"sliders\": [\n    {\n      \"id\": \"promos\",\n      \"title\": \"Promos\",\n      \"slides\": [\n        {\n          \"id\": \"verano\",\n          \"title\": \"Promo verano\",\n          \"body\": \"Tres meses al precio de dos.\",\n          \"image\": null,\n          \"tone\": \"DARK\",\n          \"accent\": null,\n          \"overlay\": \"MEDIUM\",\n          \"button\": { \"label\": \"Ver planes\", \"target\": \"PLANS\", \"packId\": null, \"url\": null }\n        }\n      ]\n    }\n  ]\n}"
+                            "raw": "{\n  \"hero\": {\n    \"title\": \"Entrená a tu ritmo con nosotros\",\n    \"subtitle\": \"Musculación, funcional y clases todos los días.\",\n    \"image\": null,\n    \"light\": { \"tone\": \"DARK\", \"accent\": \"#1d4ed8\", \"overlay\": \"MEDIUM\" },\n    \"dark\": { \"tone\": \"LIGHT\", \"accent\": \"#ffe600\", \"overlay\": \"MEDIUM\" }\n  },\n  \"sliders\": [\n    {\n      \"id\": \"promos\",\n      \"title\": \"Promos\",\n      \"slides\": [\n        {\n          \"id\": \"verano\",\n          \"title\": \"Promo verano\",\n          \"body\": \"Tres meses al precio de dos.\",\n          \"image\": null,\n          \"light\": { \"tone\": \"DARK\", \"accent\": null, \"overlay\": \"MEDIUM\" },\n          \"dark\": { \"tone\": \"LIGHT\", \"accent\": null, \"overlay\": \"MEDIUM\" },\n          \"button\": { \"label\": \"Ver planes\", \"target\": \"PLANS\", \"packId\": null, \"url\": null }\n        }\n      ]\n    }\n  ]\n}"
                         },
                         "url": "{{baseUrl}}/api/tenant-site"
                     }
@@ -4233,7 +4233,7 @@
                         ],
                         "body": {
                             "mode": "raw",
-                            "raw": "{\n  \"hero\": {\n    \"title\": \"Entrená a tu ritmo con nosotros\",\n    \"image\": null,\n    \"tone\": \"DARK\",\n    \"accent\": \"#ffe600\",\n    \"overlay\": \"MEDIUM\"\n  },\n  \"sliders\": []\n}"
+                            "raw": "{\n  \"hero\": {\n    \"title\": \"Entrená a tu ritmo con nosotros\",\n    \"image\": null,\n    \"light\": { \"tone\": \"DARK\", \"accent\": \"#ffe600\", \"overlay\": \"MEDIUM\" },\n    \"dark\": { \"tone\": \"LIGHT\", \"accent\": \"#ffe600\", \"overlay\": \"MEDIUM\" }\n  },\n  \"sliders\": []\n}"
                         },
                         "url": "{{baseUrl}}/api/tenant-site"
                     }

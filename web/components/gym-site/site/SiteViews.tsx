@@ -4,6 +4,8 @@ import type {
   SiteFocusY,
   SiteHero,
   SiteSlide,
+  SiteTheme,
+  SiteThemeColors,
   SiteVisual,
 } from '@/lib/api/tenant-site';
 import {
@@ -24,12 +26,25 @@ const FOCUS_Y: Record<SiteFocusY, string> = {
   BOTTOM: '100%',
 };
 
+/** Variables CSS de un tema (`--site-text-light`, `--site-text-dark`, …). */
+function themeVars(theme: SiteTheme, colors: SiteThemeColors) {
+  const text = SITE_TEXT[colors.tone];
+  const overlay = colors.tone === 'LIGHT' ? '0, 0, 0' : '255, 255, 255';
+  return {
+    [`--site-text-${theme}`]: text,
+    [`--site-title-${theme}`]: colors.accent ?? text,
+    [`--site-bg-${theme}`]: SITE_BASE[colors.tone],
+    [`--site-overlay-${theme}`]: `rgba(${overlay}, ${SITE_OVERLAY_ALPHA[colors.overlay]})`,
+  };
+}
+
 /**
  * Fondo (imagen + capa o color liso) y colores del texto de hero y slides.
  *
  * @remarks Sin hooks: lo usan la web del gym (Server Component) y la vista
- * previa del editor. Los colores salen de `site-contrast` (la API valida con
- * los mismos valores).
+ * previa del editor. Van los colores de los dos temas y el CSS usa los del
+ * tema activo (`data-theme`), así no hay parpadeo al cargar. Los colores salen
+ * de `site-contrast` (la API valida con los mismos valores).
  */
 function SiteFrame({
   visual,
@@ -44,17 +59,16 @@ function SiteFrame({
   className: string;
   children: ReactNode;
 }) {
-  const text = SITE_TEXT[visual.tone];
-  const overlay = visual.tone === 'LIGHT' ? '0, 0, 0' : '255, 255, 255';
   const style = {
-    '--site-text': text,
-    '--site-title': visual.accent ?? text,
-    '--site-bg': SITE_BASE[visual.tone],
-    '--site-overlay': `rgba(${overlay}, ${SITE_OVERLAY_ALPHA[visual.overlay]})`,
+    ...themeVars('light', visual.light),
+    ...themeVars('dark', visual.dark),
   } as CSSProperties;
   const { image } = visual;
   return (
-    <div className={`site-frame ${className}`} style={style}>
+    <div
+      className={`site-frame ${className}${image ? '' : ' is-plain'}`}
+      style={style}
+    >
       {image ? (
         <>
           {/* eslint-disable-next-line @next/next/no-img-element */}

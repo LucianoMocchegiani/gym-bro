@@ -6,12 +6,15 @@ import {
   type SiteFocusX,
   type SiteFocusY,
   type SiteOverlay,
+  type SiteTheme,
+  type SiteThemeColors,
   type SiteTone,
 } from '@/lib/api/tenant-site';
 import { isSiteHex } from '@/lib/site-contrast';
 import {
   draftContrastIssue,
   previewUrl,
+  SITE_THEME_LABELS,
   type DraftVisual,
 } from './site-draft';
 
@@ -24,6 +27,8 @@ const ACCENTS: Record<SiteTone, string[]> = {
   LIGHT: ['#ffe600', '#7ee081', '#5ec8ff', '#ff9f5b', '#ff7aa8'],
   DARK: ['#b00020', '#0b5394', '#1b5e20', '#6a1b9a', '#8a4b00'],
 };
+
+const THEMES: SiteTheme[] = ['light', 'dark'];
 
 /** Input o textarea con contador de caracteres. */
 export function CountedField({
@@ -79,24 +84,36 @@ export function CountedField({
 }
 
 /**
- * Fondo (imagen o color liso) y colores del texto, con aviso de contraste.
+ * Fondo de un bloque: imagen compartida y colores para cada tema de la web
+ * (claro u oscuro), con aviso de contraste.
  *
  * @remarks La imagen queda como archivo hasta publicar (se sube a la carpeta
- * `site` de R2 al guardar).
+ * `site` de R2 al guardar). La pestaña de tema la comparte todo el editor y
+ * también decide qué tema muestra la vista previa.
  */
 export function SiteVisualFields({
   value,
   onChange,
+  theme,
+  onThemeChange,
   onImageError,
   disabled,
 }: {
   value: DraftVisual;
   onChange: (next: DraftVisual) => void;
+  theme: SiteTheme;
+  onThemeChange: (theme: SiteTheme) => void;
   onImageError: (message: string) => void;
   disabled?: boolean;
 }) {
   const { image } = value;
-  const contrast = draftContrastIssue(value);
+  const colors = value[theme];
+  const other: SiteTheme = theme === 'light' ? 'dark' : 'light';
+  const contrast = draftContrastIssue(value, theme);
+
+  function setColors(patch: Partial<SiteThemeColors>) {
+    onChange({ ...value, [theme]: { ...colors, ...patch } });
+  }
 
   function selectFile(file: File | null) {
     if (image?.previewUrl) {
@@ -173,13 +190,63 @@ export function SiteVisualFields({
                 <option value="BOTTOM">Abajo</option>
               </select>
             </label>
+          </div>
+        </>
+      ) : null}
+
+      <div className="site-theme-box">
+        <div className="site-theme-head">
+          <div className="site-slide-tabs" role="group" aria-label="Colores por tema">
+            {THEMES.map((t) => (
+              <button
+                key={t}
+                type="button"
+                className="site-slide-tab"
+                aria-pressed={t === theme}
+                onClick={() => onThemeChange(t)}
+              >
+                {SITE_THEME_LABELS[t]}
+                {draftContrastIssue(value, t) ? (
+                  <span className="site-theme-alert" aria-label="no se lee">
+                    {' '}!
+                  </span>
+                ) : null}
+              </button>
+            ))}
+          </div>
+          <button
+            type="button"
+            className="linkish"
+            disabled={disabled}
+            onClick={() => onChange({ ...value, [theme]: { ...value[other] } })}
+          >
+            Copiar del {SITE_THEME_LABELS[other].toLowerCase()}
+          </button>
+        </div>
+        <p className="muted small">
+          Cada visitante ve la web en su tema. Elegí los colores para los dos.
+        </p>
+
+        <div className="site-field-row">
+          <label>
+            Texto
+            <select
+              value={colors.tone}
+              disabled={disabled}
+              onChange={(e) => setColors({ tone: e.target.value as SiteTone })}
+            >
+              <option value="LIGHT">Claro (fondo oscuro)</option>
+              <option value="DARK">Oscuro (fondo claro)</option>
+            </select>
+          </label>
+          {image ? (
             <label>
               Capa sobre la imagen
               <select
-                value={value.overlay}
+                value={colors.overlay}
                 disabled={disabled}
                 onChange={(e) =>
-                  onChange({ ...value, overlay: e.target.value as SiteOverlay })
+                  setColors({ overlay: e.target.value as SiteOverlay })
                 }
               >
                 <option value="SOFT">Suave</option>
@@ -187,62 +254,52 @@ export function SiteVisualFields({
                 <option value="STRONG">Fuerte</option>
               </select>
             </label>
-          </div>
-        </>
-      ) : null}
-
-      <label>
-        Texto
-        <select
-          value={value.tone}
-          disabled={disabled}
-          onChange={(e) =>
-            onChange({ ...value, tone: e.target.value as SiteTone })
-          }
-        >
-          <option value="LIGHT">Claro (fondo oscuro)</option>
-          <option value="DARK">Oscuro (fondo claro)</option>
-        </select>
-      </label>
-
-      <div className="site-field">
-        <span className="site-field-head">Color del título</span>
-        <div className="site-swatches">
-          <button
-            type="button"
-            className="site-swatch is-none"
-            aria-pressed={value.accent === null}
-            disabled={disabled}
-            onClick={() => onChange({ ...value, accent: null })}
-          >
-            Igual al texto
-          </button>
-          {ACCENTS[value.tone].map((color) => (
-            <button
-              key={color}
-              type="button"
-              className="site-swatch"
-              style={{ background: color }}
-              aria-label={`Color ${color}`}
-              aria-pressed={value.accent === color}
-              disabled={disabled}
-              onClick={() => onChange({ ...value, accent: color })}
-            />
-          ))}
-          <input
-            type="color"
-            className="site-swatch-picker"
-            aria-label="Otro color"
-            value={value.accent && isSiteHex(value.accent) ? value.accent : '#ffffff'}
-            disabled={disabled}
-            onChange={(e) =>
-              onChange({ ...value, accent: e.target.value.toLowerCase() })
-            }
-          />
+          ) : null}
         </div>
-      </div>
 
-      {contrast ? <p className="error small">{contrast}</p> : null}
+        <div className="site-field">
+          <span className="site-field-head">Color del título</span>
+          <div className="site-swatches">
+            <button
+              type="button"
+              className="site-swatch is-none"
+              aria-pressed={colors.accent === null}
+              disabled={disabled}
+              onClick={() => setColors({ accent: null })}
+            >
+              Igual al texto
+            </button>
+            {ACCENTS[colors.tone].map((color) => (
+              <button
+                key={color}
+                type="button"
+                className="site-swatch"
+                style={{ background: color }}
+                aria-label={`Color ${color}`}
+                aria-pressed={colors.accent === color}
+                disabled={disabled}
+                onClick={() => setColors({ accent: color })}
+              />
+            ))}
+            <input
+              type="color"
+              className="site-swatch-picker"
+              aria-label="Otro color"
+              value={
+                colors.accent && isSiteHex(colors.accent)
+                  ? colors.accent
+                  : '#ffffff'
+              }
+              disabled={disabled}
+              onChange={(e) =>
+                setColors({ accent: e.target.value.toLowerCase() })
+              }
+            />
+          </div>
+        </div>
+
+        {contrast ? <p className="error small">{contrast}</p> : null}
+      </div>
     </div>
   );
 }

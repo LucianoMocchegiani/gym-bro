@@ -500,15 +500,18 @@ Editor a la izquierda, vista previa fija a la derecha (CU-CTA-010, RN-CTA-010). 
 | Web del gym                                        [Ver mi web]  |
 +--------------------------------+---------------------------------+
 | Portada                        | Vista previa                    |
-| Título  [Entrená a tu ritmo…]  | +-----------------------------+ |
-|                  mín. 10 · 31/80| | (imagen + capa)             | |
-| Subtítulo [……………]      0/200   | | ENTRENÁ A TU RITMO          | |
-| Imagen [+] JPG/PNG/WebP ≥1200px| | subtítulo                   | |
-| Descripción [……]  Enfoque [C|C]| | [Ver planes] [Ya soy socio] | |
-| Capa [Media]  Texto [Claro]    | +-----------------------------+ |
-| Color título (○ ● ● ● ● ●) [🎨]| +-----------------------------+ |
-| ! no se va a leer sobre…       | | slide elegido               | |
-+--------------------------------+ +-----------------------------+ |
+| Título  [Entrená a tu ritmo…]  | [Tema claro] [Tema oscuro]      |
+|                  mín. 10 · 31/80| +-----------------------------+ |
+| Subtítulo [……………]      0/200   | | (imagen + capa del tema)    | |
+| Imagen [+] JPG/PNG/WebP ≥1200px| | ENTRENÁ A TU RITMO          | |
+| Descripción [……]  Enfoque [C|C]| | subtítulo                   | |
+| +-[Tema claro][Tema oscuro !]-+| | [Ver planes] [Ya soy socio] | |
+| | [Copiar del tema claro]     || +-----------------------------+ |
+| | Texto [Claro]  Capa [Media] || +-----------------------------+ |
+| | Color título (○ ● ● ●) [🎨] || | slide elegido               | |
+| | ! no se va a leer sobre…    || +-----------------------------+ |
+| +-----------------------------+|                                 |
++--------------------------------+---------------------------------+
 | Slider 1   [Subir][Bajar][Quitar]                                |
 | Título sección [Promos]  0/60  | Publicar                        |
 | (1. Promo verano)(2. Clases)(+)| · avisos pendientes             |
@@ -521,7 +524,7 @@ Editor a la izquierda, vista previa fija a la derecha (CU-CTA-010, RN-CTA-010). 
 +------------------------------------------------------------------+
 ```
 
-En la web: portada → sliders (cada uno rota cada 6 s, con flechas y puntos) → Planes. Sin contenido se ve la vidriera por defecto (nombre del gym y planes).
+La imagen es una sola; texto, capa y color del título se eligen por tema (el recuadro de colores y la vista previa comparten el tema elegido). En la web: portada → sliders (cada uno rota cada 6 s, con flechas y puntos) → Planes, con los colores del tema del visitante. Sin contenido se ve la vidriera por defecto (nombre del gym y planes).
 
 ---
 

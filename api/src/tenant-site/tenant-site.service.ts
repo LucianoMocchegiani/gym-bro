@@ -8,12 +8,14 @@ import type {
   PutTenantSiteDto,
   SiteButtonDto,
   SiteImageDto,
+  SiteThemeColorsDto,
 } from './dto/tenant-site.dto';
 import { siteContrastIssue } from './site-contrast';
 import { SITE_LIMITS } from './tenant-site.constants';
 import type {
   SiteButton,
   SiteImage,
+  SiteThemeColors,
   SiteVisual,
   TenantSiteContent,
   TenantSiteDetail,
@@ -25,6 +27,42 @@ export const SITE_IMAGE_FOLDER = 'site';
 function clean(value: string | null | undefined): string | null {
   const trimmed = value?.trim();
   return trimmed ? trimmed : null;
+}
+
+/** Formato guardado antes de los colores por tema: un solo juego. */
+type StoredVisual = Partial<SiteVisual> & Partial<SiteThemeColors>;
+
+function upgradeVisual<T extends StoredVisual>(v: T): T & SiteVisual {
+  if (v.light && v.dark) {
+    return v as T & SiteVisual;
+  }
+  const colors: SiteThemeColors = {
+    tone: v.tone ?? 'LIGHT',
+    accent: v.accent ?? null,
+    overlay: v.overlay ?? 'MEDIUM',
+  };
+  const upgraded: StoredVisual = {
+    ...v,
+    image: v.image ?? null,
+    light: colors,
+    dark: { ...colors },
+  };
+  delete upgraded.tone;
+  delete upgraded.accent;
+  delete upgraded.overlay;
+  return upgraded as T & SiteVisual;
+}
+
+/** Contenido de `tenant_sites.content`, llevado al formato actual. */
+function fromStored(raw: Prisma.JsonValue): TenantSiteContent {
+  const content = raw as unknown as TenantSiteContent;
+  return {
+    hero: upgradeVisual(content.hero),
+    sliders: content.sliders.map((slider) => ({
+      ...slider,
+      slides: slider.slides.map((slide) => upgradeVisual(slide)),
+    })),
+  };
 }
 
 function imageUrls(content: TenantSiteContent | null): Set<string> {
@@ -66,7 +104,7 @@ export class TenantSiteService {
       where: { tenantId },
     });
     return {
-      content: row ? (row.content as unknown as TenantSiteContent) : null,
+      content: row ? fromStored(row.content) : null,
       updatedAt: row?.updatedAt ?? null,
     };
   }
@@ -176,23 +214,43 @@ export class TenantSiteService {
     tenantId: string,
     dto: {
       image?: SiteImageDto | null;
-      tone: SiteVisual['tone'];
-      accent?: string | null;
-      overlay: SiteVisual['overlay'];
+      light: SiteThemeColorsDto;
+      dark: SiteThemeColorsDto;
     },
     where: string,
   ): SiteVisual {
-    const visual: SiteVisual = {
-      image: dto.image ? this.image(tenantId, dto.image, where) : null,
+    const image = dto.image ? this.image(tenantId, dto.image, where) : null;
+    return {
+      image,
+      light: this.themeColors(
+        dto.light,
+        image !== null,
+        `${where} (tema claro)`,
+      ),
+      dark: this.themeColors(
+        dto.dark,
+        image !== null,
+        `${where} (tema oscuro)`,
+      ),
+    };
+  }
+
+  /** El título tiene que leerse en cada tema (RN-CTA-010). */
+  private themeColors(
+    dto: SiteThemeColorsDto,
+    hasImage: boolean,
+    where: string,
+  ): SiteThemeColors {
+    const colors: SiteThemeColors = {
       tone: dto.tone,
       accent: dto.accent ? dto.accent.toLowerCase() : null,
       overlay: dto.overlay,
     };
-    const issue = siteContrastIssue(visual);
+    const issue = siteContrastIssue(colors, hasImage);
     if (issue) {
       throw new BadRequestException(`${where}: ${issue}`);
     }
-    return visual;
+    return colors;
   }
 
   private image(tenantId: string, dto: SiteImageDto, where: string): SiteImage {

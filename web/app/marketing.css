@@ -376,9 +376,27 @@
   }
 }
 
-/* Web del gym editable (RN-CTA-010): colores en variables desde SiteViews. */
+/* Web del gym editable (RN-CTA-010): SiteViews manda los colores de los dos
+   temas (`--site-*-light` / `--site-*-dark`) y acá se elige el del tema activo.
+   La vista previa del editor fuerza uno con `data-site-theme`. */
 .site-hero-section {
   padding-block: 1.5rem 2.5rem;
+}
+
+.site-frame,
+.site-preview[data-site-theme='dark'] .site-frame {
+  --site-text: var(--site-text-dark);
+  --site-title: var(--site-title-dark);
+  --site-bg: var(--site-bg-dark);
+  --site-overlay: var(--site-overlay-dark);
+}
+
+[data-theme='light'] .site-frame,
+.site-preview[data-site-theme='light'] .site-frame {
+  --site-text: var(--site-text-light);
+  --site-title: var(--site-title-light);
+  --site-bg: var(--site-bg-light);
+  --site-overlay: var(--site-overlay-light);
 }
 
 .site-frame {
@@ -393,6 +411,12 @@
   border-radius: 1.25rem;
   background: var(--site-bg);
   color: var(--site-text);
+}
+
+/* Sin imagen el fondo liso puede parecerse al de la página: borde suave. */
+.site-frame.is-plain {
+  box-shadow: inset 0 0 0 1px
+    color-mix(in srgb, var(--site-text) 18%, transparent);
 }
 
 .site-frame-img {

@@ -4,8 +4,8 @@ import {
   type SiteFocusX,
   type SiteFocusY,
   type SiteImage,
-  type SiteOverlay,
-  type SiteTone,
+  type SiteTheme,
+  type SiteThemeColors,
   type SiteVisual,
   type TenantSiteContent,
 } from '@/lib/api/tenant-site';
@@ -28,9 +28,13 @@ export type DraftImage = {
 
 export type DraftVisual = {
   image: DraftImage | null;
-  tone: SiteTone;
-  accent: string | null;
-  overlay: SiteOverlay;
+  light: SiteThemeColors;
+  dark: SiteThemeColors;
+};
+
+export const SITE_THEME_LABELS: Record<SiteTheme, string> = {
+  light: 'Tema claro',
+  dark: 'Tema oscuro',
 };
 
 export type DraftButton = {
@@ -53,11 +57,11 @@ export type DraftSlider = { id: string; title: string; slides: DraftSlide[] };
 
 export type SiteDraft = { hero: DraftHero; sliders: DraftSlider[] };
 
+/** Cada tema arranca con el texto que pega con su página. */
 const DEFAULT_VISUAL: DraftVisual = {
   image: null,
-  tone: 'LIGHT',
-  accent: null,
-  overlay: 'MEDIUM',
+  light: { tone: 'DARK', accent: null, overlay: 'MEDIUM' },
+  dark: { tone: 'LIGHT', accent: null, overlay: 'MEDIUM' },
 };
 
 export function newId(): string {
@@ -88,9 +92,8 @@ function imageFromContent(image: SiteImage | null): DraftImage | null {
 function visualFromContent(v: SiteVisual): DraftVisual {
   return {
     image: imageFromContent(v.image),
-    tone: v.tone,
-    accent: v.accent,
-    overlay: v.overlay,
+    light: { ...v.light },
+    dark: { ...v.dark },
   };
 }
 
@@ -160,9 +163,8 @@ export function draftToContent(
               focusY: v.image.focusY,
             }
           : null,
-      tone: v.tone,
-      accent: v.accent,
-      overlay: v.overlay,
+      light: v.light,
+      dark: v.dark,
     };
   };
   return {
@@ -227,16 +229,25 @@ export function previewUrl(image: DraftImage): string | null {
   return image.previewUrl ?? image.url;
 }
 
-/** Problema de contraste de un fondo del borrador (null = se lee bien). */
-export function draftContrastIssue(v: DraftVisual): string | null {
-  return siteContrastIssue({
-    image: v.image
-      ? { url: '', alt: null, focusX: 'CENTER', focusY: 'CENTER' }
-      : null,
-    tone: v.tone,
-    accent: v.accent,
-    overlay: v.overlay,
-  });
+/** Problema de contraste de un fondo en un tema (null = se lee bien). */
+export function draftContrastIssue(
+  v: DraftVisual,
+  theme: SiteTheme,
+): string | null {
+  return siteContrastIssue(v[theme], v.image !== null);
+}
+
+function pushContrastIssues(
+  issues: string[],
+  v: DraftVisual,
+  where: string,
+): void {
+  for (const theme of ['light', 'dark'] as const) {
+    const issue = draftContrastIssue(v, theme);
+    if (issue) {
+      issues.push(`${where} (${SITE_THEME_LABELS[theme].toLowerCase()}): ${issue}`);
+    }
+  }
 }
 
 /**
@@ -252,10 +263,7 @@ export function draftIssues(draft: SiteDraft): string[] {
       `Portada: el título necesita al menos ${L.heroTitle.min} caracteres`,
     );
   }
-  const heroContrast = draftContrastIssue(draft.hero);
-  if (heroContrast) {
-    issues.push(`Portada: ${heroContrast}`);
-  }
+  pushContrastIssues(issues, draft.hero, 'Portada');
   draft.sliders.forEach((slider, si) => {
     slider.slides.forEach((slide, i) => {
       const where = `Slider ${si + 1}, slide ${i + 1}`;
@@ -264,10 +272,7 @@ export function draftIssues(draft: SiteDraft): string[] {
           `${where}: el título necesita al menos ${L.slideTitle.min} caracteres`,
         );
       }
-      const contrast = draftContrastIssue(slide);
-      if (contrast) {
-        issues.push(`${where}: ${contrast}`);
-      }
+      pushContrastIssues(issues, slide, where);
       const button = slide.button;
       if (!button) {
         return;
