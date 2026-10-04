@@ -41,7 +41,8 @@ Primeros pasos       /docs/primeros-pasos   ← el orden para arrancar un local
 Módulos              /docs/modulos
   Config · Servicios · Packs · Sesiones · Afiliados · Carpeta · Importar
   Staff y roles · Caja · Vencimientos · Cierre · Gastos · Devoluciones
-  Reportes · Puerta · Avisos · Auditoría · App · Portal web · Asistente
+  Reportes · Puerta · Avisos · Web del gym · Auditoría · App · Portal web
+  Asistente
 
 Tu cuenta y el plan  /docs/cuenta
   Cuenta Faciliter · Contratar · Mi cuenta · Plan / Uso · Eliminar cuenta · Soporte
@@ -76,7 +77,7 @@ En esta pantalla el staff entra al **cerebro del local**. No es la app del socio
 - **Operación:** Inicio, Puerta, Caja, Vencimientos, Cierre, Gastos, Solicitudes de devolución, Reportes.
 - **Personas:** Afiliados, Staff, Roles y permisos.
 - **Catálogo:** Servicios, Packs y Sesiones.
-- **Sistema:** Config, Avisos, Plan / Uso, Auditoría.
+- **Sistema:** Config, Avisos, Web del gym, Plan / Uso, Auditoría.
 - Las tarjetas del día: afiliados activos, ingresos del día, accesos de hoy, socios sin pack activo, sesiones de hoy. Cada uno ve las que su rol permite.
 - La burbuja abajo a la derecha es el **asistente**: consulta datos del gym y puede proponer cambios que vos confirmás.
 
@@ -681,6 +682,22 @@ No hay notificaciones push todavía: el aviso llega por mail y a la bandeja.
 **Dónde:** App → Inicio → Avisos, con uno nuevo y uno leído.  
 **Qué se ve:** la bandeja con Nuevos y Anteriores.
 
+## Web del gym
+
+Sistema → **Web del gym** arma la página pública de tu local (`{tu-local}.faciliter.xyz`) sin programar. Mientras no publiques nada, la web muestra el nombre del gym y los planes.
+
+- **Portada:** título (10 a 80 caracteres), subtítulo opcional (hasta 200) e imagen de fondo opcional.
+- **Sliders:** hasta 5, cada uno con 1 a 10 slides. Cada slide tiene título (hasta 60), texto (hasta 180), fondo y, si querés, un **botón**: a los planes, a reservar clases, a comprar un pack o a un link (https). En la web rotan solos cada 6 segundos; se agregan, quitan y reordenan desde el editor.
+- **Imágenes:** JPG, PNG o WebP de al menos **1200 px de ancho**. Sumale una descripción corta (la leen quienes no ven la imagen) y elegí el **enfoque** para que no se corte lo importante.
+- **Que se lea:** elegí **texto claro u oscuro**, la **capa** sobre la imagen (suave, media o fuerte) y, si querés, otro **color para el título**. Si el título no se va a leer, el editor avisa en rojo y no deja publicar hasta que lo cambies.
+- A la derecha está la **vista previa** de la portada y del slide que estás editando. **Publicar** lo deja visible al instante. **Volver a la vidriera por defecto** borra todo, imágenes incluidas.
+
+Debajo de los sliders la web siempre muestra los **planes**. Si un pack del botón se desactiva, ese botón deja de aparecer. Si el gym no tiene Mercado Pago, «Comprar un pack» lleva a los planes.
+
+**Captura:** `web-web-del-gym.png` — falta.  
+**Dónde:** Sistema → Web del gym, con una portada con imagen y un slider con dos slides.  
+**Qué se ve:** el formulario a la izquierda y la vista previa a la derecha.
+
 ## Auditoría
 
 Sistema → **Auditoría**: quién hizo qué y cuándo (cobros, devoluciones, pases manuales, cambios de roles, altas, importaciones…). Se busca por acción y cada fila abre el detalle de antes y después. Lo que se hace desde el asistente también queda acá.
@@ -835,10 +852,11 @@ Faltan o hay que rehacer (un gym de prueba, datos de prueba):
 15. `web-asistente-propuesta.png`
 16. `web-empezar.png` + `web-cuenta.png` + `web-plan.png`
 17. `web-portal-inicio.png` + `web-portal-avisos.png`
+18. `web-web-del-gym.png`
 
 Repetir (ya publicadas; reemplazar el archivo con el mismo nombre). Las del panel tienen el menú viejo (sin Vencimientos, Gastos, Avisos ni Plan / Uso) y la «N» de Next abajo a la izquierda:
 
-18. Todas las `web-….png` marcadas **lista (repetir)**: Inicio, Servicios (lista, alta, editar), Packs (lista, editar, componentes), Sesiones (calendario, recurrencias, alta, recurrencia), Roles (lista, flags, alta), Staff (lista, alta, editar, roles), Afiliados (lista, alta, ficha, ficha al día, credencial, credencial pendiente), Caja (afiliado, carrito, carrito drop-in) y Reportes.
-19. `app-inicio-con-pack.png`: le faltan los atajos Documentos y Avisos.
+19. Todas las `web-….png` marcadas **lista (repetir)**: Inicio, Servicios (lista, alta, editar), Packs (lista, editar, componentes), Sesiones (calendario, recurrencias, alta, recurrencia), Roles (lista, flags, alta), Staff (lista, alta, editar, roles), Afiliados (lista, alta, ficha, ficha al día, credencial, credencial pendiente), Caja (afiliado, carrito, carrito drop-in) y Reportes.
+20. `app-inicio-con-pack.png`: le faltan los atajos Documentos y Avisos.
 
 Las demás (app) están **listas** en `web/public/docs/`.

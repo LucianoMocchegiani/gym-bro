@@ -1,7 +1,7 @@
 # Cuenta Faciliter
 
 **Estado:** Implementado (v1)  
-**Actor:** Persona con sesión (identity, socio o staff).
+**Actor:** Persona con sesión (identity, socio o staff); en CU-CTA-010, staff del gym.
 
 ## CU-CTA-001 Eliminar mi cuenta
 
@@ -29,6 +29,29 @@
 - 409 si es dueña de un gym activo: "Primero da de baja o transferí el gym".
 
 **Pendiente:** revocar el token de Sign in with Apple (necesita la clave `.p8` de Apple Developer); ver [publicar-tiendas.md](../mobile/publicar-tiendas.md).
+
+---
+
+## CU-CTA-010 Editar la web del gym
+
+**Reglas relacionadas:** RN-CTA-005, RN-CTA-010.  
+**Actor:** Staff con `tenant.settings.write` (con `tenant.settings.read` solo mira).
+
+**Flujo principal**
+
+1. Panel → **Sistema → Web del gym** (`/dashboard/web`). Si nunca se editó, arranca con una portada base y sin sliders.
+2. **Portada:** título, subtítulo, imagen de fondo (JPG/PNG/WebP, ≥ 1200 px de ancho), descripción, enfoque, tono del texto, capa y color del título.
+3. **Sliders** (hasta 5): título de la sección, slides (1 a 10) con título, texto, el mismo fondo y botón opcional (planes, reservar, comprar un pack o link https). Se agregan, quitan y reordenan.
+4. La **vista previa** muestra la portada y el slide elegido; contadores de caracteres y avisos de contraste antes de publicar.
+5. **Publicar:** se suben las imágenes nuevas (`POST /api/upload`, carpeta `site`) y `PUT /api/tenant-site` guarda y publica. La web (`{slug}/`) lo muestra al instante: portada, sliders (rotan solos cada 6 s) y planes.
+
+**Alternativas**
+
+- **Volver a la vidriera por defecto:** `DELETE /api/tenant-site` (con confirmación) borra el contenido y sus imágenes.
+
+**Errores (400)**
+
+- Título corto, color del título ilegible sobre el fondo, imagen que no subió el gym, pack inexistente o inactivo, link que no es https, ids repetidos.
 
 ---
 

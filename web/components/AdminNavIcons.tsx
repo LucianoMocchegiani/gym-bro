@@ -180,6 +180,16 @@ export function NavIconConfig() {
   );
 }
 
+export function NavIconWeb() {
+  return (
+    <Svg>
+      <rect x="3" y="4" width="18" height="16" rx="2" />
+      <path d="M3 9h18" />
+      <path d="M7 6.5h.01M10 6.5h.01" />
+    </Svg>
+  );
+}
+
 export function NavIconAudit() {
   return (
     <Svg>
@@ -266,6 +276,7 @@ const NAV_ICONS: Record<string, () => ReactNode> = {
   '/dashboard/sesiones': NavIconSession,
   '/dashboard/config': NavIconConfig,
   '/dashboard/avisos': NavIconBell,
+  '/dashboard/web': NavIconWeb,
   '/dashboard/plan': NavIconPack,
   '/dashboard/auditoria': NavIconAudit,
 };

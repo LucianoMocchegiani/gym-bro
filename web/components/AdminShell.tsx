@@ -73,6 +73,7 @@ const NAV_GROUPS: NavGroup[] = [
     items: [
       { href: '/dashboard/config', label: 'Config' },
       { href: '/dashboard/avisos', label: 'Avisos' },
+      { href: '/dashboard/web', label: 'Web del gym' },
       { href: '/dashboard/plan', label: 'Plan / Uso' },
       { href: '/dashboard/auditoria', label: 'Auditoría' },
     ],
@@ -90,6 +91,7 @@ function navGroupsForTenant(slug: string | null): NavGroup[] {
         if (item.href === '/dashboard/afiliados') return false;
         if (item.href === '/dashboard/plan') return false;
         if (item.href === '/dashboard/avisos') return false;
+        if (item.href === '/dashboard/web') return false;
       } else if (item.href === '/dashboard/tenants') {
         return false;
       }

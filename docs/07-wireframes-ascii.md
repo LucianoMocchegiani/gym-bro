@@ -421,6 +421,7 @@ Efectivo no muestra el tilde. “Generar link” sin cobro solo si hay MONTHLY v
 | Puerta / pase | CU-ACC-001/004 |
 | Super | CU-ROL-001/002 |
 | Config | CU-ACC-006/007, CU-PAG-006 |
+| Web del gym | CU-CTA-010 |
 | Plan / Uso | Contrato TENANT del gym (`GET /plan`); CU-PAG-011 / RN-PAG-018 |
 | Asistente (drawer) | post-MVP C5; sin CU de producto |
 
@@ -489,6 +490,38 @@ Apex `/login` sin Identity (carga, no flash de form). Apex `/cuenta` logueado:
 | [Plan Faciliter]   del tenant seleccionado                       |
 +------------------------------------------------------------------+
 ```
+
+## 18. Web del gym editable (Sistema → Web del gym)
+
+Editor a la izquierda, vista previa fija a la derecha (CU-CTA-010, RN-CTA-010). Publicar = se ve al instante en `{slug}/`.
+
+```text
++------------------------------------------------------------------+
+| Web del gym                                        [Ver mi web]  |
++--------------------------------+---------------------------------+
+| Portada                        | Vista previa                    |
+| Título  [Entrená a tu ritmo…]  | +-----------------------------+ |
+|                  mín. 10 · 31/80| | (imagen + capa)             | |
+| Subtítulo [……………]      0/200   | | ENTRENÁ A TU RITMO          | |
+| Imagen [+] JPG/PNG/WebP ≥1200px| | subtítulo                   | |
+| Descripción [……]  Enfoque [C|C]| | [Ver planes] [Ya soy socio] | |
+| Capa [Media]  Texto [Claro]    | +-----------------------------+ |
+| Color título (○ ● ● ● ● ●) [🎨]| +-----------------------------+ |
+| ! no se va a leer sobre…       | | slide elegido               | |
++--------------------------------+ +-----------------------------+ |
+| Slider 1   [Subir][Bajar][Quitar]                                |
+| Título sección [Promos]  0/60  | Publicar                        |
+| (1. Promo verano)(2. Clases)(+)| · avisos pendientes             |
+| — slide elegido —              | [Publicar] [Volver a la         |
+| [← Antes][Después →][Quitar]   |  vidriera por defecto]          |
+| Título / Texto / fondo         | Última publicación: …           |
+| [x] Con botón  Lleva a [Pack v]|                                 |
++--------------------------------+---------------------------------+
+| [+ Agregar slider (1/5)]       |                                 |
++------------------------------------------------------------------+
+```
+
+En la web: portada → sliders (cada uno rota cada 6 s, con flechas y puntos) → Planes. Sin contenido se ve la vidriera por defecto (nombre del gym y planes).
 
 ---
 

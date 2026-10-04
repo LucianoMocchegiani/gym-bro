@@ -8,7 +8,24 @@ type ImageUploadProps = {
   onClear?: () => void;
   label?: string;
   disabled?: boolean;
+  /** Tipos MIME del selector. */
+  accept?: string;
+  /** Ancho mínimo en px; si no llega, no se toma el archivo. */
+  minWidth?: number;
+  /** Archivo descartado por tipo o ancho (mensaje para el staff). */
+  onReject?: (message: string) => void;
 };
+
+const DEFAULT_ACCEPT = 'image/jpeg,image/png,image/webp,image/gif';
+
+function readImageWidth(url: string): Promise<number> {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => resolve(img.naturalWidth);
+    img.onerror = () => resolve(0);
+    img.src = url;
+  });
+}
 
 export function ImageUpload({
   value,
@@ -16,14 +33,37 @@ export function ImageUpload({
   onClear,
   label = 'Imagen',
   disabled,
+  accept = DEFAULT_ACCEPT,
+  minWidth,
+  onReject,
 }: ImageUploadProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
-  function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
+  async function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const input = e.target;
+    const file = input.files?.[0];
     if (!file) return;
+    if (!accept.split(',').includes(file.type)) {
+      input.value = '';
+      onReject?.('Ese formato de imagen no está permitido acá');
+      return;
+    }
     const url = URL.createObjectURL(file);
+    if (minWidth) {
+      const width = await readImageWidth(url);
+      if (width < minWidth) {
+        URL.revokeObjectURL(url);
+        input.value = '';
+        onReject?.(
+          width
+            ? `La imagen mide ${width} px de ancho: necesita al menos ${minWidth} px`
+            : 'No se pudo leer la imagen',
+        );
+        return;
+      }
+    }
+    if (previewUrl) URL.revokeObjectURL(previewUrl);
     setPreviewUrl(url);
     onFileSelect?.(file);
   }
@@ -100,8 +140,8 @@ export function ImageUpload({
       <input
         ref={inputRef}
         type="file"
-        accept="image/jpeg,image/png,image/webp,image/gif"
-        onChange={handleChange}
+        accept={accept}
+        onChange={(e) => void handleChange(e)}
         disabled={disabled}
         hidden
       />

@@ -57,6 +57,7 @@ identities ||--o{ platform_signups : self_serve
   sessions ||--o{ waitlist_entries : fills
   members ||--o{ waitlist_entries : waits
   tenants ||--o| tenant_settings : configures
+  tenants ||--o| tenant_sites : publishes
   tenants ||--o{ reservations : has
   members ||--o{ reservations : books
   sessions ||--o{ reservations : fills
@@ -1153,6 +1154,19 @@ Config operativa 1:1 con tenant (RN-TEN-005).
 
 API Staff: `GET|PATCH /api/tenant-settings` (`tenant.settings.read/write`). Create tenant + seed crean el row.
 
+### 4.21b `tenant_sites`
+
+Web pública editable del gym, 1:1 con tenant (RN-CTA-010). Sin fila = vidriera por defecto (nombre y planes).
+
+| Columna | Tipo | Notas |
+|---------|------|--------|
+| `tenant_id` | uuid PK FK → `tenants` | CASCADE |
+| `content` | jsonb | `{ hero, sliders[] }`: textos, imagen (URL R2 `tenants/{id}/site/…`, alt, enfoque), tono, acento, capa y botón por slide. Forma en `api/src/tenant-site/tenant-site.types.ts` |
+| `updated_by_staff_id` | uuid null | staff que publicó (sin FK) |
+| `created_at` / `updated_at` | timestamptz | |
+
+API Staff: `GET|PUT|DELETE /api/tenant-site` (`tenant.settings.read/write`). Público: `site` en `GET /api/public/tenants/by-slug/:slug/packs`.
+
 ### 4.22 `waitlist_entries`
 
 Cola FIFO de sesión (CU-RES-004 / RN-RES-004).
@@ -1201,6 +1215,7 @@ Historia incremental (2026-07 / 2026-08) **compactada** en un baseline (`40476fa
 | `20261002180000_access_provider_zkteco` | Enum `AccessProvider`; `tenant_settings.access_provider`; `access_attempts.channel` (+ backfill `manual`); tabla `access_identity_links` |
 | `20261002200000_member_import_access_codes` | `MemberImportKind` + `ACCESS_CODES` (importación de números del aparato ZKTeco, RN-MIG-006) |
 | `20261003200000_member_signups` | Enum `MemberSignupStatus` + `member_signups` (alta web del socio con pago previo, RN-CTA-007) |
+| `20261004150000_tenant_sites` | `tenant_sites` (web pública editable del gym, RN-CTA-010) |
 
 Comandos y checklist “desde cero”: [13-setup-db-desde-cero.md](./13-setup-db-desde-cero.md).
 

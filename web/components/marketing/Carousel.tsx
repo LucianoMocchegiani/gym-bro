@@ -7,18 +7,12 @@ import {
   useSyncExternalStore,
   type ReactNode,
 } from 'react';
-import { askAssistant } from '@/lib/assistant-ask';
 
-export type LandingSlide = {
+export type CarouselItem = {
   id: string;
-  eyebrow: string;
-  title: string;
-  body: string;
-  /** Opciones cortas (ej. las dos formas de la puerta). */
-  tags?: string[];
-  /** Completa «Quiero más información de …» para el asistente. */
-  topic: string;
-  icon: ReactNode;
+  /** Nombre del slide para lectores de pantalla y los puntos. */
+  label: string;
+  content: ReactNode;
 };
 
 const ROTATE_MS = 6000;
@@ -32,18 +26,20 @@ function subscribeReducedMotion(onChange: () => void): () => void {
 }
 
 /**
- * Carrusel de la landing: un tema por slide y «Más información», que abre el
- * asistente público con la pregunta ya enviada (el detalle lo da el MCP).
+ * Carrusel de la web pública (landing Faciliter y web del gym).
  *
  * @remarks Rota solo cada 6 s salvo con hover/foco o `prefers-reduced-motion`.
- * Todos los slides quedan en el HTML (SEO); los ocultos van `inert`.
+ * Todos los slides quedan en el HTML (SEO); los ocultos van `inert`. El
+ * contenido llega armado (puede venir de un Server Component).
  */
-export function LandingSlider({
-  slides,
+export function Carousel({
+  items,
   label,
+  className = 'mkt-slider',
 }: {
-  slides: LandingSlide[];
+  items: CarouselItem[];
   label: string;
+  className?: string;
 }) {
   const [index, setIndex] = useState(0);
   const [paused, setPaused] = useState(false);
@@ -53,7 +49,8 @@ export function LandingSlider({
     () => true,
   );
   const touchStartX = useRef<number | null>(null);
-  const count = slides.length;
+  const count = items.length;
+  const current = count > 0 ? Math.min(index, count - 1) : 0;
 
   useEffect(() => {
     if (paused || reducedMotion || count < 2) {
@@ -72,7 +69,7 @@ export function LandingSlider({
 
   return (
     <div
-      className="mkt-slider"
+      className={className}
       role="region"
       aria-roledescription="carousel"
       aria-label={label}
@@ -94,46 +91,25 @@ export function LandingSlider({
         if (start == null || end == null || Math.abs(end - start) < SWIPE_PX) {
           return;
         }
-        go(index + (end < start ? 1 : -1));
+        go(current + (end < start ? 1 : -1));
       }}
     >
       <div className="mkt-slider-viewport">
         <div
           className="mkt-slider-track"
-          style={{ transform: `translateX(-${index * 100}%)` }}
+          style={{ transform: `translateX(-${current * 100}%)` }}
         >
-          {slides.map((slide, i) => (
+          {items.map((item, i) => (
             <div
-              key={slide.id}
-              className="mkt-slide"
+              key={item.id}
+              className="mkt-slider-item"
               role="group"
               aria-roledescription="slide"
-              aria-label={`${i + 1} de ${count}: ${slide.title}`}
-              aria-hidden={i !== index}
-              inert={i !== index}
+              aria-label={`${i + 1} de ${count}: ${item.label}`}
+              aria-hidden={i !== current}
+              inert={i !== current}
             >
-              <span className="mkt-icon-box" aria-hidden="true">
-                {slide.icon}
-              </span>
-              <p className="eyebrow">{slide.eyebrow}</p>
-              <h3 className="mkt-slide-title">{slide.title}</h3>
-              <p className="mkt-slide-body">{slide.body}</p>
-              {slide.tags ? (
-                <ul className="mkt-slide-tags">
-                  {slide.tags.map((tag) => (
-                    <li key={tag}>{tag}</li>
-                  ))}
-                </ul>
-              ) : null}
-              <button
-                type="button"
-                className="mkt-btn-ghost"
-                onClick={() =>
-                  askAssistant(`Quiero más información de ${slide.topic}`)
-                }
-              >
-                Más información
-              </button>
+              {item.content}
             </div>
           ))}
         </div>
@@ -145,18 +121,18 @@ export function LandingSlider({
             type="button"
             className="mkt-slider-arrow"
             aria-label="Anterior"
-            onClick={() => go(index - 1)}
+            onClick={() => go(current - 1)}
           >
             ‹
           </button>
           <div className="mkt-slider-dots">
-            {slides.map((slide, i) => (
+            {items.map((item, i) => (
               <button
-                key={slide.id}
+                key={item.id}
                 type="button"
                 className="mkt-slider-dot"
-                aria-label={`Ver ${slide.title}`}
-                aria-current={i === index}
+                aria-label={`Ver ${item.label}`}
+                aria-current={i === current}
                 onClick={() => go(i)}
               />
             ))}
@@ -165,7 +141,7 @@ export function LandingSlider({
             type="button"
             className="mkt-slider-arrow"
             aria-label="Siguiente"
-            onClick={() => go(index + 1)}
+            onClick={() => go(current + 1)}
           >
             ›
           </button>

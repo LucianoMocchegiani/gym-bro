@@ -27,6 +27,7 @@ import { ReservationsModule } from './reservations/reservations.module';
 import { StaffModule } from './staff/staff.module';
 import { TenantModule } from './tenant/tenant.module';
 import { TenantSettingsModule } from './tenant-settings/tenant-settings.module';
+import { TenantSiteModule } from './tenant-site/tenant-site.module';
 import { TenantsModule } from './tenants/tenants.module';
 import { WaitlistModule } from './waitlist/waitlist.module';
 import { FileStorageModule } from './file-storage/file-storage.module';
@@ -49,6 +50,7 @@ import { UploadModule } from './upload/upload.module';
     AuthModule,
     TenantModule,
     TenantSettingsModule,
+    TenantSiteModule,
     RolesModule,
     StaffModule,
     MembersModule,

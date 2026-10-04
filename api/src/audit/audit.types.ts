@@ -77,6 +77,8 @@ export const AUDIT_ACTIONS = {
   waitlistLeave: 'waitlist.leave',
   waitlistPromote: 'waitlist.promote',
   tenantSettingsUpdate: 'tenant.settings.update',
+  tenantSiteUpdate: 'tenant.site.update',
+  tenantSiteReset: 'tenant.site.reset',
   cashReconcile: 'cash.reconcile',
   expenseCreate: 'expense.create',
   expenseUpdate: 'expense.update',

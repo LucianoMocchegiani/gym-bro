@@ -262,9 +262,12 @@
   transition: transform 0.5s ease;
 }
 
-.mkt-slide {
+.mkt-slider-item {
   flex: 0 0 100%;
   min-width: 0;
+}
+
+.mkt-slide {
   display: grid;
   align-content: start;
   justify-items: start;
@@ -371,6 +374,97 @@
   .mkt-slider-dot {
     transition: none;
   }
+}
+
+/* Web del gym editable (RN-CTA-010): colores en variables desde SiteViews. */
+.site-hero-section {
+  padding-block: 1.5rem 2.5rem;
+}
+
+.site-frame {
+  --ink: var(--site-text);
+  --muted: color-mix(in srgb, var(--site-text) 86%, transparent);
+  --line: color-mix(in srgb, var(--site-text) 40%, transparent);
+  position: relative;
+  isolation: isolate;
+  display: grid;
+  align-content: end;
+  overflow: hidden;
+  border-radius: 1.25rem;
+  background: var(--site-bg);
+  color: var(--site-text);
+}
+
+.site-frame-img {
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.site-frame-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: var(--site-overlay);
+}
+
+.site-frame-content {
+  display: grid;
+  justify-items: start;
+  gap: 0.85rem;
+  padding: clamp(1.5rem, 4vw, 3.5rem);
+}
+
+.site-hero {
+  min-height: clamp(22rem, 62vh, 38rem);
+}
+
+.site-slide {
+  min-height: clamp(18rem, 46vh, 28rem);
+}
+
+.site-title {
+  margin: 0;
+  color: var(--site-title);
+  font-family: var(--font-display), 'Barlow Condensed', sans-serif;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  line-height: 1.08;
+  overflow-wrap: anywhere;
+}
+
+.site-hero .site-title {
+  max-width: 18ch;
+  font-size: clamp(2.2rem, 5.5vw, 4.75rem);
+}
+
+.site-slide .site-title {
+  max-width: 22ch;
+  font-size: clamp(1.7rem, 3.5vw, 2.8rem);
+}
+
+.site-lead {
+  margin: 0;
+  max-width: 40rem;
+  color: var(--site-text);
+  font-size: clamp(1.05rem, 1.5vw, 1.25rem);
+  line-height: 1.55;
+  overflow-wrap: anywhere;
+}
+
+.site-frame .mkt-hero-actions {
+  margin-top: 1rem;
+}
+
+.site-slide-action {
+  margin-top: 0.5rem;
+}
+
+.site-slider .mkt-slider-controls {
+  margin-top: 1rem;
 }
 
 .mkt-checks {

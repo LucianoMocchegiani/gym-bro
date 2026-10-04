@@ -27,10 +27,13 @@ export async function generateMetadata(): Promise<Metadata> {
     if (!catalog) {
       return { robots: { index: false, follow: false } };
     }
-    const title = `${catalog.tenant.name} | Planes y precios`;
-    const description = `Planes de ${catalog.tenant.name}: elegí el tuyo${
-      catalog.onlineCheckout ? ' y pagalo online' : ''
-    }.`;
+    const hero = catalog.site?.hero;
+    const title = `${catalog.tenant.name} | ${hero?.title ?? 'Planes y precios'}`;
+    const description =
+      hero?.subtitle ??
+      `Planes de ${catalog.tenant.name}: elegí el tuyo${
+        catalog.onlineCheckout ? ' y pagalo online' : ''
+      }.`;
     const url = tenantOrigin(slug);
     return {
       title: { absolute: title },
@@ -42,6 +45,7 @@ export async function generateMetadata(): Promise<Metadata> {
         siteName: catalog.tenant.name,
         title,
         description,
+        ...(hero?.image ? { images: [{ url: hero.image.url }] } : {}),
       },
       alternates: { canonical: url },
       robots: { index: true, follow: true },

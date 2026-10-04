@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import type { ReactNode } from 'react';
 import {
   NavIconAssistant,
   NavIconCash,
@@ -6,14 +7,27 @@ import {
   NavIconPack,
   NavIconPeople,
 } from '@/components/AdminNavIcons';
-import { LandingSlider, type LandingSlide } from '@/components/marketing/LandingSlider';
+import { AskAssistantButton } from '@/components/marketing/AskAssistantButton';
+import { Carousel, type CarouselItem } from '@/components/marketing/Carousel';
 import { MarketingShell } from '@/components/marketing/MarketingShell';
 import { MktShell } from '@/components/marketing/MktShell';
 import { PackPlanCard } from '@/components/marketing/PackPlanCard';
 import { fetchPublicPlatformPacks } from '@/lib/api/public-platform';
 import { BOOKING_URL, publicSiteUrl } from '@/lib/site-url';
 
-const SLIDES: LandingSlide[] = [
+type ProductSlide = {
+  id: string;
+  eyebrow: string;
+  title: string;
+  body: string;
+  /** Opciones cortas (ej. las dos formas de la puerta). */
+  tags?: string[];
+  /** Completa «Quiero más información de …» para el asistente. */
+  topic: string;
+  icon: ReactNode;
+};
+
+const SLIDES: ProductSlide[] = [
   {
     id: 'servicios',
     eyebrow: 'Servicios',
@@ -56,6 +70,33 @@ const SLIDES: LandingSlide[] = [
     icon: <NavIconAssistant />,
   },
 ];
+
+const SLIDE_ITEMS: CarouselItem[] = SLIDES.map((slide) => ({
+  id: slide.id,
+  label: slide.title,
+  content: (
+    <div className="mkt-slide">
+      <span className="mkt-icon-box" aria-hidden="true">
+        {slide.icon}
+      </span>
+      <p className="eyebrow">{slide.eyebrow}</p>
+      <h3 className="mkt-slide-title">{slide.title}</h3>
+      <p className="mkt-slide-body">{slide.body}</p>
+      {slide.tags ? (
+        <ul className="mkt-slide-tags">
+          {slide.tags.map((tag) => (
+            <li key={tag}>{tag}</li>
+          ))}
+        </ul>
+      ) : null}
+      <AskAssistantButton
+        message={`Quiero más información de ${slide.topic}`}
+      >
+        Más información
+      </AskAssistantButton>
+    </div>
+  ),
+}));
 
 /**
  * Landing Faciliter: hero, slider de producto (el detalle lo da el asistente
@@ -131,7 +172,7 @@ export async function LandingPage() {
       </MktShell>
 
       <section id="producto" className="mkt-inner mkt-section-tight">
-        <LandingSlider slides={SLIDES} label="Qué incluye Faciliter Brain" />
+        <Carousel items={SLIDE_ITEMS} label="Qué incluye Faciliter Brain" />
       </section>
 
       <section id="precio" className="mkt-inner mkt-section">

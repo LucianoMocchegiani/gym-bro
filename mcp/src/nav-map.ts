@@ -121,6 +121,12 @@ export const NAV_MAP: readonly NavEntry[] = [
     keywords: ['aviso', 'avisos', 'plantilla', 'notificacion', 'email'],
   },
   {
+    href: '/dashboard/web',
+    label: 'Web del gym',
+    anyOf: ['tenant.settings.read', 'tenant.settings.write'],
+    keywords: ['web', 'pagina', 'sitio', 'portada', 'slider', 'landing', 'vidriera'],
+  },
+  {
     href: '/dashboard/auditoria',
     label: 'Auditoría',
     anyOf: ['audit.read'],

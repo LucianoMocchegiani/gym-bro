@@ -30,7 +30,7 @@ Los CU usan la plantilla de [00-indice.md](../00-indice.md) y citan IDs de [04-r
 | [rutinas.md](./rutinas.md) | Rutinas y progreso | Backlog (ya no E7) |
 | [notificaciones.md](./notificaciones.md) | N1 email + in-app | Cerrado (v1) |
 | [roles-permisos.md](./roles-permisos.md) | Roles, permisos, auditoría | Cerrado (v1) |
-| [cuenta.md](./cuenta.md) | Cuenta Faciliter: eliminar cuenta | Implementado (v1) |
+| [cuenta.md](./cuenta.md) | Cuenta Faciliter: eliminar cuenta; web del gym editable | Implementado (v1) |
 
 ## Numeración
 

@@ -280,7 +280,7 @@
                         "method": "GET",
                         "header": [],
                         "url": "{{baseUrl}}/api/public/tenants/by-slug/{{tenantSlug}}/packs",
-                        "description": "Sin auth. Vidriera de {slug}/ (RN-CTA-005): tenant {name, slug}, packs activos con componentes y onlineCheckout (true si el gym conectó Mercado Pago, RN-CTA-008). Slug inexistente → 404; gym suspendido → 403.",
+                        "description": "Sin auth. Vidriera de {slug}/ (RN-CTA-005): tenant {name, slug}, packs activos con componentes, onlineCheckout (true si el gym conectó Mercado Pago, RN-CTA-008) y site (portada y sliders de Sistema → Web del gym, RN-CTA-010; null = vidriera por defecto). Slug inexistente → 404; gym suspendido → 403.",
                         "auth": {
                             "type": "noauth"
                         }
@@ -294,7 +294,8 @@
                                     "pm.test('status 200', () => pm.response.to.have.status(200));",
                                     "const body = pm.response.json();",
                                     "pm.test('packs array', () => pm.expect(body.packs).to.be.an('array'));",
-                                    "pm.test('onlineCheckout boolean', () => pm.expect(body.onlineCheckout).to.be.a('boolean'));"
+                                    "pm.test('onlineCheckout boolean', () => pm.expect(body.onlineCheckout).to.be.a('boolean'));",
+                                    "pm.test('site key', () => pm.expect(body).to.have.property('site'));"
                                 ]
                             }
                         }
@@ -2011,7 +2012,7 @@
         },
         {
             "name": "Upload",
-            "description": "POST /upload. JWT staff + tenant. file + folder (services|packs|members|staff|tenants). Key tenants/{tenantId}/{folder}/{uuid}.",
+            "description": "POST /upload. JWT staff + tenant. file + folder (services|packs|members|staff|tenants|site). `site` = imágenes de la web del gym (PUT /tenant-site). Key tenants/{tenantId}/{folder}/{uuid}.",
             "item": [
                 {
                     "name": "Upload image (services)",
@@ -4150,6 +4151,111 @@
                             "raw": "{\n  \"reservationCancellationHours\": 6,\n  \"waitlistMode\": \"AUTO_ASSIGN\",\n  \"allowLateSessionEntry\": false,\n  \"debtToleranceDays\": 15,\n  \"multiEntryEnabled\": false,\n  \"multiEntryMaxPerDay\": 1\n}"
                         },
                         "url": "{{baseUrl}}/api/tenant-settings"
+                    }
+                }
+            ]
+        },
+        {
+            "name": "Tenant site (web del gym)",
+            "description": "RN-CTA-010 / CU-CTA-010. Staff GET (tenant.settings.read), PUT y DELETE (tenant.settings.write) /tenant-site. PUT reemplaza y publica { hero, sliders }: hero título 10–80, subtítulo ≤200; hasta 5 sliders de 1–10 slides (título 3–60, body ≤180, botón PLANS|BOOK|PACK|URL). Imagen: URL de POST /upload con folder=site del mismo tenant (otra → 400). Título ilegible (contraste < 3:1) → 400. DELETE vuelve a la vidriera por defecto y borra las imágenes.",
+            "item": [
+                {
+                    "name": "Staff GET tenant site",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('status 200', () => pm.response.to.have.status(200));",
+                                    "pm.test('content key', () => pm.expect(pm.response.json()).to.have.property('content'));"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": "{{baseUrl}}/api/tenant-site"
+                    }
+                },
+                {
+                    "name": "Staff PUT tenant site (sin imágenes)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('status 200', () => pm.response.to.have.status(200));",
+                                    "const body = pm.response.json();",
+                                    "pm.test('hero', () => pm.expect(body.content.hero.title).to.be.a('string'));",
+                                    "pm.test('sliders', () => pm.expect(body.content.sliders).to.have.length(1));"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "PUT",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"hero\": {\n    \"title\": \"Entrená a tu ritmo con nosotros\",\n    \"subtitle\": \"Musculación, funcional y clases todos los días.\",\n    \"image\": null,\n    \"tone\": \"LIGHT\",\n    \"accent\": \"#ffe600\",\n    \"overlay\": \"MEDIUM\"\n  },\n  \"sliders\": [\n    {\n      \"id\": \"promos\",\n      \"title\": \"Promos\",\n      \"slides\": [\n        {\n          \"id\": \"verano\",\n          \"title\": \"Promo verano\",\n          \"body\": \"Tres meses al precio de dos.\",\n          \"image\": null,\n          \"tone\": \"DARK\",\n          \"accent\": null,\n          \"overlay\": \"MEDIUM\",\n          \"button\": { \"label\": \"Ver planes\", \"target\": \"PLANS\", \"packId\": null, \"url\": null }\n        }\n      ]\n    }\n  ]\n}"
+                        },
+                        "url": "{{baseUrl}}/api/tenant-site"
+                    }
+                },
+                {
+                    "name": "Staff PUT tenant site (título ilegible → 400)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('status 400', () => pm.response.to.have.status(400));"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "PUT",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"hero\": {\n    \"title\": \"Entrená a tu ritmo con nosotros\",\n    \"image\": null,\n    \"tone\": \"DARK\",\n    \"accent\": \"#ffe600\",\n    \"overlay\": \"MEDIUM\"\n  },\n  \"sliders\": []\n}"
+                        },
+                        "url": "{{baseUrl}}/api/tenant-site"
+                    }
+                },
+                {
+                    "name": "Staff DELETE tenant site (vidriera por defecto)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('status 200', () => pm.response.to.have.status(200));",
+                                    "pm.test('content null', () => pm.expect(pm.response.json().content).to.eql(null));"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "DELETE",
+                        "header": [],
+                        "url": "{{baseUrl}}/api/tenant-site"
                     }
                 }
             ]

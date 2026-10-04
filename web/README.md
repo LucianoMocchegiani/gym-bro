@@ -4,7 +4,7 @@ Next.js App Router — sitio público, panel staff y Super Admin.
 
 ## Sitio público (apex, sin slug de gym)
 
-**`http://localhost:3002/`** — landing (hero, slider de producto `LandingSlider`, planes y CTA), pricing y SEO. Guía de uso: `/docs`. Burbuja del asistente (misma UI que el Admin; `#asistente` la abre y `askAssistant(mensaje)` de `web/lib/assistant-ask.ts` la abre y envía, como los botones «Más información» del slider). Legales: `/legal/terminos`, `/legal/privacidad`. Sitemap: `/sitemap.xml`. Canonical: `NEXT_PUBLIC_SITE_URL`.
+**`http://localhost:3002/`** — landing (hero, slider de producto con el `Carousel` compartido, planes y CTA), pricing y SEO. Guía de uso: `/docs`. Burbuja del asistente (misma UI que el Admin; `#asistente` la abre y `askAssistant(mensaje)` de `web/lib/assistant-ask.ts` la abre y envía, como los botones «Más información» del slider). Legales: `/legal/terminos`, `/legal/privacidad`. Sitemap: `/sitemap.xml`. Canonical: `NEXT_PUBLIC_SITE_URL`.
 
 El panel Staff **no** vive en el apex: hace falta el subdominio del gym.
 
@@ -16,7 +16,7 @@ Con tunnel: `{slug}.{NEXT_PUBLIC_APP_DOMAIN}` (ej. `https://demo.pruebasaproducc
 
 | Ruta | Uso |
 |------|-----|
-| `/` | Vidriera pública: packs del gym; **Comprar** solo si el gym conectó Mercado Pago (indexable) |
+| `/` | Vidriera pública: portada y sliders que arma el gym (si los publicó; `components/gym-site/site/SiteViews.tsx` + `Carousel`) y packs; **Comprar** solo si el gym conectó Mercado Pago (indexable) |
 | `/login` | Login único con la cuenta Faciliter: staff → `/dashboard`, socio → `/portal`, ambos → elige |
 | `/comprar?pack=` | Socio: suma el pack al carrito y va a `/portal/carrito`. No socio: nombre, DNI, teléfono → checkout MP; el socio nace con el pago aprobado |
 | `/cuenta` | Única cuenta del gym, para socio y staff (avatar del header y del panel): datos, contraseña, cerrar sesión, accesos al portal / panel y «Volver a plataforma» si es impersonación. `/dashboard/cuenta` redirige acá. En el apex: cuenta Faciliter con tenants y plan |
@@ -34,6 +34,7 @@ Con tunnel: `{slug}.{NEXT_PUBLIC_APP_DOMAIN}` (ej. `https://demo.pruebasaproducc
 | `/dashboard/sesiones` | Sesiones puntuales + roster / reserva CREDIT |
 | `/dashboard/roles` / `/dashboard/staff` | Roles y staff |
 | `/dashboard/config` | Settings + Mercado Pago |
+| `/dashboard/web` | Web del gym: portada y hasta 5 sliders con vista previa; publica al instante (`components/site-editor/`, contraste en `lib/site-contrast.ts`, igual que la API) |
 | `/dashboard/caja` | Caja del día |
 | `/dashboard/devoluciones` | Cola de solicitudes + ejecutar reembolso (`transaction_items.refund`) |
 | `/dashboard/reportes` | Ingresos del período (detalle nominado) + snapshot packs/activos |

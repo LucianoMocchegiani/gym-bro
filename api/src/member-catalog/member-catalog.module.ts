@@ -3,6 +3,7 @@ import { AuthModule } from '../auth/auth.module';
 import { PaymentModule } from '../payment/payment.module';
 import { PacksModule } from '../packs/packs.module';
 import { SessionsModule } from '../sessions/sessions.module';
+import { TenantSiteModule } from '../tenant-site/tenant-site.module';
 import { TenantsModule } from '../tenants/tenants.module';
 import { MemberCatalogController } from './member-catalog.controller';
 import { PublicTenantCatalogController } from './public-tenant-catalog.controller';
@@ -18,6 +19,7 @@ import { PublicTenantCatalogController } from './public-tenant-catalog.controlle
     PacksModule,
     PaymentModule,
     TenantsModule,
+    TenantSiteModule,
   ],
   controllers: [MemberCatalogController, PublicTenantCatalogController],
 })

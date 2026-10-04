@@ -321,7 +321,7 @@ Pasos de VPS: [uso/probar-debito-suscripcion-mp.md](./uso/probar-debito-suscripc
 | # | Caso | Esperado | RN/CU | R |
 |---|------|----------|-------|---|
 | M1 | Apex `http://localhost:3002/` | Landing Faciliter (no pide login) | P3 | |
-| M2 | Tenant `http://demo.localhost:3002/` | Web del gym: nombre y packs; no pide login. El panel está en `/dashboard` (RequireStaff) | RN-CTA-005 | |
+| M2 | Tenant `http://demo.localhost:3002/` | Web del gym: nombre y packs (o la portada y sliders que armó el gym, RN-CTA-010); no pide login. El panel está en `/dashboard` (RequireStaff) | RN-CTA-005 | |
 | M3 | View-source apex | `<title>` empieza con “Faciliter \|”, description, canonical, JSON-LD `Organization` + `SoftwareApplication` | P3 | |
 | M3b | `/opengraph-image` y preview al compartir | PNG 1200×630: isotipo + FACILITER + tagline; `og:image:width` 1200 / `height` 630 | P3 | |
 | M4 | `/sitemap.xml` y `/robots.txt` | URLs públicas; Admin en disallow | P3 | |
@@ -373,6 +373,16 @@ Pasos de VPS: [uso/probar-debito-suscripcion-mp.md](./uso/probar-debito-suscripc
 | G30 | Socio con avisos sin leer | El menú muestra **Avisos (n)** y el inicio «Tenés n avisos nuevos» | CU-NOT-005, RN-CTA-009 | |
 | G31 | Portal → **Avisos** → Ver un aviso nuevo | Modal con título y texto; pasa a «Anteriores» y el contador baja (también en la app) | CU-NOT-005 | |
 | G32 | Avisos → **Avisos por correo**: destildar «Pago acreditado» y pagar | Bandeja sí, mail no; recargar mantiene el tilde (mismo dato que la app) | CU-NOT-003 | |
+| G33 | Panel → **Sistema → Web del gym** sin haber editado nunca | Portada base («Entrená a tu ritmo con nosotros»), sin sliders; la web sigue con la vidriera por defecto hasta publicar | CU-CTA-010 | |
+| G34 | Portada con imagen, título y subtítulo → **Publicar** → abrir `{slug}/` | Portada con la imagen, la capa y los textos; debajo los planes. El `<title>` es «Gym \| título» y la descripción, el subtítulo | RN-CTA-010 | |
+| G35 | Elegir una imagen GIF o una de menos de 1200 px de ancho | No la toma y avisa (formato no permitido / «mide N px…») | RN-CTA-010 | |
+| G36 | Texto oscuro + color de título amarillo, o capa suave + acento azul sobre imagen | Aviso de contraste en rojo y **Publicar** deshabilitado; con capa fuerte o color que se lea, se habilita | RN-CTA-010 | |
+| G37 | 2 sliders (uno con 3 slides) con botones: Planes, Reservar, Pack y link https → Publicar | En la web rotan cada 6 s; Planes baja a `#planes`, Reservar va a `/portal/clases`, Pack a `/comprar?pack=` (sin MP: a los planes), el link abre en otra pestaña | RN-CTA-010 | |
+| G38 | Desactivar el pack de un botón y recargar la web | Ese botón no aparece; el resto igual | RN-CTA-010 | |
+| G39 | Reordenar slides y sliders, quitar uno con imagen → Publicar | La web respeta el orden; la imagen quitada se borra de R2. Auditoría: `tenant.site.update` | RN-CTA-010 | |
+| G40 | **Volver a la vidriera por defecto** (confirmar) | La web vuelve a nombre + planes; se borran las imágenes; auditoría `tenant.site.reset` | RN-CTA-010 | |
+| G41 | Staff con solo `tenant.settings.read` | Ve el editor y la vista previa con todo deshabilitado; sin `tenant.settings.*` no ve el ítem del menú | RN-CTA-010 | |
+| G42 | `PUT /api/tenant-site` con una URL de imagen de otro dominio o de otro gym | 400 «la imagen tiene que subirse desde el panel» | RN-CTA-010 | |
 
 ---
 

@@ -1,3 +1,5 @@
+import type { TenantSiteContent } from '../tenant-site/tenant-site.types';
+
 /**
  * Catálogo expuesto al afiliado (mobile): sesiones publicadas y packs activos.
  *
@@ -58,4 +60,6 @@ export type PublicTenantCatalog = {
   /** true = MP conectado: se puede comprar online. */
   onlineCheckout: boolean;
   packs: MemberPackDetail[];
+  /** Hero y sliders editables (RN-CTA-010); null = vidriera por defecto. */
+  site: TenantSiteContent | null;
 };

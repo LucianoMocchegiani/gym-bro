@@ -3,6 +3,7 @@
  */
 
 import { fetchPublicApi } from '@/lib/api/public-fetch';
+import type { TenantSiteContent } from '@/lib/api/tenant-site';
 
 export type StorePackComponent = {
   serviceId: string;
@@ -29,6 +30,8 @@ export type PublicTenantCatalog = {
   /** true = MP conectado: se compra online. */
   onlineCheckout: boolean;
   packs: StorePack[];
+  /** Hero y sliders editables (RN-CTA-010); null = vidriera por defecto. */
+  site: TenantSiteContent | null;
 };
 
 /**

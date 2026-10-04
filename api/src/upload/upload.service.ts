@@ -53,7 +53,7 @@ export class UploadService {
    * Sube una imagen validando tipo y tamaño.
    *
    * @param file - Archivo Multer (buffer disponible en memoryStorage)
-   * @param folder - `services` | `packs` | `members` | `staff` | `tenants`
+   * @param folder - `services` | `packs` | `members` | `staff` | `tenants` | `site`
    * @param tenantId - Del JWT (RN-TEN-001). Key: `tenants/{tenantId}/{folder}/{uuid}.ext`
    */
   async uploadImage(
@@ -98,6 +98,22 @@ export class UploadService {
       return;
     }
     await this.deleteOwnedPublicImage(tenantId, prev);
+  }
+
+  /**
+   * ¿`url` es una imagen pública subida por este tenant en `folder`?
+   *
+   * @remarks Para contenido que guarda URLs sueltas (web del gym): evita
+   * referenciar imágenes de otro tenant o de otro dominio.
+   */
+  isOwnedPublicImage(tenantId: string, url: string, folder: string): boolean {
+    const key = this.logicalKeyFromPublicUrl(url.trim());
+    return (
+      key !== null &&
+      key
+        .toLowerCase()
+        .startsWith(`tenants/${tenantId}/${folder}/`.toLowerCase())
+    );
   }
 
   /**

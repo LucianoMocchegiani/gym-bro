@@ -9,7 +9,7 @@ Fuera de esta guía: Super Admin. **No existen todavía:** rutinas por días, no
 | Cara | Quién | Dónde |
 |------|--------|--------|
 | Panel (web) | Dueño, recepción, profesores (staff) | `{slug}.faciliter.xyz/dashboard` |
-| Web del gym | Público y socios | `{slug}.faciliter.xyz`: planes, comprar online, **Mi cuenta** del socio (clases, carrito, historial) |
+| Web del gym | Público y socios | `{slug}.faciliter.xyz`: portada y sliders que arma el gym, planes, comprar online, **Mi portal** del socio (clases, carrito, historial) |
 | App | El afiliado (socio) y el staff | App Faciliter en el celular |
 
 El dinero del socio va al Mercado Pago **del negocio** y se registra en caja. Faciliter no se queda con el cobro. Efectivo: solo se registra.
@@ -23,7 +23,7 @@ A la izquierda, agrupado:
 - **Operación:** Inicio, Puerta, Caja, Vencimientos, Cierre, Gastos, Solicitudes de devolución, Reportes.
 - **Personas:** Afiliados, Staff, Roles y permisos.
 - **Catálogo:** Servicios, Packs, Sesiones.
-- **Sistema:** Config, Avisos (plantillas), Plan / Uso, Auditoría.
+- **Sistema:** Config, Avisos (plantillas), Web del gym, Plan / Uso, Auditoría.
 
 Cada uno ve solo lo que su rol permite. Arriba, el avatar abre **Mi cuenta**. Abajo a la derecha: burbuja del **asistente** (consulta datos del gym y propone altas/ediciones que confirmás con un botón; puede equivocarse; no cobra).
 
@@ -105,6 +105,18 @@ Pestañas **Verificar**, **Pase manual**, **Historial**. Con QR: el socio escane
 
 Sistema → **Avisos**: una tarjeta por evento (asunto y texto editables, se puede apagar). El socio los ve en App → Inicio → Avisos o en el portal web (Mi portal → Avisos), y por mail según sus preferencias. Sin push. Topic `avisos`.
 
+## Web del gym
+
+Sistema → **Web del gym** (`/dashboard/web`): el gym arma la página pública `{slug}.faciliter.xyz` sin programar.
+
+- **Portada:** título (10 a 80 caracteres), subtítulo (hasta 200) e imagen de fondo opcional.
+- **Sliders:** hasta 5, cada uno con 1 a 10 slides (título hasta 60, texto hasta 180). Rotan solos cada 6 segundos. Cada slide puede tener un **botón**: a los planes, a reservar clases (portal), a comprar un pack o a un link https.
+- **Imágenes:** JPG, PNG o WebP de al menos 1200 px de ancho, con descripción y enfoque (izquierda, centro, derecha / arriba, abajo).
+- **Colores:** texto claro u oscuro, capa sobre la imagen (suave, media, fuerte) y color del título. Si el título no se va a leer, avisa y no deja publicar: probar otro color, otro tono o una capa más fuerte.
+- **Publicar** se ve al instante; a la derecha hay vista previa. **Volver a la vidriera por defecto** borra todo (la web vuelve a nombre del gym y planes).
+
+Se necesita el permiso de editar la configuración (con el de ver, solo mira). Abajo de los sliders la web siempre muestra los planes. Logo y colores de la marca todavía no se editan.
+
 ## Auditoría
 
 Quién hizo qué y cuándo, con detalle antes/después. Lo que confirma el asistente también queda.
@@ -119,7 +131,7 @@ Cuenta Faciliter, Mi cuenta, eliminar cuenta: topic `cuenta`. Contratar Facilite
 
 ## Cómo arrancar un local (orden)
 
-Config (Puerta y MP) → Servicios → Packs → Sesiones si hay clases → Staff/roles → Afiliados (a mano o **Importar**) → cobrar en Caja o que el socio pague en la app.
+Config (Puerta y MP) → Servicios → Packs → Sesiones si hay clases → Staff/roles → Afiliados (a mano o **Importar**) → cobrar en Caja o que el socio pague en la app. Opcional: armar la **Web del gym**.
 
 ## Sitio de capturas
 

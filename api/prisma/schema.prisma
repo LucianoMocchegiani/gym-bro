@@ -206,6 +206,7 @@ model Tenant {
   reservations    Reservation[]
   waitlistEntries WaitlistEntry[]
   settings        TenantSettings?
+  site            TenantSite?
   cashMovements   CashMovement[]
   cashReconciliations CashReconciliation[]
   receipts        Receipt[]
@@ -315,6 +316,21 @@ model TenantSettings {
   tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   @@map("tenant_settings")
+}
+
+/// Contenido editable de la web pública del gym (RN-CTA-010): hero y sliders.
+/// @remarks 1:1 con tenant. `content` lo valida la API (límites, contraste,
+/// imágenes del R2 del tenant). Sin fila = vidriera por defecto.
+model TenantSite {
+  tenantId         String   @id @map("tenant_id") @db.Uuid
+  content          Json
+  updatedByStaffId String?  @map("updated_by_staff_id") @db.Uuid
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@map("tenant_sites")
 }
 
 /// Sucursal / sede física del tenant (S2: modelo multi-sede, MVP 1 visible).

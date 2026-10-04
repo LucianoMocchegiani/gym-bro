@@ -12,7 +12,14 @@ import { CurrentTenant } from '../tenant/decorators/current-tenant.decorator';
 import { RequireTenantAuth } from '../tenant/decorators/require-tenant-auth.decorator';
 import { UploadService, UploadFile } from './upload.service';
 
-const FOLDERS = ['services', 'packs', 'members', 'staff', 'tenants'] as const;
+const FOLDERS = [
+  'services',
+  'packs',
+  'members',
+  'staff',
+  'tenants',
+  'site',
+] as const;
 
 class UploadDto {
   @IsOptional()
