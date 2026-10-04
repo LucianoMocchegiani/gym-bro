@@ -16,6 +16,7 @@ La creación de registros sigue la skill:
 
 ## Índice
 
+- [2026-10-03 - Una sola cuenta del gym en /cuenta](./2026-10-03-cuenta-unica-gym.md)
 - [2026-10-03 - Web del gym: portal en /portal y cuenta con avatar en /cuenta](./2026-10-03-portal-en-portal-cuenta-avatar.md)
 - [2026-10-03 - Portal web del socio: clases, mis clases, carrito e historial](./2026-10-03-portal-socio-sesiones.md)
 - [2026-10-03 - Alta web del socio recién con el pago aprobado](./2026-10-03-alta-socio-con-pago.md)
