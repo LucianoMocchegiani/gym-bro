@@ -655,7 +655,7 @@ Comparar semanas/meses: **la misma tool dos veces** (`get_reports_summary` con `
 | `list_refund_requests` | Solicitudes de devolución | `GET /api/refund-requests` slim | `transaction_items.refund` |
 | `list_debit_mandates` | Mandatos ACTIVE/FAILED… | `GET /api/debit-mandates` slim | `cashier.operate` |
 
-`get_reports_summary` args: `{ period?: this_week\|last_week\|this_month\|last_month\|this_year, from?, to?, memberId? }`. El MCP resuelve `period` a YYYY-MM-DD (BA). Slim: `members`, `contracts`, `income.totalApproved`, `totalRefunded`, `byMethod`, `transactionCount` + **máx. 15** filas de movimientos (cobro o egreso de devolución). Link `/dashboard/reportes`.
+`get_reports_summary` args: `{ period?: this_week\|last_week\|this_month\|last_month\|this_year, from?, to?, memberId? }`. El MCP resuelve `period` a YYYY-MM-DD (BA). Slim: `members`, `contracts`, `income.totalApproved`, `totalRefunded`, `totalDiscounts`, `byMethod` (CASH, TRANSFER, MP), `transactionCount` + **máx. 15** filas de movimientos (cobro o egreso de devolución). Link `/dashboard/reportes`.
 
 Comparación: dos llamadas (ej. `last_month` y `this_month`). El modelo arma la tabla. No ejecutar devoluciones ni cargos.
 

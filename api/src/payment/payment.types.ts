@@ -61,7 +61,7 @@ export type MpWebhookProcessResult = {
 };
 
 /**
- * Respuesta de checkout CASH de carrito (APPROVED inmediato + comprobante).
+ * Respuesta del cobro presencial de carrito (APPROVED inmediato + comprobante).
  */
 export type CashCartResult = {
   transactionId: string;
@@ -74,6 +74,12 @@ export type CashCartResult = {
     amount: number;
   }>;
   receipt: ReceiptDetail | null;
+};
+
+/** Descuentos por defecto que Caja precarga según el medio (RN-PAG-020). */
+export type CashDiscountDefaults = {
+  cashDiscountPercent: number;
+  transferDiscountPercent: number;
 };
 
 /**

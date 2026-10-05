@@ -22,7 +22,15 @@ import { PacksService } from '../packs/packs.service';
 import { PlatformTrialService } from '../tenants/platform-trial.service';
 import { ReservationsService } from '../reservations/reservations.service';
 import { NotificationDispatcher } from '../notifications/notifications.service';
-import { AuditActor } from '../audit/audit.types';
+import { AUDIT_ACTIONS, AuditActor } from '../audit/audit.types';
+import { AuditService } from '../audit/audit.service';
+import { TenantSettingsService } from '../tenant-settings/tenant-settings.service';
+import {
+  MAX_DISCOUNT_BPS,
+  applyDiscount,
+  bpsToPercent,
+  percentToBps,
+} from './cash-discount';
 import { CreateCashCartDto } from './dto/create-cash-cart.dto';
 import { CashCartResult } from './payment.types';
 import { Prisma } from '@prisma/client';
@@ -43,14 +51,23 @@ export interface ProcessPaymentParams {
   receiptConcept: ReceiptConcept;
   description: string;
   recordedByStaffId?: string | null;
+  transferReference?: string | null;
 }
 
+/** Medio y descuento de un cobro presencial ya resueltos. */
+type CounterCharge = {
+  method: 'CASH' | 'TRANSFER';
+  discountBps: number;
+  transferReference: string | null;
+};
+
 /**
- * Procesa pagos CASH (caja).
+ * Procesa pagos presenciales de Caja (CASH y TRANSFER).
  *
  * @description
  * - Crea Transaction + TransactionItems APPROVED
  * - Registra movimiento en caja y emite un comprobante por Transaction
+ * - Aplica el descuento de la venta a cada ítem (RN-PAG-020)
  *
  * @remarks
  * `STUB` se rechaza. El caller debe wrapear en $transaction si necesita
@@ -73,6 +90,8 @@ export class CashPaymentService {
     private readonly packs: PacksService,
     private readonly platformTrial: PlatformTrialService,
     private readonly notifications: NotificationDispatcher,
+    private readonly tenantSettings: TenantSettingsService,
+    private readonly audit: AuditService,
   ) {}
 
   /**
@@ -99,6 +118,7 @@ export class CashPaymentService {
       receiptConcept,
       description,
       recordedByStaffId,
+      transferReference,
     } = params;
 
     if (method === PaymentMethod.STUB) {
@@ -114,6 +134,7 @@ export class CashPaymentService {
       method,
       items,
       recordedByStaffId: recordedByStaffId ?? null,
+      transferReference: transferReference ?? null,
     });
 
     const confirmed = await this.transactionService.confirmTransaction(
@@ -121,7 +142,7 @@ export class CashPaymentService {
       { userId: recordedByStaffId ?? 'system', profileType: 'SYSTEM' },
     );
 
-    if (method === PaymentMethod.CASH) {
+    if (method === PaymentMethod.CASH || method === PaymentMethod.TRANSFER) {
       const billedItems = confirmed.transactionItems.filter(
         (item) => item.amount >= 1,
       );
@@ -131,7 +152,7 @@ export class CashPaymentService {
           transactionItemId: item.id,
           memberId,
           amount: item.amount,
-          method: PaymentMethod.CASH,
+          method,
           concept: cashConcept,
           recordedByStaffId: recordedByStaffId ?? null,
         });
@@ -144,7 +165,7 @@ export class CashPaymentService {
           transactionId: confirmed.id,
           memberId,
           amount: total,
-          method: PaymentMethod.CASH,
+          method,
           concept: receiptConcept,
           description,
         });
@@ -152,6 +173,82 @@ export class CashPaymentService {
     }
 
     return { transaction: confirmed };
+  }
+
+  /**
+   * Medio, descuento y referencia del cobro presencial.
+   *
+   * @remarks Sin `discountPercent` se cobra el precio de lista (apps viejas
+   * no lo mandan). La prueba de plataforma ($0) no lleva descuento.
+   */
+  private resolveCounterCharge(dto: CreateCashCartDto): CounterCharge {
+    const method = dto.method ?? 'CASH';
+    const reference = dto.transferReference?.trim() || null;
+    if (reference && method !== 'TRANSFER') {
+      throw new BadRequestException(
+        'transferReference is only allowed with TRANSFER',
+      );
+    }
+    if (dto.applyTrial && dto.discountPercent) {
+      throw new BadRequestException('Platform trial cannot have a discount');
+    }
+    const discountBps =
+      dto.discountPercent === undefined ? 0 : percentToBps(dto.discountPercent);
+    if (discountBps < 0 || discountBps > MAX_DISCOUNT_BPS) {
+      throw new BadRequestException('discountPercent must be between 0 and 99');
+    }
+    return { method, discountBps, transferReference: reference };
+  }
+
+  private discountItems(
+    items: TransactionItemInput[],
+    discountBps: number,
+  ): TransactionItemInput[] {
+    if (discountBps === 0) {
+      return items;
+    }
+    return items.map((item) => {
+      const amount = applyDiscount(item.amount, discountBps);
+      return amount === item.amount
+        ? item
+        : { ...item, amount, listAmount: item.amount, discountBps };
+    });
+  }
+
+  /**
+   * Audita el cobro cuando el % difiere del default del gym para ese medio.
+   */
+  private async auditDiscountOverride(
+    tenantId: string,
+    actor: AuditActor,
+    transactionId: string,
+    charge: CounterCharge,
+    amounts: { list: number; charged: number },
+  ): Promise<void> {
+    const defaults =
+      await this.tenantSettings.getCashDiscountDefaults(tenantId);
+    const defaultBps =
+      charge.method === 'TRANSFER' ? defaults.transferBps : defaults.cashBps;
+    if (charge.discountBps === defaultBps) {
+      return;
+    }
+    await this.audit.record({
+      tenantId,
+      actor,
+      action: AUDIT_ACTIONS.paymentDiscountOverride,
+      entityType: 'transaction',
+      entityId: transactionId,
+      before: {
+        method: charge.method,
+        defaultDiscountPercent: bpsToPercent(defaultBps),
+      },
+      after: {
+        method: charge.method,
+        discountPercent: bpsToPercent(charge.discountBps),
+        listAmount: amounts.list,
+        chargedAmount: amounts.charged,
+      },
+    });
   }
 
   /**
@@ -176,6 +273,7 @@ export class CashPaymentService {
         'Platform trial is only available on platform Caja',
       );
     }
+    const charge = this.resolveCounterCharge(dto);
     const idempotencyKey =
       dto.idempotencyKey?.trim() || `cash-cart-${Date.now()}`;
 
@@ -248,11 +346,11 @@ export class CashPaymentService {
       });
     }
 
-    const allItems: TransactionItemInput[] = [];
+    const listItems: TransactionItemInput[] = [];
     let idx = 0;
     for (const s of sessions) {
       for (let q = 0; q < s.quantity; q++) {
-        allItems.push({
+        listItems.push({
           packId: s.packId,
           sessionId: s.sessionId,
           amount: s.amount,
@@ -262,13 +360,14 @@ export class CashPaymentService {
     }
     for (const p of packs) {
       for (let q = 0; q < p.quantity; q++) {
-        allItems.push({
+        listItems.push({
           packId: p.packId,
           amount: p.amount,
           idempotencyKey: `${idempotencyKey}-${idx++}`,
         });
       }
     }
+    const allItems = this.discountItems(listItems, charge.discountBps);
 
     const totalItems =
       sessions.reduce((sum, s) => sum + s.quantity, 0) +
@@ -292,12 +391,17 @@ export class CashPaymentService {
         memberId,
         items: allItems,
         idempotencyKey,
-        method: PaymentMethod.CASH,
+        method: charge.method,
         cashConcept,
         receiptConcept,
         description: label,
         recordedByStaffId: actor.profileType === 'STAFF' ? actor.userId : null,
+        transferReference: charge.transferReference,
       });
+    });
+    await this.auditDiscountOverride(tenantId, actor, transaction.id, charge, {
+      list: listItems.reduce((sum, item) => sum + item.amount, 0),
+      charged: transaction.amount,
     });
 
     const usedItemIds = new Set<string>();
@@ -377,6 +481,7 @@ export class CashPaymentService {
       }
       await this.platformTrial.assertCanApplyTrial(billingTenantId);
     }
+    const charge = this.resolveCounterCharge(dto);
 
     const idempotencyKey =
       dto.idempotencyKey?.trim() || `tenant-cash-cart-${Date.now()}`;
@@ -444,17 +549,18 @@ export class CashPaymentService {
       });
     }
 
-    const allItems: TransactionItemInput[] = [];
+    const listItems: TransactionItemInput[] = [];
     let idx = 0;
     for (const p of packs) {
       for (let q = 0; q < p.quantity; q++) {
-        allItems.push({
+        listItems.push({
           packId: p.packId,
           amount: p.amount,
           idempotencyKey: `${idempotencyKey}-${idx++}`,
         });
       }
     }
+    const allItems = this.discountItems(listItems, charge.discountBps);
 
     const totalItems = packs.reduce((sum, p) => sum + p.quantity, 0);
     const label = dto.applyTrial
@@ -470,13 +576,26 @@ export class CashPaymentService {
         billedTenantId: billingTenantId,
         items: allItems,
         idempotencyKey,
-        method: PaymentMethod.CASH,
+        method: charge.method,
         cashConcept: CashMovementConcept.PACK_CONTRACT,
         receiptConcept: ReceiptConcept.PACK_CONTRACT,
         description: label,
         recordedByStaffId: actor.profileType === 'STAFF' ? actor.userId : null,
+        transferReference: charge.transferReference,
       });
     });
+    if (!dto.applyTrial) {
+      await this.auditDiscountOverride(
+        catalogTenantId,
+        actor,
+        transaction.id,
+        charge,
+        {
+          list: listItems.reduce((sum, item) => sum + item.amount, 0),
+          charged: transaction.amount,
+        },
+      );
+    }
 
     const usedItemIds = new Set<string>();
     for (const item of transaction.transactionItems) {

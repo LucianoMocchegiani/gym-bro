@@ -17,6 +17,10 @@ export type TenantSettingsDetail = {
   debtToleranceDays: number;
   multiEntryEnabled: boolean;
   multiEntryMaxPerDay: number;
+  /** Descuento por defecto en Caja al cobrar en efectivo, en %. */
+  cashDiscountPercent: number;
+  /** Descuento por defecto en Caja al cobrar por transferencia, en %. */
+  transferDiscountPercent: number;
   createdAt: string;
   updatedAt: string;
 };
@@ -29,6 +33,8 @@ export type UpdateTenantSettingsInput = {
   debtToleranceDays?: number;
   multiEntryEnabled?: boolean;
   multiEntryMaxPerDay?: number;
+  cashDiscountPercent?: number;
+  transferDiscountPercent?: number;
 };
 
 /**

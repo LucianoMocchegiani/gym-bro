@@ -30,6 +30,7 @@ export const LEDGER_ITEM_INCLUDE = {
     select: {
       id: true,
       mpPaymentId: true,
+      transferReference: true,
       billedTenant: { select: { name: true } },
       receipts: {
         where: { concept: { not: ReceiptConcept.REFUND } },
@@ -57,6 +58,7 @@ type LedgerItemSource = PaymentLineSource & {
   transaction: {
     id: string;
     mpPaymentId: string | null;
+    transferReference: string | null;
     billedTenant: { name: string } | null;
     receipts: Array<{ id: string }>;
   } | null;
@@ -93,7 +95,9 @@ export type LedgerMovementRow = {
   transactionId: string;
   receiptId: string | null;
   amount: number;
-  method: 'CASH' | 'MP';
+  method: 'CASH' | 'MP' | 'TRANSFER';
+  /** Transferencia: nº de operación o quién transfirió. */
+  transferReference: string | null;
   kind: 'INCOME' | 'OUTCOME';
   category: LedgerCategory;
   createdAt: Date;
@@ -109,8 +113,11 @@ export type LedgerMovementRow = {
   items: PaymentLineDetail[];
 };
 
-function methodLabel(method: PaymentMethod): 'CASH' | 'MP' {
-  return method === PaymentMethod.MP ? 'MP' : 'CASH';
+function methodLabel(method: PaymentMethod): 'CASH' | 'MP' | 'TRANSFER' {
+  if (method === PaymentMethod.MP || method === PaymentMethod.TRANSFER) {
+    return method;
+  }
+  return 'CASH';
 }
 
 function categoryFromKind(kind: CashMovementKind): LedgerCategory {
@@ -174,6 +181,7 @@ export function buildLedgerRows(
       receiptId,
       amount: row.amount,
       method: methodLabel(item.method),
+      transferReference: item.transaction?.transferReference ?? null,
       kind,
       category,
       createdAt: row.createdAt,

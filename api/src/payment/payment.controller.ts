@@ -24,8 +24,11 @@ import { CashPaymentService } from './cash-payment.service';
 import { CreateMpCartCheckoutDto } from './dto/create-mp-cart-checkout.dto';
 import { CreateCashCartDto } from './dto/create-cash-cart.dto';
 import { MpPaymentStatusService } from './mp-payment-status.service';
+import { TenantSettingsService } from '../tenant-settings/tenant-settings.service';
+import { bpsToPercent } from './cash-discount';
 import {
   CashCartResult,
+  CashDiscountDefaults,
   MpCartCheckoutResult,
   MpPaymentStatusView,
 } from './payment.types';
@@ -42,6 +45,7 @@ export class PaymentController {
     private readonly onlinePayment: OnlinePaymentService,
     private readonly cashPayment: CashPaymentService,
     private readonly mpPaymentStatus: MpPaymentStatusService,
+    private readonly tenantSettings: TenantSettingsService,
   ) {}
 
   /**
@@ -88,6 +92,29 @@ export class PaymentController {
     );
   }
 
+  /**
+   * Descuentos por defecto de Caja (efectivo / transferencia) del tenant
+   * actual. Staff de Caja sin `tenant.settings.read` también los necesita.
+   */
+  @Get('cash/discount-defaults')
+  async getCashDiscountDefaults(
+    @CurrentTenant() tenantId: string,
+    @CurrentUser() user: AuthUser,
+  ): Promise<CashDiscountDefaults> {
+    if (user.profileType !== 'STAFF') {
+      throw new ForbiddenException('Staff profile required');
+    }
+    const defaults =
+      await this.tenantSettings.getCashDiscountDefaults(tenantId);
+    return {
+      cashDiscountPercent: bpsToPercent(defaults.cashBps),
+      transferDiscountPercent: bpsToPercent(defaults.transferBps),
+    };
+  }
+
+  /**
+   * Cobro presencial de Caja (efectivo o transferencia, con descuento opcional).
+   */
   @Post('members/:memberId/transaction-items/cash/cart')
   @HttpCode(HttpStatus.CREATED)
   @RequirePermission('members.write')
@@ -132,8 +159,8 @@ export class PaymentController {
   }
 
   /**
-   * Cobro en efectivo de plataforma: el tenant `admin` le factura un pack
-   * propio a otro gym.
+   * Cobro presencial de plataforma (efectivo o transferencia): el tenant
+   * `admin` le factura un pack propio a otro gym.
    */
   @Post('tenants/:billingTenantId/transaction-items/cash/cart')
   @HttpCode(HttpStatus.CREATED)

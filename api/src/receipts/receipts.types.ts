@@ -13,9 +13,11 @@ export type ReceiptDetail = {
   /** Código legible, ej. `GB-000001`. */
   code: string;
   amount: number;
-  method: 'STUB' | 'CASH' | 'MP';
+  method: 'STUB' | 'CASH' | 'MP' | 'TRANSFER';
   concept: 'PACK_CONTRACT' | 'DROP_IN' | 'REFUND';
   description: string | null;
+  /** Transferencia: nº de operación o quién transfirió. */
+  transferReference: string | null;
   createdAt: Date;
   /** Líneas del cart (pack/contrato o drop-in/reserva). Vacío si el cobro no tiene ítems. */
   lines: PaymentLineDetail[];

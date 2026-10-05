@@ -4,7 +4,10 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { DataTable } from '@/components/AdminList';
 import { PaymentLineCopy } from '@/components/PaymentLineCopy';
-import { ReceiptPanel } from '@/components/ReceiptPanel';
+import {
+  ReceiptPanel,
+  formatDiscountPercent,
+} from '@/components/ReceiptPanel';
 import { RefundExecuteModal } from '@/components/RefundExecuteModal';
 import { StatusPill } from '@/components/StatusPill';
 import { MpPaymentStatusModal } from '@/components/MpPaymentStatus';
@@ -33,7 +36,20 @@ function formatWhen(iso: string): string {
 function methodLabel(m: LedgerMovementRow['method']): string {
   if (m === 'CASH') return 'Efectivo';
   if (m === 'MP') return 'MP';
+  if (m === 'TRANSFER') return 'Transferencia';
   return m;
+}
+
+function RowDiscount({ row }: { row: LedgerMovementRow }) {
+  if (row.kind !== 'INCOME') return null;
+  const percents = row.items.map((i) => i.discountPercent ?? null);
+  const first = percents[0] ?? null;
+  if (first === null || percents.some((p) => p !== first)) return null;
+  return (
+    <span className="muted small" style={{ marginLeft: 6 }}>
+      −{formatDiscountPercent(first)}
+    </span>
+  );
 }
 
 function conceptLabel(row: LedgerMovementRow): string {
@@ -175,8 +191,16 @@ export function MoneyMovementsTable({
                   #{row.mpPaymentId}
                 </span>
               ) : null}
+              {row.transferReference ? (
+                <span className="muted small" style={{ marginLeft: 6 }}>
+                  {row.transferReference}
+                </span>
+              ) : null}
             </td>
-            <td>{formatMoney(row.amount)}</td>
+            <td>
+              {formatMoney(row.amount)}
+              <RowDiscount row={row} />
+            </td>
             <td>{row.recordedByStaffName ?? '—'}</td>
             <td className="row-actions">
               {canRefund &&

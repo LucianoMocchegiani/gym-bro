@@ -83,6 +83,8 @@ function ConfigInner() {
   const [debtDays, setDebtDays] = useState('0');
   const [multiEntry, setMultiEntry] = useState(false);
   const [multiMax, setMultiMax] = useState('2');
+  const [cashDiscount, setCashDiscount] = useState('0');
+  const [transferDiscount, setTransferDiscount] = useState('0');
 
   const [mp, setMp] = useState<MercadoPagoAccountStatus | null>(null);
   const [accessToken, setAccessToken] = useState('');
@@ -149,6 +151,8 @@ function ConfigInner() {
     setDebtDays(String(s.debtToleranceDays));
     setMultiEntry(s.multiEntryEnabled);
     setMultiMax(String(s.multiEntryMaxPerDay));
+    setCashDiscount(String(s.cashDiscountPercent ?? 0));
+    setTransferDiscount(String(s.transferDiscountPercent ?? 0));
   }
 
   async function onSaveSettings(e: FormEvent) {
@@ -163,7 +167,9 @@ function ConfigInner() {
       allowLate !== settings.allowLateSessionEntry ||
       debtDays !== String(settings.debtToleranceDays) ||
       multiEntry !== settings.multiEntryEnabled ||
-      multiMax !== String(settings.multiEntryMaxPerDay);
+      multiMax !== String(settings.multiEntryMaxPerDay) ||
+      cashDiscount !== String(settings.cashDiscountPercent ?? 0) ||
+      transferDiscount !== String(settings.transferDiscountPercent ?? 0);
     if (!dirty) {
       // Sin cambios: no pegarle a la API.
       return;
@@ -184,6 +190,8 @@ function ConfigInner() {
         debtToleranceDays: Number(debtDays),
         multiEntryEnabled: multiEntry,
         multiEntryMaxPerDay: Number(multiMax),
+        cashDiscountPercent: Number(cashDiscount),
+        transferDiscountPercent: Number(transferDiscount),
       });
       applySettings(updated);
       setSettingsOk(true);
@@ -381,6 +389,37 @@ function ConfigInner() {
                     />
                   </label>
                 ) : null}
+
+                <label>
+                  Descuento en Caja por pago en efectivo (%)
+                  <input
+                    type="number"
+                    min={0}
+                    max={99}
+                    step={0.01}
+                    value={cashDiscount}
+                    onChange={(e) => setCashDiscount(e.target.value)}
+                    required
+                  />
+                </label>
+                <label>
+                  Descuento en Caja por transferencia (%)
+                  <input
+                    type="number"
+                    min={0}
+                    max={99}
+                    step={0.01}
+                    value={transferDiscount}
+                    onChange={(e) => setTransferDiscount(e.target.value)}
+                    required
+                  />
+                </label>
+                <p className="muted small">
+                  Caja lo precarga según el medio y se puede cambiar en cada
+                  venta. Por defecto 7,6 %: lo que cobra Mercado Pago con la
+                  plata al instante (6,29 % + IVA), que efectivo y
+                  transferencia no pagan. 0 = sin descuento.
+                </p>
 
                 {settingsError ? (
                   <p className="error">{settingsError}</p>

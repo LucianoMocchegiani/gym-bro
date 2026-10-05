@@ -37,7 +37,34 @@ Escondida en Config (**Conexión manual (avanzado)**). Solo si lo pide soporte o
 3. No se renueva solo: si se regenera en MP, hay que pegarlo de nuevo.
 4. Webhooks opcionales en esa app: `https://api.faciliter.xyz/api/webhooks/payment?tenantId={UUID_DEL_TENANT}` con `payment`, `topic_merchant_order_wh`, `subscription_preapproval`, `subscription_authorized_payment`. El UUID es el id interno del gym (no el App ID ni el slug).
 
-## 3. Errores típicos
+## 3. Comisión y cuándo está disponible la plata
+
+Mercado Pago cobra una **comisión por cada cobro**, y el porcentaje depende de **cuándo** quiere el gym tener la plata disponible. Faciliter no cobra nada sobre las ventas del gym.
+
+Tarifas oficiales de Checkout (Argentina, consultadas en octubre de 2026; **+ IVA**, y pueden variar según la provincia y el medio de pago):
+
+| Plata disponible | Comisión |
+|------------------|----------|
+| Al instante | 6,29% + IVA |
+| En 10 días | 4,39% + IVA |
+| En 18 días | 3,39% + IVA |
+| En 35 días | 1,49% + IVA |
+
+Con el IVA (21 %), **al instante queda en ≈ 7,6 % final** del cobro. Las cuotas sin interés tienen un costo aparte para el vendedor.
+
+**Si el gym necesita la plata en el momento**, tiene que configurar el plazo **al instante** en su cuenta de Mercado Pago (no en Faciliter): **Tu negocio → Costos y cuotas**, en la configuración de cobros con Checkout. Si no, MP puede dejar el cobro aprobado pero «pendiente de liberación» hasta la fecha del plazo elegido. Desde Faciliter, **Estado en Mercado Pago** (Cierre, Reportes o comprobante) muestra la fecha de liberación de cada cobro.
+
+Links oficiales para pasarle al usuario:
+
+- Configurar costos y plazo en su cuenta (pide iniciar sesión en MP): https://www.mercadopago.com.ar/costs-section
+- Ayuda de MP «Costos, plazos de acreditación y cuotas»: https://www.mercadopago.com.ar/ayuda/19032
+- Tarifas de Checkout: https://www.mercadopago.com.ar/herramientas-para-vender/check-out
+
+Los porcentajes cambian: ante la duda, que el usuario los confirme en esos links.
+
+En Caja, efectivo y transferencia llevan un **descuento por defecto de 7,6 %** (la comisión al instante con IVA), configurable en **Config → Operación**. Si el gym eligió otro plazo en MP (por ejemplo, 35 días), puede bajar ese % para que coincida. Detalle: topic `caja`.
+
+## 4. Errores típicos
 
 - «La conexión con un toque no está habilitada»: el servidor no tiene configurada la app de plataforma (lo resuelve Faciliter).
 - «Mercado Pago no aceptó la conexión»: problema de configuración del servidor (URL de redireccionamiento o PKCE). Escribir a soporte.

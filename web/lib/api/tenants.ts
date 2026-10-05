@@ -2,6 +2,7 @@
  * Tenants API (Super + resolución pública por slug).
  */
 
+import type { CounterChargeOptions } from '@/lib/api/cash-discount';
 import { apiRequest } from '@/lib/api/client';
 import { toSearchParams } from '@/lib/api/list';
 import type { ListParams, ListResult } from '@/lib/api/list';
@@ -163,8 +164,8 @@ export function getPlatformDashboardKpis(): Promise<PlatformDashboardKpis> {
 }
 
 /**
- * Cobro en efectivo de plataforma: el tenant `admin` le factura un pack propio
- * a `billingTenantId` (el gym pagador).
+ * Cobro presencial de plataforma (efectivo o transferencia): el tenant `admin`
+ * le factura un pack propio a `billingTenantId` (el gym pagador).
  *
  * @remarks Solo packs; el drop-in es por sesiones de un gym.
  */
@@ -173,12 +174,18 @@ export function startPlatformCashCart(
   items: PlatformCartItem[],
   idempotencyKey: string,
   applyTrial?: boolean,
+  charge?: CounterChargeOptions,
 ): Promise<CashCartResult> {
   return apiRequest<CashCartResult>(
     `/tenants/${billingTenantId}/transaction-items/cash/cart`,
     {
       method: 'POST',
-      body: { items, idempotencyKey, applyTrial: applyTrial === true },
+      body: {
+        items,
+        idempotencyKey,
+        applyTrial: applyTrial === true,
+        ...charge,
+      },
     },
   );
 }

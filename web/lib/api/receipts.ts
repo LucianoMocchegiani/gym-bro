@@ -5,7 +5,7 @@
 import { apiRequest } from '@/lib/api/client';
 import type { PaymentLineDetail } from '@/lib/api/payment-lines';
 
-export type ReceiptMethod = 'STUB' | 'CASH' | 'MP';
+export type ReceiptMethod = 'STUB' | 'CASH' | 'MP' | 'TRANSFER';
 export type ReceiptConcept = 'PACK_CONTRACT' | 'DROP_IN' | 'REFUND';
 
 export type ReceiptDetail = {
@@ -21,6 +21,8 @@ export type ReceiptDetail = {
   method: ReceiptMethod;
   concept: ReceiptConcept;
   description: string | null;
+  /** Transferencia: nº de operación o quién transfirió. */
+  transferReference?: string | null;
   createdAt: string;
   lines: PaymentLineDetail[];
 };
@@ -33,7 +35,7 @@ export function getReceipt(receiptId: string): Promise<ReceiptDetail> {
 }
 
 /**
- * Comprobante de un cart (CASH o MP) (`members.read`).
+ * Comprobante de un cart (efectivo, transferencia o MP) (`members.read`).
  */
 export function getReceiptByTransaction(
   transactionId: string,

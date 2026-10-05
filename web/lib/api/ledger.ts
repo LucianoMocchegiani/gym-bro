@@ -15,7 +15,9 @@ export type LedgerMovementRow = {
   transactionId: string;
   receiptId: string | null;
   amount: number;
-  method: 'CASH' | 'MP';
+  method: 'CASH' | 'MP' | 'TRANSFER';
+  /** Transferencia: nº de operación o quién transfirió. */
+  transferReference?: string | null;
   kind: 'INCOME' | 'OUTCOME';
   /** Ausente solo si el payload es anterior al campo. */
   category?: LedgerCategory;

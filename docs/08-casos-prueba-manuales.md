@@ -106,6 +106,9 @@ Leyenda resultado: `P` pass · `F` fail · `B` bloqueado · `-` no aplica
 | P3q | Caja `admin`: link MP de un pack para un gym, pagarlo | Se completa (antes quedaba pendiente): comprobante en `admin` con el nombre del gym, contrato TENANT en el gym, aviso al dueño | RN-PAG-019, CU-PAG-001 | |
 | P3r | Cierre de `admin`: Devolver una venta de plan | Devuelve con el MP de `admin` (o efectivo); egreso en `admin`; el contrato TENANT del gym queda devuelto | RN-PAG-019, CU-PAG-005 | |
 | P3s | Cierre de un gym con una venta de plan vieja (cobrada en el gym) | Sin botón Devolver; `POST /transactions/:id/refunds` → 403 | RN-PAG-019 | |
+| P3t | Caja: efectivo con el descuento precargado (7,6 % default) | Total con descuento antes de cobrar; comprobante con lista tachada y %; ingreso suma al efectivo del Cierre; sin Auditoría | RN-PAG-020 | |
+| P3u | Caja: Transferencia con referencia y descuento cambiado (p. ej. 10 %) | Comprobante «Transferencia» + referencia; Cierre: digital, no efectivo; Reportes: «Transf.» y «Descuentos en Caja»; Auditoría `payment.discount_override` | RN-PAG-020 | |
+| P3v | Config → Operación: cambiar los % por defecto | Caja precarga el nuevo % al elegir el medio; link MP sin descuento | RN-PAG-020 | |
 | P4 | Comprobante tras pago | Visible app + email E1; en reportes y cierres, “Ver comprobante” abre el panel (pack incluye servicios) | RN-PAG-009 | |
 | P4b | Cobro MP aprobado → Cierre/Reportes o comprobante → «Estado en Mercado Pago» | Estado, comisiones, neto, «Ya disponible» o «Disponible el DD/MM» y «Tu cuenta conectada ✔»; con otra cuenta conectada, aviso «Otra cuenta de Mercado Pago» | CU-PAG-003 | |
 | P5 | Devolución afiliado dentro de política | Solicitud OK | CU-PAG-004 | |

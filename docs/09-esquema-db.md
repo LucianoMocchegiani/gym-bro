@@ -146,6 +146,7 @@ identities ||--o{ platform_signups : self_serve
     enum status
     int refunded_amount
     text mp_payment_id
+    text transfer_reference
   }
 
   receipts {
@@ -165,6 +166,8 @@ identities ||--o{ platform_signups : self_serve
     int debt_tolerance_days
     boolean multi_entry_enabled
     int multi_entry_max_per_day
+    int cash_discount_bps
+    int transfer_discount_bps
     timestamptz created_at
     timestamptz updated_at
   }
@@ -360,7 +363,7 @@ identities ||--o{ platform_signups : self_serve
 | `BillingPeriod` | `MONTHLY`, `ONE_TIME` | Periodicidad de cobro del pack |
 | `DebitMandateStatus` | `PENDING_CHECKOUT`, `ACTIVE`, `RETRYING`, `FAILED`, `CANCELLED` | Mandato / suscripción MP |
 | `PaymentStatus` | `PENDING`, `APPROVED`, `REJECTED`, `REFUNDED` | Estado de pago (RN-PAG-003) |
-| `PaymentMethod` | `STUB`, `CASH`, `MP` | Medio de cobro. `STUB` es legado: no se crean cobros nuevos. |
+| `PaymentMethod` | `STUB`, `CASH`, `MP`, `TRANSFER` | Medio de cobro. `TRANSFER` = transferencia registrada en Caja (RN-PAG-020). `STUB` es legado: no se crean cobros nuevos. |
 | `ContractStatus` | `ACTIVE`, `EXPIRED`, `CANCELLED`, `REFUNDED` | Estado de contratación |
 | `SessionStatus` | `PUBLISHED`, `CANCELLED` | Estado de sesión de calendario |
 | `Weekday` | `MONDAY` … `SUNDAY` | Días ISO de recurrencia semanal |
@@ -704,9 +707,11 @@ API Staff: `GET|POST|PATCH /api/packs`.
 | `pack_id` | uuid FK nullable | SET NULL; checkout pack |
 | `session_id` | uuid FK nullable | SET NULL; checkout drop-in |
 | `transaction_id` | uuid FK **NOT NULL** | cart padre → `transactions` |
-| `amount` | int | pesos (copia del pack / drop-in) |
+| `amount` | int | pesos cobrados (precio del pack / drop-in, con descuento si hubo) |
+| `list_amount` | int nullable | precio de lista cuando hubo descuento en Caja (RN-PAG-020); null = se cobró el de lista |
+| `discount_bps` | int | default 0; descuento aplicado en centésimas de % (760 = 7,6 %) |
 | `status` | `PaymentStatus` | |
-| `method` | `PaymentMethod` | STUB / CASH / MP |
+| `method` | `PaymentMethod` | STUB / CASH / MP / TRANSFER |
 | `idempotency_key` | text | unique por tenant; en cart `"<cartKey>-<idx>"` |
 | `mp_preference_id` | text nullable | Preference Checkout Pro (ítem suelto legacy) |
 | `mp_payment_id` | text nullable UK | dedup webhook en ítems sueltos; en cart el id vive en `transactions` |
@@ -715,7 +720,7 @@ API Staff: `GET|POST|PATCH /api/packs`.
 | `mp_refund_manual_pending` | boolean | default false |
 | `created_at` / `updated_at` | timestamptz | |
 
-Si `method=CASH` → 1 `cash_movements` INCOME por ítem (`unique (transaction_item_id, kind)`).
+Si `method=CASH` o `TRANSFER` → 1 `cash_movements` INCOME por ítem (`unique (transaction_item_id, kind)`); el Cierre separa efectivo de digital por `transaction_items.method`.
 
 ### 4.15b `cash_movements`
 
@@ -876,6 +881,7 @@ Carrito de Caja (CASH y MP, CU-PAG-001 / modelo MercadoLibre): 1 cart → N íte
 | `refunded_amount` | int | default 0; tracking de devoluciones |
 | `recorded_by_staff_id` | uuid FK nullable | staff que inició el cobro (Caja); SET NULL; null si el afiliado paga solo |
 | `billed_tenant_id` | uuid FK nullable → `tenants` | venta de plan Faciliter (RN-PAG-019): la transacción es de `admin` y este es el gym que recibe el contrato TENANT; SET NULL; index. Null en ventas a socios y en ventas de plan viejas (quedaron en el gym) |
+| `transfer_reference` | text nullable | cobro por transferencia: nº de operación o quién transfirió (opcional, RN-PAG-020) |
 | `created_at` / `updated_at` | timestamptz | |
 
 Cada `transaction_item` tiene `transaction_id` **obligatorio**. Devolución de carrito MP: `POST /transactions/:id/refunds` (refund parcial o del saldo contra `transactions.mp_payment_id`).
@@ -1146,6 +1152,7 @@ Config operativa 1:1 con tenant (RN-TEN-005).
 |---------|------|--------|
 | `tenant_id` | uuid PK FK → `tenants` | CASCADE |
 | `access_provider` | `AccessProvider` | default `KUATIA`; sistema de puerta (RN-ACC-010) |
+| `cash_discount_bps` / `transfer_discount_bps` | int | default 760 (7,6 %); descuento que Caja precarga para efectivo / transferencia, en centésimas de % (RN-PAG-020) |
 | `reservation_cancellation_hours` | int | default 6; rango API 0–720 |
 | `waitlist_mode` | `WaitlistMode` | default `AUTO_ASSIGN`; liberación MVP solo AUTO |
 | `allow_late_session_entry` | boolean | default false; RN-RES-006 / CU-RES-006 |
@@ -1219,6 +1226,7 @@ Historia incremental (2026-07 / 2026-08) **compactada** en un baseline (`40476fa
 | `20261003200000_member_signups` | Enum `MemberSignupStatus` + `member_signups` (alta web del socio con pago previo, RN-CTA-007) |
 | `20261004150000_tenant_sites` | `tenant_sites` (web pública editable del gym, RN-CTA-010) |
 | `20261004200000_transactions_billed_tenant` | `transactions.billed_tenant_id` (gym facturado en ventas de plan Faciliter de `admin`, RN-PAG-019) |
+| `20261005120000_transfer_and_cash_discount` | `PaymentMethod` + `TRANSFER`; `tenant_settings.cash_discount_bps` / `transfer_discount_bps` (default 760); `transaction_items.list_amount` / `discount_bps`; `transactions.transfer_reference` (RN-PAG-020) |
 
 Comandos y checklist “desde cero”: [13-setup-db-desde-cero.md](./13-setup-db-desde-cero.md).
 

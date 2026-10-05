@@ -7,6 +7,7 @@ import { AccessProvider, Prisma, WaitlistMode } from '@prisma/client';
 import { AUDIT_ACTIONS, AuditActor } from '../audit/audit.types';
 import { AuditService } from '../audit/audit.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { bpsToPercent, percentToBps } from '../payment/cash-discount';
 import { UpdateTenantSettingsDto } from './dto/tenant-settings.dto';
 import { TenantSettingsDetail } from './tenant-settings.types';
 
@@ -56,7 +57,9 @@ export class TenantSettingsService {
       dto.debtToleranceDays === undefined &&
       dto.multiEntryEnabled === undefined &&
       dto.multiEntryMaxPerDay === undefined &&
-      dto.accessProvider === undefined
+      dto.accessProvider === undefined &&
+      dto.cashDiscountPercent === undefined &&
+      dto.transferDiscountPercent === undefined
     ) {
       throw new BadRequestException(
         'Provide at least one settings field to update',
@@ -90,6 +93,12 @@ export class TenantSettingsService {
           : {}),
         ...(dto.accessProvider !== undefined
           ? { accessProvider: dto.accessProvider }
+          : {}),
+        ...(dto.cashDiscountPercent !== undefined
+          ? { cashDiscountBps: percentToBps(dto.cashDiscountPercent) }
+          : {}),
+        ...(dto.transferDiscountPercent !== undefined
+          ? { transferDiscountBps: percentToBps(dto.transferDiscountPercent) }
           : {}),
       },
     });
@@ -131,6 +140,20 @@ export class TenantSettingsService {
   async getAccessProvider(tenantId: string): Promise<AccessProvider> {
     const settings = await this.getOrCreate(tenantId);
     return settings.accessProvider;
+  }
+
+  /**
+   * Descuentos por defecto de Caja para efectivo y transferencia, en
+   * centésimas de % (RN-PAG-020).
+   */
+  async getCashDiscountDefaults(
+    tenantId: string,
+  ): Promise<{ cashBps: number; transferBps: number }> {
+    const settings = await this.getOrCreate(tenantId);
+    return {
+      cashBps: settings.cashDiscountBps,
+      transferBps: settings.transferDiscountBps,
+    };
   }
 
   /**
@@ -234,6 +257,8 @@ export class TenantSettingsService {
     multiEntryEnabled: boolean;
     multiEntryMaxPerDay: number;
     accessProvider: AccessProvider;
+    cashDiscountBps: number;
+    transferDiscountBps: number;
     createdAt: Date;
     updatedAt: Date;
   }): TenantSettingsDetail {
@@ -246,6 +271,8 @@ export class TenantSettingsService {
       multiEntryEnabled: row.multiEntryEnabled,
       multiEntryMaxPerDay: row.multiEntryMaxPerDay,
       accessProvider: row.accessProvider,
+      cashDiscountPercent: bpsToPercent(row.cashDiscountBps),
+      transferDiscountPercent: bpsToPercent(row.transferDiscountBps),
       createdAt: row.createdAt,
       updatedAt: row.updatedAt,
     };
@@ -260,6 +287,8 @@ export class TenantSettingsService {
       multiEntryEnabled: detail.multiEntryEnabled,
       multiEntryMaxPerDay: detail.multiEntryMaxPerDay,
       accessProvider: detail.accessProvider,
+      cashDiscountPercent: detail.cashDiscountPercent,
+      transferDiscountPercent: detail.transferDiscountPercent,
     };
   }
 }

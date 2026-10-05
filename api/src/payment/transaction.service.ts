@@ -7,6 +7,9 @@ export interface TransactionItemInput {
   packId?: string | null;
   sessionId?: string | null;
   amount: number;
+  /** Precio de lista cuando `amount` tiene descuento (RN-PAG-020). */
+  listAmount?: number | null;
+  discountBps?: number;
   idempotencyKey: string;
 }
 
@@ -20,6 +23,7 @@ export interface InitiatePaymentParams {
   method: PaymentMethod;
   items: TransactionItemInput[];
   recordedByStaffId?: string | null;
+  transferReference?: string | null;
   mpPreferenceId?: string | null;
   mpInitPoint?: string | null;
   mpSandboxInitPoint?: string | null;
@@ -31,7 +35,7 @@ export interface InitiatePaymentParams {
  * @description
  * - Crea Transactions con sus TransactionItems asociados.
  * - Confirma Transactions (cambia status a APPROVED).
- * - Es agnóstico al método de pago (CASH, MP, STUB).
+ * - Es agnóstico al método de pago (CASH, TRANSFER, MP, STUB).
  *
  * @remarks
  * Los servicios de pago específico (CashPaymentService, OnlinePaymentService)
@@ -59,6 +63,7 @@ export class TransactionService {
       method,
       items,
       recordedByStaffId,
+      transferReference,
       mpPreferenceId,
       mpInitPoint,
       mpSandboxInitPoint,
@@ -76,6 +81,7 @@ export class TransactionService {
         idempotencyKey: firstItem.idempotencyKey,
         recordedByStaffId: recordedByStaffId ?? null,
         billedTenantId: billedTenantId ?? null,
+        transferReference: transferReference ?? null,
         mpPreferenceId,
         mpInitPoint,
         mpSandboxInitPoint,
@@ -91,6 +97,8 @@ export class TransactionService {
             packId: item.packId ?? null,
             sessionId: item.sessionId ?? null,
             amount: item.amount,
+            listAmount: item.listAmount ?? null,
+            discountBps: item.discountBps ?? 0,
             status: PaymentStatus.PENDING,
             method,
             idempotencyKey: item.idempotencyKey,

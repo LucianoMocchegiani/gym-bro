@@ -33,9 +33,12 @@ export type ReportsSummary = {
   income: {
     totalApproved: number;
     totalRefunded: number;
+    /** Descuentos otorgados en Caja (lista − cobrado), RN-PAG-020. */
+    totalDiscounts: number;
     byMethod: {
       CASH: number;
       MP: number;
+      TRANSFER: number;
     };
     /** Cobros y devoluciones (egreso = una ejecución, no todo el historial del cart). */
     transactions: ReportTransactionRow[];

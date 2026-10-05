@@ -87,6 +87,8 @@ enum PaymentMethod {
   STUB
   CASH
   MP
+  /// Transferencia al alias/CBU del gym, registrada en Caja por el staff.
+  TRANSFER
 }
 
 /// Estado de una contratación (dominio Contratacion).
@@ -311,6 +313,9 @@ model TenantSettings {
   multiEntryMaxPerDay          Int          @default(1) @map("multi_entry_max_per_day")
   /// RN-ACC-010: sistema de puerta. KUATIA = QR + app; ZKTECO = aparato del torno.
   accessProvider               AccessProvider @default(KUATIA) @map("access_provider")
+  /// RN-PAG-020: descuento por defecto en Caja, en centésimas de % (760 = 7,6 %).
+  cashDiscountBps              Int          @default(760) @map("cash_discount_bps")
+  transferDiscountBps          Int          @default(760) @map("transfer_discount_bps")
   createdAt                    DateTime     @default(now()) @map("created_at")
   updatedAt                    DateTime     @updatedAt @map("updated_at")
 
@@ -733,6 +738,10 @@ model TransactionItem {
   /// Transacción a la que pertenece este ítem (1 preference con items[]).
   transactionId    String        @map("transaction_id") @db.Uuid
   amount           Int
+  /// RN-PAG-020: precio de lista cuando hubo descuento (null = se cobró el de lista).
+  listAmount       Int?          @map("list_amount")
+  /// Descuento aplicado, en centésimas de % (0 = sin descuento).
+  discountBps      Int           @default(0) @map("discount_bps")
   status           PaymentStatus
   method           PaymentMethod
   idempotencyKey   String        @map("idempotency_key")
@@ -798,6 +807,8 @@ model Transaction {
   /// Venta de plataforma: gym al que `admin` le vendió el plan. La transacción
   /// (caja, comprobante, devolución) es de `admin`; el contrato TENANT, del gym.
   billedTenantId     String?       @map("billed_tenant_id") @db.Uuid
+  /// Transferencia: nº de operación o quién transfirió (opcional, lo carga el staff).
+  transferReference  String?       @map("transfer_reference")
   createdAt          DateTime      @default(now()) @map("created_at")
   updatedAt          DateTime      @updatedAt @map("updated_at")
 

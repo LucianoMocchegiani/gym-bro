@@ -24,10 +24,12 @@ import { TenantsModule } from '../tenants/tenants.module';
 import { DebitModule } from '../debit/debit.module';
 import { NotificationsModule } from '../notifications/notifications.module';
 import { MembersModule } from '../members/members.module';
+import { TenantSettingsModule } from '../tenant-settings/tenant-settings.module';
 
 @Module({
   imports: [
     AuditModule,
+    TenantSettingsModule,
     PaymentRegisterModule,
     forwardRef(() => ReceiptsModule),
     forwardRef(() => ContractsModule),

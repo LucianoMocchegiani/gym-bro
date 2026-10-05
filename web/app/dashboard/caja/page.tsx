@@ -30,6 +30,15 @@ import { extractTenantSlugFromHost } from '@/lib/tenant-host';
 import { listActivePacks } from '@/lib/api/packs';
 import type { PackSummary } from '@/lib/api/packs';
 import { startCashCart } from '@/lib/api/reservations';
+import {
+  applyDiscount,
+  getCashDiscountDefaults,
+} from '@/lib/api/cash-discount';
+import type {
+  CashDiscountDefaults,
+  CounterChargeOptions,
+  CounterMethod,
+} from '@/lib/api/cash-discount';
 import { getPlatformTrialEligibility } from '@/lib/api/plan';
 import { getReceiptByTransaction } from '@/lib/api/receipts';
 import type { ReceiptDetail } from '@/lib/api/receipts';
@@ -100,7 +109,12 @@ function CajaInner() {
   const [memberId, setMemberId] = useState(initialMemberId);
   const [memberLabel, setMemberLabel] = useState('');
   const [cart, setCart] = useState<CartItem[]>([]);
-  const [cobroMedio, setCobroMedio] = useState<'CASH' | 'MP'>('CASH');
+  const [cobroMedio, setCobroMedio] = useState<CounterMethod | 'MP'>('CASH');
+  const [discountDefaults, setDiscountDefaults] =
+    useState<CashDiscountDefaults | null>(null);
+  const [discountInput, setDiscountInput] = useState('0');
+  const [transferReference, setTransferReference] = useState('');
+  const [counterDoneLabel, setCounterDoneLabel] = useState('');
   const [debitWanted, setDebitWanted] = useState(false);
   const [debitPayerEmail, setDebitPayerEmail] = useState('');
   const [applyTrial, setApplyTrial] = useState(false);
@@ -194,6 +208,22 @@ function CajaInner() {
   }, [isPlatform]);
 
   useEffect(() => {
+    let cancelled = false;
+    void getCashDiscountDefaults()
+      .then((d) => {
+        if (cancelled) {
+          return;
+        }
+        setDiscountDefaults(d);
+        setDiscountInput(String(d.cashDiscountPercent));
+      })
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
     if (!isPlatform || !billingTenantId) {
       setTrialEligible(false);
       setTrialHint(null);
@@ -278,7 +308,32 @@ function CajaInner() {
     isPlatform && cobroMedio === 'CASH' && trialEligible && trialPackOffers,
   );
 
-  const chargeTotal = applyTrial && trialCanApply ? 0 : total;
+  const trialApplied = applyTrial && trialCanApply;
+  const isCounter = cobroMedio !== 'MP';
+  const discountPercent = Number(discountInput.replace(',', '.'));
+  const discountValid =
+    Number.isFinite(discountPercent) &&
+    discountPercent >= 0 &&
+    discountPercent <= 99;
+  const discountActive =
+    isCounter && !trialApplied && discountValid && discountPercent > 0;
+  const chargeTotal = trialApplied
+    ? 0
+    : discountActive
+      ? cart.reduce(
+          (sum, item) => sum + applyDiscount(item.price, discountPercent),
+          0,
+        )
+      : total;
+
+  function chooseMedio(medio: CounterMethod | 'MP') {
+    setCobroMedio(medio);
+    if (medio === 'CASH') {
+      setDiscountInput(String(discountDefaults?.cashDiscountPercent ?? 0));
+    } else if (medio === 'TRANSFER') {
+      setDiscountInput(String(discountDefaults?.transferDiscountPercent ?? 0));
+    }
+  }
 
   const debitEligible = useMemo(() => {
     // El débito es un mandato por afiliado; no aplica a la venta de plataforma.
@@ -378,6 +433,7 @@ function CajaInner() {
     setApplyTrial(false);
     setMpClearConfirm(false);
     setCopyKey(null);
+    setTransferReference('');
   }
 
   function requestClearMpCheckout() {
@@ -417,6 +473,10 @@ function CajaInner() {
     }
     if (isPlatform && cart.some((item) => item.kind !== 'PACK')) {
       setCobroError('La venta de plataforma solo admite packs');
+      return;
+    }
+    if (isCounter && !trialApplied && !discountValid) {
+      setCobroError('El descuento tiene que ser entre 0 y 99 %');
       return;
     }
     setCobroBusy(true);
@@ -481,12 +541,22 @@ function CajaInner() {
         return;
       }
 
+      const counterMethod: CounterMethod =
+        cobroMedio === 'TRANSFER' ? 'TRANSFER' : 'CASH';
+      const charge: CounterChargeOptions = {
+        method: counterMethod,
+        ...(trialApplied ? {} : { discountPercent }),
+        ...(counterMethod === 'TRANSFER' && transferReference.trim()
+          ? { transferReference: transferReference.trim() }
+          : {}),
+      };
       const result = isPlatform
         ? await startPlatformCashCart(
             billingTenantId,
             cart.map((item) => ({ kind: 'PACK' as const, id: item.refId })),
             newIdempotencyKey('cash-cart'),
-            applyTrial && trialCanApply,
+            trialApplied,
+            charge,
           )
         : await startCashCart(
             memberId,
@@ -495,15 +565,24 @@ function CajaInner() {
               id: item.refId,
             })),
             newIdempotencyKey('cash-cart'),
+            charge,
           );
-      const grantedTrial = Boolean(isPlatform && applyTrial && trialCanApply);
+      const grantedTrial = Boolean(isPlatform && trialApplied);
       const labels = cart.map((item) => item.label);
+      const medioLabel =
+        counterMethod === 'TRANSFER' ? 'por transferencia' : 'en efectivo';
       setCart([]);
       setApplyTrial(false);
+      setTransferReference('');
+      setCounterDoneLabel(
+        counterMethod === 'TRANSFER'
+          ? 'Cobro por transferencia'
+          : 'Cobro en efectivo',
+      );
       setCobroOk(
         grantedTrial
           ? 'Prueba de 30 días activada (sin cobro). El gym ve el plan en Sistema → Plan / Uso.'
-          : `${labels.length} cobro${labels.length === 1 ? '' : 's'} en efectivo: ${labels.join(' · ')}`,
+          : `${labels.length} cobro${labels.length === 1 ? '' : 's'} ${medioLabel} por ${formatMoney(result.amount)}: ${labels.join(' · ')}`,
       );
       setCashTransactionId(result.transactionId);
       if (result.receipt) {
@@ -534,7 +613,7 @@ function CajaInner() {
       subtitle={
         isPlatform
           ? 'Venta de packs de plataforma a otros tenants.'
-          : 'Cobros con carrito: packs y drop-in en efectivo o Mercado Pago.'
+          : 'Cobros con carrito: packs y drop-in en efectivo, transferencia o Mercado Pago.'
       }
     >
       <ListToolbar hint="El cierre del día se ve en Cierre.">
@@ -756,7 +835,7 @@ function CajaInner() {
                   type="radio"
                   name="medio"
                   checked={cobroMedio === 'CASH'}
-                  onChange={() => setCobroMedio('CASH')}
+                  onChange={() => chooseMedio('CASH')}
                 />
                 Efectivo (suma al cierre)
               </label>
@@ -764,12 +843,60 @@ function CajaInner() {
                 <input
                   type="radio"
                   name="medio"
+                  checked={cobroMedio === 'TRANSFER'}
+                  onChange={() => chooseMedio('TRANSFER')}
+                />
+                Transferencia (ya acreditada)
+              </label>
+              <label>
+                <input
+                  type="radio"
+                  name="medio"
                   checked={cobroMedio === 'MP'}
-                  onChange={() => setCobroMedio('MP')}
+                  onChange={() => chooseMedio('MP')}
                 />
                 Mercado Pago (link único)
               </label>
             </fieldset>
+
+            {isCounter && !trialApplied ? (
+              <label>
+                Descuento (%)
+                <input
+                  type="number"
+                  min={0}
+                  max={99}
+                  step={0.01}
+                  value={discountInput}
+                  onChange={(e) => setDiscountInput(e.target.value)}
+                />
+              </label>
+            ) : null}
+            {discountActive && cart.length > 0 ? (
+              <p className="muted small">
+                Lista {formatMoney(total)} − {discountInput} % = {formatMoney(chargeTotal)}.
+                El default sale de Config; 0 = precio de lista.
+              </p>
+            ) : null}
+
+            {cobroMedio === 'TRANSFER' ? (
+              <>
+                <label>
+                  Referencia (opcional)
+                  <input
+                    value={transferReference}
+                    onChange={(e) => setTransferReference(e.target.value)}
+                    maxLength={120}
+                    placeholder="Nº de operación o quién transfirió"
+                  />
+                </label>
+                <p className="muted small">
+                  Registrá solo transferencias que ya viste acreditadas en la
+                  cuenta del gym. No suma al efectivo del cierre: va en
+                  «digital».
+                </p>
+              </>
+            ) : null}
 
             {isPlatform && billingTenantId && cobroMedio === 'CASH' ? (
               <fieldset className="mode-toggle">
@@ -842,7 +969,9 @@ function CajaInner() {
             {cashTransactionId ? (
               <div className="cart-line">
                 <div>
-                  <p className="cart-name">Cobro en efectivo</p>
+                  <p className="cart-name">
+                    {counterDoneLabel || 'Cobro en efectivo'}
+                  </p>
                   <p className="muted small">Comprobante listo</p>
                 </div>
                 <div className="row-actions">
@@ -917,7 +1046,7 @@ function CajaInner() {
                     ? 'Generar link de débito'
                     : cobroMedio === 'MP'
                       ? 'Generar link MP'
-                      : `Cobrar en efectivo${cart.length > 1 ? ` (${cart.length})` : ''}`}
+                      : `${cobroMedio === 'TRANSFER' ? 'Registrar transferencia' : 'Cobrar en efectivo'}${cart.length > 0 ? ` ${formatMoney(chargeTotal)}` : ''}`}
               </button>
             </div>
           </form>

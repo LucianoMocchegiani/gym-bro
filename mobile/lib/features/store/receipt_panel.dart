@@ -61,6 +61,7 @@ String _methodLabel(String method) {
   return switch (method) {
     'CASH' => 'Efectivo',
     'MP' => 'Mercado Pago',
+    'TRANSFER' => 'Transferencia',
     'STUB' => 'Stub',
     _ => method,
   };

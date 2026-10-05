@@ -1,4 +1,12 @@
-import { IsBoolean, IsIn, IsInt, IsOptional, Max, Min } from 'class-validator';
+import {
+  IsBoolean,
+  IsIn,
+  IsInt,
+  IsNumber,
+  IsOptional,
+  Max,
+  Min,
+} from 'class-validator';
 
 /**
  * Actualización parcial de configuración del gym.
@@ -44,4 +52,18 @@ export class UpdateTenantSettingsDto {
   @IsOptional()
   @IsIn(['KUATIA', 'ZKTECO'])
   accessProvider?: 'KUATIA' | 'ZKTECO';
+
+  /** Descuento por defecto en Caja al cobrar en efectivo, en % (RN-PAG-020). */
+  @IsOptional()
+  @IsNumber({ maxDecimalPlaces: 2 })
+  @Min(0)
+  @Max(99)
+  cashDiscountPercent?: number;
+
+  /** Descuento por defecto en Caja al cobrar por transferencia, en %. */
+  @IsOptional()
+  @IsNumber({ maxDecimalPlaces: 2 })
+  @Min(0)
+  @Max(99)
+  transferDiscountPercent?: number;
 }

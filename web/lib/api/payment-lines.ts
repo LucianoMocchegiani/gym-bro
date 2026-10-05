@@ -12,6 +12,10 @@ export type PaymentLineDetail = {
   kind: 'PACK' | 'DROP_IN';
   title: string;
   amount: number;
+  /** Precio de lista si hubo descuento en Caja; null/ausente = sin descuento. */
+  listAmount?: number | null;
+  /** Descuento aplicado en %; null/ausente = sin descuento. */
+  discountPercent?: number | null;
   /** Ausente en payloads viejos: se trata como cobrado. */
   status?: 'PENDING' | 'APPROVED' | 'REJECTED' | 'REFUNDED';
   outcome: 'CONTRACT' | 'RESERVATION' | null;

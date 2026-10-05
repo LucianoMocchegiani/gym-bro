@@ -14,6 +14,8 @@ Pantalla Admin: **Packs** (`/dashboard/packs`). Los servicios del catálogo est�
 
 Un pack ya vendido no se borra: se da de baja.
 
+**Al poner precios:** lo que se cobra por Mercado Pago paga comisión de MP (con la plata disponible al instante, 6,29 % + IVA ≈ **7,6 % final**; depende del plazo y la provincia). En efectivo o transferencia no hay esa comisión. Conviene que el precio del pack ya la tenga en cuenta: el precio del catálogo es el que paga quien usa MP, y en Caja se le descuenta automáticamente a quien paga en efectivo o transferencia (por defecto 7,6 %, se cambia en **Config → Operación**; detalle en topic `caja`). Tarifas, plazos y links oficiales: topic `mercadopago`.
+
 El asistente lista packs y precios, y puede **proponer** crear o editar servicios y packs (se hace solo si tocás Confirmar). No borra. Kuatia (credenciales) se configura en el pack, no por chat.
 
 Si no ves Packs/Servicios, falta permiso de catálogo.

@@ -37,18 +37,18 @@
 **Precondiciones:** Afiliado y concepto identificados; monto conocido.
 
 **Flujo principal:**
-1. Staff registra cobro (efectivo u otro medio presencial habilitado).
-2. Sistema crea Pago `aprobado` (presencial) con idempotencyKey.
+1. Staff registra cobro: **efectivo** o **transferencia** (ya acreditada; referencia opcional). Caja precarga el descuento por defecto del gym para ese medio y el staff lo puede cambiar (RN-PAG-020); el total con descuento se ve antes de cobrar.
+2. Sistema calcula el monto (precio de lista − descuento por ítem, redondeado al peso) y crea Pago `aprobado` (presencial) con idempotencyKey. Si el % difiere del default, lo audita.
 3. Crea MovimientoCaja del día.
 4. Confirma Contratacion/Reserva según concepto.
 5. **Un comprobante** por Transaction (total del cart) con líneas (pack → contrato/vigencia + servicios del pack; drop-in → reserva/horario). Staff lo ve en Caja (panel + “Ver comprobante”), igual que tras un cobro MP aprobado. + E1.
 6. Auditoría.
 
-**Errores:** Sin permiso → denegado.
+**Errores:** Sin permiso → denegado. Descuento fuera de 0–99 % → 400. Referencia con efectivo → 400.
 
-**Caja de plataforma (`admin`):** el «afiliado» es un gym (picker) y el concepto, un pack Faciliter. Cobro (efectivo o MP con la cuenta de `admin`), caja y comprobante quedan en `admin`; el gym recibe solo el contrato TENANT y el aviso «plan pagado» al dueño (RN-PAG-019).
+**Caja de plataforma (`admin`):** el «afiliado» es un gym (picker) y el concepto, un pack Faciliter. Cobro (efectivo, transferencia o MP con la cuenta de `admin`; descuento con el default de Config de `admin`), caja y comprobante quedan en `admin`; el gym recibe solo el contrato TENANT y el aviso «plan pagado» al dueño (RN-PAG-019).
 
-**Reglas relacionadas:** RN-PAG-007, RN-PAG-008, RN-PAG-004, RN-PAG-019
+**Reglas relacionadas:** RN-PAG-007, RN-PAG-008, RN-PAG-004, RN-PAG-019, RN-PAG-020
 
 ---
 

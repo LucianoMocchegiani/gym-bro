@@ -17,7 +17,7 @@ export type ReservationDetail = {
   creditBalanceId: string | null;
   transactionItemId: string | null;
   transactionItemAmount: number | null;
-  transactionItemMethod: 'STUB' | 'CASH' | 'MP' | null;
+  transactionItemMethod: 'STUB' | 'CASH' | 'MP' | 'TRANSFER' | null;
   status: 'CONFIRMED' | 'CANCELLED';
   coverage: 'CREDIT' | 'DROP_IN';
   createdAt: Date;

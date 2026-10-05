@@ -290,7 +290,8 @@ export class PaymentRegisterService {
   }
 
   /**
-   * Lo que no pasa por la gaveta: cobros y devoluciones MP y gastos por
+   * Lo que no pasa por la gaveta: cobros y devoluciones MP o por
+   * transferencia, y gastos por
    * transferencia, MP o tarjeta. Informativo; no entra al arqueo.
    */
   private digitalTotals(

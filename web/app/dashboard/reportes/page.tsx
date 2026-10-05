@@ -142,12 +142,18 @@ function ReportesInner() {
               {formatMoney(data.income.totalApproved)}
             </p>
             <p className="muted small">
-              Caja {formatMoney(data.income.byMethod.CASH)} · MP{' '}
+              Efectivo {formatMoney(data.income.byMethod.CASH)} · Transf.{' '}
+              {formatMoney(data.income.byMethod.TRANSFER ?? 0)} · MP{' '}
               {formatMoney(data.income.byMethod.MP)}
               {totalRefunded > 0
                 ? ` · Dev. ${formatMoney(totalRefunded)}`
                 : ''}
             </p>
+            {data.income.totalDiscounts ? (
+              <p className="muted small">
+                Descuentos en Caja {formatMoney(data.income.totalDiscounts)}
+              </p>
+            ) : null}
           </Panel>
         </div>
       ) : null}

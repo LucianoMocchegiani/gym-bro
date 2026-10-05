@@ -38,7 +38,7 @@ export class ReceiptsService {
   /**
    * Emite comprobante para un pago APPROVED (idempotente por transactionItemId o transactionId).
    *
-   * @remarks Cobros actuales (CASH y MP) usan `transactionId` (1 comprobante por cart).
+   * @remarks Cobros actuales (CASH, TRANSFER y MP) usan `transactionId` (1 comprobante por cart).
    * `transactionItemId` queda para comprobantes legacy.
    */
   async issueForApprovedPayment(
@@ -336,6 +336,28 @@ export class ReceiptsService {
           })
         : [];
 
+    const txIds = [
+      ...new Set(
+        rows
+          .map((r) => r.transactionId)
+          .filter((id): id is string => Boolean(id)),
+      ),
+    ];
+    const references =
+      txIds.length > 0
+        ? await this.prisma.transaction.findMany({
+            where: {
+              tenantId,
+              id: { in: txIds },
+              transferReference: { not: null },
+            },
+            select: { id: true, transferReference: true },
+          })
+        : [];
+    const referenceByTx = new Map(
+      references.map((t) => [t.id, t.transferReference]),
+    );
+
     const byTx = new Map<string, PaymentLineDetail[]>();
     const byItem = new Map<string, PaymentLineDetail>();
     for (const item of items) {
@@ -384,6 +406,9 @@ export class ReceiptsService {
         method: row.method,
         concept: row.concept,
         description: row.description,
+        transferReference: row.transactionId
+          ? (referenceByTx.get(row.transactionId) ?? null)
+          : null,
         createdAt: row.createdAt,
         lines,
       };

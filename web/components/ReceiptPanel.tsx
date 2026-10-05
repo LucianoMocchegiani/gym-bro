@@ -14,11 +14,32 @@ export function formatReceiptMethod(method: ReceiptDetail['method']): string {
       return 'Efectivo';
     case 'MP':
       return 'Mercado Pago';
+    case 'TRANSFER':
+      return 'Transferencia';
     case 'STUB':
       return 'Stub';
     default:
       return method;
   }
+}
+
+export function formatDiscountPercent(percent: number): string {
+  return `${percent.toLocaleString('es-AR', { maximumFractionDigits: 2 })} %`;
+}
+
+function LineAmount({ line }: { line: PaymentLineDetail }) {
+  if (!line.listAmount || !line.discountPercent) {
+    return <p>{formatMoney(line.amount)}</p>;
+  }
+  return (
+    <p>
+      <span className="muted small">
+        <s>{formatMoney(line.listAmount)}</s> −
+        {formatDiscountPercent(line.discountPercent)}
+      </span>{' '}
+      {formatMoney(line.amount)}
+    </p>
+  );
 }
 
 type ReceiptPanelProps = {
@@ -66,6 +87,12 @@ export function ReceiptPanel({
           <dt>Medio</dt>
           <dd>{formatReceiptMethod(receipt.method)}</dd>
         </div>
+        {receipt.transferReference ? (
+          <div>
+            <dt>Referencia</dt>
+            <dd>{receipt.transferReference}</dd>
+          </div>
+        ) : null}
         <div>
           <dt>Emitido</dt>
           <dd>
@@ -88,7 +115,7 @@ export function ReceiptPanel({
               ) : (
                 <PaymentLineCopy line={line} />
               )}
-              <p>{formatMoney(line.amount)}</p>
+              <LineAmount line={line} />
             </li>
           ))}
         </ul>

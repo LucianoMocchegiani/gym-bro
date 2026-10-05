@@ -2,6 +2,7 @@
  * Reservations API (módulo `reservations`).
  */
 
+import type { CounterChargeOptions } from '@/lib/api/cash-discount';
 import { apiRequest, newIdempotencyKey } from '@/lib/api/client';
 import { toSearchParams } from '@/lib/api/list';
 import type { ListParams, ListResult } from '@/lib/api/list';
@@ -25,7 +26,7 @@ export type ReservationDetail = {
   creditBalanceId: string | null;
   transactionItemId: string | null;
   transactionItemAmount: number | null;
-  transactionItemMethod: 'STUB' | 'CASH' | 'MP' | null;
+  transactionItemMethod: 'STUB' | 'CASH' | 'MP' | 'TRANSFER' | null;
   status: ReservationStatus;
   coverage: ReservationCoverage;
   createdAt: string;
@@ -100,19 +101,20 @@ export type CashCartResult = {
 };
 
 /**
- * Checkout CASH de carrito (múltiples drop-ins en una sola transacción).
- * Por ahora solo DROP_IN (packs en otra PR).
+ * Cobro presencial de carrito (efectivo o transferencia) en una sola
+ * transacción: packs y drop-ins, con el descuento de la venta.
  */
 export function startCashCart(
   memberId: string,
   items: CashCartItem[],
   idempotencyKey: string = newIdempotencyKey('cash-cart'),
+  charge?: CounterChargeOptions,
 ): Promise<CashCartResult> {
   return apiRequest<CashCartResult>(
     `/members/${memberId}/transaction-items/cash/cart`,
     {
       method: 'POST',
-      body: { items, idempotencyKey },
+      body: { items, idempotencyKey, ...charge },
     },
   );
 }

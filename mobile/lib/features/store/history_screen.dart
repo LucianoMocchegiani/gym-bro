@@ -216,6 +216,7 @@ class _ReceiptRow extends StatelessWidget {
   String get _methodLabel => switch (receipt.method) {
         'CASH' => 'Efectivo',
         'MP' => 'Mercado Pago',
+        'TRANSFER' => 'Transferencia',
         'STUB' => 'Stub',
         _ => receipt.method,
       };

@@ -17,7 +17,7 @@ export type ContractTransactionItemDetail = {
   id: string;
   amount: number;
   status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'REFUNDED';
-  method: 'STUB' | 'CASH' | 'MP';
+  method: 'STUB' | 'CASH' | 'MP' | 'TRANSFER';
   idempotencyKey: string;
 };
 

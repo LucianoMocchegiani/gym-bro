@@ -28,9 +28,13 @@ export type ReportsSummary = {
   income: {
     totalApproved: number;
     totalRefunded: number;
+    /** Descuentos otorgados en Caja (lista − cobrado). Ausente en APIs viejas. */
+    totalDiscounts?: number;
     byMethod: {
       CASH: number;
       MP: number;
+      /** Ausente en APIs viejas. */
+      TRANSFER?: number;
     };
     transactions: ReportTransactionRow[];
     transactionCount: number;

@@ -4112,7 +4112,7 @@
         },
         {
             "name": "Tenant settings",
-            "description": "RN-TEN-004/005/006/007 + RN-RES-006. Staff GET|PATCH /tenant-settings. Incluye debtToleranceDays, multiEntryEnabled, multiEntryMaxPerDay, allowLateSessionEntry.",
+            "description": "RN-TEN-004/005/006/007 + RN-RES-006 + RN-PAG-020. Staff GET|PATCH /tenant-settings. Incluye debtToleranceDays, multiEntryEnabled, multiEntryMaxPerDay, allowLateSessionEntry, cashDiscountPercent y transferDiscountPercent (0–99, default 7.6).",
             "item": [
                 {
                     "name": "Staff GET tenant settings",
@@ -4148,7 +4148,7 @@
                         ],
                         "body": {
                             "mode": "raw",
-                            "raw": "{\n  \"reservationCancellationHours\": 6,\n  \"waitlistMode\": \"AUTO_ASSIGN\",\n  \"allowLateSessionEntry\": false,\n  \"debtToleranceDays\": 15,\n  \"multiEntryEnabled\": false,\n  \"multiEntryMaxPerDay\": 1\n}"
+                            "raw": "{\n  \"reservationCancellationHours\": 6,\n  \"waitlistMode\": \"AUTO_ASSIGN\",\n  \"allowLateSessionEntry\": false,\n  \"debtToleranceDays\": 15,\n  \"multiEntryEnabled\": false,\n  \"multiEntryMaxPerDay\": 1,\n  \"cashDiscountPercent\": 7.6,\n  \"transferDiscountPercent\": 7.6\n}"
                         },
                         "url": "{{baseUrl}}/api/tenant-settings"
                     }
@@ -4686,6 +4686,15 @@
                     }
                 },
                 {
+                    "name": "Staff GET cash discount defaults",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": "{{baseUrl}}/api/cash/discount-defaults",
+                        "description": "JWT Staff (sin permiso extra). Defaults que Caja precarga: { cashDiscountPercent, transferDiscountPercent } (RN-PAG-020). Member -> 403."
+                    }
+                },
+                {
                     "name": "Staff POST CASH cart checkout",
                     "request": {
                         "method": "POST",
@@ -4698,9 +4707,9 @@
                         "url": "{{baseUrl}}/api/members/{{createdMemberId}}/transaction-items/cash/cart",
                         "body": {
                             "mode": "raw",
-                            "raw": "{\n  \"items\": [\n    {\n      \"kind\": \"PACK\",\n      \"id\": \"{{createdPackId}}\"\n    },\n    {\n      \"kind\": \"DROP_IN\",\n      \"id\": \"{{createdSessionId}}\"\n    }\n  ],\n  \"idempotencyKey\": \"cash-cart-{{$timestamp}}\"\n}"
+                            "raw": "{\n  \"items\": [\n    {\n      \"kind\": \"PACK\",\n      \"id\": \"{{createdPackId}}\"\n    },\n    {\n      \"kind\": \"DROP_IN\",\n      \"id\": \"{{createdSessionId}}\"\n    }\n  ],\n  \"idempotencyKey\": \"cash-cart-{{$timestamp}}\",\n  \"method\": \"CASH\",\n  \"discountPercent\": 7.6\n}"
                         },
-                        "description": "members.write. Caja efectivo: items[] PACK y/o DROP_IN → APPROVED inmediato + comprobante. Pack activo + sesión publicada con dropInPrice. idempotencyKey mín. 8."
+                        "description": "members.write. Caja presencial: items[] PACK y/o DROP_IN → APPROVED inmediato + comprobante. Pack activo + sesión publicada con dropInPrice. idempotencyKey mín. 8. RN-PAG-020: method CASH|TRANSFER (default CASH), discountPercent 0–99 (sin valor = precio de lista), transferReference opcional solo con TRANSFER. Cada ítem guarda listAmount y discountPercent; si el % difiere del default del gym, auditoría payment.discount_override."
                     },
                     "event": [
                         {
@@ -4734,7 +4743,7 @@
                             "mode": "raw",
                             "raw": "{\n  \"items\": [\n    {\n      \"kind\": \"PACK\",\n      \"id\": \"{{createdPackId}}\"\n    }\n  ],\n  \"idempotencyKey\": \"platform-cash-cart-{{$timestamp}}\",\n  \"applyTrial\": false\n}"
                         },
-                        "description": "Caja de plataforma (Caja del tenant `admin`). Requiere JWT Staff del tenant `admin` + `platform.tenants.write`. Solo PACK. `applyTrial: true` = 30 días $0 si el gym y el dueño no usaron la prueba (RN-PAG-017); crea Contract TENANT. Sin prueba: cobro + contrato TENANT. `{{billingTenantId}}` = gym que paga (NO admin). Pack del tenant admin. Transaccion, caja y comprobante quedan en admin (billedTenantId = gym); el gym solo recibe el contrato TENANT (RN-PAG-019)."
+                        "description": "Caja de plataforma (Caja del tenant `admin`). Requiere JWT Staff del tenant `admin` + `platform.tenants.write`. Solo PACK. `applyTrial: true` = 30 días $0 si el gym y el dueño no usaron la prueba (RN-PAG-017); crea Contract TENANT. Sin prueba: cobro + contrato TENANT. `{{billingTenantId}}` = gym que paga (NO admin). Pack del tenant admin. Transaccion, caja y comprobante quedan en admin (billedTenantId = gym); el gym solo recibe el contrato TENANT (RN-PAG-019). Acepta method, discountPercent y transferReference como el cobro de Caja del gym (RN-PAG-020); con applyTrial no se manda descuento."
                     },
                     "event": [
                         {

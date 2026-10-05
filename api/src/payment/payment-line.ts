@@ -40,6 +40,8 @@ export type PaymentLineService = {
 export type PaymentLineSource = {
   id: string;
   amount: number;
+  listAmount: number | null;
+  discountBps: number;
   status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'REFUNDED';
   sessionId: string | null;
   pack: {
@@ -67,6 +69,10 @@ export type PaymentLineDetail = {
   kind: 'PACK' | 'DROP_IN';
   title: string;
   amount: number;
+  /** Precio de lista si hubo descuento (RN-PAG-020); null = se cobró el de lista. */
+  listAmount: number | null;
+  /** Descuento aplicado en %; null = sin descuento. */
+  discountPercent: number | null;
   status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'REFUNDED';
   outcome: 'CONTRACT' | 'RESERVATION' | null;
   contract: { startsAt: Date; endsAt: Date | null } | null;
@@ -97,6 +103,8 @@ export function toPaymentLine(item: PaymentLineSource): PaymentLineDetail {
     kind: isDropIn ? 'DROP_IN' : 'PACK',
     title,
     amount: item.amount,
+    listAmount: item.listAmount,
+    discountPercent: item.discountBps > 0 ? item.discountBps / 100 : null,
     status: item.status,
     outcome,
     contract: item.contract

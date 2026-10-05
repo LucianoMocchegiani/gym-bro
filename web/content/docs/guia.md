@@ -198,6 +198,7 @@ Hay dos bloques en la **misma** pantalla.
 - **Permitir ingreso tardío a sesión:** si puede entrar después de empezada la clase.
 - **Tolerancia de deuda (días):** con cuántos días de atraso todavía deja entrar (en la demo: 15).
 - **Multi-ingreso por día:** si el mismo socio puede pasar más de una vez el mismo día, con un tope diario.
+- **Descuento en Caja por efectivo / por transferencia (%):** lo que Caja precarga al elegir ese medio. Por defecto 7,6 %, que es la comisión de Mercado Pago con la plata al instante (6,29 % + IVA): quien paga sin MP no te genera ese costo. Si en MP elegiste otro plazo, ajustalo; 0 = sin descuento.
 
 Guardar con **Guardar operación**.
 
@@ -208,6 +209,8 @@ La cuenta es **del negocio**. Sin esto, el socio no puede pagar desde la app ni 
 Tocá **Conectar Mercado Pago**, iniciá sesión en Mercado Pago con la cuenta **del gym** y autorizá. Volvés solo a Config con la cuenta conectada. No hace falta crear nada en MP Developers ni copiar claves.
 
 El estado muestra **Conectada con Mercado Pago**, la key **enmascarada** y el último test. Faciliter renueva la conexión solo; si alguna vez no puede, aparece **Reconectar Mercado Pago**. **Reconectar** también sirve para cambiar de cuenta. **Probar** verifica la cuenta. **Desconectar** corta los cobros online.
+
+**Comisión y plazo de la plata:** Mercado Pago cobra una comisión por cada cobro, más alta cuanto antes quieras la plata disponible (con Checkout, 6,29% + IVA al instante, ≈ 7,6% final, y 1,49% + IVA a 35 días; varía por provincia). Tenelo en cuenta al poner precios. Si necesitás la plata en el momento, elegí el plazo **al instante** en tu cuenta de Mercado Pago, en [Costos y cuotas](https://www.mercadopago.com.ar/costs-section). Más detalle en la [ayuda de Mercado Pago](https://www.mercadopago.com.ar/ayuda/19032).
 
 **Conexión manual (avanzado)** queda plegada abajo: pegar access token y public key de una app MP propia. Usala solo si te lo pide soporte.
 
@@ -455,8 +458,11 @@ Hay **dos caminos** (web o app) para lo mismo: un pack o una sesión suelta.
 2. En **Catálogo** elegís pestaña **Packs** o **Servicios** (clases sueltas de los próximos días) y sumás al carrito con +.
 3. Elegís el medio:
    - **Efectivo:** **Cobrar en efectivo**. Suma al cierre del día y queda el comprobante.
+   - **Transferencia:** solo cuando ya viste la plata acreditada en la cuenta del gym (Faciliter no la verifica). **Referencia** opcional (nº de operación o quién transfirió), sale en el comprobante. **Registrar transferencia**. No suma al efectivo del cierre: va en «digital».
    - **Mercado Pago:** **Generar link MP**. Aparece un QR y el link (**Copiar**, **Abrir**): el socio paga desde su celular y la pantalla pasa sola a **Aprobado**. Un solo link por todo el carrito.
 4. Si cobraste un pack, queda activo. Si cobraste una clase suelta, queda la reserva.
+
+**Descuento por pagar sin Mercado Pago:** con Efectivo o Transferencia aparece **Descuento (%)**, precargado con el de Config → Operación (7,6 % si no lo cambiaste: lo que cobra MP con la plata al instante). Lo podés cambiar o poner 0 en esa venta; el botón muestra el total con descuento. Se aplica a cada ítem, redondeado al peso. Si cambiás el %, queda registrado en Auditoría. El comprobante muestra el precio de lista tachado y el %.
 
 **Débito automático:** con Mercado Pago y **un** pack mensual en el carrito podés tildar «Autorizar cobro mensual de este pack». En vez de un pago suelto se genera un **link de débito**: el socio lo abre, autoriza con su tarjeta en Mercado Pago y queda suscripto. Faciliter no ve ni guarda la tarjeta. El seguimiento está en la pestaña **Débitos** (Módulos → Caja).
 

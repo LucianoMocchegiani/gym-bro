@@ -49,7 +49,7 @@ export function registerHelpTools(server: McpServer): void {
     {
       title: 'Ayuda Faciliter',
       description:
-        'Artículo de cómo funciona Faciliter (español). topic: producto, guia, afiliados, migracion (importar socios desde Excel/CSV + zip de fotos y carpeta, contraseña temporal ChangeMe123!; aliases importar, importacion, migrar, excel, planilla), packs, sesiones, puerta (QR con la app; ZKTeco opcional, se coordina con técnicos; aliases zkteco, molinete, acceso), caja, vencimientos, debito, mercadopago (MP completo; alias mp), carpeta (notas y PDF/imagen de socio y staff; aliases documentos, folder, rutina, rutinas), devoluciones, gastos (egresos del gym, etiquetas, comprobantes, efectivo resta en el Cierre; alias egresos), reportes, roles, avisos (plantillas del gym y bandeja del socio, sin push; aliases notificaciones, mails, bandeja), app (recorrido de la app del socio y staff; aliases aplicacion, celular), cuenta (cuenta Faciliter, login, contraseña, Tus gyms, Mi cuenta, eliminar cuenta; aliases login, contraseña, password, eliminar), plan (contratar Faciliter, /empezar, prueba, Plan / Uso, renovación, gracia; aliases contratar, suscripcion, empezar, precio, precios), chat, soporte. Sin topic lista los temas. Error/bug/humano → soporte. Pantallas → guia. MP → mercadopago y el artículo entero. Carpeta / rutina como archivo / documentos del socio → carpeta y explicá panel (ícono), etiquetas del gym, app Inicio → Documentos, que no hay módulo de rutinas por días. No cobra ni edita.',
+        'Artículo de cómo funciona Faciliter (español). topic: producto, guia, afiliados, migracion (importar socios desde Excel/CSV + zip de fotos y carpeta, contraseña temporal ChangeMe123!; aliases importar, importacion, migrar, excel, planilla), packs (incluye tener en cuenta la comisión de MP al poner precios), sesiones, puerta (QR con la app; ZKTeco opcional, se coordina con técnicos; aliases zkteco, molinete, acceso), caja (efectivo, transferencia, link MP y descuento por pago sin comisión, default 7,6 %; aliases transferencia, descuento), vencimientos, debito, mercadopago (MP completo, comisiones por plazo y cómo poner la plata al instante con links oficiales; aliases mp, comision), carpeta (notas y PDF/imagen de socio y staff; aliases documentos, folder, rutina, rutinas), devoluciones, gastos (egresos del gym, etiquetas, comprobantes, efectivo resta en el Cierre; alias egresos), reportes, roles, avisos (plantillas del gym y bandeja del socio, sin push; aliases notificaciones, mails, bandeja), app (recorrido de la app del socio y staff; aliases aplicacion, celular), cuenta (cuenta Faciliter, login, contraseña, Tus gyms, Mi cuenta, eliminar cuenta; aliases login, contraseña, password, eliminar), plan (contratar Faciliter, /empezar, prueba, Plan / Uso, renovación, gracia; aliases contratar, suscripcion, empezar, precio, precios), chat, soporte. Sin topic lista los temas. Error/bug/humano → soporte. Pantallas → guia. MP → mercadopago y el artículo entero. Carpeta / rutina como archivo / documentos del socio → carpeta y explicá panel (ícono), etiquetas del gym, app Inicio → Documentos, que no hay módulo de rutinas por días. No cobra ni edita.',
       inputSchema: {
         topic: z
           .string()
@@ -62,6 +62,11 @@ export function registerHelpTools(server: McpServer): void {
       const key = topic?.trim().toLowerCase();
       const aliases: Record<string, HelpTopic> = {
         mp: 'mercadopago',
+        comision: 'mercadopago',
+        comisiones: 'mercadopago',
+        transferencia: 'caja',
+        descuento: 'caja',
+        descuentos: 'caja',
         documentos: 'carpeta',
         folder: 'carpeta',
         rutina: 'carpeta',

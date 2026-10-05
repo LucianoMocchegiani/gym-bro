@@ -254,9 +254,9 @@ export class ContractsService {
         'Use POST /me/transaction-items/mp/cart (or Staff /members/:id/...) for Mercado Pago pack purchases',
       );
     }
-    if (method === PaymentMethod.CASH) {
+    if (method === PaymentMethod.CASH || method === PaymentMethod.TRANSFER) {
       throw new BadRequestException(
-        'Use POST /members/:id/transaction-items/cash/cart for CASH pack purchases',
+        'Use POST /members/:id/transaction-items/cash/cart for CASH or TRANSFER pack purchases',
       );
     }
 

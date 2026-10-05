@@ -51,7 +51,7 @@ export type MemberAccountTransactionItem = {
   id: string;
   amount: number;
   status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'REFUNDED';
-  method: 'STUB' | 'CASH' | 'MP';
+  method: 'STUB' | 'CASH' | 'MP' | 'TRANSFER';
   packId: string | null;
   createdAt: Date;
 };

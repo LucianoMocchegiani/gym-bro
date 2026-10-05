@@ -88,7 +88,7 @@ export class ReportsService {
         select: {
           amount: true,
           kind: true,
-          transactionItem: { select: { method: true } },
+          transactionItem: { select: { method: true, listAmount: true } },
         },
       }),
       this.prisma.cashMovement.findMany({
@@ -99,19 +99,25 @@ export class ReportsService {
       }),
     ]);
 
-    const byMethod = { CASH: 0, MP: 0 };
+    const byMethod = { CASH: 0, MP: 0, TRANSFER: 0 };
     let totalApproved = 0;
     let totalRefunded = 0;
+    let totalDiscounts = 0;
     for (const p of totalsRows) {
       if (p.kind === CashMovementKind.OUTCOME) {
         totalRefunded += p.amount;
         continue;
       }
       totalApproved += p.amount;
+      if (p.transactionItem.listAmount !== null) {
+        totalDiscounts += p.transactionItem.listAmount - p.amount;
+      }
       if (p.transactionItem.method === PaymentMethod.CASH) {
         byMethod.CASH += p.amount;
       } else if (p.transactionItem.method === PaymentMethod.MP) {
         byMethod.MP += p.amount;
+      } else if (p.transactionItem.method === PaymentMethod.TRANSFER) {
+        byMethod.TRANSFER += p.amount;
       }
     }
 
@@ -136,6 +142,7 @@ export class ReportsService {
       income: {
         totalApproved,
         totalRefunded,
+        totalDiscounts,
         byMethod,
         transactions,
         transactionCount: transactions.length,

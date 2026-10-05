@@ -23,7 +23,7 @@ export type RefundExecutionDetail = {
   transactionItemId: string;
   transactionItemIds: string[];
   status: 'REFUNDED';
-  method: 'STUB' | 'CASH' | 'MP';
+  method: 'STUB' | 'CASH' | 'MP' | 'TRANSFER';
   amount: number;
   reason: string;
   motiveCode: string | null;
@@ -42,7 +42,7 @@ export type RefundBatchExecutionDetail = {
   transactionId: string;
   transactionItemIds: string[];
   status: 'REFUNDED';
-  method: 'STUB' | 'CASH' | 'MP';
+  method: 'STUB' | 'CASH' | 'MP' | 'TRANSFER';
   amount: number;
   reason: string;
   motiveCode: string | null;
