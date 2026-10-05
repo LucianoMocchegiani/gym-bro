@@ -16,6 +16,7 @@ La creación de registros sigue la skill:
 
 ## Índice
 
+- [2026-10-04 - Transferencia y descuento por pago sin comisión en Caja](./2026-10-04-caja-transferencia-descuento.md)
 - [2026-10-04 - Estado en Mercado Pago de cada cobro](./2026-10-04-estado-cobro-mercado-pago.md)
 - [2026-10-04 - Ventas de planes Faciliter en admin](./2026-10-04-ventas-plan-faciliter-admin.md)
 - [2026-10-04 - Renovación del plan Faciliter con cada cobro de la suscripción](./2026-10-04-renovacion-plan-faciliter.md)
