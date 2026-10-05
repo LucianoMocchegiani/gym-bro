@@ -308,6 +308,8 @@ Staff POST /members/:id/transaction-items/mp/cart   (mismo body; members.write)
 
 Env: `MP_CHECKOUT_MODE=stub|live`, `PUBLIC_API_BASE_URL` (notification_url).
 
+Estado del dinero: `GET /transactions/:id/mp-payment` (`members.read`, `MpPaymentStatusService`) lee en el momento `GET /v1/payments/{id}` con el token del tenant dueño del cobro, sin persistir: estado, comisiones (`fee_details`), neto (`transaction_details.net_received_amount`), liberación (`money_release_date` / `money_release_status`) y `collector_id` comparado con `mercadopago_accounts.mp_user_id`. Si cobró otra cuenta, la venta no cambia: el detalle lo avisa. No se consulta desde un gym un plan Faciliter viejo cobrado ahí (lo cobró `admin`).
+
 `returnToWeb: true` (web del gym): la Preference lleva `back_urls` armadas en el servidor hacia `{slug}.<PUBLIC_WEB_BASE_URL>/portal?compra={transactionId}` (`auto_return=approved` solo con https). La app no lo manda. Las URLs web del tenant salen de `api/src/common/web-urls.ts` (también el retorno del OAuth MP y del débito).
 
 Ítems de la Preference (`title` / `description`): mismo criterio que el comprobante interno (pack = nombre + servicios/créditos; drop-in = servicio · sede · horario). El modal de MP lista sobre todo `title`.

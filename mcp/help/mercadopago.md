@@ -44,6 +44,7 @@ Escondida en Config (**Conexión manual (avanzado)**). Solo si lo pide soporte o
 - Autorizó con la cuenta equivocada: **Reconectar** con la del gym.
 - Aparece «Reconectar»: se quitó el permiso desde MP o el token venció. Reconectar.
 - Manual: token de **test** en un gym live, o webhook con el UUID de **admin** / de otro local.
+- «Faciliter dice aprobado pero no lo veo en la app de MP»: en Cierre, Reportes o el comprobante, **Estado en Mercado Pago** consulta el pago en MP y muestra comisiones, cuánto queda, cuándo se libera la plata y si lo cobró la cuenta conectada. Aprobado no siempre es disponible: MP libera según los plazos de la cuenta. Si dice «Otra cuenta de Mercado Pago», se conectó otra cuenta: **Reconectar** con la del gym.
 
 ## Anexo: tenant plataforma (`admin`)
 

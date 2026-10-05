@@ -2,6 +2,7 @@ import {
   Body,
   Controller,
   ForbiddenException,
+  Get,
   HttpCode,
   HttpStatus,
   Param,
@@ -22,7 +23,12 @@ import { OnlinePaymentService } from './online-payment.service';
 import { CashPaymentService } from './cash-payment.service';
 import { CreateMpCartCheckoutDto } from './dto/create-mp-cart-checkout.dto';
 import { CreateCashCartDto } from './dto/create-cash-cart.dto';
-import { CashCartResult, MpCartCheckoutResult } from './payment.types';
+import { MpPaymentStatusService } from './mp-payment-status.service';
+import {
+  CashCartResult,
+  MpCartCheckoutResult,
+  MpPaymentStatusView,
+} from './payment.types';
 
 /**
  * Checkout de pagos: cart MP (Caja y afiliado) y cart CASH (solo Caja).
@@ -35,6 +41,7 @@ export class PaymentController {
   constructor(
     private readonly onlinePayment: OnlinePaymentService,
     private readonly cashPayment: CashPaymentService,
+    private readonly mpPaymentStatus: MpPaymentStatusService,
   ) {}
 
   /**
@@ -144,5 +151,18 @@ export class PaymentController {
       toAuditActor(user),
       dto,
     );
+  }
+
+  /**
+   * Estado del cobro en Mercado Pago (neto, comisiones, liberación y cuenta
+   * que cobró), consultado en el momento.
+   */
+  @Get('transactions/:transactionId/mp-payment')
+  @RequirePermission('members.read')
+  getMpPaymentStatus(
+    @CurrentTenant() tenantId: string,
+    @Param('transactionId', ParseUUIDPipe) transactionId: string,
+  ): Promise<MpPaymentStatusView> {
+    return this.mpPaymentStatus.getForTransaction(tenantId, transactionId);
   }
 }

@@ -7,7 +7,13 @@ import { PaymentLineCopy } from '@/components/PaymentLineCopy';
 import { ReceiptPanel } from '@/components/ReceiptPanel';
 import { RefundExecuteModal } from '@/components/RefundExecuteModal';
 import { StatusPill } from '@/components/StatusPill';
-import { IconReceipt, IconRefund, RowIconButton } from '@/components/RowActions';
+import { MpPaymentStatusModal } from '@/components/MpPaymentStatus';
+import {
+  IconReceipt,
+  IconRefund,
+  IconWallet,
+  RowIconButton,
+} from '@/components/RowActions';
 import { ApiClientError } from '@/lib/api/client';
 import type { LedgerMovementRow } from '@/lib/api/ledger';
 import { getReceipt, getReceiptByTransaction } from '@/lib/api/receipts';
@@ -71,6 +77,7 @@ export function MoneyMovementsTable({
   const [receiptBusyId, setReceiptBusyId] = useState<string | null>(null);
   const [receiptError, setReceiptError] = useState<string | null>(null);
   const [refundRow, setRefundRow] = useState<LedgerMovementRow | null>(null);
+  const [mpTransactionId, setMpTransactionId] = useState<string | null>(null);
 
   async function openReceipt(row: LedgerMovementRow) {
     setReceiptBusyId(row.id);
@@ -183,6 +190,17 @@ export function MoneyMovementsTable({
                   <IconRefund />
                 </RowIconButton>
               ) : null}
+              {row.kind === 'INCOME' &&
+              row.method === 'MP' &&
+              row.mpPaymentId &&
+              row.refundable !== false ? (
+                <RowIconButton
+                  label="Estado en Mercado Pago"
+                  onClick={() => setMpTransactionId(row.transactionId)}
+                >
+                  <IconWallet />
+                </RowIconButton>
+              ) : null}
               <RowIconButton
                 label="Ver comprobante"
                 disabled={!!receiptBusyId}
@@ -198,7 +216,18 @@ export function MoneyMovementsTable({
       {receiptError ? <p className="error">{receiptError}</p> : null}
 
       {receipt ? (
-        <ReceiptPanel receipt={receipt} onClose={() => setReceipt(null)} />
+        <ReceiptPanel
+          receipt={receipt}
+          onClose={() => setReceipt(null)}
+          showMpStatus
+        />
+      ) : null}
+
+      {mpTransactionId ? (
+        <MpPaymentStatusModal
+          transactionId={mpTransactionId}
+          onClose={() => setMpTransactionId(null)}
+        />
       ) : null}
 
       {refundRow ? (

@@ -4371,6 +4371,15 @@
                     }
                 },
                 {
+                    "name": "Staff GET transaction MP payment status",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": "{{baseUrl}}/api/transactions/{{mpCartId}}/mp-payment",
+                        "description": "Estado del cobro MP leido en el momento en Mercado Pago (GET /v1/payments/{id} con el token del tenant): status, fees[], feesTotal, netReceivedAmount, moneyReleaseDate/moneyReleaseStatus, released, collectorId y collectorMatches (contra la cuenta conectada; null si no se puede comparar). 400 si no es MP o MP aun no informo el pago; 502 si MP no responde. members.read."
+                    }
+                },
+                {
                     "name": "Member GET me receipts",
                     "request": {
                         "method": "GET",

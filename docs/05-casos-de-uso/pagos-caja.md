@@ -64,6 +64,8 @@
 3. Sistema calcula el efectivo esperado (cobros en efectivo − devoluciones en efectivo − gastos en efectivo del día) vs declarado → diferencia.
 4. Guarda ArqueoCaja + auditoría.
 
+**Estado en Mercado Pago:** en cada cobro MP de la grilla (y en el comprobante), el staff consulta en el momento a MP: estado, comisiones, neto, liberación de la plata («Ya disponible» / «Disponible el DD/MM») y si lo cobró la cuenta conectada. Sirve para verificar la venta sin la app de MP; no cambia el estado de la venta.
+
 **Postcondiciones:** Arqueo registrado (no bloquea cobros futuros del día). Los gastos en efectivo de ese día quedan bloqueados (RN-GAS-006).
 
 **Reglas relacionadas:** RN-PAG-007, RN-GAS-004, RN-GAS-006

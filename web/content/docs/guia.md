@@ -606,6 +606,8 @@ El arqueo cuenta solo **efectivo**: lo esperado en el cajón es cobros en efecti
 
 **Cerrar cierre** guarda el efectivo declarado y una nota, una sola vez por día. Desde la tabla de movimientos se puede **Devolver** un cobro (con permiso) y ver el comprobante.
 
+**¿Entró la plata de Mercado Pago?** En cada cobro por Mercado Pago (en Cierre, Reportes o en el comprobante) está **Estado en Mercado Pago**: consulta a Mercado Pago en el momento y muestra si el pago está aprobado, las comisiones, cuánto te queda, cuándo se libera la plata («Ya disponible» o «Disponible el DD/MM») y si lo cobró tu cuenta conectada. Un pago puede estar aprobado y la plata todavía no disponible: Mercado Pago la libera según los plazos de tu cuenta. Así lo verificás sin buscarlo en la app de Mercado Pago.
+
 **Captura:** `web-cierre-arqueo.png` — falta.  
 **Dónde:** Cierre, elegí en el selector el día de un movimiento (o cobrá algo ese día).  
 **Qué se ve:** ingresos, efectivo esperado, digital esperado y la lista de movimientos.

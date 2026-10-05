@@ -600,6 +600,7 @@ function CajaInner() {
             receipt={receipt}
             title="Comprobante emitido"
             onClose={() => setReceipt(null)}
+            showMpStatus
           />
         </div>
       ) : null}

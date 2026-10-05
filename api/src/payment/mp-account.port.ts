@@ -25,6 +25,16 @@ export type MpRemotePayment = {
   externalReference: string | null;
   preferenceId: string | null;
   transactionAmount: number | null;
+  statusDetail: string | null;
+  dateApproved: string | null;
+  /** Cuenta que cobró (`collector_id`). */
+  collectorId: string | null;
+  /** Lo que le queda al vendedor (`transaction_details.net_received_amount`). */
+  netReceivedAmount: number | null;
+  fees: Array<{ type: string; amount: number; payer: string | null }>;
+  moneyReleaseDate: string | null;
+  /** `released` cuando la plata ya está disponible; `pending` mientras no. */
+  moneyReleaseStatus: string | null;
 };
 
 /**

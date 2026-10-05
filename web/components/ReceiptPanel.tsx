@@ -1,7 +1,8 @@
 'use client';
 
-import type { ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import { AdminModal } from '@/components/AdminModal';
+import { MpPaymentStatusDetails } from '@/components/MpPaymentStatus';
 import { PaymentLineCopy } from '@/components/PaymentLineCopy';
 import type { PaymentLineDetail } from '@/lib/api/payment-lines';
 import type { ReceiptDetail } from '@/lib/api/receipts';
@@ -26,6 +27,8 @@ type ReceiptPanelProps = {
   title?: string;
   /** Acción bajo cada línea (p. ej. «Solicitar devolución» del socio). */
   lineAction?: (line: PaymentLineDetail) => ReactNode;
+  /** Staff: botón «Estado en Mercado Pago» en cobros MP. */
+  showMpStatus?: boolean;
 };
 
 /**
@@ -38,8 +41,14 @@ export function ReceiptPanel({
   onClose,
   title = 'Comprobante',
   lineAction,
+  showMpStatus = false,
 }: ReceiptPanelProps) {
   const lines = receipt.lines ?? [];
+  const [mpOpen, setMpOpen] = useState(false);
+  const mpTransactionId =
+    showMpStatus && receipt.method === 'MP' && receipt.concept !== 'REFUND'
+      ? receipt.transactionId
+      : null;
   return (
     <AdminModal open onClose={onClose} title={title} description={receipt.code}>
       <dl className="detail-dl">
@@ -85,6 +94,19 @@ export function ReceiptPanel({
         </ul>
       ) : receipt.description ? (
         <p className="muted small">{receipt.description}</p>
+      ) : null}
+      {mpTransactionId ? (
+        mpOpen ? (
+          <MpPaymentStatusDetails transactionId={mpTransactionId} />
+        ) : (
+          <button
+            type="button"
+            className="btn ghost"
+            onClick={() => setMpOpen(true)}
+          >
+            Estado en Mercado Pago
+          </button>
+        )
       ) : null}
     </AdminModal>
   );

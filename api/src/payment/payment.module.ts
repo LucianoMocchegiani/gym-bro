@@ -3,6 +3,7 @@ import { TransactionService } from './transaction.service';
 import { CashPaymentService } from './cash-payment.service';
 import { OnlinePaymentService } from './online-payment.service';
 import { WebhookPaymentService } from './webhook-payment.service';
+import { MpPaymentStatusService } from './mp-payment-status.service';
 import { AuditModule } from '../audit/audit.module';
 import { PaymentRegisterModule } from '../payment-register/payment-register.module';
 import { ReceiptsModule } from '../receipts/receipts.module';
@@ -50,6 +51,7 @@ import { MembersModule } from '../members/members.module';
     CashPaymentService,
     OnlinePaymentService,
     WebhookPaymentService,
+    MpPaymentStatusService,
     MercadoPagoAccountService,
     MercadoPagoOAuthService,
     HttpMpAccountAdapter,

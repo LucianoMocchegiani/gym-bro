@@ -107,6 +107,7 @@ Leyenda resultado: `P` pass · `F` fail · `B` bloqueado · `-` no aplica
 | P3r | Cierre de `admin`: Devolver una venta de plan | Devuelve con el MP de `admin` (o efectivo); egreso en `admin`; el contrato TENANT del gym queda devuelto | RN-PAG-019, CU-PAG-005 | |
 | P3s | Cierre de un gym con una venta de plan vieja (cobrada en el gym) | Sin botón Devolver; `POST /transactions/:id/refunds` → 403 | RN-PAG-019 | |
 | P4 | Comprobante tras pago | Visible app + email E1; en reportes y cierres, “Ver comprobante” abre el panel (pack incluye servicios) | RN-PAG-009 | |
+| P4b | Cobro MP aprobado → Cierre/Reportes o comprobante → «Estado en Mercado Pago» | Estado, comisiones, neto, «Ya disponible» o «Disponible el DD/MM» y «Tu cuenta conectada ✔»; con otra cuenta conectada, aviso «Otra cuenta de Mercado Pago» | CU-PAG-003 | |
 | P5 | Devolución afiliado dentro de política | Solicitud OK | CU-PAG-004 | |
 | P6 | Devolución afiliado fuera de política | Rechazo; admin aún puede | RN-PAG-012/011 | |
 | P7 | Admin devolución cart (parcial o todo) | Derechos de los ítems elegidos caen; un egreso + un comprobante REFUND; se puede devolver el resto después | CU-PAG-005 | |

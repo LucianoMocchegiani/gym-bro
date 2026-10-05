@@ -170,11 +170,23 @@ export class HttpMpAccountAdapter extends MpAccountPort {
       external_reference?: string;
       preference_id?: string;
       transaction_amount?: number;
+      status_detail?: string;
+      date_approved?: string | null;
+      collector_id?: number | string | null;
+      transaction_details?: { net_received_amount?: number } | null;
+      fee_details?: Array<{
+        type?: string;
+        amount?: number;
+        fee_payer?: string;
+      }> | null;
+      money_release_date?: string | null;
+      money_release_status?: string | null;
     };
     if (data.id === undefined || data.id === null || !data.status) {
       throw new Error('Mercado Pago payment response missing id/status');
     }
 
+    const net = data.transaction_details?.net_received_amount;
     return {
       id: String(data.id),
       status: data.status,
@@ -184,6 +196,22 @@ export class HttpMpAccountAdapter extends MpAccountPort {
         typeof data.transaction_amount === 'number'
           ? data.transaction_amount
           : null,
+      statusDetail: data.status_detail ?? null,
+      dateApproved: data.date_approved ?? null,
+      collectorId:
+        data.collector_id === undefined || data.collector_id === null
+          ? null
+          : String(data.collector_id),
+      netReceivedAmount: typeof net === 'number' ? net : null,
+      fees: (data.fee_details ?? [])
+        .filter((f) => typeof f.amount === 'number')
+        .map((f) => ({
+          type: f.type ?? 'fee',
+          amount: f.amount as number,
+          payer: f.fee_payer ?? null,
+        })),
+      moneyReleaseDate: data.money_release_date ?? null,
+      moneyReleaseStatus: data.money_release_status ?? null,
     };
   }
 

@@ -75,3 +75,26 @@ export type CashCartResult = {
   }>;
   receipt: ReceiptDetail | null;
 };
+
+/**
+ * Estado de un cobro según Mercado Pago, leído en el momento con el token del
+ * tenant dueño del cobro.
+ *
+ * @remarks `released` = la plata ya está disponible en la cuenta.
+ * `collectorMatches` null si no hay `mp_user_id` guardado para comparar.
+ */
+export type MpPaymentStatusView = {
+  mpPaymentId: string;
+  status: string;
+  statusDetail: string | null;
+  dateApproved: string | null;
+  amount: number | null;
+  netReceivedAmount: number | null;
+  fees: Array<{ type: string; amount: number; payer: string | null }>;
+  feesTotal: number;
+  moneyReleaseDate: string | null;
+  moneyReleaseStatus: string | null;
+  released: boolean;
+  collectorId: string | null;
+  collectorMatches: boolean | null;
+};
