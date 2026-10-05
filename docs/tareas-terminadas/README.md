@@ -16,6 +16,7 @@ La creación de registros sigue la skill:
 
 ## Índice
 
+- [2026-10-04 - Estado en Mercado Pago de cada cobro](./2026-10-04-estado-cobro-mercado-pago.md)
 - [2026-10-04 - Ventas de planes Faciliter en admin](./2026-10-04-ventas-plan-faciliter-admin.md)
 - [2026-10-04 - Renovación del plan Faciliter con cada cobro de la suscripción](./2026-10-04-renovacion-plan-faciliter.md)
 - [2026-10-04 - Web del gym editable: colores para tema claro y tema oscuro](./2026-10-04-web-gym-tema-claro-oscuro.md)
