@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:flutter/services.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 /// Sesión de persona (sin gym). Wallet SSI se ata a esta cuenta.
@@ -133,7 +134,7 @@ class SessionStore {
 
   /// Lee sesión de gym o null.
   Future<AppSession?> read() async {
-    final raw = await _storage.read(key: _gymKey);
+    final raw = await _read(_gymKey);
     if (raw == null || raw.isEmpty) {
       return null;
     }
@@ -167,7 +168,7 @@ class SessionStore {
   }
 
   Future<IdentitySession?> readIdentity() async {
-    final raw = await _storage.read(key: _identityKey);
+    final raw = await _read(_identityKey);
     if (raw == null || raw.isEmpty) {
       return null;
     }
@@ -186,5 +187,20 @@ class SessionStore {
       key: _identityKey,
       value: jsonEncode(session.toJson()),
     );
+  }
+
+  Future<String?> _read(String key) async {
+    try {
+      return await _storage.read(key: key);
+    } on PlatformException catch (error) {
+      final message = '${error.code} ${error.message} ${error.details}'.toLowerCase();
+      if (!message.contains('badpaddingexception') &&
+          !message.contains('illegalblocksizeexception') &&
+          !message.contains('bad_decrypt')) {
+        rethrow;
+      }
+      await _storage.delete(key: key);
+      return null;
+    }
   }
 }
