@@ -193,7 +193,8 @@ class SessionStore {
     try {
       return await _storage.read(key: key);
     } on PlatformException catch (error) {
-      final message = '${error.code} ${error.message} ${error.details}'.toLowerCase();
+      final message =
+          '${error.code} ${error.message} ${error.details}'.toLowerCase();
       if (!message.contains('badpaddingexception') &&
           !message.contains('illegalblocksizeexception') &&
           !message.contains('bad_decrypt')) {
