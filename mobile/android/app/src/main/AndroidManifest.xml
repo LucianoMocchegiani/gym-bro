@@ -17,8 +17,8 @@
             android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
             android:hardwareAccelerated="true"
             android:windowSoftInputMode="adjustResize">
-            <!-- Specifies an Android theme to apply to an Activity as soon as
-                 the Flutter engine initializes. This theme is visible to the user. After that, this theme continues
+            <!-- Specifies an Android theme to apply to this Activity as soon as
+                 the Flutter engine starts. This theme is visible to the user. After that, this theme continues
                  to determine the Window background behind the Flutter UI. -->
             <meta-data
               android:name="io.flutter.embedding.android.NormalTheme"
@@ -39,9 +39,7 @@
          https://developer.android.com/training/package-visibility and
          https://developer.android.com/reference/android/content/Intent#ACTION_PROCESS_TEXT.
 
-         The app may need to process text, send text or images, or interact with apps
-         that expose their launcher activities. See the documentation for the
-         "queries" element. -->
+         This is used by the Flutter engine's ProcessTextPlugin. -->
     <queries>
         <intent>
             <action android:name="android.intent.action.PROCESS_TEXT"/>
