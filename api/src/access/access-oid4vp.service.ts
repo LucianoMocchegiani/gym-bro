@@ -54,10 +54,9 @@ export class AccessOid4VpService {
   /**
    * Crea authorization request OID4VP (pack afiliado **o** VC staff).
    *
-   * @remarks Una sola DCQL credential: `vct_values` = packs del gym + staff.
-   * El SDK holder no honra `credential_sets` (trata dos queries como AND).
-   * Claims `memberId`/`staffId` van para disclosure; evaluate elige según cuál
-   * vino en el VP. VCT staff = `urn:faciliter:staff:{tenantId}`.
+   * @remarks DCQL define credenciales separadas para afiliado y staff, y
+   * `credential_sets` deja que la wallet presente una alternativa u otra.
+   * VCT staff = `urn:faciliter:staff:{tenantId}`.
    */
   async createRequest(tenantId: string): Promise<AccessOid4VpRequestResult> {
     const provider = await this.tenantSettings.getAccessProvider(tenantId);
@@ -71,22 +70,31 @@ export class AccessOid4VpService {
       where: { tenantId },
       select: { id: true },
     });
-    const vctValues = [
-      ...packs.map((p) => packKuatiaIds(p.id).vct),
-      staffKuatiaIds(tenantId).vct,
-    ];
 
     const dcqlQuery = {
       credentials: [
         {
-          id: 'faciliter_access',
+          id: 'member_access',
           format: 'dc+sd-jwt',
-          meta: { vct_values: vctValues },
+          meta: { vct_values: packs.map((p) => packKuatiaIds(p.id).vct) },
           claims: [
             { path: ['memberId'] },
+            { path: ['tenantId'], values: [tenantId] },
+          ],
+        },
+        {
+          id: 'staff_access',
+          format: 'dc+sd-jwt',
+          meta: { vct_values: [staffKuatiaIds(tenantId).vct] },
+          claims: [
             { path: ['staffId'] },
             { path: ['tenantId'], values: [tenantId] },
           ],
+        },
+      ],
+      credential_sets: [
+        {
+          options: [['member_access'], ['staff_access']],
         },
       ],
     };
