@@ -1,6 +1,10 @@
 import { AdsService } from './ads.service';
 
 describe('AdsService', () => {
+  const activeTenant: { id: string; status: string } = {
+    id: 'tenant-id',
+    status: 'ACTIVE',
+  };
   const findTenant = jest.fn<
     Promise<{ id: string; status: string } | null>,
     [Record<string, unknown>]
@@ -28,10 +32,7 @@ describe('AdsService', () => {
   beforeEach(() => jest.clearAllMocks());
 
   it('delivers only to an active tenant and asks for an active campaign in the requested placement', async () => {
-    findTenant.mockResolvedValue({
-      id: 'tenant-id',
-      status: 'ACTIVE',
-    });
+    findTenant.mockResolvedValue(activeTenant);
     findFirst.mockResolvedValue({ id: 'campaign-id' });
     await service.serve('gym-a', 'DASHBOARD');
     expect(findFirst).toHaveBeenCalledWith(
@@ -47,10 +48,7 @@ describe('AdsService', () => {
   });
 
   it('records events with tenant and campaign IDs only, never a member identity', async () => {
-    findTenant.mockResolvedValue({
-      id: 'tenant-id',
-      status: 'ACTIVE',
-    });
+    findTenant.mockResolvedValue(activeTenant);
     findFirst.mockResolvedValue({ id: 'campaign-id' });
     await service.track({
       tenantSlug: 'gym-a',

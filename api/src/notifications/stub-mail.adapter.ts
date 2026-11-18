@@ -1,8 +1,4 @@
-import {
-  Injectable,
-  Logger,
-  type LoggerService,
-} from '@nestjs/common';
+import { Injectable, Logger, type LoggerService } from '@nestjs/common';
 import type { MailMessage, MailPort } from './mail.port';
 
 /** No envía. Log para local / CI (`MAIL_DRIVER=stub`). */
