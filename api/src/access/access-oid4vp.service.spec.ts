@@ -32,7 +32,7 @@ describe('AccessOid4VpService.createRequest', () => {
 
     await service.createRequest('tenant-1');
 
-    expect(kuatia.createPresentationRequest).toHaveBeenCalledWith(
+    expect(kuatia.createPresentationRequest.bind(kuatia)).toHaveBeenCalledWith(
       'verifier-1',
       {
         dcqlQuery: {
@@ -56,9 +56,7 @@ describe('AccessOid4VpService.createRequest', () => {
               ],
             },
           ],
-          credential_sets: [
-            { options: [['member_access'], ['staff_access']] },
-          ],
+          credential_sets: [{ options: [['member_access'], ['staff_access']] }],
         },
         responseMode: 'direct_post',
         requestSignerMethod: 'did',
