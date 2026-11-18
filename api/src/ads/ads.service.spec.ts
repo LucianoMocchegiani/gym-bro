@@ -1,12 +1,16 @@
 import { AdsService } from './ads.service';
 
 describe('AdsService', () => {
+  const findTenant = jest.fn<
+    Promise<{ id: string; status: string } | null>,
+    [Record<string, unknown>]
+  >();
   const findFirst = jest.fn<
     Promise<{ id: string } | null>,
     [Record<string, unknown>]
   >();
   const prisma = {
-    tenant: { findUnique: jest.fn() },
+    tenant: { findUnique: findTenant },
     adCampaign: {
       findFirst,
       findMany: jest.fn(),
@@ -20,7 +24,7 @@ describe('AdsService', () => {
   beforeEach(() => jest.clearAllMocks());
 
   it('delivers only to an active tenant and asks for an active campaign in the requested placement', async () => {
-    prisma.tenant.findUnique.mockResolvedValue({
+    findTenant.mockResolvedValue({
       id: 'tenant-id',
       status: 'ACTIVE',
     });
@@ -39,7 +43,7 @@ describe('AdsService', () => {
   });
 
   it('records events with tenant and campaign IDs only, never a member identity', async () => {
-    prisma.tenant.findUnique.mockResolvedValue({
+    findTenant.mockResolvedValue({
       id: 'tenant-id',
       status: 'ACTIVE',
     });
