@@ -26,7 +26,7 @@ export class SaveAdCampaignDto {
   @IsBoolean()
   active!: boolean;
 
-  @IsArray() @IsIn(AD_PLACEMENTS, { each: true })
+  @IsArray() @IsIn([...AD_PLACEMENTS], { each: true })
   placements!: string[];
 }
 
@@ -37,9 +37,9 @@ export class TrackAdEventDto {
   @IsUUID()
   campaignId!: string;
 
-  @IsIn(AD_PLACEMENTS)
+  @IsIn([...AD_PLACEMENTS])
   placement!: (typeof AD_PLACEMENTS)[number];
 
-  @IsIn(AD_EVENT_TYPES)
+  @IsIn([...AD_EVENT_TYPES])
   type!: (typeof AD_EVENT_TYPES)[number];
 }

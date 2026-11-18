@@ -10,7 +10,7 @@ COPY prisma ./prisma
 RUN npm ci
 COPY nest-cli.json tsconfig.json tsconfig.build.json ./
 COPY src ./src
-RUN npx prisma generate && npm run build
+RUN npx prisma generate --schema prisma && npm run build
 
 FROM node:24-alpine
 
@@ -24,9 +24,9 @@ COPY package.json package-lock.json ./
 COPY prisma ./prisma
 RUN npm ci --omit=dev \
   && npm install prisma@6.19.3 \
-  && npx prisma generate
+  && npx prisma generate --schema prisma
 COPY --from=build /app/dist ./dist
 
 EXPOSE 3001
 
-CMD ["sh", "-c", "npx prisma migrate deploy && exec node dist/main.js"]
+CMD ["sh", "-c", "npx prisma migrate deploy --schema prisma && exec node dist/main.js"]
