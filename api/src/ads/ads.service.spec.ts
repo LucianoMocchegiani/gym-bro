@@ -1,8 +1,10 @@
 import { AdsService } from './ads.service';
 
 describe('AdsService', () => {
-  const findFirst = jest.fn<Promise<{ id: string } | null>, [Record<string, unknown>]>(
-    );
+  const findFirst = jest.fn<
+    Promise<{ id: string } | null>,
+    [Record<string, unknown>]
+  >();
   const prisma = {
     tenant: { findUnique: jest.fn() },
     adCampaign: {
@@ -22,8 +24,11 @@ describe('AdsService', () => {
     findFirst.mockResolvedValue({ id: 'campaign-id' });
     await service.serve('gym-a', 'DASHBOARD');
     expect(findFirst).toHaveBeenCalled();
-    expect(findFirst.mock.calls[0]?.[0]).toMatchObject({
-      where: { active: true, placements: { has: 'DASHBOARD' } },
+    expect(findFirst.mock.calls[0]?.[0]?.where).toEqual({
+      active: true,
+      placements: { has: 'DASHBOARD' },
+      startsAt: { lte: expect.any(Date) },
+      endsAt: { gt: expect.any(Date) },
     });
   });
 

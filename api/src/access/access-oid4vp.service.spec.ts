@@ -10,11 +10,12 @@ describe('AccessOid4VpService.createRequest', () => {
     const prisma = {
       pack: { findMany: jest.fn().mockResolvedValue([{ id: 'pack-1' }]) },
     } as unknown as PrismaService;
+    const createPresentationRequest = jest.fn().mockResolvedValue({
+      requestUri: 'openid4vp://request',
+      verificationSessionId: 'session-1',
+    });
     const kuatia = {
-      createPresentationRequest: jest.fn().mockResolvedValue({
-        requestUri: 'openid4vp://request',
-        verificationSessionId: 'session-1',
-      }),
+      createPresentationRequest,
     } as unknown as KuatiaAdminPort;
     const kuatiaEnv = {
       requireSharedVerifierWalletId: jest.fn().mockReturnValue('verifier-1'),
@@ -32,35 +33,32 @@ describe('AccessOid4VpService.createRequest', () => {
 
     await service.createRequest('tenant-1');
 
-    expect(kuatia.createPresentationRequest.bind(kuatia)).toHaveBeenCalledWith(
-      'verifier-1',
-      {
-        dcqlQuery: {
-          credentials: [
-            {
-              id: 'member_access',
-              format: 'dc+sd-jwt',
-              meta: { vct_values: ['urn:faciliter:pack:pack-1'] },
-              claims: [
-                { path: ['memberId'] },
-                { path: ['tenantId'], values: ['tenant-1'] },
-              ],
-            },
-            {
-              id: 'staff_access',
-              format: 'dc+sd-jwt',
-              meta: { vct_values: ['urn:faciliter:staff:tenant-1'] },
-              claims: [
-                { path: ['staffId'] },
-                { path: ['tenantId'], values: ['tenant-1'] },
-              ],
-            },
-          ],
-          credential_sets: [{ options: [['member_access'], ['staff_access']] }],
-        },
-        responseMode: 'direct_post',
-        requestSignerMethod: 'did',
+    expect(createPresentationRequest).toHaveBeenCalledWith('verifier-1', {
+      dcqlQuery: {
+        credentials: [
+          {
+            id: 'member_access',
+            format: 'dc+sd-jwt',
+            meta: { vct_values: ['urn:faciliter:pack:pack-1'] },
+            claims: [
+              { path: ['memberId'] },
+              { path: ['tenantId'], values: ['tenant-1'] },
+            ],
+          },
+          {
+            id: 'staff_access',
+            format: 'dc+sd-jwt',
+            meta: { vct_values: ['urn:faciliter:staff:tenant-1'] },
+            claims: [
+              { path: ['staffId'] },
+              { path: ['tenantId'], values: ['tenant-1'] },
+            ],
+          },
+        ],
+        credential_sets: [{ options: [['member_access'], ['staff_access']] }],
       },
-    );
+      responseMode: 'direct_post',
+      requestSignerMethod: 'did',
+    });
   });
 });
