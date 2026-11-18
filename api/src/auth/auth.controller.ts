@@ -1,5 +1,4 @@
 import {
-  BadRequestException,
   Body,
   Controller,
   Get,
@@ -95,7 +94,7 @@ export class AuthController {
     @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
   ): Promise<AuthTokens> {
-    const handoffId = req.cookies?.[IMPERSONATION_HANDOFF_COOKIE];
+    const handoffId: unknown = req.cookies?.[IMPERSONATION_HANDOFF_COOKIE];
     if (typeof handoffId !== 'string' || !handoffId) {
       throw new UnauthorizedException('No session');
     }
@@ -106,33 +105,25 @@ export class AuthController {
     }
   }
 
-  /**
-   * Login staff de un tenant.
-   */
+  /** Login staff de un tenant. */
   @Post('staff/login')
   loginStaff(@Body() dto: StaffLoginDto): Promise<AuthTokens> {
     return this.authService.loginStaff(dto);
   }
 
-  /**
-   * Login afiliado de un tenant.
-   */
+  /** Login afiliado de un tenant. */
   @Post('member/login')
   loginMember(@Body() dto: MemberLoginDto): Promise<AuthTokens> {
     return this.authService.loginMember(dto);
   }
 
-  /**
-   * Login de persona (sin gym). Email + password de `identities`.
-   */
+  /** Login de persona (sin gym). Email + password de `identities`. */
   @Post('identity/login')
   loginIdentity(@Body() dto: IdentityLoginDto): Promise<AuthTokens> {
     return this.authService.loginIdentity(dto);
   }
 
-  /**
-   * Crea una cuenta Faciliter (email + password) para contratar un gym.
-   */
+  /** Crea una cuenta Faciliter (email + password) para contratar un gym. */
   @Post('identity/register')
   registerIdentity(@Body() dto: IdentityRegisterDto): Promise<AuthTokens> {
     return this.authService.registerIdentity(dto);
@@ -182,25 +173,21 @@ export class AuthController {
     @Req() req: Request,
     @Body() dto: FromCookieDto,
   ): Promise<AuthTokens> {
-    const sessionId = req.cookies?.central_session;
-    if (!sessionId) {
+    const sessionId: unknown = req.cookies?.central_session;
+    if (typeof sessionId !== 'string' || !sessionId) {
       throw new UnauthorizedException('No session');
     }
     return this.authService.loginFromProxy(sessionId, dto.tenantSlug);
   }
 
-  /**
-   * Lista de gyms/perfiles de la identity.
-   */
+  /** Lista de gyms/perfiles de la identity. */
   @Get('memberships')
   @RequireIdentityAuth()
   listMemberships(@CurrentUser() user: AuthUser): Promise<MembershipsList> {
     return this.authService.listMemberships(user.userId);
   }
 
-  /**
-   * Emite JWT de negocio para un gym + perfil.
-   */
+  /** Emite JWT de negocio para un gym + perfil. */
   @Post('select-context')
   @RequireIdentityAuth()
   selectContext(
@@ -210,24 +197,20 @@ export class AuthController {
     return this.authService.selectContext(user.userId, dto);
   }
 
-  /**
-   * Renueva access (y rota refresh) con un refresh token válido.
-   */
+  /** Renueva access (y rota refresh) con un refresh token válido. */
   @Post('refresh')
   refresh(@Body() dto: RefreshTokenDto): Promise<AuthTokens> {
     return this.authService.refresh(dto.refreshToken);
   }
 
-  /**
-   * Revoca el refresh token actual. Si hay cookie de handoff pendiente, la tira.
-   */
+  /** Revoca el refresh token actual. Si hay cookie de handoff pendiente, la tira. */
   @Post('logout')
   async logout(
     @Body() dto: LogoutDto,
     @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
   ): Promise<{ ok: true }> {
-    const handoffId = req.cookies?.[IMPERSONATION_HANDOFF_COOKIE];
+    const handoffId: unknown = req.cookies?.[IMPERSONATION_HANDOFF_COOKIE];
     if (typeof handoffId === 'string' && handoffId) {
       this.authService.discardHandoff(handoffId);
       clearHandoffCookie(res, this.config);
@@ -250,9 +233,7 @@ export class AuthController {
     return this.authService.changePassword(user, dto);
   }
 
-  /**
-   * Si la cuenta tiene contraseña y si es la temporal de migración.
-   */
+  /** Si la cuenta tiene contraseña y si es la temporal de migración. */
   @UseGuards(JwtAuthGuard)
   @Get('password')
   passwordStatus(@CurrentUser() user: AuthUser): Promise<PasswordStatus> {
@@ -273,9 +254,7 @@ export class AuthController {
     return this.authService.setPassword(user, dto);
   }
 
-  /**
-   * Usuario del access token + si el gym puede operar (plan Faciliter).
-   */
+  /** Usuario del access token + si el gym puede operar (plan Faciliter). */
   @UseGuards(JwtAuthGuard)
   @Get('me')
   async me(@CurrentUser() user: AuthUser): Promise<AuthMeResponse> {

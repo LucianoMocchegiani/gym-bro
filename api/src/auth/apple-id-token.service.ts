@@ -4,7 +4,7 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { createRemoteJWKSet, jwtVerify, type JWTPayload } from 'jose';
+import { createRemoteJWKSet, jwtVerify } from 'jose';
 
 export type AppleIdentityClaims = {
   sub: string;

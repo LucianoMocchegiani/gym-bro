@@ -1,4 +1,11 @@
-import { Body, Controller, Get, Param, ParseEnumPipe, Patch } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  ParseEnumPipe,
+  Patch,
+} from '@nestjs/common';
 import { NotificationEventCode } from '@prisma/client';
 import { RequirePermission } from '../roles/decorators/require-permission.decorator';
 import { CurrentTenant } from '../tenant/decorators/current-tenant.decorator';

@@ -87,7 +87,12 @@ export class FolderController {
     @Param('memberId', ParseUUIDPipe) memberId: string,
     @Body() dto: CreateFolderNoteDto,
   ): Promise<FolderItemDetail> {
-    return this.folder.createNote(tenantId, user, { kind: 'member', id: memberId }, dto);
+    return this.folder.createNote(
+      tenantId,
+      user,
+      { kind: 'member', id: memberId },
+      dto,
+    );
   }
 
   @Post('members/:memberId/folder/files')
@@ -173,7 +178,12 @@ export class FolderController {
     @Param('staffId', ParseUUIDPipe) staffId: string,
     @Body() dto: CreateFolderNoteDto,
   ): Promise<FolderItemDetail> {
-    return this.folder.createNote(tenantId, user, { kind: 'staff', id: staffId }, dto);
+    return this.folder.createNote(
+      tenantId,
+      user,
+      { kind: 'staff', id: staffId },
+      dto,
+    );
   }
 
   @Post('staff/:staffId/folder/files')

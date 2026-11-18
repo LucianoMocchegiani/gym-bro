@@ -9,6 +9,10 @@ describe('AdsService', () => {
     Promise<{ id: string } | null>,
     [Record<string, unknown>]
   >();
+  const createEvent = jest.fn<
+    Promise<{ id: string }>,
+    [Record<string, unknown>]
+  >();
   const prisma = {
     tenant: { findUnique: findTenant },
     adCampaign: {
@@ -17,7 +21,7 @@ describe('AdsService', () => {
       create: jest.fn(),
       update: jest.fn(),
     },
-    adEvent: { create: jest.fn(), groupBy: jest.fn() },
+    adEvent: { create: createEvent, groupBy: jest.fn() },
   };
   const service = new AdsService(prisma as never);
 
@@ -54,7 +58,7 @@ describe('AdsService', () => {
       placement: 'MEMBER_PORTAL',
       type: 'IMPRESSION',
     });
-    expect(prisma.adEvent.create).toHaveBeenCalledWith({
+    expect(createEvent).toHaveBeenCalledWith({
       data: {
         campaignId: 'campaign-id',
         tenantId: 'tenant-id',

@@ -42,24 +42,13 @@ function cookieOpts(config: ConfigService): {
   };
 }
 
-/**
- * Setea la cookie de handoff (SameSite=None; Secure — hace falta HTTPS).
- */
-export function setHandoffCookie(
-  res: Response,
-  config: ConfigService,
-  handoffId: string,
-): void {
+/** Setea la cookie de handoff (SameSite=None; Secure — hace falta HTTPS). */
+export function setHandoffCookie(res: Response, config: ConfigService, handoffId: string): void {
   res.cookie(IMPERSONATION_HANDOFF_COOKIE, handoffId, cookieOpts(config));
 }
 
-/**
- * Borra la cookie con los mismos atributos (si no, el browser la ignora).
- */
-export function clearHandoffCookie(
-  res: Response,
-  config: ConfigService,
-): void {
+/** Borra la cookie con los mismos atributos (si no, el browser la ignora). */
+export function clearHandoffCookie(res: Response, config: ConfigService): void {
   const opts = cookieOpts(config);
   res.clearCookie(IMPERSONATION_HANDOFF_COOKIE, {
     httpOnly: opts.httpOnly,
