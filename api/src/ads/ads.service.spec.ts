@@ -35,16 +35,19 @@ describe('AdsService', () => {
     findTenant.mockResolvedValue(activeTenant);
     findFirst.mockResolvedValue({ id: 'campaign-id' });
     await service.serve('gym-a', 'DASHBOARD');
-    expect(findFirst).toHaveBeenCalledWith(
-      expect.objectContaining({
-        where: {
-          active: true,
-          placements: { has: 'DASHBOARD' },
-          startsAt: { lte: expect.any(Date) },
-          endsAt: { gt: expect.any(Date) },
-        },
-      }),
-    );
+    const query = findFirst.mock.calls[0]?.[0];
+    expect(query).toMatchObject({
+      where: {
+        active: true,
+        placements: { has: 'DASHBOARD' },
+      },
+    });
+    const where = query?.where as {
+      startsAt: { lte: Date };
+      endsAt: { gt: Date };
+    };
+    expect(where.startsAt.lte).toBeInstanceOf(Date);
+    expect(where.endsAt.gt).toBeInstanceOf(Date);
   });
 
   it('records events with tenant and campaign IDs only, never a member identity', async () => {
