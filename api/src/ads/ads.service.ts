@@ -15,17 +15,12 @@ export class AdsService {
       throw new NotFoundException();
     }
     const tenant = await this.prisma.tenant.findUnique({
-      where: { slug: tenantSlug },
-      select: { id: true, status: true },
+      where: { slug: tenantSlug }, select: { id: true, status: true },
     });
     if (!tenant || tenant.status !== 'ACTIVE') throw new NotFoundException();
+    const now = new Date();
     return this.prisma.adCampaign.findFirst({
-      where: {
-        active: true,
-        placements: { has: placement },
-        startsAt: { lte: new Date() },
-        endsAt: { gt: new Date() },
-      },
+      where: { active: true, placements: { has: placement }, startsAt: { lte: now }, endsAt: { gt: now } },
       orderBy: { createdAt: 'desc' },
       select: { id: true, name: true, body: true, imageUrl: true, targetUrl: true },
     });
@@ -33,47 +28,43 @@ export class AdsService {
 
   async track(dto: TrackAdEventDto) {
     const tenant = await this.prisma.tenant.findUnique({
-      where: { slug: dto.tenantSlug },
-      select: { id: true, status: true },
+      where: { slug: dto.tenantSlug }, select: { id: true, status: true },
     });
     if (!tenant || tenant.status !== 'ACTIVE') throw new NotFoundException();
-    const campaign = await this.prisma.adCampaign.findUnique({
-      where: { id: dto.campaignId },
+    const now = new Date();
+    const campaign = await this.prisma.adCampaign.findFirst({
+      where: {
+        id: dto.campaignId, active: true, placements: { has: dto.placement },
+        startsAt: { lte: now }, endsAt: { gt: now },
+      },
       select: { id: true },
     });
     if (!campaign) throw new NotFoundException();
     // shortcut: event counts are indicative; add deduplication/rate limits before using metrics for billing.
     await this.prisma.adEvent.create({
-      data: {
-        campaignId: campaign.id,
-        tenantId: tenant.id,
-        placement: dto.placement,
-        type: dto.type,
-      },
+      data: { campaignId: campaign.id, tenantId: tenant.id, placement: dto.placement, type: dto.type },
     });
     return { recorded: true };
   }
 
-  list() {
-    return this.prisma.adCampaign.findMany({
-      orderBy: { createdAt: 'desc' },
-      include: { events: { select: { type: true } } },
-    }).then((campaigns) => campaigns.map((campaign) => ({
+  async list() {
+    const [campaigns, events] = await Promise.all([
+      this.prisma.adCampaign.findMany({ orderBy: { createdAt: 'desc' } }),
+      this.prisma.adEvent.groupBy({ by: ['campaignId', 'type'], _count: { _all: true } }),
+    ]);
+    return campaigns.map((campaign) => ({
       ...campaign,
-      impressions: campaign.events.filter((event) => event.type === 'IMPRESSION').length,
-      clicks: campaign.events.filter((event) => event.type === 'CLICK').length,
-      events: undefined,
-    })));
+      impressions: events.find((e) => e.campaignId === campaign.id && e.type === 'IMPRESSION')?._count._all ?? 0,
+      clicks: events.find((e) => e.campaignId === campaign.id && e.type === 'CLICK')?._count._all ?? 0,
+    }));
   }
 
   create(dto: SaveAdCampaignDto) {
-    const data = this.campaignData(dto);
-    return this.prisma.adCampaign.create({ data });
+    return this.prisma.adCampaign.create({ data: this.campaignData(dto) });
   }
 
   update(id: string, dto: SaveAdCampaignDto) {
-    const data = this.campaignData(dto);
-    return this.prisma.adCampaign.update({ where: { id }, data });
+    return this.prisma.adCampaign.update({ where: { id }, data: this.campaignData(dto) });
   }
 
   private campaignData(dto: SaveAdCampaignDto) {
@@ -83,13 +74,8 @@ export class AdsService {
       throw new BadRequestException('La vigencia o las ubicaciones de la campaña no son válidas');
     }
     return {
-      name: dto.name.trim(),
-      body: dto.body.trim(),
-      imageUrl: dto.imageUrl,
-      targetUrl: dto.targetUrl,
-      startsAt,
-      endsAt,
-      active: dto.active,
+      name: dto.name.trim(), body: dto.body.trim(), imageUrl: dto.imageUrl,
+      targetUrl: dto.targetUrl, startsAt, endsAt, active: dto.active,
       placements: [...new Set(dto.placements)],
     };
   }
