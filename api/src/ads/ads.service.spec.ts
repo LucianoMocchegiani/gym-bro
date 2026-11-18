@@ -20,20 +20,29 @@ describe('AdsService', () => {
   beforeEach(() => jest.clearAllMocks());
 
   it('delivers only to an active tenant and asks for an active campaign in the requested placement', async () => {
-    prisma.tenant.findUnique.mockResolvedValue({ id: 'tenant-id', status: 'ACTIVE' });
+    prisma.tenant.findUnique.mockResolvedValue({
+      id: 'tenant-id',
+      status: 'ACTIVE',
+    });
     findFirst.mockResolvedValue({ id: 'campaign-id' });
     await service.serve('gym-a', 'DASHBOARD');
-    expect(findFirst).toHaveBeenCalled();
-    expect(findFirst.mock.calls[0]?.[0]?.where).toEqual({
-      active: true,
-      placements: { has: 'DASHBOARD' },
-      startsAt: { lte: expect.any(Date) },
-      endsAt: { gt: expect.any(Date) },
-    });
+    expect(findFirst).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          active: true,
+          placements: { has: 'DASHBOARD' },
+          startsAt: { lte: expect.any(Date) },
+          endsAt: { gt: expect.any(Date) },
+        },
+      }),
+    );
   });
 
   it('records events with tenant and campaign IDs only, never a member identity', async () => {
-    prisma.tenant.findUnique.mockResolvedValue({ id: 'tenant-id', status: 'ACTIVE' });
+    prisma.tenant.findUnique.mockResolvedValue({
+      id: 'tenant-id',
+      status: 'ACTIVE',
+    });
     findFirst.mockResolvedValue({ id: 'campaign-id' });
     await service.track({
       tenantSlug: 'gym-a',
