@@ -1,4 +1,8 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { PlatformTrialEligibility } from './tenants.types';
 
@@ -12,9 +16,7 @@ import { PlatformTrialEligibility } from './tenants.types';
 export class PlatformTrialService {
   constructor(private readonly prisma: PrismaService) {}
 
-  /**
-   * Si Caja (o el alta self-serve) puede otorgar 30 días $0 a este gym.
-   */
+  /** Si Caja (o el alta self-serve) puede otorgar 30 días $0 a este gym. */
   async evaluate(billingTenantId: string): Promise<PlatformTrialEligibility> {
     const tenant = await this.prisma.tenant.findUnique({
       where: { id: billingTenantId },
@@ -56,11 +58,7 @@ export class PlatformTrialService {
     return { eligible: true, reason: null };
   }
 
-  /**
-   * Prueba para un gym que todavía no existe (self-serve).
-   *
-   * @remarks Solo candado de cuenta: el tenant se marca al nacer.
-   */
+  /** Prueba para un gym que todavía no existe (self-serve). */
   async evaluateForIdentity(
     identityId: string,
   ): Promise<PlatformTrialEligibility> {
