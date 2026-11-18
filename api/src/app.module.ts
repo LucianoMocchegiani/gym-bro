@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { ScheduleModule } from '@nestjs/schedule';
 import { AccessModule } from './access/access.module';
+import { AdsModule } from './ads/ads.module';
 import { AuditModule } from './audit/audit.module';
 import { AuthModule } from './auth/auth.module';
 import { PaymentRegisterModule } from './payment-register/payment-register.module';
@@ -37,50 +38,15 @@ import { ExpensesModule } from './expenses/expenses.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { UploadModule } from './upload/upload.module';
 
-/**
- * Módulo raíz del monolito modular GymBro.
- *
- * @remarks Infraestructura: config, Prisma, auth JWT, tenant guard y health.
- */
 @Module({
   imports: [
-    ConfigModule.forRoot({ isGlobal: true }),
-    ScheduleModule.forRoot(),
-    PrismaModule,
-    AuthModule,
-    TenantModule,
-    TenantSettingsModule,
-    TenantSiteModule,
-    RolesModule,
-    StaffModule,
-    MembersModule,
-    MemberCatalogModule,
-    ServicesModule,
-    PacksModule,
-    ContractsModule,
-    KuatiaModule,
-    SessionsModule,
-    ReservationsModule,
-    WaitlistModule,
-    PaymentRegisterModule,
-    ReceiptsModule,
-    PaymentModule,
-    DebitModule,
-    RefundsModule,
-    ExpirationsModule,
-    ReportsModule,
-    AccessModule,
-    TenantsModule,
-    AuditModule,
-    HealthModule,
-    MobileAppModule,
-    AccountDeletionModule,
-    FileStorageModule,
-    UploadModule,
-    FolderModule,
-    MemberImportModule,
-    ExpensesModule,
-    NotificationsModule,
+    ConfigModule.forRoot({ isGlobal: true }), ScheduleModule.forRoot(), PrismaModule, AuthModule,
+    TenantModule, TenantSettingsModule, TenantSiteModule, RolesModule, StaffModule, MembersModule,
+    MemberCatalogModule, ServicesModule, PacksModule, ContractsModule, KuatiaModule, SessionsModule,
+    ReservationsModule, WaitlistModule, PaymentRegisterModule, ReceiptsModule, PaymentModule,
+    DebitModule, RefundsModule, ExpirationsModule, ReportsModule, AccessModule, TenantsModule,
+    AuditModule, HealthModule, MobileAppModule, AccountDeletionModule, FileStorageModule, UploadModule,
+    FolderModule, MemberImportModule, ExpensesModule, NotificationsModule, AdsModule,
   ],
 })
 export class AppModule {}
