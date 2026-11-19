@@ -8,35 +8,52 @@ export function AdSlot({ tenantSlug, placement }: { tenantSlug: string; placemen
   const [ads, setAds] = useState<AdCreative[]>([]);
   const [startIndex, setStartIndex] = useState(0);
   const [visibleCount, setVisibleCount] = useState(1);
+  const [step, setStep] = useState(0);
   const [displayKey, setDisplayKey] = useState(0);
   const [rotationEnabled, setRotationEnabled] = useState(true);
   const [hovered, setHovered] = useState(false);
+  const [transitionEnabled, setTransitionEnabled] = useState(true);
   const carousel = useRef<HTMLDivElement>(null);
   const tracked = useRef(new Set<string>());
 
   useEffect(() => {
     let cancelled = false;
     void getAds(tenantSlug, placement)
-      .then((next) => { if (!cancelled) { setAds(next); setStartIndex(0); } })
+      .then((next) => {
+        if (!cancelled) {
+          setAds(next);
+          setStartIndex(0);
+        }
+      })
       .catch(() => undefined);
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [tenantSlug, placement]);
 
   useEffect(() => {
     const element = carousel.current;
     if (!element) return;
-    const updateVisibleCount = () => {
-      const rem = parseFloat(getComputedStyle(element).fontSize);
-      setVisibleCount(Math.max(1, Math.floor((element.clientWidth + rem * 0.75) / (rem * 18 + rem * 0.75))));
+    const updateLayout = () => {
+      const card = element.querySelector<HTMLElement>('.ad-slot-card');
+      if (!card) return;
+      const gap = parseFloat(getComputedStyle(element).columnGap) || 0;
+      const cardWidth = card.getBoundingClientRect().width;
+      setStep(cardWidth + gap);
+      setVisibleCount(Math.max(1, Math.floor((element.clientWidth + gap) / (cardWidth + gap))));
     };
-    const observer = new ResizeObserver(updateVisibleCount);
+    const observer = new ResizeObserver(updateLayout);
     observer.observe(element);
-    updateVisibleCount();
+    updateLayout();
     return () => observer.disconnect();
-  }, []);
+  }, [ads.length]);
 
-  const visibleAds = ads.slice(startIndex, startIndex + visibleCount);
+  const hasMoreAds = ads.length > visibleCount;
+
   useEffect(() => {
+    const visibleAds = hasMoreAds
+      ? Array.from({ length: visibleCount }, (_, i) => ads[(startIndex + i + ads.length) % ads.length]).filter(Boolean)
+      : ads;
     for (const ad of visibleAds) {
       const key = `${tenantSlug}:${placement}:${ad.id}:${displayKey}`;
       if (!tracked.current.has(key)) {
@@ -44,54 +61,91 @@ export function AdSlot({ tenantSlug, placement }: { tenantSlug: string; placemen
         void trackAd(tenantSlug, ad.id, placement, 'IMPRESSION').catch(() => undefined);
       }
     }
-  }, [ads, displayKey, startIndex, tenantSlug, placement, visibleCount]);
+  }, [ads, displayKey, startIndex, tenantSlug, placement, visibleCount, hasMoreAds]);
 
-  const hasMoreAds = ads.length > visibleCount;
   useEffect(() => {
     if (!rotationEnabled || hovered || !hasMoreAds) return;
     const timer = window.setInterval(() => {
-      setStartIndex((index) => index + visibleCount >= ads.length ? 0 : index + visibleCount);
+      setStartIndex((index) => index + 1);
       setDisplayKey((key) => key + 1);
     }, 6000);
     return () => window.clearInterval(timer);
-  }, [ads.length, hasMoreAds, hovered, rotationEnabled, visibleCount]);
+  }, [hasMoreAds, hovered, rotationEnabled]);
 
-  const showPage = (direction: -1 | 1) => {
-    setStartIndex((index) => direction > 0
-      ? (index + visibleCount >= ads.length ? 0 : index + visibleCount)
-      : (index === 0 ? Math.floor((ads.length - 1) / visibleCount) * visibleCount : Math.max(0, index - visibleCount)));
+  const showAd = (direction: -1 | 1) => {
+    setStartIndex((index) => index + direction);
     setDisplayKey((key) => key + 1);
     setRotationEnabled(false);
   };
 
+  const resetLoop = () => {
+    if (startIndex >= ads.length) {
+      setTransitionEnabled(false);
+      setStartIndex(0);
+      requestAnimationFrame(() => setTransitionEnabled(true));
+    } else if (startIndex < 0) {
+      setTransitionEnabled(false);
+      setStartIndex(ads.length - 1);
+      requestAnimationFrame(() => setTransitionEnabled(true));
+    }
+  };
+
+  const trackAds = hasMoreAds
+    ? [...ads.slice(-visibleCount), ...ads, ...ads.slice(0, visibleCount)]
+    : ads;
+  const trackOffset = hasMoreAds ? visibleCount + startIndex : 0;
+
   return (
-    <aside className="mkt-inner mkt-section" aria-label="Publicidad" onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)} onFocusCapture={() => setRotationEnabled(false)}>
-      <div ref={carousel} className="ad-slot-carousel" role="group" aria-roledescription="carrusel" aria-live={rotationEnabled && !hovered ? 'off' : 'polite'} style={{ gridTemplateColumns: `repeat(${visibleAds.length || 1}, minmax(0, 18rem))` }}>
-        {(visibleAds.length ? visibleAds : [null]).map((ad) => (
-          <a
-            key={ad?.id ?? 'fallback'}
-            className="ad-slot-card"
-            href={ad?.targetUrl ?? platformOrigin()}
-            target="_blank"
-            rel="noopener noreferrer"
-            aria-label={ad ? `${ad.name}. ${ad.body}` : 'Conocé Faciliter. Herramientas simples para gestionar tu gimnasio.'}
-            onClick={() => {
-              if (ad) void trackAd(tenantSlug, ad.id, placement, 'CLICK').catch(() => undefined);
+    <aside
+      className="mkt-inner mkt-section"
+      aria-label="Publicidad"
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      onFocusCapture={() => setRotationEnabled(false)}
+    >
+      <div
+        ref={carousel}
+        className="ad-slot-carousel"
+        role="group"
+        aria-roledescription="carrusel"
+        aria-live={rotationEnabled && !hovered ? 'off' : 'polite'}
+      >
+        <div className="ad-slot-window">
+          <div
+            className="ad-slot-track"
+            style={{
+              gap: '0.75rem',
+              transform: `translateX(-${trackOffset * step}px)`,
+              transition: transitionEnabled ? 'transform 500ms ease' : 'none',
             }}
+            onTransitionEnd={resetLoop}
           >
-            {ad?.imageUrl ? <img src={ad.imageUrl} alt="" loading="lazy" referrerPolicy="no-referrer" /> : null}
-            <span>
-              <span className="eyebrow">Publicidad</span>
-              <strong>{ad?.name ?? 'Conocé Faciliter'}</strong>
-              <span>{ad?.body ?? 'Herramientas simples para gestionar tu gimnasio.'}</span>
-            </span>
-          </a>
-        ))}
+            {(trackAds.length ? trackAds : [null]).map((ad, index) => (
+              <a
+                key={`${ad?.id ?? 'fallback'}-${index}`}
+                className="ad-slot-card"
+                href={ad?.targetUrl ?? platformOrigin()}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label={ad ? `${ad.name}. ${ad.body}` : 'Conocé Faciliter. Herramientas simples para gestionar tu gimnasio.'}
+                onClick={() => {
+                  if (ad) void trackAd(tenantSlug, ad.id, placement, 'CLICK').catch(() => undefined);
+                }}
+              >
+                {ad?.imageUrl ? <img src={ad.imageUrl} alt="" loading="lazy" referrerPolicy="no-referrer" /> : null}
+                <span>
+                  <span className="eyebrow">Publicidad</span>
+                  <strong>{ad?.name ?? 'Conocé Faciliter'}</strong>
+                  <span>{ad?.body ?? 'Herramientas simples para gestionar tu gimnasio.'}</span>
+                </span>
+              </a>
+            ))}
+          </div>
+        </div>
         {hasMoreAds ? (
           <div className="ad-slot-controls" aria-label="Controles de publicidad">
-            <button type="button" aria-label="Anuncios anteriores" onClick={() => showPage(-1)}>‹</button>
-            <span aria-live="off">{Math.floor(startIndex / visibleCount) + 1} / {Math.ceil(ads.length / visibleCount)}</span>
-            <button type="button" aria-label="Anuncios siguientes" onClick={() => showPage(1)}>›</button>
+            <button type="button" aria-label="Anuncio anterior" onClick={() => showAd(-1)}>‹</button>
+            <button type="button" aria-label="Anuncio siguiente" onClick={() => showAd(1)}>›</button>
             <button type="button" onClick={() => setRotationEnabled((enabled) => !enabled)}>
               {rotationEnabled ? 'Pausar' : 'Reanudar'} rotación
             </button>
@@ -101,13 +155,20 @@ export function AdSlot({ tenantSlug, placement }: { tenantSlug: string; placemen
       <style jsx>{`
         .ad-slot-carousel {
           display: grid;
-          justify-content: center;
           gap: 0.75rem;
+        }
+        .ad-slot-window {
+          overflow: hidden;
+        }
+        .ad-slot-track {
+          display: flex;
+          width: max-content;
         }
         .ad-slot-card {
           display: flex;
           width: min(100%, 18rem);
           min-width: 0;
+          flex: 0 0 auto;
           flex-direction: column;
           gap: 0.75rem;
           padding: 1rem;
@@ -137,7 +198,6 @@ export function AdSlot({ tenantSlug, placement }: { tenantSlug: string; placemen
           line-height: 1.45;
         }
         .ad-slot-controls {
-          grid-column: 1 / -1;
           display: flex;
           align-items: center;
           justify-content: center;
@@ -151,6 +211,11 @@ export function AdSlot({ tenantSlug, placement }: { tenantSlug: string; placemen
           background: var(--panel-bg);
           color: inherit;
           cursor: pointer;
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .ad-slot-track {
+            transition: none !important;
+          }
         }
       `}</style>
     </aside>
