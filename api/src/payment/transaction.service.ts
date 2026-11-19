@@ -130,11 +130,6 @@ export class TransactionService {
     Prisma.TransactionGetPayload<{ include: { transactionItems: true } }>
   > {
     void actor;
-    const transaction = await this.prisma.transaction.findUniqueOrThrow({
-      where: { id: transactionId },
-      include: { transactionItems: true },
-    });
-
     await this.prisma.$transaction([
       this.prisma.transaction.update({
         where: { id: transactionId },
