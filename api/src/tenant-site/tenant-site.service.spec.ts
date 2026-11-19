@@ -22,7 +22,7 @@ function setup(savedContent: Record<string, unknown>) {
     },
   } as unknown as PrismaService;
   const audit = { record: jest.fn() } as unknown as AuditService;
-  const upload = {} as UploadService;
+  const upload = {} as unknown as UploadService;
   return { service: new TenantSiteService(prisma, audit, upload), prisma };
 }
 
