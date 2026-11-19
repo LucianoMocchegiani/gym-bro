@@ -14,6 +14,7 @@ export function AdSlot({ tenantSlug, placement }: { tenantSlug: string; placemen
   const [hovered, setHovered] = useState(false);
   const [transitionEnabled, setTransitionEnabled] = useState(true);
   const carousel = useRef<HTMLDivElement>(null);
+  const resumeTimer = useRef<number | null>(null);
   const tracked = useRef(new Set<string>());
 
   useEffect(() => {
@@ -72,10 +73,19 @@ export function AdSlot({ tenantSlug, placement }: { tenantSlug: string; placemen
     return () => window.clearInterval(timer);
   }, [hasMoreAds, hovered, rotationEnabled]);
 
+  useEffect(() => () => {
+    if (resumeTimer.current !== null) window.clearTimeout(resumeTimer.current);
+  }, []);
+
   const showAd = (direction: -1 | 1) => {
     setStartIndex((index) => index + direction);
     setDisplayKey((key) => key + 1);
     setRotationEnabled(false);
+    if (resumeTimer.current !== null) window.clearTimeout(resumeTimer.current);
+    resumeTimer.current = window.setTimeout(() => {
+      setRotationEnabled(true);
+      resumeTimer.current = null;
+    }, 6000);
   };
 
   const resetLoop = () => {
@@ -101,7 +111,6 @@ export function AdSlot({ tenantSlug, placement }: { tenantSlug: string; placemen
       aria-label="Publicidad"
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
-      onFocusCapture={() => setRotationEnabled(false)}
     >
       <div
         ref={carousel}
@@ -146,9 +155,6 @@ export function AdSlot({ tenantSlug, placement }: { tenantSlug: string; placemen
           <div className="ad-slot-controls" aria-label="Controles de publicidad">
             <button type="button" aria-label="Anuncio anterior" onClick={() => showAd(-1)}>‹</button>
             <button type="button" aria-label="Anuncio siguiente" onClick={() => showAd(1)}>›</button>
-            <button type="button" onClick={() => setRotationEnabled((enabled) => !enabled)}>
-              {rotationEnabled ? 'Pausar' : 'Reanudar'} rotación
-            </button>
           </div>
         ) : null}
       </div>
