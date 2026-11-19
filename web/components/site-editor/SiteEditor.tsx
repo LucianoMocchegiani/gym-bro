@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, type CSSProperties } from 'react';
 import { Panel } from '@/components/AdminUi';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { uploadImageToApi } from '@/components/ImageUpload';
@@ -10,12 +10,14 @@ import type { PackSummary } from '@/lib/api/packs';
 import {
   putTenantSite,
   resetTenantSite,
+  SITE_DEFAULT_PRIMARY_COLOR,
   SITE_IMAGE_FOLDER,
   SITE_LIMITS,
   type SiteButtonTarget,
   type SiteTheme,
   type TenantSiteDetail,
 } from '@/lib/api/tenant-site';
+import { siteBrandStyle } from '@/lib/site-theme';
 import { CountedField, SiteVisualFields } from './SiteFields';
 import {
   draftFromContent,
@@ -93,6 +95,7 @@ export function SiteEditor({
   const previewSlide = selected
     ? preview.sliders[selected.slider]?.slides[selected.slide]
     : undefined;
+  const brandStyle = siteBrandStyle(draft.themeColor) as CSSProperties;
 
   function setHero(patch: Partial<DraftHero>) {
     setDraft((d) => ({ ...d, hero: { ...d.hero, ...patch } }));
@@ -197,6 +200,27 @@ export function SiteEditor({
   return (
     <div className="site-editor">
       <div className="admin-stack">
+        <Panel
+          title="Colores de la web"
+          description="El color principal define botones, enlaces y el degradado del fondo."
+        >
+          <label className="site-field">
+            <span>Color principal</span>
+            <input
+              type="color"
+              value={draft.themeColor}
+              disabled={disabled}
+              onChange={(e) =>
+                setDraft((d) => ({ ...d, themeColor: e.target.value }))
+              }
+            />
+          </label>
+          <p className="muted small">
+            Se adapta a los temas claro y oscuro. El verde Faciliter queda como
+            predeterminado.
+          </p>
+        </Panel>
+
         <Panel
           title="Portada"
           description="Lo primero que ve quien entra a la web del gym."
@@ -346,7 +370,12 @@ export function SiteEditor({
               </button>
             ))}
           </div>
-          <div className="site-preview" data-theme={theme} data-site-theme={theme}>
+          <div
+            className="site-preview gym-site-branded"
+            data-theme={theme}
+            data-site-theme={theme}
+            style={brandStyle}
+          >
             <SiteHeroView
               hero={preview.hero}
               actions={
