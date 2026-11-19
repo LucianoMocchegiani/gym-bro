@@ -13,6 +13,10 @@ describe('AdsService', () => {
     Promise<{ id: string } | null>,
     [Record<string, unknown>]
   >();
+  const findMany = jest.fn<
+    Promise<Array<{ id: string }>>,
+    [Record<string, unknown>]
+  >();
   const createEvent = jest.fn<
     Promise<{ id: string }>,
     [Record<string, unknown>]
@@ -21,7 +25,7 @@ describe('AdsService', () => {
     tenant: { findUnique: findTenant },
     adCampaign: {
       findFirst,
-      findMany: jest.fn(),
+      findMany,
       create: jest.fn(),
       update: jest.fn(),
     },
@@ -31,16 +35,23 @@ describe('AdsService', () => {
 
   beforeEach(() => jest.clearAllMocks());
 
-  it('delivers only to an active tenant and asks for an active campaign in the requested placement', async () => {
+  it('delivers up to four active campaigns to an active tenant in the requested placement', async () => {
     findTenant.mockResolvedValue(activeTenant);
-    findFirst.mockResolvedValue({ id: 'campaign-id' });
-    await service.serve('gym-a', 'DASHBOARD');
-    const query = findFirst.mock.calls[0]?.[0];
+    const campaigns = Array.from({ length: 4 }, (_, i) => ({
+      id: `campaign-${i}`,
+    }));
+    findMany.mockResolvedValue(campaigns);
+    await expect(service.serve('gym-a', 'DASHBOARD')).resolves.toEqual(
+      campaigns,
+    );
+    const query = findMany.mock.calls[0]?.[0];
     expect(query).toMatchObject({
       where: {
         active: true,
         placements: { has: 'DASHBOARD' },
       },
+      orderBy: { createdAt: 'desc' },
+      take: 4,
     });
     const where = query?.where as {
       startsAt: { lte: Date };

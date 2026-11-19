@@ -279,6 +279,7 @@ const NAV_ICONS: Record<string, () => ReactNode> = {
   '/dashboard/web': NavIconWeb,
   '/dashboard/plan': NavIconPack,
   '/dashboard/auditoria': NavIconAudit,
+  '/dashboard/ads': NavIconChart,
 };
 
 /**

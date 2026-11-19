@@ -27,12 +27,12 @@ export function saveAdCampaign(data: SaveAdCampaign, id?: string) {
     method: id ? 'PATCH' : 'POST', body: data,
   });
 }
-export async function getAd(tenantSlug: string, placement: AdPlacement): Promise<AdCreative | null> {
+export async function getAds(tenantSlug: string, placement: AdPlacement): Promise<AdCreative[]> {
   const base = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, '');
   if (!base) throw new Error('NEXT_PUBLIC_API_URL no está configurada');
   const response = await fetch(`${base}/api/ads/serve/${encodeURIComponent(tenantSlug)}/${placement}`, { cache: 'no-store' });
-  if (!response.ok) throw new Error('No se pudo cargar el anuncio');
-  return response.json() as Promise<AdCreative | null>;
+  if (!response.ok) throw new Error('No se pudieron cargar los anuncios');
+  return response.json() as Promise<AdCreative[]>;
 }
 export async function trackAd(tenantSlug: string, campaignId: string, placement: AdPlacement, type: AdEventType) {
   const base = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, '');
