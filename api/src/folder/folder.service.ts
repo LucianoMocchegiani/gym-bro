@@ -12,10 +12,7 @@ import { FILE_STORAGE_PORT } from '../file-storage/file-storage.port';
 import type { FileStoragePort } from '../file-storage/file-storage.port';
 import { PrismaService } from '../prisma/prisma.service';
 import { PermissionsService } from '../roles/permissions.service';
-import {
-  FOLDER_MAX_FILE_BYTES,
-  FOLDER_MAX_ITEMS,
-} from './folder.constants';
+import { FOLDER_MAX_FILE_BYTES, FOLDER_MAX_ITEMS } from './folder.constants';
 import type {
   FolderFileBytes,
   FolderItemDetail,
@@ -70,10 +67,7 @@ export class FolderService {
     user: AuthUser,
     nameRaw: string,
   ): Promise<FolderLabelDetail> {
-    await this.assertStaffAny(user, tenantId, [
-      'members.write',
-      'staff.write',
-    ]);
+    await this.assertStaffAny(user, tenantId, ['members.write', 'staff.write']);
     const name = nameRaw.trim();
     if (!name) {
       throw new BadRequestException('Nombre de etiqueta vacío');
@@ -172,7 +166,12 @@ export class FolderService {
     tenantId: string,
     user: AuthUser,
     owner: OwnerRef,
-    file: { mimetype: string; size: number; buffer: Buffer; originalname: string },
+    file: {
+      mimetype: string;
+      size: number;
+      buffer: Buffer;
+      originalname: string;
+    },
     input: { title?: string; labelId?: string },
   ): Promise<FolderItemDetail> {
     await this.assertWrite(user, tenantId, owner.kind);
@@ -275,8 +274,7 @@ export class FolderService {
       this.assertMine(user, row.memberId, row.staffUserId);
     } else {
       const ownerKind: FolderOwnerKind = row.memberId ? 'member' : 'staff';
-      const readCode =
-        ownerKind === 'member' ? 'members.read' : 'staff.read';
+      const readCode = ownerKind === 'member' ? 'members.read' : 'staff.read';
       await this.assertStaffCode(user, tenantId, readCode);
     }
     const obj = await this.storage.getObject(row.storageKey);
@@ -352,9 +350,7 @@ export class FolderService {
       label: row.label,
       createdAt: row.createdAt.toISOString(),
       createdByName:
-        row.createdByStaff?.name?.trim() ||
-        row.createdByStaff?.email ||
-        null,
+        row.createdByStaff?.name?.trim() || row.createdByStaff?.email || null,
     };
   }
 
