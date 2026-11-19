@@ -4,6 +4,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import {
+  ListQueryDto,
   ListResult,
   normalizeListQuery,
   resolveOrderField,
@@ -11,7 +12,6 @@ import {
 } from '../common/list';
 import { PrismaService } from '../prisma/prisma.service';
 import { AD_PLACEMENTS, SaveAdCampaignDto, TrackAdEventDto } from './ads.dto';
-import { ListAdCampaignsQueryDto } from './list-ad-campaigns-query.dto';
 
 const AD_CAMPAIGN_ORDER_FIELDS = ['createdAt'] as const;
 
@@ -81,9 +81,7 @@ export class AdsService {
     return { recorded: true };
   }
 
-  async list(
-    query: ListAdCampaignsQueryDto = {},
-  ): Promise<ListResult<Record<string, unknown>>> {
+  async list(query: ListQueryDto = {}): Promise<ListResult<Record<string, unknown>>> {
     const n = normalizeListQuery(query);
     const orderField = resolveOrderField(
       n.orderBy,
