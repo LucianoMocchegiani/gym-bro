@@ -35,8 +35,6 @@ export function AdSlot({ tenantSlug, placement }: { tenantSlug: string; placemen
     return () => observer.disconnect();
   }, []);
 
-  useEffect(() => setStartIndex(0), [ads.length, visibleCount]);
-
   const visibleAds = ads.slice(startIndex, startIndex + visibleCount);
   useEffect(() => {
     for (const ad of visibleAds) {
