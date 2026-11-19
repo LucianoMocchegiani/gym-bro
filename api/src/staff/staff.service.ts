@@ -377,11 +377,7 @@ export class StaffService {
     }
 
     await this.prisma.staffUser.delete({ where: { id: staffUserId } });
-    await this.upload.replaceOwnedPublicImage(
-      tenantId,
-      staff.imageUrl,
-      null,
-    );
+    await this.upload.replaceOwnedPublicImage(tenantId, staff.imageUrl, null);
     await this.audit.record({
       tenantId,
       actor,
