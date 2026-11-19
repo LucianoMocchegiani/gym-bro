@@ -5,7 +5,15 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { Branch, ContractStatus, ContractType, Prisma, Role, Tenant, TenantStatus } from '@prisma/client';
+import {
+  Branch,
+  ContractStatus,
+  ContractType,
+  Prisma,
+  Role,
+  Tenant,
+  TenantStatus,
+} from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
 import { AUDIT_ACTIONS, AuditActor } from '../audit/audit.types';
 import { AuditService } from '../audit/audit.service';
@@ -422,7 +430,10 @@ export class TenantsService {
    *
    * @throws {BadRequestException} Tenant `admin`.
    */
-  async getGymPlan(tenantId: string, staffUserId: string): Promise<GymPlanView> {
+  async getGymPlan(
+    tenantId: string,
+    staffUserId: string,
+  ): Promise<GymPlanView> {
     const tenant = await this.prisma.tenant.findUnique({
       where: { id: tenantId },
       select: {
@@ -447,8 +458,8 @@ export class TenantsService {
     });
     const isOwner = Boolean(
       tenant.ownerIdentityId &&
-        staff &&
-        staff.identityId === tenant.ownerIdentityId,
+      staff &&
+      staff.identityId === tenant.ownerIdentityId,
     );
 
     const now = new Date();
