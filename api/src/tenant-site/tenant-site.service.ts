@@ -132,8 +132,8 @@ export class TenantSiteService {
     dto: PutTenantSiteDto,
     actor: AuditActor,
   ): Promise<TenantSiteDetail> {
-    const content = await this.normalize(tenantId, dto);
     const before = await this.get(tenantId);
+    const content = await this.normalize(tenantId, dto, before.content?.themeColor);
     const json = content as unknown as Prisma.InputJsonValue;
     const row = await this.prisma.tenantSite.upsert({
       where: { tenantId },
@@ -176,6 +176,7 @@ export class TenantSiteService {
   private async normalize(
     tenantId: string,
     dto: PutTenantSiteDto,
+    existingThemeColor?: string,
   ): Promise<TenantSiteContent> {
     const heroTitle = this.requireText(
       dto.hero.title,
@@ -215,7 +216,10 @@ export class TenantSiteService {
 
     await this.assertPacksExist(tenantId, sliders);
     return {
-      themeColor: dto.themeColor?.toLowerCase() ?? SITE_DEFAULT_PRIMARY_COLOR,
+      themeColor:
+        dto.themeColor?.toLowerCase() ??
+        existingThemeColor ??
+        SITE_DEFAULT_PRIMARY_COLOR,
       hero,
       sliders,
     };
