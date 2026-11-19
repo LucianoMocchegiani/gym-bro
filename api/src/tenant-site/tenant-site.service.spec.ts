@@ -1,5 +1,5 @@
-import type { PrismaService } from '../prisma/prisma.service';
 import type { AuditService } from '../audit/audit.service';
+import type { PrismaService } from '../prisma/prisma.service';
 import type { UploadService } from '../upload/upload.service';
 import type { PutTenantSiteDto } from './dto/tenant-site.dto';
 import { TenantSiteService } from './tenant-site.service';
@@ -14,7 +14,10 @@ function setup(savedContent: Record<string, unknown>) {
   const now = new Date();
   const prisma = {
     tenantSite: {
-      findUnique: jest.fn().mockResolvedValue({ content: savedContent, updatedAt: now }),
+      findUnique: jest.fn().mockResolvedValue({
+        content: savedContent,
+        updatedAt: now,
+      }),
       upsert: jest.fn().mockResolvedValue({ updatedAt: now }),
     },
   } as unknown as PrismaService;
@@ -25,7 +28,12 @@ function setup(savedContent: Record<string, unknown>) {
 
 function dtoWithoutThemeColor(): PutTenantSiteDto {
   return {
-    hero: { ...visualColors, image: null, title: 'Existing gym title', subtitle: null },
+    hero: {
+      ...visualColors,
+      image: null,
+      title: 'Existing gym title',
+      subtitle: null,
+    },
     sliders: [],
   } as PutTenantSiteDto;
 }
@@ -33,7 +41,12 @@ function dtoWithoutThemeColor(): PutTenantSiteDto {
 describe('TenantSiteService brand color compatibility', () => {
   it('defaults legacy saved sites to Faciliter green', async () => {
     const legacy = {
-      hero: { ...visualColors, image: null, title: 'Existing gym title', subtitle: null },
+      hero: {
+        ...visualColors,
+        image: null,
+        title: 'Existing gym title',
+        subtitle: null,
+      },
       sliders: [],
     };
     const { service } = setup(legacy);
@@ -46,7 +59,12 @@ describe('TenantSiteService brand color compatibility', () => {
   it('keeps a saved color when an older client omits themeColor', async () => {
     const { service, prisma } = setup({
       themeColor: '#8855cc',
-      hero: { ...visualColors, image: null, title: 'Existing gym title', subtitle: null },
+      hero: {
+        ...visualColors,
+        image: null,
+        title: 'Existing gym title',
+        subtitle: null,
+      },
       sliders: [],
     });
 
