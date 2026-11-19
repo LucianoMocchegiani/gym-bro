@@ -81,7 +81,9 @@ export class AdsService {
     return { recorded: true };
   }
 
-  async list(query: ListQueryDto = {}): Promise<ListResult<Record<string, unknown>>> {
+  async list(
+    query: ListQueryDto = {},
+  ): Promise<ListResult<Record<string, unknown>>> {
     const n = normalizeListQuery(query);
     const orderField = resolveOrderField(
       n.orderBy,
@@ -99,7 +101,9 @@ export class AdsService {
     const events = campaigns.length
       ? await this.prisma.adEvent.groupBy({
           by: ['campaignId', 'type'],
-          where: { campaignId: { in: campaigns.map((campaign) => campaign.id) } },
+          where: {
+            campaignId: { in: campaigns.map((campaign) => campaign.id) },
+          },
           _count: { _all: true },
         })
       : [];
