@@ -1,10 +1,13 @@
 'use client';
 
 import { useEffect, useState, type FormEvent } from 'react';
-import { AdminGrid, Panel } from '@/components/AdminUi';
+import { DataTable } from '@/components/AdminList';
+import { AdminGrid } from '@/components/AdminUi';
 import { AdminModal } from '@/components/AdminModal';
 import { AdminShell } from '@/components/AdminShell';
 import { RequireStaff } from '@/components/RequireStaff';
+import { RowActions } from '@/components/RowActions';
+import { StatusPill, activeTone } from '@/components/StatusPill';
 import {
   AD_PLACEMENTS,
   listAdCampaigns,
@@ -27,7 +30,8 @@ const localTime = (value: string) => {
 
 function Campaigns() {
   const [items, setItems] = useState<AdCampaign[]>([]);
-  const [error, setError] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
   const [placements, setPlacements] = useState<AdPlacement[]>([...AD_PLACEMENTS]);
@@ -43,6 +47,7 @@ function Campaigns() {
   });
 
   async function reload() {
+    setError(null);
     try {
       setItems(await listAdCampaigns());
     } catch (err) {
@@ -51,17 +56,28 @@ function Campaigns() {
   }
 
   useEffect(() => {
-    void listAdCampaigns()
-      .then(setItems)
+    let cancelled = false;
+    listAdCampaigns()
+      .then((data) => {
+        if (!cancelled) setItems(data);
+      })
       .catch((err: unknown) => {
-        setError(err instanceof Error ? err.message : 'Error al cargar campañas');
+        if (!cancelled) {
+          setError(err instanceof Error ? err.message : 'Error al cargar campañas');
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
       });
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   async function submit(event: FormEvent) {
     event.preventDefault();
     setBusy(true);
-    setError('');
+    setError(null);
     try {
       const data: SaveAdCampaign = {
         ...form,
@@ -82,7 +98,7 @@ function Campaigns() {
   }
 
   async function toggle(item: AdCampaign) {
-    setError('');
+    setError(null);
     try {
       await saveAdCampaign(
         {
@@ -117,46 +133,55 @@ function Campaigns() {
         </button>
       }
     >
-      {error ? (
-        <p className="error" role="alert">
-          {error}
-        </p>
-      ) : null}
-      <h2>Campañas</h2>
-      {items.length ? (
-        <AdminGrid>
-          {items.map((item) => (
-            <Panel
-              key={item.id}
-              title={item.name}
-              description={item.active ? 'Activa' : 'Pausada'}
-            >
-              <p>{item.body}</p>
-              <p className="muted small">
-                {item.impressions} impresiones · {item.clicks} clics
-              </p>
-              <p className="muted small">
-                {item.placements.map((place) => labels[place]).join(' · ')}
-              </p>
-              <p className="muted small">
-                {new Date(item.startsAt).toLocaleDateString('es-AR')} –{' '}
-                {new Date(item.endsAt).toLocaleDateString('es-AR')}
-              </p>
-              <button
-                className="btn ghost"
-                type="button"
-                onClick={() => void toggle(item)}
-              >
-                {item.active ? 'Pausar' : 'Activar'}
-              </button>
-            </Panel>
-          ))}
-        </AdminGrid>
-      ) : (
-        <Panel>
-          <p className="muted">Todavía no hay campañas.</p>
-        </Panel>
-      )}
+      <DataTable
+        title="Campañas"
+        description={`${items.length} campañas`}
+        loading={loading}
+        error={error}
+        isEmpty={items.length === 0}
+        emptyText="Todavía no hay campañas."
+        paginate={false}
+        header={
+          <>
+            <th>Nombre</th>
+            <th>Estado</th>
+            <th>Ubicaciones</th>
+            <th>Vigencia</th>
+            <th>Impresiones</th>
+            <th>Clics</th>
+            <th />
+          </>
+        }
+      >
+        {items.map((item) => (
+          <tr key={item.id}>
+            <td>{item.name}</td>
+            <td>
+              <StatusPill tone={activeTone(item.active)}>
+                {item.active ? 'Activa' : 'Pausada'}
+              </StatusPill>
+            </td>
+            <td>{item.placements.map((place) => labels[place]).join(' · ')}</td>
+            <td>
+              {new Date(item.startsAt).toLocaleDateString('es-AR')} –{' '}
+              {new Date(item.endsAt).toLocaleDateString('es-AR')}
+            </td>
+            <td>{item.impressions}</td>
+            <td>{item.clicks}</td>
+            <td>
+              <RowActions>
+                <button
+                  className="btn ghost"
+                  type="button"
+                  onClick={() => void toggle(item)}
+                >
+                  {item.active ? 'Pausar' : 'Activar'}
+                </button>
+              </RowActions>
+            </td>
+          </tr>
+        ))}
+      </DataTable>
       <AdminModal
         open={modalOpen}
         onClose={() => setModalOpen(false)}
