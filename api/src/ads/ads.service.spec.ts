@@ -37,7 +37,10 @@ describe('AdsService', () => {
 
   it('delivers up to four active campaigns to an active tenant in the requested placement', async () => {
     findTenant.mockResolvedValue(activeTenant);
-    const campaigns = Array.from({ length: 4 }, (_, i) => ({ id: `campaign-${i}` }));
+    const campaigns = Array.from(
+      { length: 4 },
+      (_, i) => ({ id: `campaign-${i}` }),
+    );
     findMany.mockResolvedValue(campaigns);
     await expect(service.serve('gym-a', 'DASHBOARD')).resolves.toEqual(campaigns);
     const query = findMany.mock.calls[0]?.[0];
