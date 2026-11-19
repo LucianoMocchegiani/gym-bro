@@ -12,18 +12,29 @@ const visualColors = {
 
 function setup(savedContent: Record<string, unknown>) {
   const now = new Date();
+  let upsertedContent: unknown;
+  const upsert = jest.fn(
+    async (args: { update: { content: unknown } }) => {
+      upsertedContent = args.update.content;
+      return { updatedAt: now };
+    },
+  );
   const prisma = {
     tenantSite: {
       findUnique: jest.fn().mockResolvedValue({
         content: savedContent,
         updatedAt: now,
       }),
-      upsert: jest.fn().mockResolvedValue({ updatedAt: now }),
+      upsert,
     },
   } as unknown as PrismaService;
   const audit = { record: jest.fn() } as unknown as AuditService;
   const upload = {} as unknown as UploadService;
-  return { service: new TenantSiteService(prisma, audit, upload), prisma };
+  return {
+    service: new TenantSiteService(prisma, audit, upload),
+    upsert,
+    getUpsertedContent: () => upsertedContent,
+  };
 }
 
 function dtoWithoutThemeColor(): PutTenantSiteDto {
@@ -35,7 +46,7 @@ function dtoWithoutThemeColor(): PutTenantSiteDto {
       subtitle: null,
     },
     sliders: [],
-  } as PutTenantSiteDto;
+  };
 }
 
 describe('TenantSiteService brand color compatibility', () => {
@@ -57,7 +68,7 @@ describe('TenantSiteService brand color compatibility', () => {
   });
 
   it('keeps a saved color when an older client omits themeColor', async () => {
-    const { service, prisma } = setup({
+    const { service, upsert, getUpsertedContent } = setup({
       themeColor: '#8855cc',
       hero: {
         ...visualColors,
@@ -73,12 +84,9 @@ describe('TenantSiteService brand color compatibility', () => {
       userId: 'staff-id',
     });
 
-    expect(prisma.tenantSite.upsert).toHaveBeenCalledWith(
-      expect.objectContaining({
-        update: expect.objectContaining({
-          content: expect.objectContaining({ themeColor: '#8855cc' }),
-        }),
-      }),
+    expect(upsert).toHaveBeenCalled();
+    expect(getUpsertedContent()).toEqual(
+      expect.objectContaining({ themeColor: '#8855cc' }),
     );
   });
 });
