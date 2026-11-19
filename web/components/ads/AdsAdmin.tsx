@@ -34,7 +34,7 @@ function Campaigns() {
     imageUrl: '',
     targetUrl: '',
     startsAt: localTime(new Date().toISOString()),
-    endsAt: localTime(new Date(Date.now() + 30 * 86400000).toISOString()),
+    endsAt: localTime(new Date(new Date().getTime() + 30 * 86400000).toISOString()),
   });
 
   async function reload() {
