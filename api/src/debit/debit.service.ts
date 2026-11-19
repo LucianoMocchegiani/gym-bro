@@ -468,9 +468,7 @@ export class DebitService {
       await this.tryCancelRemote(accessToken, mandate.mpPreapprovalId);
     }
     const staffId =
-      actor.profileType === 'STAFF'
-        ? actor.userId
-        : mandate.enrolledByStaffId;
+      actor.profileType === 'STAFF' ? actor.userId : mandate.enrolledByStaffId;
     const row = await this.prisma.debitMandate.update({
       where: { id: mandate.id },
       data: {
