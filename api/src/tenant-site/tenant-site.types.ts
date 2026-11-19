@@ -5,6 +5,9 @@
  * los mismos tipos (`web/lib/api/tenant-site.ts`): mantener ambos alineados.
  */
 
+/** Color de marca predeterminado de Faciliter para webs sin personalización. */
+export const SITE_DEFAULT_PRIMARY_COLOR = '#a3e635';
+
 /** Tono del texto: LIGHT = texto claro sobre capa oscura; DARK = al revés. */
 export const SITE_TONES = ['LIGHT', 'DARK'] as const;
 export type SiteTone = (typeof SITE_TONES)[number];
@@ -78,6 +81,8 @@ export type SiteSlider = {
 };
 
 export type TenantSiteContent = {
+  /** Ausente en contenido anterior; el lector le aplica el verde predeterminado. */
+  themeColor?: string;
   hero: SiteHero;
   sliders: SiteSlider[];
 };
