@@ -1,4 +1,6 @@
 import { apiRequest } from './client';
+import { toSearchParams } from './list';
+import type { ListParams, ListResult } from './list';
 
 export const AD_PLACEMENTS = ['MEMBER_PORTAL', 'DASHBOARD', 'GYM_SITE'] as const;
 export type AdPlacement = (typeof AD_PLACEMENTS)[number];
@@ -19,8 +21,9 @@ export type AdCampaign = {
 export type AdCreative = Pick<AdCampaign, 'id' | 'name' | 'body' | 'imageUrl' | 'targetUrl'>;
 export type SaveAdCampaign = Omit<AdCampaign, 'id' | 'impressions' | 'clicks'>;
 
-export function listAdCampaigns() {
-  return apiRequest<AdCampaign[]>('/ads/campaigns');
+export function listAdCampaigns(input?: ListParams): Promise<ListResult<AdCampaign>> {
+  const qs = toSearchParams(input);
+  return apiRequest<ListResult<AdCampaign>>(`/ads/campaigns${qs ? `?${qs}` : ''}`);
 }
 export function saveAdCampaign(data: SaveAdCampaign, id?: string) {
   return apiRequest<AdCampaign>(id ? `/ads/campaigns/${id}` : '/ads/campaigns', {

@@ -17,19 +17,26 @@ describe('AdsService', () => {
     Promise<Array<{ id: string }>>,
     [Record<string, unknown>]
   >();
+  const countCampaigns = jest.fn<Promise<number>, []>();
+  const groupEvents = jest.fn();
   const createEvent = jest.fn<
     Promise<{ id: string }>,
     [Record<string, unknown>]
   >();
+  const transaction = jest.fn(async (queries: Promise<unknown>[]) =>
+    Promise.all(queries),
+  );
   const prisma = {
+    $transaction: transaction,
     tenant: { findUnique: findTenant },
     adCampaign: {
       findFirst,
       findMany,
+      count: countCampaigns,
       create: jest.fn(),
       update: jest.fn(),
     },
-    adEvent: { create: createEvent, groupBy: jest.fn() },
+    adEvent: { create: createEvent, groupBy: groupEvents },
   };
   const service = new AdsService(prisma as never);
 
@@ -59,6 +66,37 @@ describe('AdsService', () => {
     };
     expect(where.startsAt.lte).toBeInstanceOf(Date);
     expect(where.endsAt.gt).toBeInstanceOf(Date);
+  });
+
+  it('returns campaigns using the shared server-pagination contract', async () => {
+    const campaigns = [{ id: 'campaign-1' }];
+    findMany.mockResolvedValue(campaigns);
+    countCampaigns.mockResolvedValue(21);
+    groupEvents.mockResolvedValue([
+      {
+        campaignId: 'campaign-1',
+        type: 'IMPRESSION',
+        _count: { _all: 5 },
+      },
+    ]);
+
+    await expect(service.list({ page: 2, pageSize: 10 })).resolves.toEqual({
+      items: [{ id: 'campaign-1', impressions: 5, clicks: 0 }],
+      page: 2,
+      pageSize: 10,
+      total: 21,
+      hasMore: true,
+    });
+    expect(findMany).toHaveBeenCalledWith({
+      orderBy: { createdAt: 'desc' },
+      skip: 10,
+      take: 10,
+    });
+    expect(groupEvents).toHaveBeenCalledWith({
+      by: ['campaignId', 'type'],
+      where: { campaignId: { in: ['campaign-1'] } },
+      _count: { _all: true },
+    });
   });
 
   it('records events with tenant and campaign IDs only, never a member identity', async () => {
