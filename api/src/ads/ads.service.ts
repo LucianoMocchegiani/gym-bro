@@ -23,7 +23,7 @@ export class AdsService {
     });
     if (!tenant || tenant.status !== 'ACTIVE') throw new NotFoundException();
     const now = new Date();
-    return this.prisma.adCampaign.findFirst({
+    return this.prisma.adCampaign.findMany({
       where: {
         active: true,
         placements: { has: placement },
@@ -31,6 +31,7 @@ export class AdsService {
         endsAt: { gt: now },
       },
       orderBy: { createdAt: 'desc' },
+      take: 4,
       select: {
         id: true,
         name: true,
