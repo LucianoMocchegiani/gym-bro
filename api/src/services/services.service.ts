@@ -283,11 +283,7 @@ export class ServicesService {
     }
 
     await this.prisma.service.delete({ where: { id: serviceId } });
-    await this.upload.replaceOwnedPublicImage(
-      tenantId,
-      service.imageUrl,
-      null,
-    );
+    await this.upload.replaceOwnedPublicImage(tenantId, service.imageUrl, null);
     await this.audit.record({
       tenantId,
       actor,

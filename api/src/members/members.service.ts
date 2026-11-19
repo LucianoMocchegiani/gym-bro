@@ -605,11 +605,7 @@ export class MembersService {
     }
 
     await this.prisma.member.delete({ where: { id: memberId } });
-    await this.upload.replaceOwnedPublicImage(
-      tenantId,
-      member.imageUrl,
-      null,
-    );
+    await this.upload.replaceOwnedPublicImage(tenantId, member.imageUrl, null);
     await this.audit.record({
       tenantId,
       actor,

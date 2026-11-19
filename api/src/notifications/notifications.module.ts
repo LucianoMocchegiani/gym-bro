@@ -24,7 +24,9 @@ import { StubMailAdapter } from './stub-mail.adapter';
     {
       provide: MAIL_PORT,
       useFactory: (config: ConfigService) => {
-        const driver = (config.get<string>('MAIL_DRIVER') ?? 'stub').toLowerCase();
+        const driver = (
+          config.get<string>('MAIL_DRIVER') ?? 'stub'
+        ).toLowerCase();
         if (driver === 'resend') {
           return new ResendMailAdapter(config);
         }

@@ -370,8 +370,7 @@ export class DebitService {
     const mandate = await this.requireMandate(tenantId, mandateId);
     const mapped = remoteStatus.toLowerCase();
     if (mapped !== 'approved' && mapped !== 'processed') {
-      const chargeFailed =
-        mapped === 'rejected' || mapped === 'cancelled';
+      const chargeFailed = mapped === 'rejected' || mapped === 'cancelled';
       const waiting = mapped === 'pending' || mapped === 'in_process';
       if (
         (chargeFailed || waiting) &&
@@ -465,8 +464,7 @@ export class DebitService {
       return this.toDetail(mandate);
     }
     if (mandate.mpPreapprovalId) {
-      const accessToken =
-        await this.accounts.getDecryptedAccessToken(tenantId);
+      const accessToken = await this.accounts.getDecryptedAccessToken(tenantId);
       await this.tryCancelRemote(accessToken, mandate.mpPreapprovalId);
     }
     const staffId =

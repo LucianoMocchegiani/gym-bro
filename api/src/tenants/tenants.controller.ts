@@ -10,11 +10,11 @@ import {
   Patch,
   Post,
   Query,
+  UseGuards,
 } from '@nestjs/common';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { PlatformTenantGuard } from '../auth/guards/platform-tenant.guard';
-import { UseGuards } from '@nestjs/common';
 import type { AuthUser } from '../auth/auth.types';
 import { toAuditActor } from '../audit/to-audit-actor';
 import { ListResult } from '../common/list';
@@ -25,7 +25,12 @@ import {
   UpdateTenantDto,
 } from './dto/tenant.dto';
 import { TenantsService } from './tenants.service';
-import { PlatformDashboardKpis, PlatformTenantSummary, PlatformTrialEligibility, TenantResponse } from './tenants.types';
+import {
+  PlatformDashboardKpis,
+  PlatformTenantSummary,
+  PlatformTrialEligibility,
+  TenantResponse,
+} from './tenants.types';
 
 /**
  * CRUD de tenants para Super Admin (plataforma).
@@ -37,9 +42,7 @@ import { PlatformDashboardKpis, PlatformTenantSummary, PlatformTrialEligibility,
 export class TenantsController {
   constructor(private readonly tenantsService: TenantsService) {}
 
-  /**
-   * Alta de tenant + owner Admin, con branch default y roles sistema (CU-ROL-001).
-   */
+  /** Alta de tenant + owner Admin, con branch default y roles sistema (CU-ROL-001). */
   @UseGuards(JwtAuthGuard, PlatformTenantGuard)
   @Post()
   @HttpCode(HttpStatus.CREATED)
@@ -50,9 +53,7 @@ export class TenantsController {
     return this.tenantsService.create(dto, toAuditActor(user));
   }
 
-  /**
-   * Lista de tenants con membresía (para Super Admin).
-   */
+  /** Lista de tenants con membresía (para Super Admin). */
   @UseGuards(JwtAuthGuard, PlatformTenantGuard)
   @Get()
   findAll(
@@ -75,18 +76,14 @@ export class TenantsController {
     return this.tenantsService.platformList(query);
   }
 
-  /**
-   * KPIs del inicio de plataforma (gyms activos y sin pack Faciliter).
-   */
+  /** KPIs del inicio de plataforma (gyms activos y sin pack Faciliter). */
   @UseGuards(JwtAuthGuard, PlatformTenantGuard)
   @Get('platform/kpis')
   platformKpis(): Promise<PlatformDashboardKpis> {
     return this.tenantsService.platformKpis();
   }
 
-  /**
-   * Elegibilidad de 30 días de prueba para Caja de plataforma.
-   */
+  /** Elegibilidad de 30 días de prueba para Caja de plataforma. */
   @UseGuards(JwtAuthGuard, PlatformTenantGuard)
   @Get(':id/platform-trial')
   platformTrial(
@@ -95,9 +92,7 @@ export class TenantsController {
     return this.tenantsService.getPlatformTrialEligibility(id);
   }
 
-  /**
-   * Detalle de un tenant.
-   */
+  /** Detalle de un tenant. */
   @UseGuards(JwtAuthGuard, PlatformTenantGuard)
   @Get(':id')
   findOne(@Param('id', ParseUUIDPipe) id: string): Promise<TenantResponse> {
@@ -119,9 +114,7 @@ export class TenantsController {
     return this.tenantsService.update(id, dto, toAuditActor(user));
   }
 
-  /**
-   * Elimina un tenant (cascada total). Requiere `ELIMINAR` + slug.
-   */
+  /** Elimina un tenant (cascada total). Requiere `ELIMINAR` + slug. */
   @UseGuards(JwtAuthGuard, PlatformTenantGuard)
   @Delete(':id')
   remove(

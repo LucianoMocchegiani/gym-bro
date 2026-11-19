@@ -11,7 +11,13 @@ import { WaitlistService } from './waitlist.service';
  * Lista de espera de sesiones (E4 / CU-RES-004..005).
  */
 @Module({
-  imports: [AuthModule, RolesModule, AuditModule, TenantSettingsModule, NotificationsModule],
+  imports: [
+    AuthModule,
+    RolesModule,
+    AuditModule,
+    TenantSettingsModule,
+    NotificationsModule,
+  ],
   controllers: [WaitlistController],
   providers: [WaitlistService],
   exports: [WaitlistService],

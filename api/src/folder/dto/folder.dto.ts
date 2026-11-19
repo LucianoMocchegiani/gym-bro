@@ -1,4 +1,10 @@
-import { IsOptional, IsString, IsUUID, MaxLength, MinLength } from 'class-validator';
+import {
+  IsOptional,
+  IsString,
+  IsUUID,
+  MaxLength,
+  MinLength,
+} from 'class-validator';
 import {
   FOLDER_NOTE_BODY_MAX,
   FOLDER_NOTE_TITLE_MAX,

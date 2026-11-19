@@ -17,4 +17,7 @@ export type MobilePlatformVersionPolicy = {
 };
 
 /** Respuesta de `GET /api/public/app-config`. */
-export type MobileAppConfig = Record<MobilePlatform, MobilePlatformVersionPolicy>;
+export type MobileAppConfig = Record<
+  MobilePlatform,
+  MobilePlatformVersionPolicy
+>;

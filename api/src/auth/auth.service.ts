@@ -371,7 +371,6 @@ export class AuthService {
       include: { staffUsers: { where: { tenantId, active: true } } },
     });
     if (byEmail?.staffUsers.length) {
-      const staffUser = byEmail.staffUsers[0];
       if (byEmail.googleSub && byEmail.googleSub !== claims.sub) {
         throw new UnauthorizedException('Invalid credentials');
       }
@@ -870,11 +869,19 @@ export class AuthService {
     if (!response.ok) {
       throw new UnauthorizedException('Session invalid');
     }
-    const proxyIdentity: {
-      email: string;
-      name: string | null;
-      googleSub: string;
-    } = await response.json();
+    const proxyIdentity: unknown = await response.json();
+    if (
+      typeof proxyIdentity !== 'object' ||
+      proxyIdentity === null ||
+      !('email' in proxyIdentity) ||
+      typeof proxyIdentity.email !== 'string' ||
+      !('googleSub' in proxyIdentity) ||
+      typeof proxyIdentity.googleSub !== 'string' ||
+      !('name' in proxyIdentity) ||
+      (proxyIdentity.name !== null && typeof proxyIdentity.name !== 'string')
+    ) {
+      throw new UnauthorizedException('Session invalid');
+    }
 
     const identityRecord = await this.ensureIdentityFromGoogle({
       email: proxyIdentity.email,

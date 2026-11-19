@@ -173,9 +173,7 @@ export class RolesService {
     const role = await this.findRoleInTenant(tenantId, roleId);
 
     if (isProtectedRoleSlug(role.slug)) {
-      throw new ForbiddenException(
-        'The system role cannot be modified',
-      );
+      throw new ForbiddenException('The system role cannot be modified');
     }
 
     const before = await this.getRoleDetail(tenantId, roleId);

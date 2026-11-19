@@ -88,7 +88,7 @@ export class TransactionService {
       },
     });
 
-    const transactionItems = await Promise.all(
+    await Promise.all(
       items.map((item) =>
         this.prisma.transactionItem.create({
           data: {
@@ -129,11 +129,7 @@ export class TransactionService {
   ): Promise<
     Prisma.TransactionGetPayload<{ include: { transactionItems: true } }>
   > {
-    const transaction = await this.prisma.transaction.findUniqueOrThrow({
-      where: { id: transactionId },
-      include: { transactionItems: true },
-    });
-
+    void actor;
     await this.prisma.$transaction([
       this.prisma.transaction.update({
         where: { id: transactionId },

@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { ScheduleModule } from '@nestjs/schedule';
 import { AccessModule } from './access/access.module';
+import { AdsModule } from './ads/ads.module';
 import { AuditModule } from './audit/audit.module';
 import { AuthModule } from './auth/auth.module';
 import { PaymentRegisterModule } from './payment-register/payment-register.module';
@@ -81,6 +82,7 @@ import { UploadModule } from './upload/upload.module';
     MemberImportModule,
     ExpensesModule,
     NotificationsModule,
+    AdsModule,
   ],
 })
 export class AppModule {}

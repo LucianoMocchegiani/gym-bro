@@ -286,10 +286,7 @@ export class ExpirationsService {
         ownerIdentityId: true,
       },
     });
-    if (
-      !tenant?.ownerIdentityId ||
-      tenant.slug === PLATFORM_ADMIN_SLUG
-    ) {
+    if (!tenant?.ownerIdentityId || tenant.slug === PLATFORM_ADMIN_SLUG) {
       return [];
     }
 

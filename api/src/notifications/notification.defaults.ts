@@ -127,19 +127,13 @@ export function defaultTemplate(event: NotificationEventCode): {
   return { subject: d.subject, body: d.body };
 }
 
-/**
- * Nombre de producto del evento (Admin y listados).
- */
+/** Nombre de producto del evento (Admin y listados). */
 export function notificationEventLabel(event: NotificationEventCode): string {
   return DEFAULTS[event].label;
 }
 
-/**
- * Variables `{{clave}}` que el dispatcher rellena para ese evento.
- */
-export function templatePlaceholders(
-  event: NotificationEventCode,
-): string[] {
+/** Variables `{{clave}}` que el dispatcher rellena para ese evento. */
+export function templatePlaceholders(event: NotificationEventCode): string[] {
   return [...DEFAULTS[event].placeholders];
 }
 

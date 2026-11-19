@@ -71,10 +71,10 @@ export class R2Adapter implements FileStoragePort {
     return `${this.publicBaseUrl}/${fullKey}`;
   }
 
-  /**
-   * Lee el objeto crudo (sin URL pública).
-   */
-  async getObject(key: string): Promise<{ buffer: Buffer; contentType: string }> {
+  /** Lee el objeto crudo (sin URL pública). */
+  async getObject(
+    key: string,
+  ): Promise<{ buffer: Buffer; contentType: string }> {
     const fullKey = this.resolveKey(key);
     const out = await this.client.send(
       new GetObjectCommand({
