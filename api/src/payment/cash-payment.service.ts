@@ -112,7 +112,6 @@ export class CashPaymentService {
       memberId,
       billedTenantId,
       items,
-      idempotencyKey,
       method,
       cashConcept,
       receiptConcept,
