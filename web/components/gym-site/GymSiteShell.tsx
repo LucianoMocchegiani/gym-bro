@@ -6,7 +6,9 @@ import { MktShell } from '@/components/marketing/MktShell';
 import { platformOrigin } from '@/lib/tenant-host';
 
 /**
- * Header + footer de las páginas públicas de un gym.
+ * Header + footer de la web pública de un gym (`{slug}/`, `/comprar`, `/portal`, `/cuenta`).
+ * El header ocupa todo el ancho, como el topbar del panel, para que tema y
+ * avatar no salten de lugar al pasar del panel a la web.
  */
 export function GymSiteShell({
   slug,
