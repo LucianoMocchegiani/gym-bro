@@ -276,38 +276,69 @@ function Campaigns() {
         onClose={closeModal}
         title={selected?.name ?? 'Detalle de campaña'}
         description="Detalle de la campaña."
-        size="comfortable"
+        size="wide"
       >
         {selected ? (
-          <dl className="detail-list">
-            <dt>Estado</dt>
-            <dd>{selected.active ? 'Activa' : 'Pausada'}</dd>
-            <dt>Texto</dt>
-            <dd>{selected.body}</dd>
-            <dt>Ubicaciones</dt>
-            <dd>{selected.placements.map((place) => labels[place]).join(' · ')}</dd>
-            <dt>Vigencia</dt>
-            <dd>
-              {new Date(selected.startsAt).toLocaleString('es-AR')} –{' '}
-              {new Date(selected.endsAt).toLocaleString('es-AR')}
-            </dd>
-            <dt>Imagen</dt>
-            <dd>
-              <a href={selected.imageUrl} target="_blank" rel="noreferrer">
-                Abrir imagen
-              </a>
-            </dd>
-            <dt>Destino</dt>
-            <dd>
-              <a href={selected.targetUrl} target="_blank" rel="noreferrer">
-                Abrir destino
-              </a>
-            </dd>
-            <dt>Impresiones</dt>
-            <dd>{selected.impressions}</dd>
-            <dt>Clics</dt>
-            <dd>{selected.clicks}</dd>
-          </dl>
+          <div className="admin-form">
+            <AdminGrid>
+              <label>
+                Estado
+                <input
+                  readOnly
+                  value={selected.active ? 'Activa' : 'Pausada'}
+                />
+              </label>
+              <label>
+                Texto
+                <textarea readOnly rows={2} value={selected.body} />
+              </label>
+              <label>
+                Imagen (URL HTTPS)
+                <input readOnly value={selected.imageUrl} />
+                <a href={selected.imageUrl} target="_blank" rel="noreferrer">
+                  Abrir imagen
+                </a>
+              </label>
+              <label>
+                Destino (URL)
+                <input readOnly value={selected.targetUrl} />
+                <a href={selected.targetUrl} target="_blank" rel="noreferrer">
+                  Abrir destino
+                </a>
+              </label>
+              <label>
+                Desde
+                <input
+                  readOnly
+                  value={new Date(selected.startsAt).toLocaleString('es-AR')}
+                />
+              </label>
+              <label>
+                Hasta
+                <input
+                  readOnly
+                  value={new Date(selected.endsAt).toLocaleString('es-AR')}
+                />
+              </label>
+              <label>
+                Impresiones
+                <input readOnly value={selected.impressions} />
+              </label>
+              <label>
+                Clics
+                <input readOnly value={selected.clicks} />
+              </label>
+            </AdminGrid>
+            <fieldset className="perm-checklist">
+              <legend>Ubicaciones</legend>
+              {selected.placements.map((place) => (
+                <label key={place} className="checkbox-row">
+                  <input type="checkbox" checked disabled readOnly />
+                  {labels[place]}
+                </label>
+              ))}
+            </fieldset>
+          </div>
         ) : null}
       </AdminModal>
 
