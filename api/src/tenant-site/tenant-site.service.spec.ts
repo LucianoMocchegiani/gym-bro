@@ -13,12 +13,10 @@ const visualColors = {
 function setup(savedContent: Record<string, unknown>) {
   const now = new Date();
   let upsertedContent: unknown;
-  const upsert = jest.fn(
-    async (args: { update: { content: unknown } }) => {
-      upsertedContent = args.update.content;
-      return { updatedAt: now };
-    },
-  );
+  const upsert = jest.fn((args: { update: { content: unknown } }) => {
+    upsertedContent = args.update.content;
+    return Promise.resolve({ updatedAt: now });
+  });
   const prisma = {
     tenantSite: {
       findUnique: jest.fn().mockResolvedValue({
