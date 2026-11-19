@@ -1,0 +1,16 @@
+/* Brand color is scoped to the public gym landing and its editor preview. */
+.gym-site-branded {
+  --accent: var(--site-primary);
+  --accent-ink: var(--site-primary-ink);
+  --accent-soft: color-mix(in srgb, var(--site-primary) 16%, transparent);
+  --accent-line: color-mix(in srgb, var(--site-primary) 48%, transparent);
+  --ok: var(--site-primary);
+  --ok-soft: color-mix(in srgb, var(--site-primary) 16%, transparent);
+  background:
+    radial-gradient(
+      ellipse 80% 50% at 10% -10%,
+      color-mix(in srgb, var(--site-primary) 12%, transparent) 0%,
+      transparent 55%
+    ),
+    var(--bg);
+}
