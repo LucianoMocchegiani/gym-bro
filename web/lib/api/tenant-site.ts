@@ -21,7 +21,7 @@ export type SiteImage = {
   focusY: SiteFocusY;
 };
 
-/** Colores de un bloque en un tema de la web (claro u oscuro). */
+/** Colores de un bloque de portada o slide en un tema. */
 export type SiteThemeColors = {
   tone: SiteTone;
   /** `#rrggbb` para el título; null = mismo color que el texto. */
@@ -64,6 +64,8 @@ export type SiteSlider = {
 };
 
 export type TenantSiteContent = {
+  /** Opcional para conservar compatibilidad con contenido de webs previas. */
+  themeColor?: string;
   hero: SiteHero;
   sliders: SiteSlider[];
 };
@@ -73,6 +75,8 @@ export type TenantSiteDetail = {
   content: TenantSiteContent | null;
   updatedAt: string | null;
 };
+
+export const SITE_DEFAULT_PRIMARY_COLOR = '#a3e635';
 
 export const SITE_LIMITS = {
   heroTitle: { min: 10, max: 80 },
