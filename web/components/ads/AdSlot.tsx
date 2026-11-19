@@ -48,12 +48,12 @@ export function AdSlot({ tenantSlug, placement }: { tenantSlug: string; placemen
     return () => observer.disconnect();
   }, [ads.length]);
 
-  useEffect(() => setStartIndex(0), [visibleCount]);
-
   const hasMoreAds = ads.length > visibleCount;
-  const visibleAds = Array.from({ length: visibleCount }, (_, i) => ads[(startIndex + i + ads.length) % ads.length]).filter(Boolean);
 
   useEffect(() => {
+    const visibleAds = hasMoreAds
+      ? Array.from({ length: visibleCount }, (_, i) => ads[(startIndex + i + ads.length) % ads.length]).filter(Boolean)
+      : ads;
     for (const ad of visibleAds) {
       const key = `${tenantSlug}:${placement}:${ad.id}:${displayKey}`;
       if (!tracked.current.has(key)) {
@@ -61,7 +61,7 @@ export function AdSlot({ tenantSlug, placement }: { tenantSlug: string; placemen
         void trackAd(tenantSlug, ad.id, placement, 'IMPRESSION').catch(() => undefined);
       }
     }
-  }, [ads, displayKey, startIndex, tenantSlug, placement, visibleCount]);
+  }, [ads, displayKey, startIndex, tenantSlug, placement, visibleCount, hasMoreAds]);
 
   useEffect(() => {
     if (!rotationEnabled || hovered || !hasMoreAds) return;
