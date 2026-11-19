@@ -133,7 +133,11 @@ export class TenantSiteService {
     actor: AuditActor,
   ): Promise<TenantSiteDetail> {
     const before = await this.get(tenantId);
-    const content = await this.normalize(tenantId, dto, before.content?.themeColor);
+    const content = await this.normalize(
+      tenantId,
+      dto,
+      before.content?.themeColor,
+    );
     const json = content as unknown as Prisma.InputJsonValue;
     const row = await this.prisma.tenantSite.upsert({
       where: { tenantId },
@@ -215,14 +219,11 @@ export class TenantSiteService {
     });
 
     await this.assertPacksExist(tenantId, sliders);
-    return {
-      themeColor:
-        dto.themeColor?.toLowerCase() ??
-        existingThemeColor ??
-        SITE_DEFAULT_PRIMARY_COLOR,
-      hero,
-      sliders,
-    };
+    const themeColor =
+      dto.themeColor?.toLowerCase() ??
+      existingThemeColor ??
+      SITE_DEFAULT_PRIMARY_COLOR;
+    return { themeColor, hero, sliders };
   }
 
   private visual(
