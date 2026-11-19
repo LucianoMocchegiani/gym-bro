@@ -6,21 +6,21 @@ import { MktShell } from '@/components/marketing/MktShell';
 import { platformOrigin } from '@/lib/tenant-host';
 
 /**
- * Header + footer de la web pública de un gym (`{slug}/`, `/comprar`, `/portal`, `/cuenta`).
- * El header ocupa todo el ancho, como el topbar del panel, para que tema y
- * avatar no salten de lugar al pasar del panel a la web.
+ * Header + footer de las páginas públicas de un gym.
  */
 export function GymSiteShell({
   slug,
   gymName,
   children,
+  brandColor,
 }: {
   slug: string;
   gymName: string;
   children: ReactNode;
+  brandColor?: string;
 }) {
   return (
-    <MarketingFrame>
+    <MarketingFrame brandColor={brandColor}>
       <header className="mkt-header mkt-header-bar">
         <Link href="/" className="mkt-brand">
           <span className="brand-mark" aria-hidden="true">
