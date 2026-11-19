@@ -3,8 +3,17 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import {
+  ListQueryDto,
+  ListResult,
+  normalizeListQuery,
+  resolveOrderField,
+  toListResult,
+} from '../common/list';
 import { PrismaService } from '../prisma/prisma.service';
 import { AD_PLACEMENTS, SaveAdCampaignDto, TrackAdEventDto } from './ads.dto';
+
+const AD_CAMPAIGN_ORDER_FIELDS = ['createdAt'] as const;
 
 @Injectable()
 export class AdsService {
@@ -72,24 +81,50 @@ export class AdsService {
     return { recorded: true };
   }
 
-  async list() {
-    const [campaigns, events] = await Promise.all([
-      this.prisma.adCampaign.findMany({ orderBy: { createdAt: 'desc' } }),
-      this.prisma.adEvent.groupBy({
-        by: ['campaignId', 'type'],
-        _count: { _all: true },
+  async list(
+    query: ListQueryDto = {},
+  ): Promise<ListResult<Record<string, unknown>>> {
+    const n = normalizeListQuery(query);
+    const orderField = resolveOrderField(
+      n.orderBy,
+      AD_CAMPAIGN_ORDER_FIELDS,
+      'createdAt',
+    );
+    const [campaigns, total] = await this.prisma.$transaction([
+      this.prisma.adCampaign.findMany({
+        orderBy: { [orderField]: n.order },
+        skip: n.skip,
+        take: n.take,
       }),
+      this.prisma.adCampaign.count(),
     ]);
-    return campaigns.map((campaign) => ({
-      ...campaign,
-      impressions:
-        events.find(
-          (e) => e.campaignId === campaign.id && e.type === 'IMPRESSION',
-        )?._count._all ?? 0,
-      clicks:
-        events.find((e) => e.campaignId === campaign.id && e.type === 'CLICK')
-          ?._count._all ?? 0,
-    }));
+    const events = campaigns.length
+      ? await this.prisma.adEvent.groupBy({
+          by: ['campaignId', 'type'],
+          where: {
+            campaignId: { in: campaigns.map((campaign) => campaign.id) },
+          },
+          _count: { _all: true },
+        })
+      : [];
+    return toListResult(
+      campaigns.map((campaign) => ({
+        ...campaign,
+        impressions:
+          events.find(
+            (event) =>
+              event.campaignId === campaign.id && event.type === 'IMPRESSION',
+          )?._count._all ?? 0,
+        clicks:
+          events.find(
+            (event) =>
+              event.campaignId === campaign.id && event.type === 'CLICK',
+          )?._count._all ?? 0,
+      })),
+      total,
+      n.page,
+      n.pageSize,
+    );
   }
 
   create(dto: SaveAdCampaignDto) {

@@ -6,8 +6,10 @@ import {
   ParseUUIDPipe,
   Patch,
   Post,
+  Query,
   UseGuards,
 } from '@nestjs/common';
+import { ListQueryDto } from '../common/list';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { PlatformTenantGuard } from '../auth/guards/platform-tenant.guard';
 import { AdsService } from './ads.service';
@@ -32,8 +34,8 @@ export class AdsController {
 
   @UseGuards(JwtAuthGuard, PlatformTenantGuard)
   @Get('campaigns')
-  list() {
-    return this.ads.list();
+  list(@Query() query: ListQueryDto) {
+    return this.ads.list(query);
   }
 
   @UseGuards(JwtAuthGuard, PlatformTenantGuard)
