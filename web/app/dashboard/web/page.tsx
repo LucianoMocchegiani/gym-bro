@@ -84,8 +84,10 @@ function WebDelGymInner() {
             onSaved={(saved, message) => {
               setDetail(saved);
               setNotice(message);
-              setVersion((v) => v + 1);
-              if (!saved.content) setSocialVersion((v) => v + 1);
+              if (!saved.content) {
+                setVersion((v) => v + 1);
+                setSocialVersion((v) => v + 1);
+              }
             }}
           />
           <SocialLinksEditor
