@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Panel } from '@/components/AdminUi';
 import { ApiClientError } from '@/lib/api/client';
 import {
@@ -16,15 +16,7 @@ const SOCIALS = [
   ['tiktok', 'TikTok'],
   ['instagram', 'Instagram'],
   ['whatsapp', 'WhatsApp'],
-] as const satisfies ReadonlyArray<[keyof SiteSocialLinks, string]>;
-
-const EMPTY_LINKS: Record<keyof SiteSocialLinks, string> = {
-  facebook: '',
-  x: '',
-  tiktok: '',
-  instagram: '',
-  whatsapp: '',
-};
+] as const satisfies ReadonlyArray<readonly [keyof SiteSocialLinks, string]>;
 
 export function SocialLinksEditor({
   detail,
@@ -45,10 +37,6 @@ export function SocialLinksEditor({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (!detail.content) setLinks(EMPTY_LINKS);
-  }, [detail.content]);
 
   async function save() {
     setBusy(true);

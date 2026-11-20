@@ -12,7 +12,7 @@ const SOCIALS = [
   ['tiktok', 'TikTok'],
   ['instagram', 'Instagram'],
   ['whatsapp', 'WhatsApp'],
-] as const satisfies ReadonlyArray<[keyof SiteSocialLinks, string]>;
+] as const satisfies ReadonlyArray<readonly [keyof SiteSocialLinks, string]>;
 
 /**
  * Header + footer de la web pública de un gym (`{slug}/`, `/comprar`, `/portal`, `/cuenta`).

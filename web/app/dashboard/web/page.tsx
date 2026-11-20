@@ -33,6 +33,7 @@ function WebDelGymInner() {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [version, setVersion] = useState(0);
+  const [socialVersion, setSocialVersion] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
@@ -84,9 +85,11 @@ function WebDelGymInner() {
               setDetail(saved);
               setNotice(message);
               setVersion((v) => v + 1);
+              if (!saved.content) setSocialVersion((v) => v + 1);
             }}
           />
           <SocialLinksEditor
+            key={socialVersion}
             detail={detail}
             canWrite={canWrite}
             onSaved={setDetail}
