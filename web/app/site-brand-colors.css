@@ -24,6 +24,7 @@
 .site-frame-content .site-lead-text {
   padding: 0;
   line-height: 1;
+  border-radius: 0.12em;
   background: var(--site-overlay);
   -webkit-box-decoration-break: clone;
   box-decoration-break: clone;
