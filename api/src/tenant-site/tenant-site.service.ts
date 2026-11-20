@@ -26,106 +26,58 @@ import type {
 
 export const SITE_IMAGE_FOLDER = 'site';
 const HEX_COLOR = /^#[0-9a-f]{6}$/i;
-const EMPTY_SOCIAL_LINKS: SiteSocialLinks = {
-  facebook: null,
-  x: null,
-  tiktok: null,
-  instagram: null,
-  whatsapp: null,
-};
+const EMPTY_SOCIAL_LINKS: SiteSocialLinks = { facebook: null, x: null, tiktok: null, instagram: null, whatsapp: null };
 const SOCIAL_HOSTS: Record<keyof SiteSocialLinks, string[]> = {
-  facebook: ['facebook.com', 'fb.com'],
-  x: ['x.com', 'twitter.com'],
-  tiktok: ['tiktok.com'],
-  instagram: ['instagram.com'],
-  whatsapp: ['wa.me', 'whatsapp.com'],
+  facebook: ['facebook.com', 'fb.com'], x: ['x.com', 'twitter.com'], tiktok: ['tiktok.com'],
+  instagram: ['instagram.com'], whatsapp: ['wa.me', 'whatsapp.com'],
 };
-
 function clean(value: string | null | undefined): string | null {
   const trimmed = value?.trim();
   return trimmed ? trimmed : null;
 }
-
 type StoredVisual = Partial<SiteVisual> & Partial<SiteThemeColors>;
-
 function upgradeVisual<T extends StoredVisual>(v: T): T & SiteVisual {
-  if (v.light && v.dark) {
-    return v as T & SiteVisual;
-  }
-  const colors: SiteThemeColors = {
-    tone: v.tone ?? 'LIGHT',
-    accent: v.accent ?? null,
-    overlay: v.overlay ?? 'MEDIUM',
-  };
-  const upgraded: StoredVisual = {
-    ...v,
-    image: v.image ?? null,
-    light: colors,
-    dark: { ...colors },
-  };
+  if (v.light && v.dark) return v as T & SiteVisual;
+  const colors: SiteThemeColors = { tone: v.tone ?? 'LIGHT', accent: v.accent ?? null, overlay: v.overlay ?? 'MEDIUM' };
+  const upgraded: StoredVisual = { ...v, image: v.image ?? null, light: colors, dark: { ...colors } };
   delete upgraded.tone;
   delete upgraded.accent;
   delete upgraded.overlay;
   return upgraded as T & SiteVisual;
 }
-
-/** Contenido de `tenant_sites.content`, llevado al formato actual. */
 function fromStored(raw: Prisma.JsonValue): TenantSiteContent {
   const content = raw as unknown as TenantSiteContent;
-  const themeColor =
-    typeof content.themeColor === 'string' && HEX_COLOR.test(content.themeColor)
-      ? content.themeColor.toLowerCase()
-      : SITE_DEFAULT_PRIMARY_COLOR;
+  const themeColor = typeof content.themeColor === 'string' && HEX_COLOR.test(content.themeColor) ? content.themeColor.toLowerCase() : SITE_DEFAULT_PRIMARY_COLOR;
   return {
     themeColor,
     brandIcon: typeof content.brandIcon === 'string' ? content.brandIcon : null,
     socialLinks: { ...EMPTY_SOCIAL_LINKS, ...content.socialLinks },
+    landingCustomized: content.landingCustomized !== false,
     hero: upgradeVisual(content.hero),
-    sliders: content.sliders.map((slider) => ({
-      ...slider,
-      slides: slider.slides.map((slide) => upgradeVisual(slide)),
-    })),
+    sliders: content.sliders.map((slider) => ({ ...slider, slides: slider.slides.map((slide) => upgradeVisual(slide)) })),
   };
 }
-
 function imageUrls(content: TenantSiteContent | null): Set<string> {
   const urls = new Set<string>();
   if (!content) return urls;
   if (content.brandIcon) urls.add(content.brandIcon);
   if (content.hero.image) urls.add(content.hero.image.url);
-  for (const slider of content.sliders) {
-    for (const slide of slider.slides) {
-      if (slide.image) urls.add(slide.image.url);
-    }
-  }
+  for (const slider of content.sliders) for (const slide of slider.slides) if (slide.image) urls.add(slide.image.url);
   return urls;
 }
 
 @Injectable()
 export class TenantSiteService {
-  constructor(
-    private readonly prisma: PrismaService,
-    private readonly audit: AuditService,
-    private readonly upload: UploadService,
-  ) {}
+  constructor(private readonly prisma: PrismaService, private readonly audit: AuditService, private readonly upload: UploadService) {}
 
   async get(tenantId: string): Promise<TenantSiteDetail> {
     const row = await this.prisma.tenantSite.findUnique({ where: { tenantId } });
-    return {
-      content: row ? fromStored(row.content) : null,
-      updatedAt: row?.updatedAt ?? null,
-    };
+    return { content: row ? fromStored(row.content) : null, updatedAt: row?.updatedAt ?? null };
   }
-
   async getPublicContent(tenantId: string): Promise<TenantSiteContent | null> {
     return (await this.get(tenantId)).content;
   }
-
-  async put(
-    tenantId: string,
-    dto: PutTenantSiteDto,
-    actor: AuditActor,
-  ): Promise<TenantSiteDetail> {
+  async put(tenantId: string, dto: PutTenantSiteDto, actor: AuditActor): Promise<TenantSiteDetail> {
     const before = await this.get(tenantId);
     const content = await this.normalize(tenantId, dto, before.content);
     const json = content as unknown as Prisma.InputJsonValue;
@@ -135,46 +87,21 @@ export class TenantSiteService {
       update: { content: json, updatedByStaffId: actor.userId },
     });
     await this.deleteUnusedImages(tenantId, before.content, content);
-    await this.audit.record({
-      tenantId,
-      actor,
-      action: AUDIT_ACTIONS.tenantSiteUpdate,
-      entityType: 'tenant_site',
-      entityId: tenantId,
-      before: this.auditSnapshot(before.content),
-      after: this.auditSnapshot(content),
-    });
+    await this.audit.record({ tenantId, actor, action: AUDIT_ACTIONS.tenantSiteUpdate, entityType: 'tenant_site', entityId: tenantId, before: this.auditSnapshot(before.content), after: this.auditSnapshot(content) });
     return { content, updatedAt: row.updatedAt };
   }
-
   async reset(tenantId: string, actor: AuditActor): Promise<TenantSiteDetail> {
     const before = await this.get(tenantId);
     if (!before.content) return before;
     await this.prisma.tenantSite.delete({ where: { tenantId } });
     await this.deleteUnusedImages(tenantId, before.content, null);
-    await this.audit.record({
-      tenantId,
-      actor,
-      action: AUDIT_ACTIONS.tenantSiteReset,
-      entityType: 'tenant_site',
-      entityId: tenantId,
-      before: this.auditSnapshot(before.content),
-      after: null,
-    });
+    await this.audit.record({ tenantId, actor, action: AUDIT_ACTIONS.tenantSiteReset, entityType: 'tenant_site', entityId: tenantId, before: this.auditSnapshot(before.content), after: null });
     return { content: null, updatedAt: null };
   }
 
-  private async normalize(
-    tenantId: string,
-    dto: PutTenantSiteDto,
-    existing: TenantSiteContent | null,
-  ): Promise<TenantSiteContent> {
+  private async normalize(tenantId: string, dto: PutTenantSiteDto, existing: TenantSiteContent | null): Promise<TenantSiteContent> {
     const heroTitle = this.requireText(dto.hero.title, SITE_LIMITS.heroTitle.min, 'El título principal');
-    const hero = {
-      ...this.visual(tenantId, dto.hero, 'Portada'),
-      title: heroTitle,
-      subtitle: clean(dto.hero.subtitle),
-    };
+    const hero = { ...this.visual(tenantId, dto.hero, 'Portada'), title: heroTitle, subtitle: clean(dto.hero.subtitle) };
     const sliderIds = new Set<string>();
     const slideIds = new Set<string>();
     const sliders = dto.sliders.map((slider, si) => {
@@ -186,44 +113,32 @@ export class TenantSiteService {
           this.assertUniqueId(slideIds, slide.id);
           const where = `Slider ${si + 1}, slide ${i + 1}`;
           return {
-            ...this.visual(tenantId, slide, where),
-            id: slide.id,
+            ...this.visual(tenantId, slide, where), id: slide.id,
             title: this.requireText(slide.title, SITE_LIMITS.slideTitle.min, `${where}: el título`),
-            body: clean(slide.body),
-            button: slide.button ? this.button(slide.button, where) : null,
+            body: clean(slide.body), button: slide.button ? this.button(slide.button, where) : null,
           };
         }),
       };
     });
-
     await this.assertPacksExist(tenantId, sliders);
     const themeColor = dto.themeColor?.toLowerCase() ?? existing?.themeColor ?? SITE_DEFAULT_PRIMARY_COLOR;
     const iconUrl = dto.brandIcon === undefined ? (existing?.brandIcon ?? null) : clean(dto.brandIcon);
     const brandIcon = iconUrl ? this.brandIcon(tenantId, iconUrl) : null;
     const socialLinks = this.normalizeSocialLinks(dto.socialLinks, existing);
-    return { themeColor, brandIcon, socialLinks, hero, sliders };
+    const landingCustomized = dto.socialLinks === undefined ? true : existing?.landingCustomized ?? false;
+    return { themeColor, brandIcon, socialLinks, landingCustomized, hero, sliders };
   }
 
-  private normalizeSocialLinks(
-    dto: SiteSocialLinksDto | undefined,
-    existing: TenantSiteContent | null,
-  ): SiteSocialLinks {
+  private normalizeSocialLinks(dto: SiteSocialLinksDto | undefined, existing: TenantSiteContent | null): SiteSocialLinks {
     return Object.fromEntries(Object.entries(SOCIAL_HOSTS).map(([platform, hosts]) => {
       const key = platform as keyof SiteSocialLinks;
       const value = dto?.[key] === undefined ? existing?.socialLinks?.[key] ?? null : dto[key];
       const url = clean(value);
       if (!url) return [key, null];
       let parsed: URL;
-      try {
-        parsed = new URL(url);
-      } catch {
-        throw new BadRequestException(`El link de ${key} no es válido`);
-      }
+      try { parsed = new URL(url); } catch { throw new BadRequestException(`El link de ${key} no es válido`); }
       const hostname = parsed.hostname.toLowerCase();
-      if (
-        parsed.protocol !== 'https:' || parsed.username || parsed.password ||
-        !hosts.some((host) => hostname === host || hostname.endsWith(`.${host}`))
-      ) {
+      if (parsed.protocol !== 'https:' || parsed.username || parsed.password || !hosts.some((host) => hostname === host || hostname.endsWith(`.${host}`))) {
         throw new BadRequestException(`El link tiene que ser de ${key} y usar https://`);
       }
       return [key, url];
@@ -231,83 +146,49 @@ export class TenantSiteService {
   }
 
   private brandIcon(tenantId: string, url: string): string {
-    if (!this.upload.isOwnedPublicImage(tenantId, url, SITE_IMAGE_FOLDER)) {
-      throw new BadRequestException('El ícono tiene que subirse desde el panel');
-    }
+    if (!this.upload.isOwnedPublicImage(tenantId, url, SITE_IMAGE_FOLDER)) throw new BadRequestException('El ícono tiene que subirse desde el panel');
     return url;
   }
-
-  private visual(
-    tenantId: string,
-    dto: { image?: SiteImageDto | null; light: SiteThemeColorsDto; dark: SiteThemeColorsDto },
-    where: string,
-  ): SiteVisual {
+  private visual(tenantId: string, dto: { image?: SiteImageDto | null; light: SiteThemeColorsDto; dark: SiteThemeColorsDto }, where: string): SiteVisual {
     const image = dto.image ? this.image(tenantId, dto.image, where) : null;
-    return {
-      image,
-      light: this.themeColors(dto.light, image !== null, `${where} (tema claro)`),
-      dark: this.themeColors(dto.dark, image !== null, `${where} (tema oscuro)`),
-    };
+    return { image, light: this.themeColors(dto.light, image !== null, `${where} (tema claro)`), dark: this.themeColors(dto.dark, image !== null, `${where} (tema oscuro)`) };
   }
-
   private themeColors(dto: SiteThemeColorsDto, hasImage: boolean, where: string): SiteThemeColors {
-    const colors: SiteThemeColors = {
-      tone: dto.tone,
-      accent: dto.accent ? dto.accent.toLowerCase() : null,
-      overlay: dto.overlay,
-    };
+    const colors: SiteThemeColors = { tone: dto.tone, accent: dto.accent ? dto.accent.toLowerCase() : null, overlay: dto.overlay };
     const issue = siteContrastIssue(colors, hasImage);
     if (issue) throw new BadRequestException(`${where}: ${issue}`);
     return colors;
   }
-
   private image(tenantId: string, dto: SiteImageDto, where: string): SiteImage {
     const url = dto.url.trim();
-    if (!this.upload.isOwnedPublicImage(tenantId, url, SITE_IMAGE_FOLDER)) {
-      throw new BadRequestException(`${where}: la imagen tiene que subirse desde el panel`);
-    }
+    if (!this.upload.isOwnedPublicImage(tenantId, url, SITE_IMAGE_FOLDER)) throw new BadRequestException(`${where}: la imagen tiene que subirse desde el panel`);
     return { url, alt: clean(dto.alt), focusX: dto.focusX, focusY: dto.focusY };
   }
-
   private button(dto: SiteButtonDto, where: string): SiteButton {
     const label = this.requireText(dto.label, SITE_LIMITS.buttonLabel.min, `${where}: el texto del botón`);
     if (dto.target === 'PACK' && !dto.packId) throw new BadRequestException(`${where}: elegí el pack del botón`);
     if (dto.target === 'URL' && !dto.url) throw new BadRequestException(`${where}: falta el link del botón`);
-    return {
-      label,
-      target: dto.target,
-      packId: dto.target === 'PACK' ? (dto.packId ?? null) : null,
-      url: dto.target === 'URL' ? (dto.url?.trim() ?? null) : null,
-    };
+    return { label, target: dto.target, packId: dto.target === 'PACK' ? (dto.packId ?? null) : null, url: dto.target === 'URL' ? (dto.url?.trim() ?? null) : null };
   }
-
   private requireText(value: string, min: number, label: string): string {
     const text = value.trim();
     if (text.length < min) throw new BadRequestException(`${label} necesita al menos ${min} caracteres`);
     return text;
   }
-
   private assertUniqueId(seen: Set<string>, id: string): void {
     if (seen.has(id)) throw new BadRequestException(`Id repetido en la web: ${id}`);
     seen.add(id);
   }
-
   private async assertPacksExist(tenantId: string, sliders: TenantSiteContent['sliders']): Promise<void> {
     const ids = [...new Set(sliders.flatMap((s) => s.slides.flatMap((slide) => slide.button?.packId ? [slide.button.packId] : [])))];
     if (ids.length === 0) return;
-    const found = await this.prisma.pack.count({
-      where: { tenantId, id: { in: ids }, active: true, originServiceId: null },
-    });
+    const found = await this.prisma.pack.count({ where: { tenantId, id: { in: ids }, active: true, originServiceId: null } });
     if (found !== ids.length) throw new BadRequestException('Un botón apunta a un pack que no existe o no está activo');
   }
-
   private async deleteUnusedImages(tenantId: string, before: TenantSiteContent | null, after: TenantSiteContent | null): Promise<void> {
     const keep = imageUrls(after);
-    for (const url of imageUrls(before)) {
-      if (!keep.has(url)) await this.upload.replaceOwnedPublicImage(tenantId, url, null);
-    }
+    for (const url of imageUrls(before)) if (!keep.has(url)) await this.upload.replaceOwnedPublicImage(tenantId, url, null);
   }
-
   private auditSnapshot(content: TenantSiteContent | null): Prisma.InputJsonValue | null {
     if (!content) return null;
     return {
