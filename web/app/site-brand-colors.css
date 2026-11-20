@@ -27,6 +27,11 @@
   border-color: var(--site-primary);
 }
 
+.gym-site-branded .mkt-check {
+  background: var(--site-primary);
+  color: var(--site-primary-ink);
+}
+
 .gym-site-branded .app-nav-link.active {
   background: linear-gradient(
     90deg,
