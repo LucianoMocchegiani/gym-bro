@@ -154,13 +154,14 @@ export function Carousel({
         }
         .site-slider .mkt-slider-controls {
           position: absolute;
-          inset: 0 0 2.5rem;
+          inset: clamp(1.5rem, 3vw, 2.5rem) 0 2.5rem;
           margin: 0;
           pointer-events: none;
         }
-        .site-slider .mkt-slider-arrow {
+        .site-slider .mkt-slider-controls .mkt-slider-arrow {
           position: absolute;
           top: 50%;
+          padding: 0;
           background: var(--panel-bg);
           pointer-events: auto;
           transform: translateY(-50%);
