@@ -16,6 +16,7 @@ import {
   type GymProfiles,
 } from '@/lib/auth/gym-context';
 import { useIdentityAuth } from '@/lib/auth/IdentityAuthProvider';
+import { siteBrandStyle } from '@/lib/site-theme';
 
 function enterError(err: unknown): string {
   return err instanceof ApiClientError ? err.message : 'No se pudo entrar';
@@ -61,10 +62,12 @@ function autoStep(
 export function GymContextPicker({
   slug,
   gymName,
+  brandColor,
   nextPath,
 }: {
   slug: string;
   gymName: string;
+  brandColor: string;
   nextPath: string | null;
 }) {
   const router = useRouter();
@@ -134,7 +137,7 @@ export function GymContextPicker({
 
   if (error) {
     return (
-      <PickerCard slug={slug} gymName={gymName}>
+      <PickerCard slug={slug} gymName={gymName} brandColor={brandColor}>
         <p className="error">{error}</p>
         <SwitchAccountButton />
       </PickerCard>
@@ -142,12 +145,18 @@ export function GymContextPicker({
   }
 
   if (!profiles || auto || entering) {
-    return <LoginPending message="Entrando…" />;
+    return (
+      <LoginPending
+        message="Entrando…"
+        brand={gymName}
+        brandColor={brandColor}
+      />
+    );
   }
 
   if (!profiles.tenantId) {
     return (
-      <PickerCard slug={slug} gymName={gymName}>
+      <PickerCard slug={slug} gymName={gymName} brandColor={brandColor}>
         <p className="muted">
           Tu cuenta {identity?.email} todavía no es socia de {gymName}.
         </p>
@@ -168,7 +177,7 @@ export function GymContextPicker({
     });
   };
   return (
-    <PickerCard slug={slug} gymName={gymName}>
+    <PickerCard slug={slug} gymName={gymName} brandColor={brandColor}>
       <p className="muted">¿Cómo querés entrar?</p>
       <button type="button" className="btn primary" onClick={() => choose('STAFF')}>
         Panel del gym (staff)
@@ -184,19 +193,21 @@ export function GymContextPicker({
 function PickerCard({
   slug,
   gymName,
+  brandColor,
   children,
 }: {
   slug: string;
   gymName: string;
+  brandColor: string;
   children: React.ReactNode;
 }) {
   return (
-    <div className="login-page">
+    <div className="login-page gym-site-branded" style={siteBrandStyle(brandColor)}>
       <div className="login-theme-slot">
         <ThemeToggle />
       </div>
       <div className="login-card">
-        <p className="brand">{slug}</p>
+        <p className="brand">{gymName || slug}</p>
         <h1>{gymName}</h1>
         {children}
       </div>

@@ -17,10 +17,14 @@ import { writeStaffSession } from '@/lib/auth/session';
 import { GymContextPicker } from '@/components/GymContextPicker';
 import { IdentityLoginCard } from '@/components/IdentityLoginCard';
 import { LoginPending } from '@/components/LoginPending';
+import { SITE_DEFAULT_PRIMARY_COLOR } from '@/lib/api/tenant-site';
+import { siteBrandStyle } from '@/lib/site-theme';
 
 type LoginClientProps = {
   /** Slug resuelto en el servidor desde el header Host. */
   slug: string | null;
+  tenantName: string | null;
+  tenantColor: string | null;
   /** `?handoff=1`: canjea cookie de impersonación en este origen. */
   consumeHandoff?: boolean;
   /** `?next=` ya validado (path relativo). */
@@ -32,6 +36,8 @@ type LoginClientProps = {
  */
 export function LoginClient({
   slug,
+  tenantName,
+  tenantColor,
   consumeHandoff = false,
   nextPath,
 }: LoginClientProps) {
@@ -41,6 +47,8 @@ export function LoginClient({
   return (
     <GymLoginClient
       slug={slug}
+      gymName={tenantName ?? slug}
+      brandColor={tenantColor ?? SITE_DEFAULT_PRIMARY_COLOR}
       consumeHandoff={consumeHandoff}
       nextPath={nextPath}
     />
@@ -55,10 +63,14 @@ export function LoginClient({
  */
 function GymLoginClient({
   slug,
+  gymName,
+  brandColor,
   consumeHandoff,
   nextPath,
 }: {
   slug: string;
+  gymName: string;
+  brandColor: string;
   consumeHandoff: boolean;
   nextPath: string | null;
 }) {
@@ -142,19 +154,20 @@ function GymLoginClient({
     };
   }, [consumeHandoff, verified, slug, router]);
 
-  const gymName = tenant?.name ?? slug;
+  const displayName = tenant?.name ?? gymName;
+  const pageStyle = siteBrandStyle(brandColor);
 
   if (consumeHandoff) {
     return (
-      <div className="login-page">
+      <div className="login-page gym-site-branded" style={pageStyle}>
         <div className="login-theme-slot">
           <ThemeToggle />
         </div>
         <div className="login-card">
-          <p className="brand">{slug}</p>
+          <p className="brand">{displayName}</p>
           <h1>Entrando al gym</h1>
           <p className="muted">
-            {gymName}
+            {displayName}
             <span className="small"> · {tenantHostLabel(slug)}</span>
           </p>
           {handoffFailed ? (
@@ -177,12 +190,12 @@ function GymLoginClient({
 
   if (tenantError) {
     return (
-      <div className="login-page">
+      <div className="login-page gym-site-branded" style={pageStyle}>
         <div className="login-theme-slot">
           <ThemeToggle />
         </div>
         <div className="login-card">
-          <p className="brand">{slug}</p>
+          <p className="brand">{displayName}</p>
           <p className="error">{tenantError}</p>
         </div>
       </div>
@@ -190,20 +203,32 @@ function GymLoginClient({
   }
 
   if (!ready || !verified || !identityReady || resumeTo) {
-    return <LoginPending message="Cargando sesión…" />;
+    return (
+      <LoginPending
+        message="Cargando sesión…"
+        brand={displayName}
+        brandColor={brandColor}
+      />
+    );
   }
 
   if (!identity) {
     return (
       <IdentityLoginCard
-        brand={slug}
-        title={`Entrá a ${gymName}`}
+        brand={displayName}
+        title={`Entrá a ${displayName}`}
         subtitle="Socios y staff entran con su cuenta Faciliter (mail o Google)."
+        brandColor={brandColor}
       />
     );
   }
 
   return (
-    <GymContextPicker slug={slug} gymName={gymName} nextPath={nextPath} />
+    <GymContextPicker
+      slug={slug}
+      gymName={displayName}
+      brandColor={brandColor}
+      nextPath={nextPath}
+    />
   );
 }

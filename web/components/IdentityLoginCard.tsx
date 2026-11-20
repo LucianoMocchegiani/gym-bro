@@ -7,6 +7,7 @@ import { ContinueWithGoogleButton } from '@/components/ContinueWithGoogleButton'
 import { LoginPending } from '@/components/LoginPending';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { useIdentityAuth } from '@/lib/auth/IdentityAuthProvider';
+import { siteBrandStyle } from '@/lib/site-theme';
 
 /**
  * Login / alta con la cuenta Faciliter (Identity): apex y web del gym.
@@ -18,11 +19,13 @@ export function IdentityLoginCard({
   brand = 'Faciliter',
   title,
   subtitle = 'Para contratar un tenant o ver los que ya tenés.',
+  brandColor,
 }: {
   nextPath?: string;
   brand?: string;
   title?: string;
   subtitle?: string;
+  brandColor?: string;
 }) {
   const { session, ready, login, register, loginFromCookie } =
     useIdentityAuth();
@@ -91,11 +94,20 @@ export function IdentityLoginCard({
   }
 
   if (!ready || session || !cookieTried) {
-    return <LoginPending message="Cargando sesión…" />;
+    return (
+      <LoginPending
+        message="Cargando sesión…"
+        brand={brand}
+        brandColor={brandColor}
+      />
+    );
   }
 
   return (
-    <div className="login-page">
+    <div
+      className={`login-page${brandColor ? ' gym-site-branded' : ''}`}
+      style={brandColor ? siteBrandStyle(brandColor) : undefined}
+    >
       <div className="login-theme-slot">
         <ThemeToggle />
       </div>
