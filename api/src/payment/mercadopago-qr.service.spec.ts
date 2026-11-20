@@ -18,10 +18,14 @@ describe('MercadoPagoQrService', () => {
     const saved: { row: SavedSetup | null } = { row: null };
     const qrSetup = {
       findUnique: jest.fn(() => Promise.resolve(saved.row)),
-      upsert: jest.fn((args: { create: SavedSetup; update: Partial<SavedSetup> }) => {
-        saved.row = saved.row ? { ...saved.row, ...args.update } : args.create;
-        return Promise.resolve(saved.row);
-      }),
+      upsert: jest.fn(
+        (args: { create: SavedSetup; update: Partial<SavedSetup> }) => {
+          saved.row = saved.row
+            ? { ...saved.row, ...args.update }
+            : args.create;
+          return Promise.resolve(saved.row);
+        },
+      ),
       update: jest.fn((args: { data: Partial<SavedSetup> }) => {
         if (!saved.row) {
           throw new Error('Setup was not initialized');
@@ -44,17 +48,19 @@ describe('MercadoPagoQrService', () => {
     const mpAccount = {
       validateAccessToken: jest.fn().mockResolvedValue({ userId: 'seller-1' }),
     } as unknown as MpAccountPort;
+    const findStoreByExternalId = jest.fn().mockResolvedValue(null);
+    const createStore = jest.fn().mockResolvedValue('store-1');
+    const createPos = jest
+      .fn()
+      .mockRejectedValueOnce(new Error('temporary'))
+      .mockResolvedValue('pos-1');
     const mpQr = {
-      findStoreByExternalId: jest.fn().mockResolvedValue(null),
-      createStore: jest.fn().mockResolvedValue('store-1'),
-      createPos: jest
-        .fn()
-        .mockRejectedValueOnce(new Error('temporary'))
-        .mockResolvedValue('pos-1'),
+      findStoreByExternalId,
+      createStore,
+      createPos,
     } as unknown as HttpMpQrAdapter;
-    const audit = {
-      record: jest.fn().mockResolvedValue(undefined),
-    } as unknown as AuditService;
+    const auditRecord = jest.fn().mockResolvedValue(undefined);
+    const audit = { record: auditRecord } as unknown as AuditService;
     const service = new MercadoPagoQrService(
       prisma,
       audit,
@@ -84,10 +90,10 @@ describe('MercadoPagoQrService', () => {
       posId: 'pos-1',
     });
     await service.createSetup('tenant-id', dto, actor);
-    expect(mpQr.findStoreByExternalId.mock.calls).toHaveLength(1);
-    expect(mpQr.createStore.mock.calls).toHaveLength(1);
-    expect(mpQr.createPos.mock.calls).toHaveLength(2);
-    expect(audit.record.mock.calls).toHaveLength(1);
+    expect(findStoreByExternalId).toHaveBeenCalledTimes(1);
+    expect(createStore).toHaveBeenCalledTimes(1);
+    expect(createPos).toHaveBeenCalledTimes(2);
+    expect(auditRecord).toHaveBeenCalledTimes(1);
   });
 
   it('rejects when Mercado Pago cannot validate the connected token', async () => {
