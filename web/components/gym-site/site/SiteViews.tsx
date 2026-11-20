@@ -81,6 +81,7 @@ function SiteFrame({
           }}
         />
       ) : null}
+      {image ? <div className="site-frame-overlay" /> : null}
       <div className="site-frame-content">{children}</div>
     </div>
   );

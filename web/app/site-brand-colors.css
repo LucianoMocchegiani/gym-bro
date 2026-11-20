@@ -51,20 +51,6 @@
     transparent;
 }
 
-.site-frame-content .site-title-text,
-.site-frame-content .site-lead-text {
-  padding: 0;
-  line-height: 1;
-  border-radius: 0.12em;
-  background: var(--site-overlay);
-  -webkit-box-decoration-break: clone;
-  box-decoration-break: clone;
-}
-
-.site-frame .mkt-btn-ghost {
-  background: var(--site-overlay);
-}
-
 .gym-site-branded .site-hero-section {
   width: auto;
   max-width: none;
