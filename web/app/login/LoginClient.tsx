@@ -154,7 +154,7 @@ function GymLoginClient({
     };
   }, [consumeHandoff, verified, slug, router]);
 
-  const gymName = tenant?.name ?? gymName;
+  const displayName = tenant?.name ?? gymName;
   const pageStyle = siteBrandStyle(brandColor);
 
   if (consumeHandoff) {
@@ -164,10 +164,10 @@ function GymLoginClient({
           <ThemeToggle />
         </div>
         <div className="login-card">
-          <p className="brand">{gymName}</p>
+          <p className="brand">{displayName}</p>
           <h1>Entrando al gym</h1>
           <p className="muted">
-            {gymName}
+            {displayName}
             <span className="small"> · {tenantHostLabel(slug)}</span>
           </p>
           {handoffFailed ? (
@@ -195,7 +195,7 @@ function GymLoginClient({
           <ThemeToggle />
         </div>
         <div className="login-card">
-          <p className="brand">{gymName}</p>
+          <p className="brand">{displayName}</p>
           <p className="error">{tenantError}</p>
         </div>
       </div>
@@ -206,7 +206,7 @@ function GymLoginClient({
     return (
       <LoginPending
         message="Cargando sesión…"
-        brand={gymName}
+        brand={displayName}
         brandColor={brandColor}
       />
     );
@@ -215,8 +215,8 @@ function GymLoginClient({
   if (!identity) {
     return (
       <IdentityLoginCard
-        brand={gymName}
-        title={`Entrá a ${gymName}`}
+        brand={displayName}
+        title={`Entrá a ${displayName}`}
         subtitle="Socios y staff entran con su cuenta Faciliter (mail o Google)."
         brandColor={brandColor}
       />
@@ -226,7 +226,7 @@ function GymLoginClient({
   return (
     <GymContextPicker
       slug={slug}
-      gymName={gymName}
+      gymName={displayName}
       brandColor={brandColor}
       nextPath={nextPath}
     />
