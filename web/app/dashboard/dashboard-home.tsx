@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { AdminShell } from '@/components/AdminShell';
 import { DashboardKpis, type KpiCardData } from '@/components/DashboardKpis';
 import { RequireStaff } from '@/components/RequireStaff';
+import { AdSlot } from '@/components/ads/AdSlot';
 import {
   KpiIconCash,
   KpiIconDoor,
@@ -72,10 +73,10 @@ function DashboardInner() {
   if (hostSlug === 'admin') {
     return <AdminDashboard />;
   }
-  return <TenantDashboard />;
+  return <TenantDashboard tenantSlug={hostSlug} />;
 }
 
-function TenantDashboard() {
+function TenantDashboard({ tenantSlug }: { tenantSlug: string }) {
   const { session } = useAuth();
   const permissionCodes = session?.permissionCodes ?? null;
   const permissionsReady = permissionCodes !== null;
@@ -292,6 +293,7 @@ function TenantDashboard() {
       {permissionsReady ? (
         <DashboardKpis loading={loading} cards={kpiCards} errors={kpi.errors} />
       ) : null}
+      <AdSlot tenantSlug={tenantSlug} placement="DASHBOARD" />
     </AdminShell>
   );
 }
