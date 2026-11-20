@@ -3,6 +3,11 @@ import type { CSSProperties } from 'react';
 const DEFAULT_PRIMARY = '#a3e635';
 const HEX_COLOR = /^#[0-9a-f]{6}$/i;
 
+type SiteBrandStyle = CSSProperties & {
+  '--site-primary': string;
+  '--site-primary-ink': string;
+};
+
 function luminance(hex: string): number {
   const channels = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16));
   const linear = channels.map((channel) => {
@@ -13,7 +18,7 @@ function luminance(hex: string): number {
 }
 
 /** Chooses a readable label color and safely ignores invalid stored values. */
-export function siteBrandStyle(color: string): CSSProperties {
+export function siteBrandStyle(color: string): SiteBrandStyle {
   const primary = HEX_COLOR.test(color) ? color.toLowerCase() : DEFAULT_PRIMARY;
   const lightness = luminance(primary);
   const primaryInk =
@@ -23,5 +28,5 @@ export function siteBrandStyle(color: string): CSSProperties {
   return {
     '--site-primary': primary,
     '--site-primary-ink': primaryInk,
-  } as CSSProperties;
+  } as SiteBrandStyle;
 }
