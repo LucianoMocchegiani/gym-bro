@@ -19,6 +19,7 @@
 .gym-site-branded button.primary,
 .gym-site-branded .btn:not(.ghost):not(.danger),
 .gym-site-branded .page-tabs a.active,
+.gym-site-branded .mkt-portal-nav a.is-on,
 .gym-site-branded .cash-tabs button.active,
 .gym-site-branded .catalog-add {
   background: var(--site-primary);
