@@ -3,7 +3,7 @@
 import { useState, type CSSProperties } from 'react';
 import { Panel } from '@/components/AdminUi';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
-import { uploadImageToApi } from '@/components/ImageUpload';
+import { ImageUpload, uploadImageToApi } from '@/components/ImageUpload';
 import { SiteHeroView, SiteSlideView } from '@/components/gym-site/site/SiteViews';
 import { ApiClientError } from '@/lib/api/client';
 import type { PackSummary } from '@/lib/api/packs';
@@ -38,6 +38,7 @@ import {
 } from './site-draft';
 
 type Selection = { slider: number; slide: number } | null;
+const SITE_ICON_ACCEPT = 'image/jpeg,image/png,image/webp';
 
 function move<T>(items: T[], from: number, to: number): T[] {
   if (to < 0 || to >= items.length) {
@@ -53,6 +54,19 @@ function errorMessage(err: unknown, fallback: string): string {
   return err instanceof ApiClientError || err instanceof Error
     ? err.message
     : fallback;
+}
+
+function iconDraft(url: string | null | undefined): DraftImage | null {
+  return url
+    ? {
+        url,
+        file: null,
+        previewUrl: null,
+        alt: '',
+        focusX: 'CENTER',
+        focusY: 'CENTER',
+      }
+    : null;
 }
 
 const NEW_BUTTON: DraftButton = {
@@ -83,6 +97,9 @@ export function SiteEditor({
   const [draft, setDraft] = useState<SiteDraft>(() =>
     draftFromContent(detail.content),
   );
+  const [brandIcon, setBrandIcon] = useState<DraftImage | null>(() =>
+    iconDraft(detail.content?.brandIcon),
+  );
   const [selected, setSelected] = useState<Selection>(null);
   const [theme, setTheme] = useState<SiteTheme>('dark');
   const [busy, setBusy] = useState(false);
@@ -101,6 +118,22 @@ export function SiteEditor({
 
   function setHero(patch: Partial<DraftHero>) {
     setDraft((d) => ({ ...d, hero: { ...d.hero, ...patch } }));
+  }
+
+  function selectBrandIcon(file: File | null) {
+    setBrandIcon((previous) => {
+      if (previous?.previewUrl) URL.revokeObjectURL(previous.previewUrl);
+      return file
+        ? {
+            url: null,
+            file,
+            previewUrl: URL.createObjectURL(file),
+            alt: '',
+            focusX: 'CENTER',
+            focusY: 'CENTER',
+          }
+        : null;
+    });
   }
 
   function setSliders(fn: (sliders: DraftSlider[]) => DraftSlider[]) {
@@ -176,9 +209,19 @@ export function SiteEditor({
         return url ? { ...image, url, file: null } : image;
       });
       setDraft(ready);
-      const saved = await putTenantSite(
-        draftToContent(ready, (image) => image.url),
-      );
+      let readyIcon = brandIcon;
+      if (readyIcon?.file && !readyIcon.url) {
+        readyIcon = {
+          ...readyIcon,
+          url: await uploadImageToApi(readyIcon.file, SITE_IMAGE_FOLDER),
+          file: null,
+        };
+        setBrandIcon(readyIcon);
+      }
+      const saved = await putTenantSite({
+        ...draftToContent(ready, (image) => image.url),
+        brandIcon: readyIcon?.url ?? null,
+      });
       onSaved(saved, 'Publicado: ya se ve en la web del gym.');
     } catch (err) {
       setError(errorMessage(err, 'No se pudo publicar la web'));
@@ -236,6 +279,23 @@ export function SiteEditor({
           <p className="muted small">
             Se adapta a los temas claro y oscuro. El verde Faciliter queda como
             predeterminado.
+          </p>
+        </Panel>
+
+        <Panel
+          title="Ícono del gimnasio"
+          description="Reemplaza la letra en la web y la pesa del dashboard; también se usa como favicon en el subdominio."
+        >
+          <ImageUpload
+            label="Ícono (opcional · PNG, JPG o WebP)"
+            value={brandIcon ? previewUrl(brandIcon) : null}
+            accept={SITE_ICON_ACCEPT}
+            onReject={setError}
+            onFileSelect={selectBrandIcon}
+            disabled={disabled}
+          />
+          <p className="muted small">
+            Publicá los cambios para aplicarlo. Sin ícono se conserva la marca actual.
           </p>
         </Panel>
 
@@ -472,7 +532,7 @@ export function SiteEditor({
       <ConfirmDialog
         open={confirmReset}
         title="Volver a la vidriera por defecto"
-        description="Se borran la portada, los sliders y sus imágenes. La web vuelve a mostrar el nombre del gym y los planes."
+        description="Se borran la portada, los sliders, el ícono y sus imágenes. La web vuelve a mostrar el nombre del gym y los planes."
         confirmLabel="Restablecer"
         tone="danger"
         busy={busy}
