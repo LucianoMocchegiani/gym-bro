@@ -8,5 +8,8 @@ export function shouldShowFreePlanNotice(
     return true;
   }
   const previous = Number(lastShownAt);
-  return !Number.isFinite(previous) || now - previous >= FREE_PLAN_NOTICE_INTERVAL_MS;
+  return (
+    !Number.isFinite(previous) ||
+    now - previous >= FREE_PLAN_NOTICE_INTERVAL_MS
+  );
 }
