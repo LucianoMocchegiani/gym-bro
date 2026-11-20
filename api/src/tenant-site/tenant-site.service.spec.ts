@@ -19,7 +19,7 @@ function siteContent(extra: Record<string, unknown> = {}) {
   };
 }
 
-function setup(savedContent: Record<string, unknown>, ownsIcon = true) {
+function setup(savedContent: Record<string, unknown> | null, ownsIcon = true) {
   const now = new Date();
   let upsertedContent: unknown;
   const upsert = jest.fn((args: { update: { content: unknown } }) => {
@@ -28,7 +28,7 @@ function setup(savedContent: Record<string, unknown>, ownsIcon = true) {
   });
   const prisma = {
     tenantSite: {
-      findUnique: jest.fn().mockResolvedValue({ content: savedContent, updatedAt: now }),
+      findUnique: jest.fn().mockResolvedValue(savedContent ? { content: savedContent, updatedAt: now } : null),
       upsert,
     },
   } as unknown as PrismaService;
@@ -50,9 +50,7 @@ function dtoWithoutThemeColor(): PutTenantSiteDto {
 describe('TenantSiteService public site settings', () => {
   it('defaults legacy saved sites to Faciliter green', async () => {
     const { service } = setup(siteContent());
-    await expect(service.get('tenant-id')).resolves.toMatchObject({
-      content: { themeColor: SITE_DEFAULT_PRIMARY_COLOR },
-    });
+    await expect(service.get('tenant-id')).resolves.toMatchObject({ content: { themeColor: SITE_DEFAULT_PRIMARY_COLOR } });
   });
 
   it('keeps saved brand settings when an older client omits them', async () => {
@@ -67,6 +65,15 @@ describe('TenantSiteService public site settings', () => {
     const { service, getUpsertedContent } = setup(siteContent({ socialLinks }));
     await service.put('tenant-id', dtoWithoutThemeColor(), { profileType: 'STAFF', userId: 'staff-id' });
     expect(getUpsertedContent()).toEqual(expect.objectContaining({ socialLinks }));
+  });
+
+  it('keeps the default landing when creating a site solely for social links', async () => {
+    const { service, getUpsertedContent } = setup(null);
+    await service.put('tenant-id', {
+      ...dtoWithoutThemeColor(),
+      socialLinks: { instagram: 'https://instagram.com/example' },
+    }, { profileType: 'STAFF', userId: 'staff-id' });
+    expect(getUpsertedContent()).toEqual(expect.objectContaining({ landingCustomized: false }));
   });
 
   it('rejects URLs outside the selected social network', async () => {
