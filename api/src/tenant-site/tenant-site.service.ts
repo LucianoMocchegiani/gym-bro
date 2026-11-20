@@ -233,7 +233,9 @@ export class TenantSiteService {
 
   private brandIcon(tenantId: string, url: string): string {
     if (!this.upload.isOwnedPublicImage(tenantId, url, SITE_IMAGE_FOLDER)) {
-      throw new BadRequestException('El ícono tiene que subirse desde el panel');
+      throw new BadRequestException(
+        'El ícono tiene que subirse desde el panel',
+      );
     }
     return url;
   }
