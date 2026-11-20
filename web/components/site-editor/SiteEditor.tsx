@@ -79,9 +79,8 @@ const NEW_BUTTON: DraftButton = {
 /**
  * Sistema → Web del gym: portada y sliders con vista previa (RN-CTA-010).
  *
- * @remarks Publicar sube las imágenes nuevas a R2 y después hace el PUT: lo
- * guardado se ve al instante en la web del gym. El padre remonta el editor
- * (`key`) con lo que devuelve la API.
+ * @remarks Publicar sube las imágenes nuevas a R2 y después hace el PUT:
+ * lo guardado se ve al instante en la web del gym.
  */
 export function SiteEditor({
   detail,
@@ -223,6 +222,7 @@ export function SiteEditor({
         brandIcon: readyIcon?.url ?? null,
       });
       onSaved(saved, 'Publicado: ya se ve en la web del gym.');
+      setBusy(false);
     } catch (err) {
       setError(errorMessage(err, 'No se pudo publicar la web'));
       setBusy(false);
