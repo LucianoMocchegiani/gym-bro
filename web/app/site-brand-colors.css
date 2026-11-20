@@ -1,4 +1,4 @@
-/* Brand color is scoped to the public gym landing and its editor preview. */
+/* Tenant brand colors for public site, editor preview, and member portal. */
 .gym-site-branded {
   --accent: color-mix(in srgb, var(--site-primary) 35%, var(--ink));
   --accent-ink: var(--site-primary-ink);
