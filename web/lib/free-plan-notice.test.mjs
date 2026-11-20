@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import test from 'node:test';
+import { test } from 'node:test';
 import { shouldShowFreePlanNotice } from './free-plan-notice.ts';
 
 const week = 7 * 24 * 60 * 60 * 1000;
