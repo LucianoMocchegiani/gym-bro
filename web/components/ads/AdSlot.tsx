@@ -34,17 +34,17 @@ export function AdSlot({ tenantSlug, placement }: { tenantSlug: string; placemen
 
   useEffect(() => {
     const element = carousel.current;
-    if (!element) return;
+    const windowElement = element?.querySelector<HTMLElement>('.ad-slot-window');
+    const card = windowElement?.querySelector<HTMLElement>('.ad-slot-card');
+    if (!element || !windowElement || !card) return;
     const updateLayout = () => {
-      const card = element.querySelector<HTMLElement>('.ad-slot-card');
-      if (!card) return;
       const gap = parseFloat(getComputedStyle(element).columnGap) || 0;
       const cardWidth = card.getBoundingClientRect().width;
       setStep(cardWidth + gap);
-      setVisibleCount(Math.max(1, Math.floor((element.clientWidth + gap) / (cardWidth + gap))));
+      setVisibleCount(Math.max(1, Math.floor((windowElement.clientWidth + gap) / (cardWidth + gap))));
     };
     const observer = new ResizeObserver(updateLayout);
-    observer.observe(element);
+    observer.observe(windowElement);
     updateLayout();
     return () => observer.disconnect();
   }, [ads.length]);
@@ -163,6 +163,7 @@ export function AdSlot({ tenantSlug, placement }: { tenantSlug: string; placemen
           position: relative;
           display: grid;
           gap: 0.75rem;
+          padding-inline: 3.25rem;
         }
         .ad-slot-window {
           overflow: hidden;
@@ -233,6 +234,17 @@ export function AdSlot({ tenantSlug, placement }: { tenantSlug: string; placemen
         }
         .ad-slot-controls button:last-child {
           right: 0.5rem;
+        }
+        @media (max-width: 640px) {
+          .ad-slot-carousel {
+            padding-inline: 2.75rem;
+          }
+          .ad-slot-controls button:first-child {
+            left: 0.125rem;
+          }
+          .ad-slot-controls button:last-child {
+            right: 0.125rem;
+          }
         }
         @media (prefers-reduced-motion: reduce) {
           .ad-slot-track {
