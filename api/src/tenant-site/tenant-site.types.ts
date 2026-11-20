@@ -83,6 +83,8 @@ export type SiteSlider = {
 export type TenantSiteContent = {
   /** Ausente en contenido anterior; el lector le aplica el verde predeterminado. */
   themeColor?: string;
+  /** URL del ícono público del gimnasio; ausente en sitios anteriores. */
+  brandIcon?: string | null;
   hero: SiteHero;
   sliders: SiteSlider[];
 };

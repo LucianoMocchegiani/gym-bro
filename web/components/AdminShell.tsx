@@ -132,6 +132,7 @@ export function AdminShell({
   const { session } = useAuth();
   const pathname = usePathname();
   const [navOpen, setNavOpen] = useState(false);
+  const [brandIconAvailable, setBrandIconAvailable] = useState(true);
   const hostSlug = useSyncExternalStore(
     subscribeHost,
     readHostSlug,
@@ -195,7 +196,17 @@ export function AdminShell({
         <div className="app-sidebar-brand">
           <Link href="/dashboard" className="brand-row" onClick={closeNav}>
             <span className="brand-mark" aria-hidden="true">
-              <NavIconDumbbell />
+              {hostSlug && hostSlug !== 'admin' && brandIconAvailable ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src="/tenant-brand-icon"
+                  alt=""
+                  onError={() => setBrandIconAvailable(false)}
+                  style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+                />
+              ) : (
+                <NavIconDumbbell />
+              )}
             </span>
             <span className="brand-text">
               <span className="brand">{brandSlug}</span>
