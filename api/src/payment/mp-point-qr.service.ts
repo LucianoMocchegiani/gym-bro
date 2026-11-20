@@ -263,7 +263,8 @@ export class MpPointQrService {
         (entry) =>
           entry.id &&
           (entry.status === 'approved' || entry.status === 'processed') &&
-          (entry.amount === null || Number(entry.amount) === transaction.amount),
+          (entry.amount === null ||
+            Number(entry.amount) === transaction.amount),
       );
       if (!payment?.id) {
         throw new BadGatewayException(

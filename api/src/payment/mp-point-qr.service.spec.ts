@@ -78,9 +78,12 @@ describe('MpPointQrService', () => {
       status: 'processed',
       approved: true,
     });
-    expect(webhook.applyMpPaymentToCart.mock.calls).toEqual([
-      ['tenant-1', 'transaction-1', 'payment-1', 'approved'],
-    ]);
+    expect(webhook.applyMpPaymentToCart).toHaveBeenCalledWith(
+      'tenant-1',
+      'transaction-1',
+      'payment-1',
+      'approved',
+    );
   });
 
   it('does not confirm an order with a mismatched paid amount', async () => {
@@ -98,6 +101,6 @@ describe('MpPointQrService', () => {
     await expect(
       service.getOrderStatus('tenant-1', 'transaction-1'),
     ).rejects.toThrow(BadGatewayException);
-    expect(webhook.applyMpPaymentToCart.mock.calls).toHaveLength(0);
+    expect(webhook.applyMpPaymentToCart).not.toHaveBeenCalled();
   });
 });
