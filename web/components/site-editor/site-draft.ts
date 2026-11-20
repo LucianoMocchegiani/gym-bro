@@ -1,4 +1,5 @@
 import {
+  SITE_DEFAULT_PRIMARY_COLOR,
   SITE_LIMITS,
   type SiteButtonTarget,
   type SiteFocusX,
@@ -55,7 +56,11 @@ export type DraftSlide = DraftVisual & {
 
 export type DraftSlider = { id: string; title: string; slides: DraftSlide[] };
 
-export type SiteDraft = { hero: DraftHero; sliders: DraftSlider[] };
+export type SiteDraft = {
+  themeColor: string;
+  hero: DraftHero;
+  sliders: DraftSlider[];
+};
 
 /** Cada tema arranca con el texto que pega con su página. */
 const DEFAULT_VISUAL: DraftVisual = {
@@ -101,6 +106,7 @@ function visualFromContent(v: SiteVisual): DraftVisual {
 export function draftFromContent(content: TenantSiteContent | null): SiteDraft {
   if (!content) {
     return {
+      themeColor: SITE_DEFAULT_PRIMARY_COLOR,
       hero: {
         ...DEFAULT_VISUAL,
         title: 'Entrená a tu ritmo con nosotros',
@@ -110,6 +116,7 @@ export function draftFromContent(content: TenantSiteContent | null): SiteDraft {
     };
   }
   return {
+    themeColor: content.themeColor ?? SITE_DEFAULT_PRIMARY_COLOR,
     hero: {
       ...visualFromContent(content.hero),
       title: content.hero.title,
@@ -168,6 +175,7 @@ export function draftToContent(
     };
   };
   return {
+    themeColor: draft.themeColor,
     hero: {
       ...visual(draft.hero),
       title: draft.hero.title.trim(),
@@ -204,6 +212,7 @@ export function mapDraftImages(
   const visual = <T extends DraftVisual>(v: T): T =>
     v.image ? { ...v, image: fn(v.image) } : v;
   return {
+    ...draft,
     hero: visual(draft.hero),
     sliders: draft.sliders.map((slider) => ({
       ...slider,

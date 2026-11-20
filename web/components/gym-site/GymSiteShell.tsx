@@ -14,13 +14,15 @@ export function GymSiteShell({
   slug,
   gymName,
   children,
+  brandColor,
 }: {
   slug: string;
   gymName: string;
   children: ReactNode;
+  brandColor?: string;
 }) {
   return (
-    <MarketingFrame>
+    <MarketingFrame brandColor={brandColor}>
       <header className="mkt-header mkt-header-bar">
         <Link href="/" className="mkt-brand">
           <span className="brand-mark" aria-hidden="true">

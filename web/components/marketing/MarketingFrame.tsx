@@ -1,4 +1,5 @@
-import type { ReactNode } from 'react';
+import type { CSSProperties, ReactNode } from 'react';
+import { siteBrandStyle } from '@/lib/site-theme';
 
 /**
  * Fondo y márgenes de las páginas públicas (landing Faciliter y web del gym).
@@ -6,13 +7,19 @@ import type { ReactNode } from 'react';
 export function MarketingFrame({
   children,
   overlay,
+  brandColor,
 }: {
   children: ReactNode;
   /** Fuera del contenedor con márgenes (p. ej. burbuja flotante). */
   overlay?: ReactNode;
+  /** Aplica solo a la página pública principal del gimnasio. */
+  brandColor?: string;
 }) {
   return (
-    <div className="mkt">
+    <div
+      className={`mkt${brandColor ? ' gym-site-branded' : ''}`}
+      style={brandColor ? (siteBrandStyle(brandColor) as CSSProperties) : undefined}
+    >
       <div className="mkt-atmosphere" aria-hidden="true" />
       <div
         className="mkt-front"

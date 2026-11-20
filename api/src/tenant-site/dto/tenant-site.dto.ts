@@ -150,6 +150,11 @@ export class SiteSliderDto {
  * de botón los valida {@link TenantSiteService}.
  */
 export class PutTenantSiteDto {
+  @IsOptional()
+  @IsString()
+  @Matches(HEX_COLOR, { message: 'themeColor must be #rrggbb' })
+  themeColor?: string | null;
+
   @ValidateNested()
   @Type(() => SiteHeroDto)
   hero!: SiteHeroDto;

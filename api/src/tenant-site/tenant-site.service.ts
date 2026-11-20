@@ -12,6 +12,7 @@ import type {
 } from './dto/tenant-site.dto';
 import { siteContrastIssue } from './site-contrast';
 import { SITE_LIMITS } from './tenant-site.constants';
+import { SITE_DEFAULT_PRIMARY_COLOR } from './tenant-site.types';
 import type {
   SiteButton,
   SiteImage,
@@ -23,6 +24,7 @@ import type {
 
 /** Carpeta de `POST /upload` para las imágenes de la web. */
 export const SITE_IMAGE_FOLDER = 'site';
+const HEX_COLOR = /^#[0-9a-f]{6}$/i;
 
 function clean(value: string | null | undefined): string | null {
   const trimmed = value?.trim();
@@ -56,7 +58,12 @@ function upgradeVisual<T extends StoredVisual>(v: T): T & SiteVisual {
 /** Contenido de `tenant_sites.content`, llevado al formato actual. */
 function fromStored(raw: Prisma.JsonValue): TenantSiteContent {
   const content = raw as unknown as TenantSiteContent;
+  const themeColor =
+    typeof content.themeColor === 'string' && HEX_COLOR.test(content.themeColor)
+      ? content.themeColor.toLowerCase()
+      : SITE_DEFAULT_PRIMARY_COLOR;
   return {
+    themeColor,
     hero: upgradeVisual(content.hero),
     sliders: content.sliders.map((slider) => ({
       ...slider,
@@ -125,8 +132,12 @@ export class TenantSiteService {
     dto: PutTenantSiteDto,
     actor: AuditActor,
   ): Promise<TenantSiteDetail> {
-    const content = await this.normalize(tenantId, dto);
     const before = await this.get(tenantId);
+    const content = await this.normalize(
+      tenantId,
+      dto,
+      before.content?.themeColor,
+    );
     const json = content as unknown as Prisma.InputJsonValue;
     const row = await this.prisma.tenantSite.upsert({
       where: { tenantId },
@@ -169,6 +180,7 @@ export class TenantSiteService {
   private async normalize(
     tenantId: string,
     dto: PutTenantSiteDto,
+    existingThemeColor?: string,
   ): Promise<TenantSiteContent> {
     const heroTitle = this.requireText(
       dto.hero.title,
@@ -207,7 +219,11 @@ export class TenantSiteService {
     });
 
     await this.assertPacksExist(tenantId, sliders);
-    return { hero, sliders };
+    const themeColor =
+      dto.themeColor?.toLowerCase() ??
+      existingThemeColor ??
+      SITE_DEFAULT_PRIMARY_COLOR;
+    return { themeColor, hero, sliders };
   }
 
   private visual(
@@ -345,7 +361,7 @@ export class TenantSiteService {
     }
   }
 
-  /** Auditoría liviana: textos y cantidades, sin URLs. */
+  /** Auditoría liviana: textos, color y cantidades, sin URLs. */
   private auditSnapshot(
     content: TenantSiteContent | null,
   ): Prisma.InputJsonValue | null {
@@ -353,6 +369,7 @@ export class TenantSiteService {
       return null;
     }
     return {
+      themeColor: content.themeColor ?? SITE_DEFAULT_PRIMARY_COLOR,
       heroTitle: content.hero.title,
       sliders: content.sliders.map((s) => ({
         title: s.title,
