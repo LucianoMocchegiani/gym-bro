@@ -21,13 +21,7 @@ export function MarketingFrame({
       style={brandColor ? (siteBrandStyle(brandColor) as CSSProperties) : undefined}
     >
       <div className="mkt-atmosphere" aria-hidden="true" />
-      <div
-        className="mkt-front"
-        style={{
-          paddingLeft: 'max(2.5rem, 6vw)',
-          paddingRight: 'max(2.5rem, 6vw)',
-        }}
-      >
+      <div className="mkt-front">
         {children}
       </div>
       {overlay}

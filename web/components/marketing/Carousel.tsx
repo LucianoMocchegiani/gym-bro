@@ -178,6 +178,17 @@ export function Carousel({
           bottom: -2.5rem;
           transform: translateX(-50%);
         }
+        @media (max-width: 640px) {
+          .site-slider {
+            padding-inline: 2.75rem;
+          }
+          .site-slider .mkt-slider-arrow-prev {
+            left: 0.125rem;
+          }
+          .site-slider .mkt-slider-arrow-next {
+            right: 0.125rem;
+          }
+        }
       `}</style>
     </div>
   );
