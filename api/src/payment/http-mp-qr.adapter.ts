@@ -58,6 +58,12 @@ export class HttpMpQrAdapter {
         Accept: 'application/json',
       },
     });
+    if (response.status === 404) {
+      const error = (await response.clone().json().catch(() => null)) as {
+        error?: string;
+      } | null;
+      if (error?.error === 'store_not_found') return null;
+    }
     await this.assertOk(response, 'store search');
     const data = (await response.json()) as {
       results?: Array<{ id?: number | string; external_id?: string }>;

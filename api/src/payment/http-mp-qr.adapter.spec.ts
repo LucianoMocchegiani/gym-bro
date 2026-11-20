@@ -27,6 +27,22 @@ describe('HttpMpQrAdapter', () => {
     );
   });
 
+  it('returns no store when Mercado Pago reports store_not_found', async () => {
+    jest.spyOn(global, 'fetch').mockResolvedValue(
+      new Response(JSON.stringify({ error: 'store_not_found' }), {
+        status: 404,
+      }),
+    );
+
+    await expect(
+      new HttpMpQrAdapter().findStoreByExternalId(
+        'token',
+        'seller-1',
+        'gbtenant',
+      ),
+    ).resolves.toBeNull();
+  });
+
   it('creates a POS with the idempotency key and QR point-of-sale mode', async () => {
     const fetchMock = jest
       .spyOn(global, 'fetch')
