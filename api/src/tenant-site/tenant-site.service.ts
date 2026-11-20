@@ -248,8 +248,17 @@ export class TenantSiteService {
     const brandIcon = iconUrl ? this.brandIcon(tenantId, iconUrl) : null;
     const socialLinks = this.normalizeSocialLinks(dto.socialLinks, existing);
     const landingCustomized =
-      dto.socialLinks === undefined ? true : (existing?.landingCustomized ?? false);
-    return { themeColor, brandIcon, socialLinks, landingCustomized, hero, sliders };
+      dto.socialLinks === undefined
+        ? true
+        : (existing?.landingCustomized ?? false);
+    return {
+      themeColor,
+      brandIcon,
+      socialLinks,
+      landingCustomized,
+      hero,
+      sliders,
+    };
   }
 
   private normalizeSocialLinks(
@@ -278,7 +287,9 @@ export class TenantSiteService {
           parsed.protocol !== 'https:' ||
           parsed.username ||
           parsed.password ||
-          !hosts.some((host) => hostname === host || hostname.endsWith(`.${host}`))
+          !hosts.some(
+            (host) => hostname === host || hostname.endsWith(`.${host}`),
+          )
         ) {
           throw new BadRequestException(
             `El link tiene que ser de ${key} y usar https://`,
