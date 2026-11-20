@@ -20,6 +20,25 @@ export type CreateMpQrPosInput = {
   idempotencyKey: string;
 };
 
+export type CreateMpQrOrderInput = {
+  accessToken: string;
+  externalPosId: string;
+  externalReference: string;
+  amount: number;
+  idempotencyKey: string;
+};
+
+export type MpQrOrder = {
+  id: string;
+  type: string;
+  status: string;
+  externalReference: string | null;
+  totalAmount: string | null;
+  totalPaidAmount: string | null;
+  qrData: string | null;
+  payments: Array<{ id: string | null; status: string; amount: string | null }>;
+};
+
 @Injectable()
 export class HttpMpQrAdapter {
   private readonly logger = new Logger(HttpMpQrAdapter.name);
@@ -96,6 +115,87 @@ export class HttpMpQrAdapter {
       }),
     });
     return this.readId(response, 'POS');
+  }
+
+  async createOrder(input: CreateMpQrOrderInput): Promise<MpQrOrder> {
+    const amount = input.amount.toFixed(2);
+    const response = await fetch('https://api.mercadopago.com/v1/orders', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${input.accessToken}`,
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+        'X-Idempotency-Key': input.idempotencyKey,
+      },
+      body: JSON.stringify({
+        type: 'qr',
+        total_amount: amount,
+        external_reference: input.externalReference,
+        description: 'Cobro Faciliter',
+        config: {
+          qr: { external_pos_id: input.externalPosId, mode: 'dynamic' },
+        },
+        transactions: { payments: [{ amount }] },
+      }),
+    });
+    return this.readOrder(response);
+  }
+
+  async getOrder(accessToken: string, orderId: string): Promise<MpQrOrder> {
+    const response = await fetch(
+      `https://api.mercadopago.com/v1/orders/${encodeURIComponent(orderId)}`,
+      {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          Accept: 'application/json',
+        },
+      },
+    );
+    return this.readOrder(response);
+  }
+
+  private async readOrder(response: Response): Promise<MpQrOrder> {
+    await this.assertOk(response, 'order');
+    const data = (await response.json()) as {
+      id?: string;
+      type?: string;
+      status?: string;
+      external_reference?: string;
+      total_amount?: string | number;
+      total_paid_amount?: string | number;
+      config?: { qr?: { qr_data?: string } };
+      transactions?: {
+        payments?: Array<{
+          id?: string | number;
+          status?: string;
+          amount?: string | number;
+        }>;
+      };
+    };
+    if (!data.id || !data.status || !data.type) {
+      throw new Error('Mercado Pago QR order response missing id/type/status');
+    }
+    return {
+      id: data.id,
+      type: data.type,
+      status: data.status,
+      externalReference: data.external_reference ?? null,
+      totalAmount:
+        data.total_amount === undefined ? null : String(data.total_amount),
+      totalPaidAmount:
+        data.total_paid_amount === undefined
+          ? null
+          : String(data.total_paid_amount),
+      qrData: data.config?.qr?.qr_data ?? null,
+      payments: (data.transactions?.payments ?? []).map((payment) => ({
+        id:
+          payment.id === undefined || payment.id === null
+            ? null
+            : String(payment.id),
+        status: payment.status ?? 'unknown',
+        amount: payment.amount === undefined ? null : String(payment.amount),
+      })),
+    };
   }
 
   private async readId(response: Response, operation: string): Promise<string> {
