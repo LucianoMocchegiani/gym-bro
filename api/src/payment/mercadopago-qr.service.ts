@@ -1,14 +1,17 @@
 import {
   BadGatewayException,
   BadRequestException,
+  Inject,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { AuditActor } from '../audit/audit.types';
 import { AuditService } from '../audit/audit.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { MercadoPagoAccountService } from './mercadopago-account.service';
 import { CreateMercadoPagoQrSetupDto } from './dto/create-mercadopago-qr-setup.dto';
 import { HttpMpQrAdapter } from './http-mp-qr.adapter';
+import { MP_ACCOUNT_PORT, MpAccountPort } from './mp-account.port';
 
 export type MercadoPagoQrSetupStatus = {
   configured: boolean;
@@ -22,7 +25,8 @@ export class MercadoPagoQrService {
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
     private readonly account: MercadoPagoAccountService,
-    private readonly mp: HttpMpQrAdapter,
+    private readonly mpQr: HttpMpQrAdapter,
+    @Inject(MP_ACCOUNT_PORT) private readonly mp: MpAccountPort,
   ) {}
 
   async getSetup(tenantId: string): Promise<MercadoPagoQrSetupStatus> {
@@ -42,7 +46,7 @@ export class MercadoPagoQrService {
   async createSetup(
     tenantId: string,
     dto: CreateMercadoPagoQrSetupDto,
-    actor: { profileType: 'STAFF' | 'MEMBER' | 'IDENTITY'; userId: string },
+    actor: AuditActor,
   ): Promise<MercadoPagoQrSetupStatus> {
     const account = await this.prisma.mercadoPagoAccount.findUnique({
       where: { tenantId },
@@ -54,12 +58,16 @@ export class MercadoPagoQrService {
     const accessToken = await this.account.getDecryptedAccessToken(tenantId);
     let mpUserId: string;
     try {
-      mpUserId = (await this.mpAccountValidation(accessToken)).userId;
+      mpUserId = (await this.mp.validateAccessToken(accessToken)).userId;
     } catch {
       throw new BadRequestException(
         'No se pudo validar la conexión con Mercado Pago. Reconectá la cuenta e intentá de nuevo.',
       );
     }
+    await this.prisma.mercadoPagoAccount.update({
+      where: { tenantId },
+      data: { mpUserId, lastValidatedAt: new Date(), lastValidationOk: true },
+    });
 
     const tenant = await this.prisma.tenant.findUnique({
       where: { id: tenantId },
@@ -85,7 +93,7 @@ export class MercadoPagoQrService {
 
     try {
       if (!setup.storeId) {
-        const storeId = await this.mp.createStore({
+        const storeId = await this.mpQr.createStore({
           accessToken,
           userId: mpUserId,
           name: tenant.name,
@@ -104,7 +112,7 @@ export class MercadoPagoQrService {
       }
 
       if (!setup.posId) {
-        const posId = await this.mp.createPos({
+        const posId = await this.mpQr.createPos({
           accessToken,
           storeId: setup.storeId!,
           externalId: `gp${tenantId.replaceAll('-', '')}`,
@@ -117,7 +125,7 @@ export class MercadoPagoQrService {
       }
     } catch {
       throw new BadGatewayException(
-        'Mercado Pago no pudo crear la sucursal o la caja QR. La sucursal creada, si la hubo, se conservará para reintentar.',
+        'Mercado Pago no pudo crear la sucursal o la caja QR. Si la sucursal se creó, queda guardada para reintentar.',
       );
     }
 
@@ -131,11 +139,5 @@ export class MercadoPagoQrService {
     });
 
     return { configured: true, storeId: setup.storeId, posId: setup.posId };
-  }
-
-  private async mpAccountValidation(
-    accessToken: string,
-  ): Promise<{ userId: string }> {
-    return this.account['mp'].validateAccessToken(accessToken);
   }
 }

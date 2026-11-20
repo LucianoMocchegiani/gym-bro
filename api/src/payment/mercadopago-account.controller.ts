@@ -14,17 +14,16 @@ import { toAuditActor } from '../audit/to-audit-actor';
 import { RequirePermission } from '../roles/decorators/require-permission.decorator';
 import { CurrentTenant } from '../tenant/decorators/current-tenant.decorator';
 import { RequireTenantAuth } from '../tenant/decorators/require-tenant-auth.decorator';
-import { UpsertMercadoPagoAccountDto } from './dto/upsert-mercadopago-account.dto';
 import { CreateMercadoPagoQrSetupDto } from './dto/create-mercadopago-qr-setup.dto';
+import { UpsertMercadoPagoAccountDto } from './dto/upsert-mercadopago-account.dto';
 import { MercadoPagoAccountService } from './mercadopago-account.service';
-import { MercadoPagoQrService } from './mercadopago-qr.service';
 import {
   MercadoPagoAccountStatus,
   MercadoPagoAccountTestResult,
   MercadoPagoOAuthStartResult,
 } from './mercadopago-account.types';
 import { MercadoPagoOAuthService } from './mercadopago-oauth.service';
-import { MercadoPagoQrSetupStatus } from './mercadopago-qr.service';
+import { MercadoPagoQrService, MercadoPagoQrSetupStatus } from './mercadopago-qr.service';
 
 /**
  * Cuenta Mercado Pago del gym (staff).
@@ -42,17 +41,13 @@ export class MercadoPagoAccountController {
 
   @Get()
   @RequirePermission('mp.connect')
-  getStatus(
-    @CurrentTenant() tenantId: string,
-  ): Promise<MercadoPagoAccountStatus> {
+  getStatus(@CurrentTenant() tenantId: string): Promise<MercadoPagoAccountStatus> {
     return this.accounts.getStatus(tenantId);
   }
 
   @Get('qr-setup')
   @RequirePermission('mp.connect')
-  getQrSetup(
-    @CurrentTenant() tenantId: string,
-  ): Promise<MercadoPagoQrSetupStatus> {
+  getQrSetup(@CurrentTenant() tenantId: string): Promise<MercadoPagoQrSetupStatus> {
     return this.qr.getSetup(tenantId);
   }
 
@@ -66,14 +61,10 @@ export class MercadoPagoAccountController {
     return this.qr.createSetup(tenantId, dto, toAuditActor(user));
   }
 
-  /**
-   * Public key para Card Payment Brick en Caja (débito).
-   */
+  /** Public key para Card Payment Brick en Caja (débito). */
   @Get('public-key')
   @RequirePermission('cashier.operate')
-  async getPublicKey(
-    @CurrentTenant() tenantId: string,
-  ): Promise<{ publicKey: string }> {
+  async getPublicKey(@CurrentTenant() tenantId: string): Promise<{ publicKey: string }> {
     const publicKey = await this.accounts.getPublicKey(tenantId);
     return { publicKey };
   }
@@ -98,9 +89,7 @@ export class MercadoPagoAccountController {
     return this.accounts.test(tenantId, toAuditActor(user));
   }
 
-  /**
-   * URL de MP para «Conectar Mercado Pago» (el navegador navega ahí).
-   */
+  /** URL de MP para «Conectar Mercado Pago» (el navegador navega ahí). */
   @Post('oauth/start')
   @HttpCode(HttpStatus.OK)
   @RequirePermission('mp.connect')
