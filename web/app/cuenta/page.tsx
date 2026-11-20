@@ -39,13 +39,17 @@ export default async function CuentaPage({
   if (!site) {
     notFound();
   }
+  const color = site.catalog.site?.themeColor ?? SITE_DEFAULT_PRIMARY_COLOR;
   return (
-    <GymSiteShell
-      slug={site.slug}
-      gymName={site.catalog.tenant.name}
-      brandColor={site.catalog.site?.themeColor ?? SITE_DEFAULT_PRIMARY_COLOR}
-    >
-      <GymAccountPage slug={site.slug} />
-    </GymSiteShell>
+    <>
+      <style>{`:root { --navigation-progress-color: ${color}; }`}</style>
+      <GymSiteShell
+        slug={site.slug}
+        gymName={site.catalog.tenant.name}
+        brandColor={color}
+      >
+        <GymAccountPage slug={site.slug} />
+      </GymSiteShell>
+    </>
   );
 }

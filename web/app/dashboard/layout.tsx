@@ -16,8 +16,11 @@ export default async function DashboardLayout({
   const catalog = await fetchPublicTenantCatalog(slug);
   const color = catalog?.site?.themeColor ?? SITE_DEFAULT_PRIMARY_COLOR;
   return (
-    <div className="gym-site-branded" style={siteBrandStyle(color) as CSSProperties}>
-      {children}
-    </div>
+    <>
+      <style>{`:root { --navigation-progress-color: ${color}; }`}</style>
+      <div className="gym-site-branded" style={siteBrandStyle(color) as CSSProperties}>
+        {children}
+      </div>
+    </>
   );
 }
