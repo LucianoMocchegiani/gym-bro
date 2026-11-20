@@ -33,9 +33,11 @@ function setup(savedContent: Record<string, unknown> | null, ownsIcon = true) {
   });
   const prisma = {
     tenantSite: {
-      findUnique: jest.fn().mockResolvedValue(
-        savedContent ? { content: savedContent, updatedAt: now } : null,
-      ),
+      findUnique: jest
+        .fn()
+        .mockResolvedValue(
+          savedContent ? { content: savedContent, updatedAt: now } : null,
+        ),
       upsert,
     },
   } as unknown as PrismaService;
