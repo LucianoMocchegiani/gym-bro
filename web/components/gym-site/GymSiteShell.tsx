@@ -26,14 +26,36 @@ const SOCIAL_ICONS: Record<keyof SiteSocialLinks, ReactNode> = {
   ),
   instagram: (
     <>
-      <rect x="3" y="3" width="18" height="18" rx="5" fill="none" stroke="currentColor" strokeWidth="2" />
-      <circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" strokeWidth="2" />
+      <rect
+        x="3"
+        y="3"
+        width="18"
+        height="18"
+        rx="5"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+      />
+      <circle
+        cx="12"
+        cy="12"
+        r="4"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+      />
       <circle cx="17.5" cy="6.5" r="1" />
     </>
   ),
   whatsapp: (
     <>
-      <path d="M20.5 11.8a8.5 8.5 0 0 1-12.6 7.4L3 20.5l1.3-4.7a8.5 8.5 0 1 1 16.2-4Z" fill="none" stroke="currentColor" strokeLinejoin="round" strokeWidth="2" />
+      <path
+        d="M20.5 11.8a8.5 8.5 0 0 1-12.6 7.4L3 20.5l1.3-4.7a8.5 8.5 0 1 1 16.2-4Z"
+        fill="none"
+        stroke="currentColor"
+        strokeLinejoin="round"
+        strokeWidth="2"
+      />
       <path d="M8 8.2c.2-.5.5-.5.8-.5h.5c.2 0 .4.1.5.4l.8 1.9c.1.2.1.4-.1.6l-.6.7c-.2.2-.2.4-.1.6.6 1 1.4 1.8 2.4 2.3.2.1.4.1.6-.1l.7-.8c.2-.2.4-.2.6-.1l1.8.9c.3.1.4.3.4.5 0 .3-.2 1.1-.7 1.5-.5.5-1.2.7-1.9.6-1-.1-2.4-.7-3.9-2-1.3-1.2-2.2-2.7-2.5-3.7-.3-1 .1-2 .7-2.8Z" />
     </>
   ),
@@ -46,6 +68,7 @@ function SocialIcon({ platform }: { platform: keyof SiteSocialLinks }) {
       focusable="false"
       viewBox="0 0 24 24"
       fill="currentColor"
+      style={{ width: '1.25rem', height: '1.25rem', flexShrink: 0 }}
     >
       {SOCIAL_ICONS[platform]}
     </svg>
@@ -115,7 +138,15 @@ export function GymSiteShell({
           {configuredSocials.length > 0 ? (
             <div>
               <p className="mkt-footer-label">Redes sociales</p>
-              <ul className="mkt-social-links">
+              <ul
+                className="mkt-social-links"
+                style={{
+                  display: 'flex',
+                  flexWrap: 'wrap',
+                  alignItems: 'center',
+                  gap: '0.75rem 1rem',
+                }}
+              >
                 {configuredSocials.map(({ key, label, href }) => (
                   <li key={key}>
                     <a
@@ -123,6 +154,12 @@ export function GymSiteShell({
                       target="_blank"
                       rel="noopener noreferrer"
                       aria-label={`${label} (se abre en una pestaña nueva)`}
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '0.45rem',
+                        textDecoration: 'none',
+                      }}
                     >
                       <SocialIcon platform={key} />
                       {label}
