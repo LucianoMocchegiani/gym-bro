@@ -59,7 +59,10 @@ export class HttpMpQrAdapter {
       },
     });
     if (response.status === 404) {
-      const error = (await response.clone().json().catch(() => null)) as {
+      const error = (await response
+        .clone()
+        .json()
+        .catch(() => null)) as {
         error?: string;
       } | null;
       if (error?.error === 'store_not_found') return null;
