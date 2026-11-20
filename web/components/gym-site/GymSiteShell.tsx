@@ -169,17 +169,6 @@ export function GymSiteShell({
               </ul>
             </div>
           ) : null}
-          <div>
-            <p className="mkt-footer-label">Legal</p>
-            <ul>
-              <li>
-                <Link href="/legal/terminos">Términos</Link>
-              </li>
-              <li>
-                <Link href="/legal/privacidad">Privacidad</Link>
-              </li>
-            </ul>
-          </div>
         </MktShell>
         <p className="mkt-copy">© {new Date().getFullYear()} {gymName}</p>
       </footer>
