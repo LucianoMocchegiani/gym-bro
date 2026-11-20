@@ -76,7 +76,6 @@ const NAV_GROUPS: NavGroup[] = [
       { href: '/dashboard/web', label: 'Web del gym' },
       { href: '/dashboard/plan', label: 'Plan / Uso' },
       { href: '/dashboard/auditoria', label: 'Auditoría' },
-      { href: '/dashboard/ads', label: 'Faciliter Ads' },
     ],
   },
 ];
