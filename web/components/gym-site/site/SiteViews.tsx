@@ -70,19 +70,16 @@ function SiteFrame({
       style={style}
     >
       {image ? (
-        <>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            className="site-frame-img"
-            src={image.url}
-            alt={image.alt ?? alt}
-            loading={eager ? 'eager' : 'lazy'}
-            style={{
-              objectPosition: `${FOCUS_X[image.focusX]} ${FOCUS_Y[image.focusY]}`,
-            }}
-          />
-          <div className="site-frame-overlay" aria-hidden="true" />
-        </>
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          className="site-frame-img"
+          src={image.url}
+          alt={image.alt ?? alt}
+          loading={eager ? 'eager' : 'lazy'}
+          style={{
+            objectPosition: `${FOCUS_X[image.focusX]} ${FOCUS_Y[image.focusY]}`,
+          }}
+        />
       ) : null}
       <div className="site-frame-content">{children}</div>
     </div>
