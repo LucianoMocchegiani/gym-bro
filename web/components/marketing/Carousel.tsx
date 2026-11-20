@@ -167,10 +167,10 @@ export function Carousel({
           transform: translateY(-50%);
         }
         .site-slider .mkt-slider-arrow-prev {
-          left: calc(clamp(1.5rem, 3vw, 2.5rem) + 0.65rem);
+          left: 0.65rem;
         }
         .site-slider .mkt-slider-arrow-next {
-          right: calc(clamp(1.5rem, 3vw, 2.5rem) + 0.65rem);
+          right: 0.65rem;
         }
         .site-slider .mkt-slider-dots {
           position: absolute;
