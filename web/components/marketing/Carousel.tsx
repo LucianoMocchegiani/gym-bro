@@ -150,7 +150,7 @@ export function Carousel({
       <style jsx global>{`
         .site-slider {
           position: relative;
-          padding-bottom: 2.5rem;
+          padding: 0 3.25rem 2.5rem;
         }
         .site-slider .mkt-slider-controls {
           position: absolute;
@@ -167,10 +167,10 @@ export function Carousel({
           transform: translateY(-50%);
         }
         .site-slider .mkt-slider-arrow-prev {
-          left: 0.65rem;
+          left: 0.375rem;
         }
         .site-slider .mkt-slider-arrow-next {
-          right: 0.65rem;
+          right: 0.375rem;
         }
         .site-slider .mkt-slider-dots {
           position: absolute;
