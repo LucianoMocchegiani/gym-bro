@@ -15,6 +15,7 @@ import {
   upsertMercadoPagoAccount,
 } from '@/lib/api/mercadopago';
 import type { MercadoPagoAccountStatus } from '@/lib/api/mercadopago';
+import { MercadoPagoQrSetup } from './mercado-pago-qr-setup';
 import {
   getTenantSettings,
   updateTenantSettings,
@@ -33,10 +34,7 @@ const MP_RETURN_ERRORS: Record<string, string> = {
     'Mercado Pago no aceptó la conexión. Probá de nuevo; si sigue fallando, escribinos.',
 };
 
-/**
- * Lee `?mp=connected|error&reason=` (vuelta de «Conectar Mercado Pago») y lo
- * saca de la URL.
- */
+/** Lee y limpia los parámetros de retorno de OAuth de la URL. */
 function consumeMpReturnParam(): { ok: string | null; error: string | null } {
   const params = new URLSearchParams(window.location.search);
   const result = params.get('mp');
@@ -61,9 +59,7 @@ function consumeMpReturnParam(): { ok: string | null; error: string | null } {
   };
 }
 
-/**
- * Config operativa del gym + cuenta Mercado Pago.
- */
+/** Config operativa del gym + cuenta Mercado Pago. */
 export default function ConfigPage() {
   return (
     <RequireStaff>
@@ -499,11 +495,9 @@ function ConfigInner() {
                   </>
                 ) : null}
               </div>
+              {mp.connected ? <MercadoPagoQrSetup /> : null}
 
-              <details
-                className="advanced-details"
-                open={!mp.oauthAvailable}
-              >
+              <details className="advanced-details" open={!mp.oauthAvailable}>
                 <summary>Conexión manual (avanzado)</summary>
                 <p className="muted small">
                   Solo si te lo pide soporte: pegá el access token y la public
