@@ -208,6 +208,8 @@ export function AdminShell({
                   onError={() => setBrandIconAvailable(false)}
                   style={{ width: '100%', height: '100%', objectFit: 'contain' }}
                 />
+              ) : hostSlug && hostSlug !== 'admin' ? (
+                brandSlug.trim().slice(0, 1).toUpperCase()
               ) : (
                 <NavIconDumbbell />
               )}
