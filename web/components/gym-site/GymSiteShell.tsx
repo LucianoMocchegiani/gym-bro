@@ -27,7 +27,11 @@ export function GymSiteShell({
     <MarketingFrame brandColor={brandColor}>
       <header className="mkt-header mkt-header-bar">
         <Link href="/" className="mkt-brand">
-          <span className="brand-mark" aria-hidden="true">
+          <span
+            className="brand-mark"
+            aria-hidden="true"
+            style={brandIcon ? { border: 'none' } : undefined}
+          >
             {brandIcon ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
