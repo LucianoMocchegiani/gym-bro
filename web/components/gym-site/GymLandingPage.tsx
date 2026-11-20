@@ -39,6 +39,7 @@ export function GymLandingPage({ catalog }: { catalog: PublicTenantCatalog }) {
       slug={tenant.slug}
       gymName={tenant.name}
       brandColor={site?.themeColor ?? SITE_DEFAULT_PRIMARY_COLOR}
+      brandIcon={site?.brandIcon ?? null}
     >
       {site ? (
         <MktShell as="section" className="site-hero-section"><SiteHeroView hero={site.hero} actions={<HeroActions />} /></MktShell>
@@ -46,7 +47,7 @@ export function GymLandingPage({ catalog }: { catalog: PublicTenantCatalog }) {
         <MktShell as="section" className="mkt-hero">
           <div className="mkt-hero-copy">
             <p className="mkt-kicker">Planes y precios</p><h1>{tenant.name}</h1>
-            <p className="mkt-lead">{onlineCheckout ? 'Elegí tu plan y pagalo online con Mercado Pago. Queda activo apenas se acredita.' : 'Elegí tu plan y contratalo en el mostrador del gym.'}</p>
+            <p className="mkt-lead">{onlineCheckout ? 'Elegí tu plan y pagalo online con Mercado Pago. Queda activo apenas se acredita.' : 'Elegí tu plan y contratálo en el mostrador del gym.'}</p>
             <div className="mkt-hero-actions"><HeroActions /></div>
           </div>
         </MktShell>
