@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { AdminShell } from '@/components/AdminShell';
 import { DashboardKpis, type KpiCardData } from '@/components/DashboardKpis';
+import { FreePlanNotice } from '@/components/FreePlanNotice';
 import { RequireStaff } from '@/components/RequireStaff';
 import { AdSlot } from '@/components/ads/AdSlot';
 import {
@@ -86,6 +87,8 @@ function TenantDashboard({ tenantSlug }: { tenantSlug: string }) {
   const canMembers = canAccessNavHref('/dashboard/afiliados', permissionCodes);
   const canDoor = hasAnyPermission(permissionCodes, ['access.verify']);
   const canSessions = canAccessNavHref('/dashboard/sesiones', permissionCodes);
+  const canManagePlan =
+    permissionsReady && canAccessNavHref('/dashboard/plan', permissionCodes);
 
   const today = todayBusinessDate();
   const [kpi, setKpi] = useState<KpiState>({
@@ -293,6 +296,10 @@ function TenantDashboard({ tenantSlug }: { tenantSlug: string }) {
       {permissionsReady ? (
         <DashboardKpis loading={loading} cards={kpiCards} errors={kpi.errors} />
       ) : null}
+      <FreePlanNotice
+        tenantId={session?.tenantId ?? null}
+        canManagePlan={canManagePlan}
+      />
       <AdSlot tenantSlug={tenantSlug} placement="DASHBOARD" />
     </AdminShell>
   );
