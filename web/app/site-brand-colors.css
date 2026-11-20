@@ -51,13 +51,6 @@
     transparent;
 }
 
-.site-frame-overlay {
-  position: absolute;
-  inset: 0;
-  z-index: -1;
-  background: var(--site-overlay);
-}
-
 .gym-site-branded .site-hero-section {
   width: auto;
   max-width: none;
