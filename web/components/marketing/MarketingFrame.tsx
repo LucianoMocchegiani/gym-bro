@@ -21,7 +21,6 @@ export function MarketingFrame({
       style={brandColor ? (siteBrandStyle(brandColor) as CSSProperties) : undefined}
     >
       <div className="mkt-atmosphere" aria-hidden="true" />
-      <style>{`@media (max-width: 640px) { .gym-site-branded .mkt-front { padding-inline: 1rem !important; } }`}</style>
       <div
         className="mkt-front"
         style={{
