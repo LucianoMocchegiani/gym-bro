@@ -72,7 +72,7 @@ export function PlanPanel({ plan }: { plan: GymPlanView }) {
         </p>
       ) : null}
       {plan.status === 'active' ? (
-        <p className="muted small">
+        <p className="muted small" style={{ marginTop: '2rem' }}>
           Si contrataste en faciliter.xyz, se renueva solo con el débito de
           Mercado Pago. Si no, se renueva pagando con Faciliter.
         </p>
@@ -84,7 +84,7 @@ export function PlanPanel({ plan }: { plan: GymPlanView }) {
           <a href={`mailto:${MARKETING_MAIL}`}>{MARKETING_MAIL}</a>.
         </p>
       ) : null}
-      <p className="muted small" style={{ marginTop: '1rem' }}>
+      <p className="muted small" style={{ marginTop: '2rem' }}>
         Para cambiar de plan o dar de baja el débito, escribinos a{' '}
         <a href={`mailto:${MARKETING_MAIL}`}>{MARKETING_MAIL}</a>.
       </p>
