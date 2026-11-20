@@ -94,6 +94,34 @@ export class SiteButtonDto {
   url?: string | null;
 }
 
+/** Los enlaces sociales deben ser HTTPS; el servicio valida su dominio. */
+export class SiteSocialLinksDto {
+  @IsOptional()
+  @IsUrl({ protocols: ['https'], require_protocol: true })
+  @MaxLength(SITE_LIMITS.url.max)
+  facebook?: string | null;
+
+  @IsOptional()
+  @IsUrl({ protocols: ['https'], require_protocol: true })
+  @MaxLength(SITE_LIMITS.url.max)
+  x?: string | null;
+
+  @IsOptional()
+  @IsUrl({ protocols: ['https'], require_protocol: true })
+  @MaxLength(SITE_LIMITS.url.max)
+  tiktok?: string | null;
+
+  @IsOptional()
+  @IsUrl({ protocols: ['https'], require_protocol: true })
+  @MaxLength(SITE_LIMITS.url.max)
+  instagram?: string | null;
+
+  @IsOptional()
+  @IsUrl({ protocols: ['https'], require_protocol: true })
+  @MaxLength(SITE_LIMITS.url.max)
+  whatsapp?: string | null;
+}
+
 export class SiteHeroDto extends SiteVisualDto {
   @IsString()
   @Length(SITE_LIMITS.heroTitle.min, SITE_LIMITS.heroTitle.max)
@@ -160,6 +188,12 @@ export class PutTenantSiteDto {
   @IsString()
   @MaxLength(SITE_LIMITS.url.max)
   brandIcon?: string | null;
+
+  /** Si se omite, se conservan los enlaces existentes. */
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => SiteSocialLinksDto)
+  socialLinks?: SiteSocialLinksDto;
 
   @ValidateNested()
   @Type(() => SiteHeroDto)

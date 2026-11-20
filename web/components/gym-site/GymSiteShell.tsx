@@ -3,7 +3,16 @@ import type { ReactNode } from 'react';
 import { GymHeaderActions } from '@/components/gym-site/GymHeaderActions';
 import { MarketingFrame } from '@/components/marketing/MarketingFrame';
 import { MktShell } from '@/components/marketing/MktShell';
+import type { SiteSocialLinks } from '@/lib/api/tenant-site';
 import { platformOrigin } from '@/lib/tenant-host';
+
+const SOCIALS = [
+  ['facebook', 'Facebook'],
+  ['x', 'X'],
+  ['tiktok', 'TikTok'],
+  ['instagram', 'Instagram'],
+  ['whatsapp', 'WhatsApp'],
+] as const satisfies ReadonlyArray<readonly [keyof SiteSocialLinks, string]>;
 
 /**
  * Header + footer de la web pública de un gym (`{slug}/`, `/comprar`, `/portal`, `/cuenta`).
@@ -16,13 +25,18 @@ export function GymSiteShell({
   children,
   brandColor,
   brandIcon,
+  socialLinks,
 }: {
   slug: string;
   gymName: string;
   children: ReactNode;
   brandColor?: string;
   brandIcon?: string | null;
+  socialLinks?: SiteSocialLinks;
 }) {
+  const configuredSocials = SOCIALS.flatMap(([key, label]) =>
+    socialLinks?.[key] ? [{ key, label, href: socialLinks[key]! }] : [],
+  );
   return (
     <MarketingFrame brandColor={brandColor}>
       <header className="mkt-header mkt-header-bar">
@@ -60,6 +74,25 @@ export function GymSiteShell({
               <a href={platformOrigin()}>Faciliter</a>.
             </p>
           </div>
+          {configuredSocials.length > 0 ? (
+            <div>
+              <p className="mkt-footer-label">Redes sociales</p>
+              <ul className="mkt-social-links">
+                {configuredSocials.map(({ key, label, href }) => (
+                  <li key={key}>
+                    <a
+                      href={href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      aria-label={`${label} (se abre en una pestaña nueva)`}
+                    >
+                      {label}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
           <div>
             <p className="mkt-footer-label">Legal</p>
             <ul>

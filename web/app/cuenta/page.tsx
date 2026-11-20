@@ -48,6 +48,7 @@ export default async function CuentaPage({
         gymName={site.catalog.tenant.name}
         brandColor={color}
         brandIcon={site.catalog.site?.brandIcon ?? null}
+        socialLinks={site.catalog.site?.socialLinks}
       >
         <GymAccountPage slug={site.slug} />
       </GymSiteShell>

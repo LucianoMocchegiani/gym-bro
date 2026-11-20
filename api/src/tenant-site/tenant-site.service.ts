@@ -8,6 +8,7 @@ import type {
   PutTenantSiteDto,
   SiteButtonDto,
   SiteImageDto,
+  SiteSocialLinksDto,
   SiteThemeColorsDto,
 } from './dto/tenant-site.dto';
 import { siteContrastIssue } from './site-contrast';
@@ -16,6 +17,7 @@ import { SITE_DEFAULT_PRIMARY_COLOR } from './tenant-site.types';
 import type {
   SiteButton,
   SiteImage,
+  SiteSocialLinks,
   SiteThemeColors,
   SiteVisual,
   TenantSiteContent,
@@ -25,6 +27,20 @@ import type {
 /** Carpeta de `POST /upload` para las imágenes de la web. */
 export const SITE_IMAGE_FOLDER = 'site';
 const HEX_COLOR = /^#[0-9a-f]{6}$/i;
+const EMPTY_SOCIAL_LINKS: SiteSocialLinks = {
+  facebook: null,
+  x: null,
+  tiktok: null,
+  instagram: null,
+  whatsapp: null,
+};
+const SOCIAL_HOSTS: Record<keyof SiteSocialLinks, string[]> = {
+  facebook: ['facebook.com', 'fb.com'],
+  x: ['x.com', 'twitter.com'],
+  tiktok: ['tiktok.com'],
+  instagram: ['instagram.com'],
+  whatsapp: ['wa.me', 'whatsapp.com'],
+};
 
 function clean(value: string | null | undefined): string | null {
   const trimmed = value?.trim();
@@ -65,6 +81,8 @@ function fromStored(raw: Prisma.JsonValue): TenantSiteContent {
   return {
     themeColor,
     brandIcon: typeof content.brandIcon === 'string' ? content.brandIcon : null,
+    socialLinks: { ...EMPTY_SOCIAL_LINKS, ...content.socialLinks },
+    landingCustomized: content.landingCustomized !== false,
     hero: upgradeVisual(content.hero),
     sliders: content.sliders.map((slider) => ({
       ...slider,
@@ -228,7 +246,58 @@ export class TenantSiteService {
         ? (existing?.brandIcon ?? null)
         : clean(dto.brandIcon);
     const brandIcon = iconUrl ? this.brandIcon(tenantId, iconUrl) : null;
-    return { themeColor, brandIcon, hero, sliders };
+    const socialLinks = this.normalizeSocialLinks(dto.socialLinks, existing);
+    const landingCustomized =
+      dto.socialLinks === undefined
+        ? true
+        : (existing?.landingCustomized ?? false);
+    return {
+      themeColor,
+      brandIcon,
+      socialLinks,
+      landingCustomized,
+      hero,
+      sliders,
+    };
+  }
+
+  private normalizeSocialLinks(
+    dto: SiteSocialLinksDto | undefined,
+    existing: TenantSiteContent | null,
+  ): SiteSocialLinks {
+    return Object.fromEntries(
+      Object.entries(SOCIAL_HOSTS).map(([platform, hosts]) => {
+        const key = platform as keyof SiteSocialLinks;
+        const value =
+          dto?.[key] === undefined
+            ? (existing?.socialLinks?.[key] ?? null)
+            : dto[key];
+        const url = clean(value);
+        if (!url) {
+          return [key, null];
+        }
+        let parsed: URL;
+        try {
+          parsed = new URL(url);
+        } catch {
+          throw new BadRequestException(`El link de ${key} no es válido`);
+        }
+        const hostname = parsed.hostname.toLowerCase();
+        if (
+          parsed.protocol !== 'https:' ||
+          parsed.username ||
+          parsed.password ||
+          !hosts.some(
+            (host) => hostname === host || hostname.endsWith(`.${host}`),
+          )
+        ) {
+          throw new BadRequestException(
+            `El link tiene que ser de ${key} y usar https://`,
+          );
+        }
+        return [key, url];
+      }),
+    ) as SiteSocialLinks;
   }
 
   private brandIcon(tenantId: string, url: string): string {
@@ -389,6 +458,9 @@ export class TenantSiteService {
         title: s.title,
         slides: s.slides.map((slide) => slide.title),
       })),
+      socialLinks: Object.entries(content.socialLinks ?? {})
+        .filter(([, url]) => Boolean(url))
+        .map(([platform]) => platform),
       images: imageUrls(content).size,
     };
   }

@@ -24,7 +24,7 @@ function siteContent(extra: Record<string, unknown> = {}) {
   };
 }
 
-function setup(savedContent: Record<string, unknown>, ownsIcon = true) {
+function setup(savedContent: Record<string, unknown> | null, ownsIcon = true) {
   const now = new Date();
   let upsertedContent: unknown;
   const upsert = jest.fn((args: { update: { content: unknown } }) => {
@@ -33,10 +33,11 @@ function setup(savedContent: Record<string, unknown>, ownsIcon = true) {
   });
   const prisma = {
     tenantSite: {
-      findUnique: jest.fn().mockResolvedValue({
-        content: savedContent,
-        updatedAt: now,
-      }),
+      findUnique: jest
+        .fn()
+        .mockResolvedValue(
+          savedContent ? { content: savedContent, updatedAt: now } : null,
+        ),
       upsert,
     },
   } as unknown as PrismaService;
@@ -88,6 +89,58 @@ describe('TenantSiteService brand configuration compatibility', () => {
     expect(getUpsertedContent()).toEqual(
       expect.objectContaining({ themeColor: '#8855cc', brandIcon }),
     );
+  });
+
+  it('preserves social links when an older client omits them', async () => {
+    const socialLinks = {
+      facebook: 'https://facebook.com/example',
+      x: null,
+      tiktok: null,
+      instagram: null,
+      whatsapp: null,
+    };
+    const { service, getUpsertedContent } = setup(siteContent({ socialLinks }));
+
+    await service.put('tenant-id', dtoWithoutThemeColor(), {
+      profileType: 'STAFF',
+      userId: 'staff-id',
+    });
+
+    expect(getUpsertedContent()).toEqual(
+      expect.objectContaining({ socialLinks }),
+    );
+  });
+
+  it('keeps the default landing when saving only social links', async () => {
+    const { service, getUpsertedContent } = setup(null);
+
+    await service.put(
+      'tenant-id',
+      {
+        ...dtoWithoutThemeColor(),
+        socialLinks: { instagram: 'https://instagram.com/example' },
+      },
+      { profileType: 'STAFF', userId: 'staff-id' },
+    );
+
+    expect(getUpsertedContent()).toEqual(
+      expect.objectContaining({ landingCustomized: false }),
+    );
+  });
+
+  it('rejects social links outside their corresponding network', async () => {
+    const { service } = setup(siteContent());
+
+    await expect(
+      service.put(
+        'tenant-id',
+        {
+          ...dtoWithoutThemeColor(),
+          socialLinks: { facebook: 'https://evil.example' },
+        },
+        { profileType: 'STAFF', userId: 'staff-id' },
+      ),
+    ).rejects.toBeInstanceOf(BadRequestException);
   });
 
   it('rejects an icon not uploaded by this tenant', async () => {

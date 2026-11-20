@@ -13,6 +13,14 @@ export type SiteFocusX = 'LEFT' | 'CENTER' | 'RIGHT';
 export type SiteFocusY = 'TOP' | 'CENTER' | 'BOTTOM';
 export type SiteButtonTarget = 'PLANS' | 'BOOK' | 'PACK' | 'URL';
 
+export type SiteSocialLinks = {
+  facebook: string | null;
+  x: string | null;
+  tiktok: string | null;
+  instagram: string | null;
+  whatsapp: string | null;
+};
+
 export type SiteImage = {
   url: string;
   /** Vacío → la web usa el título. */
@@ -68,6 +76,9 @@ export type TenantSiteContent = {
   themeColor?: string;
   /** Ícono opcional del gimnasio; URL de imagen pública subida por el tenant. */
   brandIcon?: string | null;
+  /** Ausente en contenido anterior; no hay redes configuradas. */
+  socialLinks?: SiteSocialLinks;
+  landingCustomized?: boolean;
   hero: SiteHero;
   sliders: SiteSlider[];
 };

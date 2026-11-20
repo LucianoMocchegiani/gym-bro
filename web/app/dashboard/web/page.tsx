@@ -5,6 +5,7 @@ import { AdminShell } from '@/components/AdminShell';
 import { RequireStaff } from '@/components/RequireStaff';
 import { SkeletonForm } from '@/components/Skeleton';
 import { SiteEditor } from '@/components/site-editor/SiteEditor';
+import { SocialLinksEditor } from '@/components/site-editor/SocialLinksEditor';
 import { ApiClientError } from '@/lib/api/client';
 import { listActivePacks, type PackSummary } from '@/lib/api/packs';
 import { getTenantSite, type TenantSiteDetail } from '@/lib/api/tenant-site';
@@ -12,7 +13,7 @@ import { useAuth } from '@/lib/auth/AuthProvider';
 import { hasAnyPermission } from '@/lib/nav-permissions';
 
 /**
- * Sistema → Web del gym: portada y sliders de la web pública (RN-CTA-010).
+ * Sistema → Web del gym: portada, sliders y redes de la web pública.
  */
 export default function WebDelGymPage() {
   return (
@@ -32,6 +33,7 @@ function WebDelGymInner() {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [version, setVersion] = useState(0);
+  const [socialVersion, setSocialVersion] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
@@ -73,17 +75,26 @@ function WebDelGymInner() {
       {notice ? <p className="ok-msg">{notice}</p> : null}
       {!detail && !loadError ? <SkeletonForm fields={4} /> : null}
       {detail ? (
-        <SiteEditor
-          key={version}
-          detail={detail}
-          packs={packs}
-          canWrite={canWrite}
-          onSaved={(saved, message) => {
-            setDetail(saved);
-            setNotice(message);
-            setVersion((v) => v + 1);
-          }}
-        />
+        <div className="admin-stack">
+          <SiteEditor
+            key={version}
+            detail={detail}
+            packs={packs}
+            canWrite={canWrite}
+            onSaved={(saved, message) => {
+              setDetail(saved);
+              setNotice(message);
+              setVersion((v) => v + 1);
+              if (!saved.content) setSocialVersion((v) => v + 1);
+            }}
+          />
+          <SocialLinksEditor
+            key={socialVersion}
+            detail={detail}
+            canWrite={canWrite}
+            onSaved={setDetail}
+          />
+        </div>
       ) : null}
     </AdminShell>
   );

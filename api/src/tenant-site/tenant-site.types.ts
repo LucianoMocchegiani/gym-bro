@@ -26,6 +26,15 @@ export type SiteFocusY = (typeof SITE_FOCUS_Y)[number];
 export const SITE_BUTTON_TARGETS = ['PLANS', 'BOOK', 'PACK', 'URL'] as const;
 export type SiteButtonTarget = (typeof SITE_BUTTON_TARGETS)[number];
 
+/** Redes públicas configuradas opcionalmente por el tenant. */
+export type SiteSocialLinks = {
+  facebook: string | null;
+  x: string | null;
+  tiktok: string | null;
+  instagram: string | null;
+  whatsapp: string | null;
+};
+
 export type SiteImage = {
   url: string;
   /** Vacío → la web usa el título. */
@@ -85,6 +94,10 @@ export type TenantSiteContent = {
   themeColor?: string;
   /** URL del ícono público del gimnasio; ausente en sitios anteriores. */
   brandIcon?: string | null;
+  /** Ausente en contenido anterior; no hay redes configuradas. */
+  socialLinks?: SiteSocialLinks;
+  /** False solo cuando el contenido guarda redes y no personaliza la landing. */
+  landingCustomized?: boolean;
   hero: SiteHero;
   sliders: SiteSlider[];
 };
