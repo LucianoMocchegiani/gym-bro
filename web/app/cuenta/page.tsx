@@ -3,6 +3,7 @@ import { resolveGymSite, requestTenantSlug } from '@/lib/gym-site';
 import { IdentityAccountPage } from '@/components/IdentityAccountPage';
 import { GymAccountPage } from '@/components/gym-site/GymAccountPage';
 import { GymSiteShell } from '@/components/gym-site/GymSiteShell';
+import { SITE_DEFAULT_PRIMARY_COLOR } from '@/lib/api/tenant-site';
 
 export const metadata = {
   title: 'Cuenta',
@@ -39,7 +40,11 @@ export default async function CuentaPage({
     notFound();
   }
   return (
-    <GymSiteShell slug={site.slug} gymName={site.catalog.tenant.name}>
+    <GymSiteShell
+      slug={site.slug}
+      gymName={site.catalog.tenant.name}
+      brandColor={site.catalog.site?.themeColor ?? SITE_DEFAULT_PRIMARY_COLOR}
+    >
       <GymAccountPage slug={site.slug} />
     </GymSiteShell>
   );

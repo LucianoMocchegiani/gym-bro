@@ -1,4 +1,4 @@
-/* Tenant brand colors for public site, editor preview, and member portal. */
+/* Tenant brand colors for public site, editor preview, member portal, and dashboard. */
 .gym-site-branded {
   --accent: color-mix(in srgb, var(--site-primary) 35%, var(--ink));
   --accent-ink: var(--site-primary-ink);
@@ -18,6 +18,25 @@
 .gym-site-branded .mkt-btn-primary {
   background: var(--site-primary);
   color: var(--site-primary-ink);
+}
+
+.gym-site-branded .app-nav-link.active {
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--site-primary) 28%, transparent) 0%,
+    color-mix(in srgb, var(--site-primary) 6%, transparent) 70%,
+    transparent 100%
+  );
+}
+
+[data-theme='dark'] .gym-site-branded .app-shell-home .app-main {
+  background:
+    radial-gradient(
+      ellipse 55% 40% at 100% 0%,
+      color-mix(in srgb, var(--site-primary) 7%, transparent) 0%,
+      transparent 55%
+    ),
+    transparent;
 }
 
 .site-frame-content .site-title-text,
