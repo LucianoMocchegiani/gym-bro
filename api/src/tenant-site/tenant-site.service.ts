@@ -64,6 +64,7 @@ function fromStored(raw: Prisma.JsonValue): TenantSiteContent {
       : SITE_DEFAULT_PRIMARY_COLOR;
   return {
     themeColor,
+    brandIcon: typeof content.brandIcon === 'string' ? content.brandIcon : null,
     hero: upgradeVisual(content.hero),
     sliders: content.sliders.map((slider) => ({
       ...slider,
@@ -76,6 +77,9 @@ function imageUrls(content: TenantSiteContent | null): Set<string> {
   const urls = new Set<string>();
   if (!content) {
     return urls;
+  }
+  if (content.brandIcon) {
+    urls.add(content.brandIcon);
   }
   if (content.hero.image) {
     urls.add(content.hero.image.url);
@@ -133,11 +137,7 @@ export class TenantSiteService {
     actor: AuditActor,
   ): Promise<TenantSiteDetail> {
     const before = await this.get(tenantId);
-    const content = await this.normalize(
-      tenantId,
-      dto,
-      before.content?.themeColor,
-    );
+    const content = await this.normalize(tenantId, dto, before.content);
     const json = content as unknown as Prisma.InputJsonValue;
     const row = await this.prisma.tenantSite.upsert({
       where: { tenantId },
@@ -180,7 +180,7 @@ export class TenantSiteService {
   private async normalize(
     tenantId: string,
     dto: PutTenantSiteDto,
-    existingThemeColor?: string,
+    existing: TenantSiteContent | null,
   ): Promise<TenantSiteContent> {
     const heroTitle = this.requireText(
       dto.hero.title,
@@ -221,9 +221,21 @@ export class TenantSiteService {
     await this.assertPacksExist(tenantId, sliders);
     const themeColor =
       dto.themeColor?.toLowerCase() ??
-      existingThemeColor ??
+      existing?.themeColor ??
       SITE_DEFAULT_PRIMARY_COLOR;
-    return { themeColor, hero, sliders };
+    const iconUrl =
+      dto.brandIcon === undefined
+        ? (existing?.brandIcon ?? null)
+        : clean(dto.brandIcon);
+    const brandIcon = iconUrl ? this.brandIcon(tenantId, iconUrl) : null;
+    return { themeColor, brandIcon, hero, sliders };
+  }
+
+  private brandIcon(tenantId: string, url: string): string {
+    if (!this.upload.isOwnedPublicImage(tenantId, url, SITE_IMAGE_FOLDER)) {
+      throw new BadRequestException('El ícono tiene que subirse desde el panel');
+    }
+    return url;
   }
 
   private visual(
