@@ -15,9 +15,15 @@
     var(--bg);
 }
 
-.gym-site-branded .mkt-btn-primary {
+.gym-site-branded .mkt-btn-primary,
+.gym-site-branded button.primary,
+.gym-site-branded .btn:not(.ghost):not(.danger),
+.gym-site-branded .page-tabs a.active,
+.gym-site-branded .cash-tabs button.active,
+.gym-site-branded .catalog-add {
   background: var(--site-primary);
   color: var(--site-primary-ink);
+  border-color: var(--site-primary);
 }
 
 .gym-site-branded .app-nav-link.active {
