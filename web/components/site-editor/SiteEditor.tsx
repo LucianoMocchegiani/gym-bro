@@ -18,7 +18,7 @@ import {
   type TenantSiteDetail,
 } from '@/lib/api/tenant-site';
 import { siteBrandStyle } from '@/lib/site-theme';
-import { CountedField, SiteVisualFields } from './SiteFields';
+import { CountedField, SITE_COLOR_SWATCHES, SiteVisualFields } from './SiteFields';
 import {
   draftFromContent,
   draftIssues,
@@ -206,17 +206,33 @@ export function SiteEditor({
           title="Colores de la web"
           description="El color principal define botones, enlaces y el degradado del fondo."
         >
-          <label className="site-field">
-            <span>Color principal</span>
-            <input
-              type="color"
-              value={draft.themeColor}
-              disabled={disabled}
-              onChange={(e) =>
-                setDraft((d) => ({ ...d, themeColor: e.target.value }))
-              }
-            />
-          </label>
+          <div className="site-field">
+            <span className="site-field-head">Color principal</span>
+            <div className="site-swatches">
+              {[SITE_DEFAULT_PRIMARY_COLOR, ...SITE_COLOR_SWATCHES].map((color) => (
+                <button
+                  key={color}
+                  type="button"
+                  className="site-swatch"
+                  style={{ background: color }}
+                  aria-label={`Color ${color}`}
+                  aria-pressed={draft.themeColor.toLowerCase() === color}
+                  disabled={disabled}
+                  onClick={() => setDraft((d) => ({ ...d, themeColor: color }))}
+                />
+              ))}
+              <input
+                type="color"
+                className="site-swatch-picker"
+                aria-label="Otro color principal"
+                value={draft.themeColor}
+                disabled={disabled}
+                onChange={(e) =>
+                  setDraft((d) => ({ ...d, themeColor: e.target.value }))
+                }
+              />
+            </div>
+          </div>
           <p className="muted small">
             Se adapta a los temas claro y oscuro. El verde Faciliter queda como
             predeterminado.

@@ -28,6 +28,9 @@ const ACCENTS: Record<SiteTone, string[]> = {
   DARK: ['#b00020', '#0b5394', '#1b5e20', '#6a1b9a', '#8a4b00'],
 };
 
+/** La paleta viva también se usa para elegir el color principal de la web. */
+export const SITE_COLOR_SWATCHES = ACCENTS.LIGHT;
+
 const THEMES: SiteTheme[] = ['light', 'dark'];
 
 /** Input o textarea con contador de caracteres. */
