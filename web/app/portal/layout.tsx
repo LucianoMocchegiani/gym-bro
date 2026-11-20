@@ -28,6 +28,7 @@ export default async function PortalLayout({
         slug={site.slug}
         gymName={site.catalog.tenant.name}
         brandColor={color}
+        brandIcon={site.catalog.site?.brandIcon ?? null}
       >
         {children}
       </GymSiteShell>
