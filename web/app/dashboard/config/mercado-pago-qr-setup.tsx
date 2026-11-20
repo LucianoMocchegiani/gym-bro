@@ -73,7 +73,7 @@ export function MercadoPagoQrSetup() {
   }
 
   return (
-    <section aria-labelledby="mp-qr-title">
+    <section aria-labelledby="mp-qr-title" style={{ marginTop: '1rem' }}>
       <h3 id="mp-qr-title">QR dinámico en Caja</h3>
       <p className="muted small">
         Crea una sucursal y una caja en la cuenta conectada de Mercado Pago.
