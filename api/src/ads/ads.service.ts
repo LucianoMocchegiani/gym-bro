@@ -40,7 +40,6 @@ export class AdsService {
         endsAt: { gt: now },
       },
       orderBy: { createdAt: 'desc' },
-      take: 4,
       select: {
         id: true,
         name: true,

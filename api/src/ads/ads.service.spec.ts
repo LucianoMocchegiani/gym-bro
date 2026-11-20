@@ -42,9 +42,9 @@ describe('AdsService', () => {
 
   beforeEach(() => jest.clearAllMocks());
 
-  it('delivers up to four active campaigns to an active tenant in the requested placement', async () => {
+  it('delivers all active campaigns to an active tenant in the requested placement', async () => {
     findTenant.mockResolvedValue(activeTenant);
-    const campaigns = Array.from({ length: 4 }, (_, i) => ({
+    const campaigns = Array.from({ length: 6 }, (_, i) => ({
       id: `campaign-${i}`,
     }));
     findMany.mockResolvedValue(campaigns);
@@ -58,8 +58,8 @@ describe('AdsService', () => {
         placements: { has: 'DASHBOARD' },
       },
       orderBy: { createdAt: 'desc' },
-      take: 4,
     });
+    expect(query).not.toHaveProperty('take');
     const where = query?.where as {
       startsAt: { lte: Date };
       endsAt: { gt: Date };
