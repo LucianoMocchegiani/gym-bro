@@ -1,5 +1,4 @@
-'use client';
-
+import './site-editor.css';
 import { useEffect, useState } from 'react';
 import { AdminShell } from '@/components/AdminShell';
 import { RequireStaff } from '@/components/RequireStaff';
