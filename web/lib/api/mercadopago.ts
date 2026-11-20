@@ -1,7 +1,3 @@
-/**
- * Mercado Pago account API (módulo `mercadopago`).
- */
-
 import { apiRequest } from '@/lib/api/client';
 
 export type MercadoPagoAccountStatus = {
@@ -11,12 +7,9 @@ export type MercadoPagoAccountStatus = {
   lastValidatedAt: string | null;
   lastValidationOk: boolean | null;
   updatedAt: string | null;
-  /** `OAUTH` = «Conectar Mercado Pago»; `MANUAL` = token pegado. */
   connectionMode: 'MANUAL' | 'OAUTH' | null;
   tokenExpiresAt: string | null;
-  /** La renovación automática falló o el token venció: reconectar. */
   needsReconnect: boolean;
-  /** El servidor tiene configurada la app de plataforma Faciliter. */
   oauthAvailable: boolean;
 };
 
@@ -33,25 +26,41 @@ export type UpsertMercadoPagoAccountInput = {
   validate?: boolean;
 };
 
+export type MercadoPagoQrSetupStatus = {
+  configured: boolean;
+  storeId: string | null;
+  posId: string | null;
+};
+
+export type CreateMercadoPagoQrSetupInput = {
+  streetName: string;
+  streetNumber: string;
+  cityName: string;
+  stateName: string;
+  latitude: number;
+  longitude: number;
+};
+
 export type MpCheckoutKind = 'PACK' | 'DROP_IN';
+export type MpCheckoutStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | 'REFUNDED';
 
-export type MpCheckoutStatus =
-  | 'PENDING'
-  | 'APPROVED'
-  | 'REJECTED'
-  | 'REFUNDED';
-
-/**
- * Estado de cuenta MP (`mp.connect`).
- */
 export function getMercadoPagoAccount(): Promise<MercadoPagoAccountStatus> {
   return apiRequest<MercadoPagoAccountStatus>('/mercadopago/account');
 }
 
-/**
- * URL de MP para «Conectar Mercado Pago» (OAuth). El navegador navega ahí y
- * MP vuelve a `/dashboard/config?mp=connected|error`.
- */
+export function getMercadoPagoQrSetup(): Promise<MercadoPagoQrSetupStatus> {
+  return apiRequest<MercadoPagoQrSetupStatus>('/mercadopago/account/qr-setup');
+}
+
+export function createMercadoPagoQrSetup(
+  input: CreateMercadoPagoQrSetupInput,
+): Promise<MercadoPagoQrSetupStatus> {
+  return apiRequest<MercadoPagoQrSetupStatus>('/mercadopago/account/qr-setup', {
+    method: 'POST',
+    body: input,
+  });
+}
+
 export function startMercadoPagoOAuth(): Promise<{ authorizationUrl: string }> {
   return apiRequest<{ authorizationUrl: string }>(
     '/mercadopago/account/oauth/start',
@@ -59,30 +68,20 @@ export function startMercadoPagoOAuth(): Promise<{ authorizationUrl: string }> {
   );
 }
 
-/**
- * Conexión manual (avanzado): pegar access token y public key.
- */
 export function upsertMercadoPagoAccount(
   input: UpsertMercadoPagoAccountInput,
 ): Promise<MercadoPagoAccountStatus> {
   return apiRequest<MercadoPagoAccountStatus>('/mercadopago/account', {
-    method: 'PUT',
-    body: input,
+    method: 'PUT', body: input,
   });
 }
 
-/**
- * Probar credenciales guardadas.
- */
 export function testMercadoPagoAccount(): Promise<MercadoPagoAccountTestResult> {
   return apiRequest<MercadoPagoAccountTestResult>('/mercadopago/account/test', {
     method: 'POST',
   });
 }
 
-/**
- * Desconectar cuenta MP.
- */
 export function disconnectMercadoPagoAccount(): Promise<MercadoPagoAccountStatus> {
   return apiRequest<MercadoPagoAccountStatus>('/mercadopago/account', {
     method: 'DELETE',
@@ -103,10 +102,8 @@ export type MpCartLine = {
   transactionItemIds: string[];
 };
 
-/** Respuesta de checkout de carrito MP (1 preference → 1 pago). */
 export type MpCartCheckoutResult = {
   transactionId: string;
-  /** Null en ventas de plataforma (Caja del tenant `admin`). */
   memberId: string | null;
   status: MpCheckoutStatus;
   amount: number;
@@ -117,32 +114,16 @@ export type MpCartCheckoutResult = {
   lines: MpCartLine[];
 };
 
-/**
- * Checkout MP de carrito para un afiliado (staff, `members.write`).
- *
- * @remarks Modelo MercadoLibre: un solo total y un solo pago. Cada pack /
- * reserva del carrito se activa al aprobarse el pago (webhook APPROVED).
- */
 export function startStaffMpCartCheckout(
   memberId: string,
   input: { items: MpCartItemInput[]; idempotencyKey?: string },
 ): Promise<MpCartCheckoutResult> {
   return apiRequest<MpCartCheckoutResult>(
     `/members/${memberId}/transaction-items/mp/cart`,
-    {
-      method: 'POST',
-      body: input,
-    },
+    { method: 'POST', body: input },
   );
 }
 
-/**
- * URL preferida para abrir un checkout MP.
- *
- * @remarks MP recomienda usar `init_point` (no `sandbox_init_point`)
- * para Checkout Pro en test. El init_point redirige al checkout correcto
- * según el entorno del token.
- */
 export function pickMpCartCheckoutUrl(
   result: Pick<MpCartCheckoutResult, 'checkoutUrl' | 'sandboxCheckoutUrl'>,
 ): string | null {

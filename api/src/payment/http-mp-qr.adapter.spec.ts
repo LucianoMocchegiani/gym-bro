@@ -1,0 +1,21 @@
+import { HttpMpQrAdapter } from './http-mp-qr.adapter';
+
+describe('HttpMpQrAdapter', () => {
+  afterEach(() => jest.restoreAllMocks());
+
+  it('creates a POS with the idempotency key and dynamic-QR operating mode', async () => {
+    const fetch = jest.spyOn(global, 'fetch').mockResolvedValue({
+      ok: true,
+      json: async () => ({ id: 123 }),
+    } as Response);
+
+    await expect(new HttpMpQrAdapter().createPos({
+      accessToken: 'token', storeId: 'store-1', externalId: 'pos-ext', idempotencyKey: 'idem-1',
+    })).resolves.toBe('123');
+
+    expect(fetch).toHaveBeenCalledWith('https://api.mercadopago.com/v2/pos', expect.objectContaining({
+      headers: expect.objectContaining({ 'X-Idempotency-Key': 'idem-1' }),
+      body: JSON.stringify({ name: 'Caja Faciliter', store_id: 'store-1', external_id: 'pos-ext', config: { qr: { operating_mode: 'pdv' } } }),
+    }));
+  });
+});
