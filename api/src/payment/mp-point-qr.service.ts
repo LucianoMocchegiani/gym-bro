@@ -4,7 +4,12 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { MemberStatus, PaymentMethod, PaymentStatus, Prisma } from '@prisma/client';
+import {
+  MemberStatus,
+  PaymentMethod,
+  PaymentStatus,
+  Prisma,
+} from '@prisma/client';
 import { randomBytes } from 'node:crypto';
 import { PrismaService } from '../prisma/prisma.service';
 import { PacksService } from '../packs/packs.service';
@@ -280,12 +285,14 @@ export class MpPointQrService {
     tenantId: string,
     items: CreateMpCartCheckoutDto['items'],
     memberId: string,
-  ): Promise<Array<{
-    packId: string | null;
-    sessionId: string | null;
-    amount: number;
-    quantity: number;
-  }>> {
+  ): Promise<
+    Array<{
+      packId: string | null;
+      sessionId: string | null;
+      amount: number;
+      quantity: number;
+    }>
+  > {
     if (items.length === 0) {
       throw new BadRequestException('Cart must have at least one item');
     }

@@ -16,7 +16,11 @@ describe('MpPointQrService', () => {
     totalAmount: string | null;
     totalPaidAmount: string | null;
     qrData: string | null;
-    payments: Array<{ id: string | null; status: string; amount: string | null }>;
+    payments: Array<{
+      id: string | null;
+      status: string;
+      amount: string | null;
+    }>;
   }) => {
     const prisma = {
       transaction: {
@@ -67,17 +71,16 @@ describe('MpPointQrService', () => {
       payments: [{ id: 'payment-1', status: 'approved', amount: '1250.00' }],
     });
 
-    await expect(service.getOrderStatus('tenant-1', 'transaction-1')).resolves.toEqual({
+    await expect(
+      service.getOrderStatus('tenant-1', 'transaction-1'),
+    ).resolves.toEqual({
       orderId: 'ORD-1',
       status: 'processed',
       approved: true,
     });
-    expect(webhook.applyMpPaymentToCart).toHaveBeenCalledWith(
-      'tenant-1',
-      'transaction-1',
-      'payment-1',
-      'approved',
-    );
+    expect(webhook.applyMpPaymentToCart.mock.calls).toEqual([
+      ['tenant-1', 'transaction-1', 'payment-1', 'approved'],
+    ]);
   });
 
   it('does not confirm an order with a mismatched paid amount', async () => {
@@ -95,6 +98,6 @@ describe('MpPointQrService', () => {
     await expect(
       service.getOrderStatus('tenant-1', 'transaction-1'),
     ).rejects.toThrow(BadGatewayException);
-    expect(webhook.applyMpPaymentToCart).not.toHaveBeenCalled();
+    expect(webhook.applyMpPaymentToCart.mock.calls).toHaveLength(0);
   });
 });

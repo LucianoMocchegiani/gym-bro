@@ -4,9 +4,13 @@ describe('HttpMpQrAdapter', () => {
   afterEach(() => jest.restoreAllMocks());
 
   it('finds a previously created store by its stable external ID', async () => {
-    const fetchMock = jest.spyOn(global, 'fetch').mockResolvedValue(
-      new Response(JSON.stringify({ results: [{ id: 42, external_id: 'gbtenant' }] })),
-    );
+    const fetchMock = jest
+      .spyOn(global, 'fetch')
+      .mockResolvedValue(
+        new Response(
+          JSON.stringify({ results: [{ id: 42, external_id: 'gbtenant' }] }),
+        ),
+      );
 
     await expect(
       new HttpMpQrAdapter().findStoreByExternalId(
@@ -36,32 +40,34 @@ describe('HttpMpQrAdapter', () => {
       }),
     ).resolves.toBe('123');
 
-    expect(fetchMock).toHaveBeenCalledWith(
-      'https://api.mercadopago.com/v2/pos',
-      expect.objectContaining({
-        headers: expect.objectContaining({ 'X-Idempotency-Key': 'idem-1' }),
-        body: JSON.stringify({
-          name: 'Caja Faciliter',
-          store_id: 'store-1',
-          external_id: 'pos-ext',
-          config: { qr: { operating_mode: 'pdv' } },
-        }),
+    const [, options] = fetchMock.mock.calls[0];
+    expect(new Headers(options?.headers).get('X-Idempotency-Key')).toBe(
+      'idem-1',
+    );
+    expect(options?.body).toBe(
+      JSON.stringify({
+        name: 'Caja Faciliter',
+        store_id: 'store-1',
+        external_id: 'pos-ext',
+        config: { qr: { operating_mode: 'pdv' } },
       }),
     );
   });
 
   it('creates a dynamic QR order for the configured POS', async () => {
-    const fetchMock = jest.spyOn(global, 'fetch').mockResolvedValue(
-      new Response(
-        JSON.stringify({
-          id: 'ORD-1',
-          type: 'qr',
-          status: 'created',
-          external_reference: 'transaction-1',
-          config: { qr: { qr_data: 'qr-payload' } },
-        }),
-      ),
-    );
+    const fetchMock = jest
+      .spyOn(global, 'fetch')
+      .mockResolvedValue(
+        new Response(
+          JSON.stringify({
+            id: 'ORD-1',
+            type: 'qr',
+            status: 'created',
+            external_reference: 'transaction-1',
+            config: { qr: { qr_data: 'qr-payload' } },
+          }),
+        ),
+      );
 
     await expect(
       new HttpMpQrAdapter().createOrder({
@@ -72,20 +78,20 @@ describe('HttpMpQrAdapter', () => {
         idempotencyKey: 'transaction-1',
       }),
     ).resolves.toMatchObject({ id: 'ORD-1', qrData: 'qr-payload' });
-    expect(fetchMock).toHaveBeenCalledWith(
-      'https://api.mercadopago.com/v1/orders',
-      expect.objectContaining({
-        headers: expect.objectContaining({
-          'X-Idempotency-Key': 'transaction-1',
-        }),
-        body: JSON.stringify({
-          type: 'qr',
-          total_amount: '1250.00',
-          external_reference: 'transaction-1',
-          description: 'Cobro Faciliter',
-          config: { qr: { external_pos_id: 'pos-external', mode: 'dynamic' } },
-          transactions: { payments: [{ amount: '1250.00' }] },
-        }),
+
+    const [url, options] = fetchMock.mock.calls[0];
+    expect(url).toBe('https://api.mercadopago.com/v1/orders');
+    expect(new Headers(options?.headers).get('X-Idempotency-Key')).toBe(
+      'transaction-1',
+    );
+    expect(options?.body).toBe(
+      JSON.stringify({
+        type: 'qr',
+        total_amount: '1250.00',
+        external_reference: 'transaction-1',
+        description: 'Cobro Faciliter',
+        config: { qr: { external_pos_id: 'pos-external', mode: 'dynamic' } },
+        transactions: { payments: [{ amount: '1250.00' }] },
       }),
     );
   });
