@@ -34,16 +34,20 @@ export class HttpMpQrAdapter {
     );
     url.searchParams.set('external_id', externalId);
     const response = await fetch(url, {
-      headers: { Authorization: `Bearer ${accessToken}`, Accept: 'application/json' },
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        Accept: 'application/json',
+      },
     });
-    if (!response.ok) {
-      await this.readId(response, 'store search');
-    }
+    await this.assertOk(response, 'store search');
     const data = (await response.json()) as {
       results?: Array<{ id?: number | string; external_id?: string }>;
     };
     const store = data.results?.find(
-      (result) => result.external_id === externalId && result.id !== undefined && result.id !== null,
+      (result) =>
+        result.external_id === externalId &&
+        result.id !== undefined &&
+        result.id !== null,
     );
     return store ? String(store.id) : null;
   }
@@ -95,17 +99,22 @@ export class HttpMpQrAdapter {
   }
 
   private async readId(response: Response, operation: string): Promise<string> {
-    if (!response.ok) {
-      const body = await response.text().catch(() => '');
-      this.logger.warn(
-        `MP QR ${operation} failed status=${response.status} body=${body.slice(0, 300)}`,
-      );
-      throw new Error(`Mercado Pago QR ${operation} failed (HTTP ${response.status})`);
-    }
+    await this.assertOk(response, operation);
     const data = (await response.json()) as { id?: number | string };
     if (data.id === undefined || data.id === null || String(data.id) === '') {
       throw new Error(`Mercado Pago QR ${operation} response missing id`);
     }
     return String(data.id);
+  }
+
+  private async assertOk(response: Response, operation: string): Promise<void> {
+    if (response.ok) {
+      return;
+    }
+    const body = await response.text().catch(() => '');
+    this.logger.warn(
+      `MP QR ${operation} failed status=${response.status} body=${body.slice(0, 300)}`,
+    );
+    throw new Error(`Mercado Pago QR ${operation} failed (HTTP ${response.status})`);
   }
 }

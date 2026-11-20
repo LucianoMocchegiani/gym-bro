@@ -38,8 +38,8 @@ export class MercadoPagoQrService {
       !!account?.mpUserId && setup?.mpUserId === account.mpUserId;
     return {
       configured: belongsToConnectedAccount && !!setup?.posId,
-      storeId: belongsToConnectedAccount ? setup?.storeId ?? null : null,
-      posId: belongsToConnectedAccount ? setup?.posId ?? null : null,
+      storeId: belongsToConnectedAccount ? (setup?.storeId ?? null) : null,
+      posId: belongsToConnectedAccount ? (setup?.posId ?? null) : null,
     };
   }
 
@@ -95,7 +95,11 @@ export class MercadoPagoQrService {
       if (!setup.storeId) {
         const externalId = `gb${tenantId.replaceAll('-', '')}`;
         const storeId =
-          (await this.mpQr.findStoreByExternalId(accessToken, mpUserId, externalId)) ??
+          (await this.mpQr.findStoreByExternalId(
+            accessToken,
+            mpUserId,
+            externalId,
+          )) ??
           (await this.mpQr.createStore({
             accessToken,
             userId: mpUserId,

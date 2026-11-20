@@ -9,7 +9,14 @@ import { MpAccountPort } from './mp-account.port';
 
 describe('MercadoPagoQrService', () => {
   it('reuses a created store after a failed POS call and is idempotent once configured', async () => {
-    const saved: { row: { tenantId: string; mpUserId: string; storeId: string | null; posId: string | null } | null } = { row: null };
+    const saved: {
+      row: {
+        tenantId: string;
+        mpUserId: string;
+        storeId: string | null;
+        posId: string | null;
+      } | null;
+    } = { row: null };
     const qrSetup = {
       findUnique: jest.fn(() => Promise.resolve(saved.row)),
       upsert: jest.fn(({ create, update }) => {
@@ -38,21 +45,33 @@ describe('MercadoPagoQrService', () => {
     const mpQr = {
       findStoreByExternalId: jest.fn().mockResolvedValue(null),
       createStore: jest.fn().mockResolvedValue('store-1'),
-      createPos: jest.fn().mockRejectedValueOnce(new Error('temporary')).mockResolvedValue('pos-1'),
+      createPos: jest
+        .fn()
+        .mockRejectedValueOnce(new Error('temporary'))
+        .mockResolvedValue('pos-1'),
     } as unknown as HttpMpQrAdapter;
     const audit = { record: jest.fn().mockResolvedValue(undefined) } as unknown as AuditService;
     const service = new MercadoPagoQrService(prisma, audit, account, mpQr, mpAccount);
     const dto = {
-      streetName: 'Calle 1', streetNumber: '10', cityName: 'Ciudad', stateName: 'Provincia', latitude: -34, longitude: -58,
+      streetName: 'Calle 1',
+      streetNumber: '10',
+      cityName: 'Ciudad',
+      stateName: 'Provincia',
+      latitude: -34,
+      longitude: -58,
     } as CreateMercadoPagoQrSetupDto;
     const actor = { profileType: 'STAFF' as const, userId: 'staff' };
 
-    await expect(service.createSetup('tenant-id', dto, actor)).rejects.toThrow(BadGatewayException);
+    await expect(service.createSetup('tenant-id', dto, actor)).rejects.toThrow(
+      BadGatewayException,
+    );
     expect(saved.row?.storeId).toBe('store-1');
     expect(saved.row?.posId).toBeNull();
 
     await expect(service.createSetup('tenant-id', dto, actor)).resolves.toEqual({
-      configured: true, storeId: 'store-1', posId: 'pos-1',
+      configured: true,
+      storeId: 'store-1',
+      posId: 'pos-1',
     });
     await service.createSetup('tenant-id', dto, actor);
     expect(mpQr.findStoreByExternalId).toHaveBeenCalledTimes(1);
@@ -63,16 +82,28 @@ describe('MercadoPagoQrService', () => {
 
   it('rejects when Mercado Pago cannot validate the connected token', async () => {
     const prisma = {
-      mercadoPagoAccount: { findUnique: jest.fn().mockResolvedValue({ mpUserId: null }) },
+      mercadoPagoAccount: {
+        findUnique: jest.fn().mockResolvedValue({ mpUserId: null }),
+      },
     } as unknown as PrismaService;
-    const account = { getDecryptedAccessToken: jest.fn().mockResolvedValue('secret') } as unknown as MercadoPagoAccountService;
+    const account = {
+      getDecryptedAccessToken: jest.fn().mockResolvedValue('secret'),
+    } as unknown as MercadoPagoAccountService;
     const service = new MercadoPagoQrService(
       prisma,
       {} as AuditService,
       account,
       {} as HttpMpQrAdapter,
-      { validateAccessToken: jest.fn().mockRejectedValue(new Error()) } as unknown as MpAccountPort,
+      {
+        validateAccessToken: jest.fn().mockRejectedValue(new Error()),
+      } as unknown as MpAccountPort,
     );
-    await expect(service.createSetup('tenant-id', {} as CreateMercadoPagoQrSetupDto, { profileType: 'STAFF', userId: 'staff' })).rejects.toThrow(BadRequestException);
+    await expect(
+      service.createSetup(
+        'tenant-id',
+        {} as CreateMercadoPagoQrSetupDto,
+        { profileType: 'STAFF', userId: 'staff' },
+      ),
+    ).rejects.toThrow(BadRequestException);
   });
 });
