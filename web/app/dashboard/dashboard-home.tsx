@@ -298,7 +298,7 @@ function TenantDashboard({ tenantSlug }: { tenantSlug: string }) {
       ) : null}
       <FreePlanNotice
         tenantId={session?.tenantId ?? null}
-        canManagePlan={canManagePlan}
+        canManagePlan={canManagePlan && session?.platformAccess !== 'limited'}
       />
       <AdSlot tenantSlug={tenantSlug} placement="DASHBOARD" />
     </AdminShell>
