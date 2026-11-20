@@ -15,18 +15,29 @@ export function GymSiteShell({
   gymName,
   children,
   brandColor,
+  brandIcon,
 }: {
   slug: string;
   gymName: string;
   children: ReactNode;
   brandColor?: string;
+  brandIcon?: string | null;
 }) {
   return (
     <MarketingFrame brandColor={brandColor}>
       <header className="mkt-header mkt-header-bar">
         <Link href="/" className="mkt-brand">
           <span className="brand-mark" aria-hidden="true">
-            {gymName.trim().slice(0, 1).toUpperCase()}
+            {brandIcon ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={brandIcon}
+                alt=""
+                style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+              />
+            ) : (
+              gymName.trim().slice(0, 1).toUpperCase()
+            )}
           </span>
           {gymName}
         </Link>

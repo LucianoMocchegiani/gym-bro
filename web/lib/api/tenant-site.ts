@@ -66,6 +66,8 @@ export type SiteSlider = {
 export type TenantSiteContent = {
   /** Opcional para conservar compatibilidad con contenido de webs previas. */
   themeColor?: string;
+  /** Ícono opcional del gimnasio; URL de imagen pública subida por el tenant. */
+  brandIcon?: string | null;
   hero: SiteHero;
   sliders: SiteSlider[];
 };
