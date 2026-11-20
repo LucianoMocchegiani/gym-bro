@@ -491,6 +491,10 @@
   margin-top: 1rem;
 }
 
+.site-slider .mkt-slider-arrow {
+  padding: 0 0 0.5rem;
+}
+
 .mkt-checks {
   list-style: none;
   margin: 1rem 0 1.25rem;
@@ -655,21 +659,6 @@
 
 .mkt-docs-main {
   min-width: 0;
-}
-
-.mkt-docs-main h1 {
-  font-family: var(--font-display), 'Barlow Condensed', sans-serif;
-  font-weight: 600;
-  letter-spacing: -0.02em;
-  line-height: 1.1;
-  font-size: clamp(2rem, 4vw, 2.85rem);
-  margin: 0.2rem 0 0.7rem;
-}
-
-.mkt-docs-main > .muted {
-  max-width: 42rem;
-  font-size: 1.08rem;
-  line-height: 1.6;
 }
 
 .mkt-docs-nav {
