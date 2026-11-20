@@ -14,6 +14,7 @@ import { toAuditActor } from '../audit/to-audit-actor';
 import { RequirePermission } from '../roles/decorators/require-permission.decorator';
 import { CurrentTenant } from '../tenant/decorators/current-tenant.decorator';
 import { RequireTenantAuth } from '../tenant/decorators/require-tenant-auth.decorator';
+import { CreateMercadoPagoQrSetupDto } from './dto/create-mercadopago-qr-setup.dto';
 import { UpsertMercadoPagoAccountDto } from './dto/upsert-mercadopago-account.dto';
 import { MercadoPagoAccountService } from './mercadopago-account.service';
 import {
@@ -22,6 +23,10 @@ import {
   MercadoPagoOAuthStartResult,
 } from './mercadopago-account.types';
 import { MercadoPagoOAuthService } from './mercadopago-oauth.service';
+import {
+  MercadoPagoQrService,
+  MercadoPagoQrSetupStatus,
+} from './mercadopago-qr.service';
 
 /**
  * Cuenta Mercado Pago del gym (staff).
@@ -34,6 +39,7 @@ export class MercadoPagoAccountController {
   constructor(
     private readonly accounts: MercadoPagoAccountService,
     private readonly oauth: MercadoPagoOAuthService,
+    private readonly qr: MercadoPagoQrService,
   ) {}
 
   @Get()
@@ -42,6 +48,24 @@ export class MercadoPagoAccountController {
     @CurrentTenant() tenantId: string,
   ): Promise<MercadoPagoAccountStatus> {
     return this.accounts.getStatus(tenantId);
+  }
+
+  @Get('qr-setup')
+  @RequirePermission('mp.connect')
+  getQrSetup(
+    @CurrentTenant() tenantId: string,
+  ): Promise<MercadoPagoQrSetupStatus> {
+    return this.qr.getSetup(tenantId);
+  }
+
+  @Post('qr-setup')
+  @RequirePermission('mp.connect')
+  createQrSetup(
+    @CurrentTenant() tenantId: string,
+    @CurrentUser() user: AuthUser,
+    @Body() dto: CreateMercadoPagoQrSetupDto,
+  ): Promise<MercadoPagoQrSetupStatus> {
+    return this.qr.createSetup(tenantId, dto, toAuditActor(user));
   }
 
   /**

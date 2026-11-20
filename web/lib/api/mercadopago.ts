@@ -1,7 +1,3 @@
-/**
- * Mercado Pago account API (módulo `mercadopago`).
- */
-
 import { apiRequest } from '@/lib/api/client';
 
 export type MercadoPagoAccountStatus = {
@@ -33,6 +29,21 @@ export type UpsertMercadoPagoAccountInput = {
   validate?: boolean;
 };
 
+export type MercadoPagoQrSetupStatus = {
+  configured: boolean;
+  storeId: string | null;
+  posId: string | null;
+};
+
+export type CreateMercadoPagoQrSetupInput = {
+  streetName: string;
+  streetNumber: string;
+  cityName: string;
+  stateName: string;
+  latitude: number;
+  longitude: number;
+};
+
 export type MpCheckoutKind = 'PACK' | 'DROP_IN';
 
 export type MpCheckoutStatus =
@@ -41,11 +52,22 @@ export type MpCheckoutStatus =
   | 'REJECTED'
   | 'REFUNDED';
 
-/**
- * Estado de cuenta MP (`mp.connect`).
- */
+/** Estado de cuenta MP (`mp.connect`). */
 export function getMercadoPagoAccount(): Promise<MercadoPagoAccountStatus> {
   return apiRequest<MercadoPagoAccountStatus>('/mercadopago/account');
+}
+
+export function getMercadoPagoQrSetup(): Promise<MercadoPagoQrSetupStatus> {
+  return apiRequest<MercadoPagoQrSetupStatus>('/mercadopago/account/qr-setup');
+}
+
+export function createMercadoPagoQrSetup(
+  input: CreateMercadoPagoQrSetupInput,
+): Promise<MercadoPagoQrSetupStatus> {
+  return apiRequest<MercadoPagoQrSetupStatus>('/mercadopago/account/qr-setup', {
+    method: 'POST',
+    body: input,
+  });
 }
 
 /**
@@ -59,9 +81,7 @@ export function startMercadoPagoOAuth(): Promise<{ authorizationUrl: string }> {
   );
 }
 
-/**
- * Conexión manual (avanzado): pegar access token y public key.
- */
+/** Conexión manual (avanzado): pegar access token y public key. */
 export function upsertMercadoPagoAccount(
   input: UpsertMercadoPagoAccountInput,
 ): Promise<MercadoPagoAccountStatus> {
@@ -71,18 +91,14 @@ export function upsertMercadoPagoAccount(
   });
 }
 
-/**
- * Probar credenciales guardadas.
- */
+/** Probar credenciales guardadas. */
 export function testMercadoPagoAccount(): Promise<MercadoPagoAccountTestResult> {
   return apiRequest<MercadoPagoAccountTestResult>('/mercadopago/account/test', {
     method: 'POST',
   });
 }
 
-/**
- * Desconectar cuenta MP.
- */
+/** Desconectar cuenta MP. */
 export function disconnectMercadoPagoAccount(): Promise<MercadoPagoAccountStatus> {
   return apiRequest<MercadoPagoAccountStatus>('/mercadopago/account', {
     method: 'DELETE',

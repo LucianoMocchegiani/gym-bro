@@ -15,6 +15,7 @@ import {
   upsertMercadoPagoAccount,
 } from '@/lib/api/mercadopago';
 import type { MercadoPagoAccountStatus } from '@/lib/api/mercadopago';
+import { MercadoPagoQrSetup } from './mercado-pago-qr-setup';
 import {
   getTenantSettings,
   updateTenantSettings,
@@ -499,6 +500,7 @@ function ConfigInner() {
                   </>
                 ) : null}
               </div>
+              {mp.connected ? <MercadoPagoQrSetup /> : null}
 
               <details
                 className="advanced-details"

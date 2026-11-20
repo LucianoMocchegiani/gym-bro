@@ -1,0 +1,10 @@
+model MercadoPagoQrSetup {
+  tenantId  String   @id @map("tenant_id") @db.Uuid
+  mpUserId  String   @map("mp_user_id")
+  storeId   String?  @map("store_id")
+  posId     String?  @map("pos_id")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("mercadopago_qr_setups")
+}
