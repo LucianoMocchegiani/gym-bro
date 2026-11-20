@@ -173,6 +173,7 @@ export function AdSlot({ tenantSlug, placement }: { tenantSlug: string; placemen
           width: max-content;
         }
         .ad-slot-card {
+          box-sizing: border-box;
           display: flex;
           width: min(100%, 18rem);
           min-width: 0;
@@ -238,6 +239,10 @@ export function AdSlot({ tenantSlug, placement }: { tenantSlug: string; placemen
         @media (max-width: 640px) {
           .ad-slot-carousel {
             padding-inline: 2.75rem;
+          }
+          .ad-slot-card {
+            /* shortcut: assumes 1rem page and 2.75rem carousel gutters, measure the window if those gutters change. */
+            width: min(18rem, calc(100vw - 7.5rem));
           }
           .ad-slot-controls button:first-child {
             left: 0.125rem;

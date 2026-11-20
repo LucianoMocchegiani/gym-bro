@@ -179,10 +179,6 @@ export function Carousel({
           transform: translateX(-50%);
         }
         @media (max-width: 640px) {
-          .gym-site-branded .mkt-front {
-            padding-left: 1rem !important;
-            padding-right: 1rem !important;
-          }
           .site-slider {
             padding-inline: 2.75rem;
           }
