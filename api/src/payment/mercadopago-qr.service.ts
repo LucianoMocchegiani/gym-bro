@@ -5,12 +5,12 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { AuditActor } from '../audit/audit.types';
 import { AuditService } from '../audit/audit.service';
+import { AuditActor } from '../audit/audit.types';
 import { PrismaService } from '../prisma/prisma.service';
-import { MercadoPagoAccountService } from './mercadopago-account.service';
 import { CreateMercadoPagoQrSetupDto } from './dto/create-mercadopago-qr-setup.dto';
 import { HttpMpQrAdapter } from './http-mp-qr.adapter';
+import { MercadoPagoAccountService } from './mercadopago-account.service';
 import { MP_ACCOUNT_PORT, MpAccountPort } from './mp-account.port';
 
 export type MercadoPagoQrSetupStatus = {
@@ -93,18 +93,21 @@ export class MercadoPagoQrService {
 
     try {
       if (!setup.storeId) {
-        const storeId = await this.mpQr.createStore({
-          accessToken,
-          userId: mpUserId,
-          name: tenant.name,
-          externalId: `gb${tenantId.replaceAll('-', '')}`,
-          streetName: dto.streetName.trim(),
-          streetNumber: dto.streetNumber.trim(),
-          cityName: dto.cityName.trim(),
-          stateName: dto.stateName.trim(),
-          latitude: dto.latitude,
-          longitude: dto.longitude,
-        });
+        const externalId = `gb${tenantId.replaceAll('-', '')}`;
+        const storeId =
+          (await this.mpQr.findStoreByExternalId(accessToken, mpUserId, externalId)) ??
+          (await this.mpQr.createStore({
+            accessToken,
+            userId: mpUserId,
+            name: tenant.name,
+            externalId,
+            streetName: dto.streetName.trim(),
+            streetNumber: dto.streetNumber.trim(),
+            cityName: dto.cityName.trim(),
+            stateName: dto.stateName.trim(),
+            latitude: dto.latitude,
+            longitude: dto.longitude,
+          }));
         setup = await this.prisma.mercadoPagoQrSetup.update({
           where: { tenantId },
           data: { storeId },

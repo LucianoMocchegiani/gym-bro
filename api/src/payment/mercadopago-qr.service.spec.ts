@@ -1,9 +1,9 @@
 import { BadGatewayException, BadRequestException } from '@nestjs/common';
 import { AuditService } from '../audit/audit.service';
 import { PrismaService } from '../prisma/prisma.service';
-import { MercadoPagoAccountService } from './mercadopago-account.service';
 import { CreateMercadoPagoQrSetupDto } from './dto/create-mercadopago-qr-setup.dto';
 import { HttpMpQrAdapter } from './http-mp-qr.adapter';
+import { MercadoPagoAccountService } from './mercadopago-account.service';
 import { MercadoPagoQrService } from './mercadopago-qr.service';
 import { MpAccountPort } from './mp-account.port';
 
@@ -36,6 +36,7 @@ describe('MercadoPagoQrService', () => {
       validateAccessToken: jest.fn().mockResolvedValue({ userId: 'seller-1' }),
     } as unknown as MpAccountPort;
     const mpQr = {
+      findStoreByExternalId: jest.fn().mockResolvedValue(null),
       createStore: jest.fn().mockResolvedValue('store-1'),
       createPos: jest.fn().mockRejectedValueOnce(new Error('temporary')).mockResolvedValue('pos-1'),
     } as unknown as HttpMpQrAdapter;
@@ -54,6 +55,7 @@ describe('MercadoPagoQrService', () => {
       configured: true, storeId: 'store-1', posId: 'pos-1',
     });
     await service.createSetup('tenant-id', dto, actor);
+    expect(mpQr.findStoreByExternalId).toHaveBeenCalledTimes(1);
     expect(mpQr.createStore).toHaveBeenCalledTimes(1);
     expect(mpQr.createPos).toHaveBeenCalledTimes(2);
     expect(audit.record).toHaveBeenCalledTimes(1);

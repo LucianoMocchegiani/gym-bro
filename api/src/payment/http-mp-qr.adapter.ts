@@ -24,6 +24,30 @@ export type CreateMpQrPosInput = {
 export class HttpMpQrAdapter {
   private readonly logger = new Logger(HttpMpQrAdapter.name);
 
+  async findStoreByExternalId(
+    accessToken: string,
+    userId: string,
+    externalId: string,
+  ): Promise<string | null> {
+    const url = new URL(
+      `https://api.mercadopago.com/users/${encodeURIComponent(userId)}/stores/search`,
+    );
+    url.searchParams.set('external_id', externalId);
+    const response = await fetch(url, {
+      headers: { Authorization: `Bearer ${accessToken}`, Accept: 'application/json' },
+    });
+    if (!response.ok) {
+      await this.readId(response, 'store search');
+    }
+    const data = (await response.json()) as {
+      results?: Array<{ id?: number | string; external_id?: string }>;
+    };
+    const store = data.results?.find(
+      (result) => result.external_id === externalId && result.id !== undefined && result.id !== null,
+    );
+    return store ? String(store.id) : null;
+  }
+
   async createStore(input: CreateMpQrStoreInput): Promise<string> {
     const response = await fetch(
       `https://api.mercadopago.com/users/${encodeURIComponent(input.userId)}/stores`,
