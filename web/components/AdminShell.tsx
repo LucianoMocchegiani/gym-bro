@@ -195,7 +195,11 @@ export function AdminShell({
       <aside className="app-sidebar" id="admin-sidebar" aria-label="Navegación">
         <div className="app-sidebar-brand">
           <Link href="/dashboard" className="brand-row" onClick={closeNav}>
-            <span className="brand-mark" aria-hidden="true">
+            <span
+              className="brand-mark"
+              aria-hidden="true"
+              style={hostSlug && hostSlug !== 'admin' && brandIconAvailable ? { border: 'none' } : undefined}
+            >
               {hostSlug && hostSlug !== 'admin' && brandIconAvailable ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
