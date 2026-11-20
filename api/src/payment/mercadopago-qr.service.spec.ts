@@ -5,19 +5,20 @@ import { MercadoPagoAccountService } from './mercadopago-account.service';
 import { CreateMercadoPagoQrSetupDto } from './dto/create-mercadopago-qr-setup.dto';
 import { HttpMpQrAdapter } from './http-mp-qr.adapter';
 import { MercadoPagoQrService } from './mercadopago-qr.service';
+import { MpAccountPort } from './mp-account.port';
 
- describe('MercadoPagoQrService', () => {
+describe('MercadoPagoQrService', () => {
   it('reuses a created store after a failed POS call and is idempotent once configured', async () => {
-    let row: { tenantId: string; mpUserId: string; storeId: string | null; posId: string | null } | null = null;
+    const saved: { row: { tenantId: string; mpUserId: string; storeId: string | null; posId: string | null } | null } = { row: null };
     const qrSetup = {
-      findUnique: jest.fn(() => Promise.resolve(row)),
+      findUnique: jest.fn(() => Promise.resolve(saved.row)),
       upsert: jest.fn(({ create, update }) => {
-        row = row ? { ...row, ...update } : create;
-        return Promise.resolve(row);
+        saved.row = saved.row ? { ...saved.row, ...update } : create;
+        return Promise.resolve(saved.row);
       }),
       update: jest.fn(({ data }) => {
-        row = { ...row!, ...data };
-        return Promise.resolve(row);
+        saved.row = { ...saved.row!, ...data };
+        return Promise.resolve(saved.row);
       }),
     };
     const prisma = {
@@ -31,23 +32,23 @@ import { MercadoPagoQrService } from './mercadopago-qr.service';
     const account = {
       getDecryptedAccessToken: jest.fn().mockResolvedValue('secret'),
     } as unknown as MercadoPagoAccountService;
-    const mpAccount = {
+    const mpAccount: MpAccountPort = {
       validateAccessToken: jest.fn().mockResolvedValue({ userId: 'seller-1' }),
-    };
+    } as unknown as MpAccountPort;
     const mpQr = {
       createStore: jest.fn().mockResolvedValue('store-1'),
       createPos: jest.fn().mockRejectedValueOnce(new Error('temporary')).mockResolvedValue('pos-1'),
     } as unknown as HttpMpQrAdapter;
     const audit = { record: jest.fn().mockResolvedValue(undefined) } as unknown as AuditService;
-    const service = new MercadoPagoQrService(prisma, audit, account, mpQr, mpAccount as never);
+    const service = new MercadoPagoQrService(prisma, audit, account, mpQr, mpAccount);
     const dto = {
       streetName: 'Calle 1', streetNumber: '10', cityName: 'Ciudad', stateName: 'Provincia', latitude: -34, longitude: -58,
     } as CreateMercadoPagoQrSetupDto;
     const actor = { profileType: 'STAFF' as const, userId: 'staff' };
 
     await expect(service.createSetup('tenant-id', dto, actor)).rejects.toThrow(BadGatewayException);
-    expect(row?.storeId).toBe('store-1');
-    expect(row?.posId).toBeNull();
+    expect(saved.row?.storeId).toBe('store-1');
+    expect(saved.row?.posId).toBeNull();
 
     await expect(service.createSetup('tenant-id', dto, actor)).resolves.toEqual({
       configured: true, storeId: 'store-1', posId: 'pos-1',
@@ -64,8 +65,11 @@ import { MercadoPagoQrService } from './mercadopago-qr.service';
     } as unknown as PrismaService;
     const account = { getDecryptedAccessToken: jest.fn().mockResolvedValue('secret') } as unknown as MercadoPagoAccountService;
     const service = new MercadoPagoQrService(
-      prisma, {} as AuditService, account, {} as HttpMpQrAdapter,
-      { validateAccessToken: jest.fn().mockRejectedValue(new Error()) } as never,
+      prisma,
+      {} as AuditService,
+      account,
+      {} as HttpMpQrAdapter,
+      { validateAccessToken: jest.fn().mockRejectedValue(new Error()) } as unknown as MpAccountPort,
     );
     await expect(service.createSetup('tenant-id', {} as CreateMercadoPagoQrSetupDto, { profileType: 'STAFF', userId: 'staff' })).rejects.toThrow(BadRequestException);
   });

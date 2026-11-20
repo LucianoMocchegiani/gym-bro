@@ -1,11 +1,11 @@
 import { Type } from 'class-transformer';
 import {
-  IsLatitude,
-  IsLongitude,
   IsNotEmpty,
   IsNumber,
   IsString,
+  Max,
   MaxLength,
+  Min,
 } from 'class-validator';
 
 export class CreateMercadoPagoQrSetupDto {
@@ -31,11 +31,13 @@ export class CreateMercadoPagoQrSetupDto {
 
   @Type(() => Number)
   @IsNumber()
-  @IsLatitude()
+  @Min(-90)
+  @Max(90)
   latitude!: number;
 
   @Type(() => Number)
   @IsNumber()
-  @IsLongitude()
+  @Min(-180)
+  @Max(180)
   longitude!: number;
 }
