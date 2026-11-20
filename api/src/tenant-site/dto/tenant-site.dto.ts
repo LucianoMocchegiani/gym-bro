@@ -155,6 +155,12 @@ export class PutTenantSiteDto {
   @Matches(HEX_COLOR, { message: 'themeColor must be #rrggbb' })
   themeColor?: string | null;
 
+  /** Ícono público subido a la carpeta `site`; si se omite, se conserva. */
+  @IsOptional()
+  @IsString()
+  @MaxLength(SITE_LIMITS.url.max)
+  brandIcon?: string | null;
+
   @ValidateNested()
   @Type(() => SiteHeroDto)
   hero!: SiteHeroDto;

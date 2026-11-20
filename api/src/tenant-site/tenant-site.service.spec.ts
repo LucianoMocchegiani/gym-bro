@@ -1,3 +1,4 @@
+import { BadRequestException } from '@nestjs/common';
 import type { AuditService } from '../audit/audit.service';
 import type { PrismaService } from '../prisma/prisma.service';
 import type { UploadService } from '../upload/upload.service';
@@ -10,7 +11,20 @@ const visualColors = {
   dark: { tone: 'LIGHT', accent: null, overlay: 'MEDIUM' },
 } as const;
 
-function setup(savedContent: Record<string, unknown>) {
+function siteContent(extra: Record<string, unknown> = {}) {
+  return {
+    hero: {
+      ...visualColors,
+      image: null,
+      title: 'Existing gym title',
+      subtitle: null,
+    },
+    sliders: [],
+    ...extra,
+  };
+}
+
+function setup(savedContent: Record<string, unknown>, ownsIcon = true) {
   const now = new Date();
   let upsertedContent: unknown;
   const upsert = jest.fn((args: { update: { content: unknown } }) => {
@@ -27,7 +41,10 @@ function setup(savedContent: Record<string, unknown>) {
     },
   } as unknown as PrismaService;
   const audit = { record: jest.fn() } as unknown as AuditService;
-  const upload = {} as unknown as UploadService;
+  const upload = {
+    isOwnedPublicImage: jest.fn().mockReturnValue(ownsIcon),
+    replaceOwnedPublicImage: jest.fn().mockResolvedValue(undefined),
+  } as unknown as UploadService;
   return {
     service: new TenantSiteService(prisma, audit, upload),
     upsert,
@@ -47,35 +64,20 @@ function dtoWithoutThemeColor(): PutTenantSiteDto {
   };
 }
 
-describe('TenantSiteService brand color compatibility', () => {
+describe('TenantSiteService brand configuration compatibility', () => {
   it('defaults legacy saved sites to Faciliter green', async () => {
-    const legacy = {
-      hero: {
-        ...visualColors,
-        image: null,
-        title: 'Existing gym title',
-        subtitle: null,
-      },
-      sliders: [],
-    };
-    const { service } = setup(legacy);
+    const { service } = setup(siteContent());
 
     await expect(service.get('tenant-id')).resolves.toMatchObject({
       content: { themeColor: SITE_DEFAULT_PRIMARY_COLOR },
     });
   });
 
-  it('keeps a saved color when an older client omits themeColor', async () => {
-    const { service, upsert, getUpsertedContent } = setup({
-      themeColor: '#8855cc',
-      hero: {
-        ...visualColors,
-        image: null,
-        title: 'Existing gym title',
-        subtitle: null,
-      },
-      sliders: [],
-    });
+  it('keeps saved brand settings when an older client omits them', async () => {
+    const brandIcon = 'https://storage.test/tenants/tenant-id/site/icon.png';
+    const { service, upsert, getUpsertedContent } = setup(
+      siteContent({ themeColor: '#8855cc', brandIcon }),
+    );
 
     await service.put('tenant-id', dtoWithoutThemeColor(), {
       profileType: 'STAFF',
@@ -84,7 +86,22 @@ describe('TenantSiteService brand color compatibility', () => {
 
     expect(upsert).toHaveBeenCalled();
     expect(getUpsertedContent()).toEqual(
-      expect.objectContaining({ themeColor: '#8855cc' }),
+      expect.objectContaining({ themeColor: '#8855cc', brandIcon }),
     );
+  });
+
+  it('rejects an icon not uploaded by this tenant', async () => {
+    const { service } = setup(siteContent(), false);
+
+    await expect(
+      service.put(
+        'tenant-id',
+        {
+          ...dtoWithoutThemeColor(),
+          brandIcon: 'https://other.example/icon.png',
+        },
+        { profileType: 'STAFF', userId: 'staff-id' },
+      ),
+    ).rejects.toBeInstanceOf(BadRequestException);
   });
 });
