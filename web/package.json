@@ -10,7 +10,8 @@
     "build": "next build --turbopack",
     "start": "next start -H 0.0.0.0 -p 3000",
     "lint": "eslint",
-    "test:site-theme": "node --experimental-strip-types --test lib/site-theme.test.mjs"
+    "test:site-theme": "node --experimental-strip-types --test lib/site-theme.test.mjs",
+    "test:free-plan-notice": "node --experimental-strip-types --test lib/free-plan-notice.test.mjs"
   },
   "dependencies": {
     "fflate": "^0.8.3",
