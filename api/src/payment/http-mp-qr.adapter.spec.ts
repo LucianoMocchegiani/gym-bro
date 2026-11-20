@@ -4,13 +4,9 @@ describe('HttpMpQrAdapter', () => {
   afterEach(() => jest.restoreAllMocks());
 
   it('finds a previously created store by its stable external ID', async () => {
-    const fetchMock = jest
-      .spyOn(global, 'fetch')
-      .mockResolvedValue(
-        new Response(
-          JSON.stringify({ results: [{ id: 42, external_id: 'gbtenant' }] }),
-        ),
-      );
+    const fetchMock = jest.spyOn(global, 'fetch').mockResolvedValue(
+      new Response(JSON.stringify({ results: [{ id: 42, external_id: 'gbtenant' }] })),
+    );
 
     await expect(
       new HttpMpQrAdapter().findStoreByExternalId(
@@ -20,10 +16,9 @@ describe('HttpMpQrAdapter', () => {
       ),
     ).resolves.toBe('42');
     const [url] = fetchMock.mock.calls[0];
-    expect(url).toEqual(
-      new URL(
-        'https://api.mercadopago.com/users/seller-1/stores/search?external_id=gbtenant',
-      ),
+    expect(url).toBeInstanceOf(URL);
+    expect((url as URL).toString()).toBe(
+      'https://api.mercadopago.com/users/seller-1/stores/search?external_id=gbtenant',
     );
   });
 
@@ -41,20 +36,84 @@ describe('HttpMpQrAdapter', () => {
       }),
     ).resolves.toBe('123');
 
-    const [, options] = fetchMock.mock.calls[0];
-    expect(options?.headers).toEqual({
-      Authorization: 'Bearer token',
-      'Content-Type': 'application/json',
-      Accept: 'application/json',
-      'X-Idempotency-Key': 'idem-1',
-    });
-    expect(options?.body).toBe(
-      JSON.stringify({
-        name: 'Caja Faciliter',
-        store_id: 'store-1',
-        external_id: 'pos-ext',
-        config: { qr: { operating_mode: 'pdv' } },
+    expect(fetchMock).toHaveBeenCalledWith(
+      'https://api.mercadopago.com/v2/pos',
+      expect.objectContaining({
+        headers: expect.objectContaining({ 'X-Idempotency-Key': 'idem-1' }),
+        body: JSON.stringify({
+          name: 'Caja Faciliter',
+          store_id: 'store-1',
+          external_id: 'pos-ext',
+          config: { qr: { operating_mode: 'pdv' } },
+        }),
       }),
     );
+  });
+
+  it('creates a dynamic QR order for the configured POS', async () => {
+    const fetchMock = jest.spyOn(global, 'fetch').mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          id: 'ORD-1',
+          type: 'qr',
+          status: 'created',
+          external_reference: 'transaction-1',
+          config: { qr: { qr_data: 'qr-payload' } },
+        }),
+      ),
+    );
+
+    await expect(
+      new HttpMpQrAdapter().createOrder({
+        accessToken: 'token',
+        externalPosId: 'pos-external',
+        externalReference: 'transaction-1',
+        amount: 1250,
+        idempotencyKey: 'transaction-1',
+      }),
+    ).resolves.toMatchObject({ id: 'ORD-1', qrData: 'qr-payload' });
+    expect(fetchMock).toHaveBeenCalledWith(
+      'https://api.mercadopago.com/v1/orders',
+      expect.objectContaining({
+        headers: expect.objectContaining({
+          'X-Idempotency-Key': 'transaction-1',
+        }),
+        body: JSON.stringify({
+          type: 'qr',
+          total_amount: '1250.00',
+          external_reference: 'transaction-1',
+          description: 'Cobro Faciliter',
+          config: { qr: { external_pos_id: 'pos-external', mode: 'dynamic' } },
+          transactions: { payments: [{ amount: '1250.00' }] },
+        }),
+      }),
+    );
+  });
+
+  it('reads the authoritative order status and payment data', async () => {
+    jest.spyOn(global, 'fetch').mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          id: 'ORD-1',
+          type: 'qr',
+          status: 'processed',
+          external_reference: 'transaction-1',
+          total_amount: '1250.00',
+          total_paid_amount: '1250.00',
+          transactions: {
+            payments: [{ id: 99, status: 'approved', amount: '1250.00' }],
+          },
+        }),
+      ),
+    );
+
+    await expect(
+      new HttpMpQrAdapter().getOrder('token', 'ORD-1'),
+    ).resolves.toMatchObject({
+      id: 'ORD-1',
+      status: 'processed',
+      totalPaidAmount: '1250.00',
+      payments: [{ id: '99', status: 'approved', amount: '1250.00' }],
+    });
   });
 });

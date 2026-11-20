@@ -1,5 +1,5 @@
 import { apiRequest } from '@/lib/api/client';
-import type { MpCheckoutKind, MpCheckoutStatus, MpCartItemInput } from '@/lib/api/mercadopago';
+import type { MpCartItemInput, MpCheckoutStatus } from '@/lib/api/mercadopago';
 
 export type MpPointQrCheckoutResult = {
   transactionId: string;
@@ -34,5 +34,3 @@ export function getMpPointQrOrderStatus(
     `/transactions/${transactionId}/mp-qr-order`,
   );
 }
-
-export type { MpCheckoutKind };
