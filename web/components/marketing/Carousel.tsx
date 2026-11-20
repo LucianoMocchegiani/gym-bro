@@ -179,6 +179,9 @@ export function Carousel({
           transform: translateX(-50%);
         }
         @media (max-width: 640px) {
+          .site-slider {
+            padding-inline: 0;
+          }
           .site-slider .mkt-slider-arrow {
             display: none;
           }
