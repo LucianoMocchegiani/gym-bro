@@ -43,9 +43,7 @@ describe('MpPointQrService', () => {
     const adapter = {
       getOrder: jest.fn().mockResolvedValue(order),
     } as unknown as HttpMpQrAdapter;
-    const applyMpPaymentToCart = jest
-      .fn()
-      .mockResolvedValue({ handled: true });
+    const applyMpPaymentToCart = jest.fn().mockResolvedValue({ handled: true });
     const webhook = {
       applyMpPaymentToCart,
     } as unknown as WebhookPaymentService;

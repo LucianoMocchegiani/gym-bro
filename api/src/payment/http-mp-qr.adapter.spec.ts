@@ -41,21 +41,24 @@ describe('HttpMpQrAdapter', () => {
       }),
     ).resolves.toBe('123');
 
-    expect(fetchMock).toHaveBeenCalledWith('https://api.mercadopago.com/v2/pos', {
-      method: 'POST',
-      headers: {
-        Authorization: 'Bearer token',
-        'Content-Type': 'application/json',
-        Accept: 'application/json',
-        'X-Idempotency-Key': 'idem-1',
+    expect(fetchMock).toHaveBeenCalledWith(
+      'https://api.mercadopago.com/v2/pos',
+      {
+        method: 'POST',
+        headers: {
+          Authorization: 'Bearer token',
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+          'X-Idempotency-Key': 'idem-1',
+        },
+        body: JSON.stringify({
+          name: 'Caja Faciliter',
+          store_id: 'store-1',
+          external_id: 'pos-ext',
+          config: { qr: { operating_mode: 'pdv' } },
+        }),
       },
-      body: JSON.stringify({
-        name: 'Caja Faciliter',
-        store_id: 'store-1',
-        external_id: 'pos-ext',
-        config: { qr: { operating_mode: 'pdv' } },
-      }),
-    });
+    );
   });
 
   it('creates a dynamic QR order for the configured POS', async () => {
