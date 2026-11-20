@@ -8,7 +8,3 @@ CREATE TABLE "mercadopago_qr_setups" (
 
     CONSTRAINT "mercadopago_qr_setups_pkey" PRIMARY KEY ("tenant_id")
 );
-
-ALTER TABLE "mercadopago_qr_setups"
-ADD CONSTRAINT "mercadopago_qr_setups_tenant_id_fkey"
-FOREIGN KEY ("tenant_id") REFERENCES "tenants"("id") ON DELETE CASCADE ON UPDATE CASCADE;
