@@ -20,12 +20,14 @@
   color: var(--site-primary-ink);
 }
 
-/* Keep the configured contrast layer behind text, not across the full image. */
-.site-frame-content {
-  position: relative;
-  z-index: 0;
-  width: fit-content;
-  max-width: 100%;
-  border-radius: 1rem;
+.site-frame-content .site-title-text,
+.site-frame-content .site-lead-text {
+  padding: 1px 2px;
+  background: var(--site-overlay);
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
+}
+
+.site-frame .mkt-btn-ghost {
   background: var(--site-overlay);
 }

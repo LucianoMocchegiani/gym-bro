@@ -96,8 +96,14 @@ export function SiteHeroView({
 }) {
   return (
     <SiteFrame visual={hero} alt={hero.title} eager className="site-hero">
-      <h1 className="site-title">{hero.title}</h1>
-      {hero.subtitle ? <p className="site-lead">{hero.subtitle}</p> : null}
+      <h1 className="site-title">
+        <span className="site-title-text">{hero.title}</span>
+      </h1>
+      {hero.subtitle ? (
+        <p className="site-lead">
+          <span className="site-lead-text">{hero.subtitle}</span>
+        </p>
+      ) : null}
       {actions ? <div className="mkt-hero-actions">{actions}</div> : null}
     </SiteFrame>
   );
@@ -118,8 +124,14 @@ export function SiteSlideView({
       eager={false}
       className="site-slide"
     >
-      <h3 className="site-title">{slide.title}</h3>
-      {slide.body ? <p className="site-lead">{slide.body}</p> : null}
+      <h3 className="site-title">
+        <span className="site-title-text">{slide.title}</span>
+      </h3>
+      {slide.body ? (
+        <p className="site-lead">
+          <span className="site-lead-text">{slide.body}</span>
+        </p>
+      ) : null}
       {button ? <div className="site-slide-action">{button}</div> : null}
     </SiteFrame>
   );
