@@ -30,6 +30,7 @@ import {
 const HEX_COLOR = /^#[0-9a-fA-F]{6}$/;
 
 export class SiteImageDto {
+  /** URL pública del R2 del tenant (la valida el servicio). */
   @IsString()
   @MaxLength(SITE_LIMITS.url.max)
   url!: string;
@@ -46,6 +47,7 @@ export class SiteImageDto {
   focusY!: SiteFocusY;
 }
 
+/** Colores de un bloque en un tema (claro u oscuro). */
 export class SiteThemeColorsDto {
   @IsIn(SITE_TONES)
   tone!: SiteTone;
@@ -58,6 +60,7 @@ export class SiteThemeColorsDto {
   overlay!: SiteOverlay;
 }
 
+/** Fondo comunes a hero y slide: imagen compartida y colores por tema. */
 class SiteVisualDto {
   @IsOptional()
   @ValidateNested()
@@ -91,7 +94,7 @@ export class SiteButtonDto {
   url?: string | null;
 }
 
-/** El servicio limita cada enlace al dominio de la red correspondiente. */
+/** Los enlaces sociales deben ser HTTPS; el servicio valida su dominio. */
 export class SiteSocialLinksDto {
   @IsOptional()
   @IsUrl({ protocols: ['https'], require_protocol: true })
@@ -168,18 +171,25 @@ export class SiteSliderDto {
   slides!: SiteSlideDto[];
 }
 
+/**
+ * `PUT /tenant-site`: reemplaza todo el contenido (guardar = publicar).
+ *
+ * @remarks Aquí solo forma y largos; contraste, imágenes del tenant y destinos
+ * de botón los valida {@link TenantSiteService}.
+ */
 export class PutTenantSiteDto {
   @IsOptional()
   @IsString()
   @Matches(HEX_COLOR, { message: 'themeColor must be #rrggbb' })
   themeColor?: string | null;
 
+  /** Ícono público subido a la carpeta `site`; si se omite, se conserva. */
   @IsOptional()
   @IsString()
   @MaxLength(SITE_LIMITS.url.max)
   brandIcon?: string | null;
 
-  /** Si se omite, conserva las redes ya configuradas. */
+  /** Si se omite, se conservan los enlaces existentes. */
   @IsOptional()
   @ValidateNested()
   @Type(() => SiteSocialLinksDto)
