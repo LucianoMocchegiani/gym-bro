@@ -3,6 +3,21 @@ import { HttpMpQrAdapter } from './http-mp-qr.adapter';
 describe('HttpMpQrAdapter', () => {
   afterEach(() => jest.restoreAllMocks());
 
+  it('finds a previously created store by its stable external ID', async () => {
+    const fetchMock = jest.spyOn(global, 'fetch').mockResolvedValue({
+      ok: true,
+      json: async () => ({ results: [{ id: 42, external_id: 'gbtenant' }] }),
+    } as Response);
+
+    await expect(
+      new HttpMpQrAdapter().findStoreByExternalId('token', 'seller-1', 'gbtenant'),
+    ).resolves.toBe('42');
+    const [url] = fetchMock.mock.calls[0];
+    expect(String(url)).toBe(
+      'https://api.mercadopago.com/users/seller-1/stores/search?external_id=gbtenant',
+    );
+  });
+
   it('creates a POS with the idempotency key and QR point-of-sale mode', async () => {
     const fetchMock = jest.spyOn(global, 'fetch').mockResolvedValue({
       ok: true,

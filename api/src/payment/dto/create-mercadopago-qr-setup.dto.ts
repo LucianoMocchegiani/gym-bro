@@ -3,6 +3,7 @@ import {
   IsNotEmpty,
   IsNumber,
   IsString,
+  Matches,
   Max,
   MaxLength,
   Min,
@@ -11,21 +12,25 @@ import {
 export class CreateMercadoPagoQrSetupDto {
   @IsString()
   @IsNotEmpty()
+  @Matches(/\S/)
   @MaxLength(120)
   streetName!: string;
 
   @IsString()
   @IsNotEmpty()
+  @Matches(/\S/)
   @MaxLength(20)
   streetNumber!: string;
 
   @IsString()
   @IsNotEmpty()
+  @Matches(/\S/)
   @MaxLength(100)
   cityName!: string;
 
   @IsString()
   @IsNotEmpty()
+  @Matches(/\S/)
   @MaxLength(100)
   stateName!: string;
 

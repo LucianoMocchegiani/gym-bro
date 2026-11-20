@@ -94,73 +94,81 @@ export function MercadoPagoQrSetup() {
           {setup.posId}
         </p>
       ) : (
-        <form className="admin-form" onSubmit={submit}>
-          <label>
-            Nombre de la calle
-            <input
-              value={streetName}
-              onChange={(e) => setStreetName(e.target.value)}
-              maxLength={120}
-              required
-            />
-          </label>
-          <label>
-            Altura
-            <input
-              value={streetNumber}
-              onChange={(e) => setStreetNumber(e.target.value)}
-              maxLength={20}
-              required
-            />
-          </label>
-          <label>
-            Ciudad
-            <input
-              value={cityName}
-              onChange={(e) => setCityName(e.target.value)}
-              maxLength={100}
-              required
-            />
-          </label>
-          <label>
-            Provincia
-            <input
-              value={stateName}
-              onChange={(e) => setStateName(e.target.value)}
-              maxLength={100}
-              required
-            />
-          </label>
-          <label>
-            Latitud
-            <input
-              type="number"
-              step="any"
-              min="-90"
-              max="90"
-              value={latitude}
-              onChange={(e) => setLatitude(e.target.value)}
-              required
-            />
-          </label>
-          <label>
-            Longitud
-            <input
-              type="number"
-              step="any"
-              min="-180"
-              max="180"
-              value={longitude}
-              onChange={(e) => setLongitude(e.target.value)}
-              required
-            />
-          </label>
-          <div className="form-actions">
-            <button type="submit" className="primary" disabled={busy}>
-              {busy ? 'Creando…' : 'Crear sucursal y caja QR'}
-            </button>
-          </div>
-        </form>
+        <>
+          {setup.storeId ? (
+            <p className="muted small">
+              La sucursal {setup.storeId} ya existe en Mercado Pago. El reintento
+              reutiliza esa sucursal y solo crea la caja.
+            </p>
+          ) : null}
+          <form className="admin-form" onSubmit={submit}>
+            <label>
+              Nombre de la calle
+              <input
+                value={streetName}
+                onChange={(e) => setStreetName(e.target.value)}
+                maxLength={120}
+                required
+              />
+            </label>
+            <label>
+              Altura
+              <input
+                value={streetNumber}
+                onChange={(e) => setStreetNumber(e.target.value)}
+                maxLength={20}
+                required
+              />
+            </label>
+            <label>
+              Ciudad
+              <input
+                value={cityName}
+                onChange={(e) => setCityName(e.target.value)}
+                maxLength={100}
+                required
+              />
+            </label>
+            <label>
+              Provincia
+              <input
+                value={stateName}
+                onChange={(e) => setStateName(e.target.value)}
+                maxLength={100}
+                required
+              />
+            </label>
+            <label>
+              Latitud
+              <input
+                type="number"
+                step="any"
+                min="-90"
+                max="90"
+                value={latitude}
+                onChange={(e) => setLatitude(e.target.value)}
+                required
+              />
+            </label>
+            <label>
+              Longitud
+              <input
+                type="number"
+                step="any"
+                min="-180"
+                max="180"
+                value={longitude}
+                onChange={(e) => setLongitude(e.target.value)}
+                required
+              />
+            </label>
+            <div className="form-actions">
+              <button type="submit" className="primary" disabled={busy}>
+                {busy ? 'Creando…' : 'Crear sucursal y caja QR'}
+              </button>
+            </div>
+          </form>
+        </>
       )}
       <ConfirmDialog
         open={confirm}
