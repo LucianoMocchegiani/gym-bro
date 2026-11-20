@@ -130,7 +130,7 @@ export function IdentityLoginCard({
         <label>
           Email
           <input
-            type="email'
+            type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             autoComplete="email"
