@@ -119,7 +119,7 @@ export function Carousel({
         <div className="mkt-slider-controls">
           <button
             type="button"
-            className="mkt-slider-arrow"
+            className="mkt-slider-arrow mkt-slider-arrow-prev"
             aria-label="Anterior"
             onClick={() => go(current - 1)}
           >
@@ -139,7 +139,7 @@ export function Carousel({
           </div>
           <button
             type="button"
-            className="mkt-slider-arrow"
+            className="mkt-slider-arrow mkt-slider-arrow-next"
             aria-label="Siguiente"
             onClick={() => go(current + 1)}
           >
@@ -147,6 +147,37 @@ export function Carousel({
           </button>
         </div>
       ) : null}
+      <style jsx global>{`
+        .site-slider {
+          position: relative;
+          padding-bottom: 2.5rem;
+        }
+        .site-slider .mkt-slider-controls {
+          position: absolute;
+          inset: 0 0 2.5rem;
+          margin: 0;
+          pointer-events: none;
+        }
+        .site-slider .mkt-slider-arrow {
+          position: absolute;
+          top: 50%;
+          background: var(--panel-bg);
+          pointer-events: auto;
+          transform: translateY(-50%);
+        }
+        .site-slider .mkt-slider-arrow-prev {
+          left: 0.65rem;
+        }
+        .site-slider .mkt-slider-arrow-next {
+          right: 0.65rem;
+        }
+        .site-slider .mkt-slider-dots {
+          position: absolute;
+          left: 50%;
+          bottom: -2.5rem;
+          transform: translateX(-50%);
+        }
+      `}</style>
     </div>
   );
 }
