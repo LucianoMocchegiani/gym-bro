@@ -84,11 +84,13 @@ describe('MercadoPagoQrService', () => {
     expect(saved.row?.storeId).toBe('store-1');
     expect(saved.row?.posId).toBeNull();
 
-    await expect(service.createSetup('tenant-id', dto, actor)).resolves.toEqual({
-      configured: true,
-      storeId: 'store-1',
-      posId: 'pos-1',
-    });
+    await expect(service.createSetup('tenant-id', dto, actor)).resolves.toEqual(
+      {
+        configured: true,
+        storeId: 'store-1',
+        posId: 'pos-1',
+      },
+    );
     await service.createSetup('tenant-id', dto, actor);
     expect(findStoreByExternalId).toHaveBeenCalledTimes(1);
     expect(createStore).toHaveBeenCalledTimes(1);
