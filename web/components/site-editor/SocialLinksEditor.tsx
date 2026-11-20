@@ -1,9 +1,13 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Panel } from '@/components/AdminUi';
 import { ApiClientError } from '@/lib/api/client';
-import { putTenantSite, type SiteSocialLinks, type TenantSiteDetail } from '@/lib/api/tenant-site';
+import {
+  putTenantSite,
+  type SiteSocialLinks,
+  type TenantSiteDetail,
+} from '@/lib/api/tenant-site';
 import { draftFromContent, draftToContent } from './site-draft';
 
 const SOCIALS = [
@@ -14,7 +18,19 @@ const SOCIALS = [
   ['whatsapp', 'WhatsApp'],
 ] as const satisfies ReadonlyArray<[keyof SiteSocialLinks, string]>;
 
-export function SocialLinksEditor({ detail, canWrite, onSaved }: {
+const EMPTY_LINKS: Record<keyof SiteSocialLinks, string> = {
+  facebook: '',
+  x: '',
+  tiktok: '',
+  instagram: '',
+  whatsapp: '',
+};
+
+export function SocialLinksEditor({
+  detail,
+  canWrite,
+  onSaved,
+}: {
   detail: TenantSiteDetail;
   canWrite: boolean;
   onSaved: (detail: TenantSiteDetail) => void;
@@ -29,6 +45,10 @@ export function SocialLinksEditor({ detail, canWrite, onSaved }: {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!detail.content) setLinks(EMPTY_LINKS);
+  }, [detail.content]);
 
   async function save() {
     setBusy(true);
@@ -47,14 +67,21 @@ export function SocialLinksEditor({ detail, canWrite, onSaved }: {
       onSaved(saved);
       setMessage('Redes sociales guardadas y publicadas.');
     } catch (err) {
-      setError(err instanceof ApiClientError || err instanceof Error ? err.message : 'No se pudieron guardar las redes sociales');
+      setError(
+        err instanceof ApiClientError || err instanceof Error
+          ? err.message
+          : 'No se pudieron guardar las redes sociales',
+      );
     } finally {
       setBusy(false);
     }
   }
 
   return (
-    <Panel title="Redes sociales" description="Se muestran en el pie de la web pública del gimnasio; dejá vacío lo que no uses.">
+    <Panel
+      title="Redes sociales"
+      description="Se muestran en el pie de la web pública del gimnasio. Dejá vacío lo que no uses; se eliminan al restablecer toda la web."
+    >
       <div className="admin-form">
         {SOCIALS.map(([key, label]) => (
           <label key={key}>
@@ -63,9 +90,15 @@ export function SocialLinksEditor({ detail, canWrite, onSaved }: {
               type="url"
               value={links[key]}
               maxLength={500}
-              placeholder={key === 'whatsapp' ? 'https://wa.me/549…' : `https://${key === 'x' ? 'x' : key}.com/tugym`}
+              placeholder={
+                key === 'whatsapp'
+                  ? 'https://wa.me/549…'
+                  : `https://${key === 'x' ? 'x' : key}.com/tugym`
+              }
               disabled={!canWrite || busy}
-              onChange={(e) => setLinks((current) => ({ ...current, [key]: e.target.value }))}
+              onChange={(e) =>
+                setLinks((current) => ({ ...current, [key]: e.target.value }))
+              }
             />
           </label>
         ))}
@@ -74,11 +107,20 @@ export function SocialLinksEditor({ detail, canWrite, onSaved }: {
       {message ? <p className="ok-msg">{message}</p> : null}
       {canWrite ? (
         <div className="form-actions">
-          <button type="button" className="primary" disabled={busy} onClick={() => void save()}>
+          <button
+            type="button"
+            className="primary"
+            disabled={busy}
+            onClick={() => void save()}
+          >
             {busy ? 'Guardando…' : 'Guardar redes'}
           </button>
         </div>
-      ) : <p className="muted small">Solo lectura: necesitás el permiso de editar la configuración.</p>}
+      ) : (
+        <p className="muted small">
+          Solo lectura: necesitás el permiso de editar la configuración.
+        </p>
+      )}
     </Panel>
   );
 }
