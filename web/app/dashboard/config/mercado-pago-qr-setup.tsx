@@ -101,7 +101,11 @@ export function MercadoPagoQrSetup() {
               reutiliza esa sucursal y solo crea la caja.
             </p>
           ) : null}
-          <form className="admin-form" onSubmit={submit} style={{ marginTop: '1rem' }}>
+          <form
+            className="admin-form"
+            onSubmit={submit}
+            style={{ marginTop: '1rem' }}
+          >
             <label>
               Nombre de la calle
               <input
