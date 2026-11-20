@@ -8,6 +8,7 @@ import { publicSiteUrl } from '@/lib/site-url';
 import './globals.css';
 import './marketing.css';
 import './site-brand-colors.css';
+import './member-responsive.css';
 
 const display = Barlow_Condensed({
   variable: '--font-display',
