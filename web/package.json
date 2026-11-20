@@ -19,10 +19,10 @@
     "nextjs-toploader": "^3.9.17",
     "papaparse": "^5.7.0",
     "qrcode": "^1.5.4",
-    "read-excel-file": "^9.3.10",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
     "react-markdown": "^10.1.0",
+    "read-excel-file": "^9.3.10",
     "rehype-sanitize": "^6.0.0",
     "remark-gfm": "^4.0.1"
   },
