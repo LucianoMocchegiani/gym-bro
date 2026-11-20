@@ -20,13 +20,17 @@ export default async function PortalLayout({
   if (!site) {
     notFound();
   }
+  const color = site.catalog.site?.themeColor ?? SITE_DEFAULT_PRIMARY_COLOR;
   return (
-    <GymSiteShell
-      slug={site.slug}
-      gymName={site.catalog.tenant.name}
-      brandColor={site.catalog.site?.themeColor ?? SITE_DEFAULT_PRIMARY_COLOR}
-    >
-      {children}
-    </GymSiteShell>
+    <>
+      <style>{`:root { --navigation-progress-color: ${color}; }`}</style>
+      <GymSiteShell
+        slug={site.slug}
+        gymName={site.catalog.tenant.name}
+        brandColor={color}
+      >
+        {children}
+      </GymSiteShell>
+    </>
   );
 }
