@@ -295,7 +295,8 @@ export function SiteEditor({
             disabled={disabled}
           />
           <p className="muted small">
-            Publicá los cambios para aplicarlo. Sin ícono se conserva la marca actual.
+            Recomendado: imagen cuadrada de 512 × 512 px (PNG o WebP; fondo
+            transparente opcional). Publicá los cambios para aplicarlo. Sin ícono se conserva la marca actual.
           </p>
         </Panel>
 
