@@ -96,14 +96,16 @@ export function SiteHeroView({
 }) {
   return (
     <SiteFrame visual={hero} alt={hero.title} eager className="site-hero">
-      <h1 className="site-title">
-        <span className="site-title-text">{hero.title}</span>
-      </h1>
-      {hero.subtitle ? (
-        <p className="site-lead">
-          <span className="site-lead-text">{hero.subtitle}</span>
-        </p>
-      ) : null}
+      <div className="site-hero-copy">
+        <h1 className="site-title">
+          <span className="site-title-text">{hero.title}</span>
+        </h1>
+        {hero.subtitle ? (
+          <p className="site-lead">
+            <span className="site-lead-text">{hero.subtitle}</span>
+          </p>
+        ) : null}
+      </div>
       {actions ? <div className="mkt-hero-actions">{actions}</div> : null}
     </SiteFrame>
   );

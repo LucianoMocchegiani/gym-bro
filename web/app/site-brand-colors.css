@@ -59,3 +59,55 @@
 .site-frame .mkt-btn-ghost {
   background: var(--site-overlay);
 }
+
+.gym-site-branded .site-hero-section {
+  width: auto;
+  max-width: none;
+  margin-inline: calc(-1 * max(2.5rem, 6vw));
+  padding-block: 0 2rem;
+}
+
+.gym-site-branded .site-hero {
+  min-height: clamp(28rem, calc(100svh - 5rem), 50rem);
+  border-radius: 0;
+}
+
+.gym-site-branded .site-hero .site-frame-content {
+  width: 100%;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 0.75rem clamp(1rem, 4vw, 3rem);
+  padding: clamp(2rem, 6vw, 5rem);
+}
+
+.gym-site-branded .site-hero-copy {
+  display: grid;
+  gap: 0.8rem;
+  max-width: 50rem;
+}
+
+.gym-site-branded .site-hero-copy .site-lead {
+  max-width: 38rem;
+}
+
+.gym-site-branded .site-hero .mkt-hero-actions {
+  justify-content: flex-end;
+  max-width: 24rem;
+  margin-top: 0;
+}
+
+@media (max-width: 680px) {
+  .gym-site-branded .site-hero {
+    min-height: max(30rem, 72svh);
+  }
+
+  .gym-site-branded .site-hero .site-frame-content {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 1.25rem;
+    padding: 1.5rem;
+  }
+
+  .gym-site-branded .site-hero .mkt-hero-actions {
+    justify-content: flex-start;
+  }
+}
