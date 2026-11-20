@@ -115,6 +115,8 @@ export class HttpMpQrAdapter {
     this.logger.warn(
       `MP QR ${operation} failed status=${response.status} body=${body.slice(0, 300)}`,
     );
-    throw new Error(`Mercado Pago QR ${operation} failed (HTTP ${response.status})`);
+    throw new Error(
+      `Mercado Pago QR ${operation} failed (HTTP ${response.status})`,
+    );
   }
 }

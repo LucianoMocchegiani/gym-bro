@@ -119,9 +119,12 @@ export class MercadoPagoQrService {
       }
 
       if (!setup.posId) {
+        if (!setup.storeId) {
+          throw new Error('Mercado Pago store ID missing after creation');
+        }
         const posId = await this.mpQr.createPos({
           accessToken,
-          storeId: setup.storeId!,
+          storeId: setup.storeId,
           externalId: `gp${tenantId.replaceAll('-', '')}`,
           idempotencyKey: `gymbro-qr-pos-${tenantId}`,
         });
