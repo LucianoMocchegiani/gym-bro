@@ -160,6 +160,7 @@ export function AdSlot({ tenantSlug, placement }: { tenantSlug: string; placemen
       </div>
       <style jsx>{`
         .ad-slot-carousel {
+          position: relative;
           display: grid;
           gap: 0.75rem;
         }
@@ -204,19 +205,34 @@ export function AdSlot({ tenantSlug, placement }: { tenantSlug: string; placemen
           line-height: 1.45;
         }
         .ad-slot-controls {
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          gap: 0.75rem;
+          position: absolute;
+          inset: 0;
+          z-index: 1;
+          pointer-events: none;
         }
         .ad-slot-controls button {
+          position: absolute;
+          top: 50%;
+          display: grid;
+          place-items: center;
+          width: 2.5rem;
+          height: 2.5rem;
           min-width: 2.5rem;
           min-height: 2.5rem;
+          padding: 0;
           border: 1px solid var(--line);
           border-radius: 999px;
           background: var(--panel-bg);
           color: inherit;
           cursor: pointer;
+          pointer-events: auto;
+          transform: translateY(-50%);
+        }
+        .ad-slot-controls button:first-child {
+          left: 0.5rem;
+        }
+        .ad-slot-controls button:last-child {
+          right: 0.5rem;
         }
         @media (prefers-reduced-motion: reduce) {
           .ad-slot-track {
