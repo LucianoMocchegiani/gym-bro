@@ -13,12 +13,7 @@ const visualColors = {
 
 function siteContent(extra: Record<string, unknown> = {}) {
   return {
-    hero: {
-      ...visualColors,
-      image: null,
-      title: 'Existing gym title',
-      subtitle: null,
-    },
+    hero: { ...visualColors, image: null, title: 'Existing gym title', subtitle: null },
     sliders: [],
     ...extra,
   };
@@ -33,10 +28,7 @@ function setup(savedContent: Record<string, unknown>, ownsIcon = true) {
   });
   const prisma = {
     tenantSite: {
-      findUnique: jest.fn().mockResolvedValue({
-        content: savedContent,
-        updatedAt: now,
-      }),
+      findUnique: jest.fn().mockResolvedValue({ content: savedContent, updatedAt: now }),
       upsert,
     },
   } as unknown as PrismaService;
@@ -45,29 +37,19 @@ function setup(savedContent: Record<string, unknown>, ownsIcon = true) {
     isOwnedPublicImage: jest.fn().mockReturnValue(ownsIcon),
     replaceOwnedPublicImage: jest.fn().mockResolvedValue(undefined),
   } as unknown as UploadService;
-  return {
-    service: new TenantSiteService(prisma, audit, upload),
-    upsert,
-    getUpsertedContent: () => upsertedContent,
-  };
+  return { service: new TenantSiteService(prisma, audit, upload), upsert, getUpsertedContent: () => upsertedContent };
 }
 
 function dtoWithoutThemeColor(): PutTenantSiteDto {
   return {
-    hero: {
-      ...visualColors,
-      image: null,
-      title: 'Existing gym title',
-      subtitle: null,
-    },
+    hero: { ...visualColors, image: null, title: 'Existing gym title', subtitle: null },
     sliders: [],
   };
 }
 
-describe('TenantSiteService brand configuration compatibility', () => {
+describe('TenantSiteService public site settings', () => {
   it('defaults legacy saved sites to Faciliter green', async () => {
     const { service } = setup(siteContent());
-
     await expect(service.get('tenant-id')).resolves.toMatchObject({
       content: { themeColor: SITE_DEFAULT_PRIMARY_COLOR },
     });
@@ -75,33 +57,33 @@ describe('TenantSiteService brand configuration compatibility', () => {
 
   it('keeps saved brand settings when an older client omits them', async () => {
     const brandIcon = 'https://storage.test/tenants/tenant-id/site/icon.png';
-    const { service, upsert, getUpsertedContent } = setup(
-      siteContent({ themeColor: '#8855cc', brandIcon }),
-    );
+    const { service, getUpsertedContent } = setup(siteContent({ themeColor: '#8855cc', brandIcon }));
+    await service.put('tenant-id', dtoWithoutThemeColor(), { profileType: 'STAFF', userId: 'staff-id' });
+    expect(getUpsertedContent()).toEqual(expect.objectContaining({ themeColor: '#8855cc', brandIcon }));
+  });
 
-    await service.put('tenant-id', dtoWithoutThemeColor(), {
-      profileType: 'STAFF',
-      userId: 'staff-id',
-    });
+  it('preserves social links when an older client omits them', async () => {
+    const socialLinks = { facebook: 'https://facebook.com/example', x: null, tiktok: null, instagram: null, whatsapp: null };
+    const { service, getUpsertedContent } = setup(siteContent({ socialLinks }));
+    await service.put('tenant-id', dtoWithoutThemeColor(), { profileType: 'STAFF', userId: 'staff-id' });
+    expect(getUpsertedContent()).toEqual(expect.objectContaining({ socialLinks }));
+  });
 
-    expect(upsert).toHaveBeenCalled();
-    expect(getUpsertedContent()).toEqual(
-      expect.objectContaining({ themeColor: '#8855cc', brandIcon }),
-    );
+  it('rejects URLs outside the selected social network', async () => {
+    const { service } = setup(siteContent());
+    await expect(service.put(
+      'tenant-id',
+      { ...dtoWithoutThemeColor(), socialLinks: { facebook: 'https://evil.example' } },
+      { profileType: 'STAFF', userId: 'staff-id' },
+    )).rejects.toBeInstanceOf(BadRequestException);
   });
 
   it('rejects an icon not uploaded by this tenant', async () => {
     const { service } = setup(siteContent(), false);
-
-    await expect(
-      service.put(
-        'tenant-id',
-        {
-          ...dtoWithoutThemeColor(),
-          brandIcon: 'https://other.example/icon.png',
-        },
-        { profileType: 'STAFF', userId: 'staff-id' },
-      ),
-    ).rejects.toBeInstanceOf(BadRequestException);
+    await expect(service.put(
+      'tenant-id',
+      { ...dtoWithoutThemeColor(), brandIcon: 'https://other.example/icon.png' },
+      { profileType: 'STAFF', userId: 'staff-id' },
+    )).rejects.toBeInstanceOf(BadRequestException);
   });
 });
