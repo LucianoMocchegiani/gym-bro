@@ -13,14 +13,17 @@ function apiBase(): string {
 /**
  * @returns `null` si la API no está configurada, no responde o devuelve error.
  */
-export async function fetchPublicApi<T>(path: string): Promise<T | null> {
+export async function fetchPublicApi<T>(
+  path: string,
+  revalidate = 60,
+): Promise<T | null> {
   const base = apiBase();
   if (!base) {
     return null;
   }
   try {
     const res = await fetch(`${base}/api${path}`, {
-      next: { revalidate: 60 },
+      next: { revalidate },
     });
     if (!res.ok) {
       return null;

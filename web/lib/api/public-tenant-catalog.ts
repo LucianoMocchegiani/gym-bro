@@ -42,6 +42,7 @@ export function fetchPublicTenantCatalog(
 ): Promise<PublicTenantCatalog | null> {
   return fetchPublicApi<PublicTenantCatalog>(
     `/public/tenants/by-slug/${encodeURIComponent(slug)}/packs`,
+    0,
   );
 }
 

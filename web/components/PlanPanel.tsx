@@ -84,10 +84,9 @@ export function PlanPanel({ plan }: { plan: GymPlanView }) {
           <a href={`mailto:${MARKETING_MAIL}`}>{MARKETING_MAIL}</a>.
         </p>
       ) : null}
-      <p className="muted small">
+      <p className="muted small" style={{ marginTop: '1rem' }}>
         Para cambiar de plan o dar de baja el débito, escribinos a{' '}
-        <a href={`mailto:${MARKETING_MAIL}`}>{MARKETING_MAIL}</a>.{' '}
-        {plan.isOwner ? 'Sos el dueño de este gym.' : null}
+        <a href={`mailto:${MARKETING_MAIL}`}>{MARKETING_MAIL}</a>.
       </p>
     </Panel>
   );
