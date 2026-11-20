@@ -5,7 +5,11 @@ import { Carousel } from '@/components/marketing/Carousel';
 import { MktShell } from '@/components/marketing/MktShell';
 import { PackPlanCard } from '@/components/marketing/PackPlanCard';
 import { storePackItems, type PublicTenantCatalog } from '@/lib/api/public-tenant-catalog';
-import { SITE_DEFAULT_PRIMARY_COLOR, type SiteButton, type SiteSlider } from '@/lib/api/tenant-site';
+import {
+  SITE_DEFAULT_PRIMARY_COLOR,
+  type SiteButton,
+  type SiteSlider,
+} from '@/lib/api/tenant-site';
 import { siteButtonLink } from '@/lib/site-buttons';
 
 function HeroActions() {
@@ -36,7 +40,13 @@ export function GymLandingPage({ catalog }: { catalog: PublicTenantCatalog }) {
   const packIds = new Set(packs.map((p) => p.id));
   const hasCustomLanding = site?.landingCustomized !== false;
   return (
-    <GymSiteShell slug={tenant.slug} gymName={tenant.name} brandColor={site?.themeColor ?? SITE_DEFAULT_PRIMARY_COLOR} brandIcon={site?.brandIcon ?? null} socialLinks={site?.socialLinks}>
+    <GymSiteShell
+      slug={tenant.slug}
+      gymName={tenant.name}
+      brandColor={site?.themeColor ?? SITE_DEFAULT_PRIMARY_COLOR}
+      brandIcon={site?.brandIcon ?? null}
+      socialLinks={site?.socialLinks}
+    >
       {site && hasCustomLanding ? (
         <MktShell as="section" className="site-hero-section"><SiteHeroView hero={site.hero} actions={<HeroActions />} /></MktShell>
       ) : (
