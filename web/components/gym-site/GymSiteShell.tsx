@@ -131,7 +131,7 @@ export function GymSiteShell({
           <div className="mkt-footer-brand">
             <p className="mkt-footer-name">{gymName}</p>
             <p>
-              Socios y pagos con{' '}
+              Web construida con{' '}
               <a href={platformOrigin()}>Faciliter</a>.
             </p>
           </div>
