@@ -7,7 +7,9 @@ describe('HttpMpQrAdapter', () => {
     const fetchMock = jest
       .spyOn(global, 'fetch')
       .mockResolvedValue(
-        new Response(JSON.stringify({ results: [{ id: 42, external_id: 'gbtenant' }] })),
+        new Response(
+          JSON.stringify({ results: [{ id: 42, external_id: 'gbtenant' }] }),
+        ),
       );
 
     await expect(
