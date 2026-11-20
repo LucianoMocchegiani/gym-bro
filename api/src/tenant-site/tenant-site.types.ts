@@ -1,52 +1,33 @@
-/**
- * Contenido editable de la web pública del gym (RN-CTA-010).
- *
- * @remarks Se guarda como JSON en `tenant_sites.content`. La web lo dibuja con
- * los mismos tipos (`web/lib/api/tenant-site.ts`): mantener ambos alineados.
- */
+export type SiteSocialLinks = {
+  facebook: string | null;
+  x: string | null;
+  tiktok: string | null;
+  instagram: string | null;
+  whatsapp: string | null;
+};
 
-/** Color de marca predeterminado de Faciliter para webs sin personalización. */
-export const SITE_DEFAULT_PRIMARY_COLOR = '#a3e635';
+export type SiteTone = 'LIGHT' | 'DARK';
+export type SiteOverlay = 'SOFT' | 'MEDIUM' | 'STRONG';
+export type SiteFocusX = 'LEFT' | 'CENTER' | 'RIGHT';
+export type SiteFocusY = 'TOP' | 'CENTER' | 'BOTTOM';
+export type SiteButtonTarget = 'PLANS' | 'BOOK' | 'PACK' | 'URL';
 
-/** Tono del texto: LIGHT = texto claro sobre capa oscura; DARK = al revés. */
-export const SITE_TONES = ['LIGHT', 'DARK'] as const;
-export type SiteTone = (typeof SITE_TONES)[number];
-
-/** Intensidad de la capa entre la imagen y el texto. */
-export const SITE_OVERLAYS = ['SOFT', 'MEDIUM', 'STRONG'] as const;
-export type SiteOverlay = (typeof SITE_OVERLAYS)[number];
-
-export const SITE_FOCUS_X = ['LEFT', 'CENTER', 'RIGHT'] as const;
-export type SiteFocusX = (typeof SITE_FOCUS_X)[number];
-
-export const SITE_FOCUS_Y = ['TOP', 'CENTER', 'BOTTOM'] as const;
-export type SiteFocusY = (typeof SITE_FOCUS_Y)[number];
-
-/** Destino del botón de un slide. */
-export const SITE_BUTTON_TARGETS = ['PLANS', 'BOOK', 'PACK', 'URL'] as const;
-export type SiteButtonTarget = (typeof SITE_BUTTON_TARGETS)[number];
+export type SiteSocialLinksDto = Partial<SiteSocialLinks>;
 
 export type SiteImage = {
   url: string;
-  /** Vacío → la web usa el título. */
   alt: string | null;
   focusX: SiteFocusX;
   focusY: SiteFocusY;
 };
 
-/** Colores de un bloque en un tema de la web (claro u oscuro). */
 export type SiteThemeColors = {
   tone: SiteTone;
-  /** `#rrggbb` para el título; null = mismo color que el texto. */
   accent: string | null;
   overlay: SiteOverlay;
 };
 
-/** Temas de la web: el visitante ve uno u otro según su preferencia. */
-export const SITE_THEMES = ['light', 'dark'] as const;
-export type SiteTheme = (typeof SITE_THEMES)[number];
-
-/** Fondo de hero y slides: una imagen y colores para cada tema. */
+export type SiteTheme = 'light' | 'dark';
 export type SiteVisual = {
   image: SiteImage | null;
   light: SiteThemeColors;
@@ -56,9 +37,7 @@ export type SiteVisual = {
 export type SiteButton = {
   label: string;
   target: SiteButtonTarget;
-  /** Solo con `PACK`. */
   packId: string | null;
-  /** Solo con `URL` (https). */
   url: string | null;
 };
 
@@ -81,16 +60,17 @@ export type SiteSlider = {
 };
 
 export type TenantSiteContent = {
-  /** Ausente en contenido anterior; el lector le aplica el verde predeterminado. */
   themeColor?: string;
-  /** URL del ícono público del gimnasio; ausente en sitios anteriores. */
   brandIcon?: string | null;
+  /** Omitido en contenido anterior. */
+  socialLinks?: SiteSocialLinks;
   hero: SiteHero;
   sliders: SiteSlider[];
 };
 
-/** `GET /tenant-site`: null = el gym no configuró nada (vidriera por defecto). */
 export type TenantSiteDetail = {
   content: TenantSiteContent | null;
   updatedAt: Date | null;
 };
+
+export const SITE_DEFAULT_PRIMARY_COLOR = '#a3e635';

@@ -1,11 +1,12 @@
-/**
- * Web pública del gym editable (módulo `tenant-site`, RN-CTA-010).
- *
- * @remarks Mismos tipos y límites que `api/src/tenant-site/tenant-site.types.ts`
- * y `tenant-site.constants.ts`: cambiar los dos juntos.
- */
-
 import { apiRequest } from '@/lib/api/client';
+
+export type SiteSocialLinks = {
+  facebook: string | null;
+  x: string | null;
+  tiktok: string | null;
+  instagram: string | null;
+  whatsapp: string | null;
+};
 
 export type SiteTone = 'LIGHT' | 'DARK';
 export type SiteOverlay = 'SOFT' | 'MEDIUM' | 'STRONG';
@@ -15,23 +16,18 @@ export type SiteButtonTarget = 'PLANS' | 'BOOK' | 'PACK' | 'URL';
 
 export type SiteImage = {
   url: string;
-  /** Vacío → la web usa el título. */
   alt: string | null;
   focusX: SiteFocusX;
   focusY: SiteFocusY;
 };
 
-/** Colores de un bloque de portada o slide en un tema. */
 export type SiteThemeColors = {
   tone: SiteTone;
-  /** `#rrggbb` para el título; null = mismo color que el texto. */
   accent: string | null;
   overlay: SiteOverlay;
 };
 
 export type SiteTheme = 'light' | 'dark';
-
-/** Fondo de hero y slides: una imagen y colores para cada tema. */
 export type SiteVisual = {
   image: SiteImage | null;
   light: SiteThemeColors;
@@ -64,16 +60,15 @@ export type SiteSlider = {
 };
 
 export type TenantSiteContent = {
-  /** Opcional para conservar compatibilidad con contenido de webs previas. */
   themeColor?: string;
-  /** Ícono opcional del gimnasio; URL de imagen pública subida por el tenant. */
   brandIcon?: string | null;
+  /** Omitido por contenido anterior; no hay redes configuradas. */
+  socialLinks?: SiteSocialLinks;
   hero: SiteHero;
   sliders: SiteSlider[];
 };
 
 export type TenantSiteDetail = {
-  /** null = vidriera por defecto. */
   content: TenantSiteContent | null;
   updatedAt: string | null;
 };
@@ -94,25 +89,16 @@ export const SITE_LIMITS = {
   id: { max: 40 },
 } as const;
 
-/** Carpeta de `POST /upload` que acepta el PUT. */
 export const SITE_IMAGE_FOLDER = 'site';
 
-/** Lee el contenido (`tenant.settings.read`). */
 export function getTenantSite(): Promise<TenantSiteDetail> {
   return apiRequest<TenantSiteDetail>('/tenant-site');
 }
 
-/** Reemplaza y publica (`tenant.settings.write`). */
-export function putTenantSite(
-  content: TenantSiteContent,
-): Promise<TenantSiteDetail> {
-  return apiRequest<TenantSiteDetail>('/tenant-site', {
-    method: 'PUT',
-    body: content,
-  });
+export function putTenantSite(content: TenantSiteContent): Promise<TenantSiteDetail> {
+  return apiRequest<TenantSiteDetail>('/tenant-site', { method: 'PUT', body: content });
 }
 
-/** Vuelve a la vidriera por defecto (`tenant.settings.write`). */
 export function resetTenantSite(): Promise<TenantSiteDetail> {
   return apiRequest<TenantSiteDetail>('/tenant-site', { method: 'DELETE' });
 }

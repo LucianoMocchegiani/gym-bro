@@ -30,7 +30,6 @@ import {
 const HEX_COLOR = /^#[0-9a-fA-F]{6}$/;
 
 export class SiteImageDto {
-  /** URL pública del R2 del tenant (la valida el servicio). */
   @IsString()
   @MaxLength(SITE_LIMITS.url.max)
   url!: string;
@@ -47,7 +46,6 @@ export class SiteImageDto {
   focusY!: SiteFocusY;
 }
 
-/** Colores de un bloque en un tema (claro u oscuro). */
 export class SiteThemeColorsDto {
   @IsIn(SITE_TONES)
   tone!: SiteTone;
@@ -60,7 +58,6 @@ export class SiteThemeColorsDto {
   overlay!: SiteOverlay;
 }
 
-/** Fondo comunes a hero y slide: imagen compartida y colores por tema. */
 class SiteVisualDto {
   @IsOptional()
   @ValidateNested()
@@ -92,6 +89,34 @@ export class SiteButtonDto {
   @IsUrl({ protocols: ['https'], require_protocol: true })
   @MaxLength(SITE_LIMITS.url.max)
   url?: string | null;
+}
+
+/** El servicio limita cada enlace al dominio de la red correspondiente. */
+export class SiteSocialLinksDto {
+  @IsOptional()
+  @IsUrl({ protocols: ['https'], require_protocol: true })
+  @MaxLength(SITE_LIMITS.url.max)
+  facebook?: string | null;
+
+  @IsOptional()
+  @IsUrl({ protocols: ['https'], require_protocol: true })
+  @MaxLength(SITE_LIMITS.url.max)
+  x?: string | null;
+
+  @IsOptional()
+  @IsUrl({ protocols: ['https'], require_protocol: true })
+  @MaxLength(SITE_LIMITS.url.max)
+  tiktok?: string | null;
+
+  @IsOptional()
+  @IsUrl({ protocols: ['https'], require_protocol: true })
+  @MaxLength(SITE_LIMITS.url.max)
+  instagram?: string | null;
+
+  @IsOptional()
+  @IsUrl({ protocols: ['https'], require_protocol: true })
+  @MaxLength(SITE_LIMITS.url.max)
+  whatsapp?: string | null;
 }
 
 export class SiteHeroDto extends SiteVisualDto {
@@ -143,23 +168,22 @@ export class SiteSliderDto {
   slides!: SiteSlideDto[];
 }
 
-/**
- * `PUT /tenant-site`: reemplaza todo el contenido (guardar = publicar).
- *
- * @remarks Aquí solo forma y largos; contraste, imágenes del tenant y destinos
- * de botón los valida {@link TenantSiteService}.
- */
 export class PutTenantSiteDto {
   @IsOptional()
   @IsString()
   @Matches(HEX_COLOR, { message: 'themeColor must be #rrggbb' })
   themeColor?: string | null;
 
-  /** Ícono público subido a la carpeta `site`; si se omite, se conserva. */
   @IsOptional()
   @IsString()
   @MaxLength(SITE_LIMITS.url.max)
   brandIcon?: string | null;
+
+  /** Si se omite, conserva las redes ya configuradas. */
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => SiteSocialLinksDto)
+  socialLinks?: SiteSocialLinksDto;
 
   @ValidateNested()
   @Type(() => SiteHeroDto)
