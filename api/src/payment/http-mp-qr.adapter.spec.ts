@@ -41,18 +41,21 @@ describe('HttpMpQrAdapter', () => {
       }),
     ).resolves.toBe('123');
 
-    expect(fetchMock).toHaveBeenCalledWith(
-      'https://api.mercadopago.com/v2/pos',
-      expect.objectContaining({
-        headers: expect.objectContaining({ 'X-Idempotency-Key': 'idem-1' }),
-        body: JSON.stringify({
-          name: 'Caja Faciliter',
-          store_id: 'store-1',
-          external_id: 'pos-ext',
-          config: { qr: { operating_mode: 'pdv' } },
-        }),
+    expect(fetchMock).toHaveBeenCalledWith('https://api.mercadopago.com/v2/pos', {
+      method: 'POST',
+      headers: {
+        Authorization: 'Bearer token',
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+        'X-Idempotency-Key': 'idem-1',
+      },
+      body: JSON.stringify({
+        name: 'Caja Faciliter',
+        store_id: 'store-1',
+        external_id: 'pos-ext',
+        config: { qr: { operating_mode: 'pdv' } },
       }),
-    );
+    });
   });
 
   it('creates a dynamic QR order for the configured POS', async () => {
@@ -80,10 +83,14 @@ describe('HttpMpQrAdapter', () => {
 
     expect(fetchMock).toHaveBeenCalledWith(
       'https://api.mercadopago.com/v1/orders',
-      expect.objectContaining({
-        headers: expect.objectContaining({
+      {
+        method: 'POST',
+        headers: {
+          Authorization: 'Bearer token',
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
           'X-Idempotency-Key': 'transaction-1',
-        }),
+        },
         body: JSON.stringify({
           type: 'qr',
           total_amount: '1250.00',
@@ -92,7 +99,7 @@ describe('HttpMpQrAdapter', () => {
           config: { qr: { external_pos_id: 'pos-external', mode: 'dynamic' } },
           transactions: { payments: [{ amount: '1250.00' }] },
         }),
-      }),
+      },
     );
   });
 

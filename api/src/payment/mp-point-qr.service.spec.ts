@@ -43,8 +43,11 @@ describe('MpPointQrService', () => {
     const adapter = {
       getOrder: jest.fn().mockResolvedValue(order),
     } as unknown as HttpMpQrAdapter;
+    const applyMpPaymentToCart = jest
+      .fn()
+      .mockResolvedValue({ handled: true });
     const webhook = {
-      applyMpPaymentToCart: jest.fn().mockResolvedValue({ handled: true }),
+      applyMpPaymentToCart,
     } as unknown as WebhookPaymentService;
     return {
       service: new MpPointQrService(
@@ -55,12 +58,12 @@ describe('MpPointQrService', () => {
         {} as SessionValidationService,
         webhook,
       ),
-      webhook,
+      applyMpPaymentToCart,
     };
   };
 
   it('confirms only a processed order with matching amount and approved payment', async () => {
-    const { service, webhook } = makeService({
+    const { service, applyMpPaymentToCart } = makeService({
       id: 'ORD-1',
       type: 'qr',
       status: 'processed',
@@ -78,7 +81,7 @@ describe('MpPointQrService', () => {
       status: 'processed',
       approved: true,
     });
-    expect(webhook.applyMpPaymentToCart).toHaveBeenCalledWith(
+    expect(applyMpPaymentToCart).toHaveBeenCalledWith(
       'tenant-1',
       'transaction-1',
       'payment-1',
@@ -87,7 +90,7 @@ describe('MpPointQrService', () => {
   });
 
   it('does not confirm an order with a mismatched paid amount', async () => {
-    const { service, webhook } = makeService({
+    const { service, applyMpPaymentToCart } = makeService({
       id: 'ORD-1',
       type: 'qr',
       status: 'processed',
@@ -101,6 +104,6 @@ describe('MpPointQrService', () => {
     await expect(
       service.getOrderStatus('tenant-1', 'transaction-1'),
     ).rejects.toThrow(BadGatewayException);
-    expect(webhook.applyMpPaymentToCart).not.toHaveBeenCalled();
+    expect(applyMpPaymentToCart).not.toHaveBeenCalled();
   });
 });
