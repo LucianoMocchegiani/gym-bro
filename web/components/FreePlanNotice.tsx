@@ -8,7 +8,7 @@ import { shouldShowFreePlanNotice } from '@/lib/free-plan-notice';
 
 const SEEN_PREFIX = 'faciliter.freePlanNotice.';
 
-/** Aviso promocional para gyms sin contrato activo; las restricciones aún son informativas. */
+/** Aviso promocional para gyms sin contrato activo; las restricciones son informativas. */
 export function FreePlanNotice({
   tenantId,
   canManagePlan,
@@ -25,7 +25,10 @@ export function FreePlanNotice({
     let cancelled = false;
     void getGymPlan()
       .then((plan) => {
-        if (cancelled || (plan.status !== 'none' && plan.status !== 'expired')) {
+        if (
+          cancelled ||
+          (plan.status !== 'none' && plan.status !== 'expired')
+        ) {
           return;
         }
         const key = `${SEEN_PREFIX}${tenantId}`;
