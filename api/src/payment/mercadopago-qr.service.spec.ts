@@ -9,7 +9,12 @@ import { MpAccountPort } from './mp-account.port';
 
 describe('MercadoPagoQrService', () => {
   it('returns store validation details so the user can correct the input', async () => {
-    const setup = { tenantId: 'tenant-id', mpUserId: 'seller-1', storeId: null, posId: null };
+    const setup = {
+      tenantId: 'tenant-id',
+      mpUserId: 'seller-1',
+      storeId: null,
+      posId: null,
+    };
     const prisma = {
       mercadoPagoAccount: {
         findUnique: jest.fn().mockResolvedValue({ mpUserId: 'seller-1' }),
@@ -25,7 +30,9 @@ describe('MercadoPagoQrService', () => {
     const service = new MercadoPagoQrService(
       prisma,
       {} as AuditService,
-      { getDecryptedAccessToken: jest.fn().mockResolvedValue('secret') } as unknown as MercadoPagoAccountService,
+      {
+        getDecryptedAccessToken: jest.fn().mockResolvedValue('secret'),
+      } as unknown as MercadoPagoAccountService,
       {
         findStoreByExternalId: jest.fn().mockResolvedValue(null),
         createStore: jest.fn().mockRejectedValue(
@@ -43,7 +50,9 @@ describe('MercadoPagoQrService', () => {
         {} as CreateMercadoPagoQrSetupDto,
         { profileType: 'STAFF', userId: 'staff' },
       ),
-    ).rejects.toThrow('Mercado Pago rechazó los datos de la sucursal: location.city_name was invalid');
+    ).rejects.toThrow(
+      'Mercado Pago rechazó los datos de la sucursal: location.city_name was invalid',
+    );
   });
 
   it('reuses a created store after a failed POS call and is idempotent once configured', async () => {
