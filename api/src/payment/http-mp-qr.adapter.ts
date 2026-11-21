@@ -184,6 +184,15 @@ export class HttpMpQrAdapter {
     if (!data.id || !data.status || !data.type) {
       throw new Error('Mercado Pago QR order response missing id/type/status');
     }
+    const qrData = data.config?.qr?.qr_data ?? null;
+    if (!qrData) {
+      const responseFields = Object.keys(data).join(',');
+      const configFields = Object.keys(data.config ?? {}).join(',');
+      const qrFields = Object.keys(data.config?.qr ?? {}).join(',');
+      throw new Error(
+        `Mercado Pago QR order response missing QR data (id=${data.id}; fields=${responseFields}; configFields=${configFields}; qrFields=${qrFields})`,
+      );
+    }
     return {
       id: data.id,
       type: data.type,
@@ -195,7 +204,7 @@ export class HttpMpQrAdapter {
         data.total_paid_amount === undefined
           ? null
           : String(data.total_paid_amount),
-      qrData: data.config?.qr?.qr_data ?? null,
+      qrData,
       payments: (data.transactions?.payments ?? []).map((payment) => ({
         id:
           payment.id === undefined || payment.id === null
