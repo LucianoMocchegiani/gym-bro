@@ -18,6 +18,7 @@ import { HttpMpAccountAdapter } from './http-mp-account.adapter';
 import { HttpMpQrAdapter } from './http-mp-qr.adapter';
 import { MercadoPagoQrService } from './mercadopago-qr.service';
 import { MpPointQrService } from './mp-point-qr.service';
+import { MpPointQrOrderDiagnosticService } from './mp-point-qr-order-diagnostic.service';
 import { MercadoPagoPointQrController } from './mercadopago-point-qr.controller';
 import { PaymentController } from './payment.controller';
 import { PaymentWebhookController } from './payment-webhook.controller';
@@ -62,6 +63,7 @@ import { TenantSettingsModule } from '../tenant-settings/tenant-settings.module'
     MercadoPagoAccountService,
     MercadoPagoQrService,
     MpPointQrService,
+    MpPointQrOrderDiagnosticService,
     MercadoPagoOAuthService,
     HttpMpAccountAdapter,
     HttpMpQrAdapter,

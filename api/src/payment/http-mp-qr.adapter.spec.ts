@@ -208,4 +208,36 @@ describe('HttpMpQrAdapter', () => {
       payments: [{ id: '99', status: 'approved', amount: '1250.00' }],
     });
   });
+
+  it('diagnoses an order without requiring or returning QR data', async () => {
+    jest.spyOn(global, 'fetch').mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          id: 'ORD-1',
+          type: 'qr',
+          status: 'created',
+          external_reference: 'transaction-1',
+          total_amount: '1250.00',
+          total_paid_amount: '0.00',
+          config: { qr: { mode: 'dynamic', qr_data: 'must-not-return' } },
+          transactions: {
+            payments: [{ id: 'private-id', status: 'pending', amount: '1250.00' }],
+          },
+        }),
+      ),
+    );
+
+    await expect(
+      new HttpMpQrAdapter().getOrderDiagnostic('token', 'ORD-1'),
+    ).resolves.toEqual({
+      id: 'ORD-1',
+      type: 'qr',
+      status: 'created',
+      externalReference: 'transaction-1',
+      totalAmount: '1250.00',
+      totalPaidAmount: '0.00',
+      mode: 'dynamic',
+      payments: [{ status: 'pending', amount: '1250.00' }],
+    });
+  });
 });

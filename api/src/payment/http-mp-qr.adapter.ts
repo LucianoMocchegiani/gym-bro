@@ -39,6 +39,17 @@ export type MpQrOrder = {
   payments: Array<{ id: string | null; status: string; amount: string | null }>;
 };
 
+export type MpQrOrderDiagnostic = {
+  id: string;
+  type: string;
+  status: string;
+  externalReference: string | null;
+  totalAmount: string | null;
+  totalPaidAmount: string | null;
+  mode: string | null;
+  payments: Array<{ status: string; amount: string | null }>;
+};
+
 @Injectable()
 export class HttpMpQrAdapter {
   private readonly logger = new Logger(HttpMpQrAdapter.name);
@@ -161,6 +172,57 @@ export class HttpMpQrAdapter {
       },
     );
     return this.readOrder(response);
+  }
+
+  async getOrderDiagnostic(
+    accessToken: string,
+    orderId: string,
+  ): Promise<MpQrOrderDiagnostic> {
+    const response = await fetch(
+      `https://api.mercadopago.com/v1/orders/${encodeURIComponent(orderId)}`,
+      {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          Accept: 'application/json',
+        },
+      },
+    );
+    await this.assertOk(response, 'order diagnostic');
+    const data = (await response.json()) as {
+      id?: string;
+      type?: string;
+      status?: string;
+      external_reference?: string;
+      total_amount?: string | number;
+      total_paid_amount?: string | number;
+      config?: { qr?: { mode?: string } };
+      transactions?: {
+        payments?: Array<{
+          status?: string;
+          amount?: string | number;
+        }>;
+      };
+    };
+    if (!data.id || !data.status || !data.type) {
+      throw new Error('Mercado Pago QR order response missing id/type/status');
+    }
+    return {
+      id: data.id,
+      type: data.type,
+      status: data.status,
+      externalReference: data.external_reference ?? null,
+      totalAmount:
+        data.total_amount === undefined ? null : String(data.total_amount),
+      totalPaidAmount:
+        data.total_paid_amount === undefined
+          ? null
+          : String(data.total_paid_amount),
+      mode: data.config?.qr?.mode ?? null,
+      payments: (data.transactions?.payments ?? []).map((payment) => ({
+        status: payment.status ?? 'unknown',
+        amount: payment.amount === undefined ? null : String(payment.amount),
+      })),
+    };
   }
 
   private async readOrder(response: Response): Promise<MpQrOrder> {
