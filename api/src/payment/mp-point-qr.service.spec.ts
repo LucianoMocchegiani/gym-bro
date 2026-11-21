@@ -114,7 +114,7 @@ describe('MpPointQrService', () => {
       idempotencyKey: 'qr-checkout-1',
       transactionItems: [],
     };
-    const transactionCreate = jest.fn().mockResolvedValue(transaction);
+    const transactionCreate = jest.fn(async (_args: unknown) => transaction);
     const prisma = {
       member: { findFirst: jest.fn().mockResolvedValue({ status: 'ACTIVE' }) },
       pack: {
@@ -126,12 +126,13 @@ describe('MpPointQrService', () => {
         }),
       },
       transaction: { findUnique: jest.fn().mockResolvedValue(null) },
-      $transaction: jest
-        .fn()
-        .mockImplementation(
-          (callback: (tx: { transaction: { create: typeof transactionCreate } }) => Promise<unknown>) =>
-            callback({ transaction: { create: transactionCreate } }),
-        ),
+      $transaction: jest.fn().mockImplementation(
+        (
+          callback: (tx: {
+            transaction: { create: typeof transactionCreate };
+          }) => Promise<unknown>,
+        ) => callback({ transaction: { create: transactionCreate } }),
+      ),
       mercadoPagoAccount: {
         findUnique: jest.fn().mockResolvedValue({ mpUserId: 'mp-user' }),
       },
@@ -148,12 +149,16 @@ describe('MpPointQrService', () => {
         }),
       },
     } as unknown as PrismaService;
-    const adapter = {
-      createOrder: jest.fn().mockResolvedValue({ id: 'ORD-1', qrData: 'qr-payload' }),
-    } as unknown as HttpMpQrAdapter;
+    const createOrder = jest.fn(async (_input: unknown) => ({
+      id: 'ORD-1',
+      qrData: 'qr-payload',
+    }));
+    const adapter = { createOrder } as unknown as HttpMpQrAdapter;
     const service = new MpPointQrService(
       prisma,
-      { getDecryptedAccessToken: jest.fn().mockResolvedValue('token') } as unknown as MercadoPagoAccountService,
+      {
+        getDecryptedAccessToken: jest.fn().mockResolvedValue('token'),
+      } as unknown as MercadoPagoAccountService,
       adapter,
       {} as PacksService,
       {} as SessionValidationService,
@@ -186,7 +191,7 @@ describe('MpPointQrService', () => {
         }),
       }),
     );
-    expect(adapter.createOrder).toHaveBeenCalledWith(
+    expect(createOrder).toHaveBeenCalledWith(
       expect.objectContaining({ amount: 95 }),
     );
     expect(result.amount).toBe(95);
