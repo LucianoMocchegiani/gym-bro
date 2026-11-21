@@ -9,10 +9,7 @@ import { AuditService } from '../audit/audit.service';
 import { AuditActor } from '../audit/audit.types';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateMercadoPagoQrSetupDto } from './dto/create-mercadopago-qr-setup.dto';
-import {
-  HttpMpQrAdapter,
-  MpQrApiError,
-} from './http-mp-qr.adapter';
+import { HttpMpQrAdapter, MpQrApiError } from './http-mp-qr.adapter';
 import { MercadoPagoAccountService } from './mercadopago-account.service';
 import { MP_ACCOUNT_PORT, MpAccountPort } from './mp-account.port';
 
