@@ -152,9 +152,7 @@ describe('HttpMpQrAdapter', () => {
       }),
     ).rejects.toThrow('HTTP 400');
 
-    expect(warnMock).toHaveBeenCalledWith(
-      expect.stringContaining(description),
-    );
+    expect(warnMock).toHaveBeenCalledWith(expect.stringContaining(description));
   });
 
   it('reads the authoritative order status and payment data', async () => {
