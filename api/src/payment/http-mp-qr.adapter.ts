@@ -252,7 +252,9 @@ export class HttpMpQrAdapter {
     const qrData = data.type_response?.qr_data ?? null;
     if (requireQrData && !qrData) {
       const responseFields = Object.keys(data).join(',');
-      const typeResponseFields = Object.keys(data.type_response ?? {}).join(',');
+      const typeResponseFields = Object.keys(data.type_response ?? {}).join(
+        ',',
+      );
       throw new Error(
         [
           'Mercado Pago QR order response missing QR data',
