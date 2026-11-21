@@ -11,6 +11,7 @@ import { MemberPicker } from '@/components/MemberPicker';
 import { TenantPicker } from '@/components/TenantPicker';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { MpCheckoutShare } from '@/components/MpCheckoutShare';
+import { MpPointQrCheckout } from '@/components/MpPointQrCheckout';
 import { ReceiptPanel } from '@/components/ReceiptPanel';
 import { IconReceipt } from '@/components/RowActions';
 import { RequireStaff } from '@/components/RequireStaff';
@@ -21,6 +22,10 @@ import {
   pickMpCartCheckoutUrl,
   startStaffMpCartCheckout,
 } from '@/lib/api/mercadopago';
+import {
+  getMpPointQrOrderStatus,
+  startStaffMpPointQrCheckout,
+} from '@/lib/api/mp-point-qr';
 import { getMember } from '@/lib/api/members';
 import {
   startPlatformCashCart,
@@ -58,14 +63,14 @@ type CartItem = {
 
 type CatalogTab = 'SERVICIOS' | 'PACKS';
 type CajaVista = 'cobro' | 'debitos';
+type CajaPaymentMethod = CounterMethod | 'MP' | 'MP_POINT_QR';
 
 /**
  * Caja: carrito de cobros (packs + drop-in) en efectivo o con links de MP
  * (CU-PAG / RN-PAG-009). Cierre y movimientos viven en /arqueo.
  *
- * @remarks MP no redirige al checkout: muestra el link y hace polling del
- * comprobante hasta el webhook APPROVED. CASH muestra el comprobante al
- * instante (el cobro ya queda APPROVED). Débito: Card Brick + mandato (CU-PAG-008).
+ * @remarks MP link y QR Point consultan el estado hasta confirmar el pago.
+ * CASH muestra el comprobante al instante. Débito: Card Brick + mandato.
  */
 export default function CajaPage() {
   return (
@@ -79,7 +84,7 @@ export default function CajaPage() {
 
 function CajaInner() {
   const searchParams = useSearchParams();
-  // El host decide si esta es la Caja de plataforma (RequireStaff ya.validó la
+  // El host decide si esta es la Caja de plataforma (RequireStaff ya validó la
   // sesión contra el host, así que `session.tenantSlug` sería redundante).
   const isPlatform =
     typeof window !== 'undefined' &&
@@ -109,7 +114,7 @@ function CajaInner() {
   const [memberId, setMemberId] = useState(initialMemberId);
   const [memberLabel, setMemberLabel] = useState('');
   const [cart, setCart] = useState<CartItem[]>([]);
-  const [cobroMedio, setCobroMedio] = useState<CounterMethod | 'MP'>('CASH');
+  const [cobroMedio, setCobroMedio] = useState<CajaPaymentMethod>('CASH');
   const [discountDefaults, setDiscountDefaults] =
     useState<CashDiscountDefaults | null>(null);
   const [discountInput, setDiscountInput] = useState('0');
@@ -126,6 +131,10 @@ function CajaInner() {
   const [mpCheckoutUrl, setMpCheckoutUrl] = useState<string | null>(null);
   const [mpTransactionId, setMpTransactionId] = useState<string | null>(null);
   const [mpApproved, setMpApproved] = useState(false);
+  const [mpPointQrData, setMpPointQrData] = useState<string | null>(null);
+  const [mpPointQrTransactionId, setMpPointQrTransactionId] = useState<string | null>(null);
+  const [mpPointQrStatus, setMpPointQrStatus] = useState<string | null>(null);
+  const [mpPointQrApproved, setMpPointQrApproved] = useState(false);
   const [copyKey, setCopyKey] = useState<string | null>(null);
   const [mpClearConfirm, setMpClearConfirm] = useState(false);
   const [cashTransactionId, setCashTransactionId] = useState<string | null>(
@@ -289,6 +298,40 @@ function CajaInner() {
     };
   }, [mpTransactionId, mpApproved]);
 
+  useEffect(() => {
+    if (!mpPointQrTransactionId || mpPointQrApproved) {
+      return;
+    }
+    let cancelled = false;
+    const tick = async () => {
+      try {
+        const result = await getMpPointQrOrderStatus(mpPointQrTransactionId);
+        if (cancelled) {
+          return;
+        }
+        setMpPointQrStatus(result.status);
+        if (result.approved) {
+          setMpPointQrApproved(true);
+          try {
+            setReceipt(await getReceiptByTransaction(mpPointQrTransactionId));
+          } catch {
+            setReceiptError('Pago aprobado, pero no se pudo cargar el comprobante');
+          }
+        }
+      } catch {
+        // La orden se vuelve a consultar en el siguiente ciclo.
+      }
+    };
+    void tick();
+    const interval = window.setInterval(() => {
+      void tick();
+    }, 3000);
+    return () => {
+      cancelled = true;
+      window.clearInterval(interval);
+    };
+  }, [mpPointQrTransactionId, mpPointQrApproved]);
+
   const servicePrice = useMemo(
     () => new Map(services.map((s) => [s.id, s.dropInPrice])),
     [services],
@@ -309,7 +352,7 @@ function CajaInner() {
   );
 
   const trialApplied = applyTrial && trialCanApply;
-  const isCounter = cobroMedio !== 'MP';
+  const isCounter = cobroMedio === 'CASH' || cobroMedio === 'TRANSFER';
   const discountPercent = Number(discountInput.replace(',', '.'));
   const discountValid =
     Number.isFinite(discountPercent) &&
@@ -326,7 +369,7 @@ function CajaInner() {
         )
       : total;
 
-  function chooseMedio(medio: CounterMethod | 'MP') {
+  function chooseMedio(medio: CajaPaymentMethod) {
     setCobroMedio(medio);
     if (medio === 'CASH') {
       setDiscountInput(String(discountDefaults?.cashDiscountPercent ?? 0));
@@ -420,6 +463,10 @@ function CajaInner() {
     setMpCheckoutUrl(null);
     setMpTransactionId(null);
     setMpApproved(false);
+    setMpPointQrData(null);
+    setMpPointQrTransactionId(null);
+    setMpPointQrStatus(null);
+    setMpPointQrApproved(false);
     setCart([]);
     setMemberId('');
     setMemberLabel('');
@@ -437,7 +484,7 @@ function CajaInner() {
   }
 
   function requestClearMpCheckout() {
-    if (mpApproved) {
+    if (mpApproved || mpPointQrApproved) {
       resetCobroStation();
       return;
     }
@@ -485,6 +532,10 @@ function CajaInner() {
     setMpCheckoutUrl(null);
     setMpTransactionId(null);
     setMpApproved(false);
+    setMpPointQrData(null);
+    setMpPointQrTransactionId(null);
+    setMpPointQrStatus(null);
+    setMpPointQrApproved(false);
     setCashTransactionId(null);
     setCopyKey(null);
     setReceiptError(null);
@@ -508,6 +559,21 @@ function CajaInner() {
         );
         setCart([]);
         setDebitWanted(false);
+        return;
+      }
+      if (cobroMedio === 'MP_POINT_QR') {
+        const result = await startStaffMpPointQrCheckout(memberId, {
+          items: cart.map((item) => ({ kind: item.kind, id: item.refId })),
+          idempotencyKey: newIdempotencyKey('mp-point-qr'),
+        });
+        if (!result.qrData) {
+          throw new Error('Mercado Pago no devolvió los datos del QR');
+        }
+        setMpPointQrData(result.qrData);
+        setMpPointQrTransactionId(result.transactionId);
+        setMpPointQrStatus('created');
+        setCobroOk(`QR Point generado por ${formatMoney(result.amount)}.`);
+        setCart([]);
         return;
       }
       if (cobroMedio === 'MP') {
@@ -848,15 +914,28 @@ function CajaInner() {
                 />
                 Transferencia (ya acreditada)
               </label>
-              <label>
-                <input
-                  type="radio"
-                  name="medio"
-                  checked={cobroMedio === 'MP'}
-                  onChange={() => chooseMedio('MP')}
-                />
-                Mercado Pago (link único)
-              </label>
+              {!isPlatform ? (
+                <>
+                  <label>
+                    <input
+                      type="radio"
+                      name="medio"
+                      checked={cobroMedio === 'MP'}
+                      onChange={() => chooseMedio('MP')}
+                    />
+                    Mercado Pago (link único)
+                  </label>
+                  <label>
+                    <input
+                      type="radio"
+                      name="medio"
+                      checked={cobroMedio === 'MP_POINT_QR'}
+                      onChange={() => chooseMedio('MP_POINT_QR')}
+                    />
+                    Mercado Pago Point (QR en caja)
+                  </label>
+                </>
+              ) : null}
             </fieldset>
 
             {isCounter && !trialApplied ? (
@@ -927,6 +1006,13 @@ function CajaInner() {
                 Se genera un solo link con el total del carrito (como Mercado
                 Libre: 1 carrito → 1 pago). Cada pack/reserva se activa al
                 aprobarse el pago (webhook). Requiere cuenta MP en Config.
+              </p>
+            ) : null}
+            {cobroMedio === 'MP_POINT_QR' ? (
+              <p className="muted small">
+                Genera un QR dinámico para cobrar en el POS de Mercado Pago
+                configurado para este gimnasio. Caja verifica el pago antes de
+                emitir el comprobante.
               </p>
             ) : null}
 
@@ -1000,6 +1086,15 @@ function CajaInner() {
                 onReceipt={() => showReceipt(mpTransactionId)}
               />
             ) : null}
+            {mpPointQrData ? (
+              <MpPointQrCheckout
+                qrData={mpPointQrData}
+                status={mpPointQrStatus}
+                approved={mpPointQrApproved}
+                onClear={requestClearMpCheckout}
+                onReceipt={() => showReceipt(mpPointQrTransactionId)}
+              />
+            ) : null}
 
             <div className="row-actions cart-actions">
               {cart.length > 0 ? (
@@ -1039,14 +1134,18 @@ function CajaInner() {
                 {cobroBusy
                   ? debitWanted
                     ? 'Generando link de débito…'
-                    : cobroMedio === 'MP'
-                      ? 'Generando link…'
-                      : 'Cobrando…'
+                    : cobroMedio === 'MP_POINT_QR'
+                      ? 'Generando QR…'
+                      : cobroMedio === 'MP'
+                        ? 'Generando link…'
+                        : 'Cobrando…'
                   : debitWanted
                     ? 'Generar link de débito'
-                    : cobroMedio === 'MP'
-                      ? 'Generar link MP'
-                      : `${cobroMedio === 'TRANSFER' ? 'Registrar transferencia' : 'Cobrar en efectivo'}${cart.length > 0 ? ` ${formatMoney(chargeTotal)}` : ''}`}
+                    : cobroMedio === 'MP_POINT_QR'
+                      ? 'Generar QR Point'
+                      : cobroMedio === 'MP'
+                        ? 'Generar link MP'
+                        : `${cobroMedio === 'TRANSFER' ? 'Registrar transferencia' : 'Cobrar en efectivo'}${cart.length > 0 ? ` ${formatMoney(chargeTotal)}` : ''}`}
               </button>
             </div>
           </form>
@@ -1056,7 +1155,7 @@ function CajaInner() {
       <ConfirmDialog
         open={mpClearConfirm}
         title="Cancelar y limpiar"
-        description="Se saca el link de esta pantalla, el carrito y el afiliado. Si el socio ya pagó en Mercado Pago, el cobro igual puede entrar por el webhook."
+        description="Se quita el link o QR de esta pantalla, el carrito y el afiliado. Si el socio ya pagó, el pago igual puede registrarse; mientras Caja esté abierta se verifica con Mercado Pago."
         confirmLabel="Limpiar"
         cancelLabel="Seguir esperando"
         tone="danger"
