@@ -172,7 +172,11 @@ export async function LandingPage() {
       </MktShell>
 
       <section id="producto" className="mkt-inner mkt-section-tight">
-        <Carousel items={SLIDE_ITEMS} label="Qué incluye Faciliter Brain" />
+        <Carousel
+          className="mkt-slider site-slider"
+          items={SLIDE_ITEMS}
+          label="Qué incluye Faciliter Brain"
+        />
       </section>
 
       <section id="precio" className="mkt-inner mkt-section">
