@@ -19,7 +19,11 @@ export type MpPointQrOrderStatus = {
 
 export function startStaffMpPointQrCheckout(
   memberId: string,
-  input: { items: MpCartItemInput[]; idempotencyKey?: string },
+  input: {
+    items: MpCartItemInput[];
+    idempotencyKey?: string;
+    discountPercent?: number;
+  },
 ): Promise<MpPointQrCheckoutResult> {
   return apiRequest<MpPointQrCheckoutResult>(
     `/members/${memberId}/transaction-items/mp/qr/cart`,
