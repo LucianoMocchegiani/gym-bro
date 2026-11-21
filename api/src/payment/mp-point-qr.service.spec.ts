@@ -114,7 +114,21 @@ describe('MpPointQrService', () => {
       idempotencyKey: 'qr-checkout-1',
       transactionItems: [],
     };
-    const transactionCreate = jest.fn(() => Promise.resolve(transaction));
+    type TransactionCreateArgs = {
+      data: {
+        amount: number;
+        transactionItems: {
+          create: Array<{
+            amount: number;
+            listAmount: number | null;
+            discountBps: number;
+          }>;
+        };
+      };
+    };
+    const transactionCreate = jest
+      .fn<Promise<typeof transaction>, [TransactionCreateArgs]>()
+      .mockResolvedValue(transaction);
     const prisma = {
       member: { findFirst: jest.fn().mockResolvedValue({ status: 'ACTIVE' }) },
       pack: {
@@ -126,13 +140,12 @@ describe('MpPointQrService', () => {
         }),
       },
       transaction: { findUnique: jest.fn().mockResolvedValue(null) },
-      $transaction: jest.fn().mockImplementation(
-        (
-          callback: (tx: {
-            transaction: { create: typeof transactionCreate };
-          }) => Promise<unknown>,
-        ) => callback({ transaction: { create: transactionCreate } }),
-      ),
+      $transaction: jest
+        .fn()
+        .mockImplementation(
+          (callback: (tx: { transaction: { create: typeof transactionCreate } }) => Promise<unknown>) =>
+            callback({ transaction: { create: transactionCreate } }),
+        ),
       mercadoPagoAccount: {
         findUnique: jest.fn().mockResolvedValue({ mpUserId: 'mp-user' }),
       },
@@ -176,22 +189,14 @@ describe('MpPointQrService', () => {
       ),
     ).resolves.toMatchObject({ amount: 95 });
 
-    expect(transactionCreate).toHaveBeenCalledWith(
-      expect.objectContaining({
-        data: expect.objectContaining({
-          amount: 95,
-          transactionItems: {
-            create: [
-              expect.objectContaining({
-                amount: 95,
-                listAmount: 100,
-                discountBps: 500,
-              }),
-            ],
-          },
-        }),
-      }),
-    );
+    expect(transactionCreate).toHaveBeenCalledTimes(1);
+    const [{ data }] = transactionCreate.mock.calls[0];
+    expect(data.amount).toBe(95);
+    expect(data.transactionItems.create[0]).toMatchObject({
+      amount: 95,
+      listAmount: 100,
+      discountBps: 500,
+    });
     expect(createOrder).toHaveBeenCalledWith(
       expect.objectContaining({ amount: 95 }),
     );
