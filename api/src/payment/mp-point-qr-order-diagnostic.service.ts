@@ -1,7 +1,14 @@
-import { BadGatewayException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadGatewayException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { MercadoPagoAccountService } from './mercadopago-account.service';
-import { HttpMpQrAdapter } from './http-mp-qr.adapter';
+import {
+  HttpMpQrAdapter,
+  MpQrOrderDiagnostic,
+} from './http-mp-qr.adapter';
 
 export type MpPointQrOrderDiagnostic = {
   orderId: string;
@@ -31,7 +38,7 @@ export class MpPointQrOrderDiagnosticService {
     });
     if (!transaction) throw new NotFoundException('Transaction not found');
 
-    let order;
+    let order: MpQrOrderDiagnostic;
     try {
       const accessToken = await this.accounts.getDecryptedAccessToken(tenantId);
       order = await this.mpQr.getOrderDiagnostic(accessToken, orderId);
