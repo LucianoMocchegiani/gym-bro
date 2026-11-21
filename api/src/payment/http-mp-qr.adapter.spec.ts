@@ -1,3 +1,4 @@
+import { Logger } from '@nestjs/common';
 import { HttpMpQrAdapter } from './http-mp-qr.adapter';
 
 describe('HttpMpQrAdapter', () => {
@@ -120,6 +121,38 @@ describe('HttpMpQrAdapter', () => {
         }),
       },
     );
+  });
+
+  it('logs the complete city-name validation description', async () => {
+    const description = `location.city_name was invalid. Valid values are: ${'Aguara, '.repeat(50)}`;
+    const warnMock = jest
+      .spyOn(Logger.prototype, 'warn')
+      .mockImplementation(() => undefined);
+    jest.spyOn(global, 'fetch').mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          causes: [{ description }],
+        }),
+        { status: 400 },
+      ),
+    );
+
+    await expect(
+      new HttpMpQrAdapter().createStore({
+        accessToken: 'token',
+        userId: 'seller-1',
+        name: 'GymBro',
+        externalId: 'gbtenant',
+        streetName: 'Ricardo Balbin',
+        streetNumber: '1581',
+        cityName: 'General Rodriguez',
+        stateName: 'Buenos Aires',
+        latitude: -34.607297,
+        longitude: -58.925915,
+      }),
+    ).rejects.toThrow('HTTP 400');
+
+    expect(warnMock).toHaveBeenCalledWith(expect.stringContaining(description));
   });
 
   it('reads the authoritative order status and payment data', async () => {

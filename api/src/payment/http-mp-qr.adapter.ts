@@ -221,8 +221,22 @@ export class HttpMpQrAdapter {
       return;
     }
     const body = await response.text().catch(() => '');
+    let logDetail = body.slice(0, 300);
+    if (operation === 'store') {
+      try {
+        const error = JSON.parse(body) as {
+          causes?: Array<{ description?: string }>;
+        };
+        const cityNameError = error.causes?.find((cause) =>
+          cause.description?.startsWith('location.city_name was invalid.'),
+        )?.description;
+        if (cityNameError) logDetail = cityNameError;
+      } catch {
+        // Keep the existing truncated log for non-JSON error bodies.
+      }
+    }
     this.logger.warn(
-      `MP QR ${operation} failed status=${response.status} body=${body.slice(0, 300)}`,
+      `MP QR ${operation} failed status=${response.status} body=${logDetail}`,
     );
     throw new Error(
       `Mercado Pago QR ${operation} failed (HTTP ${response.status})`,
