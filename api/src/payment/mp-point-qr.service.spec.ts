@@ -114,7 +114,7 @@ describe('MpPointQrService', () => {
       idempotencyKey: 'qr-checkout-1',
       transactionItems: [],
     };
-    const transactionCreate = jest.fn(async (_args: unknown) => transaction);
+    const transactionCreate = jest.fn(() => Promise.resolve(transaction));
     const prisma = {
       member: { findFirst: jest.fn().mockResolvedValue({ status: 'ACTIVE' }) },
       pack: {
@@ -149,10 +149,9 @@ describe('MpPointQrService', () => {
         }),
       },
     } as unknown as PrismaService;
-    const createOrder = jest.fn(async (_input: unknown) => ({
-      id: 'ORD-1',
-      qrData: 'qr-payload',
-    }));
+    const createOrder = jest.fn(() =>
+      Promise.resolve({ id: 'ORD-1', qrData: 'qr-payload' }),
+    );
     const adapter = { createOrder } as unknown as HttpMpQrAdapter;
     const service = new MpPointQrService(
       prisma,
@@ -165,15 +164,17 @@ describe('MpPointQrService', () => {
       {} as WebhookPaymentService,
     );
 
-    const result = await service.startStaffCart(
-      'tenant-1',
-      'member-1',
-      {
-        items: [{ kind: 'PACK', id: 'pack-1' }],
-        idempotencyKey: 'qr-checkout-1',
-      },
-      'staff-1',
-    );
+    await expect(
+      service.startStaffCart(
+        'tenant-1',
+        'member-1',
+        {
+          items: [{ kind: 'PACK', id: 'pack-1' }],
+          idempotencyKey: 'qr-checkout-1',
+        },
+        'staff-1',
+      ),
+    ).resolves.toMatchObject({ amount: 95 });
 
     expect(transactionCreate).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -194,6 +195,5 @@ describe('MpPointQrService', () => {
     expect(createOrder).toHaveBeenCalledWith(
       expect.objectContaining({ amount: 95 }),
     );
-    expect(result.amount).toBe(95);
   });
 });
