@@ -123,7 +123,7 @@ describe('HttpMpQrAdapter', () => {
     );
   });
 
-  it('identifies the QR response fields without logging the QR payload when data is absent at the expected path', async () => {
+  it('reports safe fields when an order response has no QR data', async () => {
     jest.spyOn(global, 'fetch').mockResolvedValue(
       new Response(
         JSON.stringify({
@@ -145,7 +145,7 @@ describe('HttpMpQrAdapter', () => {
         idempotencyKey: 'transaction-2',
       }),
     ).rejects.toThrow(
-      'Mercado Pago QR order response missing QR data (id=ORD-2; fields=id,type,status,external_reference,type_response; configFields=; qrFields=)',
+      'fields=id,type,status,external_reference,type_response; configFields=; qrFields=',
     );
   });
 

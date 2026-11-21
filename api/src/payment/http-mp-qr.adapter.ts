@@ -190,7 +190,13 @@ export class HttpMpQrAdapter {
       const configFields = Object.keys(data.config ?? {}).join(',');
       const qrFields = Object.keys(data.config?.qr ?? {}).join(',');
       throw new Error(
-        `Mercado Pago QR order response missing QR data (id=${data.id}; fields=${responseFields}; configFields=${configFields}; qrFields=${qrFields})`,
+        [
+          'Mercado Pago QR order response missing QR data',
+          `id=${data.id}`,
+          `fields=${responseFields}`,
+          `configFields=${configFields}`,
+          `qrFields=${qrFields}`,
+        ].join('; '),
       );
     }
     return {
