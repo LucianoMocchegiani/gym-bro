@@ -106,14 +106,15 @@ describe('MpPointQrService', () => {
   });
 
   it('defaults QR Point checkout to a 5% discount and stores the list price', async () => {
-    const transactionCreate = jest.fn().mockResolvedValue({
+    const transaction = {
       id: 'transaction-1',
       memberId: 'member-1',
       amount: 95,
       status: 'PENDING',
       idempotencyKey: 'qr-checkout-1',
       transactionItems: [],
-    });
+    };
+    const transactionCreate = jest.fn().mockResolvedValue(transaction);
     const prisma = {
       member: { findFirst: jest.fn().mockResolvedValue({ status: 'ACTIVE' }) },
       pack: {
@@ -125,14 +126,12 @@ describe('MpPointQrService', () => {
         }),
       },
       transaction: { findUnique: jest.fn().mockResolvedValue(null) },
-      $transaction: jest.fn().mockResolvedValue({
-        id: 'transaction-1',
-        memberId: 'member-1',
-        amount: 95,
-        status: 'PENDING',
-        idempotencyKey: 'qr-checkout-1',
-        transactionItems: [],
-      }),
+      $transaction: jest
+        .fn()
+        .mockImplementation(
+          (callback: (tx: { transaction: { create: typeof transactionCreate } }) => Promise<unknown>) =>
+            callback({ transaction: { create: transactionCreate } }),
+        ),
       mercadoPagoAccount: {
         findUnique: jest.fn().mockResolvedValue({ mpUserId: 'mp-user' }),
       },
@@ -171,7 +170,22 @@ describe('MpPointQrService', () => {
       'staff-1',
     );
 
-    expect(transactionCreate).not.toHaveBeenCalled();
+    expect(transactionCreate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          amount: 95,
+          transactionItems: {
+            create: [
+              expect.objectContaining({
+                amount: 95,
+                listAmount: 100,
+                discountBps: 500,
+              }),
+            ],
+          },
+        }),
+      }),
+    );
     expect(adapter.createOrder).toHaveBeenCalledWith(
       expect.objectContaining({ amount: 95 }),
     );
