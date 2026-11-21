@@ -221,7 +221,9 @@ describe('HttpMpQrAdapter', () => {
           total_paid_amount: '0.00',
           config: { qr: { mode: 'dynamic', qr_data: 'must-not-return' } },
           transactions: {
-            payments: [{ id: 'private-id', status: 'pending', amount: '1250.00' }],
+            payments: [
+              { id: 'private-id', status: 'pending', amount: '1250.00' },
+            ],
           },
         }),
       ),
