@@ -123,6 +123,32 @@ describe('HttpMpQrAdapter', () => {
     );
   });
 
+  it('reports safe fields when an order response has no QR data', async () => {
+    jest.spyOn(global, 'fetch').mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          id: 'ORD-2',
+          type: 'qr',
+          status: 'created',
+          external_reference: 'transaction-2',
+          type_response: { qr_data: 'do-not-log-this-qr-payload' },
+        }),
+      ),
+    );
+
+    await expect(
+      new HttpMpQrAdapter().createOrder({
+        accessToken: 'token',
+        externalPosId: 'pos-external',
+        externalReference: 'transaction-2',
+        amount: 1250,
+        idempotencyKey: 'transaction-2',
+      }),
+    ).rejects.toThrow(
+      'fields=id,type,status,external_reference,type_response; configFields=; qrFields=',
+    );
+  });
+
   it('logs the complete city-name validation description', async () => {
     const description = `location.city_name was invalid. Valid values are: ${'Aguara, '.repeat(50)}`;
     const warnMock = jest
@@ -168,6 +194,7 @@ describe('HttpMpQrAdapter', () => {
           transactions: {
             payments: [{ id: 99, status: 'approved', amount: '1250.00' }],
           },
+          config: { qr: { qr_data: 'qr-payload' } },
         }),
       ),
     );
