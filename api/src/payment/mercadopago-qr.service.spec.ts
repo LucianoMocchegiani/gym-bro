@@ -17,7 +17,9 @@ describe('MercadoPagoQrService', () => {
     };
     const prisma = {
       mercadoPagoAccount: {
-        findUnique: jest.fn().mockResolvedValue({ mpUserId: 'seller-1' }),
+        findUnique: jest
+          .fn()
+          .mockResolvedValue({ mpUserId: 'seller-1' }),
         update: jest.fn().mockResolvedValue(undefined),
       },
       mercadoPagoQrSetup: {
@@ -25,7 +27,9 @@ describe('MercadoPagoQrService', () => {
         upsert: jest.fn().mockResolvedValue(setup),
         update: jest.fn().mockResolvedValue(setup),
       },
-      tenant: { findUnique: jest.fn().mockResolvedValue({ name: 'Gym' }) },
+      tenant: {
+        findUnique: jest.fn().mockResolvedValue({ name: 'Gym' }),
+      },
     } as unknown as PrismaService;
     const service = new MercadoPagoQrService(
       prisma,
@@ -45,11 +49,10 @@ describe('MercadoPagoQrService', () => {
     );
 
     await expect(
-      service.createSetup(
-        'tenant-id',
-        {} as CreateMercadoPagoQrSetupDto,
-        { profileType: 'STAFF', userId: 'staff' },
-      ),
+      service.createSetup('tenant-id', {} as CreateMercadoPagoQrSetupDto, {
+        profileType: 'STAFF',
+        userId: 'staff',
+      }),
     ).rejects.toThrow(
       'Mercado Pago rechazó los datos de la sucursal: location.city_name was invalid',
     );
