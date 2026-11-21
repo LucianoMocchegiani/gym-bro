@@ -5,7 +5,9 @@ import { HttpMpQrAdapter } from './http-mp-qr.adapter';
 import { MpPointQrOrderDiagnosticService } from './mp-point-qr-order-diagnostic.service';
 
 describe('MpPointQrOrderDiagnosticService', () => {
-  const makeService = (overrides: { id?: string; type?: string; externalReference?: string } = {}) => {
+  const makeService = (
+    overrides: { id?: string; type?: string; externalReference?: string } = {},
+  ) => {
     const prisma = {
       transaction: {
         findFirst: jest.fn().mockResolvedValue({ id: 'transaction-1' }),
