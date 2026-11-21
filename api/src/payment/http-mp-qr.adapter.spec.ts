@@ -78,7 +78,7 @@ describe('HttpMpQrAdapter', () => {
     );
   });
 
-  it('creates a dynamic QR order for the configured POS', async () => {
+  it('creates a dynamic QR order from type_response.qr_data', async () => {
     const fetchMock = jest.spyOn(global, 'fetch').mockResolvedValue(
       new Response(
         JSON.stringify({
@@ -86,7 +86,7 @@ describe('HttpMpQrAdapter', () => {
           type: 'qr',
           status: 'created',
           external_reference: 'transaction-1',
-          config: { qr: { qr_data: 'qr-payload' } },
+          type_response: { qr_data: 'qr-payload' },
         }),
       ),
     );
@@ -123,7 +123,7 @@ describe('HttpMpQrAdapter', () => {
     );
   });
 
-  it('reports safe fields when an order response has no QR data', async () => {
+  it('reports response field names without logging QR data when an order has no QR data', async () => {
     jest.spyOn(global, 'fetch').mockResolvedValue(
       new Response(
         JSON.stringify({
@@ -131,7 +131,7 @@ describe('HttpMpQrAdapter', () => {
           type: 'qr',
           status: 'created',
           external_reference: 'transaction-2',
-          type_response: { qr_data: 'do-not-log-this-qr-payload' },
+          type_response: {},
         }),
       ),
     );
@@ -145,7 +145,7 @@ describe('HttpMpQrAdapter', () => {
         idempotencyKey: 'transaction-2',
       }),
     ).rejects.toThrow(
-      'fields=id,type,status,external_reference,type_response; configFields=; qrFields=',
+      'fields=id,type,status,external_reference,type_response; typeResponseFields=',
     );
   });
 
@@ -181,7 +181,7 @@ describe('HttpMpQrAdapter', () => {
     expect(warnMock).toHaveBeenCalledWith(expect.stringContaining(description));
   });
 
-  it('reads the authoritative order status and payment data', async () => {
+  it('reads the authoritative order status and payment data without requiring QR data', async () => {
     jest.spyOn(global, 'fetch').mockResolvedValue(
       new Response(
         JSON.stringify({
@@ -194,7 +194,6 @@ describe('HttpMpQrAdapter', () => {
           transactions: {
             payments: [{ id: 99, status: 'approved', amount: '1250.00' }],
           },
-          config: { qr: { qr_data: 'qr-payload' } },
         }),
       ),
     );
@@ -205,6 +204,7 @@ describe('HttpMpQrAdapter', () => {
       id: 'ORD-1',
       status: 'processed',
       totalPaidAmount: '1250.00',
+      qrData: null,
       payments: [{ id: '99', status: 'approved', amount: '1250.00' }],
     });
   });
@@ -219,7 +219,7 @@ describe('HttpMpQrAdapter', () => {
           external_reference: 'transaction-1',
           total_amount: '1250.00',
           total_paid_amount: '0.00',
-          config: { qr: { mode: 'dynamic', qr_data: 'must-not-return' } },
+          config: { qr: { mode: 'dynamic' } },
           transactions: {
             payments: [
               { id: 'private-id', status: 'pending', amount: '1250.00' },

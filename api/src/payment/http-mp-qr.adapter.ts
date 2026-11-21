@@ -158,7 +158,7 @@ export class HttpMpQrAdapter {
         transactions: { payments: [{ amount }] },
       }),
     });
-    return this.readOrder(response);
+    return this.readOrder(response, true);
   }
 
   async getOrder(accessToken: string, orderId: string): Promise<MpQrOrder> {
@@ -225,7 +225,10 @@ export class HttpMpQrAdapter {
     };
   }
 
-  private async readOrder(response: Response): Promise<MpQrOrder> {
+  private async readOrder(
+    response: Response,
+    requireQrData = false,
+  ): Promise<MpQrOrder> {
     await this.assertOk(response, 'order');
     const data = (await response.json()) as {
       id?: string;
@@ -234,7 +237,7 @@ export class HttpMpQrAdapter {
       external_reference?: string;
       total_amount?: string | number;
       total_paid_amount?: string | number;
-      config?: { qr?: { qr_data?: string } };
+      type_response?: { qr_data?: string };
       transactions?: {
         payments?: Array<{
           id?: string | number;
@@ -246,18 +249,18 @@ export class HttpMpQrAdapter {
     if (!data.id || !data.status || !data.type) {
       throw new Error('Mercado Pago QR order response missing id/type/status');
     }
-    const qrData = data.config?.qr?.qr_data ?? null;
-    if (!qrData) {
+    const qrData = data.type_response?.qr_data ?? null;
+    if (requireQrData && !qrData) {
       const responseFields = Object.keys(data).join(',');
-      const configFields = Object.keys(data.config ?? {}).join(',');
-      const qrFields = Object.keys(data.config?.qr ?? {}).join(',');
+      const typeResponseFields = Object.keys(data.type_response ?? {}).join(
+        ',',
+      );
       throw new Error(
         [
           'Mercado Pago QR order response missing QR data',
           `id=${data.id}`,
           `fields=${responseFields}`,
-          `configFields=${configFields}`,
-          `qrFields=${qrFields}`,
+          `typeResponseFields=${typeResponseFields}`,
         ].join('; '),
       );
     }
