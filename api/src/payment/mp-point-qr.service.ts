@@ -75,15 +75,22 @@ export class MpPointQrService {
     }
 
     const discountBps = percentToBps(dto.discountPercent ?? 5);
-    if (!Number.isFinite(discountBps) || discountBps < 0 || discountBps > MAX_DISCOUNT_BPS) {
+    if (
+      !Number.isFinite(discountBps) ||
+      discountBps < 0 ||
+      discountBps > MAX_DISCOUNT_BPS
+    ) {
       throw new BadRequestException('discountPercent must be between 0 and 99');
     }
     const lines = (await this.resolveCartLines(tenantId, dto.items, memberId)).map(
       (line) => {
         const amount = applyDiscount(line.amount, discountBps);
-        return amount === line.amount
-          ? line
-          : { ...line, amount, listAmount: line.amount, discountBps };
+        return {
+          ...line,
+          amount,
+          listAmount: amount === line.amount ? undefined : line.amount,
+          discountBps: amount === line.amount ? 0 : discountBps,
+        };
       },
     );
     const amount = lines.reduce(
@@ -112,7 +119,8 @@ export class MpPointQrService {
       .flatMap((line) =>
         Array.from(
           { length: line.quantity },
-          () => `${line.sessionId ?? line.packId}:${line.amount}:${line.listAmount ?? ''}:${line.discountBps ?? 0}`,
+          () =>
+            `${line.sessionId ?? line.packId}:${line.amount}:${line.listAmount ?? ''}:${line.discountBps}`,
         ),
       )
       .sort();
@@ -165,7 +173,7 @@ export class MpPointQrService {
                     sessionId: line.sessionId,
                     amount: line.amount,
                     listAmount: line.listAmount ?? null,
-                    discountBps: line.discountBps ?? 0,
+                    discountBps: line.discountBps,
                     status: PaymentStatus.PENDING,
                     method: PaymentMethod.MP,
                     idempotencyKey: `${idempotencyKey}:${itemIndex++}`,
