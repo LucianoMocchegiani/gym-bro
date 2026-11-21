@@ -19,11 +19,7 @@ import { CreateMpPointQrCartCheckoutDto } from './dto/create-mp-point-qr-cart-ch
 import { HttpMpQrAdapter, MpQrOrder } from './http-mp-qr.adapter';
 import { MercadoPagoAccountService } from './mercadopago-account.service';
 import { WebhookPaymentService } from './webhook-payment.service';
-import {
-  applyDiscount,
-  MAX_DISCOUNT_BPS,
-  percentToBps,
-} from './cash-discount';
+import { applyDiscount, MAX_DISCOUNT_BPS, percentToBps } from './cash-discount';
 
 export type MpPointQrCheckoutResult = {
   transactionId: string;
@@ -82,17 +78,17 @@ export class MpPointQrService {
     ) {
       throw new BadRequestException('discountPercent must be between 0 and 99');
     }
-    const lines = (await this.resolveCartLines(tenantId, dto.items, memberId)).map(
-      (line) => {
-        const amount = applyDiscount(line.amount, discountBps);
-        return {
-          ...line,
-          amount,
-          listAmount: amount === line.amount ? undefined : line.amount,
-          discountBps: amount === line.amount ? 0 : discountBps,
-        };
-      },
-    );
+    const lines = (
+      await this.resolveCartLines(tenantId, dto.items, memberId)
+    ).map((line) => {
+      const amount = applyDiscount(line.amount, discountBps);
+      return {
+        ...line,
+        amount,
+        listAmount: amount === line.amount ? undefined : line.amount,
+        discountBps: amount === line.amount ? 0 : discountBps,
+      };
+    });
     const amount = lines.reduce(
       (sum, line) => sum + line.amount * line.quantity,
       0,
