@@ -2,6 +2,7 @@ import {
   BadGatewayException,
   BadRequestException,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import {
@@ -37,6 +38,8 @@ export type MpPointQrOrderStatus = {
 
 @Injectable()
 export class MpPointQrService {
+  private readonly logger = new Logger(MpPointQrService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly accounts: MercadoPagoAccountService,
@@ -206,7 +209,10 @@ export class MpPointQrService {
         },
       });
       return this.toResult(transaction, savedOrder);
-    } catch {
+    } catch (error) {
+      this.logger.error(
+        `QR checkout failed tenant=${tenantId} transaction=${transaction.id}: ${error instanceof Error ? error.message : String(error)}`,
+      );
       throw new BadGatewayException(
         'No se pudo crear el QR en Mercado Pago. Podés reintentar este cobro desde Caja.',
       );
