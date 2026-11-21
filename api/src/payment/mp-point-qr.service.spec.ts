@@ -129,7 +129,9 @@ describe('MpPointQrService', () => {
     const transactionCreate = jest
       .fn<Promise<typeof transaction>, [TransactionCreateArgs]>()
       .mockResolvedValue(transaction);
-    type PrismaTransaction = { transaction: { create: typeof transactionCreate } };
+    type PrismaTransaction = {
+      transaction: { create: typeof transactionCreate };
+    };
     const prisma = {
       member: { findFirst: jest.fn().mockResolvedValue({ status: 'ACTIVE' }) },
       pack: {
