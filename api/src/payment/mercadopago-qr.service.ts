@@ -9,7 +9,10 @@ import { AuditService } from '../audit/audit.service';
 import { AuditActor } from '../audit/audit.types';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateMercadoPagoQrSetupDto } from './dto/create-mercadopago-qr-setup.dto';
-import { HttpMpQrAdapter } from './http-mp-qr.adapter';
+import {
+  HttpMpQrAdapter,
+  MpQrApiError,
+} from './http-mp-qr.adapter';
 import { MercadoPagoAccountService } from './mercadopago-account.service';
 import { MP_ACCOUNT_PORT, MpAccountPort } from './mp-account.port';
 
@@ -133,7 +136,17 @@ export class MercadoPagoQrService {
           data: { posId },
         });
       }
-    } catch {
+    } catch (error) {
+      if (
+        error instanceof MpQrApiError &&
+        error.operation === 'store' &&
+        error.status === 400 &&
+        error.detail
+      ) {
+        throw new BadRequestException(
+          `Mercado Pago rechazó los datos de la sucursal: ${error.detail}`,
+        );
+      }
       throw new BadGatewayException(
         'Mercado Pago no pudo crear la sucursal o la caja QR. Si la sucursal se creó, queda guardada para reintentar.',
       );
