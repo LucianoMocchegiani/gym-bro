@@ -17,10 +17,10 @@ describe('MercadoPagoQrService', () => {
     };
     const prisma = {
       mercadoPagoAccount: {
-        findUnique: jest
+        findUnique: jest.fn().mockResolvedValue({ mpUserId: 'seller-1' }),
+        update: jest
           .fn()
-          .mockResolvedValue({ mpUserId: 'seller-1' }),
-        update: jest.fn().mockResolvedValue(undefined),
+          .mockResolvedValue(undefined),
       },
       mercadoPagoQrSetup: {
         findUnique: jest.fn().mockResolvedValue(null),
@@ -28,7 +28,9 @@ describe('MercadoPagoQrService', () => {
         update: jest.fn().mockResolvedValue(setup),
       },
       tenant: {
-        findUnique: jest.fn().mockResolvedValue({ name: 'Gym' }),
+        findUnique: jest
+          .fn()
+          .mockResolvedValue({ name: 'Gym' }),
       },
     } as unknown as PrismaService;
     const service = new MercadoPagoQrService(
@@ -39,12 +41,16 @@ describe('MercadoPagoQrService', () => {
       } as unknown as MercadoPagoAccountService,
       {
         findStoreByExternalId: jest.fn().mockResolvedValue(null),
-        createStore: jest.fn().mockRejectedValue(
-          new MpQrApiError('store', 400, 'location.city_name was invalid'),
-        ),
+        createStore: jest
+          .fn()
+          .mockRejectedValue(
+            new MpQrApiError('store', 400, 'location.city_name was invalid'),
+          ),
       } as unknown as HttpMpQrAdapter,
       {
-        validateAccessToken: jest.fn().mockResolvedValue({ userId: 'seller-1' }),
+        validateAccessToken: jest
+          .fn()
+          .mockResolvedValue({ userId: 'seller-1' }),
       } as unknown as MpAccountPort,
     );
 
