@@ -16,27 +16,26 @@ describe('MpPointQrOrderDiagnosticService', () => {
     const accounts = {
       getDecryptedAccessToken: jest.fn().mockResolvedValue('secret-token'),
     } as unknown as MercadoPagoAccountService;
-    const mpQr = {
-      getOrderDiagnostic: jest.fn().mockResolvedValue({
-        id: overrides.id ?? 'order-1',
-        type: overrides.type ?? 'qr',
-        externalReference: overrides.externalReference ?? 'transaction-1',
-        status: 'created',
-        mode: 'dynamic',
-        totalAmount: '1250.00',
-        totalPaidAmount: '0.00',
-        payments: [{ status: 'pending', amount: '1250.00' }],
-      }),
-    } as unknown as HttpMpQrAdapter;
+    const getOrderDiagnostic = jest.fn().mockResolvedValue({
+      id: overrides.id ?? 'order-1',
+      type: overrides.type ?? 'qr',
+      externalReference: overrides.externalReference ?? 'transaction-1',
+      status: 'created',
+      mode: 'dynamic',
+      totalAmount: '1250.00',
+      totalPaidAmount: '0.00',
+      payments: [{ status: 'pending', amount: '1250.00' }],
+    });
+    const mpQr = { getOrderDiagnostic } as unknown as HttpMpQrAdapter;
     return {
       service: new MpPointQrOrderDiagnosticService(prisma, accounts, mpQr),
       prisma,
-      mpQr,
+      getOrderDiagnostic,
     };
   };
 
   it('returns safe status fields only for the matching transaction', async () => {
-    const { service, mpQr } = makeService();
+    const { service, getOrderDiagnostic } = makeService();
 
     await expect(
       service.getOrderDiagnostic('tenant-1', 'transaction-1', 'order-1'),
@@ -48,10 +47,7 @@ describe('MpPointQrOrderDiagnosticService', () => {
       totalPaidAmount: '0.00',
       payments: [{ status: 'pending', amount: '1250.00' }],
     });
-    expect(mpQr.getOrderDiagnostic).toHaveBeenCalledWith(
-      'secret-token',
-      'order-1',
-    );
+    expect(getOrderDiagnostic).toHaveBeenCalledWith('secret-token', 'order-1');
   });
 
   it('rejects an order not linked to the transaction', async () => {

@@ -5,10 +5,7 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { MercadoPagoAccountService } from './mercadopago-account.service';
-import {
-  HttpMpQrAdapter,
-  MpQrOrderDiagnostic,
-} from './http-mp-qr.adapter';
+import { HttpMpQrAdapter, MpQrOrderDiagnostic } from './http-mp-qr.adapter';
 
 export type MpPointQrOrderDiagnostic = {
   orderId: string;
