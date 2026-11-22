@@ -8,7 +8,11 @@ describe('PublicPlatformController', () => {
           .fn()
           .mockResolvedValue([{ id: 'visible' }, { id: 'hidden' }]),
       } as never,
-      { visiblePlatformPackIds: jest.fn().mockResolvedValue(new Set(['visible'])) } as never,
+      {
+        visiblePlatformPackIds: jest
+          .fn()
+          .mockResolvedValue(new Set(['visible'])),
+      } as never,
     );
 
     await expect(controller.listPacks()).resolves.toEqual([{ id: 'visible' }]);

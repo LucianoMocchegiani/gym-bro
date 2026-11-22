@@ -13,7 +13,9 @@ describe('PublicTenantCatalogController', () => {
           .fn()
           .mockResolvedValue([{ id: 'visible' }, { id: 'hidden' }]),
       } as never,
-      { visiblePackIds: jest.fn().mockResolvedValue(new Set(['visible'])) } as never,
+      {
+        visiblePackIds: jest.fn().mockResolvedValue(new Set(['visible'])),
+      } as never,
       { getStatus: jest.fn().mockResolvedValue({ connected: false }) } as never,
       { getPublicContent: jest.fn().mockResolvedValue(null) } as never,
     );
