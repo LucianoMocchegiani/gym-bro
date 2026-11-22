@@ -1,15 +1,20 @@
 /**
- * Cliente HTTP+SSE hacia `NEXT_PUBLIC_CHAT_API_URL` (chat-api, no Nest).
- *
- * @remarks Admin: JWT Staff + refresh. Landing: `setChatAccessTokenOverride`
- * con el token de `POST /v1/public/session`.
+ * Cliente HTTP+SSE hacia `NEXT_PUBLIC_CHAT_API_URL` o Agent Runtime para staff.
+ * La landing pública conserva `chat-api` y su sesión anónima.
  */
 
 import { refreshStaffAccess } from '@/lib/api/client';
+import { clearStaffSession, readStaffSession } from '@/lib/auth/session';
 import {
-  clearStaffSession,
-  readStaffSession,
-} from '@/lib/auth/session';
+  AgentRuntimeError,
+  agentRuntimeConfigured,
+  archiveRuntimeConversation,
+  createRuntimeConversation,
+  listRuntimeConversations,
+  listRuntimeMessages,
+  postRuntimeTurn,
+  resolveRuntimeProposal,
+} from '@/lib/api/agent-runtime-chat';
 
 export type ChatConversation = {
   id: string;
@@ -52,11 +57,24 @@ function chatBaseUrl(): string {
 
 let accessTokenOverride: string | null = null;
 
-/**
- * Bearer de la landing (sesión anónima). `null` vuelve al JWT Staff.
- */
+/** Bearer de la landing (sesión anónima). `null` vuelve al JWT Staff. */
 export function setChatAccessTokenOverride(token: string | null): void {
   accessTokenOverride = token;
+}
+
+function useAgentRuntime(): boolean {
+  return agentRuntimeConfigured() && !accessTokenOverride;
+}
+
+async function runtimeCall<T>(operation: Promise<T>): Promise<T> {
+  try {
+    return await operation;
+  } catch (error) {
+    if (error instanceof AgentRuntimeError) {
+      throw new ChatClientError(error.status, error.message);
+    }
+    throw error;
+  }
 }
 
 function staffBearer(): string | null {
@@ -152,18 +170,16 @@ async function chatJson<T>(path: string, init: RequestInit = {}): Promise<T> {
   return parsed as T;
 }
 
-/**
- * Hilos activos del staff (más recientes primero).
- */
+/** Hilos activos del staff (más recientes primero). */
 export async function listChatConversations(): Promise<ChatConversation[]> {
+  if (useAgentRuntime()) return runtimeCall(listRuntimeConversations());
   const data = await chatJson<{ items: ChatConversation[] }>('/v1/conversations');
   return data.items ?? [];
 }
 
-/**
- * Alta de hilo vacío. El título lo pone el primer mensaje (C7).
- */
+/** Alta de hilo vacío. El título lo pone el primer mensaje (C7). */
 export async function createChatConversation(): Promise<ChatConversation> {
+  if (useAgentRuntime()) return runtimeCall(createRuntimeConversation());
   return chatJson<ChatConversation>('/v1/conversations', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -171,51 +187,28 @@ export async function createChatConversation(): Promise<ChatConversation> {
   });
 }
 
-/**
- * Archiva el hilo (soft-delete C2).
- */
-export async function archiveChatConversation(
-  id: string,
-): Promise<ChatConversation> {
-  return chatJson<ChatConversation>(`/v1/conversations/${id}`, {
-    method: 'DELETE',
-  });
+/** Archiva el hilo (soft-delete C2). */
+export async function archiveChatConversation(id: string): Promise<ChatConversation> {
+  if (useAgentRuntime()) return runtimeCall(archiveRuntimeConversation(id));
+  return chatJson<ChatConversation>(`/v1/conversations/${id}`, { method: 'DELETE' });
 }
 
-/**
- * Edita el título del hilo (`PATCH`). Cadena vacía = sin título.
- */
-export async function patchChatConversation(
-  id: string,
-  patch: { title: string | null },
-): Promise<ChatConversation> {
-  return chatJson<ChatConversation>(`/v1/conversations/${id}`, {
-    method: 'PATCH',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(patch),
-  });
-}
-
-/**
- * Historial persistido (user / assistant / tool).
- */
+/** Historial persistido (user / assistant / tool). */
 export async function listChatMessages(id: string): Promise<ChatMessage[]> {
-  const data = await chatJson<{ items: ChatMessage[] }>(
-    `/v1/conversations/${id}/messages`,
-  );
+  if (useAgentRuntime()) return runtimeCall(listRuntimeMessages(id));
+  const data = await chatJson<{ items: ChatMessage[] }>(`/v1/conversations/${id}/messages`);
   return data.items ?? [];
 }
 
-/**
- * Acto del usuario sobre una tarjeta (Confirmar / Cancelar). El modelo no puede hacerlo.
- *
- * @returns Fila `tool` guardada y la salida del tool MCP.
- */
+/** Acción de usuario sobre una tarjeta Confirmar / Cancelar. */
 export async function runChatUserAction(
   conversationId: string,
   tool: string,
   input: Record<string, unknown>,
 ): Promise<{ message: ChatMessage; output: unknown }> {
+  if (useAgentRuntime()) {
+    return runtimeCall(resolveRuntimeProposal(conversationId, input));
+  }
   return chatJson<{ message: ChatMessage; output: unknown }>(
     `/v1/conversations/${conversationId}/user-actions`,
     {
@@ -240,11 +233,7 @@ export function isChatAbortError(error: unknown): boolean {
   );
 }
 
-/**
- * POST turno y consume UI Message Stream.
- *
- * @returns `'aborted'` si el staff cortó con Parar.
- */
+/** POST turno y consume UI Message Stream. */
 export async function streamChatTurn(
   conversationId: string,
   text: string,
@@ -252,15 +241,17 @@ export async function streamChatTurn(
   signal?: AbortSignal,
 ): Promise<'ok' | 'aborted'> {
   try {
-    const res = await chatFetch(`/v1/conversations/${conversationId}/messages`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Accept: 'text/event-stream',
-      },
-      body: JSON.stringify({ text }),
-      signal,
-    });
+    const res = useAgentRuntime()
+      ? await runtimeCall(postRuntimeTurn(conversationId, text, signal))
+      : await chatFetch(`/v1/conversations/${conversationId}/messages`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Accept: 'text/event-stream',
+          },
+          body: JSON.stringify({ text }),
+          signal,
+        });
 
     if (!res.ok) {
       const parsed = await parseJsonBody(res);
@@ -269,7 +260,6 @@ export async function streamChatTurn(
         errorMessage(res.status, parsed, `Error HTTP ${res.status}`),
       );
     }
-
     if (!res.body) {
       throw new ChatClientError(502, 'El asistente no está disponible.');
     }
@@ -347,17 +337,13 @@ function applyStreamEvent(event: unknown, handlers: ChatStreamHandlers): void {
   if (type === 'tool-input-start') {
     const id = typeof rec.toolCallId === 'string' ? rec.toolCallId : '';
     const name = typeof rec.toolName === 'string' ? rec.toolName : 'tool';
-    if (id) {
-      handlers.onToolStart(id, name);
-    }
+    if (id) handlers.onToolStart(id, name);
     return;
   }
   if (type === 'tool-output-available') {
     const id = typeof rec.toolCallId === 'string' ? rec.toolCallId : '';
     const name = typeof rec.toolName === 'string' ? rec.toolName : 'tool';
-    if (id) {
-      handlers.onToolDone(id, name, rec.output ?? rec.result);
-    }
+    if (id) handlers.onToolDone(id, name, rec.output ?? rec.result);
     return;
   }
   if (type === 'text-delta' && typeof rec.delta === 'string') {
