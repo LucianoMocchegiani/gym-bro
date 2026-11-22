@@ -46,6 +46,7 @@ export function GymLandingPage({ catalog }: { catalog: PublicTenantCatalog }) {
       brandColor={site?.themeColor ?? SITE_DEFAULT_PRIMARY_COLOR}
       brandIcon={site?.brandIcon ?? null}
       socialLinks={site?.socialLinks}
+      contactEmail={site?.contactEmail ?? null}
     >
       {site && hasCustomLanding ? (
         <MktShell as="section" className="site-hero-section"><SiteHeroView hero={site.hero} actions={<HeroActions />} /></MktShell>

@@ -34,6 +34,7 @@ export function SocialLinksEditor({
     instagram: detail.content?.socialLinks?.instagram ?? '',
     whatsapp: detail.content?.socialLinks?.whatsapp ?? '',
   }));
+  const [email, setEmail] = useState(detail.content?.contactEmail ?? '');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
@@ -50,15 +51,16 @@ export function SocialLinksEditor({
       const saved = await putTenantSite({
         ...draftToContent(draft, (image) => image.url),
         brandIcon: detail.content?.brandIcon ?? null,
+        contactEmail: email.trim() || null,
         socialLinks,
       });
       onSaved(saved);
-      setMessage('Redes sociales guardadas y publicadas.');
+      setMessage('Contacto y redes sociales guardados y publicados.');
     } catch (err) {
       setError(
         err instanceof ApiClientError || err instanceof Error
           ? err.message
-          : 'No se pudieron guardar las redes sociales',
+          : 'No se pudieron guardar el contacto y las redes sociales',
       );
     } finally {
       setBusy(false);
@@ -67,10 +69,22 @@ export function SocialLinksEditor({
 
   return (
     <Panel
-      title="Redes sociales"
-      description="Se muestran en el pie de la web pública del gimnasio. Dejá vacío lo que no uses; se eliminan al restablecer toda la web."
+      title="Contacto y redes sociales"
+      description="El correo y las redes se muestran en el pie de la web pública del gimnasio. Dejá vacío lo que no uses."
     >
       <div className="admin-form">
+        <label>
+          Email de contacto
+          <input
+            type="email"
+            value={email}
+            maxLength={254}
+            autoComplete="email"
+            placeholder="contacto@tugym.com"
+            disabled={!canWrite || busy}
+            onChange={(e) => setEmail(e.target.value)}
+          />
+        </label>
         {SOCIALS.map(([key, label]) => (
           <label key={key}>
             {label} (URL)
@@ -101,7 +115,7 @@ export function SocialLinksEditor({
             disabled={busy}
             onClick={() => void save()}
           >
-            {busy ? 'Guardando…' : 'Guardar redes'}
+            {busy ? 'Guardando…' : 'Guardar contacto y redes'}
           </button>
         </div>
       ) : (

@@ -76,6 +76,8 @@ export type TenantSiteContent = {
   themeColor?: string;
   /** Ícono opcional del gimnasio; URL de imagen pública subida por el tenant. */
   brandIcon?: string | null;
+  /** Correo de contacto; ausente en contenido anterior. */
+  contactEmail?: string | null;
   /** Ausente en contenido anterior; no hay redes configuradas. */
   socialLinks?: SiteSocialLinks;
   landingCustomized?: boolean;
@@ -102,6 +104,7 @@ export const SITE_LIMITS = {
   buttonLabel: { min: 2, max: 24 },
   imageAlt: { max: 120 },
   url: { max: 500 },
+  contactEmail: { max: 254 },
   id: { max: 40 },
 } as const;
 
