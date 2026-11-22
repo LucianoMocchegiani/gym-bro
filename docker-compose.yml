@@ -23,11 +23,9 @@ services:
       POSTGRES_PASSWORD: gymbro
       POSTGRES_DB: gymbro
     ports:
-      # Host 5433: convive con otro Postgres (p. ej. Kuatia en 5432).
       - "127.0.0.1:5433:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      # Primer boot: crea database `chat`. Si el volumen ya existía, lo hace chat-api.
       - ./docker/postgres/init:/docker-entrypoint-initdb.d:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U gymbro -d gymbro"]
@@ -49,7 +47,6 @@ services:
       timeout: 3s
       retries: 10
 
-  # Agent Runtime mantiene configuración e historial en una DB/volumen separados.
   agent-runtime-postgres:
     image: pgvector/pgvector:pg17
     container_name: faciliter-agent-runtime-postgres
@@ -103,24 +100,6 @@ services:
       retries: 10
       start_period: 30s
 
-  # Opcional: descomentar para UI de Postgres
-  # pgadmin:
-  #   image: dpage/pgadmin4:8
-  #   container_name: faciliter-pgadmin
-  #   restart: unless-stopped
-  #   environment:
-  #     PGADMIN_DEFAULT_EMAIL: admin@example.com
-  #     PGADMIN_DEFAULT_PASSWORD: gymbro
-  #     PGADMIN_CONFIG_SERVER_MODE: "False"
-  #   ports:
-  #     - "127.0.0.1:5050:80"
-  #   volumes:
-  #     - pgadmin_data:/var/lib/pgadmin
-  #     - ./docker/pgadmin/servers.json:/pgadmin4/servers.json:ro
-  #   depends_on:
-  #     postgres:
-  #       condition: service_healthy
-
   api:
     build:
       context: ./api
@@ -159,6 +138,7 @@ services:
         NEXT_PUBLIC_WEB_PORT: ${NEXT_PUBLIC_WEB_PORT:-3002}
         NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL:-http://localhost:3002}
         NEXT_PUBLIC_CHAT_API_URL: ${NEXT_PUBLIC_CHAT_API_URL:-http://localhost:3010}
+        NEXT_PUBLIC_AGENT_RUNTIME_URL: ${NEXT_PUBLIC_AGENT_RUNTIME_URL:-http://localhost:3031}
         NEXT_PUBLIC_GOOGLE_CLIENT_ID: ${NEXT_PUBLIC_GOOGLE_CLIENT_ID:-}
         NEXT_PUBLIC_LOGIN_PROXY_URL: ${NEXT_PUBLIC_LOGIN_PROXY_URL:-https://login.faciliter.xyz}
     container_name: faciliter-web
@@ -169,7 +149,6 @@ services:
       NODE_ENV: production
       API_INTERNAL_URL: http://api:3001
     ports:
-      # Host 3002: convive con otro Next (p. ej. Kuatia en 3000).
       - "3002:3000"
     depends_on:
       api:

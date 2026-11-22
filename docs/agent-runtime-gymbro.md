@@ -1,21 +1,23 @@
 # Agent Runtime en GymBro
 
-El Compose incluye Agent Runtime con PostgreSQL y volumen propios. No comparte tablas ni credenciales de la base GymBro. Su UI/API queda disponible localmente en `http://localhost:3031`; en producción publicarla detrás de HTTPS y un proxy con autenticación adecuada.
+El Compose incluye Agent Runtime con PostgreSQL y volumen propios. No comparte tablas ni credenciales de la base GymBro. Su UI/API queda disponible localmente en `http://localhost:3031`; en producción publicar Runtime detrás de HTTPS y permitir el origen del frontend en `CORS_ORIGIN`.
 
 ## Preparar y levantar
 
 ```sh
 cp agent-runtime/.env.example agent-runtime/.env
-# Editar los secretos; para las claves usar: openssl rand -hex 32
-# Poner el mismo valor de contraseña en POSTGRES_PASSWORD y DATABASE_URL.
+cp web/.env.example web/.env
+# Editar secretos, URL pública de Runtime y CORS_ORIGIN.
 docker compose up -d --build
 ```
 
-En PowerShell, usar `Copy-Item agent-runtime/.env.example agent-runtime/.env`. El volumen `agent_runtime_data` persiste la configuración, historial y perfiles de Runtime. No ejecutar `docker compose down -v` salvo que se quiera borrar también esa información.
+En PowerShell, usar `Copy-Item`. Para claves, generar valores aleatorios con `openssl rand -hex 32`. Poner la misma contraseña de DB en `POSTGRES_PASSWORD` y `DATABASE_URL`. El volumen `agent_runtime_data` persiste configuración e historial de Runtime; no ejecutar `docker compose down -v` salvo que se quiera borrar esos datos.
+
+En producción, `NEXT_PUBLIC_AGENT_RUNTIME_URL` se bakea en el build de web: establecerla en el `.env` junto a `docker-compose.yml` antes de `docker compose up --build`. Debe ser una URL accesible desde el navegador, no el hostname Docker.
 
 ## Conectar identidad y MCP
 
-Entrar a `http://localhost:3031/admin` con las credenciales locales de `agent-runtime/.env` y configurar **Administración → Auth**:
+Entrar a `/admin` de Runtime y configurar **Administración → Auth**:
 
 ```json
 {
@@ -24,12 +26,12 @@ Entrar a `http://localhost:3031/admin` con las credenciales locales de `agent-ru
 }
 ```
 
-Probar la introspección con un access token STAFF real antes de guardar. El endpoint rechaza MEMBER o identidades sin tenant. La respuesta compone el `userId` con `[tenantId, profileType, userId]`; `tenantId` y `role` también se devuelven como metadatos. El Bearer original se conserva para las llamadas al MCP y sus permisos de GymBro.
+Probar la introspección con un access token STAFF. El endpoint rechaza MEMBER o identidades sin tenant; compone `userId` con `[tenantId, profileType, userId]` y entrega además `tenantId` y `role`. Runtime reenvía el Bearer original al MCP para conservar sus permisos.
 
-En **Administración → MCP**, configurar el servidor GymBro con URL `http://mcp:3011/mcp` y autenticación Bearer del usuario (no una credencial estática). Así Runtime envía el access token validado al MCP, que mantiene la autorización de GymBro. Configurar también un proveedor/modelo y un perfil de agente con el comportamiento y tools necesarios. Antes de ponerlo a disposición, probar con un staff de cada tenant y verificar que conversaciones de distintos gyms y usuarios quedan separadas.
+En **Administración → MCP**, configurar GymBro con URL `http://mcp:3011/mcp` y autenticación Bearer del usuario, no una credencial estática. Configurar proveedor/modelo y perfil de agente. Para mantener las tarjetas de propuestas, habilitar en el perfil `config.chat.confirmUserOnlyTools: true`; el drawer enlaza Confirmar/Cancelar con la aprobación pendiente de `confirm_proposal` y nunca ejecuta argumentos suministrados por el navegador.
 
-## Estado de la migración del chat
+## Migración del chat
 
-Esto despliega Runtime y deja disponible la conexión de identidad/MCP para probarlo. **El drawer de GymBro todavía usa `chat-api`** (`NEXT_PUBLIC_CHAT_API_URL`); no cambiarlo hasta adaptar el cliente/UI y conservar las tarjetas de propuestas y la confirmación de `confirm_proposal`. Runtime ya soporta aprobaciones genéricas de herramientas MCP marcadas `chat/userOnly`, pero ese mecanismo no sustituye automáticamente la acción de usuario específica de las tarjetas actuales. La landing pública también sigue en `chat-api`.
+Cuando `NEXT_PUBLIC_AGENT_RUNTIME_URL` está configurado, el drawer STAFF usa Runtime para conversaciones, mensajes, archivo y turnos. El chat público de la landing sigue en `chat-api`. El Compose deja el servicio antiguo desplegado para ese chat público y como transición.
 
-El Compose conserva ambos servicios deliberadamente: no se interrumpe el chat activo ni se borran sus conversaciones al desplegar Runtime. La migración de UI y el retiro de `chat-api` quedan para el paso siguiente.
+Las conversaciones antiguas de `chat-api` no se copian ni se borran; dejan de aparecer en el drawer STAFF migrado. Revisar y conservar la base `chat` antes de retirar `chat-api`. Validar CORS, introspección, perfil, MCP y una propuesta descartable en staging antes del despliegue a usuarios.
