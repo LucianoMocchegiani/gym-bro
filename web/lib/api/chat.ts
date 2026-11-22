@@ -12,6 +12,7 @@ import {
   createRuntimeConversation,
   listRuntimeConversations,
   listRuntimeMessages,
+  patchRuntimeConversation,
   postRuntimeTurn,
   resolveRuntimeProposal,
 } from '@/lib/api/agent-runtime-chat';
@@ -191,6 +192,19 @@ export async function createChatConversation(): Promise<ChatConversation> {
 export async function archiveChatConversation(id: string): Promise<ChatConversation> {
   if (useAgentRuntime()) return runtimeCall(archiveRuntimeConversation(id));
   return chatJson<ChatConversation>(`/v1/conversations/${id}`, { method: 'DELETE' });
+}
+
+/** Edita el título del hilo. */
+export async function patchChatConversation(
+  id: string,
+  patch: { title: string | null },
+): Promise<ChatConversation> {
+  if (useAgentRuntime()) return runtimeCall(patchRuntimeConversation(id, patch));
+  return chatJson<ChatConversation>(`/v1/conversations/${id}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(patch),
+  });
 }
 
 /** Historial persistido (user / assistant / tool). */
