@@ -129,6 +129,27 @@ export function updatePack(
   });
 }
 
+export function getPackLandingVisibility(
+  packId: string,
+): Promise<{ showOnLanding: boolean }> {
+  return apiRequest<{ showOnLanding: boolean }>(
+    `/packs/${packId}/landing-visibility`,
+  );
+}
+
+export function updatePackLandingVisibility(
+  packId: string,
+  showOnLanding: boolean,
+): Promise<{ showOnLanding: boolean }> {
+  return apiRequest<{ showOnLanding: boolean }>(
+    `/packs/${packId}/landing-visibility`,
+    {
+      method: 'PATCH',
+      body: { showOnLanding },
+    },
+  );
+}
+
 export type DeletePackResult = {
   deleted?: boolean;
   deactivated?: boolean;

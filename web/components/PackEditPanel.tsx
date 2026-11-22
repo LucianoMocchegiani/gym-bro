@@ -8,6 +8,7 @@ import {
 } from '@/components/PackComponentsEditor';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { ImageUpload, uploadImageToApi } from '@/components/ImageUpload';
+import { PackLandingVisibilityField } from '@/components/PackLandingVisibilityField';
 import { SkeletonForm } from '@/components/Skeleton';
 import { ApiClientError } from '@/lib/api/client';
 import { getPack, updatePack } from '@/lib/api/packs';
@@ -312,6 +313,7 @@ export function PackEditPanel({
           />
           Activo
         </label>
+        <PackLandingVisibilityField packId={packId} />
 
         <PackComponentsEditor
           components={components}
