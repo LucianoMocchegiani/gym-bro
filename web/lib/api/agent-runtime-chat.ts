@@ -17,6 +17,12 @@ type RuntimeConversation = Omit<ChatConversation, 'tenantId'>;
 type RuntimeMessage = ChatMessage;
 type Page<T, Cursor = string> = { items?: T[]; hasMore?: boolean; nextCursor?: Cursor | null };
 
+let accessTokenOverride: string | null = null;
+
+export function setRuntimeAccessTokenOverride(token: string | null): void {
+  accessTokenOverride = token;
+}
+
 export function agentRuntimeConfigured(): boolean {
   return Boolean(process.env.NEXT_PUBLIC_AGENT_RUNTIME_URL?.trim());
 }
@@ -30,13 +36,13 @@ function baseUrl(): string {
 async function runtimeFetch(path: string, init: RequestInit = {}, retried = false): Promise<Response> {
   const headers = new Headers(init.headers);
   headers.set('Accept', headers.get('Accept') ?? 'application/json');
-  const token = readStaffSession()?.accessToken;
+  const token = accessTokenOverride ?? readStaffSession()?.accessToken;
   if (token) headers.set('Authorization', `Bearer ${token}`);
   const response = await fetch(`${baseUrl()}${path}`, { ...init, headers, credentials: 'include' });
-  if (response.status === 401 && !retried && (await refreshStaffAccess())) {
+  if (response.status === 401 && !retried && !accessTokenOverride && (await refreshStaffAccess())) {
     return runtimeFetch(path, init, true);
   }
-  if (response.status === 401) clearStaffSession();
+  if (response.status === 401 && !accessTokenOverride) clearStaffSession();
   return response;
 }
 

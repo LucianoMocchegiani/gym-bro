@@ -1,8 +1,3 @@
-/**
- * Cliente HTTP+SSE hacia `NEXT_PUBLIC_CHAT_API_URL` o Agent Runtime para staff.
- * La landing pública conserva `chat-api` y su sesión anónima.
- */
-
 import { refreshStaffAccess } from '@/lib/api/client';
 import { clearStaffSession, readStaffSession } from '@/lib/auth/session';
 import {
@@ -15,6 +10,7 @@ import {
   patchRuntimeConversation,
   postRuntimeTurn,
   resolveRuntimeProposal,
+  setRuntimeAccessTokenOverride,
 } from '@/lib/api/agent-runtime-chat';
 
 export type ChatConversation = {
@@ -61,10 +57,11 @@ let accessTokenOverride: string | null = null;
 /** Bearer de la landing (sesión anónima). `null` vuelve al JWT Staff. */
 export function setChatAccessTokenOverride(token: string | null): void {
   accessTokenOverride = token;
+  setRuntimeAccessTokenOverride(token);
 }
 
 function shouldUseAgentRuntime(): boolean {
-  return agentRuntimeConfigured() && !accessTokenOverride;
+  return agentRuntimeConfigured();
 }
 
 async function runtimeCall<T>(operation: Promise<T>): Promise<T> {

@@ -1,8 +1,11 @@
-/**
- * Sesión anónima de la landing. El drawer reusa `lib/api/chat.ts` con el token.
- */
-
-import { ChatClientError, type ChatConversation } from '@/lib/api/chat';
+import { agentRuntimeConfigured } from './agent-runtime-chat';
+import {
+  ChatClientError,
+  createChatConversation,
+  setChatAccessTokenOverride,
+  type ChatConversation,
+} from './chat';
+import { createRuntimeAnonymousToken, isRuntimeAnonymousToken } from './public-chat-token';
 
 const TOKEN_KEY = 'faciliter.publicChat.token';
 const CONVERSATION_KEY = 'faciliter.publicChat.conversationId';
@@ -76,6 +79,58 @@ function clearStoredSession(): void {
   window.localStorage.removeItem(CONVERSATION_KEY);
 }
 
+function restoredSession(token: string, conversationId: string): PublicSession {
+  return {
+    token,
+    conversation: {
+      id: conversationId,
+      tenantId: 'public',
+      userId: token.slice('anon:'.length),
+      title: null,
+      archivedAt: null,
+      createdAt: '',
+      updatedAt: '',
+    },
+  };
+}
+
+/** Reusa la sesión local, o crea una sesión anónima de Runtime para la landing. */
+export async function ensurePublicChatSession(): Promise<PublicSession> {
+  if (agentRuntimeConfigured()) {
+    const stored = readStoredSession();
+    if (stored && isRuntimeAnonymousToken(stored.token)) {
+      setChatAccessTokenOverride(stored.token);
+      return restoredSession(stored.token, stored.conversationId);
+    }
+
+    const token = createRuntimeAnonymousToken();
+    setChatAccessTokenOverride(token);
+    const conversation = await createChatConversation();
+    writeStoredSession(token, conversation.id);
+    return {
+      token,
+      conversation: { ...conversation, tenantId: 'public', userId: token.slice('anon:'.length) },
+    };
+  }
+
+  const stored = readStoredSession();
+  if (stored) {
+    return {
+      token: stored.token,
+      conversation: {
+        id: stored.conversationId,
+        tenantId: 'public',
+        userId: 'landing',
+        title: null,
+        archivedAt: null,
+        createdAt: '',
+        updatedAt: '',
+      },
+    };
+  }
+  return createPublicSession();
+}
+
 async function createPublicSession(): Promise<PublicSession> {
   const res = await fetch(`${chatBaseUrl()}/v1/public/session`, {
     method: 'POST',
@@ -96,28 +151,7 @@ async function createPublicSession(): Promise<PublicSession> {
   return { token: rec.token, conversation: rec.conversation };
 }
 
-/**
- * Sesión landing: reusa localStorage o pide una nueva.
- */
-export async function ensurePublicChatSession(): Promise<PublicSession> {
-  const stored = readStoredSession();
-  if (stored) {
-    return {
-      token: stored.token,
-      conversation: {
-        id: stored.conversationId,
-        tenantId: 'public',
-        userId: 'landing',
-        title: null,
-        archivedAt: null,
-        createdAt: '',
-        updatedAt: '',
-      },
-    };
-  }
-  return createPublicSession();
-}
-
 export function resetPublicChatSession(): void {
   clearStoredSession();
+  setChatAccessTokenOverride(null);
 }

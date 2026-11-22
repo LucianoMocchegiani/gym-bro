@@ -1,6 +1,6 @@
 # Agent Runtime en GymBro
 
-El Compose incluye Agent Runtime con PostgreSQL y volumen propios. No comparte tablas ni credenciales de la base GymBro. Su UI/API queda disponible localmente en `http://localhost:3031`; en producción publicar Runtime detrás de HTTPS y permitir el origen del frontend en `CORS_ORIGIN`.
+El Compose incluye Agent Runtime con PostgreSQL y volumen propios. No comparte tablas ni credenciales de la base GymBro. Su UI/API queda disponible localmente en `http://localhost:3031`; en producción publicar Runtime detrás de HTTPS y permitir los orígenes del frontend en `CORS_ORIGIN`.
 
 ## Preparar y levantar
 
@@ -26,12 +26,12 @@ Entrar a `/admin` de Runtime y configurar **Administración → Auth**:
 }
 ```
 
-Probar la introspección con un access token STAFF. El endpoint rechaza MEMBER o identidades sin tenant; compone `userId` con `[tenantId, profileType, userId]` y entrega además `tenantId` y `role`. Runtime reenvía el Bearer original al MCP para conservar sus permisos.
+Probar la introspección con un access token STAFF. El endpoint rechaza MEMBER o identidades sin tenant; compone `userId` con `[tenantId, profileType, userId]` y entrega además `tenantId` y `role`. Runtime reenvía al MCP el Bearer original, conservando permisos. Las sesiones STAFF siguen autenticándose mediante introspección; Runtime también admite `anon:<UUID>` sin introspección para el chat público.
 
-En **Administración → MCP**, configurar GymBro con URL `http://mcp:3011/mcp` y autenticación Bearer del usuario, no una credencial estática. Configurar proveedor/modelo y perfil de agente. Para mantener las tarjetas de propuestas, habilitar en el perfil `config.chat.confirmUserOnlyTools: true`; el drawer enlaza Confirmar/Cancelar con la aprobación pendiente de `confirm_proposal` y nunca ejecuta argumentos suministrados por el navegador. Confirmar autoriza únicamente los argumentos que Runtime persistió. Cancelar rechaza la aprobación, no ejecuta el MCP de cancelación; GymBro deja vencer la propuesta temporal.
+En **Administración → MCP**, configurar GymBro con URL `http://mcp:3011/mcp` y autenticación que reenvíe el Bearer de cada petición, no una credencial estática. GymBro MCP acepta `anon:<UUID>` y para esos tokens publica exclusivamente `get_help`; los demás bearers conservan el conjunto STAFF. Configurar proveedor/modelo y perfil de agente. Para mantener las tarjetas de propuestas del drawer STAFF, habilitar en ese perfil `config.chat.confirmUserOnlyTools: true`.
 
 ## Migración del chat
 
-Cuando `NEXT_PUBLIC_AGENT_RUNTIME_URL` está configurado, el drawer STAFF usa Runtime para conversaciones, mensajes, títulos, archivo y turnos. El chat público de la landing sigue en `chat-api`. El Compose deja el servicio antiguo desplegado para ese chat público y como transición.
+Cuando `NEXT_PUBLIC_AGENT_RUNTIME_URL` está configurado, el drawer STAFF y el asistente de la landing Faciliter usan Runtime para conversaciones, mensajes y turnos. La landing crea y persiste en el navegador una sesión `anon:<UUID>`; Runtime reenvía ese mismo Bearer al MCP, que aplica el conjunto público de herramientas. Si Runtime no está configurado, el chat público conserva su fallback a `chat-api`.
 
-Las conversaciones antiguas de `chat-api` no se copian ni se borran; dejan de aparecer en el drawer STAFF migrado. Revisar y conservar la base `chat` antes de retirar `chat-api`. Validar CORS, introspección, perfil, MCP y una propuesta descartable en staging antes del despliegue a usuarios.
+El historial antiguo de la landing en `chat-api` no se migra ni se elimina; al usar Runtime queda separado y deja de aparecer en el asistente público. El límite de uso contra abuso/costo de `chat-api` aún no se reemplaza: hasta agregar rate limit de anónimos en Runtime, el acceso público a la landing puede generar costos sin ese tope. No exponer el cambio en producción sin aceptar ese riesgo; proteger temporalmente el endpoint a nivel de infraestructura si hace falta. Validar CORS, autenticación MCP, herramientas disponibles y flujo en staging antes de desplegar.
