@@ -1,8 +1,4 @@
-import {
-  BadRequestException,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { AuditService } from '../audit/audit.service';
 import { AUDIT_ACTIONS, AuditActor } from '../audit/audit.types';
 import { PrismaService } from '../prisma/prisma.service';
@@ -44,7 +40,7 @@ export class PackLandingVisibilityService {
       RETURNING show_on_landing AS "showOnLanding"
     `;
     if (!rows[0]) {
-      throw new BadRequestException('Drop-in packs cannot be published');
+      throw new NotFoundException(`Pack ${packId} not found in tenant`);
     }
     await this.audit.record({
       tenantId,
@@ -58,6 +54,7 @@ export class PackLandingVisibilityService {
     return rows[0].showOnLanding;
   }
 
+  // shortcut: keep this field in raw SQL until pack metadata is consolidated in Prisma schema.
   async visiblePackIds(tenantId: string): Promise<Set<string>> {
     const rows = await this.prisma.$queryRaw<{ id: string }[]>`
       SELECT id::text AS id
