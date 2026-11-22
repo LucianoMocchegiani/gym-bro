@@ -12,6 +12,107 @@ type MarketingShellProps = {
   children: ReactNode;
 };
 
+type ContactIconName = 'email' | 'facebook' | 'instagram' | 'tiktok' | 'youtube';
+
+const CONTACT_SOCIALS = [
+  {
+    href: 'https://www.instagram.com/faciliterapps/',
+    label: 'Instagram',
+    icon: 'instagram',
+  },
+  {
+    href: 'https://www.facebook.com/p/Faciliter-Apps-61594787115398/',
+    label: 'Facebook',
+    icon: 'facebook',
+  },
+  {
+    href: 'https://www.youtube.com/@Faciliter-apps',
+    label: 'YouTube',
+    icon: 'youtube',
+  },
+  {
+    href: 'https://www.tiktok.com/@faciliterapps',
+    label: 'TikTok',
+    icon: 'tiktok',
+  },
+] as const satisfies ReadonlyArray<{
+  href: string;
+  label: string;
+  icon: ContactIconName;
+}>;
+
+function ContactIcon({ name }: { name: ContactIconName }) {
+  const icon = {
+    email: (
+      <>
+        <rect
+          x="3"
+          y="5"
+          width="18"
+          height="14"
+          rx="2"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+        />
+        <path
+          d="m4 7 8 6 8-6"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+        />
+      </>
+    ),
+    facebook: (
+      <path d="M24 12.073C24 5.405 18.627 0 12 0S0 5.405 0 12.073c0 6.019 4.388 11.005 10.125 11.854v-8.385H7.078v-3.469h3.047V9.429c0-3.021 1.792-4.69 4.533-4.69 1.312 0 2.686.236 2.686.236v2.953h-1.513c-1.491 0-1.956.931-1.956 1.887v2.258h3.328l-.532 3.469h-2.796v8.385C19.612 23.078 24 18.092 24 12.073Z" />
+    ),
+    instagram: (
+      <>
+        <rect
+          x="3"
+          y="3"
+          width="18"
+          height="18"
+          rx="5"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+        />
+        <circle
+          cx="12"
+          cy="12"
+          r="4"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+        />
+        <circle cx="17.5" cy="6.5" r="1" />
+      </>
+    ),
+    tiktok: (
+      <path d="M12.53 0h4.3c.2 3.3 2.1 5.7 5.2 6.1v4.3c-1.9.1-3.8-.5-5.3-1.6v8.5c0 4.3-3.5 6.8-7.5 6.6-3.1-.2-6.1-2.5-6.5-5.9-.7-5 3.4-8.8 8.3-8.1v4.5c-2-.6-4.2.2-4 2.6.2 2.1 3.8 2.9 5.1 1.3.4-.5.4-1.3.4-2V0Z" />
+    ),
+    youtube: (
+      <>
+        <path d="M23.5 6.2a3 3 0 0 0-2.1-2.1C19.5 3.6 12 3.6 12 3.6s-7.5 0-9.4.5A3 3 0 0 0 .5 6.2 31 31 0 0 0 0 12a31 31 0 0 0 .5 5.8 3 3 0 0 0 2.1 2.1c1.9.5 9.4.5 9.4.5s7.5 0 9.4-.5a3 3 0 0 0 2.1-2.1A31 31 0 0 0 24 12a31 31 0 0 0-.5-5.8Z" />
+        <path d="m9.6 15.5 6.3-3.5-6.3-3.5Z" fill="var(--panel-bg)" />
+      </>
+    ),
+  }[name];
+
+  return (
+    <svg
+      aria-hidden="true"
+      focusable="false"
+      viewBox="0 0 24 24"
+      fill="currentColor"
+      style={{ width: '1.25rem', height: '1.25rem', flexShrink: 0 }}
+    >
+      {icon}
+    </svg>
+  );
+}
+
 /**
  * Header + footer públicos, contenedor ancho (patrón Kuatia MarketingShell).
  */
@@ -81,10 +182,41 @@ export function MarketingShell({ children }: MarketingShellProps) {
           </div>
           <div>
             <p className="mkt-footer-label">Contacto</p>
-            <ul>
+            <ul className="mkt-social-links" style={{ gap: '0.5rem' }}>
               <li>
-                <a href={mailHref}>{MARKETING_MAIL}</a>
+                <a
+                  href={mailHref}
+                  aria-label={`Enviar correo a ${MARKETING_MAIL}`}
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '0.45rem',
+                    textDecoration: 'none',
+                  }}
+                >
+                  <ContactIcon name="email" />
+                  {MARKETING_MAIL}
+                </a>
               </li>
+              {CONTACT_SOCIALS.map(({ href, label, icon }) => (
+                <li key={icon}>
+                  <a
+                    href={href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label={`${label} (se abre en una pestaña nueva)`}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '0.45rem',
+                      textDecoration: 'none',
+                    }}
+                  >
+                    <ContactIcon name={icon} />
+                    {label}
+                  </a>
+                </li>
+              ))}
             </ul>
           </div>
         </MktShell>
