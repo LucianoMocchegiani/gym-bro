@@ -66,4 +66,18 @@ export class UpdateTenantSettingsDto {
   @Min(0)
   @Max(99)
   transferDiscountPercent?: number;
+
+  /** Descuento por defecto en Caja al cobrar con QR Point, en %. */
+  @IsOptional()
+  @IsNumber({ maxDecimalPlaces: 2 })
+  @Min(0)
+  @Max(99)
+  qrPointDiscountPercent?: number;
+
+  /** Descuento por defecto en Caja al generar un link de Mercado Pago, en %. */
+  @IsOptional()
+  @IsNumber({ maxDecimalPlaces: 2 })
+  @Min(0)
+  @Max(99)
+  mpLinkDiscountPercent?: number;
 }
