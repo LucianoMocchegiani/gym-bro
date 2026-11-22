@@ -1,7 +1,3 @@
-/**
- * Packs API (módulo `packs`).
- */
-
 import { apiRequest } from '@/lib/api/client';
 import { toSearchParams } from '@/lib/api/list';
 import type { ListParams, ListResult } from '@/lib/api/list';
@@ -30,7 +26,6 @@ export type PackDetail = {
   offersPlatformTrial: boolean;
   kind: PackKind;
   components: PackComponentDetail[];
-  /** Clave OID4VCI (`pack_{id}`); null si aún no se intentó sync. */
   kuatiaConfigurationId: string | null;
   kuatiaVct: string | null;
   kuatiaSyncedAt: string | null;
@@ -39,7 +34,6 @@ export type PackDetail = {
   updatedAt: string;
 };
 
-/** Alias para selects de cobro. */
 export type PackSummary = Pick<
   PackDetail,
   | 'id'
@@ -80,9 +74,6 @@ export type UpdatePackInput = {
 
 export type ListPacksInput = { active?: boolean } & ListParams;
 
-/**
- * Lista packs (`catalog.write`), paginado.
- */
 export function listPacks(
   input?: ListPacksInput,
 ): Promise<ListResult<PackDetail>> {
@@ -90,25 +81,16 @@ export function listPacks(
   return apiRequest<ListResult<PackDetail>>(`/packs${qs ? `?${qs}` : ''}`);
 }
 
-/**
- * Packs activos (cobro / selects); trae hasta 100 por defecto.
- */
 export function listActivePacks(
   input?: ListParams,
 ): Promise<ListResult<PackSummary>> {
   return listPacks({ active: true, pageSize: 100, ...input });
 }
 
-/**
- * Detalle de pack.
- */
 export function getPack(packId: string): Promise<PackDetail> {
   return apiRequest<PackDetail>(`/packs/${packId}`);
 }
 
-/**
- * Alta de pack (CU-SER-002).
- */
 export function createPack(input: CreatePackInput): Promise<PackDetail> {
   return apiRequest<PackDetail>('/packs', {
     method: 'POST',
@@ -116,9 +98,6 @@ export function createPack(input: CreatePackInput): Promise<PackDetail> {
   });
 }
 
-/**
- * Edición de pack (components reemplaza el set completo).
- */
 export function updatePack(
   packId: string,
   input: UpdatePackInput,
@@ -129,6 +108,22 @@ export function updatePack(
   });
 }
 
+export function getPackLandingVisibility(
+  packId: string,
+): Promise<{ showOnLanding: boolean }> {
+  return apiRequest(`/packs/${packId}/landing-visibility`);
+}
+
+export function updatePackLandingVisibility(
+  packId: string,
+  showOnLanding: boolean,
+): Promise<{ showOnLanding: boolean }> {
+  return apiRequest(`/packs/${packId}/landing-visibility`, {
+    method: 'PATCH',
+    body: { showOnLanding },
+  });
+}
+
 export type DeletePackResult = {
   deleted?: boolean;
   deactivated?: boolean;
@@ -136,13 +131,6 @@ export type DeletePackResult = {
   totalContracts?: number;
 };
 
-/**
- * Eliminación segura de pack.
- *
- * @remarks Sin contrataciones → borrado físico. Con contrataciones → 409
- * `PACK_HAS_CONTRACTS`; con `confirmDeactivate` queda dado de baja
- * (`active=false`, dejará de funcionar el mes siguiente).
- */
 export function deletePack(
   packId: string,
   confirmDeactivate = false,
