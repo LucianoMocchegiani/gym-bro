@@ -38,7 +38,12 @@ async function runtimeFetch(path: string, init: RequestInit = {}, retried = fals
   headers.set('Accept', headers.get('Accept') ?? 'application/json');
   const token = accessTokenOverride ?? readStaffSession()?.accessToken;
   if (token) headers.set('Authorization', `Bearer ${token}`);
-  const response = await fetch(`${baseUrl()}${path}`, { ...init, headers, credentials: 'include' });
+  // Runtime cookies override anon bearers, so public requests must not send them.
+  const response = await fetch(`${baseUrl()}${path}`, {
+    ...init,
+    headers,
+    credentials: accessTokenOverride ? 'omit' : 'include',
+  });
   if (response.status === 401 && !retried && !accessTokenOverride && (await refreshStaffAccess())) {
     return runtimeFetch(path, init, true);
   }
