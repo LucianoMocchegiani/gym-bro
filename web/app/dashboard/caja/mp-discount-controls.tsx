@@ -1,87 +1,100 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { usePathname } from 'next/navigation';
 import { getCashDiscountDefaults } from '@/lib/api/cash-discount';
 
 export function CajaMpDiscountControls() {
   const pathname = usePathname();
-  const [discounts, setDiscounts] = useState<{
-    qr: string;
-    link: string;
-  } | null>(null);
+  const [discounts, setDiscounts] = useState<{ qr: string; link: string } | null>(
+    null,
+  );
+  const [method, setMethod] = useState<'qr' | 'link' | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [host, setHost] = useState<HTMLDivElement | null>(null);
 
   useEffect(() => {
-    if (pathname !== '/dashboard/caja') {
-      return;
-    }
+    if (pathname !== '/dashboard/caja') return;
     sessionStorage.removeItem('caja-mp-qr-discount');
     sessionStorage.removeItem('caja-mp-link-discount');
     void getCashDiscountDefaults()
       .then((defaults) => {
-        setDiscounts({
+        const next = {
           qr: String(defaults.qrPointDiscountPercent),
           link: String(defaults.mpLinkDiscountPercent),
-        });
-        sessionStorage.setItem(
-          'caja-mp-qr-discount',
-          String(defaults.qrPointDiscountPercent),
-        );
-        sessionStorage.setItem(
-          'caja-mp-link-discount',
-          String(defaults.mpLinkDiscountPercent),
-        );
+        };
+        setDiscounts(next);
+        sessionStorage.setItem('caja-mp-qr-discount', next.qr);
+        sessionStorage.setItem('caja-mp-link-discount', next.link);
       })
       .catch(() => setError('No se pudieron cargar los descuentos MP de Config.'));
   }, [pathname]);
 
-  if (pathname !== '/dashboard/caja') {
-    return null;
-  }
+  useEffect(() => {
+    if (pathname !== '/dashboard/caja') return;
+    let disposed = false;
+    let container: HTMLDivElement | null = null;
+    let form: HTMLFormElement | null = null;
+    const updateMethod = () => {
+      const selected = form?.querySelector<HTMLInputElement>(
+        'input[name="medio"]:checked',
+      )?.parentElement?.textContent?.toLowerCase();
+      setMethod(selected?.includes('point') ? 'qr' : selected?.includes('link') ? 'link' : null);
+    };
+    const attach = () => {
+      if (disposed || container) return;
+      const fieldset = document.querySelector<HTMLFieldSetElement>(
+        '.cash-cart form fieldset.mode-toggle',
+      );
+      if (!fieldset) return;
+      container = document.createElement('div');
+      fieldset.after(container);
+      form = fieldset.closest('form');
+      form?.addEventListener('change', updateMethod);
+      updateMethod();
+      setHost(container);
+      observer.disconnect();
+    };
+    const observer = new MutationObserver(attach);
+    observer.observe(document.body, { childList: true, subtree: true });
+    attach();
+    return () => {
+      disposed = true;
+      observer.disconnect();
+      form?.removeEventListener('change', updateMethod);
+      container?.remove();
+      setHost(null);
+    };
+  }, [pathname]);
 
   function update(medio: 'qr' | 'link', value: string) {
     setDiscounts((current) => (current ? { ...current, [medio]: value } : current));
     sessionStorage.setItem(`caja-mp-${medio}-discount`, value);
   }
 
-  return (
-    <section aria-label="Descuentos Mercado Pago en Caja" className="panel">
-      <h2>Descuentos Mercado Pago en este cobro</h2>
-      {discounts ? (
-        <div className="admin-form">
-          <label>
-            Mercado Pago Point (QR) (%)
-            <input
-              type="number"
-              min={0}
-              max={99}
-              step={0.01}
-              value={discounts.qr}
-              onChange={(event) => update('qr', event.target.value)}
-            />
-          </label>
-          <label>
-            Link de pago Mercado Pago (%)
-            <input
-              type="number"
-              min={0}
-              max={99}
-              step={0.01}
-              value={discounts.link}
-              onChange={(event) => update('link', event.target.value)}
-            />
-          </label>
-          <p className="muted small">
-            Se precargan los defaults de Config. Podés ajustar el porcentaje
-            para los cobros que generes en Caja.
-          </p>
-        </div>
+  if (!host) return null;
+  return createPortal(
+    method ? (
+      discounts ? (
+        <label>
+          Descuento (%)
+          <input
+            type="number"
+            min={0}
+            max={99}
+            step={0.01}
+            required
+            value={discounts[method]}
+            onChange={(event) => update(method, event.target.value)}
+          />
+        </label>
       ) : (
         <p className={error ? 'error' : 'muted small'}>
-          {error ?? 'Cargando descuentos desde Config…'}
+          {error ?? 'Cargando descuento desde Config…'}
         </p>
-      )}
-    </section>
+      )
+    ) : null,
+    host,
   );
 }
