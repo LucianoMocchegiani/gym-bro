@@ -1,19 +1,22 @@
 # Agent Runtime en GymBro
 
-El Compose incluye Agent Runtime con PostgreSQL y volumen propios. No comparte tablas ni credenciales de la base GymBro. Su UI/API queda disponible localmente en `http://localhost:3031`; en producción publicar Runtime detrás de HTTPS y permitir los orígenes del frontend en `CORS_ORIGIN`.
+El Compose incluye Agent Runtime con PostgreSQL y volumen propios. No comparte tablas ni credenciales de la base GymBro. Su UI/API queda disponible localmente en `http://localhost:3031`; en producción publicar Runtime detrás de HTTPS y permitir los orígenes del frontend en `CORS_ORIGIN` o los subdominios tenant con `CORS_APP_DOMAIN`.
 
 ## Preparar y levantar
 
 ```sh
 cp agent-runtime/.env.example agent-runtime/.env
 cp web/.env.example web/.env
-# Editar secretos, URL pública de Runtime y CORS_ORIGIN.
+# Editar secretos y CORS. Para Docker, configurar NEXT_PUBLIC_AGENT_RUNTIME_URL
+# en el .env junto a docker-compose.yml antes del build.
 docker compose up -d --build
 ```
 
 En PowerShell, usar `Copy-Item`. Para claves, generar valores aleatorios con `openssl rand -hex 32`. Poner la misma contraseña de DB en `POSTGRES_PASSWORD` y `DATABASE_URL`. El volumen `agent_runtime_data` persiste configuración e historial de Runtime; no ejecutar `docker compose down -v` salvo que se quiera borrar esos datos.
 
-En producción, `NEXT_PUBLIC_AGENT_RUNTIME_URL` se bakea en el build de web: establecerla en el `.env` junto a `docker-compose.yml` antes de `docker compose up --build`. Debe ser una URL accesible desde el navegador, no el hostname Docker.
+En producción, `NEXT_PUBLIC_AGENT_RUNTIME_URL` se bakea en el build de web: establecerla en el `.env` junto a `docker-compose.yml` antes de `docker compose up --build`. Debe ser una URL accesible desde el navegador, no el hostname Docker. `web/.env` sirve para ejecutar Next localmente; en Compose el valor de `NEXT_PUBLIC_*` se toma del `.env` raíz por los `build.args`.
+
+Para CORS, `CORS_ORIGIN` acepta orígenes exactos separados por coma; `CORS_APP_DOMAIN=faciliter.xyz` permite el apex y sus subdominios tenant. Ajustar el dominio al que realmente sirve GymBro en producción.
 
 ## Conectar identidad y MCP
 
