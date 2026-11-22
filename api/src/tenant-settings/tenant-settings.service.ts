@@ -192,7 +192,9 @@ export class TenantSettingsService {
     }
   }
 
-  private async getMpDiscountDefaults(tenantId: string): Promise<MpDiscountDefaults> {
+  private async getMpDiscountDefaults(
+    tenantId: string,
+  ): Promise<MpDiscountDefaults> {
     const [row] = await this.prisma.$queryRaw<MpDiscountDefaults[]>`
       SELECT "mp_point_qr_discount_bps" AS "qrBps",
              "mp_link_discount_bps" AS "mpLinkBps"
