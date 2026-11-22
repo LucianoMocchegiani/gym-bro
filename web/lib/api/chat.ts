@@ -88,8 +88,12 @@ export async function listChatMessages(id: string): Promise<ChatMessage[]> {
 /** Acción del usuario sobre una tarjeta Confirmar / Cancelar. */
 export async function runChatUserAction(
   conversationId: string,
+  tool: string,
   input: Record<string, unknown>,
 ): Promise<{ message: ChatMessage; output: unknown }> {
+  if (tool !== 'confirm_proposal' && !tool.endsWith('__confirm_proposal')) {
+    throw new ChatClientError(400, 'Acción de propuesta inválida.');
+  }
   return runtimeCall(resolveRuntimeProposal(conversationId, input));
 }
 

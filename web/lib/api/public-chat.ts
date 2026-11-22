@@ -60,7 +60,7 @@ export async function ensurePublicChatSession(): Promise<PublicSession> {
     };
   } catch (error) {
     setChatAccessTokenOverride(null);
-    throw error instanceof ChatClientError ? error : error;
+    throw error;
   }
 }
 
