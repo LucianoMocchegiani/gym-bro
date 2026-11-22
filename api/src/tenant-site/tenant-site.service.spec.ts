@@ -93,7 +93,9 @@ describe('TenantSiteService brand configuration compatibility', () => {
 
   it('preserves contact email when a client omits it', async () => {
     const contactEmail = 'hola@example.com';
-    const { service, getUpsertedContent } = setup(siteContent({ contactEmail }));
+    const { service, getUpsertedContent } = setup(
+      siteContent({ contactEmail }),
+    );
 
     await service.put('tenant-id', dtoWithoutThemeColor(), {
       profileType: 'STAFF',
