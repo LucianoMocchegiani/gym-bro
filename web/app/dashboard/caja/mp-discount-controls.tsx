@@ -7,6 +7,7 @@ import { getCashDiscountDefaults } from '@/lib/api/cash-discount';
 
 export function CajaMpDiscountControls() {
   const pathname = usePathname();
+  const isCaja = pathname?.replace(/\/+$/, '') === '/dashboard/caja';
   const [discounts, setDiscounts] = useState<{ qr: string; link: string } | null>(
     null,
   );
@@ -15,7 +16,7 @@ export function CajaMpDiscountControls() {
   const [host, setHost] = useState<HTMLDivElement | null>(null);
 
   useEffect(() => {
-    if (pathname !== '/dashboard/caja') return;
+    if (!isCaja) return;
     sessionStorage.removeItem('caja-mp-qr-discount');
     sessionStorage.removeItem('caja-mp-link-discount');
     void getCashDiscountDefaults()
@@ -29,10 +30,10 @@ export function CajaMpDiscountControls() {
         sessionStorage.setItem('caja-mp-link-discount', next.link);
       })
       .catch(() => setError('No se pudieron cargar los descuentos MP de Config.'));
-  }, [pathname]);
+  }, [isCaja]);
 
   useEffect(() => {
-    if (pathname !== '/dashboard/caja') return;
+    if (!isCaja) return;
     let disposed = false;
     let container: HTMLDivElement | null = null;
     let form: HTMLFormElement | null = null;
@@ -44,6 +45,7 @@ export function CajaMpDiscountControls() {
     };
     const attach = () => {
       if (disposed || container) return;
+      // shortcut: Caja's form has no component slot; render directly there when the form is extracted.
       const fieldset = document.querySelector<HTMLFieldSetElement>(
         '.cash-cart form fieldset.mode-toggle',
       );
@@ -66,7 +68,7 @@ export function CajaMpDiscountControls() {
       container?.remove();
       setHost(null);
     };
-  }, [pathname]);
+  }, [isCaja]);
 
   function update(medio: 'qr' | 'link', value: string) {
     setDiscounts((current) => (current ? { ...current, [medio]: value } : current));
