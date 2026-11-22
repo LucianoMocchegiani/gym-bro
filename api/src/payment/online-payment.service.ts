@@ -92,7 +92,9 @@ export class OnlinePaymentService {
       WHERE "tenant_id" = ${tenantId}::uuid
     `;
     const discountBps = recordedByStaffId
-      ? percentToBps(dto.discountPercent ?? (discountDefaults?.mpLinkBps ?? 0) / 100)
+      ? percentToBps(
+          dto.discountPercent ?? (discountDefaults?.mpLinkBps ?? 0) / 100,
+        )
       : 0;
     const resolvedLines = await this.resolveCartLines(
       tenantId,
