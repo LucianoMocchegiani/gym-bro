@@ -1,7 +1,17 @@
 # Faciliter — local + VPS (un solo Compose)
 #
-# NEXT_PUBLIC_* se bakean en el build de web. En VPS, configurar los .env de cada servicio.
-# Runtime usa PostgreSQL propio; no comparte ni modifica la DB del negocio.
+# Imágenes compiladas (sin bind-mount de código). Iterar: npm en el host
+# contra Postgres/Redis publicados, o `docker compose up --build`.
+#
+# NEXT_PUBLIC_* se bakean en el build de web. Defaults = local.
+# En VPS, un `.env` junto a este archivo (o export) antes de `--build`.
+#
+# Primer boot (DB vacía): la API corre migrate deploy sola.
+# Seed demo (Super / gym-de-prueba): a mano, ver docs/13-setup-db-desde-cero.md
+#
+# Uso:
+#   docker compose up -d --build
+#   docker compose exec api npm run prisma:seed
 
 services:
   postgres:
@@ -13,9 +23,11 @@ services:
       POSTGRES_PASSWORD: gymbro
       POSTGRES_DB: gymbro
     ports:
+      # Host 5433: convive con otro Postgres (p. ej. Kuatia en 5432).
       - "127.0.0.1:5433:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      # Primer boot: crea database `chat`. Si el volumen ya existía, lo hace chat-api.
       - ./docker/postgres/init:/docker-entrypoint-initdb.d:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U gymbro -d gymbro"]
@@ -37,13 +49,15 @@ services:
       timeout: 3s
       retries: 10
 
+  # Agent Runtime mantiene configuración e historial en una DB/volumen separados.
   agent-runtime-postgres:
     image: pgvector/pgvector:pg17
     container_name: faciliter-agent-runtime-postgres
     restart: unless-stopped
+    env_file:
+      - ./agent-runtime/.env
     environment:
       POSTGRES_USER: agent
-      POSTGRES_PASSWORD: ${AGENT_RUNTIME_DB_PASSWORD:?Set AGENT_RUNTIME_DB_PASSWORD in agent-runtime/.env}
       POSTGRES_DB: runtime
     volumes:
       - agent_runtime_data:/var/lib/postgresql/data
@@ -54,25 +68,24 @@ services:
       retries: 10
 
   agent-runtime-migrate:
-    image: ghcr.io/lucianomocchegiani/agent-runtime:${AGENT_RUNTIME_VERSION:-latest}
+    image: ghcr.io/lucianomocchegiani/agent-runtime:latest
     container_name: faciliter-agent-runtime-migrate
     working_dir: /app
     command: ["npm", "run", "prisma:deploy", "-w", "apps/api"]
     restart: "no"
-    environment:
-      DATABASE_URL: postgresql://agent:${AGENT_RUNTIME_DB_PASSWORD:?Set AGENT_RUNTIME_DB_PASSWORD in agent-runtime/.env}@agent-runtime-postgres:5432/runtime?schema=public
+    env_file:
+      - ./agent-runtime/.env
     depends_on:
       agent-runtime-postgres:
         condition: service_healthy
 
   agent-runtime:
-    image: ghcr.io/lucianomocchegiani/agent-runtime:${AGENT_RUNTIME_VERSION:-latest}
+    image: ghcr.io/lucianomocchegiani/agent-runtime:latest
     container_name: faciliter-agent-runtime
     restart: unless-stopped
     env_file:
       - ./agent-runtime/.env
     environment:
-      DATABASE_URL: postgresql://agent:${AGENT_RUNTIME_DB_PASSWORD:?Set AGENT_RUNTIME_DB_PASSWORD in agent-runtime/.env}@agent-runtime-postgres:5432/runtime?schema=public
       PORT: 3030
     ports:
       - "127.0.0.1:3031:3030"
@@ -89,6 +102,24 @@ services:
       timeout: 5s
       retries: 10
       start_period: 30s
+
+  # Opcional: descomentar para UI de Postgres
+  # pgadmin:
+  #   image: dpage/pgadmin4:8
+  #   container_name: faciliter-pgadmin
+  #   restart: unless-stopped
+  #   environment:
+  #     PGADMIN_DEFAULT_EMAIL: admin@example.com
+  #     PGADMIN_DEFAULT_PASSWORD: gymbro
+  #     PGADMIN_CONFIG_SERVER_MODE: "False"
+  #   ports:
+  #     - "127.0.0.1:5050:80"
+  #   volumes:
+  #     - pgadmin_data:/var/lib/pgadmin
+  #     - ./docker/pgadmin/servers.json:/pgadmin4/servers.json:ro
+  #   depends_on:
+  #     postgres:
+  #       condition: service_healthy
 
   api:
     build:
@@ -138,6 +169,7 @@ services:
       NODE_ENV: production
       API_INTERNAL_URL: http://api:3001
     ports:
+      # Host 3002: convive con otro Next (p. ej. Kuatia en 3000).
       - "3002:3000"
     depends_on:
       api:

@@ -5,9 +5,9 @@ El Compose incluye Agent Runtime con PostgreSQL y volumen propios. No comparte t
 ## Preparar y levantar
 
 ```sh
-mkdir -p agent-runtime
 cp agent-runtime/.env.example agent-runtime/.env
-# Editar los secretos y generar RUNTIME_CONFIG_ENCRYPTION_KEY con openssl rand -hex 32
+# Editar los secretos; para las claves usar: openssl rand -hex 32
+# Poner el mismo valor de contraseña en POSTGRES_PASSWORD y DATABASE_URL.
 docker compose up -d --build
 ```
 
@@ -30,6 +30,6 @@ En **Administración → MCP**, configurar el servidor GymBro con URL `http://mc
 
 ## Estado de la migración del chat
 
-Esto despliega Runtime y deja configurada la conexión de identidad/MCP para probarlo. **El drawer de GymBro todavía usa `chat-api`** (`NEXT_PUBLIC_CHAT_API_URL`); no cambiarlo hasta adaptar el cliente/UI y conservar las tarjetas de propuestas y la confirmación de `confirm_proposal`. Runtime ya soporta aprobaciones genéricas de herramientas MCP marcadas `chat/userOnly`, pero ese mecanismo no sustituye automáticamente la acción de usuario específica de las tarjetas actuales. La landing pública también sigue en `chat-api`.
+Esto despliega Runtime y deja disponible la conexión de identidad/MCP para probarlo. **El drawer de GymBro todavía usa `chat-api`** (`NEXT_PUBLIC_CHAT_API_URL`); no cambiarlo hasta adaptar el cliente/UI y conservar las tarjetas de propuestas y la confirmación de `confirm_proposal`. Runtime ya soporta aprobaciones genéricas de herramientas MCP marcadas `chat/userOnly`, pero ese mecanismo no sustituye automáticamente la acción de usuario específica de las tarjetas actuales. La landing pública también sigue en `chat-api`.
 
 El Compose conserva ambos servicios deliberadamente: no se interrumpe el chat activo ni se borran sus conversaciones al desplegar Runtime. La migración de UI y el retiro de `chat-api` quedan para el paso siguiente.
