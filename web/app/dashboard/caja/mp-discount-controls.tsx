@@ -8,9 +8,10 @@ import { getCashDiscountDefaults } from '@/lib/api/cash-discount';
 export function CajaMpDiscountControls() {
   const pathname = usePathname();
   const isCaja = pathname?.replace(/\/+$/, '') === '/dashboard/caja';
-  const [discounts, setDiscounts] = useState<{ qr: string; link: string } | null>(
-    null,
-  );
+  const [discounts, setDiscounts] = useState<{
+    qr: string;
+    link: string;
+  } | null>(null);
   const [method, setMethod] = useState<'qr' | 'link' | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [host, setHost] = useState<HTMLDivElement | null>(null);
@@ -29,7 +30,9 @@ export function CajaMpDiscountControls() {
         sessionStorage.setItem('caja-mp-qr-discount', next.qr);
         sessionStorage.setItem('caja-mp-link-discount', next.link);
       })
-      .catch(() => setError('No se pudieron cargar los descuentos MP de Config.'));
+      .catch(() =>
+        setError('No se pudieron cargar los descuentos MP de Config.'),
+      );
   }, [isCaja]);
 
   useEffect(() => {
@@ -38,31 +41,48 @@ export function CajaMpDiscountControls() {
     let container: HTMLDivElement | null = null;
     let form: HTMLFormElement | null = null;
     const updateMethod = () => {
-      const selected = form?.querySelector<HTMLInputElement>(
-        'input[name="medio"]:checked',
-      )?.parentElement?.textContent?.toLowerCase();
-      setMethod(selected?.includes('point') ? 'qr' : selected?.includes('link') ? 'link' : null);
+      const selected = form
+        ?.querySelector<HTMLInputElement>('input[name="medio"]:checked')
+        ?.parentElement?.textContent?.toLowerCase();
+      setMethod(
+        selected?.includes('point')
+          ? 'qr'
+          : selected?.includes('link')
+            ? 'link'
+            : null,
+      );
     };
-    const attach = () => {
-      if (disposed || container) return;
-      // shortcut: Caja's form has no component slot; render directly there when the form is extracted.
+    const sync = () => {
+      if (disposed) return;
       const fieldset = document.querySelector<HTMLFieldSetElement>(
         '.cash-cart form fieldset.mode-toggle',
       );
-      if (!fieldset) return;
+      if (container?.isConnected && container.previousElementSibling === fieldset) {
+        return;
+      }
+      form?.removeEventListener('change', updateMethod);
+      container?.remove();
+      container = null;
+      form = null;
+      setHost(null);
+      if (!fieldset) {
+        setMethod(null);
+        return;
+      }
+      // shortcut: Caja has no component slot, render from CajaPage when its form is extracted.
       container = document.createElement('div');
       fieldset.after(container);
       form = fieldset.closest('form');
       form?.addEventListener('change', updateMethod);
       updateMethod();
       setHost(container);
-      observer.disconnect();
     };
-    const observer = new MutationObserver(attach);
+    const observer = new MutationObserver(sync);
     observer.observe(document.body, { childList: true, subtree: true });
-    attach();
+    const frame = window.requestAnimationFrame(sync);
     return () => {
       disposed = true;
+      window.cancelAnimationFrame(frame);
       observer.disconnect();
       form?.removeEventListener('change', updateMethod);
       container?.remove();
