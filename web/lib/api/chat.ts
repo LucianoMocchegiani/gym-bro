@@ -63,7 +63,7 @@ export function setChatAccessTokenOverride(token: string | null): void {
   accessTokenOverride = token;
 }
 
-function useAgentRuntime(): boolean {
+function shouldUseAgentRuntime(): boolean {
   return agentRuntimeConfigured() && !accessTokenOverride;
 }
 
@@ -173,14 +173,14 @@ async function chatJson<T>(path: string, init: RequestInit = {}): Promise<T> {
 
 /** Hilos activos del staff (más recientes primero). */
 export async function listChatConversations(): Promise<ChatConversation[]> {
-  if (useAgentRuntime()) return runtimeCall(listRuntimeConversations());
+  if (shouldUseAgentRuntime()) return runtimeCall(listRuntimeConversations());
   const data = await chatJson<{ items: ChatConversation[] }>('/v1/conversations');
   return data.items ?? [];
 }
 
 /** Alta de hilo vacío. El título lo pone el primer mensaje (C7). */
 export async function createChatConversation(): Promise<ChatConversation> {
-  if (useAgentRuntime()) return runtimeCall(createRuntimeConversation());
+  if (shouldUseAgentRuntime()) return runtimeCall(createRuntimeConversation());
   return chatJson<ChatConversation>('/v1/conversations', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -190,7 +190,7 @@ export async function createChatConversation(): Promise<ChatConversation> {
 
 /** Archiva el hilo (soft-delete C2). */
 export async function archiveChatConversation(id: string): Promise<ChatConversation> {
-  if (useAgentRuntime()) return runtimeCall(archiveRuntimeConversation(id));
+  if (shouldUseAgentRuntime()) return runtimeCall(archiveRuntimeConversation(id));
   return chatJson<ChatConversation>(`/v1/conversations/${id}`, { method: 'DELETE' });
 }
 
@@ -199,7 +199,7 @@ export async function patchChatConversation(
   id: string,
   patch: { title: string | null },
 ): Promise<ChatConversation> {
-  if (useAgentRuntime()) return runtimeCall(patchRuntimeConversation(id, patch));
+  if (shouldUseAgentRuntime()) return runtimeCall(patchRuntimeConversation(id, patch));
   return chatJson<ChatConversation>(`/v1/conversations/${id}`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
@@ -209,7 +209,7 @@ export async function patchChatConversation(
 
 /** Historial persistido (user / assistant / tool). */
 export async function listChatMessages(id: string): Promise<ChatMessage[]> {
-  if (useAgentRuntime()) return runtimeCall(listRuntimeMessages(id));
+  if (shouldUseAgentRuntime()) return runtimeCall(listRuntimeMessages(id));
   const data = await chatJson<{ items: ChatMessage[] }>(`/v1/conversations/${id}/messages`);
   return data.items ?? [];
 }
@@ -220,7 +220,7 @@ export async function runChatUserAction(
   tool: string,
   input: Record<string, unknown>,
 ): Promise<{ message: ChatMessage; output: unknown }> {
-  if (useAgentRuntime()) {
+  if (shouldUseAgentRuntime()) {
     return runtimeCall(resolveRuntimeProposal(conversationId, input));
   }
   return chatJson<{ message: ChatMessage; output: unknown }>(
@@ -255,7 +255,7 @@ export async function streamChatTurn(
   signal?: AbortSignal,
 ): Promise<'ok' | 'aborted'> {
   try {
-    const res = useAgentRuntime()
+    const res = shouldUseAgentRuntime()
       ? await runtimeCall(postRuntimeTurn(conversationId, text, signal))
       : await chatFetch(`/v1/conversations/${conversationId}/messages`, {
           method: 'POST',
