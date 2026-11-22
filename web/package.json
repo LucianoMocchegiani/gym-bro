@@ -11,7 +11,8 @@
     "start": "next start -H 0.0.0.0 -p 3000",
     "lint": "eslint",
     "test:site-theme": "node --experimental-strip-types --test lib/site-theme.test.mjs",
-    "test:free-plan-notice": "node --experimental-strip-types --test lib/free-plan-notice.test.mjs"
+    "test:free-plan-notice": "node --experimental-strip-types --test lib/free-plan-notice.test.mjs",
+    "test:agent-runtime-approvals": "node --experimental-strip-types --test lib/api/agent-runtime-approvals.test.mjs"
   },
   "dependencies": {
     "fflate": "^0.8.3",
@@ -21,20 +22,21 @@
     "qrcode": "^1.5.4",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
-    "react-markdown": "^10.1.0",
+    "papaparse": "^5.7.0",
     "read-excel-file": "^9.3.10",
     "rehype-sanitize": "^6.0.0",
     "remark-gfm": "^4.0.1"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
+    "@eslint/config-array": "^0.19.0",
+    "eslint-config-next": "^16.4.3",
     "@types/node": "^24.13.3",
     "@types/papaparse": "^5.5.2",
     "@types/qrcode": "^1.5.6",
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
     "eslint": "^9",
-    "eslint-config-next": "^16.4.3",
     "typescript": "^5.9.3"
   }
 }
