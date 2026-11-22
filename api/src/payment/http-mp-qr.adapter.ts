@@ -48,6 +48,16 @@ export class MpQrApiError extends Error {
     super(`Mercado Pago QR ${operation} failed (HTTP ${status})`);
   }
 }
+export type MpQrOrderDiagnostic = {
+  id: string;
+  type: string;
+  status: string;
+  externalReference: string | null;
+  totalAmount: string | null;
+  totalPaidAmount: string | null;
+  mode: string | null;
+  payments: Array<{ status: string; amount: string | null }>;
+};
 
 @Injectable()
 export class HttpMpQrAdapter {
@@ -157,7 +167,7 @@ export class HttpMpQrAdapter {
         transactions: { payments: [{ amount }] },
       }),
     });
-    return this.readOrder(response);
+    return this.readOrder(response, true);
   }
 
   async getOrder(accessToken: string, orderId: string): Promise<MpQrOrder> {
@@ -173,8 +183,20 @@ export class HttpMpQrAdapter {
     return this.readOrder(response);
   }
 
-  private async readOrder(response: Response): Promise<MpQrOrder> {
-    await this.assertOk(response, 'order');
+  async getOrderDiagnostic(
+    accessToken: string,
+    orderId: string,
+  ): Promise<MpQrOrderDiagnostic> {
+    const response = await fetch(
+      `https://api.mercadopago.com/v1/orders/${encodeURIComponent(orderId)}`,
+      {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          Accept: 'application/json',
+        },
+      },
+    );
+    await this.assertOk(response, 'order diagnostic');
     const data = (await response.json()) as {
       id?: string;
       type?: string;
@@ -182,10 +204,9 @@ export class HttpMpQrAdapter {
       external_reference?: string;
       total_amount?: string | number;
       total_paid_amount?: string | number;
-      config?: { qr?: { qr_data?: string } };
+      config?: { qr?: { mode?: string } };
       transactions?: {
         payments?: Array<{
-          id?: string | number;
           status?: string;
           amount?: string | number;
         }>;
@@ -205,7 +226,65 @@ export class HttpMpQrAdapter {
         data.total_paid_amount === undefined
           ? null
           : String(data.total_paid_amount),
-      qrData: data.config?.qr?.qr_data ?? null,
+      mode: data.config?.qr?.mode ?? null,
+      payments: (data.transactions?.payments ?? []).map((payment) => ({
+        status: payment.status ?? 'unknown',
+        amount: payment.amount === undefined ? null : String(payment.amount),
+      })),
+    };
+  }
+
+  private async readOrder(
+    response: Response,
+    requireQrData = false,
+  ): Promise<MpQrOrder> {
+    await this.assertOk(response, 'order');
+    const data = (await response.json()) as {
+      id?: string;
+      type?: string;
+      status?: string;
+      external_reference?: string;
+      total_amount?: string | number;
+      total_paid_amount?: string | number;
+      type_response?: { qr_data?: string };
+      transactions?: {
+        payments?: Array<{
+          id?: string | number;
+          status?: string;
+          amount?: string | number;
+        }>;
+      };
+    };
+    if (!data.id || !data.status || !data.type) {
+      throw new Error('Mercado Pago QR order response missing id/type/status');
+    }
+    const qrData = data.type_response?.qr_data ?? null;
+    if (requireQrData && !qrData) {
+      const responseFields = Object.keys(data).join(',');
+      const typeResponseFields = Object.keys(data.type_response ?? {}).join(
+        ',',
+      );
+      throw new Error(
+        [
+          'Mercado Pago QR order response missing QR data',
+          `id=${data.id}`,
+          `fields=${responseFields}`,
+          `typeResponseFields=${typeResponseFields}`,
+        ].join('; '),
+      );
+    }
+    return {
+      id: data.id,
+      type: data.type,
+      status: data.status,
+      externalReference: data.external_reference ?? null,
+      totalAmount:
+        data.total_amount === undefined ? null : String(data.total_amount),
+      totalPaidAmount:
+        data.total_paid_amount === undefined
+          ? null
+          : String(data.total_paid_amount),
+      qrData,
       payments: (data.transactions?.payments ?? []).map((payment) => ({
         id:
           payment.id === undefined || payment.id === null

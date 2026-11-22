@@ -2,6 +2,7 @@ import {
   BadGatewayException,
   BadRequestException,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import {
@@ -14,10 +15,11 @@ import { randomBytes } from 'node:crypto';
 import { PrismaService } from '../prisma/prisma.service';
 import { PacksService } from '../packs/packs.service';
 import { SessionValidationService } from '../sessions/session-validation.service';
-import { CreateMpCartCheckoutDto } from './dto/create-mp-cart-checkout.dto';
+import { CreateMpPointQrCartCheckoutDto } from './dto/create-mp-point-qr-cart-checkout.dto';
 import { HttpMpQrAdapter, MpQrOrder } from './http-mp-qr.adapter';
 import { MercadoPagoAccountService } from './mercadopago-account.service';
 import { WebhookPaymentService } from './webhook-payment.service';
+import { applyDiscount, MAX_DISCOUNT_BPS, percentToBps } from './cash-discount';
 
 export type MpPointQrCheckoutResult = {
   transactionId: string;
@@ -37,6 +39,8 @@ export type MpPointQrOrderStatus = {
 
 @Injectable()
 export class MpPointQrService {
+  private readonly logger = new Logger(MpPointQrService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly accounts: MercadoPagoAccountService,
@@ -49,7 +53,7 @@ export class MpPointQrService {
   async startStaffCart(
     tenantId: string,
     memberId: string,
-    dto: CreateMpCartCheckoutDto,
+    dto: CreateMpPointQrCartCheckoutDto,
     recordedByStaffId: string,
   ): Promise<MpPointQrCheckoutResult> {
     if (dto.applyTrial) {
@@ -66,7 +70,25 @@ export class MpPointQrService {
       throw new BadRequestException('Member is not active');
     }
 
-    const lines = await this.resolveCartLines(tenantId, dto.items, memberId);
+    const discountBps = percentToBps(dto.discountPercent ?? 5);
+    if (
+      !Number.isFinite(discountBps) ||
+      discountBps < 0 ||
+      discountBps > MAX_DISCOUNT_BPS
+    ) {
+      throw new BadRequestException('discountPercent must be between 0 and 99');
+    }
+    const lines = (
+      await this.resolveCartLines(tenantId, dto.items, memberId)
+    ).map((line) => {
+      const amount = applyDiscount(line.amount, discountBps);
+      return {
+        ...line,
+        amount,
+        listAmount: amount === line.amount ? undefined : line.amount,
+        discountBps: amount === line.amount ? 0 : discountBps,
+      };
+    });
     const amount = lines.reduce(
       (sum, line) => sum + line.amount * line.quantity,
       0,
@@ -89,6 +111,31 @@ export class MpPointQrService {
         'Idempotency key already used for a Mercado Pago link checkout',
       );
     }
+    const expectedItems = lines
+      .flatMap((line) =>
+        Array.from(
+          { length: line.quantity },
+          () =>
+            `${line.sessionId ?? line.packId}:${line.amount}:${line.listAmount ?? ''}:${line.discountBps}`,
+        ),
+      )
+      .sort();
+    if (transaction) {
+      const savedItems = transaction.transactionItems
+        .map(
+          (item) =>
+            `${item.sessionId ?? item.packId}:${item.amount}:${item.listAmount ?? ''}:${item.discountBps ?? 0}`,
+        )
+        .sort();
+      if (
+        transaction.amount !== amount ||
+        JSON.stringify(savedItems) !== JSON.stringify(expectedItems)
+      ) {
+        throw new BadRequestException(
+          'Idempotency key already used for a different checkout',
+        );
+      }
+    }
     const storedOrder = transaction
       ? await this.prisma.mercadoPagoQrOrder.findUnique({
           where: { transactionId: transaction.id },
@@ -101,27 +148,7 @@ export class MpPointQrService {
       return this.toResult(transaction, null);
     }
 
-    const expectedItems = lines
-      .flatMap((line) =>
-        Array.from(
-          { length: line.quantity },
-          () => `${line.sessionId ?? line.packId}:${line.amount}`,
-        ),
-      )
-      .sort();
-    if (transaction) {
-      const savedItems = transaction.transactionItems
-        .map((item) => `${item.sessionId ?? item.packId}:${item.amount}`)
-        .sort();
-      if (
-        transaction.amount !== amount ||
-        JSON.stringify(savedItems) !== JSON.stringify(expectedItems)
-      ) {
-        throw new BadRequestException(
-          'Idempotency key already used for a different checkout',
-        );
-      }
-    } else {
+    if (!transaction) {
       let itemIndex = 0;
       try {
         transaction = await this.prisma.$transaction((tx) =>
@@ -141,6 +168,8 @@ export class MpPointQrService {
                     packId: line.packId,
                     sessionId: line.sessionId,
                     amount: line.amount,
+                    listAmount: line.listAmount ?? null,
+                    discountBps: line.discountBps,
                     status: PaymentStatus.PENDING,
                     method: PaymentMethod.MP,
                     idempotencyKey: `${idempotencyKey}:${itemIndex++}`,
@@ -206,7 +235,10 @@ export class MpPointQrService {
         },
       });
       return this.toResult(transaction, savedOrder);
-    } catch {
+    } catch (error) {
+      this.logger.error(
+        `QR checkout failed tenant=${tenantId} transaction=${transaction.id}: ${error instanceof Error ? error.message : String(error)}`,
+      );
       throw new BadGatewayException(
         'No se pudo crear el QR en Mercado Pago. Podés reintentar este cobro desde Caja.',
       );
@@ -284,7 +316,7 @@ export class MpPointQrService {
 
   private async resolveCartLines(
     tenantId: string,
-    items: CreateMpCartCheckoutDto['items'],
+    items: CreateMpPointQrCartCheckoutDto['items'],
     memberId: string,
   ): Promise<
     Array<{

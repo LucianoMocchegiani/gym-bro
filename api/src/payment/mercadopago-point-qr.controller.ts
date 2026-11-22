@@ -12,13 +12,17 @@ import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { RequirePermission } from '../roles/decorators/require-permission.decorator';
 import { CurrentTenant } from '../tenant/decorators/current-tenant.decorator';
 import { RequireTenantAuth } from '../tenant/decorators/require-tenant-auth.decorator';
-import { CreateMpCartCheckoutDto } from './dto/create-mp-cart-checkout.dto';
+import { CreateMpPointQrCartCheckoutDto } from './dto/create-mp-point-qr-cart-checkout.dto';
 import { MpPointQrService } from './mp-point-qr.service';
+import { MpPointQrOrderDiagnosticService } from './mp-point-qr-order-diagnostic.service';
 
 @Controller()
 @RequireTenantAuth()
 export class MercadoPagoPointQrController {
-  constructor(private readonly qrCheckout: MpPointQrService) {}
+  constructor(
+    private readonly qrCheckout: MpPointQrService,
+    private readonly qrOrderDiagnostic: MpPointQrOrderDiagnosticService,
+  ) {}
 
   @Post('members/:memberId/transaction-items/mp/qr/cart')
   @RequirePermission('members.write')
@@ -26,7 +30,7 @@ export class MercadoPagoPointQrController {
     @CurrentTenant() tenantId: string,
     @Param('memberId', ParseUUIDPipe) memberId: string,
     @CurrentUser() user: AuthUser,
-    @Body() dto: CreateMpCartCheckoutDto,
+    @Body() dto: CreateMpPointQrCartCheckoutDto,
   ) {
     if (user.profileType !== 'STAFF') {
       throw new ForbiddenException('Staff profile required');
@@ -41,5 +45,23 @@ export class MercadoPagoPointQrController {
     @Param('transactionId', ParseUUIDPipe) transactionId: string,
   ) {
     return this.qrCheckout.getOrderStatus(tenantId, transactionId);
+  }
+
+  @Get('transactions/:transactionId/mp-qr-orders/:orderId/diagnostic')
+  @RequirePermission('members.read')
+  getQrOrderDiagnostic(
+    @CurrentTenant() tenantId: string,
+    @Param('transactionId', ParseUUIDPipe) transactionId: string,
+    @Param('orderId') orderId: string,
+    @CurrentUser() user: AuthUser,
+  ) {
+    if (user.profileType !== 'STAFF') {
+      throw new ForbiddenException('Staff profile required');
+    }
+    return this.qrOrderDiagnostic.getOrderDiagnostic(
+      tenantId,
+      transactionId,
+      orderId,
+    );
   }
 }
