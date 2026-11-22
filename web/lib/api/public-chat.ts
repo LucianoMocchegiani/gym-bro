@@ -1,5 +1,4 @@
 import {
-  ChatClientError,
   createChatConversation,
   setChatAccessTokenOverride,
   type ChatConversation,
