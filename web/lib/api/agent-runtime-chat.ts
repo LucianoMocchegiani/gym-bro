@@ -15,7 +15,7 @@ export class AgentRuntimeError extends Error {
 
 type RuntimeConversation = Omit<ChatConversation, 'tenantId'>;
 type RuntimeMessage = ChatMessage;
-type Page<T> = { items?: T[]; hasMore?: boolean; nextCursor?: string | null };
+type Page<T, Cursor = string> = { items?: T[]; hasMore?: boolean; nextCursor?: Cursor | null };
 
 export function agentRuntimeConfigured(): boolean {
   return Boolean(process.env.NEXT_PUBLIC_AGENT_RUNTIME_URL?.trim());
@@ -103,14 +103,12 @@ export async function listRuntimeMessages(id: string): Promise<ChatMessage[]> {
       query.set('beforeCreatedAt', before.createdAt);
       query.set('beforeId', before.id);
     }
-    const page = await runtimeJson<Page<RuntimeMessage> & { nextCursor?: { createdAt: string; id: string } | null }>(
+    const page = await runtimeJson<Page<RuntimeMessage, { createdAt: string; id: string }>>(
       `/v1/conversations/${encodeURIComponent(id)}/messages?${query}`,
     );
     const rows = page.items ?? [];
     items.unshift(...rows);
-    before = page.hasMore && page.nextCursor && typeof page.nextCursor === 'object'
-      ? page.nextCursor
-      : null;
+    before = page.hasMore ? (page.nextCursor ?? null) : null;
   } while (before);
   return items;
 }
