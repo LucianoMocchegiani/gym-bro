@@ -111,17 +111,22 @@ export function updatePack(
 export function getPackLandingVisibility(
   packId: string,
 ): Promise<{ showOnLanding: boolean }> {
-  return apiRequest(`/packs/${packId}/landing-visibility`);
+  return apiRequest<{ showOnLanding: boolean }>(
+    `/packs/${packId}/landing-visibility`,
+  );
 }
 
 export function updatePackLandingVisibility(
   packId: string,
   showOnLanding: boolean,
 ): Promise<{ showOnLanding: boolean }> {
-  return apiRequest(`/packs/${packId}/landing-visibility`, {
-    method: 'PATCH',
-    body: { showOnLanding },
-  });
+  return apiRequest<{ showOnLanding: boolean }>(
+    `/packs/${packId}/landing-visibility`,
+    {
+      method: 'PATCH',
+      body: { showOnLanding },
+    },
+  );
 }
 
 export type DeletePackResult = {
