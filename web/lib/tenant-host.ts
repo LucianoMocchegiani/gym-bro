@@ -16,6 +16,7 @@ const RESERVED_HOST_LABELS = new Set([
   'app',
   'api',
   'api-gymbro',
+  'agent-runtime',
   'localhost',
   'mail',
   'cdn',

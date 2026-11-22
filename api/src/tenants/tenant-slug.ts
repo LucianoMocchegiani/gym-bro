@@ -8,6 +8,7 @@ export const RESERVED_TENANT_SLUGS = new Set([
   'www',
   'app',
   'api',
+  'agent-runtime',
   'super',
   'login',
   'localhost',
