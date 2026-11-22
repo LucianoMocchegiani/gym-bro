@@ -27,7 +27,7 @@ import { registerStaffWriteTools } from './tools/write-staff.js';
  * @remarks Ningún tool visible al modelo escribe: solo `confirm_proposal` (userOnly) ejecuta,
  * ante el clic del usuario. El Bearer vive en ALS del request HTTP.
  */
-export function createGymbroMcpServer(): McpServer {
+export function createGymbroMcpServer(options: { publicOnly?: boolean } = {}): McpServer {
   const server = new McpServer(
     {
       name: 'gymbro-mcp',
@@ -35,6 +35,8 @@ export function createGymbroMcpServer(): McpServer {
     },
     { instructions: assistantWriteInstructions() },
   );
+  registerHelpTools(server);
+  if (options.publicOnly) return server;
   registerMemberTools(server);
   registerAccessTools(server);
   registerSessionTools(server);
@@ -47,7 +49,6 @@ export function createGymbroMcpServer(): McpServer {
   registerCatalogTools(server);
   registerRoleTools(server);
   registerAuditTools(server);
-  registerHelpTools(server);
   registerLimitsTools(server);
   registerExpenseWriteTools(server);
   registerMemberWriteTools(server);
