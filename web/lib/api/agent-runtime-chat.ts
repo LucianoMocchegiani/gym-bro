@@ -168,6 +168,7 @@ export async function resolveRuntimeProposal(
   if (!pending) {
     throw new AgentRuntimeError(409, 'No hay una confirmación pendiente para esta propuesta. Pedile al asistente que la genere nuevamente.');
   }
+  // shortcut: declines the pending action and lets the GymBro proposal expire, improve when Runtime supports alternate user-approved arguments.
   await runtimeJson(`/v1/conversations/${encodeURIComponent(conversationId)}/messages/${encodeURIComponent(pending.id)}/approval`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
