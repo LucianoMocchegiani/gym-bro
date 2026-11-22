@@ -6,7 +6,10 @@ export function findPendingProposalApproval(
   decision: unknown,
 ): ChatMessage | undefined {
   return messages.find((message) => {
-    if (message.role !== 'tool' || !message.toolName?.endsWith('confirm_proposal')) {
+    if (
+      message.role !== 'tool' ||
+      !(message.toolName === 'confirm_proposal' || message.toolName?.endsWith('__confirm_proposal'))
+    ) {
       return false;
     }
     const args = message.toolArgs;
