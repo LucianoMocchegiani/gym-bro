@@ -24,11 +24,11 @@ describe('toAgentRuntimeIdentity', () => {
   });
 
   it('rejects identities without a staff tenant context', () => {
-    expect(
-      toAgentRuntimeIdentity({ ...staff, profileType: 'MEMBER' }),
-    ).toThrow(ForbiddenException);
-    expect(
-      toAgentRuntimeIdentity({ ...staff, tenantId: undefined }),
-    ).toThrow(ForbiddenException);
+    expect(toAgentRuntimeIdentity({ ...staff, profileType: 'MEMBER' })).toThrow(
+      ForbiddenException,
+    );
+    expect(toAgentRuntimeIdentity({ ...staff, tenantId: undefined })).toThrow(
+      ForbiddenException,
+    );
   });
 });
