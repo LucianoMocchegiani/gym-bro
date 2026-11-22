@@ -163,21 +163,20 @@ describe('HttpMpQrAdapter', () => {
       ),
     );
 
-    await expect(
-      new HttpMpQrAdapter().createStore({
-        accessToken: 'token',
-        userId: 'seller-1',
-        name: 'GymBro',
-        externalId: 'gbtenant',
-        streetName: 'Ricardo Balbin',
-        streetNumber: '1581',
-        cityName: 'General Rodriguez',
-        stateName: 'Buenos Aires',
-        latitude: -34.607297,
-        longitude: -58.925915,
-      }),
-    ).rejects.toThrow('HTTP 400');
-
+    const creation = new HttpMpQrAdapter().createStore({
+      accessToken: 'token',
+      userId: 'seller-1',
+      name: 'GymBro',
+      externalId: 'gbtenant',
+      streetName: 'Ricardo Balbin',
+      streetNumber: '1581',
+      cityName: 'General Rodriguez',
+      stateName: 'Buenos Aires',
+      latitude: -34.607297,
+      longitude: -58.925915,
+    });
+    await expect(creation).rejects.toThrow('HTTP 400');
+    await expect(creation).rejects.toMatchObject({ detail: description });
     expect(warnMock).toHaveBeenCalledWith(expect.stringContaining(description));
   });
 

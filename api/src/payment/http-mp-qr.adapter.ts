@@ -39,6 +39,15 @@ export type MpQrOrder = {
   payments: Array<{ id: string | null; status: string; amount: string | null }>;
 };
 
+export class MpQrApiError extends Error {
+  constructor(
+    readonly operation: string,
+    readonly status: number,
+    readonly detail: string | null = null,
+  ) {
+    super(`Mercado Pago QR ${operation} failed (HTTP ${status})`);
+  }
+}
 export type MpQrOrderDiagnostic = {
   id: string;
   type: string;
@@ -302,15 +311,22 @@ export class HttpMpQrAdapter {
     }
     const body = await response.text().catch(() => '');
     let logDetail = body.slice(0, 300);
+    let clientDetail: string | null = null;
     if (operation === 'store') {
       try {
         const error = JSON.parse(body) as {
           causes?: Array<{ description?: string }>;
         };
-        const cityNameError = error.causes?.find((cause) =>
-          cause.description?.startsWith('location.city_name was invalid.'),
-        )?.description;
+        const descriptions = (error.causes ?? [])
+          .map((cause) => cause.description)
+          .filter((description): description is string => !!description);
+        const cityNameError = descriptions.find((description) =>
+          description.startsWith('location.city_name was invalid.'),
+        );
         if (cityNameError) logDetail = cityNameError;
+        if (response.status === 400) {
+          clientDetail = descriptions.join('; ') || null;
+        }
       } catch {
         // Keep the existing truncated log for non-JSON error bodies.
       }
@@ -318,8 +334,6 @@ export class HttpMpQrAdapter {
     this.logger.warn(
       `MP QR ${operation} failed status=${response.status} body=${logDetail}`,
     );
-    throw new Error(
-      `Mercado Pago QR ${operation} failed (HTTP ${response.status})`,
-    );
+    throw new MpQrApiError(operation, response.status, clientDetail);
   }
 }
