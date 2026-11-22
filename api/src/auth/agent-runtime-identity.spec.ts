@@ -10,9 +10,9 @@ describe('toAgentRuntimeIdentity', () => {
     tenantId: 'gym-1',
   };
 
-  it('scopes conversations by tenant and user', () => {
+  it('scopes conversations by tenant, role, and user', () => {
     expect(toAgentRuntimeIdentity(staff)).toEqual({
-      userId: '["gym-1","user-1"]',
+      userId: '["gym-1","STAFF","user-1"]',
       tenantId: 'gym-1',
       role: 'STAFF',
       profileType: 'STAFF',
