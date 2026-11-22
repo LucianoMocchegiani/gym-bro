@@ -1,3 +1,10 @@
+/**
+ * Web pública del gym editable (módulo `tenant-site`, RN-CTA-010).
+ *
+ * @remarks Mismos tipos y límites que `api/src/tenant-site/tenant-site.types.ts`
+ * y `tenant-site.constants.ts`: cambiar los dos juntos.
+ */
+
 import { apiRequest } from '@/lib/api/client';
 
 export type SiteTone = 'LIGHT' | 'DARK';
