@@ -18,9 +18,7 @@ describe('MercadoPagoQrService', () => {
     const prisma = {
       mercadoPagoAccount: {
         findUnique: jest.fn().mockResolvedValue({ mpUserId: 'seller-1' }),
-        update: jest
-          .fn()
-          .mockResolvedValue(undefined),
+        update: jest.fn().mockResolvedValue(undefined),
       },
       mercadoPagoQrSetup: {
         findUnique: jest.fn().mockResolvedValue(null),
@@ -28,9 +26,7 @@ describe('MercadoPagoQrService', () => {
         update: jest.fn().mockResolvedValue(setup),
       },
       tenant: {
-        findUnique: jest
-          .fn()
-          .mockResolvedValue({ name: 'Gym' }),
+        findUnique: jest.fn().mockResolvedValue({ name: 'Gym' }),
       },
     } as unknown as PrismaService;
     const service = new MercadoPagoQrService(
