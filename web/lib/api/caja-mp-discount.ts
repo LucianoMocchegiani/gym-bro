@@ -6,9 +6,7 @@ export function getCajaMpDiscountPercent(medio: 'qr' | 'link'): number | undefin
     const raw = sessionStorage.getItem(`caja-mp-${medio}-discount`);
     if (raw === null || raw.trim() === '') return undefined;
     const percent = Number(raw);
-    return Number.isFinite(percent) && percent >= 0 && percent <= 99
-      ? percent
-      : undefined;
+    return Number.isFinite(percent) ? percent : undefined;
   } catch {
     return undefined;
   }
