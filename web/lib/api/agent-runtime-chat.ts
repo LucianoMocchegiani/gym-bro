@@ -94,6 +94,17 @@ export async function archiveRuntimeConversation(id: string): Promise<ChatConver
   }));
 }
 
+export async function patchRuntimeConversation(
+  id: string,
+  patch: { title: string | null },
+): Promise<ChatConversation> {
+  return toConversation(await runtimeJson<RuntimeConversation>(`/v1/conversations/${encodeURIComponent(id)}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(patch),
+  }));
+}
+
 export async function listRuntimeMessages(id: string): Promise<ChatMessage[]> {
   const items: RuntimeMessage[] = [];
   let before: { createdAt: string; id: string } | null = null;
@@ -145,11 +156,14 @@ export async function resolveRuntimeProposal(
   conversationId: string,
   input: Record<string, unknown>,
 ): Promise<{ message: ChatMessage; output: unknown }> {
+  if (input.decision !== 'confirm' && input.decision !== 'cancel') {
+    throw new AgentRuntimeError(400, 'Decisión de propuesta inválida.');
+  }
   const proposalId = typeof input.proposalId === 'string' ? input.proposalId : '';
   const pending = findPendingProposalApproval(
     await listRuntimeMessages(conversationId),
     proposalId,
-    input.decision,
+    input.decision === 'confirm' ? 'confirm' : undefined,
   );
   if (!pending) {
     throw new AgentRuntimeError(409, 'No hay una confirmación pendiente para esta propuesta. Pedile al asistente que la genere nuevamente.');
@@ -157,9 +171,12 @@ export async function resolveRuntimeProposal(
   await runtimeJson(`/v1/conversations/${encodeURIComponent(conversationId)}/messages/${encodeURIComponent(pending.id)}/approval`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ approved: true }),
+    body: JSON.stringify({ approved: input.decision === 'confirm' }),
   });
   const message = (await listRuntimeMessages(conversationId)).find((item) => item.id === pending.id);
   if (!message) throw new AgentRuntimeError(502, 'No se pudo recuperar el resultado de la acción.');
-  return { message, output: message.toolResult };
+  const output = input.decision === 'cancel'
+    ? { proposalId, status: 'cancelled', message: 'No se ejecutó; la propuesta vencerá automáticamente.', links: [] }
+    : message.toolResult;
+  return { message, output };
 }

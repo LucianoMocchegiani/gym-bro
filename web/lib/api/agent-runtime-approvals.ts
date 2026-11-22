@@ -3,7 +3,7 @@ import type { ChatMessage } from './chat.js';
 export function findPendingProposalApproval(
   messages: ChatMessage[],
   proposalId: string,
-  decision: unknown,
+  decision?: unknown,
 ): ChatMessage | undefined {
   return messages.find((message) => {
     if (
@@ -19,7 +19,7 @@ export function findPendingProposalApproval(
       args !== null &&
       !Array.isArray(args) &&
       (args as { proposalId?: unknown }).proposalId === proposalId &&
-      (args as { decision?: unknown }).decision === decision &&
+      (decision === undefined || (args as { decision?: unknown }).decision === decision) &&
       typeof result === 'object' &&
       result !== null &&
       !Array.isArray(result) &&

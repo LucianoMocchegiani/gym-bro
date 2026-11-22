@@ -14,9 +14,10 @@ const pending = {
 };
 
 describe('findPendingProposalApproval', () => {
-  it('matches only the pending approval for the selected proposal and decision', () => {
+  it('matches the requested pending action or any action for cancel', () => {
     assert.equal(findPendingProposalApproval([pending], 'p-1', 'confirm')?.id, 'approval-1');
-    assert.equal(findPendingProposalApproval([pending], 'p-2', 'confirm'), undefined);
+    assert.equal(findPendingProposalApproval([pending], 'p-1')?.id, 'approval-1');
+    assert.equal(findPendingProposalApproval([pending], 'p-2'), undefined);
     assert.equal(findPendingProposalApproval([pending], 'p-1', 'cancel'), undefined);
   });
 });
