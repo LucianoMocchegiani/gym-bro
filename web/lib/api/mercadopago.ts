@@ -1,4 +1,5 @@
 import { apiRequest } from '@/lib/api/client';
+import { getCajaMpDiscountPercent } from '@/lib/api/caja-mp-discount';
 
 export type MercadoPagoAccountStatus = {
   connected: boolean;
@@ -125,7 +126,14 @@ export function startStaffMpCartCheckout(
 ): Promise<MpCartCheckoutResult> {
   return apiRequest<MpCartCheckoutResult>(
     `/members/${memberId}/transaction-items/mp/cart`,
-    { method: 'POST', body: input },
+    {
+      method: 'POST',
+      body: {
+        ...input,
+        discountPercent:
+          input.discountPercent ?? getCajaMpDiscountPercent('link'),
+      },
+    },
   );
 }
 

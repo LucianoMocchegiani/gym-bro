@@ -1,4 +1,5 @@
 import { apiRequest } from '@/lib/api/client';
+import { getCajaMpDiscountPercent } from '@/lib/api/caja-mp-discount';
 import type { MpCartItemInput, MpCheckoutStatus } from '@/lib/api/mercadopago';
 
 export type MpPointQrCheckoutResult = {
@@ -27,7 +28,14 @@ export function startStaffMpPointQrCheckout(
 ): Promise<MpPointQrCheckoutResult> {
   return apiRequest<MpPointQrCheckoutResult>(
     `/members/${memberId}/transaction-items/mp/qr/cart`,
-    { method: 'POST', body: input },
+    {
+      method: 'POST',
+      body: {
+        ...input,
+        discountPercent:
+          input.discountPercent ?? getCajaMpDiscountPercent('qr'),
+      },
+    },
   );
 }
 
