@@ -18,17 +18,17 @@ describe('toAgentRuntimeIdentity', () => {
       profileType: 'STAFF',
       email: 'staff@example.com',
     });
-    expect(toAgentRuntimeIdentity({ ...staff, tenantId: 'gym-2' }).userId).not.toBe(
-      toAgentRuntimeIdentity(staff).userId,
-    );
+    expect(
+      toAgentRuntimeIdentity({ ...staff, tenantId: 'gym-2' }).userId,
+    ).not.toBe(toAgentRuntimeIdentity(staff).userId);
   });
 
   it('rejects identities without a staff tenant context', () => {
-    expect(() => toAgentRuntimeIdentity({ ...staff, profileType: 'MEMBER' })).toThrow(
-      ForbiddenException,
-    );
-    expect(() => toAgentRuntimeIdentity({ ...staff, tenantId: undefined })).toThrow(
-      ForbiddenException,
-    );
+    expect(
+      toAgentRuntimeIdentity({ ...staff, profileType: 'MEMBER' }),
+    ).toThrow(ForbiddenException);
+    expect(
+      toAgentRuntimeIdentity({ ...staff, tenantId: undefined }),
+    ).toThrow(ForbiddenException);
   });
 });
