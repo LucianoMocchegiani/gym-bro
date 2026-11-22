@@ -10,5 +10,6 @@ Setup y env: [`../README.md`](../README.md).
 | [02-modulos.md](./02-modulos.md) | Qué hace cada carpeta de `src/` |
 | [03-flujos.md](./03-flujos.md) | De abrir el chat a la respuesta; turno staff; landing; abort; errores |
 | [04-http.md](./04-http.md) | Rutas, auth, códigos |
+| [05-agent-runtime-integration.md](./05-agent-runtime-integration.md) | Introspección de identidad para Agent Runtime |
 
 Idioma: español. Si el código y este texto divergen, gana el código.
