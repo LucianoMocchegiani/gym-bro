@@ -14,12 +14,53 @@ type MarketingShellProps = {
 
 type ContactIconName = 'email' | 'facebook' | 'instagram' | 'tiktok' | 'youtube';
 
+const CONTACT_SOCIALS = [
+  {
+    href: 'https://www.instagram.com/faciliterapps/',
+    label: 'Instagram',
+    icon: 'instagram',
+  },
+  {
+    href: 'https://www.facebook.com/p/Faciliter-Apps-61594787115398/',
+    label: 'Facebook',
+    icon: 'facebook',
+  },
+  {
+    href: 'https://www.youtube.com/@Faciliter-apps',
+    label: 'YouTube',
+    icon: 'youtube',
+  },
+  {
+    href: 'https://www.tiktok.com/@faciliterapps',
+    label: 'TikTok',
+    icon: 'tiktok',
+  },
+] as const satisfies ReadonlyArray<{
+  href: string;
+  label: string;
+  icon: ContactIconName;
+}>;
+
 function ContactIcon({ name }: { name: ContactIconName }) {
   const icon = {
     email: (
       <>
-        <rect x="3" y="5" width="18" height="14" rx="2" fill="none" stroke="currentColor" strokeWidth="2" />
-        <path d="m4 7 8 6 8-6" fill="none" stroke="currentColor" strokeWidth="2" />
+        <rect
+          x="3"
+          y="5"
+          width="18"
+          height="14"
+          rx="2"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+        />
+        <path
+          d="m4 7 8 6 8-6"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+        />
       </>
     ),
     facebook: (
@@ -27,8 +68,24 @@ function ContactIcon({ name }: { name: ContactIconName }) {
     ),
     instagram: (
       <>
-        <rect x="3" y="3" width="18" height="18" rx="5" fill="none" stroke="currentColor" strokeWidth="2" />
-        <circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" strokeWidth="2" />
+        <rect
+          x="3"
+          y="3"
+          width="18"
+          height="18"
+          rx="5"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+        />
+        <circle
+          cx="12"
+          cy="12"
+          r="4"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+        />
         <circle cx="17.5" cy="6.5" r="1" />
       </>
     ),
@@ -44,7 +101,13 @@ function ContactIcon({ name }: { name: ContactIconName }) {
   }[name];
 
   return (
-    <svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="currentColor" style={{ width: '1.25rem', height: '1.25rem', flexShrink: 0 }}>
+    <svg
+      aria-hidden="true"
+      focusable="false"
+      viewBox="0 0 24 24"
+      fill="currentColor"
+      style={{ width: '1.25rem', height: '1.25rem', flexShrink: 0 }}
+    >
       {icon}
     </svg>
   );
@@ -121,31 +184,39 @@ export function MarketingShell({ children }: MarketingShellProps) {
             <p className="mkt-footer-label">Contacto</p>
             <ul className="mkt-social-links" style={{ gap: '0.5rem' }}>
               <li>
-                <a href={mailHref} aria-label={`Enviar correo a ${MARKETING_MAIL}`} style={{ display: 'inline-flex', alignItems: 'center', gap: '0.45rem', textDecoration: 'none' }}>
+                <a
+                  href={mailHref}
+                  aria-label={`Enviar correo a ${MARKETING_MAIL}`}
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '0.45rem',
+                    textDecoration: 'none',
+                  }}
+                >
                   <ContactIcon name="email" />
                   {MARKETING_MAIL}
                 </a>
               </li>
-              <li>
-                <a href="https://www.instagram.com/faciliterapps/" target="_blank" rel="noopener noreferrer" aria-label="Instagram (se abre en una pestaña nueva)" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.45rem', textDecoration: 'none' }}>
-                  <ContactIcon name="instagram" /> Instagram
-                </a>
-              </li>
-              <li>
-                <a href="https://www.facebook.com/p/Faciliter-Apps-61594787115398/" target="_blank" rel="noopener noreferrer" aria-label="Facebook (se abre en una pestaña nueva)" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.45rem', textDecoration: 'none' }}>
-                  <ContactIcon name="facebook" /> Facebook
-                </a>
-              </li>
-              <li>
-                <a href="https://www.youtube.com/@Faciliter-apps" target="_blank" rel="noopener noreferrer" aria-label="YouTube (se abre en una pestaña nueva)" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.45rem', textDecoration: 'none' }}>
-                  <ContactIcon name="youtube" /> YouTube
-                </a>
-              </li>
-              <li>
-                <a href="https://www.tiktok.com/@faciliterapps" target="_blank" rel="noopener noreferrer" aria-label="TikTok (se abre en una pestaña nueva)" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.45rem', textDecoration: 'none' }}>
-                  <ContactIcon name="tiktok" /> TikTok
-                </a>
-              </li>
+              {CONTACT_SOCIALS.map(({ href, label, icon }) => (
+                <li key={icon}>
+                  <a
+                    href={href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label={`${label} (se abre en una pestaña nueva)`}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '0.45rem',
+                      textDecoration: 'none',
+                    }}
+                  >
+                    <ContactIcon name={icon} />
+                    {label}
+                  </a>
+                </li>
+              ))}
             </ul>
           </div>
         </MktShell>
