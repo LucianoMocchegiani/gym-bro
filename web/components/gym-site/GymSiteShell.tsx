@@ -143,7 +143,11 @@ export function GymSiteShell({
               <a
                 href={`mailto:${contactEmail}`}
                 aria-label={`Enviar email a ${contactEmail}`}
-                style={{ display: 'inline-flex', alignItems: 'center', gap: '0.45rem' }}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '0.45rem',
+                }}
               >
                 <svg
                   aria-hidden="true"
