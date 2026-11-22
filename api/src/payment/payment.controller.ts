@@ -28,16 +28,10 @@ import { TenantSettingsService } from '../tenant-settings/tenant-settings.servic
 import { bpsToPercent } from './cash-discount';
 import {
   CashCartResult,
-  CashDiscountDefaults,
   MpCartCheckoutResult,
   MpPaymentStatusView,
 } from './payment.types';
 
-/**
- * Checkout de pagos: cart MP (Caja y afiliado) y cart CASH (solo Caja).
- *
- * @remarks CU-PAG-001. El afiliado no usa cash; `recordedByStaffId` queda null.
- */
 @Controller()
 @RequireTenantAuth()
 export class PaymentController {
@@ -48,12 +42,6 @@ export class PaymentController {
     private readonly tenantSettings: TenantSettingsService,
   ) {}
 
-  /**
-   * Checkout MP self-service del afiliado (app): mismo body que Caja.
-   *
-   * @remarks JWT Member; `memberId` del token. Sin `members.write`.
-   * @throws {ForbiddenException} Si el perfil no es MEMBER.
-   */
   @Post('me/transaction-items/mp/cart')
   @HttpCode(HttpStatus.CREATED)
   startMemberCartCheckout(
@@ -72,9 +60,6 @@ export class PaymentController {
     );
   }
 
-  /**
-   * Checkout MP de Caja: carrito a nombre del afiliado (`members.write`).
-   */
   @Post('members/:memberId/transaction-items/mp/cart')
   @HttpCode(HttpStatus.CREATED)
   @RequirePermission('members.write')
@@ -92,15 +77,11 @@ export class PaymentController {
     );
   }
 
-  /**
-   * Descuentos por defecto de Caja (efectivo / transferencia) del tenant
-   * actual. Staff de Caja sin `tenant.settings.read` también los necesita.
-   */
   @Get('cash/discount-defaults')
   async getCashDiscountDefaults(
     @CurrentTenant() tenantId: string,
     @CurrentUser() user: AuthUser,
-  ): Promise<CashDiscountDefaults> {
+  ) {
     if (user.profileType !== 'STAFF') {
       throw new ForbiddenException('Staff profile required');
     }
@@ -109,12 +90,11 @@ export class PaymentController {
     return {
       cashDiscountPercent: bpsToPercent(defaults.cashBps),
       transferDiscountPercent: bpsToPercent(defaults.transferBps),
+      qrPointDiscountPercent: bpsToPercent(defaults.qrPointBps),
+      mpLinkDiscountPercent: bpsToPercent(defaults.mpLinkBps),
     };
   }
 
-  /**
-   * Cobro presencial de Caja (efectivo o transferencia, con descuento opcional).
-   */
   @Post('members/:memberId/transaction-items/cash/cart')
   @HttpCode(HttpStatus.CREATED)
   @RequirePermission('members.write')
@@ -132,16 +112,7 @@ export class PaymentController {
     );
   }
 
-  /**
-   * Checkout MP de plataforma: el tenant `admin` le factura un pack propio a
-   * otro gym.
-   *
-   * @remarks `platform.tenants.write` + tenant `admin` (PlatformTenantGuard).
-   * La transacción es de `admin` (webhook y cuenta MP de `admin`) con
-   * `billedTenantId` = `billingTenantId` y `memberId: null`.
-   */
   @Post('tenants/:billingTenantId/transaction-items/mp/cart')
-  @HttpCode(HttpStatus.CREATED)
   @RequirePermission('platform.tenants.write')
   @UseGuards(JwtAuthGuard, PlatformTenantGuard, PermissionGuard)
   startPlatformCartCheckout(
@@ -158,10 +129,6 @@ export class PaymentController {
     );
   }
 
-  /**
-   * Cobro presencial de plataforma (efectivo o transferencia): el tenant
-   * `admin` le factura un pack propio a otro gym.
-   */
   @Post('tenants/:billingTenantId/transaction-items/cash/cart')
   @HttpCode(HttpStatus.CREATED)
   @RequirePermission('platform.tenants.write')
@@ -180,10 +147,6 @@ export class PaymentController {
     );
   }
 
-  /**
-   * Estado del cobro en Mercado Pago (neto, comisiones, liberación y cuenta
-   * que cobró), consultado en el momento.
-   */
   @Get('transactions/:transactionId/mp-payment')
   @RequirePermission('members.read')
   getMpPaymentStatus(
