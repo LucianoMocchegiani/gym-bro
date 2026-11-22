@@ -173,7 +173,7 @@ export async function LandingPage() {
 
       <section id="producto" className="mkt-inner mkt-section-tight">
         <Carousel
-          className="mkt-slider site-slider"
+          className="site-slider faciliter-main-slider"
           items={SLIDE_ITEMS}
           label="Qué incluye Faciliter Brain"
         />

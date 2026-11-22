@@ -178,6 +178,15 @@ export function Carousel({
           bottom: -2.5rem;
           transform: translateX(-50%);
         }
+        .faciliter-main-slider .mkt-slide {
+          box-sizing: border-box;
+          min-height: clamp(18rem, 46vh, 28rem);
+          align-content: end;
+          padding: clamp(1.5rem, 4vw, 3.5rem);
+          border: 1px solid var(--line);
+          border-radius: 1.25rem;
+          background: color-mix(in srgb, var(--panel-bg) 60%, transparent);
+        }
         @media (max-width: 640px) {
           .site-slider {
             padding-inline: 0;
