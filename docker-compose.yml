@@ -137,7 +137,6 @@ services:
         NEXT_PUBLIC_APP_DOMAIN: ${NEXT_PUBLIC_APP_DOMAIN:-}
         NEXT_PUBLIC_WEB_PORT: ${NEXT_PUBLIC_WEB_PORT:-3002}
         NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL:-http://localhost:3002}
-        NEXT_PUBLIC_CHAT_API_URL: ${NEXT_PUBLIC_CHAT_API_URL:-http://localhost:3010}
         NEXT_PUBLIC_AGENT_RUNTIME_URL: ${NEXT_PUBLIC_AGENT_RUNTIME_URL:-http://localhost:3031}
         NEXT_PUBLIC_GOOGLE_CLIENT_ID: ${NEXT_PUBLIC_GOOGLE_CLIENT_ID:-}
         NEXT_PUBLIC_LOGIN_PROXY_URL: ${NEXT_PUBLIC_LOGIN_PROXY_URL:-https://login.faciliter.xyz}
@@ -189,34 +188,6 @@ services:
       timeout: 5s
       retries: 10
       start_period: 15s
-
-  chat-api:
-    build:
-      context: ./chat-api
-      dockerfile: Dockerfile
-    container_name: faciliter-chat-api
-    restart: unless-stopped
-    env_file:
-      - ./chat-api/.env
-    environment:
-      NODE_ENV: production
-    ports:
-      - "3010:3010"
-    depends_on:
-      postgres:
-        condition: service_healthy
-      mcp:
-        condition: service_healthy
-    healthcheck:
-      test:
-        [
-          "CMD-SHELL",
-          "node -e \"fetch('http://127.0.0.1:3010/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))\"",
-        ]
-      interval: 10s
-      timeout: 5s
-      retries: 10
-      start_period: 40s
 
   mcp:
     build:
