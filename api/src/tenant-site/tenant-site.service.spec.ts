@@ -91,6 +91,34 @@ describe('TenantSiteService brand configuration compatibility', () => {
     );
   });
 
+  it('preserves contact email when a client omits it', async () => {
+    const contactEmail = 'hola@example.com';
+    const { service, getUpsertedContent } = setup(siteContent({ contactEmail }));
+
+    await service.put('tenant-id', dtoWithoutThemeColor(), {
+      profileType: 'STAFF',
+      userId: 'staff-id',
+    });
+
+    expect(getUpsertedContent()).toEqual(
+      expect.objectContaining({ contactEmail }),
+    );
+  });
+
+  it('saves and trims an explicitly configured contact email', async () => {
+    const { service, getUpsertedContent } = setup(null);
+
+    await service.put(
+      'tenant-id',
+      { ...dtoWithoutThemeColor(), contactEmail: '  hola@example.com  ' },
+      { profileType: 'STAFF', userId: 'staff-id' },
+    );
+
+    expect(getUpsertedContent()).toEqual(
+      expect.objectContaining({ contactEmail: 'hola@example.com' }),
+    );
+  });
+
   it('preserves social links when an older client omits them', async () => {
     const socialLinks = {
       facebook: 'https://facebook.com/example',

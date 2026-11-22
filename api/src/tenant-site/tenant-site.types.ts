@@ -94,6 +94,8 @@ export type TenantSiteContent = {
   themeColor?: string;
   /** URL del ícono público del gimnasio; ausente en sitios anteriores. */
   brandIcon?: string | null;
+  /** Correo de contacto; ausente en webs anteriores. */
+  contactEmail?: string | null;
   /** Ausente en contenido anterior; no hay redes configuradas. */
   socialLinks?: SiteSocialLinks;
   /** False solo cuando el contenido guarda redes y no personaliza la landing. */

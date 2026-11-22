@@ -10,5 +10,6 @@ export const SITE_LIMITS = {
   buttonLabel: { min: 2, max: 24 },
   imageAlt: { max: 120 },
   url: { max: 500 },
+  contactEmail: { max: 254 },
   id: { max: 40 },
 } as const;

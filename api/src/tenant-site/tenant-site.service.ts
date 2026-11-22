@@ -81,6 +81,8 @@ function fromStored(raw: Prisma.JsonValue): TenantSiteContent {
   return {
     themeColor,
     brandIcon: typeof content.brandIcon === 'string' ? content.brandIcon : null,
+    contactEmail:
+      typeof content.contactEmail === 'string' ? content.contactEmail : null,
     socialLinks: { ...EMPTY_SOCIAL_LINKS, ...content.socialLinks },
     landingCustomized: content.landingCustomized !== false,
     hero: upgradeVisual(content.hero),
@@ -247,13 +249,18 @@ export class TenantSiteService {
         : clean(dto.brandIcon);
     const brandIcon = iconUrl ? this.brandIcon(tenantId, iconUrl) : null;
     const socialLinks = this.normalizeSocialLinks(dto.socialLinks, existing);
+    const contactEmail =
+      dto.contactEmail === undefined
+        ? (existing?.contactEmail ?? null)
+        : clean(dto.contactEmail);
     const landingCustomized =
-      dto.socialLinks === undefined
+      dto.socialLinks === undefined && dto.contactEmail === undefined
         ? true
         : (existing?.landingCustomized ?? false);
     return {
       themeColor,
       brandIcon,
+      contactEmail,
       socialLinks,
       landingCustomized,
       hero,

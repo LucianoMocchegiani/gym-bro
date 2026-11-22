@@ -87,6 +87,7 @@ export function GymSiteShell({
   brandColor,
   brandIcon,
   socialLinks,
+  contactEmail,
 }: {
   slug: string;
   gymName: string;
@@ -94,6 +95,7 @@ export function GymSiteShell({
   brandColor?: string;
   brandIcon?: string | null;
   socialLinks?: SiteSocialLinks;
+  contactEmail?: string | null;
 }) {
   const configuredSocials = SOCIALS.flatMap(([key, label]) =>
     socialLinks?.[key] ? [{ key, label, href: socialLinks[key]! }] : [],
@@ -135,6 +137,30 @@ export function GymSiteShell({
               <a href={platformOrigin()}>Faciliter</a>.
             </p>
           </div>
+          {contactEmail ? (
+            <div>
+              <p className="mkt-footer-label">Contacto</p>
+              <a
+                href={`mailto:${contactEmail}`}
+                aria-label={`Enviar email a ${contactEmail}`}
+                style={{ display: 'inline-flex', alignItems: 'center', gap: '0.45rem' }}
+              >
+                <svg
+                  aria-hidden="true"
+                  focusable="false"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  style={{ width: '1.25rem', height: '1.25rem', flexShrink: 0 }}
+                >
+                  <rect x="3" y="5" width="18" height="14" rx="2" />
+                  <path d="m3 7 9 6 9-6" />
+                </svg>
+                {contactEmail}
+              </a>
+            </div>
+          ) : null}
           {configuredSocials.length > 0 ? (
             <div>
               <p className="mkt-footer-label">Redes sociales</p>

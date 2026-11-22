@@ -3,6 +3,7 @@ import {
   ArrayMaxSize,
   ArrayMinSize,
   IsArray,
+  IsEmail,
   IsIn,
   IsOptional,
   IsString,
@@ -188,6 +189,12 @@ export class PutTenantSiteDto {
   @IsString()
   @MaxLength(SITE_LIMITS.url.max)
   brandIcon?: string | null;
+
+  /** Correo público de contacto; si se omite, se conserva. */
+  @IsOptional()
+  @IsEmail()
+  @MaxLength(SITE_LIMITS.contactEmail.max)
+  contactEmail?: string | null;
 
   /** Si se omite, se conservan los enlaces existentes. */
   @IsOptional()
