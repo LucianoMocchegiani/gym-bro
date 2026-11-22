@@ -1,4 +1,9 @@
-import { ChatClientError, createChatConversation, setChatAccessTokenOverride, type ChatConversation } from '@/lib/api/chat';
+import {
+  ChatClientError,
+  createChatConversation,
+  setChatAccessTokenOverride,
+  type ChatConversation,
+} from '@/lib/api/chat';
 import { createRuntimeAnonymousToken, isRuntimeAnonymousToken } from '@/lib/api/public-chat-token';
 
 const TOKEN_KEY = 'faciliter.publicChat.token';
