@@ -18,12 +18,9 @@ const DEFAULT_DEBT_TOLERANCE_DAYS = 15;
 const DEFAULT_MULTI_ENTRY_ENABLED = false;
 const DEFAULT_MULTI_ENTRY_MAX = 1;
 
-/**
- * Configuración operativa del gym (RN-TEN-004..007 / RN-RES-006).
- *
- * @remarks Horas de cancelación, waitlist, ingreso tardío, deuda y multi-ingreso.
- * Si el row no existe (tenants legacy), se crea con defaults.
- */
+type MpDiscountDefaults = { qrBps: number; mpLinkBps: number };
+
+/** Configuración operativa del gym. */
 @Injectable()
 export class TenantSettingsService {
   constructor(
@@ -31,20 +28,12 @@ export class TenantSettingsService {
     private readonly audit: AuditService,
   ) {}
 
-  /**
-   * Lee settings del tenant (crea defaults si faltan).
-   */
   async get(tenantId: string): Promise<TenantSettingsDetail> {
     await this.assertTenantExists(tenantId);
     const settings = await this.getOrCreate(tenantId);
-    return this.toDetail(settings);
+    return this.toDetail(settings, await this.getMpDiscountDefaults(tenantId));
   }
 
-  /**
-   * Actualiza campos enviados; crea row si no existía.
-   *
-   * @throws {BadRequestException} Si el body no trae ningún campo.
-   */
   async update(
     tenantId: string,
     dto: UpdateTenantSettingsDto,
@@ -59,7 +48,9 @@ export class TenantSettingsService {
       dto.multiEntryMaxPerDay === undefined &&
       dto.accessProvider === undefined &&
       dto.cashDiscountPercent === undefined &&
-      dto.transferDiscountPercent === undefined
+      dto.transferDiscountPercent === undefined &&
+      dto.qrPointDiscountPercent === undefined &&
+      dto.mpLinkDiscountPercent === undefined
     ) {
       throw new BadRequestException(
         'Provide at least one settings field to update',
@@ -67,14 +58,13 @@ export class TenantSettingsService {
     }
     await this.assertTenantExists(tenantId);
     const before = await this.getOrCreate(tenantId);
+    const beforeMpDiscounts = await this.getMpDiscountDefaults(tenantId);
 
-    const settings = await this.prisma.tenantSettings.update({
+    await this.prisma.tenantSettings.update({
       where: { tenantId },
       data: {
         ...(dto.reservationCancellationHours !== undefined
-          ? {
-              reservationCancellationHours: dto.reservationCancellationHours,
-            }
+          ? { reservationCancellationHours: dto.reservationCancellationHours }
           : {}),
         ...(dto.waitlistMode !== undefined
           ? { waitlistMode: dto.waitlistMode }
@@ -102,75 +92,78 @@ export class TenantSettingsService {
           : {}),
       },
     });
-    const detail = this.toDetail(settings);
+    if (
+      dto.qrPointDiscountPercent !== undefined ||
+      dto.mpLinkDiscountPercent !== undefined
+    ) {
+      await this.prisma.$executeRaw`
+        UPDATE "tenant_settings"
+        SET "mp_point_qr_discount_bps" = COALESCE(
+              ${dto.qrPointDiscountPercent === undefined ? null : percentToBps(dto.qrPointDiscountPercent)},
+              "mp_point_qr_discount_bps"
+            ),
+            "mp_link_discount_bps" = COALESCE(
+              ${dto.mpLinkDiscountPercent === undefined ? null : percentToBps(dto.mpLinkDiscountPercent)},
+              "mp_link_discount_bps"
+            )
+        WHERE "tenant_id" = ${tenantId}::uuid
+      `;
+    }
+    const updated = await this.getOrCreate(tenantId);
+    const detail = this.toDetail(
+      updated,
+      await this.getMpDiscountDefaults(tenantId),
+    );
     await this.audit.record({
       tenantId,
       actor,
       action: AUDIT_ACTIONS.tenantSettingsUpdate,
       entityType: 'tenant_settings',
       entityId: tenantId,
-      before: this.auditSnapshot(this.toDetail(before)),
+      before: this.auditSnapshot(this.toDetail(before, beforeMpDiscounts)),
       after: this.auditSnapshot(detail),
     });
     return detail;
   }
 
-  /**
-   * Horas de cancelación efectivas (default 6 si aún no hay row).
-   */
   async getCancellationHours(tenantId: string): Promise<number> {
     const settings = await this.getOrCreate(tenantId);
     return settings.reservationCancellationHours;
   }
 
-  /**
-   * Modo de lista de espera efectivo (default AUTO_ASSIGN).
-   */
   async getWaitlistMode(tenantId: string): Promise<WaitlistMode> {
     const settings = await this.getOrCreate(tenantId);
     return settings.waitlistMode;
   }
 
-  /**
-   * Sistema de puerta efectivo del gym (default KUATIA si aún no hay row).
-   *
-   * @remarks RN-ACC-010. Define si se emiten credenciales en Kuatia y qué
-   * entrada de puerta acepta el gym (QR OID4VP o eventos ZKTeco).
-   */
   async getAccessProvider(tenantId: string): Promise<AccessProvider> {
     const settings = await this.getOrCreate(tenantId);
     return settings.accessProvider;
   }
 
-  /**
-   * Descuentos por defecto de Caja para efectivo y transferencia, en
-   * centésimas de % (RN-PAG-020).
-   */
-  async getCashDiscountDefaults(
-    tenantId: string,
-  ): Promise<{ cashBps: number; transferBps: number }> {
-    const settings = await this.getOrCreate(tenantId);
+  async getCashDiscountDefaults(tenantId: string): Promise<{
+    cashBps: number;
+    transferBps: number;
+    qrPointBps: number;
+    mpLinkBps: number;
+  }> {
+    const [settings, mpDiscounts] = await Promise.all([
+      this.getOrCreate(tenantId),
+      this.getMpDiscountDefaults(tenantId),
+    ]);
     return {
       cashBps: settings.cashDiscountBps,
       transferBps: settings.transferDiscountBps,
+      qrPointBps: mpDiscounts.qrBps,
+      mpLinkBps: mpDiscounts.mpLinkBps,
     };
   }
 
-  /**
-   * Si el gym permite reservar/crédito tras el inicio (hasta `endsAt`).
-   */
   async getAllowLateSessionEntry(tenantId: string): Promise<boolean> {
     const settings = await this.getOrCreate(tenantId);
     return settings.allowLateSessionEntry;
   }
 
-  /**
-   * Valida que la sesión aún admite reserva/crédito (CU-RES-001 / CU-RES-006).
-   *
-   * @remarks Antes de `startsAt`: siempre OK. Entre `startsAt` y `endsAt`:
-   * solo si `allowLateSessionEntry`. Después de `endsAt`: siempre error.
-   * @throws {BadRequestException} Sesión terminada o iniciada sin ingreso tardío.
-   */
   async assertSessionOpenForBooking(
     tenantId: string,
     session: { startsAt: Date; endsAt: Date },
@@ -182,15 +175,11 @@ export class TenantSettingsService {
     if (session.startsAt.getTime() > now) {
       return;
     }
-    const allowLate = await this.getAllowLateSessionEntry(tenantId);
-    if (!allowLate) {
+    if (!(await this.getAllowLateSessionEntry(tenantId))) {
       throw new BadRequestException('Session has already started');
     }
   }
 
-  /**
-   * ¿La sesión aún admite booking (sin lanzar)? Usado en promoción waitlist.
-   */
   async isSessionOpenForBooking(
     tenantId: string,
     session: { startsAt: Date; endsAt: Date },
@@ -201,6 +190,18 @@ export class TenantSettingsService {
     } catch {
       return false;
     }
+  }
+
+  private async getMpDiscountDefaults(
+    tenantId: string,
+  ): Promise<MpDiscountDefaults> {
+    const [row] = await this.prisma.$queryRaw<MpDiscountDefaults[]>`
+      SELECT "mp_point_qr_discount_bps" AS "qrBps",
+             "mp_link_discount_bps" AS "mpLinkBps"
+      FROM "tenant_settings"
+      WHERE "tenant_id" = ${tenantId}::uuid
+    `;
+    return row;
   }
 
   private async getOrCreate(tenantId: string) {
@@ -248,20 +249,23 @@ export class TenantSettingsService {
     }
   }
 
-  private toDetail(row: {
-    tenantId: string;
-    reservationCancellationHours: number;
-    waitlistMode: WaitlistMode;
-    allowLateSessionEntry: boolean;
-    debtToleranceDays: number;
-    multiEntryEnabled: boolean;
-    multiEntryMaxPerDay: number;
-    accessProvider: AccessProvider;
-    cashDiscountBps: number;
-    transferDiscountBps: number;
-    createdAt: Date;
-    updatedAt: Date;
-  }): TenantSettingsDetail {
+  private toDetail(
+    row: {
+      tenantId: string;
+      reservationCancellationHours: number;
+      waitlistMode: WaitlistMode;
+      allowLateSessionEntry: boolean;
+      debtToleranceDays: number;
+      multiEntryEnabled: boolean;
+      multiEntryMaxPerDay: number;
+      accessProvider: AccessProvider;
+      cashDiscountBps: number;
+      transferDiscountBps: number;
+      createdAt: Date;
+      updatedAt: Date;
+    },
+    mpDiscounts: MpDiscountDefaults,
+  ): TenantSettingsDetail {
     return {
       tenantId: row.tenantId,
       reservationCancellationHours: row.reservationCancellationHours,
@@ -273,6 +277,8 @@ export class TenantSettingsService {
       accessProvider: row.accessProvider,
       cashDiscountPercent: bpsToPercent(row.cashDiscountBps),
       transferDiscountPercent: bpsToPercent(row.transferDiscountBps),
+      qrPointDiscountPercent: bpsToPercent(mpDiscounts.qrBps),
+      mpLinkDiscountPercent: bpsToPercent(mpDiscounts.mpLinkBps),
       createdAt: row.createdAt,
       updatedAt: row.updatedAt,
     };
@@ -289,6 +295,8 @@ export class TenantSettingsService {
       accessProvider: detail.accessProvider,
       cashDiscountPercent: detail.cashDiscountPercent,
       transferDiscountPercent: detail.transferDiscountPercent,
+      qrPointDiscountPercent: detail.qrPointDiscountPercent,
+      mpLinkDiscountPercent: detail.mpLinkDiscountPercent,
     };
   }
 }

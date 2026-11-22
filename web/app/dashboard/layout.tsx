@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { CajaMpDiscountControls } from './caja/mp-discount-controls';
 import { fetchPublicTenantCatalog } from '@/lib/api/public-tenant-catalog';
 import { SITE_DEFAULT_PRIMARY_COLOR } from '@/lib/api/tenant-site';
 import { requestTenantSlug } from '@/lib/gym-site';
@@ -33,6 +34,8 @@ export default async function DashboardLayout({
         --ok-soft: color-mix(in srgb, var(--site-primary) 16%, transparent);
       }`}</style>
       <div className="gym-site-branded" style={brandStyle}>
+        {/* shortcut: keep the discount controls outside Caja's large form; move them inline when Caja is refactored. */}
+        <CajaMpDiscountControls />
         {children}
       </div>
     </>
