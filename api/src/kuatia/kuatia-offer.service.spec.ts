@@ -9,10 +9,20 @@ describe('KuatiaOfferService.ensureOfferForCurrentContract', () => {
   it('rejects when the authenticated member has no current contract', async () => {
     const memberFindFirst = jest.fn().mockResolvedValue({ id: 'member-1' });
     const contractFindMany = jest.fn(
-      async (_args: {
+      (args: {
         where: { tenantId: string; memberId: string; status: string };
         take: number;
-      }) => [],
+      }) => {
+        expect(args).toMatchObject({
+          where: {
+            tenantId: 'tenant-1',
+            memberId: 'member-1',
+            status: 'ACTIVE',
+          },
+          take: 1,
+        });
+        return Promise.resolve([]);
+      },
     );
     const prisma = {
       member: { findFirst: memberFindFirst },
@@ -33,11 +43,5 @@ describe('KuatiaOfferService.ensureOfferForCurrentContract', () => {
       select: { id: true },
     });
     expect(contractFindMany).toHaveBeenCalledTimes(1);
-    expect(contractFindMany.mock.calls[0]?.[0]?.where).toMatchObject({
-      tenantId: 'tenant-1',
-      memberId: 'member-1',
-      status: 'ACTIVE',
-    });
-    expect(contractFindMany.mock.calls[0]?.[0]?.take).toBe(1);
   });
 });
