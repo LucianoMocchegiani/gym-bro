@@ -8,7 +8,12 @@ import type { KuatiaPackSyncService } from './kuatia-pack-sync.service';
 describe('KuatiaOfferService.ensureOfferForCurrentContract', () => {
   it('rejects when the authenticated member has no current contract', async () => {
     const memberFindFirst = jest.fn().mockResolvedValue({ id: 'member-1' });
-    const contractFindMany = jest.fn().mockResolvedValue([]);
+    const contractFindMany = jest.fn(
+      async (_args: {
+        where: { tenantId: string; memberId: string; status: string };
+        take: number;
+      }) => [],
+    );
     const prisma = {
       member: { findFirst: memberFindFirst },
       contract: { findMany: contractFindMany },
@@ -27,15 +32,12 @@ describe('KuatiaOfferService.ensureOfferForCurrentContract', () => {
       where: { id: 'member-1', tenantId: 'tenant-1' },
       select: { id: true },
     });
-    expect(contractFindMany).toHaveBeenCalledWith(
-      expect.objectContaining({
-        where: expect.objectContaining({
-          tenantId: 'tenant-1',
-          memberId: 'member-1',
-          status: 'ACTIVE',
-        }),
-        take: 1,
-      }),
-    );
+    expect(contractFindMany).toHaveBeenCalledTimes(1);
+    expect(contractFindMany.mock.calls[0]?.[0]?.where).toMatchObject({
+      tenantId: 'tenant-1',
+      memberId: 'member-1',
+      status: 'ACTIVE',
+    });
+    expect(contractFindMany.mock.calls[0]?.[0]?.take).toBe(1);
   });
 });
