@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { issueMyCredentialOffer } from '@/lib/api/credential-offers';
+import { credentialOfferEndpoint } from '@/lib/kuatia-wallet';
 
 const WALLET_ISSUE_URL = 'https://wallet.kuatia.xyz/issue';
 
@@ -21,7 +22,10 @@ export function MemberCredentialAccess() {
         return;
       }
       const walletUrl = new URL(WALLET_ISSUE_URL);
-      walletUrl.searchParams.set('credential_offer_uri', offer.offerUri);
+      walletUrl.searchParams.set(
+        'credential_offer_uri',
+        credentialOfferEndpoint(offer.offerUri),
+      );
       window.location.assign(walletUrl.toString());
     } catch (cause) {
       setError(
