@@ -85,8 +85,10 @@ export function getAccessDoor(): Promise<AccessDoorConfig> {
 }
 
 /** Returns the authenticated person's credential for the tenant's door system. */
-export function getMyAccessCredential(): Promise<MyAccessCredential> {
-  return apiRequest<MyAccessCredential>('/me/access-credential');
+export function getMyAccessCredential(
+  auth: 'staff' | 'member' = 'staff',
+): Promise<MyAccessCredential> {
+  return apiRequest<MyAccessCredential>('/me/access-credential', { auth });
 }
 
 function accessLinksPath(subject: AccessLinkSubject): string {
