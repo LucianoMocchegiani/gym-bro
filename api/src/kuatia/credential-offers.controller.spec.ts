@@ -11,7 +11,10 @@ import type {
   CredentialOfferListItem,
   KuatiaOfferService,
 } from './kuatia-offer.service';
-import type { KuatiaStaffOfferService } from './kuatia-staff-offer.service';
+import type {
+  KuatiaStaffOfferService,
+  StaffCredentialOfferListItem,
+} from './kuatia-staff-offer.service';
 
 describe('CredentialOffersController.issueMine', () => {
   let controller: CredentialOffersController;
@@ -82,5 +85,63 @@ describe('CredentialOffersController.issueMine', () => {
         profileType: 'MEMBER',
       } as AuthUser),
     ).rejects.toBeInstanceOf(BadRequestException);
+  });
+});
+
+describe('CredentialOffersController.issueMyStaffOffer', () => {
+  let controller: CredentialOffersController;
+  let ensureOfferForStaff: jest.Mock;
+  let getAccessProvider: jest.Mock;
+
+  beforeEach(() => {
+    ensureOfferForStaff = jest.fn();
+    getAccessProvider = jest.fn().mockResolvedValue(AccessProvider.KUATIA);
+    controller = new CredentialOffersController(
+      {} as unknown as KuatiaOfferService,
+      { ensureOfferForStaff } as unknown as KuatiaStaffOfferService,
+      { getAccessProvider } as unknown as TenantSettingsService,
+    );
+  });
+
+  it('only allows the authenticated staff identity and derives its id from auth', async () => {
+    const offer = { id: 'offer-1' } as StaffCredentialOfferListItem;
+    ensureOfferForStaff.mockResolvedValue(offer);
+
+    await expect(
+      controller.issueMyStaffOffer('tenant-1', {
+        userId: 'staff-1',
+        profileType: 'STAFF',
+      } as AuthUser),
+    ).resolves.toBe(offer);
+
+    expect(getAccessProvider).toHaveBeenCalledWith('tenant-1');
+    expect(ensureOfferForStaff).toHaveBeenCalledWith('tenant-1', 'staff-1', {
+      force: true,
+    });
+  });
+
+  it('rejects non-staff identities', async () => {
+    await expect(
+      controller.issueMyStaffOffer('tenant-1', {
+        userId: 'member-1',
+        profileType: 'MEMBER',
+      } as AuthUser),
+    ).rejects.toBeInstanceOf(ForbiddenException);
+
+    expect(ensureOfferForStaff).not.toHaveBeenCalled();
+    expect(getAccessProvider).not.toHaveBeenCalled();
+  });
+
+  it('rejects gyms that do not use Kuatia', async () => {
+    getAccessProvider.mockResolvedValue(AccessProvider.ZKTECO);
+
+    await expect(
+      controller.issueMyStaffOffer('tenant-1', {
+        userId: 'staff-1',
+        profileType: 'STAFF',
+      } as AuthUser),
+    ).rejects.toBeInstanceOf(ConflictException);
+
+    expect(ensureOfferForStaff).not.toHaveBeenCalled();
   });
 });

@@ -127,6 +127,22 @@ export class CredentialOffersController {
     return this.staffOffers.listForStaff(tenantId, user.userId, query);
   }
 
+  /** Emite la credencial de acceso del staff autenticado. */
+  @Post('me/staff-credential-offers')
+  @HttpCode(HttpStatus.CREATED)
+  async issueMyStaffOffer(
+    @CurrentTenant() tenantId: string,
+    @CurrentUser() user: AuthUser,
+  ): Promise<StaffCredentialOfferListItem> {
+    if (user.profileType !== 'STAFF') {
+      throw new ForbiddenException('Staff profile required');
+    }
+    await this.assertEmitsInKuatia(tenantId);
+    return this.staffOffers.ensureOfferForStaff(tenantId, user.userId, {
+      force: true,
+    });
+  }
+
   /**
    * Confirma aceptación en wallet de la credencial de acceso staff.
    */
