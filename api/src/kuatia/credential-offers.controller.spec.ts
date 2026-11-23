@@ -1,9 +1,16 @@
-import { ConflictException, ForbiddenException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  ForbiddenException,
+} from '@nestjs/common';
 import { AccessProvider } from '@prisma/client';
 import type { AuthUser } from '../auth/auth.types';
 import { TenantSettingsService } from '../tenant-settings/tenant-settings.service';
 import { CredentialOffersController } from './credential-offers.controller';
-import type { CredentialOfferListItem, KuatiaOfferService } from './kuatia-offer.service';
+import type {
+  CredentialOfferListItem,
+  KuatiaOfferService,
+} from './kuatia-offer.service';
 import type { KuatiaStaffOfferService } from './kuatia-staff-offer.service';
 
 describe('CredentialOffersController.issueMine', () => {
@@ -62,5 +69,18 @@ describe('CredentialOffersController.issueMine', () => {
     ).rejects.toBeInstanceOf(ConflictException);
 
     expect(ensureOfferForCurrentContract).not.toHaveBeenCalled();
+  });
+
+  it('returns the existing no-current-contract error', async () => {
+    ensureOfferForCurrentContract.mockRejectedValue(
+      new BadRequestException('No hay contrato vigente para emitir credencial'),
+    );
+
+    await expect(
+      controller.issueMine('tenant-1', {
+        userId: 'member-1',
+        profileType: 'MEMBER',
+      } as AuthUser),
+    ).rejects.toBeInstanceOf(BadRequestException);
   });
 });

@@ -238,7 +238,7 @@ export class CredentialOffersController {
     const provider = await this.tenantSettings.getAccessProvider(tenantId);
     if (provider !== AccessProvider.KUATIA) {
       throw new ConflictException(
-        'Este gym usa acceso ZKTeco: no se emiten credenciales en la app.',
+        'Este gym usa acceso ZKTeco: no se emiten credenciales en Kuatia.',
       );
     }
   }
