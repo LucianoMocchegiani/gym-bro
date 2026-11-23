@@ -25,10 +25,11 @@ describe('AccessIdentityLinksService.listCredentialIds', () => {
   });
 
   it('uses the member document when there is no linked card or PIN', async () => {
-    const findMember = jest
-      .fn()
-      .mockResolvedValueOnce({ id: 'member-1' })
-      .mockResolvedValueOnce({ document: ' 123456 ' });
+    const findMember =
+      jest
+        .fn()
+        .mockResolvedValueOnce({ id: 'member-1' })
+        .mockResolvedValueOnce({ document: ' 123456 ' });
     const prisma = {
       member: { findFirst: findMember },
       staffUser: { findFirst: jest.fn() },
