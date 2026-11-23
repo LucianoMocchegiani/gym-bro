@@ -10,6 +10,7 @@ import {
   ParseUUIDPipe,
   Post,
 } from '@nestjs/common';
+import { AccessProvider } from '@prisma/client';
 import type { AuthUser } from '../auth/auth.types';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { toAuditActor } from '../audit/to-audit-actor';
@@ -21,6 +22,8 @@ import { AccessZktecoService } from './access-zkteco.service';
 import {
   AccessDoorConfig,
   AccessIdentityLinkDetail,
+  AccessSubject,
+  MyAccessCredential,
   ZktecoEventResult,
 } from './access.types';
 import { CreateAccessLinkDto } from './dto/create-access-link.dto';
@@ -39,6 +42,28 @@ export class AccessZktecoController {
     private readonly zkteco: AccessZktecoService,
     private readonly links: AccessIdentityLinksService,
   ) {}
+
+  @Get('me/access-credential')
+  async getMyCredential(
+    @CurrentTenant() tenantId: string,
+    @CurrentUser() user: AuthUser,
+  ): Promise<MyAccessCredential> {
+    if (user.profileType !== 'MEMBER' && user.profileType !== 'STAFF') {
+      throw new ForbiddenException('Member or staff profile required');
+    }
+    const subject: AccessSubject =
+      user.profileType === 'MEMBER'
+        ? { kind: 'member', memberId: user.userId }
+        : { kind: 'staff', staffUserId: user.userId };
+    const { provider } = await this.zkteco.getDoorConfig(tenantId);
+    return {
+      provider,
+      credentialIds:
+        provider === AccessProvider.ZKTECO
+          ? await this.links.listCredentialIds(tenantId, subject)
+          : [],
+    };
+  }
 
   /**
    * Sistema de puerta del gym (KUATIA | ZKTECO) para armar `/puerta` y fichas.

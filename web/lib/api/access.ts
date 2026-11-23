@@ -59,6 +59,11 @@ export type AccessDoorConfig = {
   provider: AccessProvider;
 };
 
+export type MyAccessCredential = {
+  provider: AccessProvider;
+  credentialIds: string[];
+};
+
 export type AccessIdentityLink = {
   id: string;
   provider: AccessProvider;
@@ -77,6 +82,11 @@ export type AccessLinkSubject =
  */
 export function getAccessDoor(): Promise<AccessDoorConfig> {
   return apiRequest<AccessDoorConfig>('/access/door');
+}
+
+/** Returns the authenticated person's credential for the tenant's door system. */
+export function getMyAccessCredential(): Promise<MyAccessCredential> {
+  return apiRequest<MyAccessCredential>('/me/access-credential');
 }
 
 function accessLinksPath(subject: AccessLinkSubject): string {

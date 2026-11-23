@@ -39,6 +39,31 @@ export class AccessIdentityLinksService {
     return rows.map((row) => this.toDetail(row));
   }
 
+  /** Identificadores que ZKTeco acepta para la persona autenticada. */
+  async listCredentialIds(
+    tenantId: string,
+    subject: AccessSubject,
+  ): Promise<string[]> {
+    await this.assertSubject(tenantId, subject);
+    const links = await this.prisma.accessIdentityLink.findMany({
+      where: {
+        tenantId,
+        provider: AccessProvider.ZKTECO,
+        ...this.subjectWhere(subject),
+      },
+      orderBy: { createdAt: 'asc' },
+      select: { externalId: true },
+    });
+    if (links.length || subject.kind === 'staff') {
+      return links.map((link) => link.externalId);
+    }
+    const member = await this.prisma.member.findFirst({
+      where: { id: subject.memberId, tenantId },
+      select: { document: true },
+    });
+    return member?.document?.trim() ? [member.document.trim()] : [];
+  }
+
   /**
    * Vincula un número de usuario del aparato ZKTeco.
    *

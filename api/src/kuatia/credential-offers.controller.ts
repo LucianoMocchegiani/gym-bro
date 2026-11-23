@@ -246,15 +246,15 @@ export class CredentialOffersController {
   }
 
   /**
-   * Un gym ZKTeco no emite credenciales en Kuatia (RN-ACC-010).
+   * Un tenant con ZKTeco no emite credenciales en Kuatia (RN-ACC-010).
    *
-   * @throws {ConflictException} Si el sistema de puerta del gym no es Kuatia.
+   * @throws {ConflictException} Si el sistema de puerta del tenant no es Kuatia.
    */
   private async assertEmitsInKuatia(tenantId: string): Promise<void> {
     const provider = await this.tenantSettings.getAccessProvider(tenantId);
     if (provider !== AccessProvider.KUATIA) {
       throw new ConflictException(
-        'Este gym usa acceso ZKTeco: no se emiten credenciales en Kuatia.',
+        'Este tenant usa acceso ZKTeco: no se emiten credenciales en Kuatia.',
       );
     }
   }

@@ -46,6 +46,15 @@ export function NavIconDoor() {
   );
 }
 
+export function NavIconKey() {
+  return (
+    <Svg>
+      <circle cx="7.5" cy="16.5" r="4.5" />
+      <path d="m11 13 10-10M16 8l3 3M13 11l3 3" />
+    </Svg>
+  );
+}
+
 export function NavIconCalendar() {
   return (
     <Svg>
@@ -261,6 +270,7 @@ export function NavIconAssistant() {
 const NAV_ICONS: Record<string, () => ReactNode> = {
   '/dashboard': NavIconHome,
   '/dashboard/puerta': NavIconDoor,
+  '/dashboard/credencial': NavIconKey,
   '/dashboard/caja': NavIconCash,
   '/dashboard/vencimientos': NavIconCalendar,
   '/dashboard/arqueo': NavIconCash,
