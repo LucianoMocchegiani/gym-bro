@@ -1,9 +1,9 @@
 import { BadRequestException } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
-import { KuatiaAdminPort } from './kuatia-admin.port';
-import { KuatiaEnvService } from './kuatia-env.service';
+import type { PrismaService } from '../prisma/prisma.service';
+import type { KuatiaAdminPort } from './kuatia-admin.port';
+import type { KuatiaEnvService } from './kuatia-env.service';
 import { KuatiaOfferService } from './kuatia-offer.service';
-import { KuatiaPackSyncService } from './kuatia-pack-sync.service';
+import type { KuatiaPackSyncService } from './kuatia-pack-sync.service';
 
 describe('KuatiaOfferService.ensureOfferForCurrentContract', () => {
   it('rejects when the authenticated member has no current contract', async () => {

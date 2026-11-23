@@ -5,7 +5,7 @@ import {
 } from '@nestjs/common';
 import { AccessProvider } from '@prisma/client';
 import type { AuthUser } from '../auth/auth.types';
-import { TenantSettingsService } from '../tenant-settings/tenant-settings.service';
+import type { TenantSettingsService } from '../tenant-settings/tenant-settings.service';
 import { CredentialOffersController } from './credential-offers.controller';
 import type {
   CredentialOfferListItem,
@@ -23,7 +23,7 @@ describe('CredentialOffersController.issueMine', () => {
     getAccessProvider = jest.fn().mockResolvedValue(AccessProvider.KUATIA);
     controller = new CredentialOffersController(
       { ensureOfferForCurrentContract } as unknown as KuatiaOfferService,
-      {} as KuatiaStaffOfferService,
+      {} as unknown as KuatiaStaffOfferService,
       { getAccessProvider } as unknown as TenantSettingsService,
     );
   });
@@ -71,7 +71,7 @@ describe('CredentialOffersController.issueMine', () => {
     expect(ensureOfferForCurrentContract).not.toHaveBeenCalled();
   });
 
-  it('returns the existing no-current-contract error', async () => {
+  it('propagates the no-current-contract error', async () => {
     ensureOfferForCurrentContract.mockRejectedValue(
       new BadRequestException('No hay contrato vigente para emitir credencial'),
     );
