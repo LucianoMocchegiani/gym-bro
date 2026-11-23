@@ -137,8 +137,8 @@ export class KuatiaStaffOfferService {
         claimsDisplay: {
           staffId: { name: 'Staff ID', locale: 'es' },
           staffName: { name: 'Nombre', locale: 'es' },
-          tenantId: { name: 'Gym ID', locale: 'es' },
-          tenantName: { name: 'Gym', locale: 'es' },
+          tenantId: { name: 'Tenant ID', locale: 'es' },
+          tenantName: { name: 'Tenant', locale: 'es' },
         },
         disclosureFrame: {
           _sd: ['staffId', 'staffName', 'tenantId', 'tenantName'],

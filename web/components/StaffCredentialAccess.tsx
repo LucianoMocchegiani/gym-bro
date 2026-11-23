@@ -42,7 +42,7 @@ export function StaffCredentialAccess() {
   return (
     <div className="admin-stack">
       <p className="muted">
-        La credencial identifica tu vínculo con este gimnasio. Se guardará en
+        La credencial identifica tu vínculo con este tenant. Se guardará en
         Kuatia Wallet en este dispositivo.
       </p>
       {error ? (
