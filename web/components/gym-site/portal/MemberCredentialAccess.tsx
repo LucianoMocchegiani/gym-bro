@@ -35,7 +35,10 @@ export function MemberCredentialAccess() {
   }
 
   return (
-    <section className="mkt-inner mkt-section">
+    <section
+      className="mkt-inner mkt-section"
+      style={{ display: 'grid', gap: '1rem' }}
+    >
       <p className="eyebrow">Acceso</p>
       <h1 className="mkt-h2">Tu credencial Kuatia</h1>
       <p className="muted">
