@@ -48,6 +48,7 @@ import {
   clearHandoffCookie,
   setHandoffCookie,
 } from './handoff-cookie';
+import { toAgentRuntimeIdentity } from './agent-runtime-identity';
 
 /**
  * Endpoints de autenticación por perfil (RN-ROL-005).
@@ -260,6 +261,13 @@ export class AuthController {
   async me(@CurrentUser() user: AuthUser): Promise<AuthMeResponse> {
     const platformAccess = await this.resolvePlatformAccess(user);
     return { ...user, platformAccess };
+  }
+
+  /** Introspection contract for Agent Runtime; scope the sole Runtime user ID by tenant. */
+  @UseGuards(JwtAuthGuard)
+  @Get('agent-runtime')
+  agentRuntimeIdentity(@CurrentUser() user: AuthUser) {
+    return toAgentRuntimeIdentity(user);
   }
 
   private async resolvePlatformAccess(

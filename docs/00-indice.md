@@ -51,6 +51,7 @@ Reglas relacionadas
 | [16-chat-mcp-diseno.md](./16-chat-mcp-diseno.md) | Asistente Admin: `chat-api` portable + MCP GymBro + drawer; diseño cerrado (C7: chips; tope de uso pendiente) | Cerrado (diseño) |
 | [`chat-api/docs/`](../chat-api/docs/00-indice.md) | Implementación de `chat-api`: modelo, módulos, flujos HTTP (no C-producto) | Viva |
 | [17-roadmap-chat-mcp.md](./17-roadmap-chat-mcp.md) | Tareas ordenadas del asistente (C0–C7); post-MVP | Borrador |
+| [agent-runtime-gymbro.md](./agent-runtime-gymbro.md) | Despliegue e identidad de Agent Runtime en GymBro; estado de la migración | En curso |
 | [18-prioridades-cierre-mvp.md](./18-prioridades-cierre-mvp.md) | Prioridades para un MVP vendible (molinetes, débito QA, landing/SEO, tokens, migración) | Viva |
 | [19-puerta-molinete-hw-sw.md](./19-puerta-molinete-hw-sw.md) | Molinete: BOM hardware + software (relé, agente, Kuatia nativo, DNI/huella opcionales) | Borrador |
 | [mobile/isar-wallet.md](./mobile/isar-wallet.md) | Wallet local (Isar community): VCs en el device, secreto, 16 KB, codegen Isar | Viva |

@@ -5,12 +5,14 @@ import { WebStandardStreamableHTTPServerTransport } from '@modelcontextprotocol/
 import { Hono } from 'hono';
 import { config } from './config.js';
 import { pingGymbro } from './gymbro-client.js';
+import { isAnonymousRuntimeToken } from './anonymous.js';
 import { requestBearer } from './request-auth.js';
 import { createGymbroMcpServer } from './server.js';
 
 type McpSession = {
   transport: WebStandardStreamableHTTPServerTransport;
   server: McpServer;
+  publicOnly: boolean;
 };
 
 const sessions = new Map<string, McpSession>();
@@ -65,9 +67,10 @@ export function createApp(): Hono {
 
   app.all('/mcp', async (c) => {
     const token = extractBearer(c.req.header('Authorization'));
-    if (!token) {
+    if (!token || (token.startsWith('anon:') && !isAnonymousRuntimeToken(token))) {
       return unauthorized();
     }
+    const publicOnly = isAnonymousRuntimeToken(token);
 
     let parsedBody: unknown;
     if (c.req.method === 'POST') {
@@ -81,7 +84,7 @@ export function createApp(): Hono {
     const sessionHeader = c.req.header('mcp-session-id')?.trim();
     const existing = sessionHeader ? sessions.get(sessionHeader) : undefined;
 
-    const authInfo = { token, clientId: 'staff', scopes: [] as string[] };
+    const authInfo = { token, clientId: publicOnly ? 'public' : 'staff', scopes: [] as string[] };
 
     const run = (transport: WebStandardStreamableHTTPServerTransport) =>
       requestBearer.run(token, () =>
@@ -92,6 +95,9 @@ export function createApp(): Hono {
       );
 
     if (existing) {
+      if (existing.publicOnly !== publicOnly) {
+        return unauthorized();
+      }
       return run(existing.transport);
     }
 
@@ -105,6 +111,7 @@ export function createApp(): Hono {
             sessions.set(sessionId, {
               transport: holder.transport,
               server: holder.server,
+              publicOnly,
             });
           }
         },
@@ -114,7 +121,7 @@ export function createApp(): Hono {
           void session?.server.close();
         },
       });
-      const server = createGymbroMcpServer();
+      const server = createGymbroMcpServer({ publicOnly });
       holder.transport = transport;
       holder.server = server;
       transport.onclose = () => {

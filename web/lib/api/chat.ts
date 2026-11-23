@@ -1,15 +1,14 @@
-/**
- * Cliente HTTP+SSE hacia `NEXT_PUBLIC_CHAT_API_URL` (chat-api, no Nest).
- *
- * @remarks Admin: JWT Staff + refresh. Landing: `setChatAccessTokenOverride`
- * con el token de `POST /v1/public/session`.
- */
-
-import { refreshStaffAccess } from '@/lib/api/client';
 import {
-  clearStaffSession,
-  readStaffSession,
-} from '@/lib/auth/session';
+  AgentRuntimeError,
+  archiveRuntimeConversation,
+  createRuntimeConversation,
+  listRuntimeConversations,
+  listRuntimeMessages,
+  patchRuntimeConversation,
+  postRuntimeTurn,
+  resolveRuntimeProposal,
+  setRuntimeAccessTokenOverride,
+} from '@/lib/api/agent-runtime-chat';
 
 export type ChatConversation = {
   id: string;
@@ -42,188 +41,60 @@ export class ChatClientError extends Error {
   }
 }
 
-function chatBaseUrl(): string {
-  const base = process.env.NEXT_PUBLIC_CHAT_API_URL?.replace(/\/$/, '') ?? '';
-  if (!base) {
-    throw new ChatClientError(503, 'Chat no configurado (NEXT_PUBLIC_CHAT_API_URL)');
-  }
-  return base;
-}
-
-let accessTokenOverride: string | null = null;
-
-/**
- * Bearer de la landing (sesión anónima). `null` vuelve al JWT Staff.
- */
+/** Bearer de la landing (sesión anónima). `null` vuelve al JWT Staff. */
 export function setChatAccessTokenOverride(token: string | null): void {
-  accessTokenOverride = token;
+  setRuntimeAccessTokenOverride(token);
 }
 
-function staffBearer(): string | null {
-  const session = readStaffSession();
-  return session?.accessToken ? `Bearer ${session.accessToken}` : null;
-}
-
-function chatBearer(): string | null {
-  if (accessTokenOverride) {
-    return `Bearer ${accessTokenOverride}`;
-  }
-  return staffBearer();
-}
-
-function errorMessage(status: number, parsed: unknown, fallback: string): string {
-  if (typeof parsed === 'object' && parsed !== null) {
-    const rec = parsed as { error?: unknown; message?: unknown };
-    if (typeof rec.error === 'string' && rec.error.trim()) {
-      return rec.error;
-    }
-    if (typeof rec.message === 'string' && rec.message.trim()) {
-      return rec.message;
-    }
-  }
-  if (status === 403) {
-    return 'No hay permiso para el asistente.';
-  }
-  if (status === 401) {
-    return accessTokenOverride
-      ? 'La sesión de prueba venció. Reintentá.'
-      : 'Sesión vencida. Volvé a entrar.';
-  }
-  if (status === 429) {
-    return 'Llegaste al tope de consultas por ahora. Probá más tarde o agendá una reunión.';
-  }
-  if (status === 402) {
-    return 'No tienes crédito suficiente para usar el asistente.';
-  }
-  if (status === 502) {
-    return fallback.includes('OpenRouter') || fallback.includes('proveedor')
-      ? fallback
-      : 'El asistente no está disponible.';
-  }
-  return fallback;
-}
-
-async function parseJsonBody(res: Response): Promise<unknown> {
-  const text = await res.text();
-  if (!text.trim()) {
-    return null;
-  }
+async function runtimeCall<T>(operation: Promise<T>): Promise<T> {
   try {
-    return JSON.parse(text) as unknown;
-  } catch {
-    return { message: text };
-  }
-}
-
-async function chatFetch(
-  path: string,
-  init: RequestInit,
-  retried = false,
-): Promise<Response> {
-  const headers = new Headers(init.headers);
-  headers.set('Accept', headers.get('Accept') ?? 'application/json');
-  const bearer = chatBearer();
-  if (bearer) {
-    headers.set('Authorization', bearer);
-  }
-
-  const res = await fetch(`${chatBaseUrl()}${path}`, { ...init, headers });
-
-  if (res.status === 401 && !retried && !accessTokenOverride) {
-    const refreshed = await refreshStaffAccess();
-    if (refreshed) {
-      return chatFetch(path, init, true);
+    return await operation;
+  } catch (error) {
+    if (error instanceof AgentRuntimeError) {
+      throw new ChatClientError(error.status, error.message);
     }
-    clearStaffSession();
+    throw error;
   }
-
-  return res;
 }
 
-async function chatJson<T>(path: string, init: RequestInit = {}): Promise<T> {
-  const res = await chatFetch(path, init);
-  const parsed = await parseJsonBody(res);
-  if (!res.ok) {
-    throw new ChatClientError(
-      res.status,
-      errorMessage(res.status, parsed, `Error HTTP ${res.status}`),
-    );
-  }
-  return parsed as T;
-}
-
-/**
- * Hilos activos del staff (más recientes primero).
- */
+/** Hilos activos (más recientes primero). */
 export async function listChatConversations(): Promise<ChatConversation[]> {
-  const data = await chatJson<{ items: ChatConversation[] }>('/v1/conversations');
-  return data.items ?? [];
+  return runtimeCall(listRuntimeConversations());
 }
 
-/**
- * Alta de hilo vacío. El título lo pone el primer mensaje (C7).
- */
+/** Alta de hilo vacío. El título lo pone el primer mensaje. */
 export async function createChatConversation(): Promise<ChatConversation> {
-  return chatJson<ChatConversation>('/v1/conversations', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: '{}',
-  });
+  return runtimeCall(createRuntimeConversation());
 }
 
-/**
- * Archiva el hilo (soft-delete C2).
- */
-export async function archiveChatConversation(
-  id: string,
-): Promise<ChatConversation> {
-  return chatJson<ChatConversation>(`/v1/conversations/${id}`, {
-    method: 'DELETE',
-  });
+/** Archiva el hilo sin borrar sus mensajes. */
+export async function archiveChatConversation(id: string): Promise<ChatConversation> {
+  return runtimeCall(archiveRuntimeConversation(id));
 }
 
-/**
- * Edita el título del hilo (`PATCH`). Cadena vacía = sin título.
- */
+/** Edita el título del hilo. */
 export async function patchChatConversation(
   id: string,
   patch: { title: string | null },
 ): Promise<ChatConversation> {
-  return chatJson<ChatConversation>(`/v1/conversations/${id}`, {
-    method: 'PATCH',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(patch),
-  });
+  return runtimeCall(patchRuntimeConversation(id, patch));
 }
 
-/**
- * Historial persistido (user / assistant / tool).
- */
+/** Historial persistido (user / assistant / tool). */
 export async function listChatMessages(id: string): Promise<ChatMessage[]> {
-  const data = await chatJson<{ items: ChatMessage[] }>(
-    `/v1/conversations/${id}/messages`,
-  );
-  return data.items ?? [];
+  return runtimeCall(listRuntimeMessages(id));
 }
 
-/**
- * Acto del usuario sobre una tarjeta (Confirmar / Cancelar). El modelo no puede hacerlo.
- *
- * @returns Fila `tool` guardada y la salida del tool MCP.
- */
+/** Acción del usuario sobre una tarjeta Confirmar / Cancelar. */
 export async function runChatUserAction(
   conversationId: string,
   tool: string,
   input: Record<string, unknown>,
 ): Promise<{ message: ChatMessage; output: unknown }> {
-  return chatJson<{ message: ChatMessage; output: unknown }>(
-    `/v1/conversations/${conversationId}/user-actions`,
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ tool, input }),
-    },
-  );
+  if (tool !== 'confirm_proposal' && !tool.endsWith('__confirm_proposal')) {
+    throw new ChatClientError(400, 'Acción de propuesta inválida.');
+  }
+  return runtimeCall(resolveRuntimeProposal(conversationId, input));
 }
 
 export type ChatStreamHandlers = {
@@ -240,11 +111,7 @@ export function isChatAbortError(error: unknown): boolean {
   );
 }
 
-/**
- * POST turno y consume UI Message Stream.
- *
- * @returns `'aborted'` si el staff cortó con Parar.
- */
+/** POST turno y consume UI Message Stream. */
 export async function streamChatTurn(
   conversationId: string,
   text: string,
@@ -252,34 +119,12 @@ export async function streamChatTurn(
   signal?: AbortSignal,
 ): Promise<'ok' | 'aborted'> {
   try {
-    const res = await chatFetch(`/v1/conversations/${conversationId}/messages`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Accept: 'text/event-stream',
-      },
-      body: JSON.stringify({ text }),
-      signal,
-    });
-
-    if (!res.ok) {
-      const parsed = await parseJsonBody(res);
-      throw new ChatClientError(
-        res.status,
-        errorMessage(res.status, parsed, `Error HTTP ${res.status}`),
-      );
-    }
-
-    if (!res.body) {
-      throw new ChatClientError(502, 'El asistente no está disponible.');
-    }
-
-    await consumeUiMessageStream(res.body, handlers);
+    const response = await runtimeCall(postRuntimeTurn(conversationId, text, signal));
+    if (!response.body) throw new ChatClientError(502, 'El asistente no está disponible.');
+    await consumeUiMessageStream(response.body, handlers);
     return signal?.aborted ? 'aborted' : 'ok';
   } catch (error) {
-    if (isChatAbortError(error) || signal?.aborted) {
-      return 'aborted';
-    }
+    if (isChatAbortError(error) || signal?.aborted) return 'aborted';
     throw error;
   }
 }
@@ -294,32 +139,21 @@ export async function consumeUiMessageStream(
 
   while (true) {
     const { done, value } = await reader.read();
-    if (done) {
-      break;
-    }
+    if (done) break;
     buffer += decoder.decode(value, { stream: true });
     const parts = buffer.split('\n\n');
     buffer = parts.pop() ?? '';
-    for (const part of parts) {
-      dispatchSseBlock(part, handlers);
-    }
+    for (const part of parts) dispatchSseBlock(part, handlers);
   }
-  if (buffer.trim()) {
-    dispatchSseBlock(buffer, handlers);
-  }
+  if (buffer.trim()) dispatchSseBlock(buffer, handlers);
 }
 
 function dispatchSseBlock(block: string, handlers: ChatStreamHandlers): void {
-  const lines = block.split('\n');
-  for (const line of lines) {
+  for (const line of block.split('\n')) {
     const trimmed = line.trim();
-    if (!trimmed.startsWith('data:')) {
-      continue;
-    }
+    if (!trimmed.startsWith('data:')) continue;
     const payload = trimmed.slice(5).trim();
-    if (!payload || payload === '[DONE]') {
-      continue;
-    }
+    if (!payload || payload === '[DONE]') continue;
     let event: unknown;
     try {
       event = JSON.parse(payload) as unknown;
@@ -331,9 +165,7 @@ function dispatchSseBlock(block: string, handlers: ChatStreamHandlers): void {
 }
 
 function applyStreamEvent(event: unknown, handlers: ChatStreamHandlers): void {
-  if (typeof event !== 'object' || event === null) {
-    return;
-  }
+  if (typeof event !== 'object' || event === null) return;
   const rec = event as {
     type?: unknown;
     toolCallId?: unknown;
@@ -347,17 +179,13 @@ function applyStreamEvent(event: unknown, handlers: ChatStreamHandlers): void {
   if (type === 'tool-input-start') {
     const id = typeof rec.toolCallId === 'string' ? rec.toolCallId : '';
     const name = typeof rec.toolName === 'string' ? rec.toolName : 'tool';
-    if (id) {
-      handlers.onToolStart(id, name);
-    }
+    if (id) handlers.onToolStart(id, name);
     return;
   }
   if (type === 'tool-output-available') {
     const id = typeof rec.toolCallId === 'string' ? rec.toolCallId : '';
     const name = typeof rec.toolName === 'string' ? rec.toolName : 'tool';
-    if (id) {
-      handlers.onToolDone(id, name, rec.output ?? rec.result);
-    }
+    if (id) handlers.onToolDone(id, name, rec.output ?? rec.result);
     return;
   }
   if (type === 'text-delta' && typeof rec.delta === 'string') {
@@ -365,10 +193,10 @@ function applyStreamEvent(event: unknown, handlers: ChatStreamHandlers): void {
     return;
   }
   if (type === 'error') {
-    const message =
+    handlers.onStreamError(
       typeof rec.errorText === 'string' && rec.errorText.trim()
         ? rec.errorText
-        : 'El proveedor de IA no está disponible. Reintentá en un momento.';
-    handlers.onStreamError(message);
+        : 'El proveedor de IA no está disponible. Reintentá en un momento.',
+    );
   }
 }

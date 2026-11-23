@@ -23,11 +23,9 @@ services:
       POSTGRES_PASSWORD: gymbro
       POSTGRES_DB: gymbro
     ports:
-      # Host 5433: convive con otro Postgres (p. ej. Kuatia en 5432).
       - "127.0.0.1:5433:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      # Primer boot: crea database `chat`. Si el volumen ya existía, lo hace chat-api.
       - ./docker/postgres/init:/docker-entrypoint-initdb.d:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U gymbro -d gymbro"]
@@ -49,23 +47,58 @@ services:
       timeout: 3s
       retries: 10
 
-  # Opcional: descomentar para UI de Postgres
-  # pgadmin:
-  #   image: dpage/pgadmin4:8
-  #   container_name: faciliter-pgadmin
-  #   restart: unless-stopped
-  #   environment:
-  #     PGADMIN_DEFAULT_EMAIL: admin@example.com
-  #     PGADMIN_DEFAULT_PASSWORD: gymbro
-  #     PGADMIN_CONFIG_SERVER_MODE: "False"
-  #   ports:
-  #     - "127.0.0.1:5050:80"
-  #   volumes:
-  #     - pgadmin_data:/var/lib/pgadmin
-  #     - ./docker/pgadmin/servers.json:/pgadmin4/servers.json:ro
-  #   depends_on:
-  #     postgres:
-  #       condition: service_healthy
+  agent-runtime-postgres:
+    image: pgvector/pgvector:pg17
+    container_name: faciliter-agent-runtime-postgres
+    restart: unless-stopped
+    env_file:
+      - ./agent-runtime/.env
+    environment:
+      POSTGRES_USER: agent
+      POSTGRES_DB: runtime
+    volumes:
+      - agent_runtime_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U agent -d runtime"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  agent-runtime-migrate:
+    image: ghcr.io/lucianomocchegiani/agent-runtime:latest
+    container_name: faciliter-agent-runtime-migrate
+    working_dir: /app
+    command: ["npm", "run", "prisma:deploy", "-w", "apps/api"]
+    restart: "no"
+    env_file:
+      - ./agent-runtime/.env
+    depends_on:
+      agent-runtime-postgres:
+        condition: service_healthy
+
+  agent-runtime:
+    image: ghcr.io/lucianomocchegiani/agent-runtime:latest
+    container_name: faciliter-agent-runtime
+    restart: unless-stopped
+    env_file:
+      - ./agent-runtime/.env
+    environment:
+      PORT: 3030
+    ports:
+      - "127.0.0.1:3031:3030"
+    depends_on:
+      agent-runtime-migrate:
+        condition: service_completed_successfully
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "node -e \"fetch('http://127.0.0.1:3030/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))\"",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
 
   api:
     build:
@@ -104,7 +137,7 @@ services:
         NEXT_PUBLIC_APP_DOMAIN: ${NEXT_PUBLIC_APP_DOMAIN:-}
         NEXT_PUBLIC_WEB_PORT: ${NEXT_PUBLIC_WEB_PORT:-3002}
         NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL:-http://localhost:3002}
-        NEXT_PUBLIC_CHAT_API_URL: ${NEXT_PUBLIC_CHAT_API_URL:-http://localhost:3010}
+        NEXT_PUBLIC_AGENT_RUNTIME_URL: ${NEXT_PUBLIC_AGENT_RUNTIME_URL:-http://localhost:3031}
         NEXT_PUBLIC_GOOGLE_CLIENT_ID: ${NEXT_PUBLIC_GOOGLE_CLIENT_ID:-}
         NEXT_PUBLIC_LOGIN_PROXY_URL: ${NEXT_PUBLIC_LOGIN_PROXY_URL:-https://login.faciliter.xyz}
     container_name: faciliter-web
@@ -115,7 +148,6 @@ services:
       NODE_ENV: production
       API_INTERNAL_URL: http://api:3001
     ports:
-      # Host 3002: convive con otro Next (p. ej. Kuatia en 3000).
       - "3002:3000"
     depends_on:
       api:
@@ -157,34 +189,6 @@ services:
       retries: 10
       start_period: 15s
 
-  chat-api:
-    build:
-      context: ./chat-api
-      dockerfile: Dockerfile
-    container_name: faciliter-chat-api
-    restart: unless-stopped
-    env_file:
-      - ./chat-api/.env
-    environment:
-      NODE_ENV: production
-    ports:
-      - "3010:3010"
-    depends_on:
-      postgres:
-        condition: service_healthy
-      mcp:
-        condition: service_healthy
-    healthcheck:
-      test:
-        [
-          "CMD-SHELL",
-          "node -e \"fetch('http://127.0.0.1:3010/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))\"",
-        ]
-      interval: 10s
-      timeout: 5s
-      retries: 10
-      start_period: 40s
-
   mcp:
     build:
       context: ./mcp
@@ -214,4 +218,4 @@ services:
 volumes:
   postgres_data:
   redis_data:
-  # pgadmin_data:
+  agent_runtime_data:

@@ -1,11 +1,11 @@
 import Link from 'next/link';
 import type { ReactNode } from 'react';
 import { NavIconFaciliterMark } from '@/components/AdminNavIcons';
-import { AssistantLauncher } from '@/components/assistant/AssistantDrawer';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { MarketingFrame } from '@/components/marketing/MarketingFrame';
 import { MktShell } from '@/components/marketing/MktShell';
 import { MarketingAccountLink } from '@/components/marketing/MarketingAccountLink';
+import { PublicAssistantLauncher } from '@/components/marketing/PublicAssistantLauncher';
 import { MARKETING_MAIL } from '@/lib/site-url';
 
 type MarketingShellProps = {
@@ -120,7 +120,7 @@ export function MarketingShell({ children }: MarketingShellProps) {
   const mailHref = `mailto:${MARKETING_MAIL}?subject=${encodeURIComponent('Agendar reunión Faciliter')}`;
 
   return (
-    <MarketingFrame overlay={<AssistantLauncher variant="public" />}>
+    <MarketingFrame overlay={<PublicAssistantLauncher />}>
       <MktShell as="header" className="mkt-header">
         <Link href="/" className="mkt-brand">
           <span className="brand-mark" aria-hidden="true">
