@@ -122,6 +122,14 @@ export function listStaffCredentialOffers(
   );
 }
 
+/** Emite la credencial del staff autenticado, sin aceptar su ID desde el cliente. */
+export function issueMyStaffCredentialOffer(): Promise<StaffCredentialOfferItem> {
+  return apiRequest<StaffCredentialOfferItem>('/me/staff-credential-offers', {
+    method: 'POST',
+    body: { force: true },
+  });
+}
+
 /**
  * Emite / re-emite offer OID4VCI de acceso staff (`staff.write`).
  */

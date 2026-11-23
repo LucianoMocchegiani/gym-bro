@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ForbiddenException,
   Injectable,
   Logger,
   NotFoundException,
@@ -74,6 +75,9 @@ export class KuatiaStaffOfferService {
     });
     if (!staff) {
       throw new NotFoundException(`Staff ${staffUserId} not found`);
+    }
+    if (!staff.active) {
+      throw new ForbiddenException('Active staff required to issue credential');
     }
 
     const existing = await this.prisma.staffCredentialOffer.findUnique({
