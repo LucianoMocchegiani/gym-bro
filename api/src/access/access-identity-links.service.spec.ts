@@ -8,10 +8,12 @@ describe('AccessIdentityLinksService.listCredentialIds', () => {
       member: { findFirst: jest.fn().mockResolvedValue({ id: 'member-1' }) },
       staffUser: { findFirst: jest.fn() },
       accessIdentityLink: {
-        findMany: jest.fn().mockResolvedValue([
-          { externalId: 'card-42' },
-          { externalId: 'pin-7' },
-        ]),
+        findMany: jest
+          .fn()
+          .mockResolvedValue([
+            { externalId: 'card-42' },
+            { externalId: 'pin-7' },
+          ]),
       },
     } as unknown as PrismaService;
     const service = new AccessIdentityLinksService(prisma, {} as never);
@@ -25,11 +27,10 @@ describe('AccessIdentityLinksService.listCredentialIds', () => {
   });
 
   it('uses the member document when there is no linked card or PIN', async () => {
-    const findMember =
-      jest
-        .fn()
-        .mockResolvedValueOnce({ id: 'member-1' })
-        .mockResolvedValueOnce({ document: ' 123456 ' });
+    const findMember = jest
+      .fn()
+      .mockResolvedValueOnce({ id: 'member-1' })
+      .mockResolvedValueOnce({ document: ' 123456 ' });
     const prisma = {
       member: { findFirst: findMember },
       staffUser: { findFirst: jest.fn() },
