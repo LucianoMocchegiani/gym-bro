@@ -16,7 +16,7 @@ export function MemberCredentialAccess() {
 
   useEffect(() => {
     let cancelled = false;
-    void getMyAccessCredential()
+    void getMyAccessCredential('member')
       .then((result) => {
         if (!cancelled) setCredential(result);
       })
