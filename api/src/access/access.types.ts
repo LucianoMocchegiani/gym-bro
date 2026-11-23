@@ -1,4 +1,4 @@
-import { AccessCredentialStatus } from '@prisma/client';
+import { AccessProvider } from '@prisma/client';
 
 /**
  * Modo de escaneo en puerta (RN-ACC-003).
@@ -22,13 +22,18 @@ export type AccessChannel =
   (typeof ACCESS_CHANNEL)[keyof typeof ACCESS_CHANNEL];
 
 /**
- * Quién quiere entrar, ya identificado por el sistema de puerta.
+ * Quién quiere entrar, ya identificado por un sistema de puerta.
  *
  * @remarks Cada adapter (Kuatia, ZKTeco…) resuelve su identidad a esto; las
  * reglas de Faciliter no saben de qué sistema vino.
  */
 export type AccessSubject =
   { kind: 'member'; memberId: string } | { kind: 'staff'; staffUserId: string };
+
+export type MyAccessCredential = {
+  provider: AccessProvider;
+  credentialIds: string[];
+};
 
 /**
  * Origen del intento: canal, modo y referencia idempotente del sistema de puerta.

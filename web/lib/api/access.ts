@@ -1,8 +1,3 @@
-/**
- * Access API (módulo `access`): sistema de puerta, OID4VP, pase manual,
- * historial y vínculos ZKTeco.
- */
-
 import { apiRequest } from '@/lib/api/client';
 import { toSearchParams } from '@/lib/api/list';
 import type { ListParams, ListResult } from '@/lib/api/list';
@@ -59,6 +54,11 @@ export type AccessDoorConfig = {
   provider: AccessProvider;
 };
 
+export type MyAccessCredential = {
+  provider: AccessProvider;
+  credentialIds: string[];
+};
+
 export type AccessIdentityLink = {
   id: string;
   provider: AccessProvider;
@@ -72,11 +72,13 @@ export type AccessLinkSubject =
   | { kind: 'member'; id: string }
   | { kind: 'staff'; id: string };
 
-/**
- * Sistema de puerta del gym (RN-ACC-010); legible por cualquier staff.
- */
 export function getAccessDoor(): Promise<AccessDoorConfig> {
   return apiRequest<AccessDoorConfig>('/access/door');
+}
+
+/** Returns the authenticated person's credential for the tenant's door system. */
+export function getMyAccessCredential(): Promise<MyAccessCredential> {
+  return apiRequest<MyAccessCredential>('/me/access-credential');
 }
 
 function accessLinksPath(subject: AccessLinkSubject): string {
@@ -84,9 +86,6 @@ function accessLinksPath(subject: AccessLinkSubject): string {
   return `/${base}/${encodeURIComponent(subject.id)}/access-links`;
 }
 
-/**
- * Números del aparato vinculados a un socio o staff (RN-ACC-011).
- */
 export function listAccessLinks(
   subject: AccessLinkSubject,
 ): Promise<AccessIdentityLink[]> {
@@ -118,18 +117,12 @@ export type AccessOid4VpSessionResult =
   | { status: 'done'; state: string; result: AccessVerifyResult }
   | { status: 'error'; state: string; reasonCode: string };
 
-/**
- * Crea request OID4VP para el QR de puerta (CU-ACC-001).
- */
 export function createOid4VpRequest(): Promise<AccessOid4VpRequestResult> {
   return apiRequest<AccessOid4VpRequestResult>('/access/oid4vp/request', {
     method: 'POST',
   });
 }
 
-/**
- * Poll de sesión OID4VP; al `done` incluye evaluate.
- */
 export function getOid4VpSession(
   verificationSessionId: string,
 ): Promise<AccessOid4VpSessionResult> {
@@ -138,9 +131,6 @@ export function getOid4VpSession(
   );
 }
 
-/**
- * Pase manual (CU-ACC-004 / RN-ACC-006).
- */
 export function manualPass(
   memberId: string,
   input: {
@@ -164,9 +154,6 @@ export type ListAccessAttemptsInput = {
   to?: string;
 } & ListParams;
 
-/**
- * Historial de intentos (CU-ACC-005), paginado. Incluye nombre del afiliado.
- */
 export function listAccessAttempts(
   input?: ListAccessAttemptsInput,
 ): Promise<ListResult<AccessAttemptDetail>> {
