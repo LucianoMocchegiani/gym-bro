@@ -1,24 +1,9 @@
-import {
-  BadRequestException,
-  Injectable,
-  Logger,
-  NotFoundException,
-} from '@nestjs/common';
-import { CredentialOffer, CredentialOfferStatus, Prisma } from '@prisma/client';
-import {
-  ListQueryDto,
-  ListResult,
-  normalizeListQuery,
-  toListResult,
-} from '../common/list';
+import { BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { KuatiaHttpError } from './http-kuatia-admin.adapter';
 import { KuatiaAdminPort } from './kuatia-admin.port';
 import { KuatiaEnvService } from './kuatia-env.service';
-import {
-  KuatiaPackSyncService,
-  packKuatiaIds,
-} from './kuatia-pack-sync.service';
+import { KuatiaOfferService } from './kuatia-offer.service';
+import { KuatiaPackSyncService } from './kuatia-pack-sync.service';
 
 describe('KuatiaOfferService.ensureOfferForCurrentContract', () => {
   it('rejects when the authenticated member has no current contract', async () => {
