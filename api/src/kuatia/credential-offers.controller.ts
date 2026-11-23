@@ -62,6 +62,20 @@ export class CredentialOffersController {
     return this.offers.listForMember(tenantId, user.userId, query);
   }
 
+  /** Emite la credencial del contrato vigente del afiliado autenticado. */
+  @Post('me/credential-offers')
+  @HttpCode(HttpStatus.CREATED)
+  async issueMine(
+    @CurrentTenant() tenantId: string,
+    @CurrentUser() user: AuthUser,
+  ): Promise<CredentialOfferListItem> {
+    if (user.profileType !== 'MEMBER') {
+      throw new ForbiddenException('Member profile required');
+    }
+    await this.assertEmitsInKuatia(tenantId);
+    return this.offers.ensureOfferForCurrentContract(tenantId, user.userId);
+  }
+
   /**
    * Confirma aceptación en wallet (marca `ACCEPTED`; sale de la bandeja PENDING).
    */
