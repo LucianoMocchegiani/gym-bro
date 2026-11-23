@@ -137,7 +137,7 @@ services:
         NEXT_PUBLIC_APP_DOMAIN: ${NEXT_PUBLIC_APP_DOMAIN:-}
         NEXT_PUBLIC_WEB_PORT: ${NEXT_PUBLIC_WEB_PORT:-3002}
         NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL:-http://localhost:3002}
-        NEXT_PUBLIC_AGENT_RUNTIME_URL: ${NEXT_PUBLIC_AGENT_RUNTIME_URL:-http://localhost:3031}
+        NEXT_PUBLIC_AGENT_RUNTIME_URL: "https://agent-runtime.faciliter.xyz"
         NEXT_PUBLIC_GOOGLE_CLIENT_ID: ${NEXT_PUBLIC_GOOGLE_CLIENT_ID:-}
         NEXT_PUBLIC_LOGIN_PROXY_URL: ${NEXT_PUBLIC_LOGIN_PROXY_URL:-https://login.faciliter.xyz}
     container_name: faciliter-web
