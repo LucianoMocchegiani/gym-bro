@@ -22,7 +22,7 @@ export type AccessChannel =
   (typeof ACCESS_CHANNEL)[keyof typeof ACCESS_CHANNEL];
 
 /**
- * Quién quiere entrar, ya identificado por un sistema de puerta.
+ * Quién quiere entrar, ya identificado por el sistema de puerta.
  *
  * @remarks Cada adapter (Kuatia, ZKTeco…) resuelve su identidad a esto; las
  * reglas de Faciliter no saben de qué sistema vino.
