@@ -85,8 +85,8 @@ export function MemberCredentialAccess() {
       {!loading && credential?.provider === 'ZKTECO' ? (
         <>
           <p className="muted">
-            Este tenant usa ZKTeco. Presentá en el dispositivo el número
-            vinculado a tu tarjeta o PIN.
+            Este tenant usa ZKTeco. Presentá este número en el dispositivo; es
+            el ID de tu tarjeta o PIN, o tu DNI si no hay uno vinculado.
           </p>
           {credential.credentialIds.length ? (
             <ul className="plain-list">

@@ -77,8 +77,8 @@ export function StaffCredentialAccess() {
       {!loading && credential?.provider === 'ZKTECO' ? (
         <>
           <p className="muted">
-            El tenant usa ZKTeco. Presentá el número vinculado a tu usuario en
-            el dispositivo.
+            El tenant usa ZKTeco. Presentá el número asociado a tu tarjeta o
+            PIN en el dispositivo.
           </p>
           {credential.credentialIds.length ? (
             <ul className="plain-list">
