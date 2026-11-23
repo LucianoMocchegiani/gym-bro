@@ -13,9 +13,10 @@ describe('KuatiaStaffOfferService.ensureOfferForStaff', () => {
       email: 'staff@example.test',
       active: false,
     });
+    const findUnique = jest.fn();
     const prisma = {
       staffUser: { findFirst: findStaff },
-      staffCredentialOffer: { findUnique: jest.fn() },
+      staffCredentialOffer: { findUnique },
     } as unknown as PrismaService;
     const service = new KuatiaStaffOfferService(
       prisma,
@@ -28,8 +29,10 @@ describe('KuatiaStaffOfferService.ensureOfferForStaff', () => {
       service.ensureOfferForStaff('tenant-1', 'staff-1', { force: true }),
     ).rejects.toBeInstanceOf(ForbiddenException);
     expect(findStaff).toHaveBeenCalledWith(
-      expect.objectContaining({ where: { id: 'staff-1', tenantId: 'tenant-1' } }),
+      expect.objectContaining({
+        where: { id: 'staff-1', tenantId: 'tenant-1' },
+      }),
     );
-    expect(prisma.staffCredentialOffer.findUnique).not.toHaveBeenCalled();
+    expect(findUnique).not.toHaveBeenCalled();
   });
 });
