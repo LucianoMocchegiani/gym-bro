@@ -1,4 +1,4 @@
-import { AccessProvider } from '@prisma/client';
+import { AccessCredentialStatus, AccessProvider } from '@prisma/client';
 
 /**
  * Modo de escaneo en puerta (RN-ACC-003).

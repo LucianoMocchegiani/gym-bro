@@ -85,24 +85,30 @@ export function MemberCredentialAccess() {
       {!loading && credential?.provider === 'ZKTECO' ? (
         <>
           <p className="muted">
-            Este tenant usa ZKTeco. Presentá en el dispositivo el número vinculado a tu tarjeta o PIN.
+            Este tenant usa ZKTeco. Presentá en el dispositivo el número
+            vinculado a tu tarjeta o PIN.
           </p>
           {credential.credentialIds.length ? (
             <ul className="plain-list">
               {credential.credentialIds.map((id) => (
-                <li key={id}><strong>{id}</strong></li>
+                <li key={id}>
+                  <strong>{id}</strong>
+                </li>
               ))}
             </ul>
           ) : (
-            <p className="muted">No tenés un número vinculado. Si el tenant no tiene asociado un DNI a tu cuenta, contactá al staff para configurar tu acceso.</p>
+            <p className="muted">
+              No tenés un número vinculado. Si el tenant no tiene asociado un
+              DNI a tu cuenta, contactá al staff para configurar tu acceso.
+            </p>
           )}
         </>
       ) : null}
       {!loading && credential?.provider === 'KUATIA' ? (
         <>
           <p className="muted">
-            Generá la credencial de tu plan vigente y guardala en Kuatia Wallet en
-            este dispositivo.
+            Generá la credencial de tu plan vigente y guardala en Kuatia Wallet
+            en este dispositivo.
           </p>
           <button
             className="mkt-btn-primary"
@@ -110,7 +116,9 @@ export function MemberCredentialAccess() {
             onClick={issueCredential}
             disabled={busy}
           >
-            {busy ? 'Preparando credencial…' : 'Generar credencial y abrir Kuatia Wallet'}
+            {busy
+              ? 'Preparando credencial…'
+              : 'Generar credencial y abrir Kuatia Wallet'}
           </button>
         </>
       ) : null}

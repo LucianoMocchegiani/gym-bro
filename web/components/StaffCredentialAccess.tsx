@@ -1,9 +1,9 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { ApiClientError } from '@/lib/api/client';
 import { getMyAccessCredential } from '@/lib/api/access';
 import type { MyAccessCredential } from '@/lib/api/access';
+import { ApiClientError } from '@/lib/api/client';
 import { issueMyStaffCredentialOffer } from '@/lib/api/staff';
 import { credentialOfferEndpoint } from '@/lib/kuatia-wallet';
 
@@ -77,16 +77,22 @@ export function StaffCredentialAccess() {
       {!loading && credential?.provider === 'ZKTECO' ? (
         <>
           <p className="muted">
-            El tenant usa ZKTeco. Presentá el número vinculado a tu usuario en el dispositivo.
+            El tenant usa ZKTeco. Presentá el número vinculado a tu usuario en
+            el dispositivo.
           </p>
           {credential.credentialIds.length ? (
             <ul className="plain-list">
               {credential.credentialIds.map((id) => (
-                <li key={id}><strong>{id}</strong></li>
+                <li key={id}>
+                  <strong>{id}</strong>
+                </li>
               ))}
             </ul>
           ) : (
-            <p className="muted">No tenés un número ZKTeco vinculado. Pedile al administrador del tenant que lo configure en tu ficha de staff.</p>
+            <p className="muted">
+              No tenés un número ZKTeco vinculado. Pedile al administrador del
+              tenant que lo configure en tu ficha de staff.
+            </p>
           )}
         </>
       ) : null}
@@ -102,7 +108,9 @@ export function StaffCredentialAccess() {
             onClick={issueCredential}
             disabled={busy}
           >
-            {busy ? 'Preparando credencial…' : 'Generar credencial y abrir Kuatia Wallet'}
+            {busy
+              ? 'Preparando credencial…'
+              : 'Generar credencial y abrir Kuatia Wallet'}
           </button>
         </>
       ) : null}
