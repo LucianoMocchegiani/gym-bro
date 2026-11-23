@@ -22,6 +22,14 @@ export type CredentialOfferItem = {
   lastError?: string | null;
 };
 
+/** Emite el offer del contrato vigente del afiliado autenticado. */
+export function issueMyCredentialOffer(): Promise<CredentialOfferItem> {
+  return apiRequest<CredentialOfferItem>('/me/credential-offers', {
+    method: 'POST',
+    auth: 'member',
+  });
+}
+
 /**
  * Re-emite el offer OID4VCI de un pack que cubre hoy (`members.write`).
  *

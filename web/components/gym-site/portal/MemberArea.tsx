@@ -43,6 +43,7 @@ const LINKS = [
   { href: '/portal/tienda', label: 'Tienda' },
   { href: CART_HREF, label: 'Carrito' },
   { href: '/portal/historial', label: 'Historial' },
+  { href: '/portal/acceso', label: 'Acceso' },
   { href: '/portal/documentos', label: 'Documentos' },
   { href: NOTICES_HREF, label: 'Avisos' },
 ];
