@@ -2,7 +2,7 @@
 
 La **Web del tenant** es la página pública del local y el punto de entrada al portal del afiliado. El staff la administra desde **Sistema → Web del gym** (`/dashboard/web`). La URL pública usa el subdominio del tenant. El botón **Ver mi web** abre la página publicada.
 
-La persona afiliada inicia sesión con su cuenta Faciliter y entra a **Mi portal**. Allí puede consultar clases, reservas, tienda, carrito, historial, documentos y avisos según su acceso. La app móvil no es el recorrido general del afiliado; la excepción vigente es escanear el QR de la puerta Kuatia.
+La persona afiliada inicia sesión con su cuenta Faciliter y entra a **Mi portal**. Allí puede consultar clases, reservas, tienda, carrito, historial, documentos y avisos según su acceso. La app móvil no es el recorrido general del afiliado; con acceso Kuatia, el QR de puerta abre Kuatia Wallet web y también puede compartirse como link.
 
 ## Identidad visual
 

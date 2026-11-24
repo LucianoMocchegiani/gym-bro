@@ -4,7 +4,7 @@ Usá esta sección si tenés permiso para editar la configuración del tenant. L
 
 ## Configuración operativa
 
-En **Operación** podés elegir el sistema de acceso: **QR con la app (Kuatia)** o **Acceso ZKTeco**. El portal del afiliado permite consultar/generar su acceso según la modalidad del tenant; con Kuatia la credencial se acepta en Kuatia Wallet y el escaneo del QR de la puerta sigue requiriendo la app Faciliter. Con ZKTeco se muestra el identificador ya vinculado o el DNI de respaldo; Faciliter no da de alta un número nuevo en el dispositivo.
+En **Operación** podés elegir el sistema de acceso: **QR con Kuatia Wallet** o **Acceso ZKTeco**. Con Kuatia, la pantalla de Puerta genera un QR que se escanea con la cámara del teléfono y abre Kuatia Wallet web; también se puede copiar y enviar el link. Con ZKTeco se muestra el identificador ya vinculado o el DNI de respaldo; Faciliter no da de alta un número nuevo en el dispositivo.
 
 La misma pantalla configura horas para cancelar reservas, lista de espera, ingreso tardío a clase, tolerancia de deuda y multi-ingreso con tope diario. Guardá con **Guardar operación**. Si cambiás la modalidad de acceso, confirmá que los equipos y el procedimiento del local correspondan a la opción elegida.
 
