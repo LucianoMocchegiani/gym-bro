@@ -158,7 +158,7 @@ export function GymContextPicker({
     return (
       <PickerCard slug={slug} gymName={gymName} brandColor={brandColor}>
         <p className="muted">
-          Tu cuenta todavía no está vinculada a {gymName}.
+          La cuenta {identity?.email} todavía no está vinculada a {gymName}.
         </p>
         <Link className="btn primary" href="/">
           Ver planes
