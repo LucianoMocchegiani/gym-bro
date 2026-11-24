@@ -10,11 +10,11 @@ Fuera de esta guía: Super Admin. **No existen todavía:** rutinas por días, no
 |------|--------|--------|
 | Panel (web) | Dueño, recepción, profesores (staff) | `{slug}.faciliter.xyz/dashboard` |
 | Web del tenant y portal | Público y afiliados | `{slug}.faciliter.xyz`: portada, planes y **Mi portal** del afiliado |
-| App Faciliter | Uso de acceso Kuatia | Se necesita para escanear el QR de la puerta |
+| App Faciliter | Uso de acceso Kuatia | Ya no es necesaria para presentar el QR de puerta; la Wallet web abre el link |
 
 El dinero del afiliado va al Mercado Pago **del negocio** y se registra en Caja. Faciliter no se queda con el cobro. Efectivo: solo se registra.
 
-El afiliado opera desde **Mi portal**: clases, reservas, tienda, carrito, historial, documentos y avisos. La app no es el recorrido general; sigue siendo necesaria para escanear el QR de puerta Kuatia.
+El afiliado opera desde **Mi portal**: clases, reservas, tienda, carrito, historial, documentos y avisos. Para acceso Kuatia, puede escanear el QR con la cámara del teléfono o abrir un link copiado en Kuatia Wallet web.
 
 ## Menú del panel
 
@@ -93,7 +93,7 @@ Rango de fechas: qué se cobró (pack, drop-in, medio, staff) y devoluciones. Co
 
 ## Puerta
 
-Pestañas **Verificar**, **Pase manual**, **Historial**. Con Kuatia, el afiliado escanea el QR de Verificar desde la app Faciliter y el panel muestra PERMITIDO / DENEGADO con motivo. ZKTeco es opcional y depende del modelo: se coordina con los técnicos. Topic `puerta`.
+Pestañas **Verificar**, **Pase manual**, **Historial**. Con Kuatia, Puerta muestra un QR que la cámara del teléfono abre en Kuatia Wallet web; también se puede copiar y enviar el link. El panel muestra PERMITIDO / DENEGADO cuando se presenta una credencial. ZKTeco es opcional y depende del modelo: se coordina con los técnicos. Topic `puerta`.
 
 ## Avisos
 
