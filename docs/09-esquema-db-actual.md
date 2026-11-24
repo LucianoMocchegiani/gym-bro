@@ -49,7 +49,7 @@ erDiagram
   tenants ||--o{ access_attempts : registra
   tenants ||--o{ access_identity_links : vincula
   tenants ||--o{ notifications : notifica
-  ad_campaigns ||--o{ ad_events : mide
+  ad_campaigns ||--o{ ad_events : eventos
 ```
 
 **Lectura rápida:** `tenants` es el límite de datos de cada organización. `identities` representa la cuenta de una persona; `members` y `staff_users` son sus perfiles dentro de una organización. Catálogo, sesiones y reservas cubren la actividad; `transactions` y sus `transaction_items` representan el cobro y lo vendido. Las tablas de acceso registran intentos/vínculos; las tablas de avisos, gastos, recibos, sitios y configuración cubren la operación alrededor.
@@ -60,7 +60,7 @@ El diagrama expresa relaciones funcionales. No todas las líneas son claves for�
 
 | Migración | Cambio |
 |---|---|
-| `20261006120000_faciliter_ads` | Crea `ad_campaigns` (campañas) y `ad_events` (impresiones/interacciones). `ad_events.campaign_id` sí referencia la campaña; `tenant_id` es un valor indexado sin FK declarada. |
+| `20261006120000_faciliter_ads` | Crea `ad_campaigns` (campañas) y `ad_events` (eventos de campaña). `ad_events.campaign_id` sí referencia la campaña; `tenant_id` es un valor indexado sin FK declarada. |
 | `20261007120000_mercadopago_qr_setup` | Crea `mercadopago_qr_setups`: configuración Point por organización (`tenant_id` como PK, `mp_user_id`, `store_id`, `pos_id`). La migración no declara FK a `tenants`. |
 | `20261008120000_mp_point_qr_orders` | Crea `mercadopago_qr_orders`: orden y datos QR asociados a la transacción; `transaction_id` y `mp_order_id` son únicos, sin FK declaradas. |
 | `20261009120000_mp_payment_discounts` | Añade a `tenant_settings` `mp_point_qr_discount_bps` (default 500 = 5 %) y `mp_link_discount_bps` (default 0). |
