@@ -26,10 +26,42 @@ El bloque de planes aparece debajo del contenido. Los botones hacia packs depend
 
 **Volver a la vidriera por defecto** es una acción destructiva: borra portada, sliders, ícono e imágenes asociadas; la web vuelve a mostrar el nombre del tenant y sus planes. Usala solo si realmente querés descartar el contenido publicado.
 
+**Captura:** `inicio-portal.png` — lista.  
+**Dónde:** web pública del tenant, página de inicio.  
+**Qué se ve:** portada y planes, antes de entrar al portal.
+
+**Captura:** `inico-portal-2.png` — lista.  
+**Dónde:** Mi portal, inicio de sesión de un afiliado.  
+**Qué se ve:** inicio del afiliado; usar solo con datos de prueba o anonimizados.
+
+**Captura:** `portal-tienda.png` — lista.  
+**Dónde:** Mi portal → Tienda.  
+**Qué se ve:** packs disponibles.
+
+**Captura:** `portal-clases.png` — lista.  
+**Dónde:** Mi portal → Clases.  
+**Qué se ve:** calendario y clases disponibles.
+
+**Captura:** `portal-mis-clases.png` — lista.  
+**Dónde:** Mi portal → Mis clases.  
+**Qué se ve:** reservas del afiliado.
+
+**Captura:** `portal-carrito.png` — lista.  
+**Dónde:** Mi portal → Carrito.  
+**Qué se ve:** productos seleccionados antes de pagar.
+
+**Captura:** `portal-historial.png` — lista.  
+**Dónde:** Mi portal → Historial.  
+**Qué se ve:** comprobantes del afiliado.
+
+**Captura:** `portal-acceso.png` — lista.  
+**Dónde:** Mi portal → Acceso.  
+**Qué se ve:** la credencial según la modalidad configurada para el tenant.
+
+**Captura:** `portal-avisos.png` — lista.  
+**Dónde:** Mi portal → Avisos.  
+**Qué se ve:** bandeja de avisos del afiliado.
+
 **Captura:** `web-web-del-gym.png` — falta.  
 **Dónde:** Sistema → Web del gym, portada con imagen y un slider editado.  
 **Qué se ve:** editor, vista previa y acciones de publicación.
-
-**Captura:** `web-portal-inicio.png` — falta.  
-**Dónde:** web pública del tenant, sesión iniciada de un afiliado de prueba.  
-**Qué se ve:** acceso a Mi portal y el inicio del afiliado, sin datos personales reales.
