@@ -74,7 +74,7 @@ const NAV_GROUPS: NavGroup[] = [
     items: [
       { href: '/dashboard/config', label: 'Config' },
       { href: '/dashboard/avisos', label: 'Avisos' },
-      { href: '/dashboard/web', label: 'Web del gym' },
+      { href: '/dashboard/web', label: 'Web pública' },
       { href: '/dashboard/plan', label: 'Plan / Uso' },
       { href: '/dashboard/auditoria', label: 'Auditoría' },
       { href: '/dashboard/ads', label: 'Faciliter Ads' },
@@ -260,7 +260,7 @@ export function AdminShell({
               </button>
               {variant === 'home' ? (
                 <p className="app-topbar-tagline muted small">
-                  Panel de administración / Gestioná tu gym de forma{' '}
+                  Panel de administración / Gestioná tu organización de forma{' '}
                   <span className="accent-text">simple y eficiente</span>.
                 </p>
               ) : null}

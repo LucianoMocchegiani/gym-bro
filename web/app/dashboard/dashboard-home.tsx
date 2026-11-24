@@ -306,9 +306,9 @@ function TenantDashboard({ tenantSlug }: { tenantSlug: string }) {
 }
 
 /**
- * Inicio del tenant `admin`: mismos KPIs visuales que un gym, métricas de plataforma.
+ * Inicio del tenant `admin`: mismos KPIs visuales que una organización, métricas de plataforma.
  *
- * @remarks Sin puerta ni sesiones. El analog de afiliados es tenants activos.
+ * @remarks Sin puerta ni sesiones. El análogo de afiliados son los tenants activos.
  */
 function AdminDashboard() {
   const { session } = useAuth();
@@ -344,8 +344,8 @@ function AdminDashboard() {
         } catch (err) {
           nextErrors.push(
             err instanceof ApiClientError
-              ? `Gyms: ${err.message}`
-              : 'Gyms: no disponible',
+              ? `Organizaciones: ${err.message}`
+              : 'Organizaciones: no disponible',
           );
         }
       }
@@ -380,7 +380,7 @@ function AdminDashboard() {
     canTenants
       ? {
           key: 'gyms',
-          label: 'Tenants activos',
+          label: 'Organizaciones activas',
           value: activeGyms != null ? String(activeGyms) : '—',
           hint: 'Estado activo',
           icon: <KpiIconPeople />,
@@ -400,7 +400,7 @@ function AdminDashboard() {
           key: 'nopack',
           label: 'Sin pack Faciliter',
           value: withoutPack != null ? String(withoutPack) : '—',
-          hint: 'Tenants activos sin contrato',
+          hint: 'Organizaciones activas sin contrato',
           icon: <KpiIconPack />,
         }
       : null,
@@ -430,4 +430,3 @@ function AdminDashboard() {
     </AdminShell>
   );
 }
-  

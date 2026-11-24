@@ -74,7 +74,6 @@ export function TenantEditPanel({
     }
     const dirty = name !== tenant.name || slug !== tenant.slug;
     if (!dirty) {
-      // Sin cambios: no pegarle a la API; si es modal, cerrar.
       onCancel?.();
       return;
     }
@@ -224,7 +223,7 @@ export function TenantEditPanel({
             disabled={busy || statusBusy}
             onClick={() => setDeleteConfirm(true)}
           >
-            Eliminar gym
+            Eliminar organización
           </button>
         </div>
       </form>
@@ -232,7 +231,7 @@ export function TenantEditPanel({
       <ConfirmDialog
         open={confirmSave}
         title="Guardar cambios"
-        description="¿Confirmás guardar los cambios del gym?"
+        description="¿Confirmás guardar los cambios de la organización?"
         confirmLabel="Guardar"
         busy={busy}
         onConfirm={() => {
@@ -244,10 +243,10 @@ export function TenantEditPanel({
 
       <ConfirmDialog
         open={statusTarget !== null}
-        title={statusTarget === 'SUSPENDED' ? 'Suspender gym' : 'Reactivar gym'}
+        title={statusTarget === 'SUSPENDED' ? 'Suspender organización' : 'Reactivar organización'}
         description={`¿Confirmás ${
           statusTarget === 'SUSPENDED' ? 'suspender' : 'reactivar'
-        } este gym?`}
+        } esta organización?`}
         confirmLabel={statusTarget === 'SUSPENDED' ? 'Suspender' : 'Reactivar'}
         tone={statusTarget === 'SUSPENDED' ? 'danger' : 'default'}
         busy={statusBusy}
@@ -257,13 +256,13 @@ export function TenantEditPanel({
 
       <ConfirmDialog
         open={deleteConfirm}
-        title="Eliminar gym"
+        title="Eliminar organización"
         description={
           tenant
-            ? `Esto borra en físico el gym ${tenant.name} (slug ${tenant.slug}) con todo su contenido: staff, afiliados, contratos, pagos, caja y auditoría. No se puede deshacer.`
+            ? `Esto borra en físico la organización ${tenant.name} (slug ${tenant.slug}) con todo su contenido: staff, afiliados, contratos, pagos, caja y auditoría. No se puede deshacer.`
             : undefined
         }
-        confirmLabel="Eliminar gym"
+        confirmLabel="Eliminar organización"
         tone="danger"
         confirmWord="ELIMINAR"
         confirmWord2={tenant?.slug}

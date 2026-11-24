@@ -28,7 +28,7 @@ type AutoStep =
 
 /**
  * Sin elección del usuario: perfil pedido por `?next=` o el único que tiene.
- * Si no es parte del gym y venía a comprar, la compra hace el alta.
+ * Si no es parte del tenant y venía a comprar, la compra hace el alta.
  */
 function autoStep(
   profiles: GymProfiles | null,
@@ -158,7 +158,7 @@ export function GymContextPicker({
     return (
       <PickerCard slug={slug} gymName={gymName} brandColor={brandColor}>
         <p className="muted">
-          Tu cuenta {identity?.email} todavía no es socia de {gymName}.
+          La cuenta {identity?.email} todavía no está vinculada a {gymName}.
         </p>
         <Link className="btn primary" href="/">
           Ver planes
@@ -180,10 +180,10 @@ export function GymContextPicker({
     <PickerCard slug={slug} gymName={gymName} brandColor={brandColor}>
       <p className="muted">¿Cómo querés entrar?</p>
       <button type="button" className="btn primary" onClick={() => choose('STAFF')}>
-        Panel del gym (staff)
+        Panel del equipo
       </button>
       <button type="button" className="btn" onClick={() => choose('MEMBER')}>
-        Mi cuenta de socio
+        Mi portal
       </button>
       <SwitchAccountButton />
     </PickerCard>

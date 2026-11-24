@@ -29,10 +29,10 @@ import { tenantHostLabel, tenantOrigin } from '@/lib/tenant-host';
 const PAGE_SIZE = 20;
 
 /**
- * Gestión de gyms del tenant `admin` (plataforma).
+ * Gestión de organizaciones del tenant `admin` (plataforma).
  *
  * @remarks Reemplaza el antiguo `/super/tenants`. Solo accesible con el slug
- * `admin`: un gym normal no tiene este módulo en la nav ni permisos de
+ * `admin`: una organización normal no tiene este módulo en la nav ni permisos de
  * plataforma, así que la API responde 403.
  */
 export default function AdminTenantsPage() {
@@ -74,7 +74,7 @@ function TenantsInner() {
       setError(
         err instanceof ApiClientError
           ? err.message
-          : 'No se pudieron cargar tenants',
+          : 'No se pudieron cargar las organizaciones',
       );
     } finally {
       setLoading(false);
@@ -108,8 +108,8 @@ function TenantsInner() {
   const impersonateTarget = rows.find((r) => r.id === impersonateId) ?? null;
 
   return (
-    <AdminShell title="Tenants" subtitle="Alta, edición y acceso a cada tenant.">
-      <ListToolbar hint="Accedé a un gym para operarlo con su propia sesión.">
+    <AdminShell title="Organizaciones" subtitle="Alta, edición y acceso a cada organización.">
+      <ListToolbar hint="Accedé a una organización para operarla con su propia sesión.">
         <button
           type="button"
           className="btn"
@@ -125,12 +125,12 @@ function TenantsInner() {
       {flashOk ? <p className="ok-msg">{flashOk}</p> : null}
 
       <DataTable
-        title="Tenants"
-        description={listCountDescription(total, page, 'gym', 'gyms')}
+        title="Organizaciones"
+        description={listCountDescription(total, page, 'organización', 'organizaciones')}
         loading={loading}
         error={error}
         isEmpty={rows.length === 0}
-        emptyText="No hay gyms."
+        emptyText="No hay organizaciones."
         page={page}
         hasMore={hasMore}
         onPageChange={setPage}
@@ -173,7 +173,7 @@ function TenantsInner() {
                   <IconView />
                 </RowIconButton>
                 <RowIconButton
-                  label="Entrar como gym"
+                  label="Entrar a la organización"
                   onClick={() => navigate('impersonate', t.id)}
                 >
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
@@ -193,13 +193,13 @@ function TenantsInner() {
       <AdminModal
         open={modalOpen}
         onClose={closeModal}
-        title="Nuevo gym"
-        description="Gym + owner Admin inicial."
+        title="Nueva organización"
+        description="Organización + cuenta Admin inicial."
       >
         <TenantCreateForm
           onCancel={closeModal}
           onSuccess={(created) => {
-            setFlashOk(`Gym creado: ${created.name}`);
+            setFlashOk(`Organización creada: ${created.name}`);
             closeModal();
             if (page === 1) {
               void load();
@@ -213,7 +213,7 @@ function TenantsInner() {
       <AdminModal
         open={Boolean(editarId)}
         onClose={closeModal}
-        title="Editar gym"
+        title="Editar organización"
         description="Datos, slug y estado."
       >
         {editarId ? (
@@ -222,12 +222,12 @@ function TenantsInner() {
             tenantId={editarId}
             onCancel={closeModal}
             onSaved={(updated) => {
-              setFlashOk(`Gym guardado: ${updated.name}`);
+              setFlashOk(`Organización guardada: ${updated.name}`);
               closeModal();
               void load();
             }}
             onDeleted={() => {
-              setFlashOk('Gym eliminado (cascada total).');
+              setFlashOk('Organización eliminada.');
               closeModal();
               void load();
             }}
