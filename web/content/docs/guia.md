@@ -256,7 +256,7 @@ El panel permite configurar avisos y correos. El afiliado consulta su bandeja y 
 
 En **Sistema → Web del gym** editás la portada, sliders, imágenes, enlaces y vista previa de la página pública del tenant. Revisá el contenido y el tema claro/oscuro antes de publicar. Publicar actualiza la web pública del tenant.
 
-**Captura:** `editor-web-tennant.png` — mostrar el editor Web del tenant.  
+**Capturas:** `editor-web-tennant.png` y `editor-web-tennant-2.png` — mostrar el editor y su vista previa; la segunda imagen va debajo de la primera.  
 Para el recorrido completo, consultá [`Web del tenant`](/docs/web-tenant).
 
 ## Auditoría y asistente
