@@ -18,8 +18,9 @@ export default function DocsIndexPage() {
       <p className="eyebrow">Documentación</p>
       <h1>Guía de uso</h1>
       <p className="muted">
-        El portal web es el recorrido principal del afiliado. La app Faciliter
-        sigue siendo necesaria para escanear el QR de acceso Kuatia.
+        El portal web es el recorrido principal del afiliado. Para presentar una
+        credencial Kuatia en la puerta, puede escanear el QR con la cámara del
+        teléfono o abrir el link en Kuatia Wallet web.
       </p>
       <p>
         Configuración, cobros y administración de la web del tenant tienen guías
