@@ -1,18 +1,21 @@
 # Caja
 
-**Caja** (`/dashboard/caja`) es el mostrador: el staff registra los cobros presenciales. No es la factura AFIP. Hay pestañas **Cobro** y **Débitos**.
+**Caja** (`/dashboard/caja`) es el mostrador: donde el staff registra cobros **presenciales** y ve el día. No es la factura AFIP. Dos pestañas:
 
-## Formas de cobro
+- **Cobro:** elegís el afiliado, el catálogo (Packs o Servicios para una clase suelta) y armás el carrito. Medios:
+  - **Efectivo:** queda registrado al toque y suma al efectivo del Cierre.
+  - **Transferencia:** para transferencias al alias/CBU del gym que el staff **ya vio acreditadas** (Faciliter no las verifica). Campo opcional **Referencia** (nº de operación o quién transfirió), que sale en el comprobante. No suma al efectivo del Cierre: va en «digital».
+  - **Generar link MP** muestra un QR con **Copiar** / **Abrir**; la pantalla espera hasta que Mercado Pago lo apruebe. El tilde de **débito automático** aparece solo con un pack mensual y Mercado Pago conectado.
+  - **Mercado Pago Point (QR en caja)** crea un QR dinámico con la sucursal/caja del tenant.
+- **Descuento por pago sin comisión:** con Efectivo o Transferencia, Caja precarga el % por defecto del gym (Config → Operación; **7,6 %** si no lo cambiaron, que es lo que cobra MP con la plata al instante: 6,29 % + IVA). El staff lo puede cambiar o poner 0 en cada venta (máx. 99 %); si difiere del default queda en Auditoría. Se aplica a cada ítem del carrito, redondeado al peso. El comprobante y Reportes muestran precio de lista y descuento.
+- **Débitos:** la cola de débitos automáticos (topic `debito`).
 
-- **Efectivo:** queda registrado al instante y suma al efectivo del Cierre.
-- **Transferencia:** registrala solo cuando ya viste la acreditación en la cuenta del tenant. No suma al efectivo del Cierre; va en «digital».
-- **Mercado Pago (link):** genera un link/QR para que el afiliado pague a distancia. Caja espera la aprobación.
-- **Mercado Pago Point (QR en caja):** genera un QR dinámico en el POS configurado para el tenant. El afiliado lo escanea con Mercado Pago. Caja consulta a Mercado Pago y emite el comprobante solo cuando confirma el pago.
+**Point QR** requiere Mercado Pago conectado y sucursal/caja creadas en Config con dirección real y coordenadas. El afiliado escanea con Mercado Pago; Caja consulta a Mercado Pago antes de emitir el comprobante. Descuento inicial: Point **5 %**, link MP **0 %**; se configuran por separado de efectivo/transferencia. Guía pública: `/docs/config`.
 
-Point QR requiere que el tenant haya conectado Mercado Pago en Config y creado una sucursal y una caja QR con su dirección real y coordenadas. La configuración está en `/docs/config`. No confundas Point QR (cobro presencial en Caja) con el link MP.
+La plata de Mercado Pago entra a la cuenta MP **del negocio**, no a Faciliter. Cómo conectar con OAuth y reconectar: topic `mercadopago`.
 
-Para Point QR, el descuento predeterminado inicial es 5 %; para el link MP, 0 %. Caja muestra el descuento y permite ajustarlo para cada venta. El descuento en efectivo y transferencia se configura por separado en Config → Operación.
+El **cierre / arqueo** está en **Cierre** (`/dashboard/arqueo`): compara el efectivo esperado con el declarado. El esperado cuenta solo efectivo: cobros − devoluciones − gastos en efectivo (topic `gastos`). Al lado, el **digital esperado** (MP, transferencias cobradas en Caja, gastos por transferencia o tarjeta) y el neto del día: informativos, no se cierran. La cola de packs mensuales por vencer: **Vencimientos** (`/dashboard/vencimientos`).
 
-La pestaña **Débitos** administra débitos automáticos mensuales. El cierre/arqueo está en **Cierre** (`/dashboard/arqueo`). El asistente explica y consulta; no cobra ni crea QR.
+El asistente resume la caja. **No cobra**, no arma links de pago ni cierra el día. Para cobrar, usá Caja.
 
-Hace falta permiso de Caja.
+Hace falta permiso de caja.
