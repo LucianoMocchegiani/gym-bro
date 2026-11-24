@@ -20,7 +20,7 @@ export const DOCS_PAGES: readonly DocsPageMeta[] = [
   {
     slug: 'que-es',
     title: 'Qué es Faciliter y cómo funciona',
-    description: 'Para qué sirve Faciliter: el panel del local y la app del socio.',
+    description: 'Para qué sirve Faciliter: el panel del local y el portal del afiliado.',
   },
   {
     slug: 'primeros-pasos',
@@ -91,7 +91,7 @@ function publishedImages(): Set<string> {
 
 function parseInline(text: string): GuideInline[] {
   const parts: GuideInline[] = [];
-  const re = /(\*\*[^*]+\*\*|`[^`]+`|\*[^*]+\*)/g;
+  const re = /(\\*\\*[^*]+\\*\\*|`[^`]+`|\\*[^*]+\\*)/g;
   let last = 0;
   let match: RegExpExecArray | null = re.exec(text);
   while (match) {
@@ -118,8 +118,8 @@ function parseInline(text: string): GuideInline[] {
 function splitTableRow(line: string): string[] {
   return line
     .trim()
-    .replace(/^\|/, '')
-    .replace(/\|$/, '')
+    .replace(/^\\|/, '')
+    .replace(/\\|$/, '')
     .split('|')
     .map((cell) => cell.trim());
 }
@@ -127,17 +127,17 @@ function splitTableRow(line: string): string[] {
 function isTableSeparator(cells: string[]): boolean {
   return (
     cells.length > 0 &&
-    cells.every((cell) => /^:?-{3,}:?$/.test(cell.replace(/\s/g, '')))
+    cells.every((cell) => /^:?-{3,}:?$/.test(cell.replace(/\\s/g, '')))
   );
 }
 
 function isTableLine(line: string): boolean {
   const trimmed = line.trim();
-  return trimmed.startsWith('|') && /\|/.test(trimmed.slice(1));
+  return trimmed.startsWith('|') && /\\|/.test(trimmed.slice(1));
 }
 
 function isIndentedBullet(line: string): boolean {
-  return /^[ \t]{2,}[-*] /.test(line);
+  return /^[ \\t]{2,}[-*] /.test(line);
 }
 
 function consumeNestedBullets(
@@ -157,17 +157,17 @@ function consumeNestedBullets(
 
 function isMetaLine(line: string): boolean {
   return (
-    /^\*\*Dónde:\*\*/.test(line) ||
-    /^\*\*Para qué:\*\*/.test(line) ||
-    /^\*\*Por qué rehacer:\*\*/.test(line) ||
-    /^\*\*Qué debe verse:\*\*/.test(line) ||
-    /^\*\*Qué se ve:\*\*/.test(line)
+    /^\\*\\*Dónde:\\*\\*/.test(line) ||
+    /^\\*\\*Para qué:\\*\\*/.test(line) ||
+    /^\\*\\*Por qué rehacer:\\*\\*/.test(line) ||
+    /^\\*\\*Qué debe verse:\\*\\*/.test(line) ||
+    /^\\*\\*Qué se ve:\\*\\*/.test(line)
   );
 }
 
 function extractPngs(line: string): string[] {
   const names: string[] = [];
-  const re = /`([^`]+\.png)`/gi;
+  const re = /`([^`]+\\.png)`/gi;
   let match: RegExpExecArray | null = re.exec(line);
   while (match) {
     names.push(match[1]);
@@ -179,7 +179,7 @@ function extractPngs(line: string): string[] {
 function captionFromMeta(lines: string[]): string {
   const keys = ['Qué se ve', 'Para qué', 'Qué debe verse'] as const;
   for (const key of keys) {
-    const re = new RegExp(`^\\*\\*${key}:\\*\\*\\s*(.+)$`);
+    const re = new RegExp(`^\\\\*\\\\*${key}:\\\\*\\\\*\\\\s*(.+)$`);
     for (const line of lines) {
       const match = line.match(re);
       if (match?.[1]) return stripPlaybookMarks(match[1]);
@@ -191,24 +191,24 @@ function captionFromMeta(lines: string[]): string {
 function isPlaybookOnlyLine(line: string): boolean {
   const trimmed = line.trim();
   return (
-    /^Ya cubierto en §\d+\.\s*Extra si hace falta:?$/i.test(trimmed) ||
+    /^Ya cubierto en §\\d+\\.\\s*Extra si hace falta:?$/i.test(trimmed) ||
     /^Extra si hace falta:?$/i.test(trimmed) ||
-    /^\(reusa/i.test(trimmed) ||
+    /^\\(reusa/i.test(trimmed) ||
     /^Misma lógica:/i.test(trimmed) ||
     /se reusan; acá solo las que falten/i.test(trimmed) ||
     /^No documentar rutinas/i.test(trimmed) ||
-    /^Este archivo es el \*\*playbook/i.test(trimmed)
+    /^Este archivo es el \\*\\*playbook/i.test(trimmed)
   );
 }
 
 function stripPlaybookMarks(text: string): string {
   return text
-    .replace(/^\(reusa\)\s*/i, '')
-    .replace(/\s*\(reusa(?:\s+en)?\s*§\d+\)/gi, '')
-    .replace(/\s*\(también §\d+\)/gi, '')
-    .replace(/\s*\(reusa\)/gi, '')
-    .replace(/§\d+/g, '')
-    .replace(/[ \t]{2,}/g, ' ')
+    .replace(/^\\(reusa\\)\\s*/i, '')
+    .replace(/\\s*\\(reusa(?:\\s+en)?\\s*§\\d+\\)/gi, '')
+    .replace(/\\s*\\(también §\\d+\\)/gi, '')
+    .replace(/\\s*\\(reusa\\)/gi, '')
+    .replace(/§\\d+/g, '')
+    .replace(/[ \\t]{2,}/g, ' ')
     .trim();
 }
 
@@ -217,7 +217,7 @@ function toReaderParagraph(text: string): string | null {
   if (!trimmed || isPlaybookOnlyLine(trimmed)) {
     return null;
   }
-  const extra = trimmed.match(/^Ya cubierto en §\d+\.\s*Extra:\s*(.+)$/i);
+  const extra = trimmed.match(/^Ya cubierto en §\\d+\\.\\s*Extra:\\s*(.+)$/i);
   if (extra?.[1]) {
     return stripPlaybookMarks(extra[1]);
   }
@@ -225,7 +225,7 @@ function toReaderParagraph(text: string): string | null {
 }
 
 function splitPublishedMarkdown(raw: string): Record<DocsSlug, string> {
-  const withoutChecklist = raw.split(/\n## Lista corta para ir disparando fotos\n/)[0] ?? raw;
+  const withoutChecklist = raw.split(/\\n## Lista corta para ir disparando fotos\\n/)[0] ?? raw;
   const parte1Start = withoutChecklist.search(/^# Parte 1/m);
   const fromParte1 =
     parte1Start >= 0 ? withoutChecklist.slice(parte1Start) : withoutChecklist;
@@ -250,7 +250,7 @@ function splitPublishedMarkdown(raw: string): Record<DocsSlug, string> {
       : '';
   const parte4 = parte4Start >= 0 ? fromParte1.slice(parte4Start) : '';
   const dropParteLine = (chunk: string) =>
-    chunk.replace(/^# Parte[^\n]*\n+/, '');
+    chunk.replace(/^# Parte[^\\n]*\\n+/, '');
   return {
     'que-es': dropParteLine(parte1),
     'primeros-pasos': dropParteLine(parte2),
@@ -262,7 +262,7 @@ function splitPublishedMarkdown(raw: string): Record<DocsSlug, string> {
 }
 
 function parseBlocks(markdown: string, images: Set<string>): GuideBlock[] {
-  const lines = markdown.replace(/\r\n/g, '\n').split('\n');
+  const lines = markdown.replace(/\\r\\n/g, '\\n').split('\\n');
   const blocks: GuideBlock[] = [];
   let i = 0;
 
@@ -360,11 +360,11 @@ function parseBlocks(markdown: string, images: Set<string>): GuideBlock[] {
       continue;
     }
 
-    if (/^\d+\. /.test(trimmed)) {
+    if (/^\\d+\\. /.test(trimmed)) {
       const items: GuideListItem[] = [];
-      while (i < lines.length && /^\d+\. /.test((lines[i] ?? '').trim())) {
+      while (i < lines.length && /^\\d+\\. /.test((lines[i] ?? '').trim())) {
         const parts = parseInline(
-          (lines[i] ?? '').trim().replace(/^\d+\. /, ''),
+          (lines[i] ?? '').trim().replace(/^\\d+\\. /, ''),
         );
         i += 1;
         const nested = consumeNestedBullets(lines, i);
@@ -388,7 +388,7 @@ function parseBlocks(markdown: string, images: Set<string>): GuideBlock[] {
       !(lines[i] ?? '').trim().startsWith('**Captura:') &&
       !isTableLine(lines[i] ?? '') &&
       !/^[-*] /.test((lines[i] ?? '').trim()) &&
-      !/^\d+\. /.test((lines[i] ?? '').trim())
+      !/^\\d+\\. /.test((lines[i] ?? '').trim())
     ) {
       para.push((lines[i] ?? '').trim());
       i += 1;
@@ -416,7 +416,7 @@ export function loadGuidePage(slug: DocsSlug): {
     'utf8',
   );
   const markdown = meta.source
-    ? raw.replace(/^# [^\n]*\n+/, '')
+    ? raw.replace(/^# [^\\n]*\\n+/, '')
     : splitPublishedMarkdown(raw)[slug];
   return {
     meta,
