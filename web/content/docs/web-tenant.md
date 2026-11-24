@@ -26,10 +26,10 @@ El bloque de planes aparece debajo del contenido. Los botones hacia packs depend
 
 **Volver a la vidriera por defecto** es una acción destructiva: borra portada, sliders, ícono e imágenes asociadas; la web vuelve a mostrar el nombre del tenant y sus planes. Usala solo si realmente querés descartar el contenido publicado.
 
-**Capturas:** `editor-web-tennant.png` y `editor-web-tennant-2.png` — editor y vista previa; la segunda imagen va debajo de la primera.  
+**Capturas del editor:** `editor-web-tennant.png` y `editor-web-tennant-2.png` — editor y vista previa; la segunda imagen va debajo de la primera.  
 **Dónde:** Sistema → Web del gym, editor del tenant.  
-**Qué se ve:** editor, vista previa y acciones de publicación.
+**Qué se ve:** edición y vista previa de la página pública.
 
-**Captura:** `web-publica-tenant.png` — falta.  
-**Dónde:** página pública del tenant ya publicada.  
-**Qué se ve:** la web del local, no Mi portal; se agregará cuando esté disponible la captura real.
+**Capturas de la web publicada:** `web-tennant.png` y `web-tennant-2.png` — landing pública del tenant; la segunda imagen va debajo de la primera.  
+**Dónde:** web pública del local ya publicada.  
+**Qué se ve:** la landing final, no Mi portal.
