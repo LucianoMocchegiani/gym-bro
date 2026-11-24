@@ -47,6 +47,7 @@ export const DOCS_PAGES: readonly DocsPageMeta[] = [
     title: 'Tu cuenta y el plan Faciliter',
     description:
       'Cuenta Faciliter, contratar, Mi cuenta, Plan / Uso y eliminar la cuenta.',
+    source: 'cuenta.md',
   },
   {
     slug: 'config',
@@ -315,7 +316,7 @@ function parseBlocks(markdown: string, images: Set<string>): GuideBlock[] {
       continue;
     }
 
-    if (trimmed.startsWith('**Captura:**')) {
+    if (/^\*\*Capturas?(?: (?:del|de la) [^*]+)?\*\*:/.test(trimmed)) {
       const skipShot =
         /falta/i.test(trimmed) || /rehacer/i.test(trimmed);
       const meta: string[] = [];
