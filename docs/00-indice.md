@@ -36,7 +36,8 @@ Reglas relacionadas
 | [04-reglas-de-negocio.md](./04-reglas-de-negocio.md) | Reglas por módulo | Cerrado (v1) |
 | [05-casos-de-uso/](./05-casos-de-uso/) | CU por módulo | Cerrado (v1) |
 | [06-arquitectura.md](./06-arquitectura.md) | Multi-tenant, adapters, pagos | Cerrado (v1) |
-| [09-esquema-db.md](./09-esquema-db.md) | Tablas, enums, FKs y migraciones (Prisma/Postgres) | Viva |
+| [09-esquema-db-actual.md](./09-esquema-db-actual.md) | Mapa actual del esquema y migraciones recientes (Prisma/Postgres) | Viva |
+| [09-esquema-db.md](./09-esquema-db.md) | Detalle extendido de tablas, enums y reglas (corte previo; verificar migraciones recientes en el documento actual) | Referencia |
 | [07-wireframes-ascii.md](./07-wireframes-ascii.md) | Pantallas ASCII | Cerrado (v1) |
 | [08-casos-prueba-manuales.md](./08-casos-prueba-manuales.md) | QA manual (vos + socio) | Cerrado (v1) |
 | [10-metodo-definicion-producto.md](./10-metodo-definicion-producto.md) | Cómo repetir el proceso preguntas→docs (MVP y post-MVP) | Cerrado (v1) |
