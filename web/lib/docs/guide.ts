@@ -271,7 +271,7 @@ function splitPublishedMarkdown(raw: string): Record<DocsSlug, string> {
 }
 
 function isCaptureLine(line: string): boolean {
-  return /^\*\*Capturas?(?: (?:del|de la) [^*]+)?\*\*:/.test(line.trim());
+  return /^\*\*Capturas?(?: (?:del|de la) [^*]+)?:\*\*/.test(line.trim());
 }
 
 function parseBlocks(markdown: string, images: Set<string>): GuideBlock[] {
