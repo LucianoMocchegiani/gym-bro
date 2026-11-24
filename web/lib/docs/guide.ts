@@ -47,7 +47,6 @@ export const DOCS_PAGES: readonly DocsPageMeta[] = [
     title: 'Tu cuenta y el plan Faciliter',
     description:
       'Cuenta Faciliter, contratar, Mi cuenta, Plan / Uso y eliminar la cuenta.',
-    source: 'cuenta.md',
   },
   {
     slug: 'config',
@@ -271,6 +270,10 @@ function splitPublishedMarkdown(raw: string): Record<DocsSlug, string> {
   };
 }
 
+function isCaptureLine(line: string): boolean {
+  return /^\*\*Capturas?(?: (?:del|de la) [^*]+)?\*\*:/.test(line.trim());
+}
+
 function parseBlocks(markdown: string, images: Set<string>): GuideBlock[] {
   const lines = markdown.replace(/\r\n/g, '\n').split('\n');
   const blocks: GuideBlock[] = [];
@@ -316,7 +319,7 @@ function parseBlocks(markdown: string, images: Set<string>): GuideBlock[] {
       continue;
     }
 
-    if (/^\*\*Capturas?(?: (?:del|de la) [^*]+)?\*\*:/.test(trimmed)) {
+    if (isCaptureLine(trimmed)) {
       const skipShot =
         /falta/i.test(trimmed) || /rehacer/i.test(trimmed);
       const meta: string[] = [];
@@ -395,7 +398,7 @@ function parseBlocks(markdown: string, images: Set<string>): GuideBlock[] {
       (lines[i] ?? '').trim() &&
       (lines[i] ?? '').trim() !== '---' &&
       !(lines[i] ?? '').trim().startsWith('#') &&
-      !(lines[i] ?? '').trim().startsWith('**Captura:') &&
+      !isCaptureLine(lines[i] ?? '') &&
       !isTableLine(lines[i] ?? '') &&
       !/^[-*] /.test((lines[i] ?? '').trim()) &&
       !/^\d+\. /.test((lines[i] ?? '').trim())
