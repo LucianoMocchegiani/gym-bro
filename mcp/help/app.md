@@ -1,36 +1,33 @@
-# App Faciliter (socio y staff)
+# Portal web del afiliado y app Faciliter
 
-La misma app para socios y staff. Se entra con la **cuenta Faciliter** (topic `cuenta`); si hay varios gyms o perfiles, se elige en **Tus gyms**.
+El afiliado puede usar **Mi portal** en `{slug}.faciliter.xyz/portal` con su cuenta Faciliter; no necesita instalar la app GymBro. Si también tiene perfil de staff, entra al panel desde la misma cuenta.
 
-Pestañas: **Inicio | Acceso | Ajustes**.
+## Mi portal
 
-## Socio
+- **Inicio:** próximas clases, planes vigentes y avisos nuevos.
+- **Clases:** calendario del mes; reservar con crédito, comprar una clase suelta o entrar a la lista de espera.
+- **Mis clases:** próximas reservas, listas de espera y clases pasadas.
+- **Tienda** y **Carrito:** packs y clases sueltas; pago online con Mercado Pago si el tenant lo conectó.
+- **Historial:** comprobantes de pagos realizados en portal, app o Caja; permite solicitar devolución.
+- **Documentos:** notas y archivos de su carpeta, solo lectura.
+- **Avisos:** bandeja y preferencias de correo.
+- **Acceso:** gestiona la credencial según el sistema configurado por el tenant. Para Kuatia, la oferta se acepta en Kuatia Wallet; ZKTeco muestra el identificador existente vinculado o el DNI de respaldo.
 
-- **Inicio:** packs vigentes (o aviso de que no tiene), deuda si hay, atajos **Sesiones**, **Tienda**, **Documentos** y **Avisos**, y próximas clases.
-- **Sesiones:** calendario del mes y clases del día. **Reservar** (con crédito del pack), **Al carrito** (clase suelta), **Reservada**, **Unirme a la lista** / **Salir de la lista** si está llena, y **Mis clases**. Cancelar depende de las horas de cancelación del gym.
-- **Tienda:** Packs y Sesiones (clase suelta), carrito, **Pagar con Mercado Pago** (link o QR del Mercado Pago del gym). **Historial** (menú ⋮) de pagos: **Ver comprobante** → Compartir o **Solicitar devolución** (topic `devoluciones`).
-- **Documentos:** notas y archivos de su carpeta, solo lectura (topic `carpeta`).
-- **Avisos:** su bandeja (topic `avisos`).
-- **Acceso:** **Escanear** (el QR de la puerta o una credencial) y **Credenciales** (aceptar las pendientes y ver las guardadas). Topic `puerta`.
-- **Ajustes:** Cambiar gym, Cambiar / Crear contraseña (aviso si sigue con `ChangeMe123!`), Avisos → Correo por tipo, Wallet, tema, Cerrar sesión, **Eliminar cuenta**.
+La puerta Kuatia se puede usar con **Kuatia Wallet web**: se escanea con la cámara del teléfono el QR que muestra Puerta, o se abre un link compartido. La app GymBro no es necesaria para presentar ese QR. Para ZKTeco o sin control de acceso, el portal alcanza para el uso habitual.
 
-## Staff
+**Mi cuenta** (`/cuenta`, desde el avatar): datos, cambiar o crear contraseña y cerrar sesión.
 
-Al elegir el perfil staff en Tus gyms: Sesiones, **Caja** (si tiene permiso) y Documentos. Lo demás se hace en el panel web.
+## App GymBro
 
-## Web del gym
+La app móvil sigue disponible como alternativa para las funciones del afiliado: Inicio, Sesiones, Tienda, Carrito, Historial, Documentos, Avisos y Ajustes. La puerta Kuatia ya no depende de ella; la presentación usa Kuatia Wallet web.
 
-Además de la app, cada gym tiene su web pública en `{slug}.faciliter.xyz`:
+## Web pública del tenant
 
-- **Planes:** los packs activos con precio. **Comprar** aparece solo si el gym conectó Mercado Pago; si no, dice que se contrata en el gym.
-- **Comprar:** entra o crea su cuenta Faciliter (mail o Google). Si no es socio, completa nombre, DNI y teléfono (opcional) y paga con el Mercado Pago del gym; **queda dado de alta recién cuando el pago se aprueba** (si no paga, no aparece en Afiliados). Si ya es socio, el pack se suma a su **carrito**. Vuelve al **portal** con el pack activo cuando el pago se aprueba.
-- **Portal** (`/portal`, botón «Mi portal» del header), lo mismo que la app para sesiones y compras: **Inicio** (próximas clases y planes vigentes), **Clases** (calendario del mes: reservar con crédito; sin crédito, la clase suelta va al carrito; lista de espera si está llena), **Mis clases** (cancelar o salir de la espera), **Tienda** y **Carrito** (packs y clases sueltas en un solo pago de Mercado Pago), **Historial** (todos los comprobantes y pedir devolución), **Documentos** (su carpeta, solo lectura; topic `carpeta`) y **Avisos** (bandeja con contador de no leídos en el menú y «Avisos por correo»; topic `avisos`). La credencial y el escaneo en la puerta siguen solo en la app.
+Cada tenant tiene una página pública en `{slug}.faciliter.xyz` con portada y planes. El visitante puede ver las ofertas y, cuando el tenant habilitó compra online, iniciar una compra. Configuración y publicación: `/docs/web-tenant`.
 
-**¿Hace falta descargar la app?** Solo si el local usa la puerta con **Kuatia** (la credencial está en la app). Con **ZKTeco** o sin control de acceso, alcanza con el portal web; la app es más cómoda en el teléfono, pero no es obligatoria.
-- **Mi cuenta** (`/cuenta`, avatar con las iniciales junto al tema): datos, cambiar o crear contraseña y **Cerrar sesión** (vacía el carrito).
+## Ayuda
 
-## Lo que no existe
+- Configuración OAuth de Mercado Pago y Point QR: `/docs/config`.
+- Web del tenant: `/docs/web-tenant`.
+- Operación de la puerta: topic `puerta`.
 
-Registro desde la app (sí desde la web del gym al comprar), “olvidé mi contraseña”, notificaciones push, rutinas por días (la rutina va como archivo en la carpeta), tienda de productos físicos, noticias del local, QR del socio generado por la app.
-
-Si piden capturas: `/docs/modulos` (App del socio y Portal web del socio). El asistente no ve la app ni el portal del socio.
