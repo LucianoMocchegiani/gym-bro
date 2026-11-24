@@ -7,25 +7,25 @@ import { publicSiteUrl } from '@/lib/site-url';
 export const metadata: Metadata = {
   title: 'Guía de uso',
   description:
-    'Guía de uso de Faciliter: panel del local, app del socio, cobros y puerta. Se va refinando con capturas reales.',
+    'Guías públicas de Faciliter para configurar el tenant, operar Caja y administrar su web.',
   alternates: { canonical: `${publicSiteUrl()}/docs` },
 };
 
-/**
- * Índice público de la guía de uso (landing).
- */
+/** Índice público de la guía de uso. */
 export default function DocsIndexPage() {
   return (
     <DocsChrome>
       <p className="eyebrow">Documentación</p>
       <h1>Guía de uso</h1>
       <p className="muted">
-        Para dueño y staff del local. El socio no lee esto: lo vive en la app.
-        Publicamos lo que ya está; las pantallas que faltan se van sumando.
+        El portal web es el recorrido principal del afiliado. Para presentar una
+        credencial Kuatia en la puerta, puede escanear el QR con la cámara del
+        teléfono o abrir el link en Kuatia Wallet web.
       </p>
       <p>
-        Fuera de esta guía: Super Admin. Todavía no existen rutinas por días,
-        notificaciones push, tienda de productos físicos ni noticias del local.
+        Configuración, cobros y administración de la web del tenant tienen guías
+        independientes. Las capturas marcadas como pendientes se agregarán
+        cuando estén disponibles imágenes reales.
       </p>
       <ul className="mkt-docs-cards">
         {DOCS_PAGES.map((page) => (

@@ -14,7 +14,8 @@
     "test:free-plan-notice": "node --experimental-strip-types --test lib/free-plan-notice.test.mjs",
     "test:agent-runtime-approvals": "node --experimental-strip-types --test lib/api/agent-runtime-approvals.test.mjs",
     "test:public-chat-token": "node --experimental-strip-types --test lib/api/public-chat-token.test.mjs",
-    "test:kuatia-wallet-link": "node --experimental-strip-types --test lib/kuatia-wallet.test.mjs"
+    "test:kuatia-wallet-link": "node --experimental-strip-types --test lib/kuatia-wallet.test.mjs",
+    "test:docs-guide": "node --experimental-strip-types --test lib/docs/guide.test.mjs"
   },
   "dependencies": {
     "fflate": "^0.8.3",
@@ -24,8 +25,8 @@
     "qrcode": "^1.5.4",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
-    "react-markdown": "^10.1.0",
     "read-excel-file": "^9.3.10",
+    "react-markdown": "^10.1.0",
     "rehype-sanitize": "^6.0.0",
     "remark-gfm": "^4.0.1"
   },
