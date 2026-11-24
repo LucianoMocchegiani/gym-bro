@@ -17,16 +17,6 @@ export default function DocsIndexPage() {
     <DocsChrome>
       <p className="eyebrow">Documentación</p>
       <h1>Guía de uso</h1>
-      <p className="muted">
-        El portal web es el recorrido principal del afiliado. Para presentar una
-        credencial Kuatia en la puerta, puede escanear el QR con la cámara del
-        teléfono o abrir el link en Kuatia Wallet web.
-      </p>
-      <p>
-        Configuración, cobros y administración de la web del tenant tienen guías
-        independientes. Las capturas marcadas como pendientes se agregarán
-        cuando estén disponibles imágenes reales.
-      </p>
       <ul className="mkt-docs-cards">
         {DOCS_PAGES.map((page) => (
           <li key={page.slug}>
