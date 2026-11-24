@@ -5,6 +5,7 @@ export type DocsSlug =
   | 'que-es'
   | 'primeros-pasos'
   | 'modulos'
+  | 'portal-afiliados'
   | 'cuenta'
   | 'config'
   | 'web-tenant';
@@ -20,7 +21,7 @@ export const DOCS_PAGES: readonly DocsPageMeta[] = [
   {
     slug: 'que-es',
     title: 'Qué es Faciliter y cómo funciona',
-    description: 'Para qué sirve Faciliter: el panel del local y la app del socio.',
+    description: 'Para qué sirve Faciliter: el panel del local y el portal del afiliado.',
   },
   {
     slug: 'primeros-pasos',
@@ -30,9 +31,16 @@ export const DOCS_PAGES: readonly DocsPageMeta[] = [
   },
   {
     slug: 'modulos',
-    title: 'Módulos de Faciliter',
+    title: 'Panel de administración',
     description:
-      'Caja, puerta, portal del afiliado y el resto de los módulos.',
+      'Qué puede hacer el staff en cada área del dashboard: afiliados, clases, caja, puerta y reportes.',
+  },
+  {
+    slug: 'portal-afiliados',
+    title: 'Portal de afiliados y usuarios',
+    description:
+      'Cómo entrar a Mi portal y consultar compras, clases, comprobantes, avisos y acceso.',
+    source: 'portal-afiliados.md',
   },
   {
     slug: 'cuenta',
@@ -255,6 +263,7 @@ function splitPublishedMarkdown(raw: string): Record<DocsSlug, string> {
     'que-es': dropParteLine(parte1),
     'primeros-pasos': dropParteLine(parte2),
     modulos: dropParteLine(parte3),
+    'portal-afiliados': '',
     cuenta: dropParteLine(parte4),
     config: '',
     'web-tenant': '',

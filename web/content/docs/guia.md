@@ -12,7 +12,8 @@
 
 - Qué es Faciliter: `/docs/que-es`
 - Primeros pasos: `/docs/primeros-pasos`
-- Módulos: `/docs/modulos`
+- Panel de administración: `/docs/modulos`
+- Portal de afiliados y usuarios: [`/docs/portal-afiliados`](/docs/portal-afiliados)
 - Tu cuenta y el plan: `/docs/cuenta`
 - Configuración detallada: [`/docs/config`](/docs/config)
 - Web pública del tenant: [`/docs/web-tenant`](/docs/web-tenant)
@@ -45,8 +46,7 @@ El staff opera el local desde el panel. El afiliado usa la web pública para con
 4. El local cobra desde **Caja**: efectivo, transferencia acreditada, link de Mercado Pago o Point QR.
 5. Si la puerta usa Kuatia, el afiliado abre **Mi portal → Acceso** y presenta su credencial con Kuatia Wallet web. Puede abrir el enlace, compartirlo o escanear el QR con la cámara del teléfono. Con ZKTeco, se identifica en el dispositivo.
 
-**Captura:** `web-servicios-lista.png` — mostrar el catálogo de servicios del local.  
-**Captura:** `inico-portal-2.png` — mostrar el inicio de Mi portal con el menú y datos de prueba.
+Para el recorrido del afiliado, consultá [`Portal de afiliados y usuarios`](/docs/portal-afiliados).
 
 - **Servicio:** lo que ofrece el local. Puede ser acceso libre o por sesiones.
 - **Pack:** oferta comercial con uno o más servicios.
@@ -132,7 +132,7 @@ Un pack ya vendido se desactiva para dejar de ofrecerlo; no se borra su historia
 - **Roster:** afiliados inscriptos.
 - **Lista de espera:** orden de afiliados a la espera de un lugar.
 
-El afiliado reserva desde **Mi portal → Clases**. Según el servicio y su pack, usa créditos o compra una sesión suelta. Puede cancelar dentro del plazo configurado y consultar sus reservas en **Mis clases**.
+El afiliado reserva desde **Mi portal → Clases**. Según el servicio y su pack, usa créditos o compra una sesión suelta. Puede cancelar dentro del plazo configurado y consultar sus reservas en **Mis clases**. Para más información, consultá [`Portal de afiliados y usuarios`](/docs/portal-afiliados).
 
 **Captura:** `web-sesiones-calendario.png` — mostrar el calendario de sesiones en el panel.
 
@@ -150,10 +150,9 @@ El rol Admin viene de sistema. Podés ajustar los permisos del rol Entrenador o 
 
 Cargá nombre y correo; teléfono y documento son opcionales. El afiliado usa la cuenta Faciliter asociada a ese correo para entrar al tenant y abrir Mi portal.
 
-La ficha de Afiliados permite revisar el estado de cuenta y emitir o volver a emitir una credencial según la configuración del tenant. Para una puerta Kuatia, el afiliado presenta la credencial con **Kuatia Wallet web** desde Mi portal. La oferta de credencial puede mostrarse pendiente hasta que el afiliado la acepte en Wallet; reemitir no cobra ni crea un nuevo contrato. Para ZKTeco, la ficha permite administrar los identificadores que correspondan a la instalación.
+La ficha de Afiliados permite revisar el estado de cuenta y emitir o volver a emitir una credencial según la configuración del tenant. Para una puerta Kuatia, el afiliado presenta la credencial con **Kuatia Wallet web** desde Mi portal. La oferta de credencial puede mostrarse pendiente hasta que el afiliado la acepte en Wallet; reemitir no cobra ni crea un nuevo contrato. Para ZKTeco, la ficha permite administrar los identificadores que correspondan a la instalación. Para el uso del acceso desde el portal, consultá [`Portal de afiliados y usuarios`](/docs/portal-afiliados).
 
-**Captura:** `web-afiliados-lista.png` — mostrar afiliados de prueba.  
-**Captura:** `portal-acceso.png` — mostrar Mi portal → Acceso con una credencial de prueba, sin datos personales reales.
+**Captura:** `web-afiliados-lista.png` — mostrar afiliados de prueba.
 
 ## 11. Cobrar en Caja y recibir pagos
 
@@ -190,11 +189,9 @@ El débito automático se ofrece para packs mensuales mediante Mercado Pago. El 
 
 ---
 
-# Parte 3 — Módulos
+# Parte 3 — Panel de administración
 
-## Config
-
-Config reúne ajustes de operación, acceso, descuentos y Mercado Pago. Para OAuth, Point QR, comisiones y configuración de recursos en la cuenta del negocio, seguí [`la guía de Config`](/docs/config).
+El dashboard reúne las herramientas de operación del local para el dueño y el staff. Los apartados visibles y las acciones disponibles dependen del rol y sus permisos.
 
 ## Afiliados
 
@@ -251,17 +248,15 @@ Con ZKTeco, el afiliado se identifica en el dispositivo. La vinculación del nú
 
 ## Avisos
 
-El panel permite configurar avisos y correos. El afiliado consulta su bandeja y preferencias en **Mi portal → Avisos**.
+El panel permite configurar avisos y correos. El afiliado consulta su bandeja y preferencias en **Mi portal → Avisos**; los pasos para el portal están en [`Portal de afiliados y usuarios`](/docs/portal-afiliados).
 
-**Captura:** `web-avisos.png` — mostrar una plantilla de aviso del panel.  
-**Captura:** `portal-avisos.png` — mostrar avisos y preferencias en el portal.
+**Captura:** `web-avisos.png` — mostrar una plantilla de aviso del panel.
 
 ## Web del tenant
 
 En **Sistema → Web del gym** editás la portada, sliders, imágenes, enlaces y vista previa de la página pública del tenant. Revisá el contenido y el tema claro/oscuro antes de publicar. Publicar actualiza la web pública del tenant.
 
-**Captura:** `editor-web-tennant.png` — mostrar el editor Web del tenant.  
-**Captura:** `inicio-portal.png` — mostrar la página pública del tenant con sus planes.  
+**Capturas:** `editor-web-tennant.png` y `editor-web-tennant-2.png` — mostrar el editor y su vista previa; la segunda imagen va debajo de la primera.  
 Para el recorrido completo, consultá [`Web del tenant`](/docs/web-tenant).
 
 ## Auditoría y asistente

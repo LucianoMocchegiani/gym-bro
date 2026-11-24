@@ -1,8 +1,8 @@
 # Web del tenant
 
-La **Web del tenant** es la página pública del local y el punto de entrada al portal del afiliado. El staff la administra desde **Sistema → Web del gym** (`/dashboard/web`). La URL pública usa el subdominio del tenant. El botón **Ver mi web** abre la página publicada.
+La **Web del tenant** es la página pública del local, donde visitantes pueden conocer la propuesta y acceder a las opciones que el local publica. El staff la administra desde **Sistema → Web del gym** (`/dashboard/web`). La URL pública usa el subdominio del tenant y **Ver mi web** abre la versión publicada.
 
-La persona afiliada inicia sesión con su cuenta Faciliter y entra a **Mi portal**. Allí puede consultar clases, reservas, tienda, carrito, historial, documentos y avisos según su acceso. La app móvil no es el recorrido general del afiliado; con acceso Kuatia, el QR de puerta abre Kuatia Wallet web y también puede compartirse como link.
+El editor permite administrar la portada, sliders, imágenes, enlaces y vista previa de la página pública. **Mi portal** es un recorrido separado para afiliados; sus capturas e instrucciones están en [`Portal de afiliados y usuarios`](/docs/portal-afiliados).
 
 ## Identidad visual
 
@@ -26,42 +26,10 @@ El bloque de planes aparece debajo del contenido. Los botones hacia packs depend
 
 **Volver a la vidriera por defecto** es una acción destructiva: borra portada, sliders, ícono e imágenes asociadas; la web vuelve a mostrar el nombre del tenant y sus planes. Usala solo si realmente querés descartar el contenido publicado.
 
-**Captura:** `inicio-portal.png` — lista.  
-**Dónde:** web pública del tenant, página de inicio.  
-**Qué se ve:** portada y planes, antes de entrar al portal.
-
-**Captura:** `inico-portal-2.png` — lista.  
-**Dónde:** Mi portal, inicio de sesión de un afiliado.  
-**Qué se ve:** inicio del afiliado; usar solo con datos de prueba o anonimizados.
-
-**Captura:** `portal-tienda.png` — lista.  
-**Dónde:** Mi portal → Tienda.  
-**Qué se ve:** packs disponibles.
-
-**Captura:** `portal-clases.png` — lista.  
-**Dónde:** Mi portal → Clases.  
-**Qué se ve:** calendario y clases disponibles.
-
-**Captura:** `portal-mis-clases.png` — lista.  
-**Dónde:** Mi portal → Mis clases.  
-**Qué se ve:** reservas del afiliado.
-
-**Captura:** `portal-carrito.png` — lista.  
-**Dónde:** Mi portal → Carrito.  
-**Qué se ve:** productos seleccionados antes de pagar.
-
-**Captura:** `portal-historial.png` — lista.  
-**Dónde:** Mi portal → Historial.  
-**Qué se ve:** comprobantes del afiliado.
-
-**Captura:** `portal-acceso.png` — lista.  
-**Dónde:** Mi portal → Acceso.  
-**Qué se ve:** la credencial según la modalidad configurada para el tenant.
-
-**Captura:** `portal-avisos.png` — lista.  
-**Dónde:** Mi portal → Avisos.  
-**Qué se ve:** bandeja de avisos del afiliado.
-
-**Captura:** `web-web-del-gym.png` — falta.  
-**Dónde:** Sistema → Web del gym, portada con imagen y un slider editado.  
+**Capturas:** `editor-web-tennant.png` y `editor-web-tennant-2.png` — editor y vista previa; la segunda imagen va debajo de la primera.  
+**Dónde:** Sistema → Web del gym, editor del tenant.  
 **Qué se ve:** editor, vista previa y acciones de publicación.
+
+**Captura:** `web-publica-tenant.png` — falta.  
+**Dónde:** página pública del tenant ya publicada.  
+**Qué se ve:** la web del local, no Mi portal; se agregará cuando esté disponible la captura real.
