@@ -24,7 +24,7 @@
 
 ## 01. Qué es Faciliter
 
-Faciliter administra afiliados, servicios, packs, cobros, clases y acceso de un gimnasio, club o estudio.
+Faciliter administra afiliados, servicios, packs, cobros, clases y acceso para clubes, estudios y otras organizaciones.
 
 | Área | Quién la usa | Dónde |
 |---|---|---|
@@ -191,7 +191,7 @@ El débito automático se ofrece para packs mensuales mediante Mercado Pago. El 
 
 # Parte 3 — Panel de administración
 
-El dashboard reúne las herramientas de operación del local para el dueño y el staff. Los apartados visibles y las acciones disponibles dependen del rol y sus permisos.
+El dashboard reúne las herramientas de operación de la organización para el dueño y el staff. Los apartados visibles y las acciones disponibles dependen del rol y sus permisos.
 
 ## Afiliados
 
@@ -252,9 +252,9 @@ El panel permite configurar avisos y correos. El afiliado consulta su bandeja y 
 
 **Captura:** `web-avisos.png` — mostrar una plantilla de aviso del panel.
 
-## Web del tenant
+## Web pública del tenant
 
-En **Sistema → Web del gym** editás la portada, sliders, imágenes, enlaces y vista previa de la página pública del tenant. Revisá el contenido y el tema claro/oscuro antes de publicar. Publicar actualiza la web pública del tenant.
+En **Sistema → Web pública** editás la portada, sliders, imágenes, enlaces y vista previa de la página pública del tenant. Revisá el contenido y el tema claro/oscuro antes de publicar. Publicar actualiza la web pública del tenant.
 
 **Capturas:** `editor-web-tennant.png` y `editor-web-tennant-2.png` — mostrar el editor y su vista previa; la segunda imagen va debajo de la primera.  
 Para el recorrido completo, consultá [`Web del tenant`](/docs/web-tenant).

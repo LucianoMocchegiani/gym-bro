@@ -1,13 +1,13 @@
 # Web del tenant
 
-La **Web del tenant** es la página pública del local, donde visitantes pueden conocer la propuesta y acceder a las opciones que el local publica. El staff la administra desde **Sistema → Web del gym** (`/dashboard/web`). La URL pública usa el subdominio del tenant y **Ver mi web** abre la versión publicada.
+La **Web del tenant** es la página pública del local, donde visitantes pueden conocer la propuesta y acceder a las opciones que el local publica. El staff la administra desde **Sistema → Web pública** (`/dashboard/web`). La URL pública usa el subdominio del tenant y **Ver mi web** abre la versión publicada.
 
 El editor permite administrar la portada, sliders, imágenes, enlaces y vista previa de la página pública. **Mi portal** es un recorrido separado para afiliados; sus capturas e instrucciones están en [`Portal de afiliados y usuarios`](/docs/portal-afiliados).
 
 ## Identidad visual
 
 - **Color principal:** se aplica a botones, enlaces y elementos de marca.
-- **Ícono del gimnasio:** reemplaza la letra de marca en la web, el ícono del dashboard y el favicon del subdominio.
+- **Ícono de la organización:** reemplaza la letra de marca en la web, el ícono del dashboard y el favicon del subdominio.
 - Los temas claro y oscuro de la web usan el mismo contenido, con presentación adaptada al tema.
 
 ## Portada y sliders
@@ -22,12 +22,12 @@ Un slide puede llevar botón hacia los planes, reserva de clases en el portal, u
 
 **Publicar** guarda los cambios y los hace visibles en la web del tenant. Se necesita el permiso `tenant.settings.write`; con permisos de solo lectura se puede consultar el contenido, pero no publicarlo.
 
-El bloque de planes aparece debajo del contenido. Los botones hacia packs dependen de que el pack siga activo; los pagos online requieren que Mercado Pago esté conectado. Los enlaces a redes sociales se administran por separado en la misma sección de Web del gym.
+El bloque de planes aparece debajo del contenido. Los botones hacia packs dependen de que el pack siga activo; los pagos online requieren que Mercado Pago esté conectado. Los enlaces a redes sociales se administran por separado en la misma sección de Web pública.
 
 **Volver a la vidriera por defecto** es una acción destructiva: borra portada, sliders, ícono e imágenes asociadas; la web vuelve a mostrar el nombre del tenant y sus planes. Usala solo si realmente querés descartar el contenido publicado.
 
 **Capturas del editor:** `editor-web-tennant.png` y `editor-web-tennant-2.png` — editor y vista previa; la segunda imagen va debajo de la primera.  
-**Dónde:** Sistema → Web del gym, editor del tenant.  
+**Dónde:** Sistema → Web pública, editor del tenant.  
 **Qué se ve:** edición y vista previa de la página pública.
 
 **Capturas de la web publicada:** `web-tennant.png` y `web-tennant-2.png` — landing pública del tenant; la segunda imagen va debajo de la primera.  

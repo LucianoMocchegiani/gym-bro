@@ -32,7 +32,7 @@ const SLIDES: ProductSlide[] = [
     id: 'servicios',
     eyebrow: 'Servicios',
     title: 'Armás tu oferta. El sistema se adapta.',
-    body: 'Gym, club o estudio: cuotas mensuales, clases sueltas o packs de créditos, como los definas.',
+    body: 'Club, estudio u organización: cuotas mensuales, clases sueltas o packs de créditos, como los definas.',
     topic: 'los servicios y packs',
     icon: <NavIconPack />,
   },
@@ -48,7 +48,7 @@ const SLIDES: ProductSlide[] = [
     id: 'socio',
     eyebrow: 'App y portal del socio',
     title: 'Tus socios se gestionan solos.',
-    body: 'Desde la app o la web de tu gym reservan clases, compran packs y ven sus pagos, documentos y avisos.',
+    body: 'Desde la app o la web de tu organización reservan clases, compran packs y ven sus pagos, documentos y avisos.',
     topic: 'la app y el portal del socio',
     icon: <NavIconPeople />,
   },
@@ -123,7 +123,7 @@ export async function LandingPage() {
         applicationCategory: 'BusinessApplication',
         operatingSystem: 'Web, Android, iOS',
         description:
-          'Faciliter es el sistema de afiliaciones para gyms, clubes y estudios: cobros en línea y en efectivo, app del afiliado, puerta QR y asistente.',
+          'Faciliter es el sistema de afiliaciones para organizaciones, clubes y estudios: cobros en línea y en efectivo, app del afiliado, puerta QR y asistente.',
         url: site,
         image: `${site}/icon.png`,
         publisher: { '@id': `${site}#organization` },
@@ -152,8 +152,8 @@ export async function LandingPage() {
             <span className="accent-text">afiliados</span>.
           </h1>
           <p className="mkt-lead">
-            Afiliados, cobros, puerta y app en un solo sistema, para gyms,
-            clubes y estudios.
+            Afiliados, cobros, puerta y app en un solo sistema, para clubes,
+            estudios y otras organizaciones.
           </p>
           <div className="mkt-hero-actions">
             <a
@@ -182,7 +182,7 @@ export async function LandingPage() {
       <section id="precio" className="mkt-inner mkt-section">
         <h2 className="mkt-h2">Planes</h2>
         <p className="mkt-section-lead">
-          Elegí un plan para dar de alta tu gym.
+          Elegí un plan para dar de alta tu organización.
         </p>
         {packs.length === 0 ? (
           <p className="muted">El catálogo no está disponible ahora.</p>
