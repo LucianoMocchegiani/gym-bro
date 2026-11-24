@@ -1,12 +1,19 @@
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 
-export type DocsSlug = 'que-es' | 'primeros-pasos' | 'modulos' | 'cuenta';
+export type DocsSlug =
+  | 'que-es'
+  | 'primeros-pasos'
+  | 'modulos'
+  | 'cuenta'
+  | 'config'
+  | 'web-tenant';
 
 export type DocsPageMeta = {
   slug: DocsSlug;
   title: string;
   description: string;
+  source?: string;
 };
 
 export const DOCS_PAGES: readonly DocsPageMeta[] = [
@@ -25,13 +32,27 @@ export const DOCS_PAGES: readonly DocsPageMeta[] = [
     slug: 'modulos',
     title: 'Módulos de Faciliter',
     description:
-      'Config, caja, puerta, app y el resto de Faciliter, con más pantallas.',
+      'Caja, puerta, portal del afiliado y el resto de los módulos.',
   },
   {
     slug: 'cuenta',
     title: 'Tu cuenta y el plan Faciliter',
     description:
       'Cuenta Faciliter, contratar, Mi cuenta, Plan / Uso y eliminar la cuenta.',
+  },
+  {
+    slug: 'config',
+    title: 'Config del tenant',
+    description:
+      'Acceso, conexión OAuth de Mercado Pago y configuración de Point QR.',
+    source: 'config.md',
+  },
+  {
+    slug: 'web-tenant',
+    title: 'Web del tenant',
+    description:
+      'Configurar, previsualizar y publicar la web pública del tenant.',
+    source: 'web-tenant.md',
   },
 ];
 
@@ -55,11 +76,10 @@ export type GuideBlock =
   | { type: 'figure'; src: string; alt: string; caption: GuideInline[] };
 
 const GUIDE_PATH = path.join(process.cwd(), 'content', 'docs', 'guia.md');
+const GUIDE_CONTENT = path.join(process.cwd(), 'content', 'docs');
 const PUBLIC_DOCS = path.join(process.cwd(), 'public', 'docs');
 
-/**
- * Lista PNG publicadas. Si falta el archivo, el artículo no muestra la figura.
- */
+/** Lista PNG publicadas. Si falta el archivo, el artículo no muestra la figura. */
 function publishedImages(): Set<string> {
   if (!existsSync(PUBLIC_DOCS)) {
     return new Set();
@@ -168,9 +188,6 @@ function captionFromMeta(lines: string[]): string {
   return '';
 }
 
-/**
- * Notas del playbook de fotos: no son copy para el lector de `/docs`.
- */
 function isPlaybookOnlyLine(line: string): boolean {
   const trimmed = line.trim();
   return (
@@ -239,6 +256,8 @@ function splitPublishedMarkdown(raw: string): Record<DocsSlug, string> {
     'primeros-pasos': dropParteLine(parte2),
     modulos: dropParteLine(parte3),
     cuenta: dropParteLine(parte4),
+    config: '',
+    'web-tenant': '',
   };
 }
 
@@ -299,8 +318,7 @@ function parseBlocks(markdown: string, images: Set<string>): GuideBlock[] {
       if (!skipShot) {
         const captionText = captionFromMeta(meta);
         const caption = captionText ? parseInline(captionText) : [];
-        const alt =
-          caption.map((part) => part.text).join('') || lastHeading;
+        const alt = caption.map((part) => part.text).join('') || lastHeading;
         for (const file of extractPngs(trimmed)) {
           if (images.has(file)) {
             blocks.push({ type: 'figure', src: `/docs/${file}`, alt, caption });
@@ -384,9 +402,7 @@ function parseBlocks(markdown: string, images: Set<string>): GuideBlock[] {
   return blocks;
 }
 
-/**
- * Carga la guía publicada y recorta el playbook de capturas.
- */
+/** Carga la guía pública o un artículo Markdown independiente. */
 export function loadGuidePage(slug: DocsSlug): {
   meta: DocsPageMeta;
   blocks: GuideBlock[];
@@ -395,10 +411,15 @@ export function loadGuidePage(slug: DocsSlug): {
   if (!meta) {
     throw new Error(`Docs slug desconocido: ${slug}`);
   }
-  const raw = readFileSync(GUIDE_PATH, 'utf8');
-  const chunks = splitPublishedMarkdown(raw);
+  const raw = readFileSync(
+    meta.source ? path.join(GUIDE_CONTENT, meta.source) : GUIDE_PATH,
+    'utf8',
+  );
+  const markdown = meta.source
+    ? raw.replace(/^# [^\n]*\n+/, '')
+    : splitPublishedMarkdown(raw)[slug];
   return {
     meta,
-    blocks: parseBlocks(chunks[slug], publishedImages()),
+    blocks: parseBlocks(markdown, publishedImages()),
   };
 }
