@@ -64,25 +64,38 @@ export function VenueQr({
         height={size}
         unoptimized
       />
-      <p className="muted small">Escaneá con la cámara o enviá el link a tu teléfono.</p>
+      <p className="muted small">
+        Escaneá con la cámara o enviá el link a tu teléfono.
+      </p>
       <div className="admin-actions">
-        <a className="btn ghost" href={walletLink} target="_blank" rel="noreferrer">
+        <a
+          className="btn ghost"
+          href={walletLink}
+          target="_blank"
+          rel="noreferrer"
+        >
           Abrir Kuatia Wallet
         </a>
         <button
           type="button"
           className="btn ghost"
-          onClick={() => {
-            void navigator.clipboard
-              .writeText(walletLink)
-              .then(() => setCopyStatus('Link copiado.'))
-              .catch(() => setCopyStatus('No se pudo copiar el link.'));
+          onClick={async () => {
+            try {
+              await navigator.clipboard.writeText(walletLink);
+              setCopyStatus('Link copiado.');
+            } catch {
+              setCopyStatus('No se pudo copiar el link.');
+            }
           }}
         >
           Copiar link
         </button>
       </div>
-      {copyStatus ? <p className="muted small" role="status">{copyStatus}</p> : null}
+      {copyStatus ? (
+        <p className="muted small" role="status">
+          {copyStatus}
+        </p>
+      ) : null}
     </div>
   );
 }

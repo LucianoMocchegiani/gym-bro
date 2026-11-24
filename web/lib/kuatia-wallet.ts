@@ -21,13 +21,16 @@ export function presentationWalletLink(requestUri: string): string {
     throw new Error('La solicitud de presentación no es una URL válida.');
   }
 
-  const match = /^\/openid4vc-flow\/([A-Za-z0-9][A-Za-z0-9_-]{0,127})\/(?:authorize|authorization-requests)\/[^/]+\/?$/.exec(request.pathname);
+  const match = /^\/openid4vc-flow\/([^/]+)\/(?:authorize|authorization-requests)\/[^/]+\/?$/.exec(
+    request.pathname,
+  );
   if (
     request.origin !== 'https://verifier.kuatia.xyz' ||
     request.username ||
     request.password ||
     request.hash ||
-    !match
+    !match ||
+    !/^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$/.test(match[1])
   ) {
     throw new Error('La solicitud no pertenece a un verifier de Kuatia válido.');
   }
