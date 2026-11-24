@@ -295,7 +295,7 @@ function PuertaInner() {
         <AdminGrid className="door-dashboard">
           <Panel
             title="Verificar ingreso"
-            description="Mostrá este QR; el afiliado lo escanea desde la app (OID4VP)."
+            description="Mostrá este QR; escanealo con la cámara del teléfono o compartí el link de Kuatia Wallet web."
           >
             {error ? <p className="error">{error}</p> : null}
             {requestUri ? (
