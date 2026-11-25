@@ -55,12 +55,11 @@ export function canAccessNavHref(
   platformModules?: string[] | null,
 ): boolean {
   if (platformAccess === 'limited') return href === '/dashboard/plan';
-  if (permissionCodes === null || permissionCodes === undefined) return true;
 
   const rule = ADMIN_NAV_PERMISSIONS.find((item) => item.href === href);
-  if (!rule || (rule.module && platformModules && !platformModules.includes(rule.module))) {
-    return false;
-  }
+  if (!rule) return true;
+  if (rule.module && platformModules && !platformModules.includes(rule.module)) return false;
+  if (permissionCodes === null || permissionCodes === undefined) return true;
   return rule.anyOf.length === 0 || rule.anyOf.some((code) => permissionCodes.includes(code));
 }
 
@@ -68,12 +67,16 @@ export function hasAllPermissions(
   permissionCodes: string[] | null | undefined,
   codes: readonly string[],
 ): boolean {
-  return !!permissionCodes && codes.length > 0 && codes.every((code) => permissionCodes.includes(code));
+  if (!permissionCodes || codes.length === 0) return false;
+  const set = new Set(permissionCodes);
+  return codes.every((code) => set.has(code));
 }
 
 export function hasAnyPermission(
   permissionCodes: string[] | null | undefined,
   codes: readonly string[],
 ): boolean {
-  return !!permissionCodes && codes.length > 0 && codes.some((code) => permissionCodes.includes(code));
+  if (!permissionCodes || codes.length === 0) return false;
+  const set = new Set(permissionCodes);
+  return codes.some((code) => set.has(code));
 }
