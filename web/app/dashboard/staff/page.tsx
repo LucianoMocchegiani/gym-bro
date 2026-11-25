@@ -33,6 +33,8 @@ import { listStaff } from '@/lib/api/staff';
 import type { StaffUserDetail } from '@/lib/api/staff';
 import { deleteStaff } from '@/lib/api/staff';
 import { useAccessDoor } from '@/lib/use-access-door';
+import { useAuth } from '@/lib/auth/AuthProvider';
+import { usePlatformModules } from '@/lib/use-platform-modules';
 
 const PAGE_SIZE = 20;
 
@@ -53,7 +55,10 @@ function StaffInner() {
   const rolesId = searchParams.get('roles')?.trim() || null;
   const credencialId = searchParams.get('credencial')?.trim() || null;
   const carpetaId = searchParams.get('carpeta')?.trim() || null;
-  const doorProvider = useAccessDoor();
+  const { session } = useAuth();
+  const platformModules = usePlatformModules(session?.tenantId);
+  const hasClubModule = Boolean(platformModules?.includes('club'));
+  const doorProvider = useAccessDoor(hasClubModule);
   const createOpen =
     searchParams.get('nuevo') === '1' &&
     !fichaId &&
@@ -204,16 +209,18 @@ function StaffInner() {
                 >
                   <IconRoles />
                 </RowIconButton>
-                <RowIconButton
-                  label={
-                    doorProvider === 'ZKTECO'
-                      ? 'Acceso ZKTeco'
-                      : 'Credencial de acceso'
-                  }
-                  onClick={() => openCredencial(s.id)}
-                >
-                  <IconCredential />
-                </RowIconButton>
+                {hasClubModule ? (
+                  <RowIconButton
+                    label={
+                      doorProvider === 'ZKTECO'
+                        ? 'Acceso ZKTeco'
+                        : 'Credencial de acceso'
+                    }
+                    onClick={() => openCredencial(s.id)}
+                  >
+                    <IconCredential />
+                  </RowIconButton>
+                ) : null}
                 <RowIconButton
                   label="Carpeta"
                   onClick={() => openCarpeta(s.id)}
@@ -298,7 +305,7 @@ function StaffInner() {
       </AdminModal>
 
       <AdminModal
-        open={Boolean(credencialId)}
+        open={Boolean(credencialId && hasClubModule)}
         onClose={closeModals}
         title={
           doorProvider === 'ZKTECO' ? 'Acceso ZKTeco' : 'Credencial de acceso'
@@ -310,14 +317,14 @@ function StaffInner() {
         }
         size="comfortable"
       >
-        {credencialId && doorProvider === 'ZKTECO' ? (
+        {credencialId && hasClubModule && doorProvider === 'ZKTECO' ? (
           <AccessLinksPanel
             key={credencialId}
             kind="staff"
             subjectId={credencialId}
           />
         ) : null}
-        {credencialId && doorProvider === 'KUATIA' ? (
+        {credencialId && hasClubModule && doorProvider === 'KUATIA' ? (
           <StaffCredentialPanel key={credencialId} staffId={credencialId} />
         ) : null}
       </AdminModal>

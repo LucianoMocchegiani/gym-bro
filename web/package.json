@@ -15,7 +15,8 @@
     "test:agent-runtime-approvals": "node --experimental-strip-types --test lib/api/agent-runtime-approvals.test.mjs",
     "test:public-chat-token": "node --experimental-strip-types --test lib/api/public-chat-token.test.mjs",
     "test:kuatia-wallet-link": "node --experimental-strip-types --test lib/kuatia-wallet.test.mjs",
-    "test:docs-guide": "node --experimental-strip-types --test lib/docs/guide.test.mjs"
+    "test:docs-guide": "node --experimental-strip-types --test lib/docs/guide.test.mjs",
+    "test:nav-permissions": "node --experimental-strip-types --test lib/nav-permissions.test.mjs"
   },
   "dependencies": {
     "fflate": "^0.8.3",

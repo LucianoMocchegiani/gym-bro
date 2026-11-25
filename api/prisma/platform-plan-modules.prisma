@@ -1,0 +1,6 @@
+model PlatformPlanModule {
+  packId  String   @id @map("pack_id") @db.Uuid
+  modules String[] @default(["club"])
+
+  @@map("platform_plan_modules")
+}

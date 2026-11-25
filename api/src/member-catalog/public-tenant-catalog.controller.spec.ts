@@ -1,3 +1,5 @@
+import { NotFoundException } from '@nestjs/common';
+import { PlatformPlansService } from '../platform-plans/platform-plans.service';
 import { PublicTenantCatalogController } from './public-tenant-catalog.controller';
 
 describe('PublicTenantCatalogController', () => {
@@ -18,10 +20,36 @@ describe('PublicTenantCatalogController', () => {
       } as never,
       { getStatus: jest.fn().mockResolvedValue({ connected: false }) } as never,
       { getPublicContent: jest.fn().mockResolvedValue(null) } as never,
+      {
+        getTenantModules: jest.fn().mockResolvedValue(['club']),
+      } as unknown as PlatformPlansService,
     );
 
     await expect(controller.listPacks('gym')).resolves.toMatchObject({
       packs: [{ id: 'visible' }],
     });
+  });
+
+  it('does not expose the Club catalog on an ecommerce-only tenant', async () => {
+    const listForMember = jest.fn();
+    const controller = new PublicTenantCatalogController(
+      {
+        findPublicBySlug: jest
+          .fn()
+          .mockResolvedValue({ id: 'tenant-id', name: 'Shop', slug: 'shop' }),
+      } as never,
+      { listForMember } as never,
+      {} as never,
+      {} as never,
+      {} as never,
+      {
+        getTenantModules: jest.fn().mockResolvedValue(['ecommerce']),
+      } as unknown as PlatformPlansService,
+    );
+
+    await expect(controller.listPacks('shop')).rejects.toBeInstanceOf(
+      NotFoundException,
+    );
+    expect(listForMember).not.toHaveBeenCalled();
   });
 });

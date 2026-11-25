@@ -1,6 +1,7 @@
 import { Controller, Get, Query } from '@nestjs/common';
 import { RequirePermission } from '../roles/decorators/require-permission.decorator';
 import { CurrentTenant } from '../tenant/decorators/current-tenant.decorator';
+import { RequirePlatformModule } from '../tenant/decorators/require-platform-module.decorator';
 import { RequireTenantAuth } from '../tenant/decorators/require-tenant-auth.decorator';
 import { ExpirationsQueryDto } from './dto/expirations-query.dto';
 import { ExpirationsService } from './expirations.service';
@@ -13,6 +14,7 @@ import { ExpirationsList } from './expirations.types';
  */
 @Controller('expirations')
 @RequireTenantAuth()
+@RequirePlatformModule('club')
 export class ExpirationsController {
   constructor(private readonly expirations: ExpirationsService) {}
 

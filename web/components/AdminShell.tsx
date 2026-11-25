@@ -21,6 +21,7 @@ import { ThemeToggle } from '@/components/ThemeToggle';
 import { useAuth } from '@/lib/auth/AuthProvider';
 import { useGymAccountPerson } from '@/lib/auth/useGymAccountPerson';
 import { canAccessNavHref } from '@/lib/nav-permissions';
+import { usePlatformModules } from '@/lib/use-platform-modules';
 import { extractTenantSlugFromHost } from '@/lib/tenant-host';
 
 type AdminShellProps = {
@@ -76,6 +77,7 @@ const NAV_GROUPS: NavGroup[] = [
       { href: '/dashboard/avisos', label: 'Avisos' },
       { href: '/dashboard/web', label: 'Web pública' },
       { href: '/dashboard/plan', label: 'Plan / Uso' },
+      { href: '/dashboard/planes', label: 'Planes y módulos' },
       { href: '/dashboard/auditoria', label: 'Auditoría' },
       { href: '/dashboard/ads', label: 'Faciliter Ads' },
     ],
@@ -96,6 +98,7 @@ function navGroupsForTenant(slug: string | null): NavGroup[] {
         if (item.href === '/dashboard/web') return false;
       } else if (
         item.href === '/dashboard/tenants' ||
+        item.href === '/dashboard/planes' ||
         item.href === '/dashboard/ads'
       ) {
         return false;
@@ -143,16 +146,13 @@ export function AdminShell({
   const { person } = useGymAccountPerson(hostSlug ?? '');
   const permissionCodes = session?.permissionCodes ?? null;
   const platformAccess = session?.platformAccess ?? 'ok';
+  const platformModules = usePlatformModules(session?.tenantId);
   const limited = platformAccess === 'limited';
   const router = useRouter();
 
   useEffect(() => {
-    if (!limited) {
-      return;
-    }
-    if (pathname === '/dashboard/plan') {
-      return;
-    }
+    if (!limited) return;
+    if (pathname === '/dashboard/plan') return;
     router.replace('/dashboard/plan');
   }, [limited, pathname, router]);
 
@@ -164,11 +164,11 @@ export function AdminShell({
       .map((group) => ({
         ...group,
         items: group.items.filter((item) =>
-          canAccessNavHref(item.href, permissionCodes, platformAccess),
+          canAccessNavHref(item.href, permissionCodes, platformAccess, platformModules),
         ),
       }))
       .filter((group) => group.items.length > 0);
-  }, [permissionCodes, hostSlug, platformAccess]);
+  }, [permissionCodes, hostSlug, platformAccess, platformModules]);
 
   function navClass(href: string): string {
     const active =

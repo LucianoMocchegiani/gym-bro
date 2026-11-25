@@ -17,6 +17,7 @@ const eslintConfig = defineConfig([
       "components/PersonFolderModal.tsx",
       "components/PlanLimitedNotice.tsx",
       "lib/auth/AuthProvider.tsx",
+      "lib/use-platform-modules.ts",
     ],
     // Existing fetch/session effects update React state; keep their behavior unchanged.
     rules: { "react-hooks/set-state-in-effect": "off" },

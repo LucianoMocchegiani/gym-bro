@@ -6,6 +6,7 @@ import { MercadoPagoAccountService } from '../payment/mercadopago-account.servic
 import { PacksService } from '../packs/packs.service';
 import { SessionsService } from '../sessions/sessions.service';
 import { CurrentTenant } from '../tenant/decorators/current-tenant.decorator';
+import { RequirePlatformModule } from '../tenant/decorators/require-platform-module.decorator';
 import { RequireTenantAuth } from '../tenant/decorators/require-tenant-auth.decorator';
 import { MemberListSessionsQueryDto } from './dto/member-catalog.dto';
 import {
@@ -21,6 +22,7 @@ import {
  */
 @Controller()
 @RequireTenantAuth()
+@RequirePlatformModule('club')
 export class MemberCatalogController {
   constructor(
     private readonly sessions: SessionsService,

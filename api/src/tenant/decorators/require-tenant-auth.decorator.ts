@@ -1,6 +1,7 @@
 import { applyDecorators, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { PlatformAccessGuard } from '../guards/platform-access.guard';
+import { PlatformModuleGuard } from '../guards/platform-module.guard';
 import { TenantGuard } from '../guards/tenant.guard';
 
 /**
@@ -11,6 +12,11 @@ import { TenantGuard } from '../guards/tenant.guard';
  */
 export function RequireTenantAuth() {
   return applyDecorators(
-    UseGuards(JwtAuthGuard, TenantGuard, PlatformAccessGuard),
+    UseGuards(
+      JwtAuthGuard,
+      TenantGuard,
+      PlatformAccessGuard,
+      PlatformModuleGuard,
+    ),
   );
 }

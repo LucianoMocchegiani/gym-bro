@@ -16,6 +16,7 @@ import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { toAuditActor } from '../audit/to-audit-actor';
 import { RequirePermission } from '../roles/decorators/require-permission.decorator';
 import { CurrentTenant } from '../tenant/decorators/current-tenant.decorator';
+import { RequirePlatformModule } from '../tenant/decorators/require-platform-module.decorator';
 import { RequireTenantAuth } from '../tenant/decorators/require-tenant-auth.decorator';
 import { AccessIdentityLinksService } from './access-identity-links.service';
 import { AccessZktecoService } from './access-zkteco.service';
@@ -37,6 +38,7 @@ import { ZktecoEventDto } from './dto/zkteco-event.dto';
  */
 @Controller()
 @RequireTenantAuth()
+@RequirePlatformModule('club')
 export class AccessZktecoController {
   constructor(
     private readonly zkteco: AccessZktecoService,
