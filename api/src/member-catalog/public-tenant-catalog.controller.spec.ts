@@ -20,7 +20,9 @@ describe('PublicTenantCatalogController', () => {
       } as never,
       { getStatus: jest.fn().mockResolvedValue({ connected: false }) } as never,
       { getPublicContent: jest.fn().mockResolvedValue(null) } as never,
-      { getTenantModules: jest.fn().mockResolvedValue(['club']) } as unknown as PlatformPlansService,
+      {
+        getTenantModules: jest.fn().mockResolvedValue(['club']),
+      } as unknown as PlatformPlansService,
     );
 
     await expect(controller.listPacks('gym')).resolves.toMatchObject({
@@ -31,15 +33,23 @@ describe('PublicTenantCatalogController', () => {
   it('does not expose the Club catalog on an ecommerce-only tenant', async () => {
     const listForMember = jest.fn();
     const controller = new PublicTenantCatalogController(
-      { findPublicBySlug: jest.fn().mockResolvedValue({ id: 'tenant-id', name: 'Shop', slug: 'shop' }) } as never,
+      {
+        findPublicBySlug: jest
+          .fn()
+          .mockResolvedValue({ id: 'tenant-id', name: 'Shop', slug: 'shop' }),
+      } as never,
       { listForMember } as never,
       {} as never,
       {} as never,
       {} as never,
-      { getTenantModules: jest.fn().mockResolvedValue(['ecommerce']) } as unknown as PlatformPlansService,
+      {
+        getTenantModules: jest.fn().mockResolvedValue(['ecommerce']),
+      } as unknown as PlatformPlansService,
     );
 
-    await expect(controller.listPacks('shop')).rejects.toBeInstanceOf(NotFoundException);
+    await expect(controller.listPacks('shop')).rejects.toBeInstanceOf(
+      NotFoundException,
+    );
     expect(listForMember).not.toHaveBeenCalled();
   });
 });
