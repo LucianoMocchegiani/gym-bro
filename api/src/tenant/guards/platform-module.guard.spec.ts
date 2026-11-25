@@ -21,7 +21,14 @@ describe('PlatformModuleGuard', () => {
     expect(plans.getTenantModules).not.toHaveBeenCalled();
   });
 
-  it('allows a route only when the tenant plan includes its module', async () => {
+  it('allows a tenant whose plan includes the required module', async () => {
+    reflector.getAllAndOverride.mockReturnValue('club');
+    plans.getTenantModules.mockResolvedValue(['club']);
+
+    await expect(guard.canActivate(context)).resolves.toBe(true);
+  });
+
+  it('denies a tenant whose plan does not include the required module', async () => {
     reflector.getAllAndOverride.mockReturnValue('club');
     plans.getTenantModules.mockResolvedValue(['ecommerce']);
 
