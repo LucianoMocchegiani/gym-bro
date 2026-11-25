@@ -15,6 +15,7 @@ import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { ListResult } from '../common/list';
 import { RequirePermission } from '../roles/decorators/require-permission.decorator';
 import { CurrentTenant } from '../tenant/decorators/current-tenant.decorator';
+import { RequirePlatformModule } from '../tenant/decorators/require-platform-module.decorator';
 import { RequireTenantAuth } from '../tenant/decorators/require-tenant-auth.decorator';
 import { AccessOid4VpService } from './access-oid4vp.service';
 import { AccessVerifyService } from './access-verify.service';
@@ -28,99 +29,45 @@ import {
   AccessVerifyResult,
 } from './access.types';
 
-/**
- * Puerta OID4VP, preview de ingreso, pase manual e historial (CU-ACC-001 / 004 / 005).
- */
 @Controller()
 @RequireTenantAuth()
+@RequirePlatformModule('club')
 export class AccessVerifyController {
-  constructor(
-    private readonly accessVerify: AccessVerifyService,
-    private readonly oid4vp: AccessOid4VpService,
-  ) {}
+  constructor(private readonly accessVerify: AccessVerifyService, private readonly oid4vp: AccessOid4VpService) {}
 
-  /**
-   * Crea un request OID4VP (QR de puerta, modo afiliado escanea).
-   *
-   * @remarks CU-ACC-001 / RN-ACC-003. El QR es `requestUri`.
-   */
   @Post('access/oid4vp/request')
   @HttpCode(HttpStatus.OK)
   @RequirePermission('access.verify')
-  createOid4VpRequest(
-    @CurrentTenant() tenantId: string,
-    @CurrentUser() user: AuthUser,
-  ): Promise<AccessOid4VpRequestResult> {
-    if (user.profileType !== 'STAFF') {
-      throw new ForbiddenException('Staff profile required');
-    }
+  createOid4VpRequest(@CurrentTenant() tenantId: string, @CurrentUser() user: AuthUser): Promise<AccessOid4VpRequestResult> {
+    if (user.profileType !== 'STAFF') throw new ForbiddenException('Staff profile required');
     return this.oid4vp.createRequest(tenantId);
   }
 
-  /**
-   * Poll de sesión OID4VP; al completar evalúa ingreso (idempotente).
-   */
   @Get('access/oid4vp/session/:verificationSessionId')
   @RequirePermission('access.verify')
-  getOid4VpSession(
-    @CurrentTenant() tenantId: string,
-    @CurrentUser() user: AuthUser,
-    @Param('verificationSessionId') verificationSessionId: string,
-  ): Promise<AccessOid4VpSessionResult> {
-    if (user.profileType !== 'STAFF') {
-      throw new ForbiddenException('Staff profile required');
-    }
+  getOid4VpSession(@CurrentTenant() tenantId: string, @CurrentUser() user: AuthUser, @Param('verificationSessionId') verificationSessionId: string): Promise<AccessOid4VpSessionResult> {
+    if (user.profileType !== 'STAFF') throw new ForbiddenException('Staff profile required');
     return this.oid4vp.getSession(tenantId, verificationSessionId, user.userId);
   }
 
-  /**
-   * Simula si el afiliado podría ingresar ahora (mismas RN que la puerta).
-   *
-   * @remarks No escribe `access_attempts` ni marca asistencia. MCP / Caja.
-   * @throws {NotFoundException} Si el afiliado no existe en el tenant.
-   */
   @Get('members/:memberId/access-preview')
   @RequirePermission('access.verify')
-  previewMemberAccess(
-    @CurrentTenant() tenantId: string,
-    @CurrentUser() user: AuthUser,
-    @Param('memberId', ParseUUIDPipe) memberId: string,
-  ): Promise<AccessPreviewResult> {
-    if (user.profileType !== 'STAFF') {
-      throw new ForbiddenException('Staff profile required');
-    }
+  previewMemberAccess(@CurrentTenant() tenantId: string, @CurrentUser() user: AuthUser, @Param('memberId', ParseUUIDPipe) memberId: string): Promise<AccessPreviewResult> {
+    if (user.profileType !== 'STAFF') throw new ForbiddenException('Staff profile required');
     return this.accessVerify.previewMemberAccess(tenantId, memberId);
   }
 
-  /**
-   * Pase manual: ingreso permitido pese a reglas automáticas (RN-ACC-006).
-   */
   @Post('members/:memberId/access/manual-pass')
   @HttpCode(HttpStatus.CREATED)
   @RequirePermission('access.manual_pass')
-  manualPass(
-    @CurrentTenant() tenantId: string,
-    @CurrentUser() user: AuthUser,
-    @Param('memberId', ParseUUIDPipe) memberId: string,
-    @Body() dto: ManualPassDto,
-  ): Promise<AccessVerifyResult> {
-    if (user.profileType !== 'STAFF') {
-      throw new ForbiddenException('Staff profile required');
-    }
+  manualPass(@CurrentTenant() tenantId: string, @CurrentUser() user: AuthUser, @Param('memberId', ParseUUIDPipe) memberId: string, @Body() dto: ManualPassDto): Promise<AccessVerifyResult> {
+    if (user.profileType !== 'STAFF') throw new ForbiddenException('Staff profile required');
     return this.accessVerify.manualPass(tenantId, memberId, dto, user.userId);
   }
 
-  /**
-   * Lista intentos del gym (paginado; más recientes primero por defecto).
-   *
-   * @remarks Incluye nombre/email del afiliado. `from`/`to` = YYYY-MM-DD (BA).
-   */
   @Get('access-attempts')
   @RequirePermission('access.verify')
-  list(
-    @CurrentTenant() tenantId: string,
-    @Query() query: ListAccessAttemptsQueryDto,
-  ): Promise<ListResult<AccessAttemptDetail>> {
+  list(@CurrentTenant() tenantId: string, @Query() query: ListAccessAttemptsQueryDto): Promise<ListResult<AccessAttemptDetail>> {
     return this.accessVerify.listAttempts(tenantId, query);
   }
 }
