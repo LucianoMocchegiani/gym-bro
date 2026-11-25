@@ -18,6 +18,7 @@ import {
   NavIconMenu,
 } from '@/components/AdminNavIcons';
 import { ThemeToggle } from '@/components/ThemeToggle';
+import { apiRequest } from '@/lib/api/client';
 import { useAuth } from '@/lib/auth/AuthProvider';
 import { useGymAccountPerson } from '@/lib/auth/useGymAccountPerson';
 import { canAccessNavHref } from '@/lib/nav-permissions';
@@ -120,8 +121,6 @@ function getServerHostSlug(): null {
 /**
  * Shell Admin: sidebar de navegación + topbar (tema / perfil).
  * El asistente es burbuja fija (no va en el topbar).
- *
- * @remarks Filtra links según `session.permissionCodes` (GET /me/permissions).
  */
 export function AdminShell({
   title,
@@ -134,6 +133,7 @@ export function AdminShell({
   const pathname = usePathname();
   const [navOpen, setNavOpen] = useState(false);
   const [brandIconAvailable, setBrandIconAvailable] = useState(true);
+  const [platformModules, setPlatformModules] = useState<string[] | null>(null);
   const hostSlug = useSyncExternalStore(
     subscribeHost,
     readHostSlug,
@@ -147,12 +147,18 @@ export function AdminShell({
   const router = useRouter();
 
   useEffect(() => {
-    if (!limited) {
-      return;
-    }
-    if (pathname === '/dashboard/plan') {
-      return;
-    }
+    let current = true;
+    setPlatformModules(null);
+    if (!session?.tenantId) return () => { current = false; };
+    apiRequest<{ modules: string[] }>('/tenant/platform-modules')
+      .then(({ modules }) => { if (current) setPlatformModules(modules); })
+      .catch(() => { if (current) setPlatformModules([]); });
+    return () => { current = false; };
+  }, [session?.tenantId, hostSlug]);
+
+  useEffect(() => {
+    if (!limited) return;
+    if (pathname === '/dashboard/plan') return;
     router.replace('/dashboard/plan');
   }, [limited, pathname, router]);
 
@@ -164,11 +170,11 @@ export function AdminShell({
       .map((group) => ({
         ...group,
         items: group.items.filter((item) =>
-          canAccessNavHref(item.href, permissionCodes, platformAccess),
+          canAccessNavHref(item.href, permissionCodes, platformAccess, platformModules),
         ),
       }))
       .filter((group) => group.items.length > 0);
-  }, [permissionCodes, hostSlug, platformAccess]);
+  }, [permissionCodes, hostSlug, platformAccess, platformModules]);
 
   function navClass(href: string): string {
     const active =
