@@ -15,7 +15,9 @@ import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { ListResult } from '../common/list';
 import { RequirePermission } from '../roles/decorators/require-permission.decorator';
 import { CurrentTenant } from '../tenant/decorators/current-tenant.decorator';
-import { RequirePlatformModule } from '../tenant/decorators/require-platform-module.decorator';
+import {
+  RequirePlatformModule,
+} from '../tenant/decorators/require-platform-module.decorator';
 import { RequireTenantAuth } from '../tenant/decorators/require-tenant-auth.decorator';
 import { AccessOid4VpService } from './access-oid4vp.service';
 import { AccessVerifyService } from './access-verify.service';
@@ -59,7 +61,9 @@ export class AccessVerifyController {
     return this.oid4vp.createRequest(tenantId);
   }
 
-  /** Poll de sesión OID4VP; al completar evalúa ingreso (idempotente). */
+  /**
+   * Poll de sesión OID4VP; al completar evalúa ingreso (idempotente).
+   */
   @Get('access/oid4vp/session/:verificationSessionId')
   @RequirePermission('access.verify')
   getOid4VpSession(
@@ -92,7 +96,9 @@ export class AccessVerifyController {
     return this.accessVerify.previewMemberAccess(tenantId, memberId);
   }
 
-  /** Pase manual: ingreso permitido pese a reglas automáticas (RN-ACC-006). */
+  /**
+   * Pase manual: ingreso permitido pese a reglas automáticas (RN-ACC-006).
+   */
   @Post('members/:memberId/access/manual-pass')
   @HttpCode(HttpStatus.CREATED)
   @RequirePermission('access.manual_pass')
