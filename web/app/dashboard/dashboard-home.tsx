@@ -30,6 +30,7 @@ import {
   canAccessNavHref,
   hasAnyPermission,
 } from '@/lib/nav-permissions';
+import { usePlatformModules } from '@/lib/use-platform-modules';
 
 type KpiState = {
   income: number | null;
@@ -81,14 +82,17 @@ function TenantDashboard({ tenantSlug }: { tenantSlug: string }) {
   const { session } = useAuth();
   const permissionCodes = session?.permissionCodes ?? null;
   const permissionsReady = permissionCodes !== null;
+  const platformAccess = session?.platformAccess ?? 'ok';
+  const platformModules = usePlatformModules(session?.tenantId);
+  const hasClubModule = Boolean(platformModules?.includes('club'));
 
-  const canCaja = canAccessNavHref('/dashboard/caja', permissionCodes);
-  const canReports = canAccessNavHref('/dashboard/reportes', permissionCodes);
-  const canMembers = canAccessNavHref('/dashboard/afiliados', permissionCodes);
-  const canDoor = hasAnyPermission(permissionCodes, ['access.verify']);
-  const canSessions = canAccessNavHref('/dashboard/sesiones', permissionCodes);
+  const canCaja = canAccessNavHref('/dashboard/caja', permissionCodes, platformAccess, platformModules);
+  const canReports = canAccessNavHref('/dashboard/reportes', permissionCodes, platformAccess, platformModules);
+  const canMembers = canAccessNavHref('/dashboard/afiliados', permissionCodes, platformAccess, platformModules);
+  const canDoor = hasClubModule && hasAnyPermission(permissionCodes, ['access.verify']);
+  const canSessions = canAccessNavHref('/dashboard/sesiones', permissionCodes, platformAccess, platformModules);
   const canManagePlan =
-    permissionsReady && canAccessNavHref('/dashboard/plan', permissionCodes);
+    permissionsReady && canAccessNavHref('/dashboard/plan', permissionCodes, platformAccess, platformModules);
 
   const today = todayBusinessDate();
   const [kpi, setKpi] = useState<KpiState>({
@@ -149,8 +153,10 @@ function TenantDashboard({ tenantSlug }: { tenantSlug: string }) {
       if (canReports) {
         try {
           const summary = await getReportsSummary({ from: today, to: today });
-          withoutPack = summary.members.activeWithoutActiveContract;
-          activeMembers = summary.members.active;
+          if (hasClubModule) {
+            withoutPack = summary.members.activeWithoutActiveContract;
+            activeMembers = summary.members.active;
+          }
         } catch (err) {
           errors.push(
             err instanceof ApiClientError
@@ -221,11 +227,12 @@ function TenantDashboard({ tenantSlug }: { tenantSlug: string }) {
     canMembers,
     canDoor,
     canSessions,
+    hasClubModule,
     session?.platformAccess,
   ]);
 
   const kpiCards = [
-    canMembers || canReports
+    hasClubModule && (canMembers || canReports)
       ? {
           key: 'members',
           label: 'Afiliados activos',
@@ -254,7 +261,7 @@ function TenantDashboard({ tenantSlug }: { tenantSlug: string }) {
           live: true,
         }
       : null,
-    canReports
+    hasClubModule && canReports
       ? {
           key: 'nopack',
           label: 'Sin pack activo',
