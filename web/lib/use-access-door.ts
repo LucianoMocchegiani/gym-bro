@@ -5,15 +5,16 @@ import { getAccessDoor } from '@/lib/api/access';
 import type { AccessProvider } from '@/lib/api/access';
 
 /**
- * Sistema de puerta del gym; `null` mientras carga.
+ * Sistema de puerta del gym; `null` mientras carga o si Club no está habilitado.
  *
  * @remarks Si falla la lectura se asume KUATIA (comportamiento previo).
  */
-export function useAccessDoor(): AccessProvider | null {
+export function useAccessDoor(enabled = true): AccessProvider | null {
   const [provider, setProvider] = useState<AccessProvider | null>(null);
 
   useEffect(() => {
     let cancelled = false;
+    if (!enabled) return () => { cancelled = true; };
     void (async () => {
       try {
         const door = await getAccessDoor();
@@ -25,7 +26,7 @@ export function useAccessDoor(): AccessProvider | null {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [enabled]);
 
-  return provider;
+  return enabled ? provider : null;
 }

@@ -18,10 +18,10 @@ import {
   NavIconMenu,
 } from '@/components/AdminNavIcons';
 import { ThemeToggle } from '@/components/ThemeToggle';
-import { apiRequest } from '@/lib/api/client';
 import { useAuth } from '@/lib/auth/AuthProvider';
 import { useGymAccountPerson } from '@/lib/auth/useGymAccountPerson';
 import { canAccessNavHref } from '@/lib/nav-permissions';
+import { usePlatformModules } from '@/lib/use-platform-modules';
 import { extractTenantSlugFromHost } from '@/lib/tenant-host';
 
 type AdminShellProps = {
@@ -137,10 +137,6 @@ export function AdminShell({
   const pathname = usePathname();
   const [navOpen, setNavOpen] = useState(false);
   const [brandIconAvailable, setBrandIconAvailable] = useState(true);
-  const [platformModuleState, setPlatformModuleState] = useState<{
-    tenantId: string;
-    modules: string[];
-  } | null>(null);
   const hostSlug = useSyncExternalStore(
     subscribeHost,
     readHostSlug,
@@ -150,26 +146,9 @@ export function AdminShell({
   const { person } = useGymAccountPerson(hostSlug ?? '');
   const permissionCodes = session?.permissionCodes ?? null;
   const platformAccess = session?.platformAccess ?? 'ok';
+  const platformModules = usePlatformModules(session?.tenantId);
   const limited = platformAccess === 'limited';
   const router = useRouter();
-  const platformModules =
-    platformModuleState?.tenantId === session?.tenantId
-      ? platformModuleState.modules
-      : null;
-
-  useEffect(() => {
-    let current = true;
-    const tenantId = session?.tenantId;
-    if (!tenantId) return () => { current = false; };
-    apiRequest<{ modules: string[] }>('/tenant/platform-modules')
-      .then(({ modules }) => {
-        if (current) setPlatformModuleState({ tenantId, modules });
-      })
-      .catch(() => {
-        if (current) setPlatformModuleState({ tenantId, modules: [] });
-      });
-    return () => { current = false; };
-  }, [session?.tenantId, hostSlug]);
 
   useEffect(() => {
     if (!limited) return;
