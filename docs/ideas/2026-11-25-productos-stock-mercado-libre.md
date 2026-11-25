@@ -12,6 +12,38 @@ Permitir que cada organización gestione productos y existencias desde Faciliter
 
 **Principio propuesto:** Faciliter es la fuente de verdad del producto y del stock. Mercado Libre es un canal externo opcional, no un requisito para cargar o vender productos.
 
+## Productos comerciales y recorrido por plan
+
+La oferta de Faciliter contempla tres opciones para una organización:
+
+- **Faciliter Club:** el producto actual para clubes, gimnasios y estudios.
+- **Faciliter E-commerce:** productos, stock y ventas para comercios, sin los módulos propios de Club.
+- **Faciliter Club + E-commerce:** ambos conjuntos de funcionalidades habilitados para la misma organización.
+
+El plan contratado determina qué funcionalidades puede usar la organización. La disponibilidad debe respetarse tanto en la navegación como en las acciones del backend; ocultar una opción del menú por sí solo no alcanza.
+
+### Faciliter Club
+
+La experiencia actual de Club se conserva: afiliados, servicios, sesiones, reservas, Caja y las funciones asociadas a accesos y credenciales. Este documento no propone reemplazar esos módulos.
+
+### Faciliter E-commerce
+
+Al contratar solo E-commerce, el recorrido esperado es administrar el catálogo propio y vender sus productos desde Caja:
+
+1. La navegación muestra un módulo nuevo de **Productos**.
+2. El módulo reutiliza desde el frontend la grilla y los componentes existentes, con información del producto y acciones para ver detalle, editar y eliminar.
+3. Desde Caja se buscan productos por nombre o código en un catálogo paginado. No se ofrece el selector de servicios ni los débitos automáticos.
+4. La interfaz usa **Clientes** en lugar de **Afiliados**. La venta de productos no debe crear contratos ni habilitar funciones de Club.
+5. El control de stock forma parte del alcance básico; el flujo para ingresar y ajustar existencias sigue pendiente de definición.
+
+En este plan quedan fuera los módulos de accesos y credenciales (incluidos ZKTeco y Kuatia en Staff), Afiliados, Configuración de Club, Services/Servicios, Sesiones, Mi credencial, Puerta, Vencimientos y débitos automáticos.
+
+### Faciliter Club + E-commerce
+
+La organización puede usar las funcionalidades de Club y E-commerce en una misma cuenta: productos y stock además de los módulos de Club. Los productos se venden sin convertirse en servicios ni generar contratos; el carrito mixto con productos y líneas de Club se define en la etapa 3.
+
+Queda por decidir cómo se nombra a las personas en esta experiencia combinada: **Afiliados**, **Clientes** o ambos según el contexto. No se renombrarán tablas ni APIs de Club solo por cambiar los textos visibles.
+
 ## Etapas
 
 ### 1. Catálogo interno y stock
@@ -71,6 +103,8 @@ Permitir que cada organización gestione productos y existencias desde Faciliter
 3. ¿Se requiere SKU/código de barras desde el primer corte?
 4. ¿Qué categorías de productos deben soportarse primero en Mercado Libre?
 5. ¿Qué permisos del plan habilitan catálogo, stock y conexión al marketplace?
+6. ¿Cómo se nombran las personas en el plan combinado: Afiliados, Clientes o ambos según el contexto?
+7. ¿Cómo se cargan y ajustan existencias, y qué ocurre con el stock al dar de baja un producto?
 
 Estas etapas son una propuesta de alcance; antes de implementar cada una, cerrar sus decisiones y contrastar los puntos de integración con el código y la documentación vigentes.
 
