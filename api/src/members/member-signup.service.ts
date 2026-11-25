@@ -8,6 +8,7 @@ import {
 import { MemberSignupStatus, PaymentMethod } from '@prisma/client';
 import { OnlinePaymentService } from '../payment/online-payment.service';
 import { TransactionService } from '../payment/transaction.service';
+import { PlatformPlansService } from '../platform-plans/platform-plans.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { StartMemberSignupDto } from './dto/member.dto';
 import { MembersService } from './members.service';
@@ -29,6 +30,7 @@ export class MemberSignupService {
     private readonly members: MembersService,
     private readonly onlinePayment: OnlinePaymentService,
     private readonly transactions: TransactionService,
+    private readonly plans: PlatformPlansService,
   ) {}
 
   /**
@@ -43,6 +45,9 @@ export class MemberSignupService {
       dto.tenantSlug,
       dto.document,
     );
+    if (!(await this.plans.getTenantModules(tenantId)).includes('club')) {
+      throw new NotFoundException('Club signup is unavailable');
+    }
     const pack = await this.prisma.pack.findFirst({
       where: {
         id: dto.packId,

@@ -16,6 +16,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { PlatformTenantGuard } from '../auth/guards/platform-tenant.guard';
 import { PermissionGuard } from '../roles/guards/permission.guard';
 import { RequireTenantAuth } from '../tenant/decorators/require-tenant-auth.decorator';
+import { RequirePlatformModule } from '../tenant/decorators/require-platform-module.decorator';
 import { CurrentTenant } from '../tenant/decorators/current-tenant.decorator';
 import { RequirePermission } from '../roles/decorators/require-permission.decorator';
 import { toAuditActor } from '../audit/to-audit-actor';
@@ -44,6 +45,7 @@ export class PaymentController {
 
   @Post('me/transaction-items/mp/cart')
   @HttpCode(HttpStatus.CREATED)
+  @RequirePlatformModule('club')
   startMemberCartCheckout(
     @CurrentTenant() tenantId: string,
     @CurrentUser() user: AuthUser,
@@ -62,6 +64,7 @@ export class PaymentController {
 
   @Post('members/:memberId/transaction-items/mp/cart')
   @HttpCode(HttpStatus.CREATED)
+  @RequirePlatformModule('club')
   @RequirePermission('members.write')
   startStaffCartCheckout(
     @CurrentTenant() tenantId: string,
@@ -97,6 +100,7 @@ export class PaymentController {
 
   @Post('members/:memberId/transaction-items/cash/cart')
   @HttpCode(HttpStatus.CREATED)
+  @RequirePlatformModule('club')
   @RequirePermission('members.write')
   startCashCart(
     @CurrentTenant() tenantId: string,
@@ -148,6 +152,7 @@ export class PaymentController {
   }
 
   @Get('transactions/:transactionId/mp-payment')
+  @RequirePlatformModule('club')
   @RequirePermission('members.read')
   getMpPaymentStatus(
     @CurrentTenant() tenantId: string,

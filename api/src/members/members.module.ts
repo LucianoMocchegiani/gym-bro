@@ -3,6 +3,7 @@ import { AuditModule } from '../audit/audit.module';
 import { AuthModule } from '../auth/auth.module';
 import { ContractsModule } from '../contracts/contracts.module';
 import { PaymentModule } from '../payment/payment.module';
+import { PlatformPlansModule } from '../platform-plans/platform-plans.module';
 import { RolesModule } from '../roles/roles.module';
 import { UploadModule } from '../upload/upload.module';
 import { IdentityMembersController } from './identity-members.controller';
@@ -20,6 +21,7 @@ import { MembersService } from './members.service';
     AuditModule,
     ContractsModule,
     UploadModule,
+    PlatformPlansModule,
     forwardRef(() => PaymentModule),
   ],
   controllers: [MembersController, IdentityMembersController],
