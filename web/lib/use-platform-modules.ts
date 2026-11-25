@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { ApiClientError, apiRequest } from '@/lib/api/client';
+import { apiRequest } from '@/lib/api/client';
 
 type ModuleState = { tenantId: string; modules: string[] };
 
