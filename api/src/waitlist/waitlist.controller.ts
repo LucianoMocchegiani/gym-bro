@@ -18,115 +18,54 @@ import { toAuditActor } from '../audit/to-audit-actor';
 import { ListResult } from '../common/list';
 import { RequirePermission } from '../roles/decorators/require-permission.decorator';
 import { CurrentTenant } from '../tenant/decorators/current-tenant.decorator';
+import { RequirePlatformModule } from '../tenant/decorators/require-platform-module.decorator';
 import { RequireTenantAuth } from '../tenant/decorators/require-tenant-auth.decorator';
-import {
-  JoinWaitlistDto,
-  LeaveWaitlistDto,
-  ListWaitlistQueryDto,
-} from './dto/waitlist.dto';
+import { JoinWaitlistDto, LeaveWaitlistDto, ListWaitlistQueryDto } from './dto/waitlist.dto';
 import { WaitlistService } from './waitlist.service';
 import { WaitlistEntryDetail } from './waitlist.types';
 
-/**
- * Lista de espera (staff + afiliado).
- *
- * @remarks CU-RES-004. Staff: `reservations.write`.
- */
 @Controller()
 @RequireTenantAuth()
+@RequirePlatformModule('club')
 export class WaitlistController {
   constructor(private readonly waitlistService: WaitlistService) {}
 
   @Post('me/waitlist')
   @HttpCode(HttpStatus.CREATED)
-  joinMine(
-    @CurrentTenant() tenantId: string,
-    @CurrentUser() user: AuthUser,
-    @Body() dto: JoinWaitlistDto,
-  ): Promise<WaitlistEntryDetail> {
-    if (user.profileType !== 'MEMBER') {
-      throw new ForbiddenException('Member profile required');
-    }
-    return this.waitlistService.join(
-      tenantId,
-      user.userId,
-      dto,
-      this.memberActor(user),
-    );
+  joinMine(@CurrentTenant() tenantId: string, @CurrentUser() user: AuthUser, @Body() dto: JoinWaitlistDto): Promise<WaitlistEntryDetail> {
+    if (user.profileType !== 'MEMBER') throw new ForbiddenException('Member profile required');
+    return this.waitlistService.join(tenantId, user.userId, dto, this.memberActor(user));
   }
 
   @Get('me/waitlist')
-  listMine(
-    @CurrentTenant() tenantId: string,
-    @CurrentUser() user: AuthUser,
-    @Query() query: ListWaitlistQueryDto,
-  ): Promise<ListResult<WaitlistEntryDetail>> {
-    if (user.profileType !== 'MEMBER') {
-      throw new ForbiddenException('Member profile required');
-    }
+  listMine(@CurrentTenant() tenantId: string, @CurrentUser() user: AuthUser, @Query() query: ListWaitlistQueryDto): Promise<ListResult<WaitlistEntryDetail>> {
+    if (user.profileType !== 'MEMBER') throw new ForbiddenException('Member profile required');
     return this.waitlistService.listByMember(tenantId, user.userId, query);
   }
 
   @Patch('me/waitlist/:entryId/status')
-  leaveMine(
-    @CurrentTenant() tenantId: string,
-    @CurrentUser() user: AuthUser,
-    @Param('entryId', ParseUUIDPipe) entryId: string,
-    @Body() dto: LeaveWaitlistDto,
-  ): Promise<WaitlistEntryDetail> {
-    if (user.profileType !== 'MEMBER') {
-      throw new ForbiddenException('Member profile required');
-    }
-    return this.waitlistService.leave(
-      tenantId,
-      entryId,
-      dto,
-      this.memberActor(user),
-      user.userId,
-    );
+  leaveMine(@CurrentTenant() tenantId: string, @CurrentUser() user: AuthUser, @Param('entryId', ParseUUIDPipe) entryId: string, @Body() dto: LeaveWaitlistDto): Promise<WaitlistEntryDetail> {
+    if (user.profileType !== 'MEMBER') throw new ForbiddenException('Member profile required');
+    return this.waitlistService.leave(tenantId, entryId, dto, this.memberActor(user), user.userId);
   }
 
   @Post('members/:memberId/waitlist')
   @HttpCode(HttpStatus.CREATED)
   @RequirePermission('reservations.write')
-  joinForMember(
-    @CurrentTenant() tenantId: string,
-    @CurrentUser() user: AuthUser,
-    @Param('memberId', ParseUUIDPipe) memberId: string,
-    @Body() dto: JoinWaitlistDto,
-  ): Promise<WaitlistEntryDetail> {
-    return this.waitlistService.join(
-      tenantId,
-      memberId,
-      dto,
-      toAuditActor(user),
-    );
+  joinForMember(@CurrentTenant() tenantId: string, @CurrentUser() user: AuthUser, @Param('memberId', ParseUUIDPipe) memberId: string, @Body() dto: JoinWaitlistDto): Promise<WaitlistEntryDetail> {
+    return this.waitlistService.join(tenantId, memberId, dto, toAuditActor(user));
   }
 
   @Get('sessions/:sessionId/waitlist')
   @RequirePermission('reservations.write')
-  listBySession(
-    @CurrentTenant() tenantId: string,
-    @Param('sessionId', ParseUUIDPipe) sessionId: string,
-    @Query() query: ListWaitlistQueryDto,
-  ): Promise<ListResult<WaitlistEntryDetail>> {
+  listBySession(@CurrentTenant() tenantId: string, @Param('sessionId', ParseUUIDPipe) sessionId: string, @Query() query: ListWaitlistQueryDto): Promise<ListResult<WaitlistEntryDetail>> {
     return this.waitlistService.listBySession(tenantId, sessionId, query);
   }
 
   @Patch('waitlist/:entryId/status')
   @RequirePermission('reservations.write')
-  leave(
-    @CurrentTenant() tenantId: string,
-    @CurrentUser() user: AuthUser,
-    @Param('entryId', ParseUUIDPipe) entryId: string,
-    @Body() dto: LeaveWaitlistDto,
-  ): Promise<WaitlistEntryDetail> {
-    return this.waitlistService.leave(
-      tenantId,
-      entryId,
-      dto,
-      toAuditActor(user),
-    );
+  leave(@CurrentTenant() tenantId: string, @CurrentUser() user: AuthUser, @Param('entryId', ParseUUIDPipe) entryId: string, @Body() dto: LeaveWaitlistDto): Promise<WaitlistEntryDetail> {
+    return this.waitlistService.leave(tenantId, entryId, dto, toAuditActor(user));
   }
 
   private memberActor(user: AuthUser): AuditActor {
