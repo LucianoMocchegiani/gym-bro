@@ -46,6 +46,7 @@ export const ADMIN_NAV_PERMISSIONS: readonly NavPermissionRule[] = [
   { href: '/dashboard/plan', anyOf: ['tenant.settings.read'] },
   { href: '/dashboard/auditoria', anyOf: ['audit.read'] },
   { href: '/dashboard/tenants', anyOf: ['platform.tenants.read'] },
+  { href: '/dashboard/planes', anyOf: ['platform.tenants.read'] },
 ] as const;
 
 export function canAccessNavHref(

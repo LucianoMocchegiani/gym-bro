@@ -19,3 +19,11 @@ test('Club plans retain Club navigation', () => {
     true,
   );
 });
+
+test('only staff with platform read permission see the plan editor link', () => {
+  assert.equal(canAccessNavHref('/dashboard/planes', [], 'ok', ['club']), false);
+  assert.equal(
+    canAccessNavHref('/dashboard/planes', ['platform.tenants.read'], 'ok', ['club']),
+    true,
+  );
+});
