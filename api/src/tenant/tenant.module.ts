@@ -1,5 +1,5 @@
 import { Global, Module } from '@nestjs/common';
-import { PlatformPlansModule } from '../../platform-plans/platform-plans.module';
+import { PlatformPlansModule } from '../platform-plans/platform-plans.module';
 import { PlatformAccessService } from './platform-access.service';
 import { PlatformAccessGuard } from './guards/platform-access.guard';
 import { PlatformModuleGuard } from './guards/platform-module.guard';
