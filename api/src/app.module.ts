@@ -15,6 +15,7 @@ import { MemberCatalogModule } from './member-catalog/member-catalog.module';
 import { PaymentModule } from './payment/payment.module';
 import { DebitModule } from './debit/debit.module';
 import { PacksModule } from './packs/packs.module';
+import { PlatformPlansModule } from './platform-plans/platform-plans.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { KuatiaModule } from './kuatia/kuatia.module';
 import { ReceiptsModule } from './receipts/receipts.module';
@@ -58,6 +59,7 @@ import { UploadModule } from './upload/upload.module';
     MemberCatalogModule,
     ServicesModule,
     PacksModule,
+    PlatformPlansModule,
     ContractsModule,
     KuatiaModule,
     SessionsModule,
