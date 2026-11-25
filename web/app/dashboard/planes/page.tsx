@@ -9,8 +9,6 @@ import { useAuth } from '@/lib/auth/AuthProvider';
 type PlatformPlan = {
   id: string;
   name: string;
-  price: number;
-  billingPeriod: string;
   active: boolean;
   modules: string[];
 };
@@ -72,6 +70,8 @@ function PlansInner() {
   return (
     <AdminShell title="Planes de la plataforma" subtitle="Asigná módulos a los planes de Faciliter; el plan se crea o edita desde Packs.">
       <p className="muted">Usá claves separadas por comas (por ejemplo: club, ecommerce). Una clave nueva solo habilita funciones cuando la aplicación la implementa.</p>
+      <p className="warn" role="note">Asigná los módulos antes de ofrecer un plan nuevo desde Packs.</p>
+      {/* shortcut: Packs puede vender un plan activo antes de asignar módulos, bloquear checkout antes de lanzar nuevas ofertas. */}
       {error ? <p className="err-msg" role="alert">{error}</p> : null}
       {success ? <p className="ok-msg" role="status">{success}</p> : null}
       {loading ? <p className="muted">Cargando planes…</p> : plans.length === 0 ? <p className="muted">No hay planes de plataforma.</p> : (
