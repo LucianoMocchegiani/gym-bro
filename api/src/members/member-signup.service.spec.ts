@@ -17,15 +17,12 @@ describe('MemberSignupService', () => {
     );
 
     await expect(
-      service.start(
-        'identity-1',
-        {
-          tenantSlug: 'shop',
-          document: '123',
-          packId: 'pack-1',
-          name: 'Buyer',
-        } as never,
-      ),
+      service.start('identity-1', {
+        tenantSlug: 'shop',
+        document: '123',
+        packId: 'pack-1',
+        name: 'Buyer',
+      }),
     ).rejects.toBeInstanceOf(NotFoundException);
     expect(createSignupPreference).not.toHaveBeenCalled();
   });

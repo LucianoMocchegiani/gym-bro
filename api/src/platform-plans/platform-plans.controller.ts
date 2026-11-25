@@ -47,6 +47,8 @@ export class TenantPlatformModulesController {
 
   @Get('platform-modules')
   get(@CurrentTenant() tenantId: string) {
-    return this.plans.getTenantModules(tenantId).then((modules) => ({ modules }));
+    return this.plans
+      .getTenantModules(tenantId)
+      .then((modules) => ({ modules }));
   }
 }

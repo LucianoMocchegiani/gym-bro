@@ -17,9 +17,7 @@ import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { ListQueryDto, ListResult } from '../common/list';
 import { RequirePermission } from '../roles/decorators/require-permission.decorator';
 import { CurrentTenant } from '../tenant/decorators/current-tenant.decorator';
-import {
-  RequirePlatformModule,
-} from '../tenant/decorators/require-platform-module.decorator';
+import { RequirePlatformModule } from '../tenant/decorators/require-platform-module.decorator';
 import { RequireTenantAuth } from '../tenant/decorators/require-tenant-auth.decorator';
 import { TenantSettingsService } from '../tenant-settings/tenant-settings.service';
 import { FailCredentialOfferDto } from './dto/fail-credential-offer.dto';
@@ -201,8 +199,8 @@ export class CredentialOffersController {
   /**
    * Emite o re-emite el offer de un pack que cubre hoy (`members.write`).
    *
-   * @remarks `packId` opcional; sin él, el contrato vigente de `startsAt` más
-   * reciente. No crea contrato ni cobro. Soft-fail Kuatia. Default `force=true`.
+   * @remarks `packId` opcional; sem ele, o contrato vigente de `startsAt` mais
+   * recente. Não cria contrato nem cobro. Soft-fail Kuatia. Default `force=true`.
    */
   @Post('members/:memberId/credential-offers')
   @HttpCode(HttpStatus.CREATED)

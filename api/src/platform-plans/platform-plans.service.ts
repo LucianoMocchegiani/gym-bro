@@ -109,7 +109,8 @@ export class PlatformPlansService {
       orderBy: { startsAt: 'desc' },
       select: { packId: true },
     });
-    const last = live ??
+    const last =
+      live ??
       (await this.prisma.contract.findFirst({
         where: { tenantId, contractType: ContractType.TENANT },
         orderBy: { endsAt: 'desc' },
@@ -136,7 +137,9 @@ export class PlatformPlansService {
       select: { id: true, slug: true },
     });
     if (tenant?.slug !== 'admin') {
-      throw new ForbiddenException('Platform plans can only be managed by admin');
+      throw new ForbiddenException(
+        'Platform plans can only be managed by admin',
+      );
     }
     return tenant;
   }

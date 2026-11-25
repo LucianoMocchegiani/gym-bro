@@ -18,9 +18,7 @@ import { toAuditActor } from '../audit/to-audit-actor';
 import { ListResult } from '../common/list';
 import { RequirePermission } from '../roles/decorators/require-permission.decorator';
 import { CurrentTenant } from '../tenant/decorators/current-tenant.decorator';
-import {
-  RequirePlatformModule,
-} from '../tenant/decorators/require-platform-module.decorator';
+import { RequirePlatformModule } from '../tenant/decorators/require-platform-module.decorator';
 import { RequireTenantAuth } from '../tenant/decorators/require-tenant-auth.decorator';
 import {
   CreateReservationDto,
