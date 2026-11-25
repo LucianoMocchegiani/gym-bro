@@ -35,7 +35,10 @@ export class PlatformPlansService {
     });
     const byPackId = new Map<string, string[]>();
     for (const entry of modules) byPackId.set(entry.packId, entry.modules);
-    return packs.map((pack) => ({ ...pack, modules: byPackId.get(pack.id) ?? [] }));
+    return packs.map((pack) => ({
+      ...pack,
+      modules: byPackId.get(pack.id) ?? [],
+    }));
   }
 
   async updateModules(
@@ -59,7 +62,9 @@ export class PlatformPlansService {
     if (!pack) throw new NotFoundException('Platform plan not found');
 
     return this.prisma.$transaction(async (tx) => {
-      const before = await tx.platformPlanModule.findUnique({ where: { packId } });
+      const before = await tx.platformPlanModule.findUnique({
+        where: { packId },
+      });
       const updated = await tx.platformPlanModule.upsert({
         where: { packId },
         create: { packId, modules },
@@ -104,11 +109,12 @@ export class PlatformPlansService {
       orderBy: { startsAt: 'desc' },
       select: { packId: true },
     });
-    const last = live ?? (await this.prisma.contract.findFirst({
-      where: { tenantId, contractType: ContractType.TENANT },
-      orderBy: { endsAt: 'desc' },
-      select: { packId: true },
-    }));
+    const last = live ??
+      (await this.prisma.contract.findFirst({
+        where: { tenantId, contractType: ContractType.TENANT },
+        orderBy: { endsAt: 'desc' },
+        select: { packId: true },
+      }));
     if (!last) return ['club'];
 
     const pack = await this.prisma.pack.findUnique({
