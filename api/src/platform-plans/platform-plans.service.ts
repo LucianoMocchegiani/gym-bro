@@ -4,7 +4,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { ContractStatus, ContractType, Prisma } from '@prisma/client';
+import { ContractStatus, ContractType } from '@prisma/client';
 import { AuditService } from '../audit/audit.service';
 import { PrismaService } from '../prisma/prisma.service';
 
@@ -33,7 +33,8 @@ export class PlatformPlansService {
     const modules = await this.prisma.platformPlanModule.findMany({
       where: { packId: { in: packs.map(({ id }) => id) } },
     });
-    const byPackId = new Map(modules.map((entry) => [entry.packId, entry.modules]));
+    const byPackId = new Map<string, string[]>();
+    for (const entry of modules) byPackId.set(entry.packId, entry.modules);
     return packs.map((pack) => ({ ...pack, modules: byPackId.get(pack.id) ?? [] }));
   }
 
@@ -57,11 +58,9 @@ export class PlatformPlansService {
     });
     if (!pack) throw new NotFoundException('Platform plan not found');
 
-    const before = await this.prisma.platformPlanModule.findUnique({
-      where: { packId },
-    });
-    const updated = await this.prisma.$transaction(async (tx) => {
-      const result = await tx.platformPlanModule.upsert({
+    return this.prisma.$transaction(async (tx) => {
+      const before = await tx.platformPlanModule.findUnique({ where: { packId } });
+      const updated = await tx.platformPlanModule.upsert({
         where: { packId },
         create: { packId, modules },
         update: { modules },
@@ -73,11 +72,10 @@ export class PlatformPlansService {
         entityType: 'platform_plan',
         entityId: packId,
         before: before ? { modules: before.modules } : null,
-        after: { modules: result.modules },
+        after: { modules: updated.modules },
       });
-      return result;
+      return { packId: updated.packId, modules: updated.modules };
     });
-    return { packId: updated.packId, modules: updated.modules };
   }
 
   async getTenantModules(tenantId: string): Promise<string[]> {
