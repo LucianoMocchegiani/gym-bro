@@ -82,7 +82,8 @@ type ContractPlan = {
  * Pago CASH registra movimiento de caja (RN-PAG-007). Comprobante interno
  * RN-PAG-009. MP confirma vía webhook con {@link confirmFromApprovedPayment}.
  * Vigencias: MONTHLY apila por pack (día siguiente a `endsAt` si renueva a
- * tiempo o usó tolerancia en puerta; si no, día de pago). ONE_TIME puede solapar.
+ * tiempo o usó tolerancia en puerta; si no, día de pago). ONE_TIME no renueva,
+ * puede solapar y concede un mes por defecto (o `creditsExpireAt`).
  */
 @Injectable()
 export class ContractsService {
@@ -342,54 +343,19 @@ export class ContractsService {
     if (pack.components.length === 0) {
       throw new BadRequestException('Pack has no components');
     }
-    const contractType = transactionItem.memberId
-      ? ContractType.MEMBER
-      : ContractType.TENANT;
     const contractTenantId =
       transactionItem.transaction?.billedTenantId ?? tenantId;
-    const plan = await this.resolveContractPlan(
-      contractTenantId,
-      transactionItem.memberId,
-      pack,
-      options?.applyTrial ? { applyTrial: true } : undefined,
-    );
 
     try {
-      const contract = await this.prisma.$transaction(async (tx) => {
-        const created = await this.createContractInTx(tx, {
-          tenantId: contractTenantId,
-          memberId: transactionItem.memberId ?? undefined,
-          packId: pack.id,
-          transactionItemId: transactionItem.id,
-          plan,
-          contractType,
-          isPlatformTrial: Boolean(options?.applyTrial),
-        });
-        if (contractType === ContractType.TENANT) {
-          await this.markPlatformPlanUsageInTx(tx, contractTenantId, {
-            applyTrial: Boolean(options?.applyTrial),
-          });
-        }
-        return created;
-      });
-
-      const detail = this.toDetail(contract);
-      await this.audit.record({
-        tenantId: contractTenantId,
+      return await this.activateApprovedPack({
+        tenantId,
+        contractTenantId,
+        memberId: transactionItem.memberId,
+        transactionItemId: transactionItem.id,
+        pack,
         actor,
-        action: AUDIT_ACTIONS.contractCreate,
-        entityType: 'contract',
-        entityId: contract.id,
-        before: null,
-        after: this.auditSnapshot(detail),
+        options,
       });
-      if (transactionItem.memberId) {
-        await this.credentialIssuer.ensureOfferForContract(
-          tenantId,
-          contract.id,
-        );
-      }
-      return detail;
     } catch (error: unknown) {
       if (
         error instanceof Prisma.PrismaClientKnownRequestError &&
@@ -464,32 +430,51 @@ export class ContractsService {
     if (pack.components.length === 0) {
       throw new BadRequestException('Pack has no components');
     }
-
-    const contractType = transactionItem.memberId
-      ? ContractType.MEMBER
-      : ContractType.TENANT;
     const contractTenantId =
       transactionItem.transaction?.billedTenantId ?? tenantId;
-    const plan = await this.resolveContractPlan(
-      contractTenantId,
-      transactionItem.memberId,
-      pack,
-      options?.applyTrial ? { applyTrial: true } : undefined,
-    );
 
+    return this.activateApprovedPack({
+      tenantId,
+      contractTenantId,
+      memberId: transactionItem.memberId,
+      transactionItemId: transactionItem.id,
+      pack,
+      actor,
+      options,
+    });
+  }
+
+  private async activateApprovedPack(input: {
+    tenantId: string;
+    contractTenantId: string;
+    memberId: string | null;
+    transactionItemId: string;
+    pack: PackForContract;
+    actor: AuditActor;
+    options?: { applyTrial?: boolean };
+  }): Promise<ContractDetail> {
+    const contractType = input.memberId
+      ? ContractType.MEMBER
+      : ContractType.TENANT;
+    const plan = await this.resolveContractPlan(
+      input.contractTenantId,
+      input.memberId,
+      input.pack,
+      input.options?.applyTrial ? { applyTrial: true } : undefined,
+    );
     const contract = await this.prisma.$transaction(async (tx) => {
       const created = await this.createContractInTx(tx, {
-        tenantId: contractTenantId,
-        memberId: transactionItem.memberId ?? undefined,
-        packId: pack.id,
-        transactionItemId: transactionItem.id,
+        tenantId: input.contractTenantId,
+        memberId: input.memberId ?? undefined,
+        packId: input.pack.id,
+        transactionItemId: input.transactionItemId,
         plan,
         contractType,
-        isPlatformTrial: Boolean(options?.applyTrial),
+        isPlatformTrial: Boolean(input.options?.applyTrial),
       });
       if (contractType === ContractType.TENANT) {
-        await this.markPlatformPlanUsageInTx(tx, contractTenantId, {
-          applyTrial: Boolean(options?.applyTrial),
+        await this.markPlatformPlanUsageInTx(tx, input.contractTenantId, {
+          applyTrial: Boolean(input.options?.applyTrial),
         });
       }
       return created;
@@ -497,16 +482,19 @@ export class ContractsService {
 
     const detail = this.toDetail(contract);
     await this.audit.record({
-      tenantId: contractTenantId,
-      actor,
+      tenantId: input.contractTenantId,
+      actor: input.actor,
       action: AUDIT_ACTIONS.contractCreate,
       entityType: 'contract',
       entityId: contract.id,
       before: null,
       after: this.auditSnapshot(detail),
     });
-    if (transactionItem.memberId) {
-      await this.credentialIssuer.ensureOfferForContract(tenantId, contract.id);
+    if (input.memberId) {
+      await this.credentialIssuer.ensureOfferForContract(
+        input.tenantId,
+        contract.id,
+      );
     }
     return detail;
   }
@@ -595,8 +583,8 @@ export class ContractsService {
    * a `endsAt` si aún vigente o si hubo ingreso ALLOWED tras el vencimiento
    * (usó tolerancia); si el hueco no tuvo ingresos → `startsAt = now`.
    * Con `startsAt` manual → +1 mes y 400 si solapa el mismo pack.
-   * ONE_TIME: puede solapar; defaults +1 mes / `creditsExpireAt`; override
-   * `startsAt` y/o `endsAt`. Créditos heredan `endsAt`.
+   * ONE_TIME: no renueva; puede solapar; por defecto dura un mes o hasta
+   * `creditsExpireAt` si es posterior al inicio. Créditos heredan `endsAt`.
    * @throws {BadRequestException} Otro pack MONTHLY vigente, solape MONTHLY,
    *   `endsAt` en MONTHLY, o rango inválido.
    */
