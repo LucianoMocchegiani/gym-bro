@@ -20,6 +20,8 @@ Permitir que cada organización gestione productos y existencias desde Faciliter
 - Incluir una imagen principal opcional por producto. Reutilizar la funcionalidad existente de carga a Cloudflare R2 y guardar la referencia de la imagen en el producto; confirmar los límites y permisos existentes al implementar.
 - Registrar movimientos de stock (por ejemplo, ingreso, ajuste y salida por venta) para conservar trazabilidad.
 - Alcance inicial propuesto: una existencia por organización, sin variantes ni stock separado por sucursal.
+- Permitir el borrado físico solo si el producto nunca se usó en una venta. Si ya tiene ventas asociadas, impedir el borrado y permitir darlo de baja/archivarlo para preservar el historial.
+- Definir antes de implementar cómo se manejará el stock disponible al dar de baja un producto.
 
 ### 2. Venta de productos en Caja
 
