@@ -123,6 +123,8 @@ function getServerHostSlug(): null {
 /**
  * Shell Admin: sidebar de navegación + topbar (tema / perfil).
  * El asistente es burbuja fija (no va en el topbar).
+ *
+ * @remarks Filtra links según `session.permissionCodes` (GET /me/permissions).
  */
 export function AdminShell({
   title,
@@ -135,7 +137,10 @@ export function AdminShell({
   const pathname = usePathname();
   const [navOpen, setNavOpen] = useState(false);
   const [brandIconAvailable, setBrandIconAvailable] = useState(true);
-  const [platformModules, setPlatformModules] = useState<string[] | null>(null);
+  const [platformModuleState, setPlatformModuleState] = useState<{
+    tenantId: string;
+    modules: string[];
+  } | null>(null);
   const hostSlug = useSyncExternalStore(
     subscribeHost,
     readHostSlug,
@@ -147,14 +152,22 @@ export function AdminShell({
   const platformAccess = session?.platformAccess ?? 'ok';
   const limited = platformAccess === 'limited';
   const router = useRouter();
+  const platformModules =
+    platformModuleState?.tenantId === session?.tenantId
+      ? platformModuleState.modules
+      : null;
 
   useEffect(() => {
     let current = true;
-    setPlatformModules(null);
-    if (!session?.tenantId) return () => { current = false; };
+    const tenantId = session?.tenantId;
+    if (!tenantId) return () => { current = false; };
     apiRequest<{ modules: string[] }>('/tenant/platform-modules')
-      .then(({ modules }) => { if (current) setPlatformModules(modules); })
-      .catch(() => { if (current) setPlatformModules([]); });
+      .then(({ modules }) => {
+        if (current) setPlatformModuleState({ tenantId, modules });
+      })
+      .catch(() => {
+        if (current) setPlatformModuleState({ tenantId, modules: [] });
+      });
     return () => { current = false; };
   }, [session?.tenantId, hostSlug]);
 

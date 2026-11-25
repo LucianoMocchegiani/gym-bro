@@ -20,6 +20,13 @@ test('Club plans retain Club navigation', () => {
   );
 });
 
+test('Club navigation stays hidden until the plan modules are loaded', () => {
+  assert.equal(
+    canAccessNavHref('/dashboard/servicios', ['catalog.write'], 'ok', null),
+    false,
+  );
+});
+
 test('only staff with platform read permission see the plan editor link', () => {
   assert.equal(canAccessNavHref('/dashboard/planes', [], 'ok', ['club']), false);
   assert.equal(
