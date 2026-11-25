@@ -28,6 +28,11 @@ import {
 import { ReservationsService } from './reservations.service';
 import { ReservationDetail } from './reservations.types';
 
+/**
+ * Reservas del gym (staff) y propias (afiliado).
+ *
+ * @remarks CU-RES-001 / CU-RES-002 / CU-RES-003. Staff: `reservations.write`.
+ */
 @Controller()
 @RequireTenantAuth()
 @RequirePlatformModule('club')
@@ -36,40 +41,95 @@ export class ReservationsController {
 
   @Post('me/reservations')
   @HttpCode(HttpStatus.CREATED)
-  createMine(@CurrentTenant() tenantId: string, @CurrentUser() user: AuthUser, @Body() dto: CreateReservationDto): Promise<ReservationDetail> {
-    if (user.profileType !== 'MEMBER') throw new ForbiddenException('Member profile required');
-    return this.reservationsService.createForMember(tenantId, user.userId, dto, this.memberActor(user));
+  createMine(
+    @CurrentTenant() tenantId: string,
+    @CurrentUser() user: AuthUser,
+    @Body() dto: CreateReservationDto,
+  ): Promise<ReservationDetail> {
+    if (user.profileType !== 'MEMBER') {
+      throw new ForbiddenException('Member profile required');
+    }
+    return this.reservationsService.createForMember(
+      tenantId,
+      user.userId,
+      dto,
+      this.memberActor(user),
+    );
   }
 
   @Get('me/reservations')
-  listMine(@CurrentTenant() tenantId: string, @CurrentUser() user: AuthUser, @Query() query: ListReservationsQueryDto): Promise<ListResult<ReservationDetail>> {
-    if (user.profileType !== 'MEMBER') throw new ForbiddenException('Member profile required');
+  listMine(
+    @CurrentTenant() tenantId: string,
+    @CurrentUser() user: AuthUser,
+    @Query() query: ListReservationsQueryDto,
+  ): Promise<ListResult<ReservationDetail>> {
+    if (user.profileType !== 'MEMBER') {
+      throw new ForbiddenException('Member profile required');
+    }
     return this.reservationsService.listByMember(tenantId, user.userId, query);
   }
 
   @Patch('me/reservations/:reservationId/status')
-  cancelMine(@CurrentTenant() tenantId: string, @CurrentUser() user: AuthUser, @Param('reservationId', ParseUUIDPipe) reservationId: string, @Body() dto: UpdateReservationStatusDto): Promise<ReservationDetail> {
-    if (user.profileType !== 'MEMBER') throw new ForbiddenException('Member profile required');
-    return this.reservationsService.cancel(tenantId, reservationId, dto, this.memberActor(user), user.userId);
+  cancelMine(
+    @CurrentTenant() tenantId: string,
+    @CurrentUser() user: AuthUser,
+    @Param('reservationId', ParseUUIDPipe) reservationId: string,
+    @Body() dto: UpdateReservationStatusDto,
+  ): Promise<ReservationDetail> {
+    if (user.profileType !== 'MEMBER') {
+      throw new ForbiddenException('Member profile required');
+    }
+    return this.reservationsService.cancel(
+      tenantId,
+      reservationId,
+      dto,
+      this.memberActor(user),
+      user.userId,
+    );
   }
 
   @Post('members/:memberId/reservations')
   @HttpCode(HttpStatus.CREATED)
   @RequirePermission('reservations.write')
-  createForMember(@CurrentTenant() tenantId: string, @CurrentUser() user: AuthUser, @Param('memberId', ParseUUIDPipe) memberId: string, @Body() dto: CreateReservationDto): Promise<ReservationDetail> {
-    return this.reservationsService.createForMember(tenantId, memberId, dto, toAuditActor(user));
+  createForMember(
+    @CurrentTenant() tenantId: string,
+    @CurrentUser() user: AuthUser,
+    @Param('memberId', ParseUUIDPipe) memberId: string,
+    @Body() dto: CreateReservationDto,
+  ): Promise<ReservationDetail> {
+    return this.reservationsService.createForMember(
+      tenantId,
+      memberId,
+      dto,
+      toAuditActor(user),
+    );
   }
 
+  /** Roster de reservas de una sesión. */
   @Get('sessions/:sessionId/reservations')
   @RequirePermission('reservations.write')
-  listBySession(@CurrentTenant() tenantId: string, @Param('sessionId', ParseUUIDPipe) sessionId: string, @Query() query: ListReservationsQueryDto): Promise<ListResult<ReservationDetail>> {
+  listBySession(
+    @CurrentTenant() tenantId: string,
+    @Param('sessionId', ParseUUIDPipe) sessionId: string,
+    @Query() query: ListReservationsQueryDto,
+  ): Promise<ListResult<ReservationDetail>> {
     return this.reservationsService.listBySession(tenantId, sessionId, query);
   }
 
   @Patch('reservations/:reservationId/status')
   @RequirePermission('reservations.write')
-  cancel(@CurrentTenant() tenantId: string, @CurrentUser() user: AuthUser, @Param('reservationId', ParseUUIDPipe) reservationId: string, @Body() dto: UpdateReservationStatusDto): Promise<ReservationDetail> {
-    return this.reservationsService.cancel(tenantId, reservationId, dto, toAuditActor(user));
+  cancel(
+    @CurrentTenant() tenantId: string,
+    @CurrentUser() user: AuthUser,
+    @Param('reservationId', ParseUUIDPipe) reservationId: string,
+    @Body() dto: UpdateReservationStatusDto,
+  ): Promise<ReservationDetail> {
+    return this.reservationsService.cancel(
+      tenantId,
+      reservationId,
+      dto,
+      toAuditActor(user),
+    );
   }
 
   private memberActor(user: AuthUser): AuditActor {

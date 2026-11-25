@@ -28,7 +28,11 @@ import {
 import { SessionsService } from './sessions.service';
 import { SessionDetail } from './sessions.types';
 
-/** Sesiones puntuales del gym (staff). */
+/**
+ * Sesiones puntuales del gym (staff).
+ *
+ * @remarks CU-SER-003 / CU-SER-005. Requiere `sessions.write` (lectura y mutación en MVP).
+ */
 @Controller('sessions')
 @RequireTenantAuth()
 @RequirePlatformModule('club')
@@ -37,38 +41,72 @@ export class SessionsController {
 
   @Get()
   @RequirePermission('sessions.write')
-  list(@CurrentTenant() tenantId: string, @Query() query: ListSessionsQueryDto): Promise<ListResult<SessionDetail>> {
+  list(
+    @CurrentTenant() tenantId: string,
+    @Query() query: ListSessionsQueryDto,
+  ): Promise<ListResult<SessionDetail>> {
     return this.sessionsService.list(tenantId, query);
   }
 
   @Get(':sessionId')
   @RequirePermission('sessions.write')
-  findOne(@CurrentTenant() tenantId: string, @Param('sessionId', ParseUUIDPipe) sessionId: string): Promise<SessionDetail> {
+  findOne(
+    @CurrentTenant() tenantId: string,
+    @Param('sessionId', ParseUUIDPipe) sessionId: string,
+  ): Promise<SessionDetail> {
     return this.sessionsService.findOne(tenantId, sessionId);
   }
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
   @RequirePermission('sessions.write')
-  create(@CurrentTenant() tenantId: string, @CurrentUser() user: AuthUser, @Body() dto: CreateSessionDto): Promise<SessionDetail> {
+  create(
+    @CurrentTenant() tenantId: string,
+    @CurrentUser() user: AuthUser,
+    @Body() dto: CreateSessionDto,
+  ): Promise<SessionDetail> {
     return this.sessionsService.create(tenantId, dto, toAuditActor(user));
   }
 
   @Patch(':sessionId/capacity')
   @RequirePermission('sessions.write')
-  expandCapacity(@CurrentTenant() tenantId: string, @CurrentUser() user: AuthUser, @Param('sessionId', ParseUUIDPipe) sessionId: string, @Body() dto: ExpandSessionCapacityDto): Promise<SessionDetail> {
-    return this.sessionsService.expandCapacity(tenantId, sessionId, dto, toAuditActor(user));
+  expandCapacity(
+    @CurrentTenant() tenantId: string,
+    @CurrentUser() user: AuthUser,
+    @Param('sessionId', ParseUUIDPipe) sessionId: string,
+    @Body() dto: ExpandSessionCapacityDto,
+  ): Promise<SessionDetail> {
+    return this.sessionsService.expandCapacity(
+      tenantId,
+      sessionId,
+      dto,
+      toAuditActor(user),
+    );
   }
 
   @Patch(':sessionId')
   @RequirePermission('sessions.write')
-  update(@CurrentTenant() tenantId: string, @CurrentUser() user: AuthUser, @Param('sessionId', ParseUUIDPipe) sessionId: string, @Body() dto: UpdateSessionDto): Promise<SessionDetail> {
-    return this.sessionsService.update(tenantId, sessionId, dto, toAuditActor(user));
+  update(
+    @CurrentTenant() tenantId: string,
+    @CurrentUser() user: AuthUser,
+    @Param('sessionId', ParseUUIDPipe) sessionId: string,
+    @Body() dto: UpdateSessionDto,
+  ): Promise<SessionDetail> {
+    return this.sessionsService.update(
+      tenantId,
+      sessionId,
+      dto,
+      toAuditActor(user),
+    );
   }
 
   @Delete(':sessionId')
   @RequirePermission('sessions.write')
-  remove(@CurrentTenant() tenantId: string, @CurrentUser() user: AuthUser, @Param('sessionId', ParseUUIDPipe) sessionId: string): ReturnType<SessionsService['remove']> {
+  remove(
+    @CurrentTenant() tenantId: string,
+    @CurrentUser() user: AuthUser,
+    @Param('sessionId', ParseUUIDPipe) sessionId: string,
+  ): ReturnType<SessionsService['remove']> {
     return this.sessionsService.remove(tenantId, sessionId, toAuditActor(user));
   }
 }

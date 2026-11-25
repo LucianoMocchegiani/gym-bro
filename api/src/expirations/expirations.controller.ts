@@ -7,6 +7,11 @@ import { ExpirationsQueryDto } from './dto/expirations-query.dto';
 import { ExpirationsService } from './expirations.service';
 import { ExpirationsList } from './expirations.types';
 
+/**
+ * Cola de vencimientos MONTHLY para recepción.
+ *
+ * @remarks Requiere `members.read`. No es `reports.read`.
+ */
 @Controller('expirations')
 @RequireTenantAuth()
 @RequirePlatformModule('club')
@@ -15,7 +20,10 @@ export class ExpirationsController {
 
   @Get()
   @RequirePermission('members.read')
-  list(@CurrentTenant() tenantId: string, @Query() query: ExpirationsQueryDto): Promise<ExpirationsList> {
+  list(
+    @CurrentTenant() tenantId: string,
+    @Query() query: ExpirationsQueryDto,
+  ): Promise<ExpirationsList> {
     return this.expirations.list(tenantId, query);
   }
 }

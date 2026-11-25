@@ -40,32 +40,56 @@ export class ServicesController {
 
   @Get()
   @RequirePermission('catalog.write')
-  list(@CurrentTenant() tenantId: string, @Query() query: ListServicesQueryDto): Promise<ListResult<ServiceDetail>> {
+  list(
+    @CurrentTenant() tenantId: string,
+    @Query() query: ListServicesQueryDto,
+  ): Promise<ListResult<ServiceDetail>> {
     return this.servicesService.list(tenantId, query);
   }
 
   @Get(':serviceId')
   @RequirePermission('catalog.write')
-  findOne(@CurrentTenant() tenantId: string, @Param('serviceId', ParseUUIDPipe) serviceId: string): Promise<ServiceDetail> {
+  findOne(
+    @CurrentTenant() tenantId: string,
+    @Param('serviceId', ParseUUIDPipe) serviceId: string,
+  ): Promise<ServiceDetail> {
     return this.servicesService.findOne(tenantId, serviceId);
   }
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
   @RequirePermission('catalog.write')
-  create(@CurrentTenant() tenantId: string, @CurrentUser() user: AuthUser, @Body() dto: CreateServiceDto): Promise<ServiceDetail> {
+  create(
+    @CurrentTenant() tenantId: string,
+    @CurrentUser() user: AuthUser,
+    @Body() dto: CreateServiceDto,
+  ): Promise<ServiceDetail> {
     return this.servicesService.create(tenantId, dto, toAuditActor(user));
   }
 
   @Patch(':serviceId')
   @RequirePermission('catalog.write')
-  update(@CurrentTenant() tenantId: string, @CurrentUser() user: AuthUser, @Param('serviceId', ParseUUIDPipe) serviceId: string, @Body() dto: UpdateServiceDto): Promise<ServiceDetail> {
-    return this.servicesService.update(tenantId, serviceId, dto, toAuditActor(user));
+  update(
+    @CurrentTenant() tenantId: string,
+    @CurrentUser() user: AuthUser,
+    @Param('serviceId', ParseUUIDPipe) serviceId: string,
+    @Body() dto: UpdateServiceDto,
+  ): Promise<ServiceDetail> {
+    return this.servicesService.update(
+      tenantId,
+      serviceId,
+      dto,
+      toAuditActor(user),
+    );
   }
 
   @Delete(':serviceId')
   @RequirePermission('catalog.write')
-  remove(@CurrentTenant() tenantId: string, @CurrentUser() user: AuthUser, @Param('serviceId', ParseUUIDPipe) serviceId: string): ReturnType<ServicesService['remove']> {
+  remove(
+    @CurrentTenant() tenantId: string,
+    @CurrentUser() user: AuthUser,
+    @Param('serviceId', ParseUUIDPipe) serviceId: string,
+  ): ReturnType<ServicesService['remove']> {
     return this.servicesService.remove(tenantId, serviceId, toAuditActor(user));
   }
 }
