@@ -15,14 +15,15 @@
     "test:agent-runtime-approvals": "node --experimental-strip-types --test lib/api/agent-runtime-approvals.test.mjs",
     "test:public-chat-token": "node --experimental-strip-types --test lib/api/public-chat-token.test.mjs",
     "test:kuatia-wallet-link": "node --experimental-strip-types --test lib/kuatia-wallet.test.mjs",
-    "test:docs-guide": "node --experimental-strip-types --test lib/docs/guide.test.mjs"
+    "test:docs-guide": "node --experimental-strip-types --test lib/docs/guide.test.mjs",
+    "test:nav-permissions": "node --experimental-strip-types --test lib/nav-permissions.test.mjs"
   },
   "dependencies": {
     "fflate": "^0.8.3",
     "next": "^16.4.3",
     "nextjs-toploader": "^3.9.17",
     "papaparse": "^5.7.0",
-    "qrcode": "^1.5.4",
+    "qrcode": "^1.5.2",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
     "read-excel-file": "^9.3.10",
@@ -38,7 +39,7 @@
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
     "eslint": "^9",
-    "eslint-config-next": "^16.4.3",
+    "eslint-config-next": "^16",
     "typescript": "^5.9.3"
   }
 }
