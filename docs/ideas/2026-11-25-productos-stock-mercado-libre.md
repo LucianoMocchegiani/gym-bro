@@ -36,7 +36,7 @@ Al contratar solo E-commerce, el recorrido esperado es administrar el catálogo 
 4. La interfaz usa **Clientes** en lugar de **Afiliados**. La venta de productos no debe crear contratos ni habilitar funciones de Club.
 5. El control de stock forma parte del alcance básico; el flujo para ingresar y ajustar existencias sigue pendiente de definición.
 
-En este plan quedan fuera los módulos de accesos y credenciales (incluidos ZKTeco y Kuatia en Staff), Afiliados, Configuración de Club, Services/Servicios, Sesiones, Mi credencial, Puerta, Vencimientos y débitos automáticos.
+En este plan quedan fuera los módulos de accesos y credenciales (incluidos ZKTeco y Kuatia en Staff), Afiliados, Configuración de Club, Servicios, Sesiones, Mi credencial, Puerta, Vencimientos y débitos automáticos.
 
 ### Faciliter Club + E-commerce
 
@@ -61,7 +61,7 @@ Queda por decidir cómo se nombra a las personas en esta experiencia combinada: 
 - Conservar en cada línea de venta una copia del nombre y del precio del producto al momento de la operación, para que el historial no cambie si luego se edita o archiva el producto.
 - Descontar existencias y registrar venta/caja de forma consistente, evitando ventas por encima del stock disponible.
 - Empezar con los medios de pago sencillos que ya soporte Caja; dejar Mercado Pago para la etapa de carrito mixto.
-- Confirmar antes de implementar si se permitirán ventas sin asociar un afiliado y cómo se tratarán devoluciones.
+- Confirmar antes de implementar si se permitirán ventas sin asociar un cliente y cómo se tratarán devoluciones.
 
 ### 3. Carrito mixto y cobros existentes
 
@@ -98,7 +98,7 @@ Queda por decidir cómo se nombra a las personas en esta experiencia combinada: 
 
 ## Decisiones pendientes
 
-1. ¿Se puede vender sin afiliado asociado?
+1. ¿Se puede vender sin cliente asociado?
 2. ¿Qué política de devolución y reposición de stock se necesita?
 3. ¿Se requiere SKU/código de barras desde el primer corte?
 4. ¿Qué categorías de productos deben soportarse primero en Mercado Libre?
