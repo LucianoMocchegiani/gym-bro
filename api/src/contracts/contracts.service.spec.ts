@@ -3,7 +3,6 @@ import { AuditService } from '../audit/audit.service';
 import { AuditActor } from '../audit/audit.types';
 import { CredentialIssuerPort } from '../access-providers/credential-issuer.port';
 import { PrismaService } from '../prisma/prisma.service';
-import { ContractDetail } from './contracts.types';
 import { ContractsService } from './contracts.service';
 
 describe('ContractsService pack activation', () => {
@@ -39,7 +38,7 @@ describe('ContractsService pack activation', () => {
       {} as AuditService,
       {} as CredentialIssuerPort,
     );
-    const activate = jest.fn().mockResolvedValue({} as ContractDetail);
+    const activate = jest.fn().mockResolvedValue({});
     Object.defineProperty(service, 'activateApprovedPack', { value: activate });
     const actor: AuditActor = { profileType: 'MEMBER', userId: 'member-1' };
 
@@ -56,25 +55,30 @@ describe('ContractsService pack activation', () => {
       {} as CredentialIssuerPort,
     );
     const startsAt = new Date('2026-01-15T12:00:00.000Z');
-    const plan = await service['resolveContractPlan']('tenant-1', 'member-1', {
-      id: 'pack-1',
-      name: 'Single purchase',
-      price: 100,
-      billingPeriod: BillingPeriod.ONE_TIME,
-      creditsExpireAt: null,
-      components: [
-        {
-          serviceId: 'service-1',
-          creditAmount: null,
-          service: {
-            id: 'service-1',
-            name: 'Access',
-            type: ServiceType.ACCESO_LIBRE,
-            active: true,
+    const plan = await service['resolveContractPlan'](
+      'tenant-1',
+      'member-1',
+      {
+        id: 'pack-1',
+        name: 'Single purchase',
+        price: 100,
+        billingPeriod: BillingPeriod.ONE_TIME,
+        creditsExpireAt: null,
+        components: [
+          {
+            serviceId: 'service-1',
+            creditAmount: null,
+            service: {
+              id: 'service-1',
+              name: 'Access',
+              type: ServiceType.ACCESO_LIBRE,
+              active: true,
+            },
           },
-        },
-      ],
-    }, { startsAt });
+        ],
+      },
+      { startsAt },
+    );
     const expectedEnd = new Date(startsAt);
     expectedEnd.setMonth(expectedEnd.getMonth() + 1);
 
