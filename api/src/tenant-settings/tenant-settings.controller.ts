@@ -4,6 +4,7 @@ import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { toAuditActor } from '../audit/to-audit-actor';
 import { RequirePermission } from '../roles/decorators/require-permission.decorator';
 import { CurrentTenant } from '../tenant/decorators/current-tenant.decorator';
+import { RequirePlatformModule } from '../tenant/decorators/require-platform-module.decorator';
 import { RequireTenantAuth } from '../tenant/decorators/require-tenant-auth.decorator';
 import { UpdateTenantSettingsDto } from './dto/tenant-settings.dto';
 import { TenantSettingsService } from './tenant-settings.service';
@@ -16,6 +17,7 @@ import { TenantSettingsDetail } from './tenant-settings.types';
  */
 @Controller('tenant-settings')
 @RequireTenantAuth()
+@RequirePlatformModule('club')
 export class TenantSettingsController {
   constructor(private readonly tenantSettings: TenantSettingsService) {}
 
