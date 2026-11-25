@@ -1,3 +1,4 @@
+import { ForbiddenException } from '@nestjs/common';
 import { PlatformPlansService } from './platform-plans.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
@@ -39,5 +40,14 @@ describe('PlatformPlansService', () => {
     prisma.platformPlanModule.findUnique.mockResolvedValue(null);
 
     await expect(service.getTenantModules('gym-1')).resolves.toEqual([]);
+  });
+
+  it('only permits the admin tenant to modify platform plan modules', async () => {
+    prisma.tenant.findUnique.mockResolvedValue({ id: 'gym-1', slug: 'gym' });
+
+    await expect(service.updateModules('gym-1', 'pack-1', ['ecommerce'], {
+      profileType: 'STAFF',
+      userId: 'staff-1',
+    })).rejects.toBeInstanceOf(ForbiddenException);
   });
 });
