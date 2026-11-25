@@ -24,6 +24,7 @@ Permitir que cada organización gestione productos y existencias desde Faciliter
 ### 2. Venta de productos en Caja
 
 - Buscar y agregar productos a Caja y completar ventas de productos sin crear contratos de servicios.
+- Conservar en cada línea de venta una copia del nombre y del precio del producto al momento de la operación, para que el historial no cambie si luego se edita o archiva el producto.
 - Descontar existencias y registrar venta/caja de forma consistente, evitando ventas por encima del stock disponible.
 - Empezar con los medios de pago sencillos que ya soporte Caja; dejar Mercado Pago para la etapa de carrito mixto.
 - Confirmar antes de implementar si se permitirán ventas sin asociar un afiliado y cómo se tratarán devoluciones.
