@@ -52,6 +52,7 @@ Ejemplos: `2026-07-13-stores-mp-vs-ml.md`, `2026-08-01-waitlist-ux.md`
 
 | Archivo | Tema | Estado |
 |---------|------|--------|
+| [2026-11-25-productos-stock-mercado-libre.md](./2026-11-25-productos-stock-mercado-libre.md) | Productos, stock, Caja y Mercado Libre por etapas | revisada |
 | [2026-09-08-tipos-molinetes.md](./2026-09-08-tipos-molinetes.md) | Acceso: cómo se abre; relé / DNI / huella | revisada |
 | [2026-07-13-stores-mp-vs-ml.md](./2026-07-13-stores-mp-vs-ml.md) | Tienda: checkout propio (MP) vs ML/marketplaces | revisada |
 
