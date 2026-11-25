@@ -21,5 +21,5 @@ export function usePlatformModules(tenantId: string | null | undefined) {
     return () => { current = false; };
   }, [tenantId]);
 
-  return state?.tenantId === tenantId ? state.modules : null;
+  return state && state.tenantId === tenantId ? state.modules : null;
 }
