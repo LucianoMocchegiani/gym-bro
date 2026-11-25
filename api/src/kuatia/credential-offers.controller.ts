@@ -17,6 +17,7 @@ import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { ListQueryDto, ListResult } from '../common/list';
 import { RequirePermission } from '../roles/decorators/require-permission.decorator';
 import { CurrentTenant } from '../tenant/decorators/current-tenant.decorator';
+import { RequirePlatformModule } from '../tenant/decorators/require-platform-module.decorator';
 import { RequireTenantAuth } from '../tenant/decorators/require-tenant-auth.decorator';
 import { TenantSettingsService } from '../tenant-settings/tenant-settings.service';
 import { FailCredentialOfferDto } from './dto/fail-credential-offer.dto';
@@ -40,6 +41,7 @@ import {
  */
 @Controller()
 @RequireTenantAuth()
+@RequirePlatformModule('club')
 export class CredentialOffersController {
   constructor(
     private readonly offers: KuatiaOfferService,
@@ -47,9 +49,6 @@ export class CredentialOffersController {
     private readonly tenantSettings: TenantSettingsService,
   ) {}
 
-  /**
-   * Offers del afiliado autenticado (bandeja).
-   */
   @Get('me/credential-offers')
   listMine(
     @CurrentTenant() tenantId: string,
@@ -62,7 +61,6 @@ export class CredentialOffersController {
     return this.offers.listForMember(tenantId, user.userId, query);
   }
 
-  /** Emite la credencial del contrato vigente del afiliado autenticado. */
   @Post('me/credential-offers')
   @HttpCode(HttpStatus.CREATED)
   async issueMine(
@@ -76,9 +74,6 @@ export class CredentialOffersController {
     return this.offers.ensureOfferForCurrentContract(tenantId, user.userId);
   }
 
-  /**
-   * Confirma aceptación en wallet (marca `ACCEPTED`; sale de la bandeja PENDING).
-   */
   @Post('me/credential-offers/:offerId/accept')
   acceptMine(
     @CurrentTenant() tenantId: string,
@@ -91,9 +86,6 @@ export class CredentialOffersController {
     return this.offers.markAcceptedByMember(tenantId, user.userId, offerId);
   }
 
-  /**
-   * Marca offer `FAILED` tras OID4VCI inválido/vencido en wallet.
-   */
   @Post('me/credential-offers/:offerId/fail')
   failMine(
     @CurrentTenant() tenantId: string,
@@ -104,17 +96,9 @@ export class CredentialOffersController {
     if (user.profileType !== 'MEMBER') {
       throw new ForbiddenException('Member profile required');
     }
-    return this.offers.markFailedByMember(
-      tenantId,
-      user.userId,
-      offerId,
-      body?.reason,
-    );
+    return this.offers.markFailedByMember(tenantId, user.userId, offerId, body?.reason);
   }
 
-  /**
-   * Offers de acceso del staff autenticado (bandeja; no es la de packs).
-   */
   @Get('me/staff-credential-offers')
   listMyStaffOffers(
     @CurrentTenant() tenantId: string,
@@ -127,7 +111,6 @@ export class CredentialOffersController {
     return this.staffOffers.listForStaff(tenantId, user.userId, query);
   }
 
-  /** Emite la credencial de acceso del staff autenticado. */
   @Post('me/staff-credential-offers')
   @HttpCode(HttpStatus.CREATED)
   async issueMyStaffOffer(
@@ -138,14 +121,9 @@ export class CredentialOffersController {
       throw new ForbiddenException('Staff profile required');
     }
     await this.assertEmitsInKuatia(tenantId);
-    return this.staffOffers.ensureOfferForStaff(tenantId, user.userId, {
-      force: true,
-    });
+    return this.staffOffers.ensureOfferForStaff(tenantId, user.userId, { force: true });
   }
 
-  /**
-   * Confirma aceptación en wallet de la credencial de acceso staff.
-   */
   @Post('me/staff-credential-offers/:offerId/accept')
   acceptMyStaffOffer(
     @CurrentTenant() tenantId: string,
@@ -158,9 +136,6 @@ export class CredentialOffersController {
     return this.staffOffers.markAcceptedByStaff(tenantId, user.userId, offerId);
   }
 
-  /**
-   * Marca offer staff `FAILED` tras OID4VCI inválido/vencido en wallet.
-   */
   @Post('me/staff-credential-offers/:offerId/fail')
   failMyStaffOffer(
     @CurrentTenant() tenantId: string,
@@ -171,17 +146,9 @@ export class CredentialOffersController {
     if (user.profileType !== 'STAFF') {
       throw new ForbiddenException('Staff profile required');
     }
-    return this.staffOffers.markFailedByStaff(
-      tenantId,
-      user.userId,
-      offerId,
-      body?.reason,
-    );
+    return this.staffOffers.markFailedByStaff(tenantId, user.userId, offerId, body?.reason);
   }
 
-  /**
-   * Offers de un afiliado (staff; incluye `lastError`).
-   */
   @Get('members/:memberId/credential-offers')
   @RequirePermission('members.read')
   listForMember(
@@ -189,17 +156,9 @@ export class CredentialOffersController {
     @Param('memberId', ParseUUIDPipe) memberId: string,
     @Query() query: ListQueryDto,
   ): Promise<ListResult<CredentialOfferListItem>> {
-    return this.offers.listForMember(tenantId, memberId, query, {
-      includeLastError: true,
-    });
+    return this.offers.listForMember(tenantId, memberId, query, { includeLastError: true });
   }
 
-  /**
-   * Emite o re-emite el offer de un pack que cubre hoy (`members.write`).
-   *
-   * @remarks `packId` opcional; sin él, el contrato vigente de `startsAt` más
-   * reciente. No crea contrato ni cobro. Soft-fail Kuatia. Default `force=true`.
-   */
   @Post('members/:memberId/credential-offers')
   @HttpCode(HttpStatus.CREATED)
   @RequirePermission('members.write')
@@ -215,9 +174,6 @@ export class CredentialOffersController {
     });
   }
 
-  /**
-   * Offers de credencial de acceso de un staff (`staff.read`).
-   */
   @Get('staff/:staffId/credential-offers')
   @RequirePermission('staff.read')
   listForStaffUser(
@@ -228,9 +184,6 @@ export class CredentialOffersController {
     return this.staffOffers.listForStaff(tenantId, staffId, query);
   }
 
-  /**
-   * Emite o re-emite offer de acceso staff (`staff.write`). Soft-fail Kuatia.
-   */
   @Post('staff/:staffId/credential-offers')
   @HttpCode(HttpStatus.CREATED)
   @RequirePermission('staff.write')
@@ -240,22 +193,13 @@ export class CredentialOffersController {
     @Body() body: IssueStaffCredentialOfferDto,
   ): Promise<StaffCredentialOfferListItem> {
     await this.assertEmitsInKuatia(tenantId);
-    return this.staffOffers.ensureOfferForStaff(tenantId, staffId, {
-      force: body?.force ?? true,
-    });
+    return this.staffOffers.ensureOfferForStaff(tenantId, staffId, { force: body?.force ?? true });
   }
 
-  /**
-   * Un tenant con ZKTeco no emite credenciales en Kuatia (RN-ACC-010).
-   *
-   * @throws {ConflictException} Si el sistema de puerta del tenant no es Kuatia.
-   */
   private async assertEmitsInKuatia(tenantId: string): Promise<void> {
     const provider = await this.tenantSettings.getAccessProvider(tenantId);
     if (provider !== AccessProvider.KUATIA) {
-      throw new ConflictException(
-        'Este tenant usa acceso ZKTeco: no se emiten credenciales en Kuatia.',
-      );
+      throw new ConflictException('Este tenant usa acceso ZKTeco: no se emiten credenciales en Kuatia.');
     }
   }
 }
