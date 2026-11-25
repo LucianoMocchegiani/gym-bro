@@ -6,12 +6,24 @@ import { PlatformModuleGuard } from './guards/platform-module.guard';
 import { TenantGuard } from './guards/tenant.guard';
 
 /**
- * Aislamiento multi-tenant y autorización por plan Faciliter.
+ * Aislamiento multi-tenant a nivel request (RN-TEN-001).
+ *
+ * @remarks Exporta {@link TenantGuard} y el recorte de plan Faciliter.
  */
 @Global()
 @Module({
   imports: [PlatformPlansModule],
-  providers: [TenantGuard, PlatformAccessService, PlatformAccessGuard, PlatformModuleGuard],
-  exports: [TenantGuard, PlatformAccessService, PlatformAccessGuard, PlatformModuleGuard],
+  providers: [
+    TenantGuard,
+    PlatformAccessService,
+    PlatformAccessGuard,
+    PlatformModuleGuard,
+  ],
+  exports: [
+    TenantGuard,
+    PlatformAccessService,
+    PlatformAccessGuard,
+    PlatformModuleGuard,
+  ],
 })
 export class TenantModule {}
