@@ -1,4 +1,11 @@
-import { ArrayMaxSize, ArrayMinSize, ArrayUnique, IsArray, IsString, Matches } from 'class-validator';
+import {
+  ArrayMaxSize,
+  ArrayMinSize,
+  ArrayUnique,
+  IsArray,
+  IsString,
+  Matches,
+} from 'class-validator';
 
 export class UpdatePlatformPlanModulesDto {
   @IsArray()

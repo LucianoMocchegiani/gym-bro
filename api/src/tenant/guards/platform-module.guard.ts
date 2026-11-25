@@ -1,4 +1,9 @@
-import { CanActivate, ExecutionContext, ForbiddenException, Injectable } from '@nestjs/common';
+import {
+  CanActivate,
+  ExecutionContext,
+  ForbiddenException,
+  Injectable,
+} from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import type { Request } from 'express';
 import type { AuthUser } from '../../auth/auth.types';
@@ -15,15 +20,19 @@ export class PlatformModuleGuard implements CanActivate {
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
-    const required = this.reflector.getAllAndOverride<string>(REQUIRED_PLATFORM_MODULE, [
-      context.getHandler(),
-      context.getClass(),
-    ]);
+    const required = this.reflector.getAllAndOverride<string>(
+      REQUIRED_PLATFORM_MODULE,
+      [context.getHandler(), context.getClass()],
+    );
     if (!required) return true;
 
     const user = context.switchToHttp().getRequest<RequestWithUser>().user;
     if (!user?.tenantId || user.impersonatedBy) return true;
-    if ((await this.plans.getTenantModules(user.tenantId)).includes(required)) return true;
-    throw new ForbiddenException(`El plan contratado no incluye el módulo ${required}.`);
+    if ((await this.plans.getTenantModules(user.tenantId)).includes(required)) {
+      return true;
+    }
+    throw new ForbiddenException(
+      `El plan contratado no incluye el módulo ${required}.`,
+    );
   }
 }

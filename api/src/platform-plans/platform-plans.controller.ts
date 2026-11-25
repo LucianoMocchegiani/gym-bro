@@ -1,4 +1,11 @@
-import { Body, Controller, Get, Param, ParseUUIDPipe, Patch } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  ParseUUIDPipe,
+  Patch,
+} from '@nestjs/common';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { RequirePermission } from '../roles/decorators/require-permission.decorator';
 import { CurrentTenant } from '../tenant/decorators/current-tenant.decorator';
@@ -21,7 +28,11 @@ export class PlatformPlansController {
   @RequirePermission('platform.tenants.write')
   updateModules(
     @CurrentTenant() tenantId: string,
-    @CurrentUser() user: { profileType: 'STAFF' | 'MEMBER' | 'IDENTITY'; userId: string },
+    @CurrentUser()
+    user: {
+      profileType: 'STAFF' | 'MEMBER' | 'IDENTITY';
+      userId: string;
+    },
     @Param('packId', ParseUUIDPipe) packId: string,
     @Body() dto: UpdatePlatformPlanModulesDto,
   ) {

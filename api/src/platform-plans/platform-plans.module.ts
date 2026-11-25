@@ -1,6 +1,9 @@
 import { Module } from '@nestjs/common';
 import { AuditModule } from '../audit/audit.module';
-import { PlatformPlansController, TenantPlatformModulesController } from './platform-plans.controller';
+import {
+  PlatformPlansController,
+  TenantPlatformModulesController,
+} from './platform-plans.controller';
 import { PlatformPlansService } from './platform-plans.service';
 
 @Module({
