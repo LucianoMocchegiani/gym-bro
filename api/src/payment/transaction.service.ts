@@ -17,11 +17,8 @@ export interface TransactionItemInput {
 }
 
 export interface InitiatePaymentParams {
-  /** Tenant dueño del cobro (en ventas de plataforma, `admin`). */
   tenantId: string;
-  /** Afiliado cobrador. Null cuando el tenant mismo abona. */
   memberId: string | null;
-  /** Venta de plataforma: gym que recibe el contrato TENANT. */
   billedTenantId?: string | null;
   method: PaymentMethod;
   items: TransactionItemInput[];
@@ -41,40 +38,26 @@ export class TransactionService {
     tx?: Prisma.TransactionClient,
   ): Promise<Prisma.TransactionGetPayload<{ include: { transactionItems: true } }>> {
     const {
-      tenantId,
-      memberId,
-      billedTenantId,
-      method,
-      items,
-      recordedByStaffId,
-      transferReference,
-      mpPreferenceId,
-      mpInitPoint,
-      mpSandboxInitPoint,
+      tenantId, memberId, billedTenantId, method, items, recordedByStaffId,
+      transferReference, mpPreferenceId, mpInitPoint, mpSandboxInitPoint,
     } = params;
     const db = tx ?? this.prisma;
     const totalAmount = items.reduce((sum, item) => sum + item.amount, 0);
     const transaction = await db.transaction.create({
       data: {
-        tenantId,
-        memberId,
-        amount: totalAmount,
-        status: PaymentStatus.PENDING,
+        tenantId, memberId, amount: totalAmount, status: PaymentStatus.PENDING,
         idempotencyKey: items[0].idempotencyKey,
         recordedByStaffId: recordedByStaffId ?? null,
         billedTenantId: billedTenantId ?? null,
         transferReference: transferReference ?? null,
-        mpPreferenceId,
-        mpInitPoint,
-        mpSandboxInitPoint,
+        mpPreferenceId, mpInitPoint, mpSandboxInitPoint,
       },
     });
 
     for (const item of items) {
       const saved = await db.transactionItem.create({
         data: {
-          tenantId,
-          memberId,
+          tenantId, memberId,
           packId: item.packId ?? null,
           sessionId: item.sessionId ?? null,
           amount: item.amount,
@@ -84,23 +67,15 @@ export class TransactionService {
           method,
           idempotencyKey: item.idempotencyKey,
           transactionId: transaction.id,
-          mpPreferenceId,
-          mpInitPoint,
-          mpSandboxInitPoint,
+          mpPreferenceId, mpInitPoint, mpSandboxInitPoint,
         },
       });
       if (item.productId) {
-        await reserveProductSale(
-          db,
-          {
-            tenantId,
-            transactionItemId: saved.id,
-            productId: item.productId,
-            quantity: item.productQuantity ?? 1,
-            staffUserId: recordedByStaffId ?? null,
-          },
-          true,
-        );
+        await reserveProductSale(db, {
+          tenantId, transactionItemId: saved.id, productId: item.productId,
+          quantity: item.productQuantity ?? 1,
+          staffUserId: recordedByStaffId ?? null,
+        }, true);
       }
     }
 
@@ -119,25 +94,13 @@ export class TransactionService {
     const db = tx ?? this.prisma;
     if (tx) {
       await Promise.all([
-        tx.transaction.update({
-          where: { id: transactionId },
-          data: { status: PaymentStatus.APPROVED },
-        }),
-        tx.transactionItem.updateMany({
-          where: { transactionId },
-          data: { status: PaymentStatus.APPROVED },
-        }),
+        tx.transaction.update({ where: { id: transactionId }, data: { status: PaymentStatus.APPROVED } }),
+        tx.transactionItem.updateMany({ where: { transactionId }, data: { status: PaymentStatus.APPROVED } }),
       ]);
     } else {
       await this.prisma.$transaction([
-        this.prisma.transaction.update({
-          where: { id: transactionId },
-          data: { status: PaymentStatus.APPROVED },
-        }),
-        this.prisma.transactionItem.updateMany({
-          where: { transactionId },
-          data: { status: PaymentStatus.APPROVED },
-        }),
+        this.prisma.transaction.update({ where: { id: transactionId }, data: { status: PaymentStatus.APPROVED } }),
+        this.prisma.transactionItem.updateMany({ where: { transactionId }, data: { status: PaymentStatus.APPROVED } }),
       ]);
     }
     return db.transaction.findUniqueOrThrow({
@@ -148,9 +111,7 @@ export class TransactionService {
 
   async getTransaction(
     transactionId: string,
-  ): Promise<Prisma.TransactionGetPayload<{
-    include: { transactionItems: true };
-  }> | null> {
+  ): Promise<Prisma.TransactionGetPayload<{ include: { transactionItems: true } }> | null> {
     return this.prisma.transaction.findUnique({
       where: { id: transactionId },
       include: { transactionItems: true },
