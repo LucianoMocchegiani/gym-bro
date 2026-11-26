@@ -60,7 +60,8 @@ export class TransactionService {
       mpInitPoint,
       mpSandboxInitPoint,
     } = params;
-    if (!items.length) throw new BadRequestException('La venta no tiene ítems.');
+    if (!items.length)
+      throw new BadRequestException('La venta no tiene ítems.');
     let totalAmount = 0;
     for (const item of items) {
       if (item.productId) {
