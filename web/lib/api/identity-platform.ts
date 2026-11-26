@@ -21,10 +21,14 @@ export type PlatformSignupView = {
   tenantSlug: string | null;
 };
 
+export type IdentityPlanActionsView = {
+  automaticDebit: 'active' | 'cancelled' | 'none' | 'unknown';
+  canFinalize: boolean;
+  finalizationAt: string | null;
+};
+
 export function listIdentityGyms(): Promise<IdentityGymRow[]> {
-  return apiRequest<IdentityGymRow[]>('/identity/tenants', {
-    auth: 'identity',
-  });
+  return apiRequest<IdentityGymRow[]>('/identity/tenants', { auth: 'identity' });
 }
 
 export function getIdentityGymPlan(tenantId: string): Promise<GymPlanView> {
@@ -33,11 +37,37 @@ export function getIdentityGymPlan(tenantId: string): Promise<GymPlanView> {
   });
 }
 
+export function getIdentityPlanActions(
+  tenantId: string,
+): Promise<IdentityPlanActionsView> {
+  return apiRequest<IdentityPlanActionsView>(
+    `/identity/tenants/${tenantId}/plan-actions`,
+    { auth: 'identity' },
+  );
+}
+
+export function cancelIdentityPlanDebit(
+  tenantId: string,
+): Promise<IdentityPlanActionsView> {
+  return apiRequest<IdentityPlanActionsView>(
+    `/identity/tenants/${tenantId}/plan-actions/automatic-debit`,
+    { method: 'DELETE', auth: 'identity' },
+  );
+}
+
+export function finalizeIdentityPlan(
+  tenantId: string,
+): Promise<IdentityPlanActionsView> {
+  return apiRequest<IdentityPlanActionsView>(
+    `/identity/tenants/${tenantId}/plan-actions/finalize`,
+    { method: 'POST', auth: 'identity' },
+  );
+}
+
 export function startPlatformSignup(input: {
   packId: string;
   slug: string;
   gymName: string;
-  /** Vacío = el mail de la cuenta Faciliter. */
   payerEmail?: string;
 }): Promise<PlatformSignupView> {
   return apiRequest<PlatformSignupView>('/identity/signups', {
