@@ -98,13 +98,16 @@ export class ProductsService {
 
   async update(tenantId: string, productId: string, dto: UpdateProductDto) {
     if (Object.values(dto).every((value) => value === undefined)) {
-      throw new BadRequestException('Indicá al menos un campo para actualizar.');
+      throw new BadRequestException(
+        'Indicá al menos un campo para actualizar.',
+      );
     }
     if (dto.name !== undefined && dto.name.trim().length < 2) {
       throw new BadRequestException('El nombre es demasiado corto.');
     }
     const before = await this.findProduct(tenantId, productId);
-    const imageUrl = dto.imageUrl === undefined ? before.image_url : dto.imageUrl;
+    const imageUrl =
+      dto.imageUrl === undefined ? before.image_url : dto.imageUrl;
     this.assertImage(tenantId, imageUrl);
     const sets = [
       dto.name === undefined ? null : Prisma.sql`name = ${dto.name.trim()}`,
@@ -112,7 +115,9 @@ export class ProductsService {
         ? null
         : Prisma.sql`description = ${dto.description?.trim() || null}`,
       dto.price === undefined ? null : Prisma.sql`price = ${dto.price}`,
-      dto.imageUrl === undefined ? null : Prisma.sql`image_url = ${dto.imageUrl}`,
+      dto.imageUrl === undefined
+        ? null
+        : Prisma.sql`image_url = ${dto.imageUrl}`,
       dto.active === undefined ? null : Prisma.sql`active = ${dto.active}`,
     ].filter((part): part is Prisma.Sql => part !== null);
     const [row] = await this.prisma.$queryRaw<ProductRow[]>`

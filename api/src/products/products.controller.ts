@@ -65,10 +65,7 @@ export class ProductsController {
 
   @Post()
   @RequirePermission('products.write')
-  create(
-    @CurrentTenant() tenantId: string,
-    @Body() dto: CreateProductDto,
-  ) {
+  create(@CurrentTenant() tenantId: string, @Body() dto: CreateProductDto) {
     return this.products.create(tenantId, dto);
   }
 
