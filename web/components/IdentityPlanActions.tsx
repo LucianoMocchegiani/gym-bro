@@ -75,15 +75,17 @@ export function IdentityPlanActions({
     setBusy(true);
     setError(null);
     try {
-      setState(
-        action === 'debit'
-          ? mode === 'identity'
-            ? await cancelIdentityPlanDebit(plan.tenantId)
-            : await cancelTenantPlanDebit()
-          : mode === 'identity'
-            ? await finalizeIdentityPlan(plan.tenantId)
-            : await finalizeTenantPlan(),
-      );
+      const requests =
+        mode === 'identity'
+          ? {
+              debit: () => cancelIdentityPlanDebit(plan.tenantId),
+              finalize: () => finalizeIdentityPlan(plan.tenantId),
+            }
+          : {
+              debit: cancelTenantPlanDebit,
+              finalize: finalizeTenantPlan,
+            };
+      setState(await requests[action]());
       setConfirming(null);
     } catch (err) {
       setError(
