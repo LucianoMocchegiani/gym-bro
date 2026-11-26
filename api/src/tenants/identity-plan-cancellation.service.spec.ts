@@ -1,7 +1,4 @@
-import {
-  BadRequestException,
-  NotFoundException,
-} from '@nestjs/common';
+import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { AuditService } from '../audit/audit.service';
 import { ContractsService } from '../contracts/contracts.service';
 import { MercadoPagoAccountService } from '../payment/mercadopago-account.service';
@@ -35,12 +32,17 @@ describe('IdentityPlanCancellationService', () => {
     prisma = {
       tenant: {
         findFirst: jest.fn().mockResolvedValue({ id: tenantId }),
-        findUnique: jest.fn((input: { where: { id?: string; slug?: string } }) =>
-          Promise.resolve(
-            input.where.slug
-              ? { id: 'admin-id' }
-              : { id: tenantId, slug: 'test-gym', ownerIdentityId: identityId },
-          ),
+        findUnique: jest.fn(
+          (input: { where: { id?: string; slug?: string } }) =>
+            Promise.resolve(
+              input.where.slug
+                ? { id: 'admin-id' }
+                : {
+                    id: tenantId,
+                    slug: 'test-gym',
+                    ownerIdentityId: identityId,
+                  },
+            ),
         ),
       },
       contract: {
@@ -126,7 +128,11 @@ describe('IdentityPlanCancellationService', () => {
   });
 
   it('immediately cancels the tenant contract and its automatic debit when present', async () => {
-    await service.cancelPlanImmediatelyByPlatform('platform-staff-1', tenantId, 'test-gym');
+    await service.cancelPlanImmediatelyByPlatform(
+      'platform-staff-1',
+      tenantId,
+      'test-gym',
+    );
 
     expect(mp.cancelPreapproval).toHaveBeenCalledWith('token', preapprovalId);
     expect(contracts.updateStatus).toHaveBeenCalledWith(
@@ -162,7 +168,11 @@ describe('IdentityPlanCancellationService', () => {
 
   it('requires the exact tenant slug before cancelling the contract', async () => {
     await expect(
-      service.cancelPlanImmediatelyByPlatform('platform-staff-1', tenantId, 'other-gym'),
+      service.cancelPlanImmediatelyByPlatform(
+        'platform-staff-1',
+        tenantId,
+        'other-gym',
+      ),
     ).rejects.toBeInstanceOf(BadRequestException);
     expect(mp.cancelPreapproval).not.toHaveBeenCalled();
     expect(contracts.updateStatus).not.toHaveBeenCalled();
