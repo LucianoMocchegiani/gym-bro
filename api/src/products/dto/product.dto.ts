@@ -5,10 +5,13 @@ import {
   IsInt,
   IsOptional,
   IsString,
+  Max,
   MaxLength,
   Min,
   MinLength,
 } from 'class-validator';
+
+const MAX_INTEGER = 2_147_483_647;
 
 export class ListProductsQueryDto {
   @IsOptional()
@@ -45,6 +48,7 @@ export class CreateProductDto {
 
   @IsInt()
   @Min(0)
+  @Max(MAX_INTEGER)
   price!: number;
 
   @IsOptional()
@@ -68,6 +72,7 @@ export class UpdateProductDto {
   @IsOptional()
   @IsInt()
   @Min(0)
+  @Max(MAX_INTEGER)
   price?: number;
 
   @IsOptional()
@@ -87,6 +92,7 @@ export class CreateStockAdjustmentDto {
 
   @IsInt()
   @Min(1)
+  @Max(MAX_INTEGER)
   quantity!: number;
 
   @IsString()

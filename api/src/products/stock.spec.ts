@@ -6,9 +6,10 @@ describe('calculateStockAfter', () => {
     expect(calculateStockAfter(4, 'OUT', 3)).toBe(1);
   });
 
-  it('refuses a negative balance and invalid quantities', () => {
+  it('refuses negative balances, overflow, and invalid quantities', () => {
     expect(calculateStockAfter(2, 'OUT', 3)).toBeNull();
     expect(calculateStockAfter(2, 'IN', 0)).toBeNull();
     expect(calculateStockAfter(-1, 'IN', 1)).toBeNull();
+    expect(calculateStockAfter(2_147_483_647, 'IN', 1)).toBeNull();
   });
 });
