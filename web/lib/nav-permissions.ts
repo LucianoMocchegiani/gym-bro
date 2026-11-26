@@ -1,5 +1,3 @@
-import { GymPlanView } from '@/lib/api/plan';
-
 /**
  * Mapa nav/atajos Admin → permisos requeridos (cualquiera de la lista).
  *
