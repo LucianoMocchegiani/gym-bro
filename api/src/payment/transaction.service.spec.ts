@@ -43,12 +43,10 @@ describe('TransactionService product checkout validation', () => {
     expect(transactionCreate).not.toHaveBeenCalled();
   });
 
-  it.each(
-    [
-      [PaymentMethod.CASH, false],
-      [PaymentMethod.MP, true],
-    ] as const,
-  )(
+  it.each([
+    [PaymentMethod.CASH, false],
+    [PaymentMethod.MP, true],
+  ] as const)(
     'creates a product sale and reserves stock for %s',
     async (method, pending) => {
       const productQuery = jest

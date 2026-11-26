@@ -34,10 +34,7 @@ import {
 import { CreateCashCartDto } from './dto/create-cash-cart.dto';
 import { CashCartResult } from './payment.types';
 import { Prisma } from '@prisma/client';
-import {
-  CashProduct,
-  createCashProductItems,
-} from './cash-product-items';
+import { CashProduct, createCashProductItems } from './cash-product-items';
 
 type Tx = Prisma.TransactionClient;
 

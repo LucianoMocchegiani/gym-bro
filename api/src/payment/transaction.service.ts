@@ -205,11 +205,9 @@ export class TransactionService {
 
   async getTransaction(
     transactionId: string,
-  ): Promise<
-    Prisma.TransactionGetPayload<{
-      include: { transactionItems: true };
-    }> | null
-  > {
+  ): Promise<Prisma.TransactionGetPayload<{
+    include: { transactionItems: true };
+  }> | null> {
     return this.prisma.transaction.findUnique({
       where: { id: transactionId },
       include: { transactionItems: true },
