@@ -17,6 +17,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { PlatformTenantGuard } from '../auth/guards/platform-tenant.guard';
 import type { AuthUser } from '../auth/auth.types';
 import { toAuditActor } from '../audit/to-audit-actor';
+import { RequirePermission } from '../roles/decorators/require-permission.decorator';
 import { ListResult } from '../common/list';
 import {
   CreateTenantDto,
@@ -24,6 +25,8 @@ import {
   ListTenantsQueryDto,
   UpdateTenantDto,
 } from './dto/tenant.dto';
+import { CancelPlatformPlanDto } from './dto/cancel-platform-plan.dto';
+import { IdentityPlanCancellationService } from './identity-plan-cancellation.service';
 import { TenantsService } from './tenants.service';
 import {
   PlatformDashboardKpis,
@@ -40,7 +43,10 @@ import {
  */
 @Controller('tenants')
 export class TenantsController {
-  constructor(private readonly tenantsService: TenantsService) {}
+  constructor(
+    private readonly tenantsService: TenantsService,
+    private readonly planCancellation: IdentityPlanCancellationService,
+  ) {}
 
   /** Alta de tenant + owner Admin, con branch default y roles sistema (CU-ROL-001). */
   @UseGuards(JwtAuthGuard, PlatformTenantGuard)
@@ -81,6 +87,22 @@ export class TenantsController {
   @Get('platform/kpis')
   platformKpis(): Promise<PlatformDashboardKpis> {
     return this.tenantsService.platformKpis();
+  }
+
+  /** Baja inmediata del contrato Faciliter y del débito automático si existe. */
+  @RequirePermission('platform.tenants.write')
+  @UseGuards(JwtAuthGuard, PlatformTenantGuard)
+  @Post(':id/platform-plan/cancel')
+  cancelPlatformPlan(
+    @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUser() user: AuthUser,
+    @Body() dto: CancelPlatformPlanDto,
+  ) {
+    return this.planCancellation.cancelPlanImmediatelyByPlatform(
+      user.userId,
+      id,
+      dto.confirmSlug,
+    );
   }
 
   /** Elegibilidad de 30 días de prueba para Caja de plataforma. */

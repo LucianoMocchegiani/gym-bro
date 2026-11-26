@@ -8,6 +8,7 @@ import {
 } from '@/components/AdminList';
 import { AdminShell } from '@/components/AdminShell';
 import { AdminModal } from '@/components/AdminModal';
+import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { RequireStaff } from '@/components/RequireStaff';
 import { PageSkeleton } from '@/components/Skeleton';
 import { StatusPill, activeTone } from '@/components/StatusPill';
@@ -22,7 +23,10 @@ import { TenantCreateForm } from '@/components/TenantCreateForm';
 import { TenantEditPanel } from '@/components/TenantEditPanel';
 import { ImpersonateTenantPanel } from '@/components/ImpersonateTenantPanel';
 import { ApiClientError } from '@/lib/api/client';
-import { listTenants } from '@/lib/api/tenants';
+import {
+  cancelPlatformTenantPlan,
+  listTenants,
+} from '@/lib/api/tenants';
 import type { TenantDetail } from '@/lib/api/tenants';
 import { tenantHostLabel, tenantOrigin } from '@/lib/tenant-host';
 
@@ -61,6 +65,10 @@ function TenantsInner() {
   const impersonateId = searchParams.get('impersonate')?.trim() || null;
   const detalleId = searchParams.get('detalle')?.trim() || null;
   const [flashOk, setFlashOk] = useState<string | null>(null);
+  const [planCancelTarget, setPlanCancelTarget] =
+    useState<TenantDetail | null>(null);
+  const [planCancelBusy, setPlanCancelBusy] = useState(false);
+  const [planCancelError, setPlanCancelError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -102,6 +110,25 @@ function TenantsInner() {
     router.replace(`/dashboard/tenants?${param}=${encodeURIComponent(id)}`, {
       scroll: false,
     });
+  }
+
+  async function cancelPlatformPlan() {
+    if (!planCancelTarget) return;
+    setPlanCancelBusy(true);
+    setPlanCancelError(null);
+    try {
+      await cancelPlatformTenantPlan(planCancelTarget.id, planCancelTarget.slug);
+      setFlashOk(`Plan de ${planCancelTarget.name} dado de baja inmediatamente.`);
+      setPlanCancelTarget(null);
+    } catch (err) {
+      setPlanCancelError(
+        err instanceof ApiClientError
+          ? err.message
+          : 'No se pudo dar de baja el plan',
+      );
+    } finally {
+      setPlanCancelBusy(false);
+    }
   }
 
   const detalle = rows.find((r) => r.id === detalleId) ?? null;
@@ -242,26 +269,61 @@ function TenantsInner() {
         description={detalle ? `${detalle.slug} · ${detalle.status}` : ''}
       >
         {detalle ? (
-          <ul className="plain-list">
-            <li>
-              <strong>Slug:</strong> <code>{detalle.slug}</code>
-            </li>
-            <li>
-              <strong>Estado:</strong> {detalle.status}
-            </li>
-            <li>
-              <strong>Sede:</strong> {detalle.defaultBranch?.name ?? '—'}
-            </li>
-            <li>
-              <strong>Owner:</strong> {detalle.owner?.email ?? '—'}
-            </li>
-            <li>
-              <strong>Alta:</strong>{' '}
-              {new Date(detalle.createdAt).toLocaleDateString('es-AR')}
-            </li>
-          </ul>
+          <>
+            <ul className="plain-list">
+              <li>
+                <strong>Slug:</strong> <code>{detalle.slug}</code>
+              </li>
+              <li>
+                <strong>Estado:</strong> {detalle.status}
+              </li>
+              <li>
+                <strong>Sede:</strong> {detalle.defaultBranch?.name ?? '—'}
+              </li>
+              <li>
+                <strong>Owner:</strong> {detalle.owner?.email ?? '—'}
+              </li>
+              <li>
+                <strong>Alta:</strong>{' '}
+                {new Date(detalle.createdAt).toLocaleDateString('es-AR')}
+              </li>
+            </ul>
+            <div className="admin-modal-actions">
+              <button
+                type="button"
+                className="btn danger"
+                onClick={() => {
+                  setPlanCancelError(null);
+                  setPlanCancelTarget(detalle);
+                }}
+              >
+                Dar de baja el plan ahora
+              </button>
+            </div>
+          </>
         ) : null}
       </AdminModal>
+
+      <ConfirmDialog
+        open={Boolean(planCancelTarget)}
+        title="Dar de baja el plan ahora"
+        description={
+          planCancelTarget
+            ? `Se cancelará inmediatamente el contrato Faciliter de ${planCancelTarget.name} (${planCancelTarget.slug}) y el débito automático asociado, si existe. Perderá acceso al plan y todos los créditos restantes se pondrán en cero. No implica reintegro. Un cobro que Mercado Pago ya esté procesando podría acreditarse igualmente.`
+            : undefined
+        }
+        confirmLabel="Dar de baja ahora"
+        tone="danger"
+        confirmWord="BAJA INMEDIATA"
+        confirmWord2={planCancelTarget?.slug}
+        busy={planCancelBusy}
+        onConfirm={() => void cancelPlatformPlan()}
+        onCancel={() => {
+          if (!planCancelBusy) setPlanCancelTarget(null);
+        }}
+      >
+        {planCancelError ? <p className="error">{planCancelError}</p> : null}
+      </ConfirmDialog>
 
       {impersonateTarget ? (
         <ImpersonateTenantPanel

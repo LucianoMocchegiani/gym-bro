@@ -203,3 +203,14 @@ export function startPlatformMpCartCheckout(
     { method: 'POST', body: input },
   );
 }
+
+/** Baja inmediata de plan desde la administración de plataforma. */
+export function cancelPlatformTenantPlan(
+  id: string,
+  confirmSlug: string,
+): Promise<{ contract: unknown; automaticDebitCancelled: boolean }> {
+  return apiRequest<{ contract: unknown; automaticDebitCancelled: boolean }>(
+    `/tenants/${id}/platform-plan/cancel`,
+    { method: 'POST', body: { confirmSlug } },
+  );
+}
