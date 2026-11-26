@@ -25,8 +25,7 @@ export type SystemRoleSlug =
  */
 export function isProtectedRoleSlug(slug: string): boolean {
   return (
-    slug === SYSTEM_ROLE_SLUGS.admin ||
-    slug === SYSTEM_ROLE_SLUGS.superAdmin
+    slug === SYSTEM_ROLE_SLUGS.admin || slug === SYSTEM_ROLE_SLUGS.superAdmin
   );
 }
 

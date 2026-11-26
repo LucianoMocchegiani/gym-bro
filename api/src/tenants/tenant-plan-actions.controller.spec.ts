@@ -3,7 +3,7 @@ import { IdentityPlanCancellationService } from './identity-plan-cancellation.se
 import { TenantPlanActionsController } from './tenant-plan-actions.controller';
 
 const plans = {
-  cancelAutomaticDebitForStaff: jest.fn(),
+  cancelAutomaticDebitForStaff: jest.fn().mockResolvedValue({}),
   finalizePlanForStaff: jest.fn(),
 };
 
@@ -31,14 +31,14 @@ describe('TenantPlanActionsController', () => {
     expect(plans.finalizePlanForStaff).not.toHaveBeenCalled();
   });
 
-  it('passes tenant and staff ids to the cancellation service', () => {
+  it('passes tenant and staff ids to the cancellation service', async () => {
     const user = {
       userId: 'staff-1',
       email: 'staff@example.test',
       profileType: 'STAFF' as const,
     };
 
-    controller.cancelAutomaticDebit('tenant-1', user);
+    await controller.cancelAutomaticDebit('tenant-1', user);
 
     expect(plans.cancelAutomaticDebitForStaff).toHaveBeenCalledWith(
       'staff-1',
