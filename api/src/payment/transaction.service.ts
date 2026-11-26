@@ -29,33 +29,14 @@ export interface InitiatePaymentParams {
   mpSandboxInitPoint?: string | null;
 }
 
-/**
- * Gestiona el ciclo de vida de Transactions y TransactionItems.
- *
- * @description
- * - Crea Transactions con sus TransactionItems asociados.
- * - Confirma Transactions (cambia status a APPROVED).
- * - Es agnóstico al método de pago (CASH, TRANSFER, MP, STUB).
- *
- * @remarks
- * Los servicios de pago específico (CashPaymentService, OnlinePaymentService)
- * usan este servicio como base para crear/transacciones.
- */
 @Injectable()
 export class TransactionService {
   constructor(private readonly prisma: PrismaService) {}
 
-  /**
-   * Crea una Transaction con sus TransactionItems.
-   *
-   * @param params - Parámetros de la transacción
-   * @returns La Transaction creada con sus items
-   */
   async initiateTransaction(
     params: InitiatePaymentParams,
-  ): Promise<
-    Prisma.TransactionGetPayload<{ include: { transactionItems: true } }>
-  > {
+    tx?: Prisma.TransactionClient,
+  ): Promise<Prisma.TransactionGetPayload<{ include: { transactionItems: true } }>> {
     const {
       tenantId,
       memberId,
@@ -68,11 +49,10 @@ export class TransactionService {
       mpInitPoint,
       mpSandboxInitPoint,
     } = params;
-
+    const db = tx ?? this.prisma;
     const totalAmount = items.reduce((sum, item) => sum + item.amount, 0);
     const firstItem = items[0];
-
-    const transaction = await this.prisma.transaction.create({
+    const transaction = await db.transaction.create({
       data: {
         tenantId,
         memberId,
@@ -90,7 +70,7 @@ export class TransactionService {
 
     await Promise.all(
       items.map((item) =>
-        this.prisma.transactionItem.create({
+        db.transactionItem.create({
           data: {
             tenantId,
             memberId,
@@ -111,25 +91,35 @@ export class TransactionService {
       ),
     );
 
-    return this.prisma.transaction.findUniqueOrThrow({
+    return db.transaction.findUniqueOrThrow({
       where: { id: transaction.id },
       include: { transactionItems: true },
     });
   }
 
-  /**
-   * Confirma una Transaction y sus TransactionItems (cambia a APPROVED).
-   *
-   * @param transactionId - ID de la transacción
-   * @param actor - Usuario que confirma (para auditoría)
-   */
   async confirmTransaction(
     transactionId: string,
     actor: { userId: string; profileType: string },
-  ): Promise<
-    Prisma.TransactionGetPayload<{ include: { transactionItems: true } }>
-  > {
+    tx?: Prisma.TransactionClient,
+  ): Promise<Prisma.TransactionGetPayload<{ include: { transactionItems: true } }>> {
     void actor;
+    if (tx) {
+      await Promise.all([
+        tx.transaction.update({
+          where: { id: transactionId },
+          data: { status: PaymentStatus.APPROVED },
+        }),
+        tx.transactionItem.updateMany({
+          where: { transactionId },
+          data: { status: PaymentStatus.APPROVED },
+        }),
+      ]);
+      return tx.transaction.findUniqueOrThrow({
+        where: { id: transactionId },
+        include: { transactionItems: true },
+      });
+    }
+
     await this.prisma.$transaction([
       this.prisma.transaction.update({
         where: { id: transactionId },
@@ -140,16 +130,12 @@ export class TransactionService {
         data: { status: PaymentStatus.APPROVED },
       }),
     ]);
-
     return this.prisma.transaction.findUniqueOrThrow({
       where: { id: transactionId },
       include: { transactionItems: true },
     });
   }
 
-  /**
-   * Obtiene una Transaction por ID con sus items.
-   */
   async getTransaction(
     transactionId: string,
   ): Promise<Prisma.TransactionGetPayload<{
