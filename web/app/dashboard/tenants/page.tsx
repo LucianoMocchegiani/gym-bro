@@ -270,6 +270,7 @@ function TenantsInner() {
       >
         {detalle ? (
           <>
+            {flashOk ? <p className="ok-msg" role="status">{flashOk}</p> : null}
             <ul className="plain-list">
               <li>
                 <strong>Slug:</strong> <code>{detalle.slug}</code>
