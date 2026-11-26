@@ -81,7 +81,10 @@ export function PlanPanel({
         </p>
       ) : null}
       {plan.status === 'active' ? (
-        <p className="muted small" style={{ marginTop: '2rem' }}>
+        <p
+          className="muted small"
+          style={{ marginTop: '2rem', marginBottom: '1rem' }}
+        >
           Si contrataste en faciliter.xyz, se renueva solo con el débito de
           Mercado Pago. Si no, se renueva pagando con Faciliter.
         </p>
