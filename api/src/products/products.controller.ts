@@ -37,7 +37,10 @@ export class ProductsController {
 
   @Get()
   @RequirePermission('products.read')
-  list(@CurrentTenant() tenantId: string, @Query() query: ListProductsQueryDto) {
+  list(
+    @CurrentTenant() tenantId: string,
+    @Query() query: ListProductsQueryDto,
+  ) {
     return this.products.list(tenantId, query);
   }
 
@@ -62,7 +65,10 @@ export class ProductsController {
 
   @Post()
   @RequirePermission('products.write')
-  create(@CurrentTenant() tenantId: string, @Body() dto: CreateProductDto) {
+  create(
+    @CurrentTenant() tenantId: string,
+    @Body() dto: CreateProductDto,
+  ) {
     return this.products.create(tenantId, dto);
   }
 
