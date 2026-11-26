@@ -28,6 +28,7 @@ export const ADMIN_NAV_PERMISSIONS: readonly NavPermissionRule[] = [
   { href: '/dashboard/roles', anyOf: ['roles.write'] },
   { href: '/dashboard/servicios', anyOf: ['catalog.write'], module: 'club' },
   { href: '/dashboard/packs', anyOf: ['catalog.write'], module: 'club' },
+  { href: '/dashboard/productos', anyOf: ['products.read'], module: 'ecommerce' },
   { href: '/dashboard/sesiones', anyOf: ['sessions.write'], module: 'club' },
   {
     href: '/dashboard/config',
@@ -77,9 +78,7 @@ export function canAccessNavHref(
   return rule.anyOf.some((code) => set.has(code));
 }
 
-/**
- * True si tiene todos los códigos (permisos ya hidratados).
- */
+/** True si tiene todos los códigos (permisos ya hidratados). */
 export function hasAllPermissions(
   permissionCodes: string[] | null | undefined,
   codes: readonly string[],
@@ -91,9 +90,7 @@ export function hasAllPermissions(
   return codes.every((code) => set.has(code));
 }
 
-/**
- * True si tiene al menos uno de los códigos (permisos ya hidratados).
- */
+/** True si tiene al menos uno de los códigos (permisos ya hidratados). */
 export function hasAnyPermission(
   permissionCodes: string[] | null | undefined,
   codes: readonly string[],

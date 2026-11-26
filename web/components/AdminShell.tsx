@@ -67,6 +67,7 @@ const NAV_GROUPS: NavGroup[] = [
     items: [
       { href: '/dashboard/servicios', label: 'Servicios' },
       { href: '/dashboard/packs', label: 'Packs' },
+      { href: '/dashboard/productos', label: 'Productos' },
       { href: '/dashboard/sesiones', label: 'Sesiones' },
     ],
   },
@@ -96,6 +97,7 @@ function navGroupsForTenant(slug: string | null): NavGroup[] {
         if (item.href === '/dashboard/plan') return false;
         if (item.href === '/dashboard/avisos') return false;
         if (item.href === '/dashboard/web') return false;
+        if (item.href === '/dashboard/productos') return false;
       } else if (
         item.href === '/dashboard/tenants' ||
         item.href === '/dashboard/planes' ||

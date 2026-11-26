@@ -47,6 +47,16 @@ export const PERMISSION_OPTIONS: readonly PermissionOption[] = [
     dangerous: false,
   },
   {
+    code: 'products.read',
+    description: 'Ver productos y movimientos de stock',
+    dangerous: false,
+  },
+  {
+    code: 'products.write',
+    description: 'Administrar productos y ajustar stock',
+    dangerous: false,
+  },
+  {
     code: 'sessions.write',
     description: 'Sesiones, cupos y calendario',
     dangerous: false,

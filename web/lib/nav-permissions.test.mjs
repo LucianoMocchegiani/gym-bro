@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { canAccessNavHref } from './nav-permissions.ts';
 
-test('ecommerce-only navigation hides Club modules even before permissions load', () => {
+test('ecommerce-only navigation hides Club modules and exposes Products', () => {
   assert.equal(
     canAccessNavHref('/dashboard/afiliados', null, 'ok', ['ecommerce']),
     false,
@@ -10,6 +10,24 @@ test('ecommerce-only navigation hides Club modules even before permissions load'
   assert.equal(
     canAccessNavHref('/dashboard/caja', null, 'ok', ['ecommerce']),
     true,
+  );
+  assert.equal(
+    canAccessNavHref(
+      '/dashboard/productos',
+      ['products.read'],
+      'ok',
+      ['ecommerce'],
+    ),
+    true,
+  );
+  assert.equal(
+    canAccessNavHref(
+      '/dashboard/productos',
+      ['products.read'],
+      'ok',
+      ['club'],
+    ),
+    false,
   );
 });
 
@@ -30,7 +48,12 @@ test('Club navigation stays hidden until the plan modules are loaded', () => {
 test('only staff with platform read permission see the plan editor link', () => {
   assert.equal(canAccessNavHref('/dashboard/planes', [], 'ok', ['club']), false);
   assert.equal(
-    canAccessNavHref('/dashboard/planes', ['platform.tenants.read'], 'ok', ['club']),
+    canAccessNavHref(
+      '/dashboard/planes',
+      ['platform.tenants.read'],
+      'ok',
+      ['club'],
+    ),
     true,
   );
 });
