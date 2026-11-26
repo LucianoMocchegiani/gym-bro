@@ -28,7 +28,9 @@ export type IdentityPlanActionsView = {
 };
 
 export function listIdentityGyms(): Promise<IdentityGymRow[]> {
-  return apiRequest<IdentityGymRow[]>('/identity/tenants', { auth: 'identity' });
+  return apiRequest<IdentityGymRow[]>('/identity/tenants', {
+    auth: 'identity',
+  });
 }
 
 export function getIdentityGymPlan(tenantId: string): Promise<GymPlanView> {
@@ -68,6 +70,7 @@ export function startPlatformSignup(input: {
   packId: string;
   slug: string;
   gymName: string;
+  /** Vacío = el mail de la cuenta Faciliter. */
   payerEmail?: string;
 }): Promise<PlatformSignupView> {
   return apiRequest<PlatformSignupView>('/identity/signups', {
