@@ -2,7 +2,11 @@
 
 import { Suspense, useCallback, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { DataTable, ListToolbar, listCountDescription } from '@/components/AdminList';
+import {
+  DataTable,
+  ListToolbar,
+  listCountDescription,
+} from '@/components/AdminList';
 import { AdminModal } from '@/components/AdminModal';
 import { AdminShell } from '@/components/AdminShell';
 import { DeleteRowButton } from '@/components/DeleteRowButton';
@@ -19,8 +23,8 @@ import {
   type ProductDetail,
 } from '@/lib/api/products';
 import { formatMoney } from '@/lib/cash-labels';
-import { hasAllPermissions } from '@/lib/nav-permissions';
 import { useAuth } from '@/lib/auth/AuthProvider';
+import { hasAllPermissions } from '@/lib/nav-permissions';
 
 const PAGE_SIZE = 20;
 
@@ -45,7 +49,9 @@ function ProductosInner() {
   const [query, setQuery] = useState('');
   const [page, setPage] = useState(1);
   const [rows, setRows] = useState<ProductDetail[]>([]);
-  const [selectedProduct, setSelectedProduct] = useState<ProductDetail | null>(null);
+  const [selectedProduct, setSelectedProduct] = useState<ProductDetail | null>(
+    null,
+  );
   const [selectionLoading, setSelectionLoading] = useState(false);
   const [selectionError, setSelectionError] = useState<string | null>(null);
   const [total, setTotal] = useState(0);

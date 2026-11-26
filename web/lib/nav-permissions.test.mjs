@@ -12,11 +12,21 @@ test('ecommerce-only navigation hides Club modules and exposes Products', () => 
     true,
   );
   assert.equal(
-    canAccessNavHref('/dashboard/productos', ['products.read'], 'ok', ['ecommerce']),
+    canAccessNavHref(
+      '/dashboard/productos',
+      ['products.read'],
+      'ok',
+      ['ecommerce'],
+    ),
     true,
   );
   assert.equal(
-    canAccessNavHref('/dashboard/productos', ['products.read'], 'ok', ['club']),
+    canAccessNavHref(
+      '/dashboard/productos',
+      ['products.read'],
+      'ok',
+      ['club'],
+    ),
     false,
   );
 });
@@ -38,7 +48,12 @@ test('Club navigation stays hidden until the plan modules are loaded', () => {
 test('only staff with platform read permission see the plan editor link', () => {
   assert.equal(canAccessNavHref('/dashboard/planes', [], 'ok', ['club']), false);
   assert.equal(
-    canAccessNavHref('/dashboard/planes', ['platform.tenants.read'], 'ok', ['club']),
+    canAccessNavHref(
+      '/dashboard/planes',
+      ['platform.tenants.read'],
+      'ok',
+      ['club'],
+    ),
     true,
   );
 });

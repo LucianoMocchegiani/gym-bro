@@ -39,7 +39,9 @@ export type ProductListParams = ListParams & {
 
 export function listProducts(params?: ProductListParams) {
   const query = toSearchParams(params);
-  return apiRequest<ListResult<ProductDetail>>(`/products${query ? `?${query}` : ''}`);
+  return apiRequest<ListResult<ProductDetail>>(
+    `/products${query ? `?${query}` : ''}`,
+  );
 }
 
 export function getProduct(id: string) {
@@ -47,11 +49,20 @@ export function getProduct(id: string) {
 }
 
 export function createProduct(input: ProductInput) {
-  return apiRequest<ProductDetail>('/products', { method: 'POST', body: input });
+  return apiRequest<ProductDetail>('/products', {
+    method: 'POST',
+    body: input,
+  });
 }
 
-export function updateProduct(id: string, input: Partial<ProductInput> & { active?: boolean }) {
-  return apiRequest<ProductDetail>(`/products/${id}`, { method: 'PATCH', body: input });
+export function updateProduct(
+  id: string,
+  input: Partial<ProductInput> & { active?: boolean },
+) {
+  return apiRequest<ProductDetail>(`/products/${id}`, {
+    method: 'PATCH',
+    body: input,
+  });
 }
 
 export function deleteProduct(id: string) {
@@ -65,20 +76,25 @@ export function listProductStockMovements(id: string, params?: ListParams) {
   );
 }
 
-export function adjustProductStock(id: string, input: {
-  type: 'IN' | 'OUT';
-  quantity: number;
-  reason: string;
-}) {
-  return apiRequest<{ product: ProductDetail; movement: ProductStockMovement }>(
-    `/products/${id}/stock-adjustments`,
-    { method: 'POST', body: input },
-  );
+export function adjustProductStock(
+  id: string,
+  input: { type: 'IN' | 'OUT'; quantity: number; reason: string },
+) {
+  return apiRequest<{
+    product: ProductDetail;
+    movement: ProductStockMovement;
+  }>(`/products/${id}/stock-adjustments`, {
+    method: 'POST',
+    body: input,
+  });
 }
 
 export async function uploadProductImage(file: File): Promise<string> {
   const formData = new FormData();
   formData.append('file', file);
-  const uploaded = await apiMultipart<{ url: string }>('/products/image', formData);
+  const uploaded = await apiMultipart<{ url: string }>(
+    '/products/image',
+    formData,
+  );
   return uploaded.url;
 }
