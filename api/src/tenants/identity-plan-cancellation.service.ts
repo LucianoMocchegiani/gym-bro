@@ -44,7 +44,11 @@ export class IdentityPlanCancellationService {
 
   async cancelAutomaticDebit(identityId: string, tenantId: string) {
     await this.requireOwnedTenant(identityId, tenantId);
-    return this.cancelDebit(tenantId, identityId, this.identityActor(identityId));
+    return this.cancelDebit(
+      tenantId,
+      identityId,
+      this.identityActor(identityId),
+    );
   }
 
   async cancelAutomaticDebitForStaff(staffId: string, tenantId: string) {
