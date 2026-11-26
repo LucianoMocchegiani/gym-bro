@@ -44,7 +44,8 @@ export async function reserveProductSale(
     WHERE id = ${input.productId}::uuid AND tenant_id = ${input.tenantId}::uuid
     FOR UPDATE`;
   if (!product) throw new NotFoundException('Producto no encontrado.');
-  if (!product.active) throw new BadRequestException('El producto está archivado.');
+  if (!product.active)
+    throw new BadRequestException('El producto está archivado.');
   if (product.stock_quantity < input.quantity) {
     throw new BadRequestException(`Stock insuficiente para ${product.name}.`);
   }
@@ -155,7 +156,8 @@ export async function refundProductSale(
     WHERE tenant_id = ${tenantId}::uuid AND transaction_item_id = ${transactionItemId}::uuid
     FOR UPDATE`;
   if (!sale) return;
-  if (sale.status !== 'SOLD') throw new BadRequestException('La venta del producto no está confirmada.');
+  if (sale.status !== 'SOLD')
+    throw new BadRequestException('La venta del producto no está confirmada.');
   if (sale.refunded_at) return;
   if (restock) {
     const [product] = await tx.$queryRaw<{ stock_quantity: number }[]>`
