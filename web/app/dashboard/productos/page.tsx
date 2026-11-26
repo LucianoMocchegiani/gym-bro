@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, useCallback, useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import {
   DataTable,
@@ -43,75 +43,86 @@ function ProductosInner() {
   const params = useSearchParams();
   const editId = params.get('editar');
   const stockId = params.get('stock');
+  const selectedId = editId || stockId;
   const createOpen = params.get('nuevo') === '1';
   const { session } = useAuth();
   const canWrite = hasAllPermissions(session?.permissionCodes, ['products.write']);
   const [query, setQuery] = useState('');
   const [page, setPage] = useState(1);
   const [rows, setRows] = useState<ProductDetail[]>([]);
-  const [selectedProduct, setSelectedProduct] = useState<ProductDetail | null>(
-    null,
-  );
-  const [selectionLoading, setSelectionLoading] = useState(false);
-  const [selectionError, setSelectionError] = useState<string | null>(null);
+  const [selectionResult, setSelectionResult] = useState<{
+    id: string;
+    product?: ProductDetail;
+    error?: string;
+  } | null>(null);
+  const selection = selectionResult?.id === selectedId ? selectionResult : null;
+  const selectedProduct = selection?.product;
+  const selectionLoading = Boolean(selectedId && !selection);
+  const selectionError = selection?.error ?? null;
   const [total, setTotal] = useState(0);
   const [hasMore, setHasMore] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [reloadKey, setReloadKey] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [flash, setFlash] = useState<string | null>(null);
 
-  const load = useCallback(async () => {
-    try {
-      const result = await listProducts({
-        q: query || undefined,
-        page,
-        pageSize: PAGE_SIZE,
-      });
-      setRows(result.items);
-      setTotal(result.total);
-      setHasMore(result.hasMore);
-      setError(null);
-    } catch (err) {
-      setError(
-        err instanceof ApiClientError
-          ? err.message
-          : 'No se pudieron cargar los productos.',
-      );
-    } finally {
-      setLoading(false);
-    }
-  }, [page, query]);
-
   useEffect(() => {
-    void load();
-  }, [load]);
-
-  useEffect(() => {
-    const id = editId || stockId;
-    if (!id) return;
     let cancelled = false;
-    setSelectionLoading(true);
-    setSelectionError(null);
-    void getProduct(id)
-      .then((product) => {
-        if (!cancelled) setSelectedProduct(product);
+    void listProducts({
+      q: query || undefined,
+      page,
+      pageSize: PAGE_SIZE,
+    })
+      .then((result) => {
+        if (cancelled) return;
+        setRows(result.items);
+        setTotal(result.total);
+        setHasMore(result.hasMore);
+        setError(null);
       })
       .catch((err: unknown) => {
-        if (!cancelled) {
-          setSelectionError(
-            err instanceof ApiClientError
-              ? err.message
-              : 'No se pudo cargar el producto.',
-          );
-        }
+        if (cancelled) return;
+        setError(
+          err instanceof ApiClientError
+            ? err.message
+            : 'No se pudieron cargar los productos.',
+        );
       })
       .finally(() => {
-        if (!cancelled) setSelectionLoading(false);
+        if (!cancelled) setLoading(false);
       });
     return () => {
       cancelled = true;
     };
-  }, [editId, stockId]);
+  }, [page, query, reloadKey]);
+
+  useEffect(() => {
+    if (!selectedId) return;
+    let cancelled = false;
+    void getProduct(selectedId)
+      .then((product) => {
+        if (!cancelled) setSelectionResult({ id: selectedId, product });
+      })
+      .catch((err: unknown) => {
+        if (!cancelled) {
+          setSelectionResult({
+            id: selectedId,
+            error:
+              err instanceof ApiClientError
+                ? err.message
+                : 'No se pudo cargar el producto.',
+          });
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedId]);
+
+  function reload() {
+    setLoading(true);
+    setReloadKey((value) => value + 1);
+  }
 
   function go(search: string) {
     setFlash(null);
@@ -200,8 +211,7 @@ function ProductosInner() {
                     onDelete={() => deleteProduct(product.id)}
                     onSuccess={() => {
                       setFlash(`Se eliminó ${product.name}.`);
-                      setLoading(true);
-                      void load();
+                      reload();
                     }}
                     onError={(err) => setError(err.message)}
                   />
@@ -221,8 +231,7 @@ function ProductosInner() {
         <ProductForm
           onSuccess={() => {
             go('');
-            setLoading(true);
-            void load();
+            reload();
           }}
           onCancel={() => go('')}
         />
@@ -243,8 +252,7 @@ function ProductosInner() {
             product={selectedProduct}
             onSuccess={() => {
               go('');
-              setLoading(true);
-              void load();
+              reload();
             }}
             onCancel={() => go('')}
           />
@@ -265,10 +273,7 @@ function ProductosInner() {
             key={stockId}
             product={selectedProduct}
             canWrite={canWrite}
-            onUpdated={() => {
-              setLoading(true);
-              void load();
-            }}
+            onUpdated={reload}
           />
         ) : null}
       </AdminModal>
