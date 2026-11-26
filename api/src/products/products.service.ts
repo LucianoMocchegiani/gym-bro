@@ -154,7 +154,11 @@ export class ProductsService {
         DELETE FROM products
         WHERE id = ${productId}::uuid AND tenant_id = ${tenantId}::uuid`;
     });
-    await this.upload.replaceOwnedPublicImage(tenantId, product.image_url, null);
+    await this.upload.replaceOwnedPublicImage(
+      tenantId,
+      product.image_url,
+      null,
+    );
   }
 
   async adjustStock(
