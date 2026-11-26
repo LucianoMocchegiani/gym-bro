@@ -3,16 +3,14 @@ import {
   Delete,
   ForbiddenException,
   Get,
-  Param,
-  ParseUUIDPipe,
   Post,
 } from '@nestjs/common';
 import type { AuthUser } from '../auth/auth.types';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
-import { CurrentTenant } from '../tenant/decorators/current-tenant.decorator';
-import { AllowWhenLimited } from '../tenant/decorators/allow-when-limited.decorator';
-import { RequireTenantAuth } from '../tenant/decorators/require-tenant-auth.decorator';
 import { RequirePermission } from '../roles/decorators/require-permission.decorator';
+import { AllowWhenLimited } from '../tenant/decorators/allow-when-limited.decorator';
+import { CurrentTenant } from '../tenant/decorators/current-tenant.decorator';
+import { RequireTenantAuth } from '../tenant/decorators/require-tenant-auth.decorator';
 import { IdentityPlanCancellationService } from './identity-plan-cancellation.service';
 
 @Controller('plan/actions')
@@ -51,7 +49,9 @@ export class TenantPlanActionsController {
 
   private requireNotImpersonating(user: AuthUser): void {
     if (user.impersonatedBy) {
-      throw new ForbiddenException('Billing actions are disabled while impersonating');
+      throw new ForbiddenException(
+        'Billing actions are disabled while impersonating',
+      );
     }
   }
 }

@@ -20,6 +20,7 @@ describe('TenantPlanActionsController', () => {
   it('does not allow billing actions during impersonation', () => {
     const user = {
       userId: 'staff-1',
+      email: 'staff@example.test',
       profileType: 'STAFF' as const,
       impersonatedBy: 'platform-staff-1',
     };
@@ -30,8 +31,12 @@ describe('TenantPlanActionsController', () => {
     expect(plans.finalizePlanForStaff).not.toHaveBeenCalled();
   });
 
-  it('allows the authorized staff handler to cancel automatic debit', () => {
-    const user = { userId: 'staff-1', profileType: 'STAFF' as const };
+  it('passes tenant and staff ids to the cancellation service', () => {
+    const user = {
+      userId: 'staff-1',
+      email: 'staff@example.test',
+      profileType: 'STAFF' as const,
+    };
 
     controller.cancelAutomaticDebit('tenant-1', user);
 
