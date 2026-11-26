@@ -1,4 +1,4 @@
-import { GymPlanView } from '@/lib/api/plan';
+import { apiRequest } from '@/lib/api/client';
 
 /**
  * Plan Faciliter del gym (GET /plan).
