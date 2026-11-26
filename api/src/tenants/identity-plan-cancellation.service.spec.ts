@@ -42,36 +42,32 @@ describe('IdentityPlanCancellationService', () => {
         }),
       },
       auditEvent: {
-        findFirst: jest.fn(
-          (input: { where: { action: string } }) => {
-            if (
-              input.where.action === 'platform.plan.finalize' &&
-              finalizationRecorded
-            ) {
-              return Promise.resolve({ id: 'finalized' });
-            }
-            if (
-              input.where.action === 'platform.plan.automatic_debit.cancel' &&
-              debitCancellationRecorded
-            ) {
-              return Promise.resolve({ id: 'debit-cancelled' });
-            }
-            return Promise.resolve(null);
-          },
-        ),
+        findFirst: jest.fn((input: { where: { action: string } }) => {
+          if (
+            input.where.action === 'platform.plan.finalize' &&
+            finalizationRecorded
+          ) {
+            return Promise.resolve({ id: 'finalized' });
+          }
+          if (
+            input.where.action === 'platform.plan.automatic_debit.cancel' &&
+            debitCancellationRecorded
+          ) {
+            return Promise.resolve({ id: 'debit-cancelled' });
+          }
+          return Promise.resolve(null);
+        }),
       },
     };
     audit = {
-      record: jest.fn(
-        async (input: { action: string }) => {
-          if (input.action === 'platform.plan.finalize') {
-            finalizationRecorded = true;
-          }
-          if (input.action === 'platform.plan.automatic_debit.cancel') {
-            debitCancellationRecorded = true;
-          }
-        },
-      ),
+      record: jest.fn((input: { action: string }) => {
+        if (input.action === 'platform.plan.finalize') {
+          finalizationRecorded = true;
+        }
+        if (input.action === 'platform.plan.automatic_debit.cancel') {
+          debitCancellationRecorded = true;
+        }
+      }),
     };
     mp = {
       getPreapproval: jest.fn().mockResolvedValue({ status: 'authorized' }),
