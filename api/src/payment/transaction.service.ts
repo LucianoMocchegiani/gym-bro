@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { PaymentMethod, PaymentStatus } from '@prisma/client';
@@ -10,7 +10,6 @@ export interface TransactionItemInput {
   productId?: string | null;
   productQuantity?: number;
   amount: number;
-  /** Precio de lista cuando `amount` tiene descuento (RN-PAG-020). */
   listAmount?: number | null;
   discountBps?: number;
   idempotencyKey: string;
@@ -41,8 +40,35 @@ export class TransactionService {
       tenantId, memberId, billedTenantId, method, items, recordedByStaffId,
       transferReference, mpPreferenceId, mpInitPoint, mpSandboxInitPoint,
     } = params;
+    if (!items.length) throw new BadRequestException('La venta no tiene ítems.');
     const db = tx ?? this.prisma;
-    const totalAmount = items.reduce((sum, item) => sum + item.amount, 0);
+    let totalAmount = 0;
+    for (const item of items) {
+      if (item.productId) {
+        if (item.packId || item.sessionId) {
+          throw new BadRequestException('Un ítem de venta solo puede ser pack, drop-in o producto.');
+        }
+        const quantity = item.productQuantity ?? 1;
+        if (!Number.isSafeInteger(quantity) || quantity < 1) {
+          throw new BadRequestException('La cantidad debe ser un entero positivo.');
+        }
+        const [product] = await db.$queryRaw<{ price: number; active: boolean }[]>`
+          SELECT price, active FROM products
+          WHERE id = ${item.productId}::uuid AND tenant_id = ${tenantId}::uuid`;
+        if (!product) throw new NotFoundException('Producto no encontrado.');
+        if (!product.active) throw new BadRequestException('El producto está archivado.');
+        const listTotal = product.price * quantity;
+        if ((item.listAmount ?? item.amount) !== listTotal || item.amount < 1 || item.amount > listTotal) {
+          throw new BadRequestException('El precio del producto no coincide con el catálogo.');
+        }
+        totalAmount += item.amount;
+      } else {
+        if (item.packId && item.sessionId) {
+          throw new BadRequestException('Un ítem no puede ser pack y drop-in a la vez.');
+        }
+        totalAmount += item.amount;
+      }
+    }
     const transaction = await db.transaction.create({
       data: {
         tenantId, memberId, amount: totalAmount, status: PaymentStatus.PENDING,
@@ -75,7 +101,7 @@ export class TransactionService {
           tenantId, transactionItemId: saved.id, productId: item.productId,
           quantity: item.productQuantity ?? 1,
           staffUserId: recordedByStaffId ?? null,
-        }, true);
+        }, method === PaymentMethod.MP);
       }
     }
 
