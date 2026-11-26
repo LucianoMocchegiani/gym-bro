@@ -36,6 +36,7 @@ export class IdentityPlanCancellationService {
   ): Promise<IdentityPlanActionsView> {
     await this.requireOwnedTenant(identityId, tenantId);
     const contract = await this.currentContract(tenantId);
+    // shortcut: finalización se deriva de auditoría, no del contrato; migrar a estado propio al modelar suscripciones de plataforma.
     const finalized = contract
       ? await this.prisma.auditEvent.findFirst({
           where: {
