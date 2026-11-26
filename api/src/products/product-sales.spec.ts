@@ -25,6 +25,14 @@ const sale = {
 };
 
 describe('reserveProductSale', () => {
+  it('rejects an invalid quantity before querying or writing', async () => {
+    const { tx, calls } = txFor(4);
+    await expect(
+      reserveProductSale(tx, { ...sale, quantity: -1 }, true),
+    ).rejects.toBeInstanceOf(BadRequestException);
+    expect(calls).toHaveLength(0);
+  });
+
   it('rejects an unavailable item before writing a reservation', async () => {
     const { tx, calls } = txFor(0);
     await expect(reserveProductSale(tx, sale, true)).rejects.toBeInstanceOf(

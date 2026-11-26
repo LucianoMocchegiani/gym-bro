@@ -37,6 +37,9 @@ export async function reserveProductSale(
   input: ProductSale,
   pendingPayment: boolean,
 ): Promise<void> {
+  if (!Number.isSafeInteger(input.quantity) || input.quantity < 1) {
+    throw new BadRequestException('La cantidad debe ser un entero positivo.');
+  }
   const [product] = await tx.$queryRaw<
     { stock_quantity: number; active: boolean; name: string }[]
   >`
