@@ -80,7 +80,9 @@ describe('IdentityPlanCancellationService', () => {
         }
       }),
     };
-    contracts = { updateStatus: jest.fn().mockResolvedValue({ status: 'CANCELLED' }) };
+    contracts = {
+      updateStatus: jest.fn().mockResolvedValue({ status: 'CANCELLED' }),
+    };
     mp = {
       getPreapproval: jest.fn().mockResolvedValue({ status: 'authorized' }),
       cancelPreapproval: jest.fn().mockResolvedValue(undefined),
@@ -142,6 +144,20 @@ describe('IdentityPlanCancellationService', () => {
         actor: { profileType: 'STAFF', userId: 'platform-staff-1' },
       }),
     );
+  });
+
+  it('cancels the active plan even when the tenant has no automatic debit', async () => {
+    prisma.platformSignup.findFirst.mockResolvedValue(null);
+
+    const result = await service.cancelPlanImmediatelyByPlatform(
+      'platform-staff-1',
+      tenantId,
+      'test-gym',
+    );
+
+    expect(mp.getPreapproval).not.toHaveBeenCalled();
+    expect(contracts.updateStatus).toHaveBeenCalled();
+    expect(result.automaticDebitCancelled).toBe(false);
   });
 
   it('requires the exact tenant slug before cancelling the contract', async () => {

@@ -81,7 +81,7 @@ export class IdentityPlanCancellationService {
   ) {
     const tenant = await this.prisma.tenant.findUnique({
       where: { id: tenantId },
-      select: { id: true, slug: true, ownerIdentityId: true },
+      select: { id: true, slug: true },
     });
     if (!tenant) {
       throw new NotFoundException(`Tenant ${tenantId} not found`);
@@ -98,9 +98,15 @@ export class IdentityPlanCancellationService {
       throw new BadRequestException('No hay un plan vigente para dar de baja');
     }
 
-    const signup = tenant.ownerIdentityId
-      ? await this.findSignup(tenant.ownerIdentityId, tenantId)
-      : null;
+    const signup = await this.prisma.platformSignup.findFirst({
+      where: {
+        tenantId,
+        status: PlatformSignupStatus.COMPLETED,
+        mpPreapprovalId: { not: null },
+      },
+      orderBy: { updatedAt: 'desc' },
+      select: { id: true, mpPreapprovalId: true },
+    });
     if (signup?.mpPreapprovalId) {
       await this.stopPreapproval(signup.mpPreapprovalId);
       await this.audit.record({
