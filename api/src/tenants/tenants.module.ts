@@ -9,6 +9,8 @@ import { ReceiptsModule } from '../receipts/receipts.module';
 import { RolesModule } from '../roles/roles.module';
 import { StaffModule } from '../staff/staff.module';
 import { IdentityPlatformController } from './identity-platform.controller';
+import { IdentityPlanCancellationController } from './identity-plan-cancellation.controller';
+import { IdentityPlanCancellationService } from './identity-plan-cancellation.service';
 import { PlatformSignupService } from './platform-signup.service';
 import { PlatformTrialService } from './platform-trial.service';
 import { TenantsController } from './tenants.controller';
@@ -16,9 +18,6 @@ import { PublicTenantsController } from './public-tenants.controller';
 import { PlanController } from './plan.controller';
 import { TenantsService } from './tenants.service';
 
-/**
- * Módulo de CRUD de tenants (Super Admin / plataforma) + resolución pública por slug.
- */
 @Module({
   imports: [
     AuthModule,
@@ -36,8 +35,14 @@ import { TenantsService } from './tenants.service';
     PublicTenantsController,
     PlanController,
     IdentityPlatformController,
+    IdentityPlanCancellationController,
   ],
-  providers: [TenantsService, PlatformTrialService, PlatformSignupService],
+  providers: [
+    TenantsService,
+    PlatformTrialService,
+    PlatformSignupService,
+    IdentityPlanCancellationService,
+  ],
   exports: [TenantsService, PlatformTrialService, PlatformSignupService],
 })
 export class TenantsModule {}

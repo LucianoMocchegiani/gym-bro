@@ -1,6 +1,7 @@
 'use client';
 
 import { Panel } from '@/components/AdminUi';
+import { IdentityPlanActions } from '@/components/IdentityPlanActions';
 import type { GymPlanView } from '@/lib/api/plan';
 import { MARKETING_MAIL } from '@/lib/site-url';
 
@@ -32,8 +33,7 @@ function statusLabel(plan: GymPlanView): string {
  * Plan Faciliter del gym (mismo layout pensado para apex más adelante).
  *
  * @remarks Contratado en faciliter.xyz → débito MP de `admin` (RN-PAG-017).
- * Alta por plataforma → Caja de `admin`. Cambio de plan y baja del débito
- * todavía no son self-serve: se piden a Faciliter.
+ * Alta por plataforma → Caja de `admin`.
  */
 export function PlanPanel({ plan }: { plan: GymPlanView }) {
   return (
@@ -84,8 +84,9 @@ export function PlanPanel({ plan }: { plan: GymPlanView }) {
           <a href={`mailto:${MARKETING_MAIL}`}>{MARKETING_MAIL}</a>.
         </p>
       ) : null}
+      {plan.isOwner ? <IdentityPlanActions plan={plan} /> : null}
       <p className="muted small" style={{ marginTop: '2rem' }}>
-        Para cambiar de plan o dar de baja el débito, escribinos a{' '}
+        Para cambiar de plan, escribinos a{' '}
         <a href={`mailto:${MARKETING_MAIL}`}>{MARKETING_MAIL}</a>.
       </p>
     </Panel>
