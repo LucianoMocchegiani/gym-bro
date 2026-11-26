@@ -2,10 +2,13 @@ import { Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { PaymentMethod, PaymentStatus } from '@prisma/client';
+import { reserveProductSale } from '../products/product-sales';
 
 export interface TransactionItemInput {
   packId?: string | null;
   sessionId?: string | null;
+  productId?: string | null;
+  productQuantity?: number;
   amount: number;
   /** Precio de lista cuando `amount` tiene descuento (RN-PAG-020). */
   listAmount?: number | null;
@@ -51,14 +54,13 @@ export class TransactionService {
     } = params;
     const db = tx ?? this.prisma;
     const totalAmount = items.reduce((sum, item) => sum + item.amount, 0);
-    const firstItem = items[0];
     const transaction = await db.transaction.create({
       data: {
         tenantId,
         memberId,
         amount: totalAmount,
         status: PaymentStatus.PENDING,
-        idempotencyKey: firstItem.idempotencyKey,
+        idempotencyKey: items[0].idempotencyKey,
         recordedByStaffId: recordedByStaffId ?? null,
         billedTenantId: billedTenantId ?? null,
         transferReference: transferReference ?? null,
@@ -68,28 +70,39 @@ export class TransactionService {
       },
     });
 
-    await Promise.all(
-      items.map((item) =>
-        db.transactionItem.create({
-          data: {
+    for (const item of items) {
+      const saved = await db.transactionItem.create({
+        data: {
+          tenantId,
+          memberId,
+          packId: item.packId ?? null,
+          sessionId: item.sessionId ?? null,
+          amount: item.amount,
+          listAmount: item.listAmount ?? null,
+          discountBps: item.discountBps ?? 0,
+          status: PaymentStatus.PENDING,
+          method,
+          idempotencyKey: item.idempotencyKey,
+          transactionId: transaction.id,
+          mpPreferenceId,
+          mpInitPoint,
+          mpSandboxInitPoint,
+        },
+      });
+      if (item.productId) {
+        await reserveProductSale(
+          db,
+          {
             tenantId,
-            memberId,
-            packId: item.packId ?? null,
-            sessionId: item.sessionId ?? null,
-            amount: item.amount,
-            listAmount: item.listAmount ?? null,
-            discountBps: item.discountBps ?? 0,
-            status: PaymentStatus.PENDING,
-            method,
-            idempotencyKey: item.idempotencyKey,
-            transactionId: transaction.id,
-            mpPreferenceId,
-            mpInitPoint,
-            mpSandboxInitPoint,
+            transactionItemId: saved.id,
+            productId: item.productId,
+            quantity: item.productQuantity ?? 1,
+            staffUserId: recordedByStaffId ?? null,
           },
-        }),
-      ),
-    );
+          true,
+        );
+      }
+    }
 
     return db.transaction.findUniqueOrThrow({
       where: { id: transaction.id },
@@ -103,6 +116,7 @@ export class TransactionService {
     tx?: Prisma.TransactionClient,
   ): Promise<Prisma.TransactionGetPayload<{ include: { transactionItems: true } }>> {
     void actor;
+    const db = tx ?? this.prisma;
     if (tx) {
       await Promise.all([
         tx.transaction.update({
@@ -114,23 +128,19 @@ export class TransactionService {
           data: { status: PaymentStatus.APPROVED },
         }),
       ]);
-      return tx.transaction.findUniqueOrThrow({
-        where: { id: transactionId },
-        include: { transactionItems: true },
-      });
+    } else {
+      await this.prisma.$transaction([
+        this.prisma.transaction.update({
+          where: { id: transactionId },
+          data: { status: PaymentStatus.APPROVED },
+        }),
+        this.prisma.transactionItem.updateMany({
+          where: { transactionId },
+          data: { status: PaymentStatus.APPROVED },
+        }),
+      ]);
     }
-
-    await this.prisma.$transaction([
-      this.prisma.transaction.update({
-        where: { id: transactionId },
-        data: { status: PaymentStatus.APPROVED },
-      }),
-      this.prisma.transactionItem.updateMany({
-        where: { transactionId },
-        data: { status: PaymentStatus.APPROVED },
-      }),
-    ]);
-    return this.prisma.transaction.findUniqueOrThrow({
+    return db.transaction.findUniqueOrThrow({
       where: { id: transactionId },
       include: { transactionItems: true },
     });
