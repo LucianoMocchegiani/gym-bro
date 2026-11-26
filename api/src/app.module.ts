@@ -15,6 +15,7 @@ import { MemberCatalogModule } from './member-catalog/member-catalog.module';
 import { PaymentModule } from './payment/payment.module';
 import { DebitModule } from './debit/debit.module';
 import { PacksModule } from './packs/packs.module';
+import { ProductsModule } from './products/products.module';
 import { PlatformPlansModule } from './platform-plans/platform-plans.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { KuatiaModule } from './kuatia/kuatia.module';
@@ -39,52 +40,17 @@ import { ExpensesModule } from './expenses/expenses.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { UploadModule } from './upload/upload.module';
 
-/**
- * Módulo raíz del monolito modular GymBro.
- *
- * @remarks Infraestructura: config, Prisma, auth JWT, tenant guard y health.
- */
 @Module({
   imports: [
-    ConfigModule.forRoot({ isGlobal: true }),
-    ScheduleModule.forRoot(),
-    PrismaModule,
-    AuthModule,
-    TenantModule,
-    TenantSettingsModule,
-    TenantSiteModule,
-    RolesModule,
-    StaffModule,
-    MembersModule,
-    MemberCatalogModule,
-    ServicesModule,
-    PacksModule,
-    PlatformPlansModule,
-    ContractsModule,
-    KuatiaModule,
-    SessionsModule,
-    ReservationsModule,
-    WaitlistModule,
-    PaymentRegisterModule,
-    ReceiptsModule,
-    PaymentModule,
-    DebitModule,
-    RefundsModule,
-    ExpirationsModule,
-    ReportsModule,
-    AccessModule,
-    TenantsModule,
-    AuditModule,
-    HealthModule,
-    MobileAppModule,
-    AccountDeletionModule,
-    FileStorageModule,
-    UploadModule,
-    FolderModule,
-    MemberImportModule,
-    ExpensesModule,
-    NotificationsModule,
-    AdsModule,
+    ConfigModule.forRoot({ isGlobal: true }), ScheduleModule.forRoot(), PrismaModule,
+    AuthModule, TenantModule, TenantSettingsModule, TenantSiteModule, RolesModule,
+    StaffModule, MembersModule, MemberCatalogModule, ServicesModule, PacksModule,
+    ProductsModule, PlatformPlansModule, ContractsModule, KuatiaModule, SessionsModule,
+    ReservationsModule, WaitlistModule, PaymentRegisterModule, ReceiptsModule,
+    PaymentModule, DebitModule, RefundsModule, ExpirationsModule, ReportsModule,
+    AccessModule, TenantsModule, AuditModule, HealthModule, MobileAppModule,
+    AccountDeletionModule, FileStorageModule, UploadModule, FolderModule,
+    MemberImportModule, ExpensesModule, NotificationsModule, AdsModule,
   ],
 })
 export class AppModule {}
