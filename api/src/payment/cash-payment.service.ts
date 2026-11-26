@@ -38,11 +38,8 @@ import { Prisma } from '@prisma/client';
 type Tx = Prisma.TransactionClient;
 
 export interface ProcessPaymentParams {
-  /** Tenant dueño del cobro (en ventas de plataforma, `admin`). */
   tenantId: string;
-  /** Afiliado cobrador. Null cuando el tenant mismo abona. */
   memberId: string | null;
-  /** Venta de plataforma: gym que recibe el contrato TENANT. */
   billedTenantId?: string | null;
   items: TransactionItemInput[];
   idempotencyKey: string;
@@ -54,25 +51,12 @@ export interface ProcessPaymentParams {
   transferReference?: string | null;
 }
 
-/** Medio y descuento de un cobro presencial ya resueltos. */
 type CounterCharge = {
   method: 'CASH' | 'TRANSFER';
   discountBps: number;
   transferReference: string | null;
 };
 
-/**
- * Procesa pagos presenciales de Caja (CASH y TRANSFER).
- *
- * @description
- * - Crea Transaction + TransactionItems APPROVED
- * - Registra movimiento en caja y emite un comprobante por Transaction
- * - Aplica el descuento de la venta a cada ítem (RN-PAG-020)
- *
- * @remarks
- * `STUB` se rechaza. El caller debe wrapear en $transaction si necesita
- * atomicidad con otras operaciones.
- */
 @Injectable()
 export class CashPaymentService {
   private readonly logger = new Logger(CashPaymentService.name);
@@ -94,13 +78,6 @@ export class CashPaymentService {
     private readonly audit: AuditService,
   ) {}
 
-  /**
-   * Procesa un pago.
-   *
-   * @param tx - Transacción Prisma existente (para atomicidad con otras operaciones)
-   * @param params - Parámetros del pago
-   * @returns La Transaction confirmada con sus items
-   */
   async processPayment(
     tx: Tx,
     params: ProcessPaymentParams,
@@ -126,19 +103,23 @@ export class CashPaymentService {
       );
     }
 
-    const transaction = await this.transactionService.initiateTransaction({
-      tenantId,
-      memberId,
-      billedTenantId: billedTenantId ?? null,
-      method,
-      items,
-      recordedByStaffId: recordedByStaffId ?? null,
-      transferReference: transferReference ?? null,
-    });
+    const transaction = await this.transactionService.initiateTransaction(
+      {
+        tenantId,
+        memberId,
+        billedTenantId: billedTenantId ?? null,
+        method,
+        items,
+        recordedByStaffId: recordedByStaffId ?? null,
+        transferReference: transferReference ?? null,
+      },
+      tx,
+    );
 
     const confirmed = await this.transactionService.confirmTransaction(
       transaction.id,
       { userId: recordedByStaffId ?? 'system', profileType: 'SYSTEM' },
+      tx,
     );
 
     if (method === PaymentMethod.CASH || method === PaymentMethod.TRANSFER) {
@@ -174,12 +155,6 @@ export class CashPaymentService {
     return { transaction: confirmed };
   }
 
-  /**
-   * Medio, descuento y referencia del cobro presencial.
-   *
-   * @remarks Sin `discountPercent` se cobra el precio de lista (apps viejas
-   * no lo mandan). La prueba de plataforma ($0) no lleva descuento.
-   */
   private resolveCounterCharge(dto: CreateCashCartDto): CounterCharge {
     const method = dto.method ?? 'CASH';
     const reference = dto.transferReference?.trim() || null;
@@ -214,9 +189,6 @@ export class CashPaymentService {
     });
   }
 
-  /**
-   * Audita el cobro cuando el % difiere del default del gym para ese medio.
-   */
   private async auditDiscountOverride(
     tenantId: string,
     actor: AuditActor,
@@ -250,17 +222,6 @@ export class CashPaymentService {
     });
   }
 
-  /**
-   * Checkout en efectivo de carrito: múltiples items (DROP_IN y PACK) en una sola transacción.
-   *
-   * @description
-   * - Valida sesiones (DROP_IN) y packs antes de procesar
-   * - Crea Transaction APPROVED, contratos (pack o drop-in ONE_TIME) y reservas CREDIT
-   *
-   * @returns Cart APPROVED con `receipt` leído **después** del commit (el
-   *   lookup no puede ir dentro de `$transaction`: `findByTransactionId` usa
-   *   otra conexión y no vería el comprobante aún no commiteado).
-   */
   async startCashCart(
     tenantId: string,
     memberId: string,
@@ -453,19 +414,6 @@ export class CashPaymentService {
     };
   }
 
-  /**
-   * Checkout en efectivo de la Caja de plataforma: el tenant `admin` le factura
-   * un pack propio a otro gym.
-   *
-   * @description
-   * Reusa {@link processPayment} con `memberId: null`: la transacción, la caja
-   * y el comprobante quedan en `catalogTenantId` (la plataforma) con
-   * `billedTenantId` = `billingTenantId`; el contrato `TENANT` va al gym.
-   * `applyTrial`: 30 días, $0, candados por gym y por cuenta dueña.
-   *
-   * @remarks
-   * Solo packs: el drop-in es por sesiones de un gym, no aplica a plataforma.
-   */
   async startTenantCashCart(
     catalogTenantId: string,
     billingTenantId: string,
