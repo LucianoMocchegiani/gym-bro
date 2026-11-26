@@ -96,15 +96,18 @@ function PlanInner() {
       {error ? <p className="error">{error}</p> : null}
       {!error && !plan ? <SkeletonPanel lines={6} /> : null}
       {plan ? (
-        <>
-          <PlanPanel plan={plan} showIdentityActions={false} />
-          <IdentityPlanActions
-            plan={plan}
-            mode="tenant"
-            permissionCodes={session?.permissionCodes}
-            impersonating={session?.impersonating}
-          />
-        </>
+        <PlanPanel
+          plan={plan}
+          showIdentityActions={false}
+          actions={
+            <IdentityPlanActions
+              plan={plan}
+              mode="tenant"
+              permissionCodes={session?.permissionCodes}
+              impersonating={session?.impersonating}
+            />
+          }
+        />
       ) : null}
     </AdminShell>
   );
