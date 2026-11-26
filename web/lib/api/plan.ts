@@ -1,8 +1,8 @@
+import { apiRequest } from '@/lib/api/client';
+
 /**
  * Plan Faciliter del gym (GET /plan).
  */
-
-import { apiRequest } from '@/lib/api/client';
 
 export type GymPlanStatus = 'trial' | 'active' | 'expired' | 'none';
 
@@ -26,11 +26,33 @@ export type PlatformTrialEligibility = {
   reason: string | null;
 };
 
+export type TenantPlanActionsView = {
+  automaticDebit: 'active' | 'cancelled' | 'none' | 'unknown';
+  canFinalize: boolean;
+  finalizationAt: string | null;
+};
+
 /**
  * Plan del gym del Host (`tenant.settings.read`).
  */
 export function getGymPlan(): Promise<GymPlanView> {
   return apiRequest<GymPlanView>('/plan');
+}
+
+export function getTenantPlanActions(): Promise<TenantPlanActionsView> {
+  return apiRequest<TenantPlanActionsView>('/plan/actions');
+}
+
+export function cancelTenantPlanDebit(): Promise<TenantPlanActionsView> {
+  return apiRequest<TenantPlanActionsView>('/plan/actions/automatic-debit', {
+    method: 'DELETE',
+  });
+}
+
+export function finalizeTenantPlan(): Promise<TenantPlanActionsView> {
+  return apiRequest<TenantPlanActionsView>('/plan/actions/finalize', {
+    method: 'POST',
+  });
 }
 
 /**

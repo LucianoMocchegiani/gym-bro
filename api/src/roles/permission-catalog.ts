@@ -154,6 +154,16 @@ export const PERMISSION_CATALOG: readonly PermissionDefinition[] = [
     dangerous: true,
   },
   {
+    code: 'tenant.plan.debit.cancel',
+    description: 'Cancelar el débito automático del plan Faciliter',
+    dangerous: true,
+  },
+  {
+    code: 'tenant.plan.finalize',
+    description: 'Finalizar el plan Faciliter al vencimiento',
+    dangerous: true,
+  },
+  {
     code: 'platform.tenants.read',
     description: 'Listar gyms de la plataforma',
     dangerous: false,

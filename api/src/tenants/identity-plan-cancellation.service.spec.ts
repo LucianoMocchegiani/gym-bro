@@ -30,7 +30,13 @@ describe('IdentityPlanCancellationService', () => {
     prisma = {
       tenant: {
         findFirst: jest.fn().mockResolvedValue({ id: tenantId }),
-        findUnique: jest.fn().mockResolvedValue({ id: 'admin-id' }),
+        findUnique: jest.fn((input: { where: { slug?: string } }) =>
+          Promise.resolve(
+            input.where.slug
+              ? { id: 'admin-id' }
+              : { ownerIdentityId: identityId },
+          ),
+        ),
       },
       contract: {
         findFirst: jest.fn().mockResolvedValue({ id: 'contract-1', endsAt }),
@@ -96,6 +102,18 @@ describe('IdentityPlanCancellationService', () => {
     );
     expect(prisma.contract.findFirst).toHaveBeenCalled();
     expect(result.finalizationAt).toBe(endsAt.toISOString());
+  });
+
+  it('cancels debit on behalf of the tenant and audits the staff actor', async () => {
+    await service.cancelAutomaticDebitForStaff('staff-1', tenantId);
+
+    expect(mp.cancelPreapproval).toHaveBeenCalledWith('token', preapprovalId);
+    expect(audit.record).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: 'platform.plan.automatic_debit.cancel',
+        actor: { profileType: 'STAFF', userId: 'staff-1' },
+      }),
+    );
   });
 
   it('does not cancel a tenant that is not owned by the identity', async () => {

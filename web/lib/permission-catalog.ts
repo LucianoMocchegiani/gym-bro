@@ -116,4 +116,14 @@ export const PERMISSION_OPTIONS: readonly PermissionOption[] = [
     description: 'Conectar o cambiar cuenta Mercado Pago',
     dangerous: true,
   },
+  {
+    code: 'tenant.plan.debit.cancel',
+    description: 'Cancelar el débito automático del plan Faciliter',
+    dangerous: true,
+  },
+  {
+    code: 'tenant.plan.finalize',
+    description: 'Finalizar el plan Faciliter al vencimiento',
+    dangerous: true,
+  },
 ] as const;

@@ -35,6 +35,47 @@ export class IdentityPlanCancellationService {
     tenantId: string,
   ): Promise<IdentityPlanActionsView> {
     await this.requireOwnedTenant(identityId, tenantId);
+    return this.getActions(identityId, tenantId);
+  }
+
+  async getForTenant(tenantId: string): Promise<IdentityPlanActionsView> {
+    return this.getActions(await this.ownerIdentityId(tenantId), tenantId);
+  }
+
+  async cancelAutomaticDebit(identityId: string, tenantId: string) {
+    await this.requireOwnedTenant(identityId, tenantId);
+    return this.cancelDebit(
+      tenantId,
+      identityId,
+      this.identityActor(identityId),
+    );
+  }
+
+  async cancelAutomaticDebitForStaff(staffId: string, tenantId: string) {
+    const identityId = await this.ownerIdentityId(tenantId);
+    return this.cancelDebit(tenantId, identityId, {
+      profileType: 'STAFF',
+      userId: staffId,
+    });
+  }
+
+  async finalizePlan(identityId: string, tenantId: string) {
+    await this.requireOwnedTenant(identityId, tenantId);
+    return this.finalize(tenantId, identityId, this.identityActor(identityId));
+  }
+
+  async finalizePlanForStaff(staffId: string, tenantId: string) {
+    const identityId = await this.ownerIdentityId(tenantId);
+    return this.finalize(tenantId, identityId, {
+      profileType: 'STAFF',
+      userId: staffId,
+    });
+  }
+
+  private async getActions(
+    identityId: string,
+    tenantId: string,
+  ): Promise<IdentityPlanActionsView> {
     const contract = await this.currentContract(tenantId);
     // shortcut: finalización se deriva de auditoría, no del contrato; migrar a estado propio al modelar suscripciones de plataforma.
     const finalized = contract
@@ -88,8 +129,11 @@ export class IdentityPlanCancellationService {
     };
   }
 
-  async cancelAutomaticDebit(identityId: string, tenantId: string) {
-    await this.requireOwnedTenant(identityId, tenantId);
+  private async cancelDebit(
+    tenantId: string,
+    identityId: string,
+    actor: AuditActor,
+  ) {
     const signup = await this.findSignup(identityId, tenantId);
     if (!signup?.mpPreapprovalId) {
       throw new BadRequestException('No hay un débito automático asociado');
@@ -97,17 +141,20 @@ export class IdentityPlanCancellationService {
     await this.stopPreapproval(signup.mpPreapprovalId);
     await this.audit.record({
       tenantId,
-      actor: this.actor(identityId),
+      actor,
       action: 'platform.plan.automatic_debit.cancel',
       entityType: 'platform_signup',
       entityId: signup.id,
       after: { preapprovalId: signup.mpPreapprovalId },
     });
-    return this.get(identityId, tenantId);
+    return this.getActions(identityId, tenantId);
   }
 
-  async finalizePlan(identityId: string, tenantId: string) {
-    await this.requireOwnedTenant(identityId, tenantId);
+  private async finalize(
+    tenantId: string,
+    identityId: string,
+    actor: AuditActor,
+  ) {
     const contract = await this.currentContract(tenantId);
     if (!contract?.endsAt) {
       throw new BadRequestException('No hay un plan vigente con vencimiento');
@@ -127,7 +174,7 @@ export class IdentityPlanCancellationService {
         await this.stopPreapproval(signup.mpPreapprovalId);
         await this.audit.record({
           tenantId,
-          actor: this.actor(identityId),
+          actor,
           action: 'platform.plan.automatic_debit.cancel',
           entityType: 'platform_signup',
           entityId: signup.id,
@@ -139,14 +186,14 @@ export class IdentityPlanCancellationService {
       }
       await this.audit.record({
         tenantId,
-        actor: this.actor(identityId),
+        actor,
         action: 'platform.plan.finalize',
         entityType: 'contract',
         entityId: contract.id,
         after: { effectiveAt: contract.endsAt.toISOString() },
       });
     }
-    return this.get(identityId, tenantId);
+    return this.getActions(identityId, tenantId);
   }
 
   private async stopPreapproval(preapprovalId: string): Promise<void> {
@@ -166,6 +213,20 @@ export class IdentityPlanCancellationService {
       throw new BadRequestException('Tenant de plataforma no configurado');
     }
     return this.accounts.getDecryptedAccessToken(admin.id);
+  }
+
+  private async ownerIdentityId(tenantId: string): Promise<string> {
+    const tenant = await this.prisma.tenant.findUnique({
+      where: { id: tenantId },
+      select: { ownerIdentityId: true },
+    });
+    if (!tenant) {
+      throw new NotFoundException(`Tenant ${tenantId} not found`);
+    }
+    if (!tenant.ownerIdentityId) {
+      throw new BadRequestException('El tenant no tiene una cuenta dueña');
+    }
+    return tenant.ownerIdentityId;
   }
 
   private async findSignup(identityId: string, tenantId: string) {
@@ -206,7 +267,7 @@ export class IdentityPlanCancellationService {
     }
   }
 
-  private actor(identityId: string): AuditActor {
+  private identityActor(identityId: string): AuditActor {
     return { profileType: 'IDENTITY', userId: identityId };
   }
 }

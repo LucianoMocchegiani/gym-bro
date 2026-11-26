@@ -4,6 +4,7 @@ import { Panel } from '@/components/AdminUi';
 import { IdentityPlanActions } from '@/components/IdentityPlanActions';
 import type { GymPlanView } from '@/lib/api/plan';
 import { MARKETING_MAIL } from '@/lib/site-url';
+import type { ReactNode } from 'react';
 
 function formatWhen(iso: string | null): string {
   if (!iso) {
@@ -35,7 +36,15 @@ function statusLabel(plan: GymPlanView): string {
  * @remarks Contratado en faciliter.xyz → débito MP de `admin` (RN-PAG-017).
  * Alta por plataforma → Caja de `admin`.
  */
-export function PlanPanel({ plan }: { plan: GymPlanView }) {
+export function PlanPanel({
+  plan,
+  showIdentityActions = true,
+  actions,
+}: {
+  plan: GymPlanView;
+  showIdentityActions?: boolean;
+  actions?: ReactNode;
+}) {
   return (
     <Panel
       title="Plan Faciliter"
@@ -84,7 +93,10 @@ export function PlanPanel({ plan }: { plan: GymPlanView }) {
           <a href={`mailto:${MARKETING_MAIL}`}>{MARKETING_MAIL}</a>.
         </p>
       ) : null}
-      {plan.isOwner ? <IdentityPlanActions plan={plan} /> : null}
+      {showIdentityActions && plan.isOwner ? (
+        <IdentityPlanActions plan={plan} />
+      ) : null}
+      {actions}
       <p className="muted small" style={{ marginTop: '2rem' }}>
         Para cambiar de plan, escribinos a{' '}
         <a href={`mailto:${MARKETING_MAIL}`}>{MARKETING_MAIL}</a>.

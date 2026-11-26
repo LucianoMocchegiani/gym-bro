@@ -9,6 +9,11 @@ import {
   getIdentityPlanActions,
   type IdentityPlanActionsView,
 } from '@/lib/api/identity-platform';
+import {
+  cancelTenantPlanDebit,
+  finalizeTenantPlan,
+  getTenantPlanActions,
+} from '@/lib/api/plan';
 
 function formatWhen(iso: string | null): string {
   if (!iso) {
@@ -21,17 +26,40 @@ function formatWhen(iso: string | null): string {
   });
 }
 
-export function IdentityPlanActions({ plan }: { plan: GymPlanView }) {
+type IdentityPlanActionsProps = {
+  plan: GymPlanView;
+  mode?: 'identity' | 'tenant';
+  permissionCodes?: string[] | null;
+  impersonating?: boolean;
+};
+
+export function IdentityPlanActions({
+  plan,
+  mode = 'identity',
+  permissionCodes,
+  impersonating = false,
+}: IdentityPlanActionsProps) {
   const [state, setState] = useState<IdentityPlanActionsView | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [confirming, setConfirming] = useState<'debit' | 'finalize' | null>(
     null,
   );
+  const canCancelDebit =
+    mode === 'identity' ||
+    (!impersonating && permissionCodes?.includes('tenant.plan.debit.cancel'));
+  const canFinalize =
+    mode === 'identity' ||
+    (!impersonating && permissionCodes?.includes('tenant.plan.finalize'));
 
   useEffect(() => {
+    if (mode === 'tenant' && !canCancelDebit && !canFinalize) return;
     let cancelled = false;
-    void getIdentityPlanActions(plan.tenantId)
+    const load =
+      mode === 'identity'
+        ? getIdentityPlanActions(plan.tenantId)
+        : getTenantPlanActions();
+    void load
       .then((value) => {
         if (!cancelled) setState(value);
       })
@@ -41,17 +69,23 @@ export function IdentityPlanActions({ plan }: { plan: GymPlanView }) {
     return () => {
       cancelled = true;
     };
-  }, [plan.tenantId]);
+  }, [mode, plan.tenantId, canCancelDebit, canFinalize]);
 
   async function run(action: 'debit' | 'finalize') {
     setBusy(true);
     setError(null);
     try {
-      setState(
-        action === 'debit'
-          ? await cancelIdentityPlanDebit(plan.tenantId)
-          : await finalizeIdentityPlan(plan.tenantId),
-      );
+      const requests =
+        mode === 'identity'
+          ? {
+              debit: () => cancelIdentityPlanDebit(plan.tenantId),
+              finalize: () => finalizeIdentityPlan(plan.tenantId),
+            }
+          : {
+              debit: cancelTenantPlanDebit,
+              finalize: finalizeTenantPlan,
+            };
+      setState(await requests[action]());
       setConfirming(null);
     } catch (err) {
       setError(
@@ -69,8 +103,9 @@ export function IdentityPlanActions({ plan }: { plan: GymPlanView }) {
           {error}
         </p>
       ) : null}
-      {state?.automaticDebit === 'active' ||
-      state?.automaticDebit === 'unknown' ? (
+      {canCancelDebit &&
+      (state?.automaticDebit === 'active' ||
+        state?.automaticDebit === 'unknown') ? (
         <button
           className="btn ghost"
           type="button"
@@ -79,10 +114,10 @@ export function IdentityPlanActions({ plan }: { plan: GymPlanView }) {
           Cancelar débito automático
         </button>
       ) : null}
-      {state?.automaticDebit === 'cancelled' ? (
+      {canCancelDebit && state?.automaticDebit === 'cancelled' ? (
         <p className="muted small">El débito automático está cancelado.</p>
       ) : null}
-      {state?.canFinalize && !state.finalizationAt ? (
+      {canFinalize && state?.canFinalize && !state.finalizationAt ? (
         <button
           className="btn danger"
           type="button"
@@ -91,7 +126,7 @@ export function IdentityPlanActions({ plan }: { plan: GymPlanView }) {
           Finalizar plan
         </button>
       ) : null}
-      {state?.finalizationAt ? (
+      {canFinalize && state?.finalizationAt ? (
         <p className="muted small">
           El plan finalizará el {formatWhen(state.finalizationAt)}. El acceso se
           mantiene hasta esa fecha.

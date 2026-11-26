@@ -45,7 +45,14 @@ export const ADMIN_NAV_PERMISSIONS: readonly NavPermissionRule[] = [
     anyOf: ['tenant.settings.read', 'tenant.settings.write'],
     module: 'club',
   },
-  { href: '/dashboard/plan', anyOf: ['tenant.settings.read'] },
+  {
+    href: '/dashboard/plan',
+    anyOf: [
+      'tenant.settings.read',
+      'tenant.plan.debit.cancel',
+      'tenant.plan.finalize',
+    ],
+  },
   { href: '/dashboard/auditoria', anyOf: ['audit.read'] },
   // Gestión de tenants y planes de plataforma: solo admin (la API exige slug).
   { href: '/dashboard/tenants', anyOf: ['platform.tenants.read'] },

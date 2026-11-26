@@ -11,6 +11,7 @@ import { StaffModule } from '../staff/staff.module';
 import { IdentityPlatformController } from './identity-platform.controller';
 import { IdentityPlanCancellationController } from './identity-plan-cancellation.controller';
 import { IdentityPlanCancellationService } from './identity-plan-cancellation.service';
+import { TenantPlanActionsController } from './tenant-plan-actions.controller';
 import { PlatformSignupService } from './platform-signup.service';
 import { PlatformTrialService } from './platform-trial.service';
 import { TenantsController } from './tenants.controller';
@@ -36,6 +37,7 @@ import { TenantsService } from './tenants.service';
     PlanController,
     IdentityPlatformController,
     IdentityPlanCancellationController,
+    TenantPlanActionsController,
   ],
   providers: [
     TenantsService,
