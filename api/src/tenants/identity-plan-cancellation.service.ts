@@ -84,9 +84,7 @@ export class IdentityPlanCancellationService {
       automaticDebit,
       canFinalize: Boolean(contract?.endsAt),
       finalizationAt:
-        finalized && contract?.endsAt
-          ? contract.endsAt.toISOString()
-          : null,
+        finalized && contract?.endsAt ? contract.endsAt.toISOString() : null,
     };
   }
 
