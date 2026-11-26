@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { AuditModule } from '../audit/audit.module';
+import { RolesModule } from '../roles/roles.module';
 import {
   PlatformPlansController,
   TenantPlatformModulesController,
@@ -7,7 +8,7 @@ import {
 import { PlatformPlansService } from './platform-plans.service';
 
 @Module({
-  imports: [AuditModule],
+  imports: [AuditModule, RolesModule],
   controllers: [PlatformPlansController, TenantPlatformModulesController],
   providers: [PlatformPlansService],
   exports: [PlatformPlansService],
