@@ -5,28 +5,24 @@ import { IdentityPlanActions } from '@/components/IdentityPlanActions';
 import type { GymPlanView } from '@/lib/api/plan';
 import { MARKETING_MAIL } from '@/lib/site-url';
 
-function formatWhen(iso: string | null): string {
-  if (!iso) {
-    return '—';
-  }
-  return new Date(iso).toLocaleDateString('es-AR', {
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-  });
+function dateLabel(date: string | null): string {
+  if (!date) return 'Sin fecha de vencimiento';
+  return new Intl.DateTimeFormat('es-AR', { dateStyle: 'medium' }).format(
+    new Date(date),
+  );
 }
 
 function statusLabel(plan: GymPlanView): string {
-  if (plan.status === 'trial') {
-    return `Prueba · hasta ${formatWhen(plan.endsAt)}`;
+  switch (plan.status) {
+    case 'trial':
+      return 'Prueba';
+    case 'active':
+      return 'Activo';
+    case 'expired':
+      return 'Vencido';
+    case 'none':
+      return 'Sin plan';
   }
-  if (plan.status === 'active') {
-    return `Vigente · hasta ${formatWhen(plan.endsAt)}`;
-  }
-  if (plan.status === 'expired') {
-    return `Vencido · ${formatWhen(plan.endsAt)}`;
-  }
-  return 'Sin pack Faciliter';
 }
 
 /**
@@ -35,56 +31,54 @@ function statusLabel(plan: GymPlanView): string {
  * @remarks Contratado en faciliter.xyz → débito MP de `admin` (RN-PAG-017).
  * Alta por plataforma → Caja de `admin`.
  */
-export function PlanPanel({ plan }: { plan: GymPlanView }) {
+export function PlanPanel({
+  plan,
+  showIdentityActions = true,
+}: {
+  plan: GymPlanView;
+  showIdentityActions?: boolean;
+}) {
   return (
-    <Panel
-      title="Plan Faciliter"
-      description={`${plan.tenantName} · ${plan.tenantSlug}.faciliter.xyz`}
-    >
-      <dl className="detail-dl">
-        <div>
-          <dt>Pack</dt>
-          <dd>{plan.packName ?? 'Ninguno'}</dd>
-        </div>
+    <Panel title="Plan Faciliter" description={plan.tenantName}>
+      <dl className="admin-definition-list">
         <div>
           <dt>Estado</dt>
           <dd>{statusLabel(plan)}</dd>
         </div>
-        {plan.serviceNames.length > 0 ? (
+        <div>
+          <dt>Pack</dt>
+          <dd>{plan.packName ?? '—'}</dd>
+        </div>
+        {plan.serviceNames.length ? (
           <div>
-            <dt>Incluye</dt>
-            <dd>
-              <ul className="plain-list">
-                {plan.serviceNames.map((name) => (
-                  <li key={name}>{name}</li>
-                ))}
-              </ul>
-            </dd>
+            <dt>Servicios</dt>
+            <dd>{plan.serviceNames.join(', ')}</dd>
           </div>
         ) : null}
+        {plan.isPlatformTrial ? (
+          <div>
+            <dt>Modalidad</dt>
+            <dd>Prueba de plataforma</dd>
+          </div>
+        ) : null}
+        <div>
+          <dt>Inicio</dt>
+          <dd>{dateLabel(plan.startsAt)}</dd>
+        </div>
+        <div>
+          <dt>Vencimiento</dt>
+          <dd>{dateLabel(plan.endsAt)}</dd>
+        </div>
       </dl>
-      {plan.status === 'trial' ? (
+      {plan.status === 'none' ? (
         <p className="muted small">
-          Prueba hasta el {formatWhen(plan.endsAt)}. Si contrataste en
-          faciliter.xyz, al terminar Mercado Pago cobra el primer mes con el
-          débito que autorizaste. Si te dio de alta Faciliter, el mes se paga
-          con Faciliter.
-        </p>
-      ) : null}
-      {plan.status === 'active' ? (
-        <p className="muted small" style={{ marginTop: '2rem' }}>
-          Si contrataste en faciliter.xyz, se renueva solo con el débito de
-          Mercado Pago. Si no, se renueva pagando con Faciliter.
-        </p>
-      ) : null}
-      {plan.status === 'none' || plan.status === 'expired' ? (
-        <p className="muted small">
-          Sin plan vigente: hay 3 días de gracia y después el gym queda
-          limitado (solo Plan / Uso). Para renovar, escribinos a{' '}
+          Para activar un plan, escribinos a{' '}
           <a href={`mailto:${MARKETING_MAIL}`}>{MARKETING_MAIL}</a>.
         </p>
       ) : null}
-      {plan.isOwner ? <IdentityPlanActions plan={plan} /> : null}
+      {showIdentityActions && plan.isOwner ? (
+        <IdentityPlanActions plan={plan} />
+      ) : null}
       <p className="muted small" style={{ marginTop: '2rem' }}>
         Para cambiar de plan, escribinos a{' '}
         <a href={`mailto:${MARKETING_MAIL}`}>{MARKETING_MAIL}</a>.

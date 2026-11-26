@@ -1,13 +1,10 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { AccountPanel } from '@/components/AccountPanel';
-import { IdentityPlanActions } from '@/components/IdentityPlanActions';
 import { Panel } from '@/components/AdminUi';
-import { getIdentityGymPlan, listIdentityGyms } from '@/lib/api/identity-platform';
-import type { GymPlanView } from '@/lib/api/plan';
 import { signOutOfGym } from '@/lib/auth/gym-context';
 import { useGymAccountPerson } from '@/lib/auth/useGymAccountPerson';
 import { PLATFORM_TENANT_SLUG, tenantOrigin } from '@/lib/tenant-host';
@@ -24,8 +21,6 @@ export function GymAccountPage({ slug }: { slug: string }) {
   const { ready, identity, member, staff, impersonating, person, sessionKind } =
     useGymAccountPerson(slug);
   const leavingRef = useRef(false);
-  const [identityPlan, setIdentityPlan] = useState<GymPlanView | null>(null);
-  const [planError, setPlanError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!ready || person || leavingRef.current) {
@@ -33,25 +28,6 @@ export function GymAccountPage({ slug }: { slug: string }) {
     }
     router.replace('/login?next=/cuenta');
   }, [ready, person, router]);
-
-  useEffect(() => {
-    if (sessionKind !== 'identity') return;
-    let cancelled = false;
-    void listIdentityGyms()
-      .then((gyms) => {
-        const gym = gyms.find((item) => item.slug === slug);
-        return gym ? getIdentityGymPlan(gym.tenantId) : null;
-      })
-      .then((plan) => {
-        if (!cancelled && plan) setIdentityPlan(plan);
-      })
-      .catch(() => {
-        if (!cancelled) setPlanError('No se pudo cargar el plan Faciliter.');
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [sessionKind, slug]);
 
   async function handleLogout(): Promise<void> {
     leavingRef.current = true;
@@ -111,12 +87,6 @@ export function GymAccountPage({ slug }: { slug: string }) {
           }
           passwordAuth={sessionKind}
         />
-        {planError ? <p className="error" role="alert">{planError}</p> : null}
-        {identityPlan?.tenantSlug === slug && identityPlan.isOwner ? (
-          <Panel title="Plan Faciliter">
-            <IdentityPlanActions plan={identityPlan} />
-          </Panel>
-        ) : null}
       </div>
     </section>
   );

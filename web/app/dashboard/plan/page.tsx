@@ -2,12 +2,14 @@
 
 import { useEffect, useState, useSyncExternalStore } from 'react';
 import { AdminShell } from '@/components/AdminShell';
+import { IdentityPlanActions } from '@/components/IdentityPlanActions';
 import { PlanPanel } from '@/components/PlanPanel';
 import { RequireStaff } from '@/components/RequireStaff';
 import { SkeletonPanel } from '@/components/Skeleton';
 import { ApiClientError } from '@/lib/api/client';
 import { getGymPlan } from '@/lib/api/plan';
 import type { GymPlanView } from '@/lib/api/plan';
+import { useAuth } from '@/lib/auth/AuthProvider';
 import { extractTenantSlugFromHost } from '@/lib/tenant-host';
 
 function subscribeHost(): () => void {
@@ -34,6 +36,7 @@ export default function PlanPage() {
 }
 
 function PlanInner() {
+  const { session } = useAuth();
   const hostSlug = useSyncExternalStore(
     subscribeHost,
     readHostSlug,
@@ -92,7 +95,17 @@ function PlanInner() {
     <AdminShell title="Plan / Uso" subtitle="Contrato con Faciliter">
       {error ? <p className="error">{error}</p> : null}
       {!error && !plan ? <SkeletonPanel lines={6} /> : null}
-      {plan ? <PlanPanel plan={plan} /> : null}
+      {plan ? (
+        <>
+          <PlanPanel plan={plan} showIdentityActions={false} />
+          <IdentityPlanActions
+            plan={plan}
+            mode="tenant"
+            permissionCodes={session?.permissionCodes}
+            impersonating={session?.impersonating}
+          />
+        </>
+      ) : null}
     </AdminShell>
   );
 }
