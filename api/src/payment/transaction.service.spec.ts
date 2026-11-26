@@ -4,9 +4,13 @@ import { TransactionService } from './transaction.service';
 
 describe('TransactionService product checkout validation', () => {
   it('rejects a client-supplied product price that differs from the catalog', async () => {
+    const productQuery = jest.fn().mockResolvedValue([{ price: 1000, active: true }]);
+    const transactionCreate = jest.fn();
     const prisma = {
-      $queryRaw: jest.fn().mockResolvedValue([{ price: 1000, active: true }]),
-      transaction: { create: jest.fn() },
+      $transaction: jest.fn((callback) => callback({
+        $queryRaw: productQuery,
+        transaction: { create: transactionCreate },
+      })),
     };
     const service = new TransactionService(prisma as never);
 
@@ -14,6 +18,7 @@ describe('TransactionService product checkout validation', () => {
       tenantId: 'tenant', memberId: 'member', method: PaymentMethod.CASH,
       items: [{ productId: 'product', amount: 500, idempotencyKey: 'item-key' }],
     })).rejects.toBeInstanceOf(BadRequestException);
-    expect(prisma.transaction.create).not.toHaveBeenCalled();
+    expect(prisma.$transaction).toHaveBeenCalledTimes(1);
+    expect(transactionCreate).not.toHaveBeenCalled();
   });
 });

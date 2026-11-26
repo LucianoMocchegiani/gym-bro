@@ -36,12 +36,16 @@ export class TransactionService {
     params: InitiatePaymentParams,
     tx?: Prisma.TransactionClient,
   ): Promise<Prisma.TransactionGetPayload<{ include: { transactionItems: true } }>> {
+    if (!tx) {
+      return this.prisma.$transaction((client) =>
+        this.initiateTransaction(params, client),
+      );
+    }
     const {
       tenantId, memberId, billedTenantId, method, items, recordedByStaffId,
       transferReference, mpPreferenceId, mpInitPoint, mpSandboxInitPoint,
     } = params;
     if (!items.length) throw new BadRequestException('La venta no tiene ítems.');
-    const db = tx ?? this.prisma;
     let totalAmount = 0;
     for (const item of items) {
       if (item.productId) {
@@ -52,7 +56,7 @@ export class TransactionService {
         if (!Number.isSafeInteger(quantity) || quantity < 1) {
           throw new BadRequestException('La cantidad debe ser un entero positivo.');
         }
-        const [product] = await db.$queryRaw<{ price: number; active: boolean }[]>`
+        const [product] = await tx.$queryRaw<{ price: number; active: boolean }[]>`
           SELECT price, active FROM products
           WHERE id = ${item.productId}::uuid AND tenant_id = ${tenantId}::uuid`;
         if (!product) throw new NotFoundException('Producto no encontrado.');
@@ -69,7 +73,7 @@ export class TransactionService {
         totalAmount += item.amount;
       }
     }
-    const transaction = await db.transaction.create({
+    const transaction = await tx.transaction.create({
       data: {
         tenantId, memberId, amount: totalAmount, status: PaymentStatus.PENDING,
         idempotencyKey: items[0].idempotencyKey,
@@ -81,7 +85,7 @@ export class TransactionService {
     });
 
     for (const item of items) {
-      const saved = await db.transactionItem.create({
+      const saved = await tx.transactionItem.create({
         data: {
           tenantId, memberId,
           packId: item.packId ?? null,
@@ -97,7 +101,7 @@ export class TransactionService {
         },
       });
       if (item.productId) {
-        await reserveProductSale(db, {
+        await reserveProductSale(tx, {
           tenantId, transactionItemId: saved.id, productId: item.productId,
           quantity: item.productQuantity ?? 1,
           staffUserId: recordedByStaffId ?? null,
@@ -105,7 +109,7 @@ export class TransactionService {
       }
     }
 
-    return db.transaction.findUniqueOrThrow({
+    return tx.transaction.findUniqueOrThrow({
       where: { id: transaction.id },
       include: { transactionItems: true },
     });
