@@ -75,9 +75,14 @@ export class TransactionService {
         }
         const [product] = await tx.$queryRaw<
           { price: number; active: boolean }[]
-        >`
-          SELECT price, active FROM products
-          WHERE id = ${item.productId}::uuid AND tenant_id = ${tenantId}::uuid`;
+        >(
+          Prisma.sql`
+            SELECT price, active
+            FROM products
+            WHERE id = ${item.productId}::uuid
+              AND tenant_id = ${tenantId}::uuid
+          `,
+        );
         if (!product) throw new NotFoundException('Producto no encontrado.');
         if (!product.active) {
           throw new BadRequestException('El producto está archivado.');
