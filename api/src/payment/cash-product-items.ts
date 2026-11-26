@@ -34,7 +34,9 @@ export function createCashProductItems(
       !Number.isSafeInteger(amount) ||
       amount < 1
     ) {
-      throw new BadRequestException('La cantidad o el precio del producto no son válidos.');
+      throw new BadRequestException(
+        'La cantidad o el precio del producto no son válidos.',
+      );
     }
     quantity += count;
     names.push(product.name);
