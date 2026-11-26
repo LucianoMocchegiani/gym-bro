@@ -17,8 +17,8 @@ import {
 import { Transform, Type } from 'class-transformer';
 
 export class MpCartItemDto {
-  @IsIn(['PACK', 'DROP_IN', 'PRODUCT'])
-  kind!: 'PACK' | 'DROP_IN' | 'PRODUCT';
+  @IsIn(['PACK', 'DROP_IN'])
+  kind!: 'PACK' | 'DROP_IN';
 
   @IsUUID()
   id!: string;
