@@ -1,0 +1,104 @@
+import { NotFoundException } from '@nestjs/common';
+import type { PrismaService } from '../prisma/prisma.service';
+import { AuditService } from '../audit/audit.service';
+import { MercadoPagoAccountService } from '../payment/mercadopago-account.service';
+import { MpAccountPort } from '../payment/mp-account.port';
+import { IdentityPlanCancellationService } from './identity-plan-cancellation.service';
+
+const identityId = 'identity-1';
+const tenantId = 'tenant-1';
+const signupId = 'signup-1';
+const preapprovalId = 'preapproval-1';
+const endsAt = new Date(Date.now() + 86_400_000);
+
+describe('IdentityPlanCancellationService', () => {
+  let service: IdentityPlanCancellationService;
+  let prisma: {
+    tenant: { findFirst: jest.Mock; findUnique: jest.Mock };
+    contract: { findFirst: jest.Mock };
+    platformSignup: { findFirst: jest.Mock };
+    auditEvent: { findFirst: jest.Mock };
+  };
+  let audit: { record: jest.Mock };
+  let mp: { getPreapproval: jest.Mock; cancelPreapproval: jest.Mock };
+  let finalizationRecorded: boolean;
+  let debitCancellationRecorded: boolean;
+
+  beforeEach(() => {
+    finalizationRecorded = false;
+    debitCancellationRecorded = false;
+    prisma = {
+      tenant: {
+        findFirst: jest.fn().mockResolvedValue({ id: tenantId }),
+        findUnique: jest.fn().mockResolvedValue({ id: 'admin-id' }),
+      },
+      contract: {
+        findFirst: jest.fn().mockResolvedValue({ id: 'contract-1', endsAt }),
+      },
+      platformSignup: {
+        findFirst: jest.fn().mockResolvedValue({
+          id: signupId,
+          mpPreapprovalId: preapprovalId,
+        }),
+      },
+      auditEvent: {
+        findFirst: jest.fn(({ where }) => {
+          if (where.action === 'platform.plan.finalize' && finalizationRecorded) {
+            return Promise.resolve({ id: 'finalized' });
+          }
+          if (
+            where.action === 'platform.plan.automatic_debit.cancel' &&
+            debitCancellationRecorded
+          ) {
+            return Promise.resolve({ id: 'debit-cancelled' });
+          }
+          return Promise.resolve(null);
+        }),
+      },
+    };
+    audit = {
+      record: jest.fn(async ({ action }) => {
+        if (action === 'platform.plan.finalize') finalizationRecorded = true;
+        if (action === 'platform.plan.automatic_debit.cancel') {
+          debitCancellationRecorded = true;
+        }
+      }),
+    };
+    mp = {
+      getPreapproval: jest.fn().mockResolvedValue({ status: 'authorized' }),
+      cancelPreapproval: jest.fn().mockResolvedValue(undefined),
+    };
+    service = new IdentityPlanCancellationService(
+      prisma as unknown as PrismaService,
+      {
+        getDecryptedAccessToken: jest.fn().mockResolvedValue('token'),
+      } as unknown as MercadoPagoAccountService,
+      audit as unknown as AuditService,
+      mp as unknown as MpAccountPort,
+    );
+  });
+
+  it('cancels renewal but preserves the current contract through its end date', async () => {
+    const result = await service.finalizePlan(identityId, tenantId);
+
+    expect(mp.cancelPreapproval).toHaveBeenCalledWith('token', preapprovalId);
+    expect(audit.record).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: 'platform.plan.finalize',
+        entityId: 'contract-1',
+        after: { effectiveAt: endsAt.toISOString() },
+      }),
+    );
+    expect(prisma.contract.findFirst).toHaveBeenCalled();
+    expect(result.finalizationAt).toBe(endsAt.toISOString());
+  });
+
+  it('does not cancel a tenant that is not owned by the identity', async () => {
+    prisma.tenant.findFirst.mockResolvedValue(null);
+
+    await expect(
+      service.cancelAutomaticDebit(identityId, tenantId),
+    ).rejects.toBeInstanceOf(NotFoundException);
+    expect(mp.cancelPreapproval).not.toHaveBeenCalled();
+  });
+});

@@ -1,5 +1,14 @@
-import { Injectable, NotFoundException, BadRequestException, Inject } from '@nestjs/common';
-import { ContractStatus, ContractType, PlatformSignupStatus } from '@prisma/client';
+import {
+  BadRequestException,
+  Inject,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
+import {
+  ContractStatus,
+  ContractType,
+  PlatformSignupStatus,
+} from '@prisma/client';
 import type { AuditActor } from '../audit/audit.types';
 import { AuditService } from '../audit/audit.service';
 import { MercadoPagoAccountService } from '../payment/mercadopago-account.service';
@@ -21,7 +30,10 @@ export class IdentityPlanCancellationService {
     @Inject(MP_ACCOUNT_PORT) private readonly mp: MpAccountPort,
   ) {}
 
-  async get(identityId: string, tenantId: string): Promise<IdentityPlanActionsView> {
+  async get(
+    identityId: string,
+    tenantId: string,
+  ): Promise<IdentityPlanActionsView> {
     await this.requireOwnedTenant(identityId, tenantId);
     const contract = await this.currentContract(tenantId);
     const finalized = contract
@@ -59,7 +71,9 @@ export class IdentityPlanCancellationService {
           );
           automaticDebit = ['cancelled', 'paused', 'rejected'].includes(
             remote.status,
-          ) ? 'cancelled' : 'active';
+          )
+            ? 'cancelled'
+            : 'active';
         } catch {
           automaticDebit = 'unknown';
         }
@@ -68,9 +82,10 @@ export class IdentityPlanCancellationService {
     return {
       automaticDebit,
       canFinalize: Boolean(contract?.endsAt),
-      finalizationAt: finalized && contract?.endsAt
-        ? contract.endsAt.toISOString()
-        : null,
+      finalizationAt:
+        finalized && contract?.endsAt
+          ? contract.endsAt.toISOString()
+          : null,
     };
   }
 
@@ -117,7 +132,10 @@ export class IdentityPlanCancellationService {
           action: 'platform.plan.automatic_debit.cancel',
           entityType: 'platform_signup',
           entityId: signup.id,
-          after: { preapprovalId: signup.mpPreapprovalId, reason: 'plan_finalize' },
+          after: {
+            preapprovalId: signup.mpPreapprovalId,
+            reason: 'plan_finalize',
+          },
         });
       }
       await this.audit.record({
@@ -145,7 +163,9 @@ export class IdentityPlanCancellationService {
       where: { slug: 'admin' },
       select: { id: true },
     });
-    if (!admin) throw new BadRequestException('Tenant de plataforma no configurado');
+    if (!admin) {
+      throw new BadRequestException('Tenant de plataforma no configurado');
+    }
     return this.accounts.getDecryptedAccessToken(admin.id);
   }
 
@@ -182,7 +202,9 @@ export class IdentityPlanCancellationService {
       where: { id: tenantId, ownerIdentityId: identityId },
       select: { id: true },
     });
-    if (!tenant) throw new NotFoundException(`Tenant ${tenantId} not found`);
+    if (!tenant) {
+      throw new NotFoundException(`Tenant ${tenantId} not found`);
+    }
   }
 
   private actor(identityId: string): AuditActor {
