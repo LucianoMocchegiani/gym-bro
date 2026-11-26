@@ -1,4 +1,4 @@
-import { IsBoolean, IsInt, IsOptional, IsString, MaxLength, Min, MinLength } from 'class-validator';
+import { IsBoolean, IsIn, IsInt, IsOptional, IsString, MaxLength, Min, MinLength } from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class ListProductsQueryDto {
@@ -17,10 +17,10 @@ export class ListProductsQueryDto {
   @IsInt()
   @Min(1)
   pageSize?: number;
-  
+
   @IsOptional()
-  @IsBoolean()
-  active?: boolean;
+  @IsIn(['true', 'false'])
+  active?: string;
 }
 
 export class CreateProductDto {
@@ -73,6 +73,7 @@ export class UpdateProductDto {
 
 export class CreateStockAdjustmentDto {
   @IsString()
+  @IsIn(['IN', 'OUT'])
   type!: 'IN' | 'OUT';
 
   @IsInt()
