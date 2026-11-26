@@ -12,9 +12,11 @@ import { formatMoney } from '@/lib/cash-labels';
 
 export function ProductStockPanel({
   product,
+  canWrite,
   onUpdated,
 }: {
   product: ProductDetail;
+  canWrite: boolean;
   onUpdated: () => void;
 }) {
   const [current, setCurrent] = useState(product);
@@ -63,27 +65,30 @@ export function ProductStockPanel({
     <div className="admin-form">
       <p><strong>{current.name}</strong> · {formatMoney(current.price)}</p>
       <p className="stat-value">Stock actual: {current.stockQuantity}</p>
-      <form className="admin-form" onSubmit={(event) => void submit(event)}>
-        <label>
-          Movimiento
-          <select value={type} onChange={(event) => setType(event.target.value as 'IN' | 'OUT')}>
-            <option value="IN">Ingreso</option>
-            <option value="OUT">Salida</option>
-          </select>
-        </label>
-        <label>
-          Cantidad
-          <input type="number" min={1} step={1} required value={quantity} onChange={(event) => setQuantity(event.target.value)} />
-        </label>
-        <label>
-          Motivo (obligatorio)
-          <input value={reason} onChange={(event) => setReason(event.target.value)} required maxLength={500} />
-        </label>
-        {error ? <p className="error">{error}</p> : null}
-        <button type="submit" className="primary" disabled={busy || !reason.trim()}>
-          {busy ? 'Guardando…' : 'Registrar movimiento'}
-        </button>
-      </form>
+      {canWrite ? (
+        <form className="admin-form" onSubmit={(event) => void submit(event)}>
+          <label>
+            Movimiento
+            <select value={type} onChange={(event) => setType(event.target.value as 'IN' | 'OUT')}>
+              <option value="IN">Ingreso</option>
+              <option value="OUT">Salida</option>
+            </select>
+          </label>
+          <label>
+            Cantidad
+            <input type="number" min={1} step={1} required value={quantity} onChange={(event) => setQuantity(event.target.value)} />
+          </label>
+          <label>
+            Motivo (obligatorio)
+            <input value={reason} onChange={(event) => setReason(event.target.value)} required maxLength={500} />
+          </label>
+          {error ? <p className="error">{error}</p> : null}
+          <button type="submit" className="primary" disabled={busy || !reason.trim()}>
+            {busy ? 'Guardando…' : 'Registrar movimiento'}
+          </button>
+        </form>
+      ) : null}
+      {!canWrite && error ? <p className="error">{error}</p> : null}
       <h2>Historial de stock</h2>
       <div className="table-scroll">
         <table>

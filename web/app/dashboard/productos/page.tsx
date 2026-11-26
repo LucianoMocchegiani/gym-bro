@@ -5,13 +5,14 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { DataTable, ListToolbar, listCountDescription } from '@/components/AdminList';
 import { AdminModal } from '@/components/AdminModal';
 import { AdminShell } from '@/components/AdminShell';
+import { DeleteRowButton } from '@/components/DeleteRowButton';
 import { ProductForm } from '@/components/products/ProductForm';
 import { ProductStockPanel } from '@/components/products/ProductStockPanel';
 import { RequireStaff } from '@/components/RequireStaff';
 import { IconEdit, RowActions, RowIconButton } from '@/components/RowActions';
 import { PageSkeleton } from '@/components/Skeleton';
 import { ApiClientError } from '@/lib/api/client';
-import { deleteProduct, listProducts, type ProductDetail } from '@/lib/api/products';
+import { deleteProduct, getProduct, listProducts, type ProductDetail } from '@/lib/api/products';
 import { formatMoney } from '@/lib/cash-labels';
 import { hasAllPermissions } from '@/lib/nav-permissions';
 import { useAuth } from '@/lib/auth/AuthProvider';
@@ -39,6 +40,9 @@ function ProductosInner() {
   const [query, setQuery] = useState('');
   const [page, setPage] = useState(1);
   const [rows, setRows] = useState<ProductDetail[]>([]);
+  const [selectedProduct, setSelectedProduct] = useState<ProductDetail | null>(null);
+  const [selectionLoading, setSelectionLoading] = useState(false);
+  const [selectionError, setSelectionError] = useState<string | null>(null);
   const [total, setTotal] = useState(0);
   const [hasMore, setHasMore] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -61,6 +65,26 @@ function ProductosInner() {
   }, [page, query]);
 
   useEffect(() => { void load(); }, [load]);
+
+  useEffect(() => {
+    const id = editId || stockId;
+    if (!id) {
+      setSelectedProduct(null);
+      setSelectionError(null);
+      return;
+    }
+    let cancelled = false;
+    setSelectionLoading(true);
+    setSelectionError(null);
+    void getProduct(id).then((product) => {
+      if (!cancelled) setSelectedProduct(product);
+    }).catch((err: unknown) => {
+      if (!cancelled) setSelectionError(err instanceof ApiClientError ? err.message : 'No se pudo cargar el producto.');
+    }).finally(() => {
+      if (!cancelled) setSelectionLoading(false);
+    });
+    return () => { cancelled = true; };
+  }, [editId, stockId]);
 
   function go(search: string) {
     setFlash(null);
@@ -102,45 +126,38 @@ function ProductosInner() {
                 <RowIconButton label="Editar producto" onClick={() => go(`editar=${product.id}`)}><IconEdit /></RowIconButton>
                 <button type="button" className="btn ghost small" onClick={() => go(`stock=${product.id}`)}>Stock</button>
                 {canWrite ? (
-                  <button
-                    type="button"
-                    className="btn ghost small"
-                    onClick={async () => {
-                      try {
-                        await deleteProduct(product.id);
-                        setFlash(`Se eliminó ${product.name}.`);
-                        void load();
-                      } catch (err) {
-                        setError(err instanceof ApiClientError ? err.message : 'No se pudo eliminar el producto.');
-                      }
-                    }}
-                  >
-                    Eliminar
-                  </button>
+                  <DeleteRowButton
+                    dialogTitle={`¿Eliminar ${product.name}?`}
+                    description="Solo se puede borrar un producto sin movimientos de stock. Si tiene historial, archiválo desde Editar."
+                    onDelete={() => deleteProduct(product.id)}
+                    onSuccess={() => { setFlash(`Se eliminó ${product.name}.`); void load(); }}
+                    onError={(err) => setError(err.message)}
+                  />
                 ) : null}
               </RowActions>
             </td>
           </tr>
         ))}
       </DataTable>
-      <AdminModal open={createOpen} onClose={() => go('')} title="Nuevo producto" description="Los productos se crean con stock inicial en cero." size="comfortable">
+      <AdminModal open={createOpen && canWrite} onClose={() => go('')} title="Nuevo producto" description="Los productos se crean con stock inicial en cero." size="comfortable">
         <ProductForm onSuccess={() => { go(''); void load(); }} onCancel={() => go('')} />
       </AdminModal>
-      <AdminModal open={Boolean(editId)} onClose={() => go('')} title="Editar producto" size="comfortable">
-        {editId ? (
+      <AdminModal open={Boolean(editId && canWrite)} onClose={() => go('')} title="Editar producto" size="comfortable">
+        {selectionLoading ? <p>Cargando producto…</p> : selectionError ? <p className="error">{selectionError}</p> : selectedProduct ? (
           <ProductForm
             key={editId}
-            product={rows.find((row) => row.id === editId)}
+            product={selectedProduct}
             onSuccess={() => { go(''); void load(); }}
             onCancel={() => go('')}
           />
         ) : null}
       </AdminModal>
       <AdminModal open={Boolean(stockId)} onClose={() => go('')} title="Existencias" size="wide">
-        {stockId ? (
+        {selectionLoading ? <p>Cargando producto…</p> : selectionError ? <p className="error">{selectionError}</p> : selectedProduct ? (
           <ProductStockPanel
             key={stockId}
-            product={rows.find((row) => row.id === stockId)!}
+            product={selectedProduct}
+            canWrite={canWrite}
             onUpdated={() => void load()}
           />
         ) : null}
