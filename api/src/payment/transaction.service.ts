@@ -31,6 +31,8 @@ export interface InitiatePaymentParams {
   mpSandboxInitPoint?: string | null;
 }
 
+type ProductSale = { price: number; active: boolean };
+
 @Injectable()
 export class TransactionService {
   constructor(private readonly prisma: PrismaService) {}
@@ -73,9 +75,7 @@ export class TransactionService {
             'La cantidad debe ser un entero positivo.',
           );
         }
-        const [product] = await tx.$queryRaw<
-          { price: number; active: boolean }[]
-        >(
+        const products = await tx.$queryRaw<ProductSale[]>(
           Prisma.sql`
             SELECT price, active
             FROM products
@@ -83,6 +83,7 @@ export class TransactionService {
               AND tenant_id = ${tenantId}::uuid
           `,
         );
+        const product = products[0];
         if (!product) throw new NotFoundException('Producto no encontrado.');
         if (!product.active) {
           throw new BadRequestException('El producto está archivado.');
