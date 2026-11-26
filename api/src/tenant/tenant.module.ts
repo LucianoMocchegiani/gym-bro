@@ -1,4 +1,5 @@
 import { Global, Module } from '@nestjs/common';
+import { APP_GUARD } from '@nestjs/core';
 import { PlatformPlansModule } from '../platform-plans/platform-plans.module';
 import { PlatformAccessService } from './platform-access.service';
 import { PlatformAccessGuard } from './guards/platform-access.guard';
@@ -18,12 +19,8 @@ import { TenantGuard } from './guards/tenant.guard';
     PlatformAccessService,
     PlatformAccessGuard,
     PlatformModuleGuard,
+    { provide: APP_GUARD, useExisting: PlatformModuleGuard },
   ],
-  exports: [
-    TenantGuard,
-    PlatformAccessService,
-    PlatformAccessGuard,
-    PlatformModuleGuard,
-  ],
+  exports: [TenantGuard, PlatformAccessService, PlatformAccessGuard],
 })
 export class TenantModule {}
