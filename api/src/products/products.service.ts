@@ -6,11 +6,7 @@ import {
 } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { randomUUID } from 'crypto';
-import {
-  normalizeListQuery,
-  toListResult,
-  type ListResult,
-} from '../common/list';
+import { normalizeListQuery, toListResult } from '../common/list';
 import { PrismaService } from '../prisma/prisma.service';
 import { UploadService } from '../upload/upload.service';
 import {
@@ -55,21 +51,23 @@ export class ProductsService {
     private readonly upload: UploadService,
   ) {}
 
-  async list(
-    tenantId: string,
-    query: ListProductsQueryDto,
-  ): Promise<ListResult<ReturnType<ProductsService['detail']>>> {
+  async list(tenantId: string, query: ListProductsQueryDto) {
     const n = normalizeListQuery(query);
     const filter = Prisma.sql`
       AND (${n.q ?? null}::text IS NULL OR name ILIKE '%' || ${n.q ?? ''} || '%')
-      ${query.active === undefined ? Prisma.empty : Prisma.sql`AND active = ${query.active === 'true'}`}
+      ${
+        query.active === undefined
+          ? Prisma.empty
+          : Prisma.sql`AND active = ${query.active === 'true'}`
+      }
     `;
     const [rows, count] = await Promise.all([
       this.prisma.$queryRaw<ProductRow[]>`
         SELECT * FROM products WHERE tenant_id = ${tenantId}::uuid ${filter}
         ORDER BY created_at DESC LIMIT ${n.take} OFFSET ${n.skip}`,
       this.prisma.$queryRaw<{ count: bigint }[]>`
-        SELECT count(*) AS count FROM products WHERE tenant_id = ${tenantId}::uuid ${filter}`,
+        SELECT count(*) AS count FROM products
+        WHERE tenant_id = ${tenantId}::uuid ${filter}`,
     ]);
     return toListResult(
       rows.map((row) => this.detail(row)),
@@ -102,6 +100,9 @@ export class ProductsService {
     if (Object.values(dto).every((value) => value === undefined)) {
       throw new BadRequestException('Indicá al menos un campo para actualizar.');
     }
+    if (dto.name !== undefined && dto.name.trim().length < 2) {
+      throw new BadRequestException('El nombre es demasiado corto.');
+    }
     const before = await this.findProduct(tenantId, productId);
     const imageUrl = dto.imageUrl === undefined ? before.image_url : dto.imageUrl;
     this.assertImage(tenantId, imageUrl);
@@ -116,7 +117,8 @@ export class ProductsService {
     ].filter((part): part is Prisma.Sql => part !== null);
     const [row] = await this.prisma.$queryRaw<ProductRow[]>`
       UPDATE products SET ${Prisma.join(sets)}, updated_at = now()
-      WHERE id = ${productId}::uuid AND tenant_id = ${tenantId}::uuid RETURNING *`;
+      WHERE id = ${productId}::uuid AND tenant_id = ${tenantId}::uuid
+      RETURNING *`;
     if (!row) throw new NotFoundException('Producto no encontrado.');
     if (dto.imageUrl !== undefined) {
       await this.upload.replaceOwnedPublicImage(
@@ -133,7 +135,8 @@ export class ProductsService {
     await this.prisma.$transaction(async (tx) => {
       await tx.$queryRaw`
         SELECT id FROM products
-        WHERE id = ${productId}::uuid AND tenant_id = ${tenantId}::uuid FOR UPDATE`;
+        WHERE id = ${productId}::uuid AND tenant_id = ${tenantId}::uuid
+        FOR UPDATE`;
       const [usage] = await tx.$queryRaw<{ count: bigint }[]>`
         SELECT count(*) AS count FROM product_stock_movements
         WHERE product_id = ${productId}::uuid AND tenant_id = ${tenantId}::uuid`;
@@ -143,7 +146,8 @@ export class ProductsService {
         );
       }
       await tx.$executeRaw`
-        DELETE FROM products WHERE id = ${productId}::uuid AND tenant_id = ${tenantId}::uuid`;
+        DELETE FROM products
+        WHERE id = ${productId}::uuid AND tenant_id = ${tenantId}::uuid`;
     });
     await this.upload.replaceOwnedPublicImage(tenantId, product.image_url, null);
   }
@@ -159,7 +163,8 @@ export class ProductsService {
     return this.prisma.$transaction(async (tx) => {
       const [product] = await tx.$queryRaw<ProductRow[]>`
         SELECT * FROM products
-        WHERE id = ${productId}::uuid AND tenant_id = ${tenantId}::uuid FOR UPDATE`;
+        WHERE id = ${productId}::uuid AND tenant_id = ${tenantId}::uuid
+        FOR UPDATE`;
       if (!product) throw new NotFoundException('Producto no encontrado.');
       const next = calculateStockAfter(
         product.stock_quantity,
@@ -174,7 +179,8 @@ export class ProductsService {
       const delta = dto.type === 'IN' ? dto.quantity : -dto.quantity;
       const [updated] = await tx.$queryRaw<ProductRow[]>`
         UPDATE products SET stock_quantity = ${next}, updated_at = now()
-        WHERE id = ${productId}::uuid AND tenant_id = ${tenantId}::uuid RETURNING *`;
+        WHERE id = ${productId}::uuid AND tenant_id = ${tenantId}::uuid
+        RETURNING *`;
       const [movement] = await tx.$queryRaw<MovementRow[]>`
         INSERT INTO product_stock_movements
           (id, tenant_id, product_id, type, quantity, quantity_delta,
@@ -184,7 +190,10 @@ export class ProductsService {
           ${dto.type}, ${dto.quantity}, ${delta}, ${next}, ${reason},
           ${staffUserId}::uuid
         ) RETURNING *, NULL::text AS created_by_name`;
-      return { product: this.detail(updated), movement: this.movement(movement) };
+      return {
+        product: this.detail(updated),
+        movement: this.movement(movement),
+      };
     });
   }
 
@@ -199,8 +208,10 @@ export class ProductsService {
       this.prisma.$queryRaw<MovementRow[]>`
         SELECT m.*, COALESCE(s.name, s.email) AS created_by_name
         FROM product_stock_movements m
-        LEFT JOIN staff_users s ON s.id = m.created_by_staff_id AND s.tenant_id = m.tenant_id
-        WHERE m.tenant_id = ${tenantId}::uuid AND m.product_id = ${productId}::uuid
+        LEFT JOIN staff_users s
+          ON s.id = m.created_by_staff_id AND s.tenant_id = m.tenant_id
+        WHERE m.tenant_id = ${tenantId}::uuid
+          AND m.product_id = ${productId}::uuid
         ORDER BY m.created_at DESC LIMIT ${n.take} OFFSET ${n.skip}`,
       this.prisma.$queryRaw<{ count: bigint }[]>`
         SELECT count(*) AS count FROM product_stock_movements
@@ -221,16 +232,28 @@ export class ProductsService {
     return this.upload.uploadImage(file, 'products', tenantId);
   }
 
-  private async findProduct(tenantId: string, productId: string): Promise<ProductRow> {
+  private async findProduct(
+    tenantId: string,
+    productId: string,
+  ): Promise<ProductRow> {
     const [row] = await this.prisma.$queryRaw<ProductRow[]>`
-      SELECT * FROM products WHERE id = ${productId}::uuid AND tenant_id = ${tenantId}::uuid`;
+      SELECT * FROM products
+      WHERE id = ${productId}::uuid AND tenant_id = ${tenantId}::uuid`;
     if (!row) throw new NotFoundException('Producto no encontrado.');
     return row;
   }
 
-  private assertImage(tenantId: string, imageUrl: string | null | undefined): void {
-    if (imageUrl && !this.upload.isOwnedPublicImage(tenantId, imageUrl, 'products')) {
-      throw new BadRequestException('La imagen no pertenece al catálogo de este tenant.');
+  private assertImage(
+    tenantId: string,
+    imageUrl: string | null | undefined,
+  ): void {
+    if (
+      imageUrl &&
+      !this.upload.isOwnedPublicImage(tenantId, imageUrl, 'products')
+    ) {
+      throw new BadRequestException(
+        'La imagen no pertenece al catálogo de este tenant.',
+      );
     }
   }
 
