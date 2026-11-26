@@ -1,3 +1,7 @@
+/**
+ * Tenants API (Super + resolución pública por slug).
+ */
+
 import type { CounterChargeOptions } from '@/lib/api/cash-discount';
 import { apiRequest } from '@/lib/api/client';
 import { toSearchParams } from '@/lib/api/list';
@@ -74,7 +78,9 @@ export type PlatformCartItem = {
   quantity?: number;
 };
 
-/** Resuelve gym por slug (público, sin auth). */
+/**
+ * Resuelve gym por slug (público, sin auth).
+ */
 export function getTenantBySlug(slug: string): Promise<PublicTenantSummary> {
   return apiRequest<PublicTenantSummary>(
     `/public/tenants/by-slug/${encodeURIComponent(slug)}`,
@@ -82,7 +88,11 @@ export function getTenantBySlug(slug: string): Promise<PublicTenantSummary> {
   );
 }
 
-/** Lista todos los tenants (plataforma), paginado. */
+/**
+ * Lista todos los tenants (plataforma), paginado.
+ *
+ * @remarks Staff del tenant `admin` (`PlatformTenantGuard`).
+ */
 export function listTenants(
   input?: ListParams,
 ): Promise<ListResult<TenantDetail>> {
@@ -95,15 +105,21 @@ export function getTenant(id: string): Promise<TenantDetail> {
   return apiRequest<TenantDetail>(`/tenants/${id}`);
 }
 
-/** Alta de tenant + owner (CU-ROL-001). */
-export function createTenant(input: CreateTenantInput): Promise<TenantDetail> {
+/**
+ * Alta de tenant + owner (CU-ROL-001).
+ */
+export function createTenant(
+  input: CreateTenantInput,
+): Promise<TenantDetail> {
   return apiRequest<TenantDetail>('/tenants', {
     method: 'POST',
     body: input,
   });
 }
 
-/** Edición / suspensión (CU-ROL-002). */
+/**
+ * Edición / suspensión (CU-ROL-002).
+ */
 export function updateTenant(
   id: string,
   input: UpdateTenantInput,
@@ -114,7 +130,9 @@ export function updateTenant(
   });
 }
 
-/** Eliminación de tenant (cascada total). Requiere `ELIMINAR` + slug. */
+/**
+ * Eliminación de tenant (cascada total). Requiere `ELIMINAR` + slug.
+ */
 export function deleteTenant(
   id: string,
   confirmWord: string,
@@ -126,7 +144,9 @@ export function deleteTenant(
   });
 }
 
-/** Lista tenants para el dashboard de plataforma (staff del tenant `admin`). */
+/**
+ * Lista tenants para el dashboard de plataforma (staff del tenant `admin`).
+ */
 export function listPlatformTenants(
   input?: ListParams & { status?: TenantStatus },
 ): Promise<ListResult<PlatformTenantSummary>> {
@@ -136,12 +156,19 @@ export function listPlatformTenants(
   );
 }
 
-/** KPIs del inicio de plataforma (gyms, no el tenant `admin`). */
+/**
+ * KPIs del inicio de plataforma (gyms, no el tenant `admin`).
+ */
 export function getPlatformDashboardKpis(): Promise<PlatformDashboardKpis> {
   return apiRequest<PlatformDashboardKpis>('/tenants/platform/kpis');
 }
 
-/** Cobro presencial de plataforma (efectivo o transferencia): el tenant `admin` factura un pack al gym. */
+/**
+ * Cobro presencial de plataforma (efectivo o transferencia): el tenant `admin`
+ * le factura un pack propio a `billingTenantId` (el gym pagador).
+ *
+ * @remarks Solo packs; el drop-in es por sesiones de un gym.
+ */
 export function startPlatformCashCart(
   billingTenantId: string,
   items: PlatformCartItem[],
@@ -163,7 +190,10 @@ export function startPlatformCashCart(
   );
 }
 
-/** Checkout MP de plataforma: el tenant `admin` factura un pack al gym. */
+/**
+ * Checkout MP de plataforma: el tenant `admin` le factura un pack propio a
+ * `billingTenantId` (el gym pagador).
+ */
 export function startPlatformMpCartCheckout(
   billingTenantId: string,
   input: { items: PlatformCartItem[]; idempotencyKey?: string },
