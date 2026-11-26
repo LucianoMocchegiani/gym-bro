@@ -30,7 +30,10 @@ export function ProductStockPanel({
   const [busy, setBusy] = useState(false);
 
   const loadMovements = useCallback(async () => {
-    const result = await listProductStockMovements(product.id, { page, pageSize: 10 });
+    const result = await listProductStockMovements(product.id, {
+      page,
+      pageSize: 10,
+    });
     setRows(result.items);
     setHasMore(result.hasMore);
   }, [page, product.id]);
@@ -49,13 +52,23 @@ export function ProductStockPanel({
         quantity: Number(quantity),
         reason: reason.trim(),
       });
+      const latest = await listProductStockMovements(product.id, {
+        page: 1,
+        pageSize: 10,
+      });
       setCurrent(result.product);
+      setRows(latest.items);
+      setHasMore(latest.hasMore);
+      setPage(1);
       setQuantity('');
       setReason('');
-      setPage(1);
       onUpdated();
     } catch (err) {
-      setError(err instanceof ApiClientError ? err.message : 'No se pudo ajustar el stock.');
+      setError(
+        err instanceof ApiClientError
+          ? err.message
+          : 'No se pudo ajustar el stock.',
+      );
     } finally {
       setBusy(false);
     }
@@ -63,27 +76,48 @@ export function ProductStockPanel({
 
   return (
     <div className="admin-form">
-      <p><strong>{current.name}</strong> · {formatMoney(current.price)}</p>
+      <p>
+        <strong>{current.name}</strong> · {formatMoney(current.price)}
+      </p>
       <p className="stat-value">Stock actual: {current.stockQuantity}</p>
       {canWrite ? (
         <form className="admin-form" onSubmit={(event) => void submit(event)}>
           <label>
             Movimiento
-            <select value={type} onChange={(event) => setType(event.target.value as 'IN' | 'OUT')}>
+            <select
+              value={type}
+              onChange={(event) => setType(event.target.value as 'IN' | 'OUT')}
+            >
               <option value="IN">Ingreso</option>
               <option value="OUT">Salida</option>
             </select>
           </label>
           <label>
             Cantidad
-            <input type="number" min={1} step={1} required value={quantity} onChange={(event) => setQuantity(event.target.value)} />
+            <input
+              type="number"
+              min={1}
+              step={1}
+              required
+              value={quantity}
+              onChange={(event) => setQuantity(event.target.value)}
+            />
           </label>
           <label>
             Motivo (obligatorio)
-            <input value={reason} onChange={(event) => setReason(event.target.value)} required maxLength={500} />
+            <input
+              value={reason}
+              onChange={(event) => setReason(event.target.value)}
+              required
+              maxLength={500}
+            />
           </label>
           {error ? <p className="error">{error}</p> : null}
-          <button type="submit" className="primary" disabled={busy || !reason.trim()}>
+          <button
+            type="submit"
+            className="primary"
+            disabled={busy || !reason.trim()}
+          >
             {busy ? 'Guardando…' : 'Registrar movimiento'}
           </button>
         </form>
@@ -92,26 +126,56 @@ export function ProductStockPanel({
       <h2>Historial de stock</h2>
       <div className="table-scroll">
         <table>
-          <thead><tr><th>Fecha</th><th>Tipo</th><th>Cantidad</th><th>Stock resultante</th><th>Motivo</th><th>Registró</th></tr></thead>
+          <thead>
+            <tr>
+              <th>Fecha</th>
+              <th>Tipo</th>
+              <th>Cantidad</th>
+              <th>Stock resultante</th>
+              <th>Motivo</th>
+              <th>Registró</th>
+            </tr>
+          </thead>
           <tbody>
             {rows.map((row) => (
               <tr key={row.id}>
                 <td>{new Date(row.createdAt).toLocaleString('es')}</td>
                 <td>{row.type === 'IN' ? 'Ingreso' : 'Salida'}</td>
-                <td>{row.quantityDelta > 0 ? '+' : ''}{row.quantityDelta}</td>
+                <td>
+                  {row.quantityDelta > 0 ? '+' : ''}
+                  {row.quantityDelta}
+                </td>
                 <td>{row.quantityAfter}</td>
                 <td>{row.reason}</td>
                 <td>{row.createdBy ?? '—'}</td>
               </tr>
             ))}
-            {rows.length === 0 ? <tr><td colSpan={6}>Todavía no hay movimientos.</td></tr> : null}
+            {rows.length === 0 ? (
+              <tr>
+                <td colSpan={6}>Todavía no hay movimientos.</td>
+              </tr>
+            ) : null}
           </tbody>
         </table>
       </div>
       <div className="form-actions">
-        <button type="button" className="btn ghost" disabled={page <= 1} onClick={() => setPage((value) => value - 1)}>Anterior</button>
+        <button
+          type="button"
+          className="btn ghost"
+          disabled={page <= 1}
+          onClick={() => setPage((value) => value - 1)}
+        >
+          Anterior
+        </button>
         <span className="muted small">Página {page}</span>
-        <button type="button" className="btn ghost" disabled={!hasMore} onClick={() => setPage((value) => value + 1)}>Siguiente</button>
+        <button
+          type="button"
+          className="btn ghost"
+          disabled={!hasMore}
+          onClick={() => setPage((value) => value + 1)}
+        >
+          Siguiente
+        </button>
       </div>
     </div>
   );
