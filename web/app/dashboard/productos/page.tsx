@@ -61,7 +61,6 @@ function ProductosInner() {
   const [flash, setFlash] = useState<string | null>(null);
 
   const load = useCallback(async () => {
-    setLoading(true);
     try {
       const result = await listProducts({
         q: query || undefined,
@@ -89,11 +88,7 @@ function ProductosInner() {
 
   useEffect(() => {
     const id = editId || stockId;
-    if (!id) {
-      setSelectedProduct(null);
-      setSelectionError(null);
-      return;
-    }
+    if (!id) return;
     let cancelled = false;
     setSelectionLoading(true);
     setSelectionError(null);
@@ -145,6 +140,7 @@ function ProductosInner() {
           <input
             value={query}
             onChange={(event) => {
+              setLoading(true);
               setPage(1);
               setQuery(event.target.value);
             }}
@@ -160,7 +156,10 @@ function ProductosInner() {
         emptyText="Todavía no hay productos."
         page={page}
         hasMore={hasMore}
-        onPageChange={setPage}
+        onPageChange={(nextPage) => {
+          setLoading(true);
+          setPage(nextPage);
+        }}
         header={
           <>
             <th>Producto</th>
@@ -201,6 +200,7 @@ function ProductosInner() {
                     onDelete={() => deleteProduct(product.id)}
                     onSuccess={() => {
                       setFlash(`Se eliminó ${product.name}.`);
+                      setLoading(true);
                       void load();
                     }}
                     onError={(err) => setError(err.message)}
@@ -221,6 +221,7 @@ function ProductosInner() {
         <ProductForm
           onSuccess={() => {
             go('');
+            setLoading(true);
             void load();
           }}
           onCancel={() => go('')}
@@ -242,6 +243,7 @@ function ProductosInner() {
             product={selectedProduct}
             onSuccess={() => {
               go('');
+              setLoading(true);
               void load();
             }}
             onCancel={() => go('')}
@@ -263,7 +265,10 @@ function ProductosInner() {
             key={stockId}
             product={selectedProduct}
             canWrite={canWrite}
-            onUpdated={() => void load()}
+            onUpdated={() => {
+              setLoading(true);
+              void load();
+            }}
           />
         ) : null}
       </AdminModal>

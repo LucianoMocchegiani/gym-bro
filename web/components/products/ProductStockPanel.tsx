@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState, type FormEvent } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
 import { ApiClientError } from '@/lib/api/client';
 import {
   adjustProductStock,
@@ -29,18 +29,22 @@ export function ProductStockPanel({
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
-  const loadMovements = useCallback(async () => {
-    const result = await listProductStockMovements(product.id, {
-      page,
-      pageSize: 10,
-    });
-    setRows(result.items);
-    setHasMore(result.hasMore);
-  }, [page, product.id]);
-
   useEffect(() => {
-    void loadMovements().catch(() => setError('No se pudo cargar el historial.'));
-  }, [loadMovements]);
+    let cancelled = false;
+    void listProductStockMovements(product.id, { page, pageSize: 10 })
+      .then((result) => {
+        if (!cancelled) {
+          setRows(result.items);
+          setHasMore(result.hasMore);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setError('No se pudo cargar el historial.');
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [page, product.id]);
 
   async function submit(event: FormEvent) {
     event.preventDefault();
