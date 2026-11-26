@@ -1,5 +1,9 @@
-import { NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  NotFoundException,
+} from '@nestjs/common';
 import { AuditService } from '../audit/audit.service';
+import { ContractsService } from '../contracts/contracts.service';
 import { MercadoPagoAccountService } from '../payment/mercadopago-account.service';
 import { MpAccountPort } from '../payment/mp-account.port';
 import type { PrismaService } from '../prisma/prisma.service';
@@ -20,6 +24,7 @@ describe('IdentityPlanCancellationService', () => {
     auditEvent: { findFirst: jest.Mock };
   };
   let audit: { record: jest.Mock };
+  let contracts: { updateStatus: jest.Mock };
   let mp: { getPreapproval: jest.Mock; cancelPreapproval: jest.Mock };
   let finalizationRecorded: boolean;
   let debitCancellationRecorded: boolean;
@@ -30,11 +35,11 @@ describe('IdentityPlanCancellationService', () => {
     prisma = {
       tenant: {
         findFirst: jest.fn().mockResolvedValue({ id: tenantId }),
-        findUnique: jest.fn((input: { where: { slug?: string } }) =>
+        findUnique: jest.fn((input: { where: { id?: string; slug?: string } }) =>
           Promise.resolve(
             input.where.slug
               ? { id: 'admin-id' }
-              : { ownerIdentityId: identityId },
+              : { id: tenantId, slug: 'test-gym', ownerIdentityId: identityId },
           ),
         ),
       },
@@ -75,6 +80,7 @@ describe('IdentityPlanCancellationService', () => {
         }
       }),
     };
+    contracts = { updateStatus: jest.fn().mockResolvedValue({ status: 'CANCELLED' }) };
     mp = {
       getPreapproval: jest.fn().mockResolvedValue({ status: 'authorized' }),
       cancelPreapproval: jest.fn().mockResolvedValue(undefined),
@@ -85,6 +91,7 @@ describe('IdentityPlanCancellationService', () => {
         getDecryptedAccessToken: jest.fn().mockResolvedValue('token'),
       } as unknown as MercadoPagoAccountService,
       audit as unknown as AuditService,
+      contracts as unknown as ContractsService,
       mp as unknown as MpAccountPort,
     );
   });
@@ -114,6 +121,35 @@ describe('IdentityPlanCancellationService', () => {
         actor: { profileType: 'STAFF', userId: 'staff-1' },
       }),
     );
+  });
+
+  it('immediately cancels the tenant contract and its automatic debit when present', async () => {
+    await service.cancelPlanImmediatelyByPlatform('platform-staff-1', tenantId, 'test-gym');
+
+    expect(mp.cancelPreapproval).toHaveBeenCalledWith('token', preapprovalId);
+    expect(contracts.updateStatus).toHaveBeenCalledWith(
+      tenantId,
+      'contract-1',
+      {
+        status: 'CANCELLED',
+        reason: 'Baja inmediata por administración Faciliter',
+      },
+      { profileType: 'STAFF', userId: 'platform-staff-1' },
+    );
+    expect(audit.record).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: 'platform.plan.automatic_debit.cancel',
+        actor: { profileType: 'STAFF', userId: 'platform-staff-1' },
+      }),
+    );
+  });
+
+  it('requires the exact tenant slug before cancelling the contract', async () => {
+    await expect(
+      service.cancelPlanImmediatelyByPlatform('platform-staff-1', tenantId, 'other-gym'),
+    ).rejects.toBeInstanceOf(BadRequestException);
+    expect(mp.cancelPreapproval).not.toHaveBeenCalled();
+    expect(contracts.updateStatus).not.toHaveBeenCalled();
   });
 
   it('does not cancel a tenant that is not owned by the identity', async () => {

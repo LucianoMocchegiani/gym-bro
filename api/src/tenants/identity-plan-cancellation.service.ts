@@ -11,6 +11,7 @@ import {
 } from '@prisma/client';
 import type { AuditActor } from '../audit/audit.types';
 import { AuditService } from '../audit/audit.service';
+import { ContractsService } from '../contracts/contracts.service';
 import { MercadoPagoAccountService } from '../payment/mercadopago-account.service';
 import { MP_ACCOUNT_PORT, MpAccountPort } from '../payment/mp-account.port';
 import { PrismaService } from '../prisma/prisma.service';
@@ -27,6 +28,7 @@ export class IdentityPlanCancellationService {
     private readonly prisma: PrismaService,
     private readonly accounts: MercadoPagoAccountService,
     private readonly audit: AuditService,
+    private readonly contracts: ContractsService,
     @Inject(MP_ACCOUNT_PORT) private readonly mp: MpAccountPort,
   ) {}
 
@@ -70,6 +72,63 @@ export class IdentityPlanCancellationService {
       profileType: 'STAFF',
       userId: staffId,
     });
+  }
+
+  async cancelPlanImmediatelyByPlatform(
+    staffId: string,
+    tenantId: string,
+    confirmSlug: string,
+  ) {
+    const tenant = await this.prisma.tenant.findUnique({
+      where: { id: tenantId },
+      select: { id: true, slug: true, ownerIdentityId: true },
+    });
+    if (!tenant) {
+      throw new NotFoundException(`Tenant ${tenantId} not found`);
+    }
+    if (tenant.slug === 'admin') {
+      throw new BadRequestException('El tenant de plataforma no tiene plan');
+    }
+    if (confirmSlug.trim().toLowerCase() !== tenant.slug.toLowerCase()) {
+      throw new BadRequestException('confirmSlug does not match tenant slug');
+    }
+
+    const contract = await this.currentContract(tenantId);
+    if (!contract) {
+      throw new BadRequestException('No hay un plan vigente para dar de baja');
+    }
+
+    const signup = tenant.ownerIdentityId
+      ? await this.findSignup(tenant.ownerIdentityId, tenantId)
+      : null;
+    if (signup?.mpPreapprovalId) {
+      await this.stopPreapproval(signup.mpPreapprovalId);
+      await this.audit.record({
+        tenantId,
+        actor: { profileType: 'STAFF', userId: staffId },
+        action: 'platform.plan.automatic_debit.cancel',
+        entityType: 'platform_signup',
+        entityId: signup.id,
+        after: {
+          preapprovalId: signup.mpPreapprovalId,
+          reason: 'admin_immediate_plan_cancellation',
+        },
+      });
+    }
+
+    const cancelledContract = await this.contracts.updateStatus(
+      tenantId,
+      contract.id,
+      {
+        status: ContractStatus.CANCELLED,
+        reason: 'Baja inmediata por administración Faciliter',
+      },
+      { profileType: 'STAFF', userId: staffId },
+    );
+    return {
+      contract: cancelledContract,
+      automaticDebitCancelled: Boolean(signup?.mpPreapprovalId),
+    };
   }
 
   private async getActions(
