@@ -34,6 +34,10 @@ import {
 import { CreateCashCartDto } from './dto/create-cash-cart.dto';
 import { CashCartResult } from './payment.types';
 import { Prisma } from '@prisma/client';
+import {
+  CashProduct,
+  createCashProductItems,
+} from './cash-product-items';
 
 type Tx = Prisma.TransactionClient;
 
@@ -243,6 +247,14 @@ export class CashPaymentService {
 
     const dropInItems = dto.items.filter((i) => i.kind === 'DROP_IN');
     const packItems = dto.items.filter((i) => i.kind === 'PACK');
+    const productItems = dto.items.filter((i) => i.kind === 'PRODUCT');
+    const productCatalog: CashProduct[] = [];
+    for (const item of productItems) {
+      const [product] = await this.prisma.$queryRaw<CashProduct[]>`
+        SELECT id, name, price, active FROM products
+        WHERE id = ${item.id}::uuid AND tenant_id = ${tenantId}::uuid`;
+      if (product) productCatalog.push(product);
+    }
 
     const sessions: Array<{
       sessionId: string;
@@ -327,14 +339,25 @@ export class CashPaymentService {
         });
       }
     }
+    const productCart = createCashProductItems(
+      productItems,
+      productCatalog,
+      idempotencyKey,
+      idx,
+    );
+    listItems.push(...productCart.items);
     const allItems = this.discountItems(listItems, charge.discountBps);
 
     const totalItems =
       sessions.reduce((sum, s) => sum + s.quantity, 0) +
-      packs.reduce((sum, p) => sum + p.quantity, 0);
+      packs.reduce((sum, p) => sum + p.quantity, 0) +
+      productCart.quantity;
     const label =
       totalItems === 1
-        ? (sessions[0]?.name ?? packs[0]?.name ?? 'Cart')
+        ? (sessions[0]?.name ??
+          packs[0]?.name ??
+          productCart.names[0] ??
+          'Cart')
         : `${totalItems} items`;
     const cashConcept =
       sessions.length > 0
