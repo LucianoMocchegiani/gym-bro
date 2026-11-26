@@ -1,9 +1,6 @@
-import {
-  Suspense,
-  useCallback,
-  useEffect,
-  useState,
-} from 'react';
+'use client';
+
+import { Suspense, useCallback, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import {
   DataTable,
@@ -284,7 +281,8 @@ function TenantsInner() {
                 <strong>Sede:</strong> {detalle.defaultBranch?.name ?? '—'}
               </li>
               <li>
-                <strong>Owner:</strong> {detalle.owner?.email ?? '—'}</li>
+                <strong>Owner:</strong> {detalle.owner?.email ?? '—'}
+              </li>
               <li>
                 <strong>Alta:</strong>{' '}
                 {new Date(detalle.createdAt).toLocaleDateString('es-AR')}
