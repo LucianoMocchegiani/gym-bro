@@ -74,7 +74,12 @@ export async function resolveProductSales(
   staffUserId: string | null,
 ): Promise<void> {
   const sales = await tx.$queryRaw<
-    { transaction_item_id: string; product_id: string; quantity: number; status: string }[]
+    {
+      transaction_item_id: string;
+      product_id: string;
+      quantity: number;
+      status: string;
+    }[]
   >`
     SELECT s.transaction_item_id, s.product_id, s.quantity, s.status
     FROM product_sale_items s
@@ -90,13 +95,20 @@ export async function resolveProductSales(
       const [product] = await tx.$queryRaw<{ stock_quantity: number }[]>`
         SELECT stock_quantity FROM products
         WHERE id = ${sale.product_id}::uuid AND tenant_id = ${tenantId}::uuid`;
-      await movement(tx, {
-        tenantId,
-        transactionItemId: sale.transaction_item_id,
-        productId: sale.product_id,
-        quantity: sale.quantity,
-        staffUserId,
-      }, 'OUT', -sale.quantity, product.stock_quantity, 'Venta MP aprobada');
+      await movement(
+        tx,
+        {
+          tenantId,
+          transactionItemId: sale.transaction_item_id,
+          productId: sale.product_id,
+          quantity: sale.quantity,
+          staffUserId,
+        },
+        'OUT',
+        -sale.quantity,
+        product.stock_quantity,
+        'Venta MP aprobada',
+      );
     } else {
       const [product] = await tx.$queryRaw<{ stock_quantity: number }[]>`
         UPDATE products SET stock_quantity = stock_quantity + ${sale.quantity}, updated_at = now()
@@ -105,13 +117,20 @@ export async function resolveProductSales(
       await tx.$executeRaw`
         UPDATE product_sale_items SET status = 'RELEASED'::product_sale_status
         WHERE transaction_item_id = ${sale.transaction_item_id}::uuid`;
-      await movement(tx, {
-        tenantId,
-        transactionItemId: sale.transaction_item_id,
-        productId: sale.product_id,
-        quantity: sale.quantity,
-        staffUserId,
-      }, 'IN', sale.quantity, product.stock_quantity, 'Pago MP rechazado o cancelado; reserva liberada');
+      await movement(
+        tx,
+        {
+          tenantId,
+          transactionItemId: sale.transaction_item_id,
+          productId: sale.product_id,
+          quantity: sale.quantity,
+          staffUserId,
+        },
+        'IN',
+        sale.quantity,
+        product.stock_quantity,
+        'Pago MP rechazado o cancelado; reserva liberada',
+      );
     }
   }
 }
@@ -125,7 +144,12 @@ export async function refundProductSale(
   staffUserId: string | null,
 ): Promise<void> {
   const [sale] = await tx.$queryRaw<
-    { product_id: string; quantity: number; status: string; refunded_at: Date | null }[]
+    {
+      product_id: string;
+      quantity: number;
+      status: string;
+      refunded_at: Date | null;
+    }[]
   >`
     SELECT product_id, quantity, status, refunded_at FROM product_sale_items
     WHERE tenant_id = ${tenantId}::uuid AND transaction_item_id = ${transactionItemId}::uuid
@@ -138,13 +162,20 @@ export async function refundProductSale(
       UPDATE products SET stock_quantity = stock_quantity + ${sale.quantity}, updated_at = now()
       WHERE id = ${sale.product_id}::uuid AND tenant_id = ${tenantId}::uuid
       RETURNING stock_quantity`;
-    await movement(tx, {
-      tenantId,
-      transactionItemId,
-      productId: sale.product_id,
-      quantity: sale.quantity,
-      staffUserId,
-    }, 'IN', sale.quantity, product.stock_quantity, 'Devolución de producto: repone stock');
+    await movement(
+      tx,
+      {
+        tenantId,
+        transactionItemId,
+        productId: sale.product_id,
+        quantity: sale.quantity,
+        staffUserId,
+      },
+      'IN',
+      sale.quantity,
+      product.stock_quantity,
+      'Devolución de producto: repone stock',
+    );
   }
   await tx.$executeRaw`
     UPDATE product_sale_items SET refunded_at = now(), restocked = ${restock}
