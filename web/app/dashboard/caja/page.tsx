@@ -69,7 +69,7 @@ type CajaVista = 'cobro' | 'debitos';
 type CajaPaymentMethod = CounterMethod | 'MP' | 'MP_POINT_QR';
 
 /**
- * Caja: carrito de cobros (packs + drop-in) en efectivo o con links de MP
+ * Caja: carrito de cobros (packs + drop-in + productos) en efectivo o con MP
  * (CU-PAG / RN-PAG-009). Cierre y movimientos viven en /arqueo.
  *
  * @remarks MP link y QR Point consultan el estado hasta confirmar el pago.
@@ -487,9 +487,6 @@ function CajaInner() {
         },
       ];
     });
-    if (cobroMedio === 'MP_POINT_QR') {
-      chooseMedio('CASH');
-    }
   }
 
   function removeItem(key: string) {
@@ -567,10 +564,6 @@ function CajaInner() {
     }
     if (isPlatform && cart.some((item) => item.kind !== 'PACK')) {
       setCobroError('La venta de plataforma solo admite packs');
-      return;
-    }
-    if (hasProducts && cobroMedio === 'MP_POINT_QR') {
-      setCobroError('Los productos por QR Point todavía no están integrados. Elegí efectivo, transferencia o Mercado Pago Link.');
       return;
     }
     if (isCounter && !trialApplied && !discountValid) {
@@ -733,7 +726,7 @@ function CajaInner() {
       subtitle={
         isPlatform
           ? 'Venta de packs de plataforma a otros tenants.'
-          : 'Cobros con carrito: packs, drop-in y productos en efectivo, transferencia o Mercado Pago Link; QR Point sigue disponible para packs y drop-in.'
+          : 'Cobros con carrito: packs, drop-in y productos en efectivo, transferencia o Mercado Pago.'
       }
     >
       <ListToolbar hint="El cierre del día se ve en Cierre.">
@@ -1028,13 +1021,12 @@ function CajaInner() {
                       type="radio"
                       name="medio"
                       checked={cobroMedio === 'MP_POINT_QR'}
-                      disabled={hasProducts}
                       onChange={() => chooseMedio('MP_POINT_QR')}
                     />
                     Mercado Pago Point (QR en caja)
                   </label>
                   {hasProducts ? (
-                    <p className="muted small">Los productos ya se pueden cobrar con Mercado Pago Link; QR Point todavía no admite productos. Para ese medio, quitá los productos del carrito.</p>
+                    <p className="muted small">Los productos se reservan al generar el QR y el stock se confirma o libera cuando Mercado Pago informa el resultado.</p>
                   ) : null}
                 </>
               ) : null}
@@ -1114,7 +1106,7 @@ function CajaInner() {
               <p className="muted small">
                 Genera un QR dinámico para cobrar en el POS de Mercado Pago
                 configurado para este gimnasio. Caja verifica el pago antes de
-                emitir el comprobante.
+                emitir el comprobante; los productos reservan stock hasta su resolución.
               </p>
             ) : null}
 
