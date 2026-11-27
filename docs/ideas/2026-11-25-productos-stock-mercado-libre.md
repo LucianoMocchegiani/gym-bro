@@ -2,13 +2,13 @@
 
 **Fecha:** 2026-11-25  
 **Fuente:** definición con el usuario  
-**Estado:** revisada; alcance inicial pendiente de cerrar  
-**Tema:** productos · inventario · caja · Mercado Libre  
+**Estado:** alcance ordenado por etapas; pendiente relevar y cerrar cada implementación  
+**Tema:** productos · inventario · caja · experiencias E-commerce · Mercado Libre  
 **Relacionado:** [idea previa de tienda y marketplaces](./2026-07-13-stores-mp-vs-ml.md)
 
 ## Objetivo
 
-Permitir que cada organización gestione productos y existencias desde Faciliter. El catálogo interno funciona aunque la organización no use Mercado Libre; quien lo elija podrá conectar su cuenta y publicar productos desde el mismo catálogo.
+Permitir que cada organización gestione productos y existencias desde Faciliter. El catálogo interno funciona aunque la organización no use Mercado Libre; quien lo elija podrá conectar su cuenta y publicar productos desde el mismo catálogo, una vez terminadas y repasadas las experiencias de E-commerce y Club + E-commerce.
 
 **Principio propuesto:** Faciliter es la fuente de verdad del producto y del stock. Mercado Libre es un canal externo opcional, no un requisito para cargar o vender productos.
 
@@ -70,14 +70,44 @@ Queda por decidir cómo se nombra a las personas en esta experiencia combinada: 
 - Integrar los productos al flujo de Mercado Pago existente.
 - Resolver pago pendiente con reserva/confirmación/liberación de stock e idempotencia, para evitar vender dos veces la última unidad o descontar dos veces.
 
-### 4. Conexión opcional con Mercado Libre
+### 4. Adecuar el plan E-commerce
+
+Antes de conectar Mercado Libre, adaptar la experiencia completa para organizaciones que contratan solo E-commerce:
+
+- Acomodar el dashboard y repasar los módulos del panel de administración para que sean adecuados al plan, mostrando las funciones disponibles y evitando las que pertenecen a Club.
+- Adaptar la web del tenant para mostrar sus productos.
+- Adaptar el portal de usuario para el plan E-commerce.
+
+El alcance concreto de cada pantalla y módulo se relevará en el código antes de implementar. Mostrar productos en la web del tenant no implica por sí solo agregar un checkout público.
+
+### 5. Repaso integral del plan E-commerce
+
+Recorrer y probar el flujo de E-commerce de punta a punta después de adecuar dashboard, administración, web del tenant y portal. Si se detecta algo faltante, documentarlo y agregarlo como etapa inmediata antes de avanzar al plan combinado.
+
+### 6. Adecuar el plan Club + E-commerce
+
+Con el plan E-commerce revisado, adaptar la experiencia para organizaciones que contratan ambos planes:
+
+- Acomodar el dashboard y repasar los módulos del panel de administración para que integren las funciones de Club y E-commerce.
+- Adaptar la web del tenant para mostrar productos y planes.
+- Adaptar el portal de usuario para el plan Club + E-commerce.
+
+El alcance concreto de cada pantalla y módulo se relevará en el código antes de implementar. No renombrar modelos ni APIs internas de Club solo para cambiar textos visibles.
+
+### 7. Repaso integral del plan Club + E-commerce
+
+Recorrer y probar el flujo combinado de punta a punta. Si se detecta algo faltante, documentarlo y agregarlo como etapa inmediata antes de iniciar el trabajo de Mercado Libre.
+
+### 8. Conexión opcional con Mercado Libre
+
+Iniciar esta etapa solo después de terminar y repasar las etapas 4–7:
 
 - Conectar la cuenta vendedora de cada organización mediante OAuth, separado de las credenciales y la integración de Mercado Pago.
 - Permitir seleccionar qué productos internos vincular/publicar y conservar una referencia a su publicación.
 - Antes de habilitar publicación, investigar y validar con la API vigente los requisitos y restricciones por categoría, atributos, variantes, imágenes, permisos y cuenta vendedora. No asumir que todos los productos se pueden publicar igual.
 - Esta etapa prepara y valida la integración; no implica todavía sincronización completa de ventas.
 
-### 5. Publicación y sincronización bidireccional
+### 9. Publicación y sincronización bidireccional
 
 - Crear y actualizar publicaciones desde Faciliter, incluyendo al menos precio y stock según lo que permita la API de Mercado Libre.
 - Recibir las órdenes generadas en Mercado Libre y reflejarlas en Faciliter para descontar stock una sola vez.
@@ -86,12 +116,13 @@ Queda por decidir cómo se nombra a las personas en esta experiencia combinada: 
 
 ## Fuera del alcance inicial
 
-- Tienda pública propia o checkout para socios: es un canal distinto y puede definirse por separado.
+- Checkout público o compra de productos desde la web del tenant: mostrar productos no incluye automáticamente este flujo; debe definirse por separado si se requiere.
 - Variantes, códigos de barras, múltiples depósitos/sucursales y reglas avanzadas de inventario.
 - Integrar otros marketplaces además de Mercado Libre.
 
 ## Criterios para avanzar
 
+- Las etapas de adecuación y repaso de E-commerce y Club + E-commerce deben completarse antes de conectar Mercado Libre.
 - La etapa 1 debe ser útil sin Mercado Libre.
 - No habilitar venta de stock compartido en canales concurrentes hasta contar con una estrategia de reserva y recepción de órdenes.
 - Validar las limitaciones concretas de Mercado Libre contra la documentación/API vigente y las categorías que realmente quieran vender; las reglas pueden cambiar.
@@ -99,12 +130,14 @@ Queda por decidir cómo se nombra a las personas en esta experiencia combinada: 
 ## Decisiones pendientes
 
 1. ¿Se puede vender sin cliente asociado?
-2. ¿Qué política de devolución y reposición de stock se necesita?
-3. ¿Se requiere SKU/código de barras desde el primer corte?
-4. ¿Qué categorías de productos deben soportarse primero en Mercado Libre?
-5. ¿Qué permisos del plan habilitan catálogo, stock y conexión al marketplace?
-6. ¿Cómo se nombran las personas en el plan combinado: Afiliados, Clientes o ambos según el contexto?
-7. ¿Cómo se cargan y ajustan existencias, y qué ocurre con el stock al dar de baja un producto?
+2. ¿Se requiere SKU/código de barras desde el primer corte?
+3. ¿Qué categorías de productos deben soportarse primero en Mercado Libre?
+4. ¿Qué permisos del plan habilitan catálogo, stock y conexión al marketplace?
+5. ¿Cómo se nombran las personas en el plan combinado: Afiliados, Clientes o ambos según el contexto?
+6. ¿Cómo se cargan y ajustan existencias, y qué ocurre con el stock al dar de baja un producto?
+7. ¿Se requiere checkout público para comprar los productos mostrados en la web del tenant?
+
+La política de devoluciones para productos debe permitir elegir, por producto, entre reponer y no reponer el stock; la decisión debe quedar registrada y aplicarse de forma idempotente.
 
 Estas etapas son una propuesta de alcance; antes de implementar cada una, cerrar sus decisiones y contrastar los puntos de integración con el código y la documentación vigentes.
 
