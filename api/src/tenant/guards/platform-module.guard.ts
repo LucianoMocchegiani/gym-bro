@@ -33,10 +33,10 @@ export class PlatformModuleGuard implements CanActivate {
     if (requiredModules.some((module) => tenantModules.includes(module))) {
       return true;
     }
-    throw new ForbiddenException(
+    const message =
       requiredModules.length === 1
         ? `El plan contratado no incluye el módulo ${requiredModules[0]}.`
-        : `El plan contratado no incluye ninguno de los módulos ${requiredModules.join(', ')}.`,
-    );
+        : `El plan contratado no incluye ninguno de los módulos ${requiredModules.join(', ')}.`;
+    throw new ForbiddenException(message);
   }
 }
