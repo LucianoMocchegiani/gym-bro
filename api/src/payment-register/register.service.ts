@@ -168,6 +168,38 @@ export class PaymentRegisterService {
     ]);
 
     const movements = buildLedgerRows(rows);
+    const productItemIds = [
+      ...new Set(movements.flatMap((movement) => movement.items.map((item) => item.id))),
+    ];
+    if (productItemIds.length > 0) {
+      const productSales = await this.prisma.$queryRaw<
+        { transaction_item_id: string; name: string; quantity: number }[]
+      >`
+        SELECT s.transaction_item_id, p.name, s.quantity
+        FROM product_sale_items s
+        JOIN products p
+          ON p.id = s.product_id AND p.tenant_id = s.tenant_id
+        WHERE s.tenant_id = ${tenantId}::uuid
+          AND s.transaction_item_id IN (${Prisma.join(
+            productItemIds.map((id) => Prisma.sql`${id}::uuid`),
+          )})`;
+      const salesByItem = new Map(
+        productSales.map((sale) => [sale.transaction_item_id, sale]),
+      );
+      for (const movement of movements) {
+        movement.items = movement.items.map((item) => {
+          const sale = salesByItem.get(item.id);
+          return sale
+            ? {
+                ...item,
+                kind: 'PRODUCT',
+                title: sale.name,
+                productQuantity: sale.quantity,
+              }
+            : item;
+        });
+      }
+    }
     const income = rows
       .filter((m) => m.kind === CashMovementKind.INCOME)
       .reduce((sum, m) => sum + m.amount, 0);
@@ -292,7 +324,7 @@ export class PaymentRegisterService {
   /**
    * Lo que no pasa por la gaveta: cobros y devoluciones MP o por
    * transferencia, y gastos por
-   * transferencia, MP o tarjeta. Informativo; no entra al arqueo.
+   * transferencia, MP o tarjeta. Informativo; no entra al cierre.
    */
   private digitalTotals(
     tenantId: string,
