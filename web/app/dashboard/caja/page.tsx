@@ -53,6 +53,9 @@ import { listSessions } from '@/lib/api/sessions';
 import type { SessionSummary } from '@/lib/api/sessions';
 import { listServices } from '@/lib/api/services';
 import { formatMoney } from '@/lib/cash-labels';
+import { useAuth } from '@/lib/auth/AuthProvider';
+import { usePlatformModules } from '@/lib/use-platform-modules';
+import { cajaCatalogTypes, type CajaCatalogType } from '@/lib/caja-catalog';
 
 type CartItem = {
   key: string;
@@ -64,7 +67,6 @@ type CartItem = {
   quantity: number;
 };
 
-type CatalogTab = 'SERVICIOS' | 'PACKS' | 'PRODUCTOS';
 type CajaVista = 'cobro' | 'debitos';
 type CajaPaymentMethod = CounterMethod | 'MP' | 'MP_POINT_QR';
 
@@ -87,11 +89,19 @@ export default function CajaPage() {
 
 function CajaInner() {
   const searchParams = useSearchParams();
+  const { session } = useAuth();
   // El host decide si esta es la Caja de plataforma (RequireStaff ya validó la
   // sesión contra el host, así que `session.tenantSlug` sería redundante).
   const isPlatform =
     typeof window !== 'undefined' &&
     extractTenantSlugFromHost(window.location.host) === 'admin';
+  const platformModules = usePlatformModules(session?.tenantId);
+  const catalogTypes = cajaCatalogTypes(platformModules, isPlatform);
+  const isEcommerceOnly =
+    !isPlatform &&
+    platformModules?.includes('ecommerce') === true &&
+    !platformModules.includes('club');
+  const catalogModulesLoaded = isPlatform || platformModules !== null;
   const initialMemberId = searchParams.get('memberId')?.trim() ?? '';
   const initialBillingTenantId =
     searchParams.get('billingTenantId')?.trim() ?? '';
@@ -99,7 +109,7 @@ function CajaInner() {
     searchParams.get('vista') === 'debitos' ? 'debitos' : 'cobro';
 
   const [vista, setVista] = useState<CajaVista>(initialVista);
-  const [catalogTab, setCatalogTab] = useState<CatalogTab>(
+  const [catalogTab, setCatalogTab] = useState<CajaCatalogType>(
     isPlatform ? 'PACKS' : 'SERVICIOS',
   );
   const [packs, setPacks] = useState<PackSummary[]>([]);
@@ -148,6 +158,9 @@ function CajaInner() {
   const [receipt, setReceipt] = useState<ReceiptDetail | null>(null);
   const [receiptError, setReceiptError] = useState<string | null>(null);
 
+  const visibleCatalogTab = catalogTypes.includes(catalogTab)
+    ? catalogTab
+    : (catalogTypes[0] ?? 'PRODUCTOS');
   const itemSeq = useRef(0);
 
   useEffect(() => {
@@ -160,6 +173,7 @@ function CajaInner() {
   }, [initialMemberId, isPlatform]);
 
   useEffect(() => {
+    if (!catalogModulesLoaded) return;
     let cancelled = false;
     void (async () => {
       try {
@@ -176,33 +190,40 @@ function CajaInner() {
           setCatalogError(null);
           return;
         }
+        const requestedCatalogs = cajaCatalogTypes(platformModules, false);
         const from = new Date();
         const to = new Date();
         to.setDate(to.getDate() + 14);
         const [packsResult, sessionsResult, servicesResult, productsResult] =
           await Promise.all([
-            listActivePacks(),
-            listSessions({
-              status: 'PUBLISHED',
-              from: from.toISOString(),
-              to: to.toISOString(),
-              pageSize: 100,
-            }),
-            listServices({ active: true, pageSize: 100 }),
-            listProducts({ active: true, pageSize: 100 }),
+            requestedCatalogs.includes('PACKS') ? listActivePacks() : null,
+            requestedCatalogs.includes('SERVICIOS')
+              ? listSessions({
+                  status: 'PUBLISHED',
+                  from: from.toISOString(),
+                  to: to.toISOString(),
+                  pageSize: 100,
+                })
+              : null,
+            requestedCatalogs.includes('SERVICIOS')
+              ? listServices({ active: true, pageSize: 100 })
+              : null,
+            requestedCatalogs.includes('PRODUCTOS')
+              ? listProducts({ active: true, pageSize: 100 })
+              : null,
           ]);
         if (cancelled) {
           return;
         }
-        setPacks(packsResult.items);
-        setSessions(sessionsResult.items);
+        setPacks(packsResult?.items ?? []);
+        setSessions(sessionsResult?.items ?? []);
         setServices(
-          servicesResult.items.map((s) => ({
+          servicesResult?.items.map((s) => ({
             id: s.id,
             dropInPrice: s.dropInPrice,
-          })),
+          })) ?? [],
         );
-        setProducts(productsResult.items);
+        setProducts(productsResult?.items ?? []);
         setCatalogError(null);
       } catch (err) {
         if (cancelled) {
@@ -222,7 +243,7 @@ function CajaInner() {
     return () => {
       cancelled = true;
     };
-  }, [isPlatform]);
+  }, [isPlatform, catalogModulesLoaded, platformModules]);
 
   useEffect(() => {
     let cancelled = false;
@@ -726,7 +747,9 @@ function CajaInner() {
       subtitle={
         isPlatform
           ? 'Venta de packs de plataforma a otros tenants.'
-          : 'Cobros con carrito: packs, drop-in y productos en efectivo, transferencia o Mercado Pago.'
+          : isEcommerceOnly
+            ? 'Cobros de productos en efectivo, transferencia o Mercado Pago.'
+            : 'Cobros con carrito: packs, drop-in y productos en efectivo, transferencia o Mercado Pago.'
       }
     >
       <ListToolbar hint="El cierre del día se ve en Cierre.">
@@ -805,45 +828,49 @@ function CajaInner() {
           title="Catálogo"
           description="Agregá ítems al carrito con el botón +."
         >
-          <div className="cash-tabs" role="tablist">
-            {isPlatform ? null : (
-              <button
-                type="button"
-                role="tab"
-                aria-selected={catalogTab === 'SERVICIOS'}
-                className={catalogTab === 'SERVICIOS' ? 'active' : undefined}
-                onClick={() => setCatalogTab('SERVICIOS')}
-              >
-                Servicios
-              </button>
-            )}
-            <button
-              type="button"
-              role="tab"
-              aria-selected={catalogTab === 'PACKS'}
-              className={catalogTab === 'PACKS' ? 'active' : undefined}
-              onClick={() => setCatalogTab('PACKS')}
-            >
-              Packs
-            </button>
-            {isPlatform ? null : (
-              <button
-                type="button"
-                role="tab"
-                aria-selected={catalogTab === 'PRODUCTOS'}
-                className={catalogTab === 'PRODUCTOS' ? 'active' : undefined}
-                onClick={() => setCatalogTab('PRODUCTOS')}
-              >
-                Productos
-              </button>
-            )}
-          </div>
+          {catalogModulesLoaded ? (
+            <div className="cash-tabs" role="tablist">
+              {catalogTypes.includes('SERVICIOS') ? (
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={visibleCatalogTab === 'SERVICIOS'}
+                  className={visibleCatalogTab === 'SERVICIOS' ? 'active' : undefined}
+                  onClick={() => setCatalogTab('SERVICIOS')}
+                >
+                  Servicios
+                </button>
+              ) : null}
+              {catalogTypes.includes('PACKS') ? (
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={visibleCatalogTab === 'PACKS'}
+                  className={visibleCatalogTab === 'PACKS' ? 'active' : undefined}
+                  onClick={() => setCatalogTab('PACKS')}
+                >
+                  Packs
+                </button>
+              ) : null}
+              {catalogTypes.includes('PRODUCTOS') ? (
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={visibleCatalogTab === 'PRODUCTOS'}
+                  className={visibleCatalogTab === 'PRODUCTOS' ? 'active' : undefined}
+                  onClick={() => setCatalogTab('PRODUCTOS')}
+                >
+                  Productos
+                </button>
+              ) : null}
+            </div>
+          ) : null}
 
           {catalogError ? <p className="error">{catalogError}</p> : null}
 
           {catalogLoading ? <SkeletonPanel lines={5} /> : null}
 
-          {!catalogLoading && catalogTab === 'SERVICIOS' ? (
+          {!catalogLoading && visibleCatalogTab === 'SERVICIOS' ? (
             sessions.length === 0 ? (
               <p className="muted small">
                 Sin sesiones publicadas en los próximos 14 días.
@@ -898,7 +925,7 @@ function CajaInner() {
             )
           ) : null}
 
-          {!catalogLoading && catalogTab === 'PACKS' ? (
+          {!catalogLoading && visibleCatalogTab === 'PACKS' ? (
             packs.length === 0 ? (
               <p className="muted small">Sin packs activos.</p>
             ) : (
@@ -931,7 +958,7 @@ function CajaInner() {
             )
           ) : null}
 
-          {!catalogLoading && catalogTab === 'PRODUCTOS' ? (
+          {!catalogLoading && visibleCatalogTab === 'PRODUCTOS' ? (
             products.length === 0 ? (
               <p className="muted small">Sin productos activos.</p>
             ) : (
@@ -975,7 +1002,9 @@ function CajaInner() {
           className="cash-cart"
         >
           {cart.length === 0 ? (
-            <p className="muted small">Carrito vacío. Agregá servicios, packs o productos.</p>
+            <p className="muted small">
+              Carrito vacío. Agregá {isEcommerceOnly ? 'productos' : 'servicios, packs o productos'}.
+            </p>
           ) : (
             <CartLineList
               items={cart}
