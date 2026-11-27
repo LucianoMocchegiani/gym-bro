@@ -14,7 +14,9 @@ type RefundRow = {
   movement_count: number;
 };
 
-const describeWithDatabase = process.env.DATABASE_URL ? describe : describe.skip;
+const describeWithDatabase = process.env.DATABASE_URL
+  ? describe
+  : describe.skip;
 
 describeWithDatabase('product sales PostgreSQL integration', () => {
   const prisma = new PrismaClient();
@@ -31,7 +33,9 @@ describeWithDatabase('product sales PostgreSQL integration', () => {
     );
     const [functionSql, triggerSql] = migration.split('$$ LANGUAGE plpgsql;');
     if (!functionSql || !triggerSql) {
-      throw new Error('Could not parse product sales payment trigger migration');
+      throw new Error(
+        'Could not parse product sales payment trigger migration',
+      );
     }
 
     const schema = `product_sales_${randomUUID().replaceAll('-', '')}`;
