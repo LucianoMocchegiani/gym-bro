@@ -36,4 +36,20 @@ describe('PlatformModuleGuard', () => {
       ForbiddenException,
     );
   });
+
+  it('allows a tenant with any one of the required modules', async () => {
+    reflector.getAllAndOverride.mockReturnValue(['club', 'ecommerce']);
+    plans.getTenantModules.mockResolvedValue(['ecommerce']);
+
+    await expect(guard.canActivate(context)).resolves.toBe(true);
+  });
+
+  it('denies a tenant with none of the required modules', async () => {
+    reflector.getAllAndOverride.mockReturnValue(['club', 'ecommerce']);
+    plans.getTenantModules.mockResolvedValue([]);
+
+    await expect(guard.canActivate(context)).rejects.toBeInstanceOf(
+      ForbiddenException,
+    );
+  });
 });

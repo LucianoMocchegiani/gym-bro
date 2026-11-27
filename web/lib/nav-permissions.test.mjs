@@ -29,11 +29,29 @@ test('ecommerce-only navigation hides Club modules and exposes Products', () => 
     ),
     false,
   );
+  assert.equal(
+    canAccessNavHref(
+      '/dashboard/devoluciones',
+      ['transaction_items.refund'],
+      'ok',
+      ['ecommerce'],
+    ),
+    true,
+  );
 });
 
 test('Club plans retain Club navigation', () => {
   assert.equal(
     canAccessNavHref('/dashboard/servicios', ['catalog.write'], 'ok', ['club']),
+    true,
+  );
+  assert.equal(
+    canAccessNavHref(
+      '/dashboard/devoluciones',
+      ['transaction_items.refund'],
+      'ok',
+      ['club'],
+    ),
     true,
   );
 });
