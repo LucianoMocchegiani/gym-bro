@@ -107,7 +107,7 @@ export function toPaymentLine(item: PaymentLineSource): PaymentLineDetail {
     kind: isProduct ? 'PRODUCT' : isDropIn ? 'DROP_IN' : 'PACK',
     title,
     amount: item.amount,
-    productQuantity: isProduct ? 1 : null,
+    productQuantity: null,
     listAmount: item.listAmount,
     discountPercent: item.discountBps > 0 ? item.discountBps / 100 : null,
     status: item.status,

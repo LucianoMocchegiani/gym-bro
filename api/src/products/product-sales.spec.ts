@@ -108,11 +108,17 @@ describe('refundProductSale', () => {
       $queryRaw: (strings: TemplateStringsArray) => {
         calls.push(strings.join(''));
         queryCount += 1;
-        return queryCount === 1
-          ? [{ product_id: 'product', quantity: 2, status: 'SOLD', refunded_at: refundedAt }]
-          : product
-            ? [{ stock_quantity: 7 }]
-            : [];
+        if (queryCount === 1) {
+          return [
+            {
+              product_id: 'product',
+              quantity: 2,
+              status: 'SOLD',
+              refunded_at: refundedAt,
+            },
+          ];
+        }
+        return product ? [{ stock_quantity: 7 }] : [];
       },
       $executeRaw: (strings: TemplateStringsArray) => {
         calls.push(strings.join(''));
@@ -125,8 +131,14 @@ describe('refundProductSale', () => {
   it('restocks and records a movement when requested', async () => {
     const { tx, calls } = refundTx(null, true);
     await refundProductSale(tx, 'tenant', 'item', true, 'staff');
-    expect(calls.filter((call) => call.includes('UPDATE products'))).toHaveLength(1);
-    expect(calls.filter((call) => call.includes('INSERT INTO product_stock_movements'))).toHaveLength(1);
+    expect(
+      calls.filter((call) => call.includes('UPDATE products')),
+    ).toHaveLength(1);
+    expect(
+      calls.filter((call) =>
+        call.includes('INSERT INTO product_stock_movements'),
+      ),
+    ).toHaveLength(1);
     expect(calls.at(-1)).toContain('restocked = ');
   });
 
@@ -134,7 +146,11 @@ describe('refundProductSale', () => {
     const { tx, calls } = refundTx(null, false);
     await refundProductSale(tx, 'tenant', 'item', false, 'staff');
     expect(calls.some((call) => call.includes('UPDATE products'))).toBe(false);
-    expect(calls.some((call) => call.includes('INSERT INTO product_stock_movements'))).toBe(false);
+    expect(
+      calls.some((call) =>
+        call.includes('INSERT INTO product_stock_movements'),
+      ),
+    ).toBe(false);
     expect(calls.at(-1)).toContain('restocked = ');
   });
 

@@ -56,7 +56,9 @@ export class ExecuteRefundDto {
 
   @IsOptional()
   @IsArray()
-  @ArrayUnique((decision: ProductRestockDecisionDto) => decision.transactionItemId)
+  @ArrayUnique(
+    (decision: ProductRestockDecisionDto) => decision.transactionItemId,
+  )
   @ValidateNested({ each: true })
   @Type(() => ProductRestockDecisionDto)
   productRestockDecisions?: ProductRestockDecisionDto[];
