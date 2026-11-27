@@ -35,6 +35,8 @@ export default async function PortalLayout({
           brandColor={color}
           brandIcon={site.catalog.site?.brandIcon ?? null}
           socialLinks={site.catalog.site?.socialLinks}
+          showPlans={site.catalog.hasPlans}
+          showProducts={site.catalog.hasProducts}
         >
           {children}
         </GymSiteShell>

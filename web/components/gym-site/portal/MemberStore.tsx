@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { ListPagination } from '@/components/AdminList';
 import { PackPlanCard } from '@/components/marketing/PackPlanCard';
@@ -65,9 +66,9 @@ export function MemberStore() {
     }
     if (cart.has('PACK', pack.id)) {
       return (
-        <a className="mkt-btn-ghost" href="/portal/carrito">
+        <Link className="mkt-btn-ghost" href="/portal/carrito">
           En el carrito
-        </a>
+        </Link>
       );
     }
     return (
@@ -165,7 +166,7 @@ export function MemberStore() {
       ) : null}
       {cart.count > 0 ? (
         <p className="small">
-          <a href="/portal/carrito">Ir al carrito ({cart.count})</a>
+          <Link href="/portal/carrito">Ir al carrito ({cart.count})</Link>
         </p>
       ) : null}
     </section>
