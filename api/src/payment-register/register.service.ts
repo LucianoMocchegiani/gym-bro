@@ -169,7 +169,9 @@ export class PaymentRegisterService {
 
     const movements = buildLedgerRows(rows);
     const productItemIds = [
-      ...new Set(movements.flatMap((movement) => movement.items.map((item) => item.id))),
+      ...new Set(
+        movements.flatMap((movement) => movement.items.map((item) => item.id)),
+      ),
     ];
     if (productItemIds.length > 0) {
       const productSales = await this.prisma.$queryRaw<
@@ -192,7 +194,7 @@ export class PaymentRegisterService {
           return sale
             ? {
                 ...item,
-                kind: 'PRODUCT',
+                kind: 'PRODUCT' as const,
                 title: sale.name,
                 productQuantity: sale.quantity,
               }
@@ -324,7 +326,7 @@ export class PaymentRegisterService {
   /**
    * Lo que no pasa por la gaveta: cobros y devoluciones MP o por
    * transferencia, y gastos por
-   * transferencia, MP o tarjeta. Informativo; no entra al cierre.
+   * transferencia, MP o tarjeta. Informativo; no entra al arqueo.
    */
   private digitalTotals(
     tenantId: string,

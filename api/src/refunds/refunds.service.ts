@@ -24,7 +24,10 @@ import { ListResult, normalizeListQuery, toListResult } from '../common/list';
 import { MercadoPagoAccountService } from '../payment/mercadopago-account.service';
 import { MP_ACCOUNT_PORT, MpAccountPort } from '../payment/mp-account.port';
 import { PrismaService } from '../prisma/prisma.service';
-import { refundProductSale, validateProductRestockDecisions } from '../products/product-sales';
+import {
+  refundProductSale,
+  validateProductRestockDecisions,
+} from '../products/product-sales';
 import { WaitlistService } from '../waitlist/waitlist.service';
 import { DebitService } from '../debit/debit.service';
 import { NotificationDispatcher } from '../notifications/notifications.service';
