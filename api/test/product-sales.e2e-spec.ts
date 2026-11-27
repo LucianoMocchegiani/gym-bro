@@ -4,6 +4,13 @@ import { join } from 'node:path';
 import { Prisma, PrismaClient } from '@prisma/client';
 import { refundProductSale } from '../src/products/product-sales';
 
+type RefundRow = {
+  stock_quantity: number;
+  refunded_at: Date | null;
+  restocked: boolean;
+  movement_count: number;
+};
+
 const describeWithDatabase = process.env.DATABASE_URL ? describe : describe.skip;
 
 describeWithDatabase('product payment status trigger (PostgreSQL)', () => {
@@ -101,9 +108,7 @@ describeWithDatabase('product payment status trigger (PostgreSQL)', () => {
       const client = tx as unknown as Prisma.TransactionClient;
       await refundProductSale(client, tenantId, approvedItemId, true, null);
       await refundProductSale(client, tenantId, approvedItemId, true, null);
-      const [refunded] = await tx.$queryRaw<
-        { stock_quantity: number; refunded_at: Date | null; restocked: boolean; movement_count: number }[]
-      >`
+      const [refunded] = await tx.$queryRaw<RefundRow[]>`
         SELECT p.stock_quantity, s.refunded_at, s.restocked,
                (SELECT count(*)::int FROM product_stock_movements m WHERE m.product_id = p.id) AS movement_count
         FROM product_sale_items s
@@ -115,6 +120,7 @@ describeWithDatabase('product payment status trigger (PostgreSQL)', () => {
         movement_count: 2,
       });
       expect(refunded?.refunded_at).toBeInstanceOf(Date);
+      await tx.$executeRawUnsafe(`DROP SCHEMA ${schema} CASCADE`);
     });
   });
 });
