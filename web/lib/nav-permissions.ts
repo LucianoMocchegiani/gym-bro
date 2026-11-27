@@ -43,7 +43,7 @@ export const ADMIN_NAV_PERMISSIONS: readonly NavPermissionRule[] = [
   {
     href: '/dashboard/avisos',
     anyOf: ['tenant.settings.read', 'tenant.settings.write'],
-    module: 'club',
+    anyModule: ['club', 'ecommerce'],
   },
   {
     href: '/dashboard/web',

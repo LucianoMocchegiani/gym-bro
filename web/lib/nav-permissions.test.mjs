@@ -49,6 +49,15 @@ test('ecommerce-only navigation hides Club modules and exposes Products', () => 
   );
   assert.equal(
     canAccessNavHref(
+      '/dashboard/avisos',
+      ['tenant.settings.read'],
+      'ok',
+      ['ecommerce'],
+    ),
+    true,
+  );
+  assert.equal(
+    canAccessNavHref(
       '/dashboard/web',
       ['tenant.settings.read'],
       'ok',
