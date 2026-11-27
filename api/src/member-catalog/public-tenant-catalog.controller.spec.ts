@@ -28,7 +28,10 @@ describe('PublicTenantCatalogController', () => {
   });
 
   it('omits hidden packs from the public landing catalog', async () => {
-    packs.listForMember.mockResolvedValue([{ id: 'visible' }, { id: 'hidden' }]);
+    packs.listForMember.mockResolvedValue([
+      { id: 'visible' },
+      { id: 'hidden' },
+    ]);
     visibility.visiblePackIds.mockResolvedValue(new Set(['visible']));
     const result = await create(['club']).listPacks('shop');
     expect(result.packs).toEqual([{ id: 'visible' }]);

@@ -68,7 +68,8 @@ export class PublicTenantCatalogController {
     @Query() query: ListQueryDto,
   ) {
     const tenant = await this.tenants.findPublicBySlug(slug);
-    if (!(await this.plans.getTenantModules(tenant.id)).includes('ecommerce')) {
+    const modules = await this.plans.getTenantModules(tenant.id);
+    if (!modules.includes('ecommerce')) {
       throw new NotFoundException('Product catalog is unavailable');
     }
     return this.products.list(tenant.id, query);

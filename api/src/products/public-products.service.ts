@@ -21,7 +21,10 @@ export class PublicProductsService {
       SELECT count(*) AS count FROM products
       WHERE tenant_id = ${tenantId}::uuid AND active = true`;
     const total = Number(count?.count ?? 0);
-    const page = Math.min(n.page, Math.max(1, Math.ceil(total / n.pageSize)));
+    const page = Math.min(
+      n.page,
+      Math.max(1, Math.ceil(total / n.pageSize)),
+    );
     const rows = await this.prisma.$queryRaw<PublicProductRow[]>`
       SELECT id, name, description, price, image_url FROM products
       WHERE tenant_id = ${tenantId}::uuid AND active = true
