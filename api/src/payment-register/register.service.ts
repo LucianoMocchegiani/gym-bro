@@ -36,9 +36,10 @@ export function attachProductSalesToLedger(
   sales: ProductSaleLedgerRow[],
 ): LedgerMovementRow[] {
   const salesByItem = new Map<string, ProductSaleLedgerRow>(
-    sales.map(
-      (sale): [string, ProductSaleLedgerRow] => [sale.transaction_item_id, sale],
-    ),
+    sales.map((sale): [string, ProductSaleLedgerRow] => [
+      sale.transaction_item_id,
+      sale,
+    ]),
   );
   return rows.map((row) => ({
     ...row,

@@ -114,9 +114,21 @@ describe('MpPointQrService', () => {
       idempotencyKey: 'qr-checkout-product-1',
       transactionItems: [{ id: 'transaction-item-1' }],
     };
-    const transactionCreate = jest.fn().mockResolvedValue(transaction);
+    type TransactionCreateArgs = { data: { amount: number } };
+    type TransactionItemCreateArgs = {
+      data: {
+        packId: string | null;
+        sessionId: string | null;
+        amount: number;
+        listAmount: number;
+        discountBps: number;
+      };
+    };
+    const transactionCreate = jest
+      .fn<Promise<typeof transaction>, [TransactionCreateArgs]>()
+      .mockResolvedValue(transaction);
     const transactionItemCreate = jest
-      .fn()
+      .fn<Promise<{ id: string }>, [TransactionItemCreateArgs]>()
       .mockResolvedValue({ id: 'transaction-item-1' });
     type PrismaTransaction = {
       transaction: {
@@ -199,20 +211,14 @@ describe('MpPointQrService', () => {
       ),
     ).resolves.toMatchObject({ amount: 95 });
 
-    expect(transactionCreate).toHaveBeenCalledWith(
-      expect.objectContaining({ data: expect.objectContaining({ amount: 95 }) }),
-    );
-    expect(transactionItemCreate).toHaveBeenCalledWith(
-      expect.objectContaining({
-        data: expect.objectContaining({
-          packId: null,
-          sessionId: null,
-          amount: 95,
-          listAmount: 100,
-          discountBps: 500,
-        }),
-      }),
-    );
+    expect(transactionCreate.mock.calls[0]?.[0].data.amount).toBe(95);
+    expect(transactionItemCreate.mock.calls[0]?.[0].data).toMatchObject({
+      packId: null,
+      sessionId: null,
+      amount: 95,
+      listAmount: 100,
+      discountBps: 500,
+    });
     expect(tx.$executeRaw).toHaveBeenCalledTimes(2);
     expect(createOrder).toHaveBeenCalledWith(
       expect.objectContaining({ amount: 95 }),
