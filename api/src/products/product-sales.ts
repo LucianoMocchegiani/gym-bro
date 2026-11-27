@@ -35,7 +35,7 @@ export function validateProductRestockDecisions(
   productItemIds: string[],
   decisions: { transactionItemId: string; restock: boolean }[],
 ): Map<string, boolean> {
-  const byItem = new Map(
+  const byItem = new Map<string, boolean>(
     decisions.map((decision) => [decision.transactionItemId, decision.restock]),
   );
   if (

@@ -70,7 +70,7 @@ describe('reserveProductSale', () => {
 });
 
 describe('validateProductRestockDecisions', () => {
-  it('requires an explicit restock choice for each returned product', () => {
+  it('requires a choice for every returned product', () => {
     expect(
       validateProductRestockDecisions(['item-1', 'item-2'], [
         { transactionItemId: 'item-1', restock: true },

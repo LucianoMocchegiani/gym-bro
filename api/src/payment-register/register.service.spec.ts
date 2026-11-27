@@ -16,7 +16,7 @@ const rows = [
 ] as unknown as LedgerMovementRow[];
 
 describe('attachProductSalesToLedger', () => {
-  it('adds product identity and quantity only to matching sale lines', () => {
+  it('labels matching product lines and leaves other lines unchanged', () => {
     expect(
       attachProductSalesToLedger(rows, [
         {
