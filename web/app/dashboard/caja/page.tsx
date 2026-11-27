@@ -55,7 +55,7 @@ import { listServices } from '@/lib/api/services';
 import { formatMoney } from '@/lib/cash-labels';
 import { useAuth } from '@/lib/auth/AuthProvider';
 import { usePlatformModules } from '@/lib/use-platform-modules';
-import { cajaCatalogTypes } from '@/lib/caja-catalog';
+import { cajaCatalogTypes, type CajaCatalogType } from '@/lib/caja-catalog';
 
 type CartItem = {
   key: string;
@@ -101,9 +101,6 @@ function CajaInner() {
     !isPlatform &&
     platformModules?.includes('ecommerce') === true &&
     !platformModules.includes('club');
-  const visibleCatalogTab = catalogTypes.includes(catalogTab)
-    ? catalogTab
-    : (catalogTypes[0] ?? 'PRODUCTOS');
   const catalogModulesLoaded = isPlatform || platformModules !== null;
   const initialMemberId = searchParams.get('memberId')?.trim() ?? '';
   const initialBillingTenantId =
@@ -161,6 +158,9 @@ function CajaInner() {
   const [receipt, setReceipt] = useState<ReceiptDetail | null>(null);
   const [receiptError, setReceiptError] = useState<string | null>(null);
 
+  const visibleCatalogTab = catalogTypes.includes(catalogTab)
+    ? catalogTab
+    : (catalogTypes[0] ?? 'PRODUCTOS');
   const itemSeq = useRef(0);
 
   useEffect(() => {
