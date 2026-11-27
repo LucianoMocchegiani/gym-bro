@@ -18,7 +18,7 @@ import { TenantSiteDetail } from './tenant-site.types';
  */
 @Controller('tenant-site')
 @RequireTenantAuth()
-@RequirePlatformModule('club')
+@RequirePlatformModule(['club', 'ecommerce'])
 export class TenantSiteController {
   constructor(private readonly site: TenantSiteService) {}
 

@@ -5,11 +5,14 @@ import {
   Prisma,
 } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import { PlatformPlansService } from '../platform-plans/platform-plans.service';
 import {
   CABLED_NOTIFICATION_EVENTS,
   defaultTemplate,
   formatAmountArs,
   notificationEventLabel,
+  notificationEventsForModules,
+  notificationModulesForEvent,
   renderTemplate,
   templatePlaceholders,
 } from './notification.defaults';
@@ -39,6 +42,7 @@ export class NotificationDispatcher {
 
   constructor(
     private readonly prisma: PrismaService,
+    private readonly platformPlans: PlatformPlansService,
     @Inject(MAIL_PORT) private readonly mail: MailPort,
   ) {}
 
@@ -129,6 +133,15 @@ export class NotificationDispatcher {
   }
 
   private async dispatch(input: NotifyMemberInput): Promise<void> {
+    const modules = await this.platformPlans.getTenantModules(input.tenantId);
+    if (
+      !notificationModulesForEvent(input.event).some((module) =>
+        modules.includes(module),
+      )
+    ) {
+      return;
+    }
+
     const member = await this.prisma.member.findFirst({
       where: { id: input.memberId, tenantId: input.tenantId },
       select: {
@@ -175,21 +188,27 @@ export class NotificationDispatcher {
     const title = renderTemplate(subjectTpl, vars);
     const body = renderTemplate(bodyTpl, vars);
 
-    let emailStatus: NotificationEmailStatus = NotificationEmailStatus.SKIPPED;
-
     try {
-      await this.prisma.notification.create({
-        data: {
-          tenantId: input.tenantId,
-          memberId: input.memberId,
-          eventCode: input.event,
-          title,
-          body,
-          payload: input.payload,
-          inAppRead: false,
-          emailStatus: NotificationEmailStatus.SKIPPED,
-          idempotencyKey: input.idempotencyKey,
-        },
+      await this.prisma.$transaction(async (tx) => {
+        await tx.notification.create({
+          data: {
+            tenantId: input.tenantId,
+            memberId: input.memberId,
+            eventCode: input.event,
+            title,
+            body,
+            payload: input.payload,
+            inAppRead: false,
+            emailStatus: NotificationEmailStatus.SKIPPED,
+            idempotencyKey: input.idempotencyKey,
+          },
+        });
+        await tx.$executeRaw`
+          UPDATE notifications
+          SET modules = ${notificationModulesForEvent(input.event)}::text[]
+          WHERE tenant_id = ${input.tenantId}::uuid
+            AND idempotency_key = ${input.idempotencyKey}
+        `;
       });
     } catch (err) {
       if (
@@ -210,6 +229,7 @@ export class NotificationDispatcher {
       return;
     }
 
+    let emailStatus: NotificationEmailStatus = NotificationEmailStatus.SKIPPED;
     try {
       await this.mail.send({ to, subject: title, text: body });
       emailStatus = NotificationEmailStatus.SENT;
@@ -318,7 +338,10 @@ export class NotificationDispatcher {
  */
 @Injectable()
 export class NotificationsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly platformPlans: PlatformPlansService,
+  ) {}
 
   async listMine(
     tenantId: string,
@@ -332,6 +355,7 @@ export class NotificationsService {
     return rows.map((r) => ({
       id: r.id,
       eventCode: r.eventCode,
+      modules: notificationModulesForEvent(r.eventCode),
       title: r.title,
       body: r.body,
       inAppRead: r.inAppRead,
@@ -357,6 +381,7 @@ export class NotificationsService {
     return {
       id: updated.id,
       eventCode: updated.eventCode,
+      modules: notificationModulesForEvent(updated.eventCode),
       title: updated.title,
       body: updated.body,
       inAppRead: updated.inAppRead,
@@ -372,7 +397,9 @@ export class NotificationsService {
       where: { tenantId, memberId },
     });
     const byEvent = new Map(rows.map((r) => [r.eventCode, r.emailEnabled]));
-    return CABLED_NOTIFICATION_EVENTS.map((eventCode) => ({
+    return notificationEventsForModules(
+      await this.platformPlans.getTenantModules(tenantId),
+    ).map((eventCode) => ({
       eventCode,
       emailEnabled: byEvent.get(eventCode) ?? true,
     }));
@@ -384,9 +411,7 @@ export class NotificationsService {
     eventCode: NotificationEventCode,
     emailEnabled: boolean,
   ): Promise<NotificationPreferenceDetail> {
-    if (!CABLED_NOTIFICATION_EVENTS.includes(eventCode)) {
-      throw new NotFoundException('Unknown notification event');
-    }
+    await this.assertCabled(tenantId, eventCode);
     await this.prisma.notificationPreference.upsert({
       where: {
         tenantId_memberId_eventCode: {
@@ -414,7 +439,9 @@ export class NotificationsService {
       where: { tenantId },
     });
     const byEvent = new Map(rows.map((r) => [r.eventCode, r]));
-    return CABLED_NOTIFICATION_EVENTS.map((eventCode) =>
+    return notificationEventsForModules(
+      await this.platformPlans.getTenantModules(tenantId),
+    ).map((eventCode) =>
       this.toTemplateDetail(eventCode, byEvent.get(eventCode) ?? null),
     );
   }
@@ -427,7 +454,7 @@ export class NotificationsService {
     eventCode: NotificationEventCode,
     input: { subject: string; body: string; active: boolean },
   ): Promise<NotificationTemplateDetail> {
-    this.assertCabled(eventCode);
+    await this.assertCabled(tenantId, eventCode);
     const row = await this.prisma.notificationTemplate.upsert({
       where: {
         tenantId_eventCode: { tenantId, eventCode },
@@ -448,8 +475,17 @@ export class NotificationsService {
     return this.toTemplateDetail(eventCode, row);
   }
 
-  private assertCabled(eventCode: NotificationEventCode): void {
-    if (!CABLED_NOTIFICATION_EVENTS.includes(eventCode)) {
+  private async assertCabled(
+    tenantId: string,
+    eventCode: NotificationEventCode,
+  ): Promise<void> {
+    const modules = await this.platformPlans.getTenantModules(tenantId);
+    if (
+      !CABLED_NOTIFICATION_EVENTS.includes(eventCode) ||
+      !notificationModulesForEvent(eventCode).some((module) =>
+        modules.includes(module),
+      )
+    ) {
       throw new NotFoundException('Unknown notification event');
     }
   }

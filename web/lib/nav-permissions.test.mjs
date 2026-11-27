@@ -38,6 +38,33 @@ test('ecommerce-only navigation hides Club modules and exposes Products', () => 
     ),
     true,
   );
+  assert.equal(
+    canAccessNavHref(
+      '/dashboard/config',
+      ['tenant.settings.read'],
+      'ok',
+      ['ecommerce'],
+    ),
+    true,
+  );
+  assert.equal(
+    canAccessNavHref(
+      '/dashboard/avisos',
+      ['tenant.settings.read'],
+      'ok',
+      ['ecommerce'],
+    ),
+    true,
+  );
+  assert.equal(
+    canAccessNavHref(
+      '/dashboard/web',
+      ['tenant.settings.read'],
+      'ok',
+      ['ecommerce'],
+    ),
+    true,
+  );
 });
 
 test('Club plans retain Club navigation', () => {

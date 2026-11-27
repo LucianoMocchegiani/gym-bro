@@ -17,7 +17,7 @@ import { TenantSettingsDetail } from './tenant-settings.types';
  */
 @Controller('tenant-settings')
 @RequireTenantAuth()
-@RequirePlatformModule('club')
+@RequirePlatformModule(['club', 'ecommerce'])
 export class TenantSettingsController {
   constructor(private readonly tenantSettings: TenantSettingsService) {}
 
