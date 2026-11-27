@@ -1,7 +1,8 @@
 import { randomUUID } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
-import { PrismaClient } from '@prisma/client';
+import { Prisma, PrismaClient } from '@prisma/client';
+import { refundProductSale } from '../src/products/product-sales';
 
 const describeWithDatabase = process.env.DATABASE_URL ? describe : describe.skip;
 
@@ -10,7 +11,7 @@ describeWithDatabase('product payment status trigger (PostgreSQL)', () => {
 
   afterAll(async () => prisma.$disconnect());
 
-  it('resolves reservations once and ignores repeated or late payment updates', async () => {
+  it('resolves reservations once, ignores late updates, and refunds idempotently', async () => {
     const migration = await readFile(
       join(
         __dirname,
@@ -51,7 +52,7 @@ describeWithDatabase('product payment status trigger (PostgreSQL)', () => {
         'CREATE TABLE products (id uuid PRIMARY KEY, tenant_id uuid, stock_quantity integer, updated_at timestamptz)',
       );
       await tx.$executeRawUnsafe(
-        'CREATE TABLE product_sale_items (id uuid PRIMARY KEY, tenant_id uuid, transaction_item_id uuid, product_id uuid, quantity integer, status product_sale_status)',
+        'CREATE TABLE product_sale_items (id uuid PRIMARY KEY, tenant_id uuid, transaction_item_id uuid, product_id uuid, quantity integer, status product_sale_status, refunded_at timestamptz, restocked boolean)',
       );
       await tx.$executeRawUnsafe(
         'CREATE TABLE product_stock_movements (id uuid PRIMARY KEY, tenant_id uuid, product_id uuid, type text, quantity integer, quantity_delta integer, quantity_after integer, reason text, created_by_staff_id uuid)',
@@ -91,11 +92,29 @@ describeWithDatabase('product payment status trigger (PostgreSQL)', () => {
                (SELECT count(*)::int FROM product_stock_movements m WHERE m.product_id = p.id) AS movement_count
         FROM product_sale_items s
         JOIN products p ON p.id = s.product_id
-        ORDER BY p.id`;
+        ORDER BY s.status`;
       expect(rows).toEqual([
-        { status: 'SOLD', stock_quantity: 3, movement_count: 1 },
         { status: 'RELEASED', stock_quantity: 7, movement_count: 1 },
+        { status: 'SOLD', stock_quantity: 3, movement_count: 1 },
       ]);
+
+      const client = tx as unknown as Prisma.TransactionClient;
+      await refundProductSale(client, tenantId, approvedItemId, true, null);
+      await refundProductSale(client, tenantId, approvedItemId, true, null);
+      const [refunded] = await tx.$queryRaw<
+        { stock_quantity: number; refunded_at: Date | null; restocked: boolean; movement_count: number }[]
+      >`
+        SELECT p.stock_quantity, s.refunded_at, s.restocked,
+               (SELECT count(*)::int FROM product_stock_movements m WHERE m.product_id = p.id) AS movement_count
+        FROM product_sale_items s
+        JOIN products p ON p.id = s.product_id
+        WHERE s.transaction_item_id = ${approvedItemId}::uuid`;
+      expect(refunded).toMatchObject({
+        stock_quantity: 5,
+        restocked: true,
+        movement_count: 2,
+      });
+      expect(refunded?.refunded_at).toBeInstanceOf(Date);
     });
   });
 });
