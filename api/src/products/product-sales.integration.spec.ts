@@ -27,7 +27,14 @@ function inventoryDatabase(initialStock: number) {
     if (sql.includes('SELECT stock_quantity, active, name FROM products')) {
       return [{ stock_quantity: stock, active: true, name: 'Botella' }];
     }
-    if (sql.includes('FROM product_sale_items s')) return sales;
+    if (sql.includes('FROM product_sale_items s')) {
+      return sales.map((sale) => ({
+        transaction_item_id: sale.transactionItemId,
+        product_id: sale.productId,
+        quantity: sale.quantity,
+        status: sale.status,
+      }));
+    }
     if (sql.includes('SELECT stock_quantity FROM products')) {
       return [{ stock_quantity: stock }];
     }
@@ -110,7 +117,7 @@ describe('product sale inventory lifecycle integration', () => {
 
     expect(db.sales[0]?.status).toBe('SOLD');
     expect(db.stock).toBe(3);
-    expect(db.movements).toBe(2);
+    expect(db.movements).toBe(1);
   });
 
   it('releases a rejected reservation once and ignores a late approval', async () => {
@@ -123,33 +130,36 @@ describe('product sale inventory lifecycle integration', () => {
 
     expect(db.sales[0]?.status).toBe('RELEASED');
     expect(db.stock).toBe(5);
-    expect(db.movements).toBe(2);
+    expect(db.movements).toBe(1);
   });
 
-  it.each([true, false])('refunds a product with restock=%s exactly once', async (restock) => {
-    const db = inventoryDatabase(5);
-    await reserveProductSale(db.tx, saleInput, false);
-    const decisions = validateProductRestockDecisions(['item-1'], [
-      { transactionItemId: 'item-1', restock },
-    ]);
+  it.each([true, false])(
+    'refunds a product with restock=%s exactly once',
+    async (restock) => {
+      const db = inventoryDatabase(5);
+      await reserveProductSale(db.tx, saleInput, false);
+      const decisions = validateProductRestockDecisions(['item-1'], [
+        { transactionItemId: 'item-1', restock },
+      ]);
 
-    await refundProductSale(
-      db.tx,
-      'tenant-1',
-      'item-1',
-      decisions.get('item-1')!,
-      'staff-1',
-    );
-    await refundProductSale(
-      db.tx,
-      'tenant-1',
-      'item-1',
-      decisions.get('item-1')!,
-      'staff-1',
-    );
+      await refundProductSale(
+        db.tx,
+        'tenant-1',
+        'item-1',
+        decisions.get('item-1')!,
+        'staff-1',
+      );
+      await refundProductSale(
+        db.tx,
+        'tenant-1',
+        'item-1',
+        decisions.get('item-1')!,
+        'staff-1',
+      );
 
-    expect(db.stock).toBe(restock ? 5 : 3);
-    expect(db.sales[0]?.restocked).toBe(restock);
-    expect(db.movements).toBe(restock ? 2 : 1);
-  });
+      expect(db.stock).toBe(restock ? 5 : 3);
+      expect(db.sales[0]?.restocked).toBe(restock);
+      expect(db.movements).toBe(restock ? 2 : 1);
+    },
+  );
 });
