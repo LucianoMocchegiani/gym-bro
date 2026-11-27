@@ -100,7 +100,9 @@ export function MemberStore() {
   return (
     <section className="mkt-inner mkt-section">
       <p className="eyebrow">Tienda</p>
-      <h2 className="mkt-h2">{hasPlans ? 'Planes y productos' : 'Productos'}</h2>
+      <h2 className="mkt-h2">
+        {hasPlans ? (hasProducts ? 'Planes y productos' : 'Planes') : 'Productos'}
+      </h2>
       {error ? <p className="error">{error}</p> : null}
       {mpConnected === false ? (
         <p className="muted">
@@ -150,7 +152,9 @@ export function MemberStore() {
                     ) : null}
                     <h3>{product.name}</h3>
                     {product.description ? <p>{product.description}</p> : null}
-                    <p><strong>{formatMoney(product.price)}</strong></p>
+                    <p>
+                      <strong>{formatMoney(product.price)}</strong>
+                    </p>
                     {productAction(product)}
                   </article>
                 ))}
