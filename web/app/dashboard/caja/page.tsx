@@ -487,7 +487,7 @@ function CajaInner() {
         },
       ];
     });
-    if (cobroMedio === 'MP' || cobroMedio === 'MP_POINT_QR') {
+    if (cobroMedio === 'MP_POINT_QR') {
       chooseMedio('CASH');
     }
   }
@@ -569,8 +569,8 @@ function CajaInner() {
       setCobroError('La venta de plataforma solo admite packs');
       return;
     }
-    if (hasProducts && (cobroMedio === 'MP' || cobroMedio === 'MP_POINT_QR')) {
-      setCobroError('Los productos por Mercado Pago estarán disponibles cuando se integre la reserva de stock. Elegí efectivo o transferencia.');
+    if (hasProducts && cobroMedio === 'MP_POINT_QR') {
+      setCobroError('Los productos por QR Point todavía no están integrados. Elegí efectivo, transferencia o Mercado Pago Link.');
       return;
     }
     if (isCounter && !trialApplied && !discountValid) {
@@ -654,7 +654,7 @@ function CajaInner() {
         setMpCheckoutUrl(url);
         setMpTransactionId(result.transactionId);
         setCobroOk(
-          `Link MP generado por ${formatMoney(result.amount)}. Cada pack/reserva del carrito se activa al aprobarse el pago (webhook).`,
+          `Link MP generado por ${formatMoney(result.amount)}. Cada ítem del carrito se confirma al aprobarse el pago (webhook).`,
         );
         setCart([]);
         return;
@@ -733,7 +733,7 @@ function CajaInner() {
       subtitle={
         isPlatform
           ? 'Venta de packs de plataforma a otros tenants.'
-          : 'Cobros con carrito: packs, drop-in y productos en efectivo o transferencia; Mercado Pago para packs y drop-in.'
+          : 'Cobros con carrito: packs, drop-in y productos en efectivo, transferencia o Mercado Pago Link; QR Point sigue disponible para packs y drop-in.'
       }
     >
       <ListToolbar hint="El cierre del día se ve en Cierre.">
@@ -1019,7 +1019,6 @@ function CajaInner() {
                       type="radio"
                       name="medio"
                       checked={cobroMedio === 'MP'}
-                      disabled={hasProducts}
                       onChange={() => chooseMedio('MP')}
                     />
                     Mercado Pago (link único)
@@ -1035,7 +1034,7 @@ function CajaInner() {
                     Mercado Pago Point (QR en caja)
                   </label>
                   {hasProducts ? (
-                    <p className="muted small">Los pagos MP de productos todavía no están integrados; para este carrito usá efectivo o transferencia.</p>
+                    <p className="muted small">Los productos ya se pueden cobrar con Mercado Pago Link; QR Point todavía no admite productos. Para ese medio, quitá los productos del carrito.</p>
                   ) : null}
                 </>
               ) : null}
@@ -1107,8 +1106,8 @@ function CajaInner() {
             {cobroMedio === 'MP' ? (
               <p className="muted small">
                 Se genera un solo link con el total del carrito (como Mercado
-                Libre: 1 carrito → 1 pago). Cada pack/reserva se activa al
-                aprobarse el pago (webhook). Requiere cuenta MP en Config.
+                Libre: 1 carrito → 1 pago). Cada pack, reserva o producto se
+                confirma al aprobarse el pago (webhook). Requiere cuenta MP en Config.
               </p>
             ) : null}
             {cobroMedio === 'MP_POINT_QR' ? (
