@@ -1,7 +1,6 @@
 import { Module } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { AuthModule } from '../auth/auth.module';
-import { PlatformPlansModule } from '../platform-plans/platform-plans.module';
 import { RolesModule } from '../roles/roles.module';
 import { MAIL_PORT } from './mail.port';
 import { NotificationTemplatesController } from './notification-templates.controller';
@@ -17,7 +16,7 @@ import { StubMailAdapter } from './stub-mail.adapter';
  * N1: dispatcher, bandeja socio, MailPort (stub | resend).
  */
 @Module({
-  imports: [AuthModule, PlatformPlansModule, RolesModule],
+  imports: [AuthModule, RolesModule],
   controllers: [NotificationsController, NotificationTemplatesController],
   providers: [
     NotificationsService,
