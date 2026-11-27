@@ -39,8 +39,7 @@ describe('PublicTenantCatalogController', () => {
     expect(result.hasProducts).toBe(false);
   });
 
-  it(
-    'allows an ecommerce-only tenant to load its public storefront without exposing Club packs',
+  it('allows an ecommerce-only tenant to load its public storefront without exposing Club packs',
     async () => {
       const result = await create(['ecommerce']).listPacks('shop');
       expect(result).toMatchObject({
@@ -51,8 +50,7 @@ describe('PublicTenantCatalogController', () => {
         site: null,
       });
       expect(packs.listForMember).not.toHaveBeenCalled();
-    },
-  );
+    });
 
   it('serves products only when the tenant has E-commerce', async () => {
     const controller = create(['ecommerce']);

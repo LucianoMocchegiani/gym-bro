@@ -1,8 +1,7 @@
 import { PublicProductsService } from './public-products.service';
 
 describe('PublicProductsService', () => {
-  it(
-    'returns only active storefront fields in the standard paginated shape',
+  it('returns only active storefront fields in the standard paginated shape',
     async () => {
       const queries: string[] = [];
       const prisma = {
@@ -46,8 +45,7 @@ describe('PublicProductsService', () => {
         true,
       );
       expect(queries[1]).not.toContain('stock_quantity');
-    },
-  );
+    });
 
   it('clamps requests beyond the last page before querying products', async () => {
     const pages: number[] = [];
