@@ -57,7 +57,10 @@ export class PaymentController {
     if (user.profileType !== 'MEMBER') {
       throw new ForbiddenException('Member profile required');
     }
-    assertMemberCartModules(await this.platformPlans.getTenantModules(tenantId), dto.items);
+    assertMemberCartModules(
+      await this.platformPlans.getTenantModules(tenantId),
+      dto.items,
+    );
     return this.onlinePayment.startCartCheckout(
       tenantId,
       user.userId,

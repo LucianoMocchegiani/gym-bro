@@ -3,8 +3,12 @@ import { assertMemberCartModules } from './member-cart-modules';
 
 describe('assertMemberCartModules', () => {
   it('allows products for E-commerce and Club items for Club', () => {
-    expect(() => assertMemberCartModules(['ecommerce'], [{ kind: 'PRODUCT' }])).not.toThrow();
-    expect(() => assertMemberCartModules(['club'], [{ kind: 'PACK' }])).not.toThrow();
+    expect(() =>
+      assertMemberCartModules(['ecommerce'], [{ kind: 'PRODUCT' }]),
+    ).not.toThrow();
+    expect(() =>
+      assertMemberCartModules(['club'], [{ kind: 'PACK' }]),
+    ).not.toThrow();
   });
 
   it('allows mixed carts only when both modules are active', () => {
@@ -17,11 +21,11 @@ describe('assertMemberCartModules', () => {
   });
 
   it('rejects items outside the tenant modules', () => {
-    expect(() => assertMemberCartModules(['club'], [{ kind: 'PRODUCT' }])).toThrow(
-      ForbiddenException,
-    );
-    expect(() => assertMemberCartModules(['ecommerce'], [{ kind: 'DROP_IN' }])).toThrow(
-      ForbiddenException,
-    );
+    expect(() =>
+      assertMemberCartModules(['club'], [{ kind: 'PRODUCT' }]),
+    ).toThrow(ForbiddenException);
+    expect(() =>
+      assertMemberCartModules(['ecommerce'], [{ kind: 'DROP_IN' }]),
+    ).toThrow(ForbiddenException);
   });
 });
