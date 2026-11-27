@@ -3,6 +3,7 @@ import { NotificationEventCode } from '@prisma/client';
 export interface NotificationDetail {
   id: string;
   eventCode: NotificationEventCode;
+  modules: string[];
   title: string;
   body: string;
   inAppRead: boolean;

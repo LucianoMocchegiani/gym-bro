@@ -13,6 +13,35 @@ export const CABLED_NOTIFICATION_EVENTS: NotificationEventCode[] = [
   NotificationEventCode.DEBIT_MANDATE_FAILED,
 ];
 
+export const NOTIFICATION_EVENT_MODULES: Record<NotificationEventCode, string[]> = {
+  PAYMENT_APPROVED: ['club', 'ecommerce'],
+  RESERVATION_CONFIRMED: ['club'],
+  RESERVATION_CANCELLED: ['club'],
+  WAITLIST_PROMOTED: ['club'],
+  REFUND_EXECUTED: ['club', 'ecommerce'],
+  CONTRACT_EXPIRING: ['club'],
+  CONTRACT_EXPIRING_DEBIT: ['club'],
+  CONTRACT_IN_TOLERANCE: ['club'],
+  DEBIT_CHARGE_FAILED: ['club'],
+  DEBIT_MANDATE_FAILED: ['club'],
+  PLATFORM_PLAN_PAID: [],
+  PLATFORM_PLAN_EXPIRING: [],
+  PLATFORM_PLAN_EXPIRING_DEBIT: [],
+  PLATFORM_PLAN_IN_TOLERANCE: [],
+  PLATFORM_DEBIT_CHARGE_FAILED: [],
+  PLATFORM_DEBIT_MANDATE_FAILED: [],
+};
+
+export function notificationModulesForEvent(event: NotificationEventCode): string[] {
+  return NOTIFICATION_EVENT_MODULES[event];
+}
+
+export function notificationEventsForModules(modules: string[]): NotificationEventCode[] {
+  return CABLED_NOTIFICATION_EVENTS.filter((event) =>
+    notificationModulesForEvent(event).some((module) => modules.includes(module)),
+  );
+}
+
 type TemplateDefault = {
   label: string;
   subject: string;
