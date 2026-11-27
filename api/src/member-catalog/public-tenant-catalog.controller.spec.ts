@@ -57,6 +57,8 @@ describe('PublicTenantCatalogController', () => {
     const query = { page: 2, pageSize: 6 };
     await controller.listProducts('shop', query);
     expect(products.list).toHaveBeenCalledWith(tenant.id, query);
-    await expect(create(['club']).listProducts('shop', query)).rejects.toThrow();
+    await expect(
+      create(['club']).listProducts('shop', query),
+    ).rejects.toThrow();
   });
 });
