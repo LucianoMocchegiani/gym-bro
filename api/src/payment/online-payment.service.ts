@@ -142,7 +142,11 @@ export class OnlinePaymentService {
       const savedItems = existing.transactionItems
         .map((item) => {
           const productId = productByItem.get(item.id);
-          const kind = item.sessionId ? 'DROP_IN' : productId ? 'PRODUCT' : 'PACK';
+          const kind = item.sessionId
+            ? 'DROP_IN'
+            : productId
+              ? 'PRODUCT'
+              : 'PACK';
           const refId = item.sessionId ?? productId ?? item.packId;
           return `${kind}:${refId}:${item.amount}:${item.listAmount ?? ''}:${item.discountBps}`;
         })
@@ -641,7 +645,11 @@ export class OnlinePaymentService {
     const grouped = new Map<string, MpCartLine>();
     for (const item of transactionItems) {
       const productId = productByItem.get(item.id);
-      const kind = item.sessionId ? 'DROP_IN' : productId ? 'PRODUCT' : 'PACK';
+      const kind = item.sessionId
+        ? 'DROP_IN'
+        : productId
+          ? 'PRODUCT'
+          : 'PACK';
       const refId = item.sessionId ?? productId ?? item.packId ?? '';
       const key = `${kind}:${refId}:${item.amount}`;
       const line = grouped.get(key);
