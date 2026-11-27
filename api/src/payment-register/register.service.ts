@@ -203,9 +203,7 @@ export class PaymentRegisterService {
     const ledgerRows = buildLedgerRows(rows);
     const productItemIds = [
       ...new Set(
-        ledgerRows.flatMap((movement) =>
-          movement.items.map((item) => item.id),
-        ),
+        ledgerRows.flatMap((movement) => movement.items.map((item) => item.id)),
       ),
     ];
     const productSales = productItemIds.length

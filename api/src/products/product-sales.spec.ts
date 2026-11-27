@@ -72,10 +72,13 @@ describe('reserveProductSale', () => {
 describe('validateProductRestockDecisions', () => {
   it('requires a choice for every returned product', () => {
     expect(
-      validateProductRestockDecisions(['item-1', 'item-2'], [
-        { transactionItemId: 'item-1', restock: true },
-        { transactionItemId: 'item-2', restock: false },
-      ]),
+      validateProductRestockDecisions(
+        ['item-1', 'item-2'],
+        [
+          { transactionItemId: 'item-1', restock: true },
+          { transactionItemId: 'item-2', restock: false },
+        ],
+      ),
     ).toEqual(
       new Map([
         ['item-1', true],
