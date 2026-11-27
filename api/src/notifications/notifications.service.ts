@@ -134,7 +134,11 @@ export class NotificationDispatcher {
 
   private async dispatch(input: NotifyMemberInput): Promise<void> {
     const modules = await this.platformPlans.getTenantModules(input.tenantId);
-    if (!notificationModulesForEvent(input.event).some((module) => modules.includes(module))) {
+    if (
+      !notificationModulesForEvent(input.event).some((module) =>
+        modules.includes(module),
+      )
+    ) {
       return;
     }
 
@@ -393,7 +397,9 @@ export class NotificationsService {
       where: { tenantId, memberId },
     });
     const byEvent = new Map(rows.map((r) => [r.eventCode, r.emailEnabled]));
-    return notificationEventsForModules(await this.platformPlans.getTenantModules(tenantId)).map((eventCode) => ({
+    return notificationEventsForModules(
+      await this.platformPlans.getTenantModules(tenantId),
+    ).map((eventCode) => ({
       eventCode,
       emailEnabled: byEvent.get(eventCode) ?? true,
     }));
@@ -433,7 +439,9 @@ export class NotificationsService {
       where: { tenantId },
     });
     const byEvent = new Map(rows.map((r) => [r.eventCode, r]));
-    return notificationEventsForModules(await this.platformPlans.getTenantModules(tenantId)).map((eventCode) =>
+    return notificationEventsForModules(
+      await this.platformPlans.getTenantModules(tenantId),
+    ).map((eventCode) =>
       this.toTemplateDetail(eventCode, byEvent.get(eventCode) ?? null),
     );
   }
@@ -467,11 +475,16 @@ export class NotificationsService {
     return this.toTemplateDetail(eventCode, row);
   }
 
-  private async assertCabled(tenantId: string, eventCode: NotificationEventCode): Promise<void> {
+  private async assertCabled(
+    tenantId: string,
+    eventCode: NotificationEventCode,
+  ): Promise<void> {
     const modules = await this.platformPlans.getTenantModules(tenantId);
     if (
       !CABLED_NOTIFICATION_EVENTS.includes(eventCode) ||
-      !notificationModulesForEvent(eventCode).some((module) => modules.includes(module))
+      !notificationModulesForEvent(eventCode).some((module) =>
+        modules.includes(module),
+      )
     ) {
       throw new NotFoundException('Unknown notification event');
     }
