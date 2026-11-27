@@ -99,7 +99,7 @@ describeWithDatabase('product payment status trigger (PostgreSQL)', () => {
                (SELECT count(*)::int FROM product_stock_movements m WHERE m.product_id = p.id) AS movement_count
         FROM product_sale_items s
         JOIN products p ON p.id = s.product_id
-        ORDER BY s.status`;
+        ORDER BY s.status::text`;
       expect(rows).toEqual([
         { status: 'RELEASED', stock_quantity: 7, movement_count: 1 },
         { status: 'SOLD', stock_quantity: 3, movement_count: 1 },
