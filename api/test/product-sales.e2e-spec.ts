@@ -2,7 +2,10 @@ import { randomUUID } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { Prisma, PrismaClient } from '@prisma/client';
-import { refundProductSale } from '../src/products/product-sales';
+import {
+  refundProductSale,
+  reserveProductSale,
+} from '../src/products/product-sales';
 
 type RefundRow = {
   stock_quantity: number;
@@ -13,12 +16,12 @@ type RefundRow = {
 
 const describeWithDatabase = process.env.DATABASE_URL ? describe : describe.skip;
 
-describeWithDatabase('product payment status trigger (PostgreSQL)', () => {
+describeWithDatabase('product sales PostgreSQL integration', () => {
   const prisma = new PrismaClient();
 
   afterAll(async () => prisma.$disconnect());
 
-  it('resolves reservations once, ignores late updates, and refunds idempotently', async () => {
+  it('reserves checkout stock, resolves repeat/late payments, and refunds idempotently', async () => {
     const migration = await readFile(
       join(
         __dirname,
@@ -56,7 +59,7 @@ describeWithDatabase('product payment status trigger (PostgreSQL)', () => {
         'CREATE TABLE transaction_items (id uuid PRIMARY KEY, tenant_id uuid, transaction_id uuid, status payment_status)',
       );
       await tx.$executeRawUnsafe(
-        'CREATE TABLE products (id uuid PRIMARY KEY, tenant_id uuid, stock_quantity integer, updated_at timestamptz)',
+        'CREATE TABLE products (id uuid PRIMARY KEY, tenant_id uuid, name text, active boolean, stock_quantity integer, updated_at timestamptz)',
       );
       await tx.$executeRawUnsafe(
         'CREATE TABLE product_sale_items (id uuid PRIMARY KEY, tenant_id uuid, transaction_item_id uuid, product_id uuid, quantity integer, status product_sale_status, refunded_at timestamptz, restocked boolean)',
@@ -76,15 +79,34 @@ describeWithDatabase('product payment status trigger (PostgreSQL)', () => {
           (${approvedItemId}::uuid, ${tenantId}::uuid, ${approvedTransactionId}::uuid, 'PENDING'),
           (${rejectedItemId}::uuid, ${tenantId}::uuid, ${rejectedTransactionId}::uuid, 'PENDING')`;
       await tx.$executeRaw`
-        INSERT INTO products (id, tenant_id, stock_quantity, updated_at)
+        INSERT INTO products (id, tenant_id, name, active, stock_quantity, updated_at)
         VALUES
-          (${approvedProductId}::uuid, ${tenantId}::uuid, 3, now()),
-          (${rejectedProductId}::uuid, ${tenantId}::uuid, 4, now())`;
-      await tx.$executeRaw`
-        INSERT INTO product_sale_items (id, tenant_id, transaction_item_id, product_id, quantity, status)
-        VALUES
-          (${randomUUID()}::uuid, ${tenantId}::uuid, ${approvedItemId}::uuid, ${approvedProductId}::uuid, 2, 'RESERVED'),
-          (${randomUUID()}::uuid, ${tenantId}::uuid, ${rejectedItemId}::uuid, ${rejectedProductId}::uuid, 3, 'RESERVED')`;
+          (${approvedProductId}::uuid, ${tenantId}::uuid, 'Botella', true, 5, now()),
+          (${rejectedProductId}::uuid, ${tenantId}::uuid, 'Toalla', true, 7, now())`;
+
+      const client = tx as unknown as Prisma.TransactionClient;
+      await reserveProductSale(
+        client,
+        {
+          tenantId,
+          transactionItemId: approvedItemId,
+          productId: approvedProductId,
+          quantity: 2,
+          staffUserId: null,
+        },
+        true,
+      );
+      await reserveProductSale(
+        client,
+        {
+          tenantId,
+          transactionItemId: rejectedItemId,
+          productId: rejectedProductId,
+          quantity: 3,
+          staffUserId: null,
+        },
+        true,
+      );
 
       await tx.$executeRaw`UPDATE transaction_items SET status = 'APPROVED' WHERE id = ${approvedItemId}::uuid`;
       await tx.$executeRaw`UPDATE transaction_items SET status = 'APPROVED' WHERE id = ${approvedItemId}::uuid`;
@@ -105,7 +127,6 @@ describeWithDatabase('product payment status trigger (PostgreSQL)', () => {
         { status: 'SOLD', stock_quantity: 3, movement_count: 1 },
       ]);
 
-      const client = tx as unknown as Prisma.TransactionClient;
       await refundProductSale(client, tenantId, approvedItemId, true, null);
       await refundProductSale(client, tenantId, approvedItemId, true, null);
       const [refunded] = await tx.$queryRaw<RefundRow[]>`
