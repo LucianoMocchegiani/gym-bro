@@ -24,6 +24,7 @@ import { ListResult, normalizeListQuery, toListResult } from '../common/list';
 import { MercadoPagoAccountService } from '../payment/mercadopago-account.service';
 import { MP_ACCOUNT_PORT, MpAccountPort } from '../payment/mp-account.port';
 import { PrismaService } from '../prisma/prisma.service';
+import { refundProductSale, validateProductRestockDecisions } from '../products/product-sales';
 import { WaitlistService } from '../waitlist/waitlist.service';
 import { DebitService } from '../debit/debit.service';
 import { NotificationDispatcher } from '../notifications/notifications.service';
@@ -360,6 +361,19 @@ export class RefundsService {
       }
     }
 
+    const productItems = toRefund.length
+      ? await this.prisma.$queryRaw<{ transaction_item_id: string }[]>`
+          SELECT transaction_item_id FROM product_sale_items
+          WHERE tenant_id = ${tenantId}::uuid
+            AND transaction_item_id IN (${Prisma.join(
+              toRefund.map((item) => Prisma.sql`${item.id}::uuid`),
+            )})`
+      : [];
+    const productRestockByItem = validateProductRestockDecisions(
+      productItems.map((item) => item.transaction_item_id),
+      dto.productRestockDecisions ?? [],
+    );
+
     let mpRefundManualPending = false;
     if (method === PaymentMethod.MP) {
       const mpPaymentId =
@@ -419,6 +433,16 @@ export class RefundsService {
               reservation: true,
             },
           });
+
+          if (productRestockByItem.has(pay.id)) {
+            await refundProductSale(
+              tx,
+              tenantId,
+              pay.id,
+              productRestockByItem.get(pay.id)!,
+              staffId,
+            );
+          }
 
           if (pay.contract && pay.contract.status === ContractStatus.ACTIVE) {
             await tx.contractCreditBalance.updateMany({
@@ -531,6 +555,9 @@ export class RefundsService {
       entityId: transactionId,
       after: {
         transactionItemIds: itemIds,
+        productRestockDecisions: [...productRestockByItem].map(
+          ([transactionItemId, restock]) => ({ transactionItemId, restock }),
+        ),
         status: PaymentStatus.REFUNDED,
         reason,
         motiveCode,
