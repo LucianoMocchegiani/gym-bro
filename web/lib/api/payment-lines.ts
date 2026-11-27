@@ -1,4 +1,8 @@
-import type { PaymentLineService } from '@/lib/api/payment-lines';
+/** Servicio incluido en un pack (`credits` null = acceso libre). */
+export type PaymentLineService = {
+  name: string;
+  credits: number | null;
+};
 
 /**
  * Línea comercial de un cart cobrado (mismo payload en comprobante y reportes).
