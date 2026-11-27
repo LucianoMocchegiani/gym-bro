@@ -1,3 +1,7 @@
+/**
+ * Refunds API (CU-PAG-004 / CU-PAG-005 / RN-PAG-012).
+ */
+
 import { apiRequest } from '@/lib/api/client';
 import type { ListResult } from '@/lib/api/list';
 
