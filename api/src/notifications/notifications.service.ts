@@ -4,7 +4,6 @@ import {
   NotificationEventCode,
   Prisma,
 } from '@prisma/client';
-import { PlatformPlansService } from '../platform-plans/platform-plans.service';
 import { PrismaService } from '../prisma/prisma.service';
 import {
   CABLED_NOTIFICATION_EVENTS,
@@ -16,10 +15,6 @@ import {
 } from './notification.defaults';
 import { MAIL_PORT } from './mail.port';
 import type { MailPort } from './mail.port';
-import {
-  isNotificationEventAvailable,
-  notificationModules,
-} from './notification-modules';
 import type {
   NotificationDetail,
   NotificationPreferenceDetail,
@@ -45,7 +40,6 @@ export class NotificationDispatcher {
   constructor(
     private readonly prisma: PrismaService,
     @Inject(MAIL_PORT) private readonly mail: MailPort,
-    private readonly platformPlans: PlatformPlansService,
   ) {}
 
   async notifyPaymentApproved(
@@ -135,11 +129,6 @@ export class NotificationDispatcher {
   }
 
   private async dispatch(input: NotifyMemberInput): Promise<void> {
-    const modules = await this.platformPlans.getTenantModules(input.tenantId);
-    if (!isNotificationEventAvailable(input.event, modules)) {
-      return;
-    }
-
     const member = await this.prisma.member.findFirst({
       where: { id: input.memberId, tenantId: input.tenantId },
       select: {
@@ -194,7 +183,6 @@ export class NotificationDispatcher {
           tenantId: input.tenantId,
           memberId: input.memberId,
           eventCode: input.event,
-          modules: notificationModules(input.event),
           title,
           body,
           payload: input.payload,
@@ -280,7 +268,6 @@ export class NotificationDispatcher {
           tenantId: input.tenantId,
           identityId: input.identityId,
           eventCode: input.event,
-          modules: notificationModules(input.event),
           title,
           body,
           payload: input.payload,
@@ -331,18 +318,14 @@ export class NotificationDispatcher {
  */
 @Injectable()
 export class NotificationsService {
-  constructor(
-    private readonly prisma: PrismaService,
-    private readonly platformPlans: PlatformPlansService,
-  ) {}
+  constructor(private readonly prisma: PrismaService) {}
 
   async listMine(
     tenantId: string,
     memberId: string,
   ): Promise<NotificationDetail[]> {
-    const modules = await this.platformPlans.getTenantModules(tenantId);
     const rows = await this.prisma.notification.findMany({
-      where: { tenantId, memberId, modules: { hasSome: modules } },
+      where: { tenantId, memberId },
       orderBy: { createdAt: 'desc' },
       take: 50,
     });
@@ -361,14 +344,8 @@ export class NotificationsService {
     memberId: string,
     notificationId: string,
   ): Promise<NotificationDetail> {
-    const modules = await this.platformPlans.getTenantModules(tenantId);
     const row = await this.prisma.notification.findFirst({
-      where: {
-        id: notificationId,
-        tenantId,
-        memberId,
-        modules: { hasSome: modules },
-      },
+      where: { id: notificationId, tenantId, memberId },
     });
     if (!row) {
       throw new NotFoundException('Notification not found');
@@ -391,16 +368,11 @@ export class NotificationsService {
     tenantId: string,
     memberId: string,
   ): Promise<NotificationPreferenceDetail[]> {
-    const [modules, rows] = await Promise.all([
-      this.platformPlans.getTenantModules(tenantId),
-      this.prisma.notificationPreference.findMany({
-        where: { tenantId, memberId },
-      }),
-    ]);
+    const rows = await this.prisma.notificationPreference.findMany({
+      where: { tenantId, memberId },
+    });
     const byEvent = new Map(rows.map((r) => [r.eventCode, r.emailEnabled]));
-    return CABLED_NOTIFICATION_EVENTS.filter((eventCode) =>
-      isNotificationEventAvailable(eventCode, modules),
-    ).map((eventCode) => ({
+    return CABLED_NOTIFICATION_EVENTS.map((eventCode) => ({
       eventCode,
       emailEnabled: byEvent.get(eventCode) ?? true,
     }));
@@ -412,7 +384,9 @@ export class NotificationsService {
     eventCode: NotificationEventCode,
     emailEnabled: boolean,
   ): Promise<NotificationPreferenceDetail> {
-    await this.assertCabled(tenantId, eventCode);
+    if (!CABLED_NOTIFICATION_EVENTS.includes(eventCode)) {
+      throw new NotFoundException('Unknown notification event');
+    }
     await this.prisma.notificationPreference.upsert({
       where: {
         tenantId_memberId_eventCode: {
@@ -436,14 +410,11 @@ export class NotificationsService {
    * Lista eventos cableados con default o fila del tenant (RN-NOT-003 / RN-NOT-007).
    */
   async listTemplates(tenantId: string): Promise<NotificationTemplateDetail[]> {
-    const [modules, rows] = await Promise.all([
-      this.platformPlans.getTenantModules(tenantId),
-      this.prisma.notificationTemplate.findMany({ where: { tenantId } }),
-    ]);
+    const rows = await this.prisma.notificationTemplate.findMany({
+      where: { tenantId },
+    });
     const byEvent = new Map(rows.map((r) => [r.eventCode, r]));
-    return CABLED_NOTIFICATION_EVENTS.filter((eventCode) =>
-      isNotificationEventAvailable(eventCode, modules),
-    ).map((eventCode) =>
+    return CABLED_NOTIFICATION_EVENTS.map((eventCode) =>
       this.toTemplateDetail(eventCode, byEvent.get(eventCode) ?? null),
     );
   }
@@ -456,7 +427,7 @@ export class NotificationsService {
     eventCode: NotificationEventCode,
     input: { subject: string; body: string; active: boolean },
   ): Promise<NotificationTemplateDetail> {
-    await this.assertCabled(tenantId, eventCode);
+    this.assertCabled(eventCode);
     const row = await this.prisma.notificationTemplate.upsert({
       where: {
         tenantId_eventCode: { tenantId, eventCode },
@@ -477,15 +448,8 @@ export class NotificationsService {
     return this.toTemplateDetail(eventCode, row);
   }
 
-  private async assertCabled(
-    tenantId: string,
-    eventCode: NotificationEventCode,
-  ): Promise<void> {
-    const modules = await this.platformPlans.getTenantModules(tenantId);
-    if (
-      !CABLED_NOTIFICATION_EVENTS.includes(eventCode) ||
-      !isNotificationEventAvailable(eventCode, modules)
-    ) {
+  private assertCabled(eventCode: NotificationEventCode): void {
+    if (!CABLED_NOTIFICATION_EVENTS.includes(eventCode)) {
       throw new NotFoundException('Unknown notification event');
     }
   }
