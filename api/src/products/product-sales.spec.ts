@@ -1,5 +1,9 @@
 import { BadRequestException } from '@nestjs/common';
-import { reserveProductSale } from './product-sales';
+import {
+  refundProductSale,
+  reserveProductSale,
+  validateProductRestockDecisions,
+} from './product-sales';
 
 function txFor(stock: number, active = true) {
   const calls: string[] = [];
@@ -62,5 +66,81 @@ describe('reserveProductSale', () => {
     await reserveProductSale(tx, sale, false);
     expect(calls).toHaveLength(4);
     expect(calls[3]).toContain('INSERT INTO product_stock_movements');
+  });
+});
+
+describe('validateProductRestockDecisions', () => {
+  it('requires exactly one explicit restock choice per returned product', () => {
+    expect(
+      validateProductRestockDecisions(['item-1', 'item-2'], [
+        { transactionItemId: 'item-1', restock: true },
+        { transactionItemId: 'item-2', restock: false },
+      ]),
+    ).toEqual(
+      new Map([
+        ['item-1', true],
+        ['item-2', false],
+      ]),
+    );
+  });
+
+  it('rejects missing, duplicate, or unrelated product decisions', () => {
+    for (const decisions of [
+      [],
+      [
+        { transactionItemId: 'item-1', restock: true },
+        { transactionItemId: 'item-1', restock: false },
+      ],
+      [{ transactionItemId: 'other-item', restock: true }],
+    ]) {
+      expect(() =>
+        validateProductRestockDecisions(['item-1'], decisions),
+      ).toThrow(BadRequestException);
+    }
+  });
+});
+
+describe('refundProductSale', () => {
+  function refundTx(refundedAt: Date | null, product: boolean) {
+    const calls: string[] = [];
+    let queryCount = 0;
+    const tx = {
+      $queryRaw: (strings: TemplateStringsArray) => {
+        calls.push(strings.join(''));
+        queryCount += 1;
+        return queryCount === 1
+          ? [{ product_id: 'product', quantity: 2, status: 'SOLD', refunded_at: refundedAt }]
+          : product
+            ? [{ stock_quantity: 7 }]
+            : [];
+      },
+      $executeRaw: (strings: TemplateStringsArray) => {
+        calls.push(strings.join(''));
+        return 1;
+      },
+    } as never;
+    return { tx, calls };
+  }
+
+  it('restocks and records a movement when requested', async () => {
+    const { tx, calls } = refundTx(null, true);
+    await refundProductSale(tx, 'tenant', 'item', true, 'staff');
+    expect(calls.filter((call) => call.includes('UPDATE products'))).toHaveLength(1);
+    expect(calls.filter((call) => call.includes('INSERT INTO product_stock_movements'))).toHaveLength(1);
+    expect(calls.at(-1)).toContain('restocked = ');
+  });
+
+  it('records the choice without changing stock when restocking is declined', async () => {
+    const { tx, calls } = refundTx(null, false);
+    await refundProductSale(tx, 'tenant', 'item', false, 'staff');
+    expect(calls.some((call) => call.includes('UPDATE products'))).toBe(false);
+    expect(calls.some((call) => call.includes('INSERT INTO product_stock_movements'))).toBe(false);
+    expect(calls.at(-1)).toContain('restocked = ');
+  });
+
+  it('does not restock again after the sale has been refunded', async () => {
+    const { tx, calls } = refundTx(new Date(), true);
+    await refundProductSale(tx, 'tenant', 'item', true, 'staff');
+    expect(calls).toHaveLength(1);
   });
 });

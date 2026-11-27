@@ -1,13 +1,14 @@
-/**
- * Refunds API (CU-PAG-004 / CU-PAG-005 / RN-PAG-012).
- */
-
 import { apiRequest } from '@/lib/api/client';
 import type { ListResult } from '@/lib/api/list';
 
 export type RefundMotiveCode = 'solicitud' | 'doble_cobro' | 'otro';
 
 export type RefundRequestStatus = 'PENDING' | 'EXECUTED' | 'REJECTED';
+
+export type ProductRestockDecision = {
+  transactionItemId: string;
+  restock: boolean;
+};
 
 export type RefundRequestDetail = {
   id: string;
@@ -84,6 +85,7 @@ export function executeRefund(
     reason: string;
     motiveCode?: RefundMotiveCode;
     refundRequestId?: string;
+    productRestockDecisions?: ProductRestockDecision[];
   },
 ): Promise<RefundExecutionDetail> {
   return apiRequest<RefundExecutionDetail>(
@@ -104,6 +106,7 @@ export function executeTransactionRefund(
     transactionItemIds: string[];
     reason: string;
     motiveCode?: RefundMotiveCode;
+    productRestockDecisions?: ProductRestockDecision[];
   },
 ): Promise<RefundBatchExecutionDetail> {
   return apiRequest<RefundBatchExecutionDetail>(

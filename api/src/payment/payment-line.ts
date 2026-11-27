@@ -66,9 +66,10 @@ export type PaymentLineSource = {
  */
 export type PaymentLineDetail = {
   id: string;
-  kind: 'PACK' | 'DROP_IN';
+  kind: 'PACK' | 'DROP_IN' | 'PRODUCT';
   title: string;
   amount: number;
+  productQuantity: number | null;
   /** Precio de lista si hubo descuento (RN-PAG-020); null = se cobró el de lista. */
   listAmount: number | null;
   /** Descuento aplicado en %; null = sin descuento. */
@@ -88,10 +89,13 @@ export type PaymentLineDetail = {
  * Mapea un transaction_item (con `PAYMENT_LINE_INCLUDE`) a línea de comprobante/reportes.
  */
 export function toPaymentLine(item: PaymentLineSource): PaymentLineDetail {
+  const isProduct = !item.pack && !item.sessionId;
   const isDropIn = Boolean(item.sessionId);
-  const title = isDropIn
-    ? (item.session?.service.name ?? 'Drop-in')
-    : (item.pack?.name ?? 'Pack');
+  const title = isProduct
+    ? 'Producto'
+    : isDropIn
+      ? (item.session?.service.name ?? 'Drop-in')
+      : (item.pack?.name ?? 'Pack');
   let outcome: PaymentLineDetail['outcome'] = null;
   if (item.contract) {
     outcome = 'CONTRACT';
@@ -100,9 +104,10 @@ export function toPaymentLine(item: PaymentLineSource): PaymentLineDetail {
   }
   return {
     id: item.id,
-    kind: isDropIn ? 'DROP_IN' : 'PACK',
+    kind: isProduct ? 'PRODUCT' : isDropIn ? 'DROP_IN' : 'PACK',
     title,
     amount: item.amount,
+    productQuantity: isProduct ? 1 : null,
     listAmount: item.listAmount,
     discountPercent: item.discountBps > 0 ? item.discountBps / 100 : null,
     status: item.status,

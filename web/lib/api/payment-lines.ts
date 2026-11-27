@@ -1,17 +1,14 @@
-/** Servicio incluido en un pack (`credits` null = acceso libre). */
-export type PaymentLineService = {
-  name: string;
-  credits: number | null;
-};
+import type { PaymentLineService } from '@/lib/api/payment-lines';
 
 /**
  * Línea comercial de un cart cobrado (mismo payload en comprobante y reportes).
  */
 export type PaymentLineDetail = {
   id: string;
-  kind: 'PACK' | 'DROP_IN';
+  kind: 'PACK' | 'DROP_IN' | 'PRODUCT';
   title: string;
   amount: number;
+  productQuantity: number | null;
   /** Precio de lista si hubo descuento en Caja; null/ausente = sin descuento. */
   listAmount?: number | null;
   /** Descuento aplicado en %; null/ausente = sin descuento. */

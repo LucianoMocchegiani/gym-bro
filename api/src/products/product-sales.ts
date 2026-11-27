@@ -31,6 +31,23 @@ async function movement(
     )`;
 }
 
+export function validateProductRestockDecisions(
+  productItemIds: string[],
+  decisions: { transactionItemId: string; restock: boolean }[],
+): Map<string, boolean> {
+  const byItem = new Map(decisions.map((decision) => [decision.transactionItemId, decision.restock]));
+  if (
+    byItem.size !== decisions.length ||
+    byItem.size !== productItemIds.length ||
+    productItemIds.some((id) => !byItem.has(id))
+  ) {
+    throw new BadRequestException(
+      'Indicá si querés reponer el stock para cada producto devuelto.',
+    );
+  }
+  return byItem;
+}
+
 /** Decrements available stock under row lock before linking an item to a sale. */
 export async function reserveProductSale(
   tx: Tx,
@@ -158,7 +175,7 @@ export async function refundProductSale(
     SELECT product_id, quantity, status, refunded_at FROM product_sale_items
     WHERE tenant_id = ${tenantId}::uuid AND transaction_item_id = ${transactionItemId}::uuid
     FOR UPDATE`;
-  if (!sale) return;
+  if (!sale) throw new BadRequestException('No se encontró la venta del producto.');
   if (sale.status !== 'SOLD')
     throw new BadRequestException('La venta del producto no está confirmada.');
   if (sale.refunded_at) return;
@@ -167,6 +184,7 @@ export async function refundProductSale(
       UPDATE products SET stock_quantity = stock_quantity + ${sale.quantity}, updated_at = now()
       WHERE id = ${sale.product_id}::uuid AND tenant_id = ${tenantId}::uuid
       RETURNING stock_quantity`;
+    if (!product) throw new NotFoundException('Producto no encontrado.');
     await movement(
       tx,
       {
