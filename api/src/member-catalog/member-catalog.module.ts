@@ -3,6 +3,7 @@ import { AuthModule } from '../auth/auth.module';
 import { PaymentModule } from '../payment/payment.module';
 import { PacksModule } from '../packs/packs.module';
 import { PlatformPlansModule } from '../platform-plans/platform-plans.module';
+import { ProductsModule } from '../products/products.module';
 import { SessionsModule } from '../sessions/sessions.module';
 import { TenantSiteModule } from '../tenant-site/tenant-site.module';
 import { TenantsModule } from '../tenants/tenants.module';
@@ -20,6 +21,7 @@ import { PublicTenantCatalogController } from './public-tenant-catalog.controlle
     PacksModule,
     PaymentModule,
     PlatformPlansModule,
+    ProductsModule,
     TenantsModule,
     TenantSiteModule,
   ],
