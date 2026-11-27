@@ -11,10 +11,7 @@ import { cartLineKey, useMemberCart } from '@/lib/member-cart';
 import { mpCheckoutErrorText, redirectToMpCheckout } from '@/lib/mp-checkout';
 import { useMemberArea } from './MemberArea';
 
-/**
- * Carrito del socio: packs y clases sueltas en un solo pago de Mercado Pago
- * (CU-PAG-001). MP vuelve a `/portal?compra=`; el webhook activa todo.
- */
+/** Carrito del socio: planes, clases sueltas y productos en un solo pago de Mercado Pago. */
 export function MemberCartView() {
   const { cartOwner } = useMemberArea();
   const cart = useMemberCart(cartOwner);
@@ -31,7 +28,11 @@ export function MemberCartView() {
         return;
       }
       const checkout = await startMyCartCheckout(
-        cart.lines.map((l) => ({ kind: l.kind, id: l.id })),
+        cart.lines.map((line) => ({
+          kind: line.kind,
+          id: line.id,
+          quantity: line.quantity ?? 1,
+        })),
       );
       cart.clear();
       redirectToMpCheckout(checkout);
@@ -48,24 +49,22 @@ export function MemberCartView() {
       {error ? <p className="error">{error}</p> : null}
       {cart.count === 0 ? (
         <p className="muted">
-          Tu carrito está vacío. Sumá un <Link href="/portal/tienda">plan</Link>{' '}
+          Tu carrito está vacío. Sumá un <Link href="/portal/tienda">plan o producto</Link>{' '}
           o una <Link href="/portal/clases">clase suelta</Link>.
         </p>
       ) : (
         <div className="portal-cart">
           <CartLineList
-            items={cart.lines.map((l) => ({ ...l, key: cartLineKey(l) }))}
+            items={cart.lines.map((line) => ({ ...line, key: cartLineKey(line) }))}
             total={cart.total}
             onRemove={(key) => {
-              const line = cart.lines.find((l) => cartLineKey(l) === key);
-              if (line) {
-                cart.remove(line.kind, line.id);
-              }
+              const line = cart.lines.find((item) => cartLineKey(item) === key);
+              if (line) cart.remove(line.kind, line.id);
             }}
           />
           <p className="muted small">
             Pagás todo junto en Mercado Pago. Los planes y las clases se
-            activan apenas se aprueba el pago.
+            activan al aprobarse el pago; el stock de productos se confirma entonces.
           </p>
           <button
             type="button"

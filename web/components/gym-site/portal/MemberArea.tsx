@@ -14,7 +14,24 @@ import { useMemberSession } from '@/lib/auth/useMemberSession';
 import { useMemberCart } from '@/lib/member-cart';
 import { useMemberNotices, type MemberNotices } from './useMemberNotices';
 
-type MemberAreaValue = {
+type MemberPortalFeatures = { hasPlans: boolean; hasProducts: boolean };
+const MemberPortalFeaturesContext = createContext<MemberPortalFeatures>({
+  hasPlans: true,
+  hasProducts: false,
+});
+
+export function MemberPortalFeaturesProvider({
+  children,
+  ...features
+}: MemberPortalFeatures & { children: ReactNode }) {
+  return (
+    <MemberPortalFeaturesContext.Provider value={features}>
+      {children}
+    </MemberPortalFeaturesContext.Provider>
+  );
+}
+
+type MemberAreaValue = MemberPortalFeatures & {
   slug: string;
   session: MemberSession;
   /** Dueño del carrito: `tenantId:memberId`. */
@@ -47,6 +64,19 @@ const LINKS = [
   { href: '/portal/documentos', label: 'Documentos' },
   { href: NOTICES_HREF, label: 'Avisos' },
 ];
+const ECOMMERCE_LINKS = new Set([
+  '/portal',
+  '/portal/tienda',
+  CART_HREF,
+  '/portal/historial',
+]);
+const CLUB_ONLY_PATHS = new Set([
+  '/portal/clases',
+  '/portal/mis-clases',
+  '/portal/acceso',
+  '/portal/documentos',
+  NOTICES_HREF,
+]);
 
 /** Burbuja de contador (carrito, avisos sin leer). */
 function PortalCount({ value }: { value: number }) {
@@ -56,9 +86,11 @@ function PortalCount({ value }: { value: number }) {
 function PortalNav({
   cartOwner,
   unread,
+  hasPlans,
 }: {
   cartOwner: string;
   unread: number;
+  hasPlans: boolean;
 }) {
   const pathname = usePathname();
   const cart = useMemberCart(cartOwner);
@@ -68,16 +100,18 @@ function PortalNav({
   };
   return (
     <nav className="mkt-inner mkt-portal-nav" aria-label="Portal del socio">
-      {LINKS.map((link) => (
-        <Link
-          key={link.href}
-          href={link.href}
-          className={pathname === link.href ? 'is-on' : undefined}
-        >
-          {link.label}
-          <PortalCount value={counts[link.href] ?? 0} />
-        </Link>
-      ))}
+      {LINKS.filter((link) => hasPlans || ECOMMERCE_LINKS.has(link.href)).map(
+        (link) => (
+          <Link
+            key={link.href}
+            href={link.href}
+            className={pathname === link.href ? 'is-on' : undefined}
+          >
+            {link.label}
+            <PortalCount value={counts[link.href] ?? 0} />
+          </Link>
+        ),
+      )}
     </nav>
   );
 }
@@ -96,15 +130,19 @@ export function MemberArea({
   children: ReactNode;
 }) {
   const router = useRouter();
+  const pathname = usePathname();
+  const features = useContext(MemberPortalFeaturesContext);
   const { session, ready } = useMemberSession(slug);
-  const notices = useMemberNotices(Boolean(session));
+  const notices = useMemberNotices(Boolean(session) && features.hasPlans);
 
   useEffect(() => {
     if (ready && !session) {
       const here = `${window.location.pathname}${window.location.search}`;
       router.replace(`/login?next=${encodeURIComponent(here)}`);
+    } else if (ready && session && !features.hasPlans && CLUB_ONLY_PATHS.has(pathname)) {
+      router.replace('/portal');
     }
-  }, [ready, session, router]);
+  }, [ready, session, features.hasPlans, pathname, router]);
 
   const value = useMemo(
     () =>
@@ -114,17 +152,22 @@ export function MemberArea({
             session,
             cartOwner: `${session.tenantId}:${session.memberId}`,
             notices,
+            ...features,
           }
         : null,
-    [slug, session, notices],
+    [slug, session, notices, features],
   );
 
-  if (!value) {
+  if (!value || (!features.hasPlans && CLUB_ONLY_PATHS.has(pathname))) {
     return <p className="muted mkt-inner mkt-section">Cargando tu cuenta…</p>;
   }
   return (
     <MemberAreaContext.Provider value={value}>
-      <PortalNav cartOwner={value.cartOwner} unread={notices.unread} />
+      <PortalNav
+        cartOwner={value.cartOwner}
+        unread={notices.unread}
+        hasPlans={features.hasPlans}
+      />
       {children}
     </MemberAreaContext.Provider>
   );
