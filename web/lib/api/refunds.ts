@@ -9,6 +9,11 @@ export type RefundMotiveCode = 'solicitud' | 'doble_cobro' | 'otro';
 
 export type RefundRequestStatus = 'PENDING' | 'EXECUTED' | 'REJECTED';
 
+export type ProductRestockDecision = {
+  transactionItemId: string;
+  restock: boolean;
+};
+
 export type RefundRequestDetail = {
   id: string;
   transactionItemId: string;
@@ -84,6 +89,7 @@ export function executeRefund(
     reason: string;
     motiveCode?: RefundMotiveCode;
     refundRequestId?: string;
+    productRestockDecisions?: ProductRestockDecision[];
   },
 ): Promise<RefundExecutionDetail> {
   return apiRequest<RefundExecutionDetail>(
@@ -104,6 +110,7 @@ export function executeTransactionRefund(
     transactionItemIds: string[];
     reason: string;
     motiveCode?: RefundMotiveCode;
+    productRestockDecisions?: ProductRestockDecision[];
   },
 ): Promise<RefundBatchExecutionDetail> {
   return apiRequest<RefundBatchExecutionDetail>(

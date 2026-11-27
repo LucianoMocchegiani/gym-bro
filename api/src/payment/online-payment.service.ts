@@ -31,6 +31,8 @@ import {
 import { MP_ACCOUNT_PORT, MpAccountPort } from './mp-account.port';
 import { mpCopyForDropIn, mpCopyForPack } from './mp-item-copy';
 import { applyDiscount, percentToBps } from './cash-discount';
+import { reserveProductSale } from '../products/product-sales';
+import { createMpProductLine } from './mp-product-line';
 
 @Injectable()
 export class OnlinePaymentService {
@@ -124,11 +126,30 @@ export class OnlinePaymentService {
           ),
         )
         .sort();
+      const productSales = await this.prisma.$queryRaw<
+        Array<{ transactionItemId: string; productId: string }>
+      >`
+        SELECT s.transaction_item_id AS "transactionItemId",
+               s.product_id AS "productId"
+        FROM product_sale_items s
+        JOIN transaction_items i ON i.id = s.transaction_item_id
+        WHERE i.transaction_id = ${existing.id}::uuid
+          AND s.tenant_id = ${tenantId}::uuid
+      `;
+      const productByItem = new Map(
+        productSales.map((sale) => [sale.transactionItemId, sale.productId]),
+      );
       const savedItems = existing.transactionItems
-        .map(
-          (item) =>
-            `${item.sessionId ? 'DROP_IN' : 'PACK'}:${item.sessionId ?? item.packId}:${item.amount}:${item.listAmount ?? ''}:${item.discountBps}`,
-        )
+        .map((item) => {
+          const productId = productByItem.get(item.id);
+          const kind = item.sessionId
+            ? 'DROP_IN'
+            : productId
+              ? 'PRODUCT'
+              : 'PACK';
+          const refId = item.sessionId ?? productId ?? item.packId;
+          return `${kind}:${refId}:${item.amount}:${item.listAmount ?? ''}:${item.discountBps}`;
+        })
         .sort();
       if (
         existing.amount !== total ||
@@ -148,37 +169,57 @@ export class OnlinePaymentService {
       amount: number;
     }[] = existing?.transactionItems ?? [];
     if (!cart) {
-      cart = await this.prisma.transaction.create({
-        data: {
-          tenantId,
-          memberId,
-          amount: total,
-          status: PaymentStatus.PENDING,
-          idempotencyKey,
-          recordedByStaffId,
-        },
-      });
-      let itemIndex = 0;
-      for (const line of lines) {
-        for (let n = 0; n < line.quantity; n++) {
-          const transactionItem = await this.prisma.transactionItem.create({
-            data: {
-              tenantId,
-              memberId,
-              packId: line.kind === 'PACK' ? line.refId : (line.packId ?? null),
-              sessionId: line.kind === 'DROP_IN' ? line.refId : null,
-              amount: line.amount,
-              listAmount: line.listAmount,
-              discountBps: line.discountBps ?? 0,
-              status: PaymentStatus.PENDING,
-              method: PaymentMethod.MP,
-              idempotencyKey: `${idempotencyKey}:${itemIndex++}`,
-              transactionId: cart.id,
-            },
-          });
-          transactionItems.push(transactionItem);
+      const created = await this.prisma.$transaction(async (tx) => {
+        const createdCart = await tx.transaction.create({
+          data: {
+            tenantId,
+            memberId,
+            amount: total,
+            status: PaymentStatus.PENDING,
+            idempotencyKey,
+            recordedByStaffId,
+          },
+        });
+        const createdItems = [];
+        let itemIndex = 0;
+        for (const line of lines) {
+          for (let n = 0; n < line.quantity; n++) {
+            const transactionItem = await tx.transactionItem.create({
+              data: {
+                tenantId,
+                memberId,
+                packId:
+                  line.kind === 'PACK' ? line.refId : (line.packId ?? null),
+                sessionId: line.kind === 'DROP_IN' ? line.refId : null,
+                amount: line.amount,
+                listAmount: line.listAmount,
+                discountBps: line.discountBps ?? 0,
+                status: PaymentStatus.PENDING,
+                method: PaymentMethod.MP,
+                idempotencyKey: `${idempotencyKey}:${itemIndex++}`,
+                transactionId: createdCart.id,
+              },
+            });
+            createdItems.push(transactionItem);
+            if (line.kind === 'PRODUCT') {
+              await reserveProductSale(
+                tx,
+                {
+                  tenantId,
+                  transactionItemId: transactionItem.id,
+                  productId: line.refId,
+                  quantity: 1,
+                  staffUserId: recordedByStaffId,
+                },
+                true,
+              );
+            }
+          }
         }
-      }
+        return { cart: createdCart, items: createdItems };
+      });
+      cart = created.cart;
+      transactionItems.push(...created.items);
     }
 
     const accessToken = await this.accounts.getDecryptedAccessToken(tenantId);
@@ -505,6 +546,24 @@ export class OnlinePaymentService {
         });
         continue;
       }
+      if (item.kind === 'PRODUCT') {
+        const [product] = await this.prisma.$queryRaw<
+          Array<{
+            id: string;
+            name: string;
+            description: string | null;
+            price: number;
+            active: boolean;
+          }>
+        >`
+          SELECT id, name, description, price, active
+          FROM products
+          WHERE id = ${item.id}::uuid AND tenant_id = ${tenantId}::uuid
+        `;
+        if (!product) throw new NotFoundException('Producto no encontrado.');
+        lines.push(createMpProductLine(product, quantity));
+        continue;
+      }
       if (!memberId) {
         throw new BadRequestException('Drop-in checkout requires a member');
       }
@@ -551,9 +610,10 @@ export class OnlinePaymentService {
     );
   }
 
-  private toCartResult(
+  private async toCartResult(
     cart: {
       id: string;
+      tenantId: string;
       memberId: string | null;
       status: PaymentStatus;
       amount: number;
@@ -568,11 +628,25 @@ export class OnlinePaymentService {
       packId: string | null;
       amount: number;
     }[],
-  ): MpCartCheckoutResult {
+  ): Promise<MpCartCheckoutResult> {
+    const productSales = await this.prisma.$queryRaw<
+      Array<{ transactionItemId: string; productId: string }>
+    >`
+      SELECT s.transaction_item_id AS "transactionItemId",
+             s.product_id AS "productId"
+      FROM product_sale_items s
+      JOIN transaction_items i ON i.id = s.transaction_item_id
+      WHERE i.transaction_id = ${cart.id}::uuid
+        AND s.tenant_id = ${cart.tenantId}::uuid
+    `;
+    const productByItem = new Map(
+      productSales.map((sale) => [sale.transactionItemId, sale.productId]),
+    );
     const grouped = new Map<string, MpCartLine>();
     for (const item of transactionItems) {
-      const kind = item.sessionId ? 'DROP_IN' : 'PACK';
-      const refId = item.sessionId ?? item.packId ?? '';
+      const productId = productByItem.get(item.id);
+      const kind = item.sessionId ? 'DROP_IN' : productId ? 'PRODUCT' : 'PACK';
+      const refId = item.sessionId ?? productId ?? item.packId ?? '';
       const key = `${kind}:${refId}:${item.amount}`;
       const line = grouped.get(key);
       if (line) {

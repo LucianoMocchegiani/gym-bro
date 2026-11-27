@@ -9,9 +9,10 @@ export type PaymentLineService = {
  */
 export type PaymentLineDetail = {
   id: string;
-  kind: 'PACK' | 'DROP_IN';
+  kind: 'PACK' | 'DROP_IN' | 'PRODUCT';
   title: string;
   amount: number;
+  productQuantity: number | null;
   /** Precio de lista si hubo descuento en Caja; null/ausente = sin descuento. */
   listAmount?: number | null;
   /** Descuento aplicado en %; null/ausente = sin descuento. */

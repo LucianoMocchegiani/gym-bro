@@ -5,6 +5,7 @@ export type CartLineItem = {
   label: string;
   sub: string;
   price: number;
+  quantity?: number;
 };
 
 /**
@@ -30,6 +31,8 @@ export function CartLineList({
               <p className="small">
                 {item.price === 0 ? (
                   <span className="muted">Sin precio</span>
+                ) : item.quantity && item.quantity > 1 ? (
+                  `${item.quantity} × ${formatMoney(item.price)} = ${formatMoney(item.quantity * item.price)}`
                 ) : (
                   formatMoney(item.price)
                 )}

@@ -20,6 +20,18 @@ import { HttpMpQrAdapter, MpQrOrder } from './http-mp-qr.adapter';
 import { MercadoPagoAccountService } from './mercadopago-account.service';
 import { WebhookPaymentService } from './webhook-payment.service';
 import { applyDiscount, MAX_DISCOUNT_BPS, percentToBps } from './cash-discount';
+import { createMpProductLine } from './mp-product-line';
+import { reserveProductSale } from '../products/product-sales';
+
+type PointQrLine = {
+  kind: 'PACK' | 'DROP_IN' | 'PRODUCT';
+  refId: string;
+  packId: string | null;
+  sessionId: string | null;
+  productId: string | null;
+  amount: number;
+  quantity: number;
+};
 
 export type MpPointQrCheckoutResult = {
   transactionId: string;
@@ -116,16 +128,35 @@ export class MpPointQrService {
         Array.from(
           { length: line.quantity },
           () =>
-            `${line.sessionId ?? line.packId}:${line.amount}:${line.listAmount ?? ''}:${line.discountBps}`,
+            `${line.kind}:${line.refId}:${line.amount}:${line.listAmount ?? ''}:${line.discountBps}`,
         ),
       )
       .sort();
     if (transaction) {
+      const productSales = await this.prisma.$queryRaw<
+        Array<{ transactionItemId: string; productId: string }>
+      >`
+        SELECT s.transaction_item_id AS "transactionItemId",
+               s.product_id AS "productId"
+        FROM product_sale_items s
+        JOIN transaction_items i ON i.id = s.transaction_item_id
+        WHERE i.transaction_id = ${transaction.id}::uuid
+          AND s.tenant_id = ${tenantId}::uuid
+      `;
+      const productByItem = new Map(
+        productSales.map((sale) => [sale.transactionItemId, sale.productId]),
+      );
       const savedItems = transaction.transactionItems
-        .map(
-          (item) =>
-            `${item.sessionId ?? item.packId}:${item.amount}:${item.listAmount ?? ''}:${item.discountBps ?? 0}`,
-        )
+        .map((item) => {
+          const productId = productByItem.get(item.id);
+          const kind = item.sessionId
+            ? 'DROP_IN'
+            : productId
+              ? 'PRODUCT'
+              : 'PACK';
+          const refId = item.sessionId ?? productId ?? item.packId ?? '';
+          return `${kind}:${refId}:${item.amount}:${item.listAmount ?? ''}:${item.discountBps}`;
+        })
         .sort();
       if (
         transaction.amount !== amount ||
@@ -151,8 +182,8 @@ export class MpPointQrService {
     if (!transaction) {
       let itemIndex = 0;
       try {
-        transaction = await this.prisma.$transaction((tx) =>
-          tx.transaction.create({
+        transaction = await this.prisma.$transaction(async (tx) => {
+          const created = await tx.transaction.create({
             data: {
               tenantId,
               memberId,
@@ -160,26 +191,45 @@ export class MpPointQrService {
               status: PaymentStatus.PENDING,
               idempotencyKey,
               recordedByStaffId,
-              transactionItems: {
-                create: lines.flatMap((line) =>
-                  Array.from({ length: line.quantity }, () => ({
-                    tenantId,
-                    memberId,
-                    packId: line.packId,
-                    sessionId: line.sessionId,
-                    amount: line.amount,
-                    listAmount: line.listAmount ?? null,
-                    discountBps: line.discountBps,
-                    status: PaymentStatus.PENDING,
-                    method: PaymentMethod.MP,
-                    idempotencyKey: `${idempotencyKey}:${itemIndex++}`,
-                  })),
-                ),
-              },
             },
+          });
+          for (const line of lines) {
+            for (let n = 0; n < line.quantity; n++) {
+              const item = await tx.transactionItem.create({
+                data: {
+                  tenantId,
+                  memberId,
+                  packId: line.packId,
+                  sessionId: line.sessionId,
+                  amount: line.amount,
+                  listAmount: line.listAmount ?? null,
+                  discountBps: line.discountBps,
+                  status: PaymentStatus.PENDING,
+                  method: PaymentMethod.MP,
+                  idempotencyKey: `${idempotencyKey}:${itemIndex++}`,
+                  transactionId: created.id,
+                },
+              });
+              if (line.productId) {
+                await reserveProductSale(
+                  tx,
+                  {
+                    tenantId,
+                    transactionItemId: item.id,
+                    productId: line.productId,
+                    quantity: 1,
+                    staffUserId: recordedByStaffId,
+                  },
+                  true,
+                );
+              }
+            }
+          }
+          return tx.transaction.findUniqueOrThrow({
+            where: { id: created.id },
             include: { transactionItems: { orderBy: { createdAt: 'asc' } } },
-          }),
-        );
+          });
+        });
       } catch (error) {
         if (
           error instanceof Prisma.PrismaClientKnownRequestError &&
@@ -318,23 +368,11 @@ export class MpPointQrService {
     tenantId: string,
     items: CreateMpPointQrCartCheckoutDto['items'],
     memberId: string,
-  ): Promise<
-    Array<{
-      packId: string | null;
-      sessionId: string | null;
-      amount: number;
-      quantity: number;
-    }>
-  > {
+  ): Promise<PointQrLine[]> {
     if (items.length === 0) {
       throw new BadRequestException('Cart must have at least one item');
     }
-    const lines: Array<{
-      packId: string | null;
-      sessionId: string | null;
-      amount: number;
-      quantity: number;
-    }> = [];
+    const lines: PointQrLine[] = [];
     for (const item of items) {
       const quantity = item.quantity ?? 1;
       if (item.kind === 'PACK') {
@@ -359,10 +397,40 @@ export class MpPointQrService {
           throw new BadRequestException('Pack price must be at least 1');
         }
         lines.push({
+          kind: 'PACK',
+          refId: pack.id,
           packId: pack.id,
           sessionId: null,
+          productId: null,
           amount: pack.price,
           quantity,
+        });
+        continue;
+      }
+      if (item.kind === 'PRODUCT') {
+        const [product] = await this.prisma.$queryRaw<
+          Array<{
+            id: string;
+            name: string;
+            description: string | null;
+            price: number;
+            active: boolean;
+          }>
+        >`
+          SELECT id, name, description, price, active
+          FROM products
+          WHERE id = ${item.id}::uuid AND tenant_id = ${tenantId}::uuid
+        `;
+        if (!product) throw new NotFoundException('Producto no encontrado.');
+        const line = createMpProductLine(product, quantity);
+        lines.push({
+          kind: 'PRODUCT',
+          refId: line.refId,
+          packId: null,
+          sessionId: null,
+          productId: line.refId,
+          amount: line.amount,
+          quantity: line.quantity,
         });
         continue;
       }
@@ -382,8 +450,11 @@ export class MpPointQrService {
         );
       }
       lines.push({
+        kind: 'DROP_IN',
+        refId: session.id,
         packId: dropInPack.id,
         sessionId: session.id,
+        productId: null,
         amount: dropInPack.price,
         quantity,
       });

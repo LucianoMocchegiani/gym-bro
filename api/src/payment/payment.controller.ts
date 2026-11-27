@@ -32,6 +32,8 @@ import {
   MpCartCheckoutResult,
   MpPaymentStatusView,
 } from './payment.types';
+import { PlatformPlansService } from '../platform-plans/platform-plans.service';
+import { assertMemberCartModules } from './member-cart-modules';
 
 @Controller()
 @RequireTenantAuth()
@@ -41,12 +43,13 @@ export class PaymentController {
     private readonly cashPayment: CashPaymentService,
     private readonly mpPaymentStatus: MpPaymentStatusService,
     private readonly tenantSettings: TenantSettingsService,
+    private readonly platformPlans: PlatformPlansService,
   ) {}
 
   @Post('me/transaction-items/mp/cart')
   @HttpCode(HttpStatus.CREATED)
-  @RequirePlatformModule('club')
-  startMemberCartCheckout(
+  @RequirePlatformModule(['club', 'ecommerce'])
+  async startMemberCartCheckout(
     @CurrentTenant() tenantId: string,
     @CurrentUser() user: AuthUser,
     @Body() dto: CreateMpCartCheckoutDto,
@@ -54,6 +57,10 @@ export class PaymentController {
     if (user.profileType !== 'MEMBER') {
       throw new ForbiddenException('Member profile required');
     }
+    assertMemberCartModules(
+      await this.platformPlans.getTenantModules(tenantId),
+      dto.items,
+    );
     return this.onlinePayment.startCartCheckout(
       tenantId,
       user.userId,
@@ -64,14 +71,18 @@ export class PaymentController {
 
   @Post('members/:memberId/transaction-items/mp/cart')
   @HttpCode(HttpStatus.CREATED)
-  @RequirePlatformModule('club')
+  @RequirePlatformModule(['club', 'ecommerce'])
   @RequirePermission('members.write')
-  startStaffCartCheckout(
+  async startStaffCartCheckout(
     @CurrentTenant() tenantId: string,
     @Param('memberId', ParseUUIDPipe) memberId: string,
     @CurrentUser() user: AuthUser,
     @Body() dto: CreateMpCartCheckoutDto,
   ): Promise<MpCartCheckoutResult> {
+    assertMemberCartModules(
+      await this.platformPlans.getTenantModules(tenantId),
+      dto.items,
+    );
     return this.onlinePayment.startCartCheckout(
       tenantId,
       memberId,
@@ -100,14 +111,18 @@ export class PaymentController {
 
   @Post('members/:memberId/transaction-items/cash/cart')
   @HttpCode(HttpStatus.CREATED)
-  @RequirePlatformModule('club')
+  @RequirePlatformModule(['club', 'ecommerce'])
   @RequirePermission('members.write')
-  startCashCart(
+  async startCashCart(
     @CurrentTenant() tenantId: string,
     @Param('memberId', ParseUUIDPipe) memberId: string,
     @CurrentUser() user: AuthUser,
     @Body() dto: CreateCashCartDto,
   ): Promise<CashCartResult> {
+    assertMemberCartModules(
+      await this.platformPlans.getTenantModules(tenantId),
+      dto.items,
+    );
     return this.cashPayment.startCashCart(
       tenantId,
       memberId,
@@ -152,7 +167,7 @@ export class PaymentController {
   }
 
   @Get('transactions/:transactionId/mp-payment')
-  @RequirePlatformModule('club')
+  @RequirePlatformModule(['club', 'ecommerce'])
   @RequirePermission('members.read')
   getMpPaymentStatus(
     @CurrentTenant() tenantId: string,

@@ -11,6 +11,7 @@ export type NavPermissionRule = {
   /** Vacío = siempre visible. */
   anyOf: readonly string[];
   module?: string;
+  anyModule?: readonly string[];
 };
 
 export const ADMIN_NAV_PERMISSIONS: readonly NavPermissionRule[] = [
@@ -21,7 +22,11 @@ export const ADMIN_NAV_PERMISSIONS: readonly NavPermissionRule[] = [
   { href: '/dashboard/vencimientos', anyOf: ['members.read'], module: 'club' },
   { href: '/dashboard/arqueo', anyOf: ['cashier.operate'] },
   { href: '/dashboard/gastos', anyOf: ['expenses.read'] },
-  { href: '/dashboard/devoluciones', anyOf: ['transaction_items.refund'], module: 'club' },
+  {
+    href: '/dashboard/devoluciones',
+    anyOf: ['transaction_items.refund'],
+    anyModule: ['club', 'ecommerce'],
+  },
   { href: '/dashboard/reportes', anyOf: ['reports.read'] },
   { href: '/dashboard/afiliados', anyOf: ['members.read'], module: 'club' },
   { href: '/dashboard/staff', anyOf: ['staff.read'] },
@@ -77,6 +82,12 @@ export function canAccessNavHref(
   const rule = ADMIN_NAV_PERMISSIONS.find((item) => item.href === href);
   if (!rule) return true;
   if (rule.module && !platformModules?.includes(rule.module)) return false;
+  if (
+    rule.anyModule &&
+    !rule.anyModule.some((module) => platformModules?.includes(module))
+  ) {
+    return false;
+  }
   if (permissionCodes === null || permissionCodes === undefined) {
     return true;
   }

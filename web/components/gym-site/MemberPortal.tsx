@@ -28,16 +28,32 @@ function contractItems(c: ContractDetail): string[] {
 
 function PurchaseBanner({ purchase }: { purchase: PurchaseReturn }) {
   if (purchase.status === 'approved') {
-    return <p className="success">Pago aprobado. Tus planes y clases aparecen acá apenas Mercado Pago lo acredita (unos segundos).</p>;
+    return <p className="success">Pago aprobado. Tu compra se confirma al acreditarse el pago.</p>;
   }
   if (purchase.status === 'pending' || purchase.status === 'in_process') {
-    return <p className="muted">El pago quedó pendiente. Cuando Mercado Pago lo apruebe, se activa solo.</p>;
+    return <p className="muted">El pago quedó pendiente. Cuando Mercado Pago lo apruebe, se confirma solo.</p>;
   }
   return <p className="error">El pago no se completó. Podés intentarlo de nuevo desde el carrito.</p>;
 }
 
-/** Inicio del portal: planes vigentes y próximas reservas. */
-function MemberHome({ purchase, slug }: { purchase: PurchaseReturn | null; slug: string }) {
+function EcommerceMemberHome({ purchase }: { purchase: PurchaseReturn | null }) {
+  const { session } = useMemberArea();
+  return (
+    <section className="mkt-inner mkt-section">
+      <p className="eyebrow">Mi cuenta</p>
+      <h2 className="mkt-h2">Hola, {session.name ?? session.email}</h2>
+      {purchase ? <PurchaseBanner purchase={purchase} /> : null}
+      <p className="muted">Explorá los productos disponibles y seguí tus compras desde el portal.</p>
+      <div className="mkt-hero-actions">
+        <Link className="mkt-btn-primary" href="/portal/tienda">Ver productos</Link>
+        <Link className="mkt-btn-ghost" href="/portal/carrito">Ir al carrito</Link>
+        <Link className="mkt-btn-ghost" href="/portal/historial">Historial de compras</Link>
+      </div>
+    </section>
+  );
+}
+
+function ClubMemberHome({ purchase, slug }: { purchase: PurchaseReturn | null; slug: string }) {
   const { session, notices } = useMemberArea();
   const booking = useMemberBooking();
   const account = booking.data?.account ?? null;
@@ -59,7 +75,7 @@ function MemberHome({ purchase, slug }: { purchase: PurchaseReturn | null; slug:
         ) : null}
         <div className="mkt-hero-actions">
           <Link className="mkt-btn-primary" href="/portal/clases">Reservar una clase</Link>
-          <Link className="mkt-btn-ghost" href="/portal/tienda">Ver planes</Link>
+          <Link className="mkt-btn-ghost" href="/portal/tienda">Ver tienda</Link>
           <button type="button" className="mkt-btn-ghost" onClick={booking.reload}>Actualizar</button>
         </div>
       </section>
@@ -96,6 +112,15 @@ function MemberHome({ purchase, slug }: { purchase: PurchaseReturn | null; slug:
         )}
       </section>
     </>
+  );
+}
+
+function MemberHome({ purchase, slug }: { purchase: PurchaseReturn | null; slug: string }) {
+  const { hasPlans } = useMemberArea();
+  return hasPlans ? (
+    <ClubMemberHome purchase={purchase} slug={slug} />
+  ) : (
+    <EcommerceMemberHome purchase={purchase} />
   );
 }
 

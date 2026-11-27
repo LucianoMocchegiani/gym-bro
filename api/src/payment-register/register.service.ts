@@ -18,11 +18,44 @@ import { CashDayDetail, CashReconciliationDetail } from './register.types';
 import {
   LEDGER_MOVEMENT_INCLUDE,
   buildLedgerRows,
+  type LedgerMovementRow,
 } from '../payment/ledger-row';
 
 export const CASH_REGISTER_TIMEZONE = 'America/Argentina/Buenos_Aires' as const;
 
 type Tx = Prisma.TransactionClient;
+
+type ProductSaleLedgerRow = {
+  transaction_item_id: string;
+  name: string;
+  quantity: number;
+};
+
+export function attachProductSalesToLedger(
+  rows: LedgerMovementRow[],
+  sales: ProductSaleLedgerRow[],
+): LedgerMovementRow[] {
+  const salesByItem = new Map<string, ProductSaleLedgerRow>(
+    sales.map((sale): [string, ProductSaleLedgerRow] => [
+      sale.transaction_item_id,
+      sale,
+    ]),
+  );
+  return rows.map((row) => ({
+    ...row,
+    items: row.items.map((item) => {
+      const sale = salesByItem.get(item.id);
+      return sale
+        ? {
+            ...item,
+            kind: 'PRODUCT' as const,
+            title: sale.name,
+            productQuantity: sale.quantity,
+          }
+        : item;
+    }),
+  }));
+}
 
 /**
  * Gestión de caja y arqueo.
@@ -167,7 +200,24 @@ export class PaymentRegisterService {
       this.digitalTotals(tenantId, businessDate),
     ]);
 
-    const movements = buildLedgerRows(rows);
+    const ledgerRows = buildLedgerRows(rows);
+    const productItemIds = [
+      ...new Set(
+        ledgerRows.flatMap((movement) => movement.items.map((item) => item.id)),
+      ),
+    ];
+    const productSales = productItemIds.length
+      ? await this.prisma.$queryRaw<ProductSaleLedgerRow[]>`
+          SELECT s.transaction_item_id, p.name, s.quantity
+          FROM product_sale_items s
+          JOIN products p
+            ON p.id = s.product_id AND p.tenant_id = s.tenant_id
+          WHERE s.tenant_id = ${tenantId}::uuid
+            AND s.transaction_item_id IN (${Prisma.join(
+              productItemIds.map((id) => Prisma.sql`${id}::uuid`),
+            )})`
+      : [];
+    const movements = attachProductSalesToLedger(ledgerRows, productSales);
     const income = rows
       .filter((m) => m.kind === CashMovementKind.INCOME)
       .reduce((sum, m) => sum + m.amount, 0);

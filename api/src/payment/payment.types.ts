@@ -3,7 +3,7 @@ import type { ReceiptDetail } from '../receipts/receipts.types';
 export type MpCheckoutStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | 'REFUNDED';
 
 export type MpCartLine = {
-  kind: 'PACK' | 'DROP_IN';
+  kind: 'PACK' | 'DROP_IN' | 'PRODUCT';
   refId: string;
   packId?: string;
   title?: string;

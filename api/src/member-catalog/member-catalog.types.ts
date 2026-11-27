@@ -60,6 +60,8 @@ export type PublicTenantCatalog = {
   /** true = MP conectado: se puede comprar online. */
   onlineCheckout: boolean;
   packs: MemberPackDetail[];
+  hasPlans: boolean;
+  hasProducts: boolean;
   /** Hero y sliders editables (RN-CTA-010); null = vidriera por defecto. */
   site: TenantSiteContent | null;
 };

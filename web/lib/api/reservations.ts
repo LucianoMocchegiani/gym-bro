@@ -82,7 +82,7 @@ export function cancelReservation(
 }
 
 export type CashCartItem = {
-  kind: 'DROP_IN' | 'PACK';
+  kind: 'DROP_IN' | 'PACK' | 'PRODUCT';
   id: string;
   quantity?: number;
 };

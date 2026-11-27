@@ -35,6 +35,7 @@ export function RefundExecuteModal({
   const [selectedIds, setSelectedIds] = useState<string[]>(() =>
     refundable.map((i) => i.id),
   );
+  const [productRestock, setProductRestock] = useState<Record<string, boolean>>({});
   const [reason, setReason] = useState('');
   const [motiveCode, setMotiveCode] = useState<RefundMotiveCode>('otro');
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -50,7 +51,15 @@ export function RefundExecuteModal({
   );
 
   const canSubmit =
-    selectedIds.length > 0 && reason.trim().length >= 3 && !busy;
+    selectedIds.length > 0 &&
+    reason.trim().length >= 3 &&
+    !busy &&
+    items.every(
+      (line) =>
+        !selectedIds.includes(line.id) ||
+        line.kind !== 'PRODUCT' ||
+        productRestock[line.id] !== undefined,
+    );
 
   function toggle(id: string, enabled: boolean) {
     if (!enabled) {
@@ -94,6 +103,13 @@ export function RefundExecuteModal({
         transactionItemIds: selectedIds,
         reason: reason.trim(),
         motiveCode,
+        productRestockDecisions: items.flatMap((line) =>
+          line.kind === 'PRODUCT' &&
+          selectedIds.includes(line.id) &&
+          productRestock[line.id] !== undefined
+            ? [{ transactionItemId: line.id, restock: productRestock[line.id] }]
+            : [],
+        ),
       });
       setConfirmOpen(false);
       onDone();
@@ -153,6 +169,35 @@ export function RefundExecuteModal({
                     </span>
                     <span>{formatMoney(line.amount)}</span>
                   </label>
+                  {checked && enabled && line.kind === 'PRODUCT' ? (
+                    <fieldset className="mode-toggle">
+                      <legend>
+                        Devolución de {line.title} · cantidad {line.productQuantity ?? 1}
+                      </legend>
+                      <label>
+                        <input
+                          type="radio"
+                          name={`restock-${line.id}`}
+                          checked={productRestock[line.id] === true}
+                          onChange={() =>
+                            setProductRestock((prev) => ({ ...prev, [line.id]: true }))
+                          }
+                        />
+                        Reponer stock
+                      </label>
+                      <label>
+                        <input
+                          type="radio"
+                          name={`restock-${line.id}`}
+                          checked={productRestock[line.id] === false}
+                          onChange={() =>
+                            setProductRestock((prev) => ({ ...prev, [line.id]: false }))
+                          }
+                        />
+                        No reponer stock
+                      </label>
+                    </fieldset>
+                  ) : null}
                 </li>
               );
             })}

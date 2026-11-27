@@ -3,6 +3,7 @@ import {
   ArrayMinSize,
   ArrayUnique,
   IsArray,
+  IsBoolean,
   IsEnum,
   IsIn,
   IsOptional,
@@ -10,6 +11,7 @@ import {
   IsUUID,
   MaxLength,
   MinLength,
+  ValidateNested,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ListQueryDto } from '../../common/list';
@@ -23,6 +25,15 @@ export class CreateRefundRequestDto {
   @MinLength(1)
   @MaxLength(500)
   reason?: string;
+}
+
+/** Choice attached to the product transaction item being refunded. */
+export class ProductRestockDecisionDto {
+  @IsUUID('4')
+  transactionItemId!: string;
+
+  @IsBoolean()
+  restock!: boolean;
 }
 
 /**
@@ -42,6 +53,16 @@ export class ExecuteRefundDto {
   @IsOptional()
   @IsString()
   refundRequestId?: string;
+
+  @IsOptional()
+  @IsArray()
+  @ArrayUnique(
+    (decision: ProductRestockDecisionDto | null | undefined) =>
+      decision?.transactionItemId,
+  )
+  @ValidateNested({ each: true })
+  @Type(() => ProductRestockDecisionDto)
+  productRestockDecisions?: ProductRestockDecisionDto[];
 }
 
 /**

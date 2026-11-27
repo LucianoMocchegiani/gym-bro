@@ -34,6 +34,8 @@ import {
 import { extractTenantSlugFromHost } from '@/lib/tenant-host';
 import { listActivePacks } from '@/lib/api/packs';
 import type { PackSummary } from '@/lib/api/packs';
+import { listProducts } from '@/lib/api/products';
+import type { ProductDetail } from '@/lib/api/products';
 import { startCashCart } from '@/lib/api/reservations';
 import {
   applyDiscount,
@@ -54,19 +56,20 @@ import { formatMoney } from '@/lib/cash-labels';
 
 type CartItem = {
   key: string;
-  kind: 'PACK' | 'DROP_IN';
+  kind: 'PACK' | 'DROP_IN' | 'PRODUCT';
   refId: string;
   label: string;
   sub: string;
   price: number;
+  quantity: number;
 };
 
-type CatalogTab = 'SERVICIOS' | 'PACKS';
+type CatalogTab = 'SERVICIOS' | 'PACKS' | 'PRODUCTOS';
 type CajaVista = 'cobro' | 'debitos';
 type CajaPaymentMethod = CounterMethod | 'MP' | 'MP_POINT_QR';
 
 /**
- * Caja: carrito de cobros (packs + drop-in) en efectivo o con links de MP
+ * Caja: carrito de cobros (packs + drop-in + productos) en efectivo o con MP
  * (CU-PAG / RN-PAG-009). Cierre y movimientos viven en /arqueo.
  *
  * @remarks MP link y QR Point consultan el estado hasta confirmar el pago.
@@ -100,6 +103,7 @@ function CajaInner() {
     isPlatform ? 'PACKS' : 'SERVICIOS',
   );
   const [packs, setPacks] = useState<PackSummary[]>([]);
+  const [products, setProducts] = useState<ProductDetail[]>([]);
   const [sessions, setSessions] = useState<SessionSummary[]>([]);
   const [services, setServices] = useState<
     { id: string; dropInPrice: number | null }[]
@@ -168,22 +172,25 @@ function CajaInner() {
           setPacks(packsResult.items);
           setSessions([]);
           setServices([]);
+          setProducts([]);
           setCatalogError(null);
           return;
         }
         const from = new Date();
         const to = new Date();
         to.setDate(to.getDate() + 14);
-        const [packsResult, sessionsResult, servicesResult] = await Promise.all([
-          listActivePacks(),
-          listSessions({
-            status: 'PUBLISHED',
-            from: from.toISOString(),
-            to: to.toISOString(),
-            pageSize: 100,
-          }),
-          listServices({ active: true, pageSize: 100 }),
-        ]);
+        const [packsResult, sessionsResult, servicesResult, productsResult] =
+          await Promise.all([
+            listActivePacks(),
+            listSessions({
+              status: 'PUBLISHED',
+              from: from.toISOString(),
+              to: to.toISOString(),
+              pageSize: 100,
+            }),
+            listServices({ active: true, pageSize: 100 }),
+            listProducts({ active: true, pageSize: 100 }),
+          ]);
         if (cancelled) {
           return;
         }
@@ -195,6 +202,7 @@ function CajaInner() {
             dropInPrice: s.dropInPrice,
           })),
         );
+        setProducts(productsResult.items);
         setCatalogError(null);
       } catch (err) {
         if (cancelled) {
@@ -337,8 +345,14 @@ function CajaInner() {
     [services],
   );
 
+  const productQuantity = useMemo(
+    () => new Map(cart.filter((item) => item.kind === 'PRODUCT').map((item) => [item.refId, item.quantity])),
+    [cart],
+  );
+  const hasProducts = productQuantity.size > 0;
+
   const total = useMemo(
-    () => cart.reduce((sum, item) => sum + item.price, 0),
+    () => cart.reduce((sum, item) => sum + item.price * item.quantity, 0),
     [cart],
   );
 
@@ -364,7 +378,7 @@ function CajaInner() {
     ? 0
     : discountActive
       ? cart.reduce(
-          (sum, item) => sum + applyDiscount(item.price, discountPercent),
+          (sum, item) => sum + applyDiscount(item.price, discountPercent) * item.quantity,
           0,
         )
       : total;
@@ -418,6 +432,7 @@ function CajaInner() {
               ? 'Créditos'
               : 'Mixto',
         price: pack.price,
+        quantity: 1,
       },
     ]);
   }
@@ -441,8 +456,37 @@ function CajaInner() {
         label: session.serviceName,
         sub: `${when} · ${session.branchName} (${session.bookedCount}/${session.capacity})`,
         price,
+        quantity: 1,
       },
     ]);
+  }
+
+  function addProduct(product: ProductDetail) {
+    if (productQuantity.get(product.id) === product.stockQuantity) return;
+    setCart((prev) => {
+      const existing = prev.find(
+        (item) => item.kind === 'PRODUCT' && item.refId === product.id,
+      );
+      if (existing) {
+        return prev.map((item) =>
+          item.key === existing.key
+            ? { ...item, quantity: item.quantity + 1 }
+            : item,
+        );
+      }
+      return [
+        ...prev,
+        {
+          key: `PRODUCT-${product.id}`,
+          kind: 'PRODUCT',
+          refId: product.id,
+          label: product.name,
+          sub: `Stock disponible: ${product.stockQuantity}`,
+          price: product.price,
+          quantity: 1,
+        },
+      ];
+    });
   }
 
   function removeItem(key: string) {
@@ -563,7 +607,7 @@ function CajaInner() {
       }
       if (cobroMedio === 'MP_POINT_QR') {
         const result = await startStaffMpPointQrCheckout(memberId, {
-          items: cart.map((item) => ({ kind: item.kind, id: item.refId })),
+          items: cart.map((item) => ({ kind: item.kind, id: item.refId, quantity: item.quantity })),
           idempotencyKey: newIdempotencyKey('mp-point-qr'),
         });
         if (!result.qrData) {
@@ -582,6 +626,7 @@ function CajaInner() {
               items: cart.map((item) => ({
                 kind: 'PACK' as const,
                 id: item.refId,
+                quantity: item.quantity,
               })),
               idempotencyKey: newIdempotencyKey('mp-cart'),
             })
@@ -589,6 +634,7 @@ function CajaInner() {
               items: cart.map((item) => ({
                 kind: item.kind,
                 id: item.refId,
+                quantity: item.quantity,
               })),
               idempotencyKey: newIdempotencyKey('mp-cart'),
             });
@@ -601,7 +647,7 @@ function CajaInner() {
         setMpCheckoutUrl(url);
         setMpTransactionId(result.transactionId);
         setCobroOk(
-          `Link MP generado por ${formatMoney(result.amount)}. Cada pack/reserva del carrito se activa al aprobarse el pago.`,
+          `Link MP generado por ${formatMoney(result.amount)}. Cada ítem del carrito se confirma al aprobarse el pago (webhook).`,
         );
         setCart([]);
         return;
@@ -619,7 +665,7 @@ function CajaInner() {
       const result = isPlatform
         ? await startPlatformCashCart(
             billingTenantId,
-            cart.map((item) => ({ kind: 'PACK' as const, id: item.refId })),
+            cart.map((item) => ({ kind: 'PACK' as const, id: item.refId, quantity: item.quantity })),
             newIdempotencyKey('cash-cart'),
             trialApplied,
             charge,
@@ -629,6 +675,7 @@ function CajaInner() {
             cart.map((item) => ({
               kind: item.kind,
               id: item.refId,
+              quantity: item.quantity,
             })),
             newIdempotencyKey('cash-cart'),
             charge,
@@ -679,7 +726,7 @@ function CajaInner() {
       subtitle={
         isPlatform
           ? 'Venta de packs de plataforma a otros tenants.'
-          : 'Cobros con carrito: packs y drop-in en efectivo, transferencia o Mercado Pago.'
+          : 'Cobros con carrito: packs, drop-in y productos en efectivo, transferencia o Mercado Pago.'
       }
     >
       <ListToolbar hint="El cierre del día se ve en Cierre.">
@@ -779,6 +826,17 @@ function CajaInner() {
             >
               Packs
             </button>
+            {isPlatform ? null : (
+              <button
+                type="button"
+                role="tab"
+                aria-selected={catalogTab === 'PRODUCTOS'}
+                className={catalogTab === 'PRODUCTOS' ? 'active' : undefined}
+                onClick={() => setCatalogTab('PRODUCTOS')}
+              >
+                Productos
+              </button>
+            )}
           </div>
 
           {catalogError ? <p className="error">{catalogError}</p> : null}
@@ -872,6 +930,39 @@ function CajaInner() {
               </ul>
             )
           ) : null}
+
+          {!catalogLoading && catalogTab === 'PRODUCTOS' ? (
+            products.length === 0 ? (
+              <p className="muted small">Sin productos activos.</p>
+            ) : (
+              <ul className="plain-list">
+                {products.map((product) => {
+                  const quantityInCart = productQuantity.get(product.id) ?? 0;
+                  return (
+                    <li key={product.id} className="catalog-row">
+                      <div>
+                        <p className="catalog-name">{product.name}</p>
+                        <p className="muted small">
+                          {formatMoney(product.price)} · Stock: {product.stockQuantity - quantityInCart}
+                          {quantityInCart > 0 ? ` · En carrito: ${quantityInCart}` : ''}
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        className="catalog-add"
+                        title={product.stockQuantity <= quantityInCart ? 'Sin stock disponible' : 'Agregar al carrito'}
+                        aria-label={`Agregar ${product.name} al carrito`}
+                        disabled={product.stockQuantity <= quantityInCart}
+                        onClick={() => addProduct(product)}
+                      >
+                        +
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            )
+          ) : null}
         </Panel>
 
         <Panel
@@ -884,7 +975,7 @@ function CajaInner() {
           className="cash-cart"
         >
           {cart.length === 0 ? (
-            <p className="muted small">Carrito vacío. Agregá servicios o packs.</p>
+            <p className="muted small">Carrito vacío. Agregá servicios, packs o productos.</p>
           ) : (
             <CartLineList
               items={cart}
@@ -934,6 +1025,9 @@ function CajaInner() {
                     />
                     Mercado Pago Point (QR en caja)
                   </label>
+                  {hasProducts ? (
+                    <p className="muted small">Los productos se reservan al generar el QR y el stock se confirma o libera cuando Mercado Pago informa el resultado.</p>
+                  ) : null}
                 </>
               ) : null}
             </fieldset>
@@ -1004,15 +1098,15 @@ function CajaInner() {
             {cobroMedio === 'MP' ? (
               <p className="muted small">
                 Se genera un solo link con el total del carrito (como Mercado
-                Libre: 1 carrito → 1 pago). Cada pack/reserva se activa al
-                aprobarse el pago (webhook). Requiere cuenta MP en Config.
+                Libre: 1 carrito → 1 pago). Cada pack, reserva o producto se
+                confirma al aprobarse el pago (webhook). Requiere cuenta MP en Config.
               </p>
             ) : null}
             {cobroMedio === 'MP_POINT_QR' ? (
               <p className="muted small">
                 Genera un QR dinámico para cobrar en el POS de Mercado Pago
                 configurado para este gimnasio. Caja verifica el pago antes de
-                emitir el comprobante.
+                emitir el comprobante; los productos reservan stock hasta su resolución.
               </p>
             ) : null}
 

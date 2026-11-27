@@ -3,7 +3,10 @@ import { headers } from 'next/headers';
 import { notFound } from 'next/navigation';
 import { GymLandingPage } from '@/components/gym-site/GymLandingPage';
 import { LandingPage } from '@/components/marketing/LandingPage';
-import { fetchPublicTenantCatalog } from '@/lib/api/public-tenant-catalog';
+import {
+  fetchPublicProducts,
+  fetchPublicTenantCatalog,
+} from '@/lib/api/public-tenant-catalog';
 import { extractTenantSlugFromHost, tenantOrigin } from '@/lib/tenant-host';
 import { publicSiteUrl } from '@/lib/site-url';
 
@@ -28,12 +31,12 @@ export async function generateMetadata(): Promise<Metadata> {
       return { robots: { index: false, follow: false } };
     }
     const hero = catalog.site?.hero;
-    const title = `${catalog.tenant.name} | ${hero?.title ?? 'Planes y precios'}`;
+    const title = `${catalog.tenant.name} | ${hero?.title ?? (catalog.hasPlans ? 'Planes y precios' : 'Productos')}`;
     const description =
       hero?.subtitle ??
-      `Planes de ${catalog.tenant.name}: elegí el tuyo${
-        catalog.onlineCheckout ? ' y pagalo online' : ''
-      }.`;
+      (catalog.hasPlans
+        ? `Planes de ${catalog.tenant.name}: elegí el tuyo${catalog.onlineCheckout ? ' y pagalo online' : ''}.`
+        : `Productos disponibles en ${catalog.tenant.name}.`);
     const url = tenantOrigin(slug);
     return {
       title: { absolute: title },
@@ -81,7 +84,11 @@ export async function generateMetadata(): Promise<Metadata> {
   };
 }
 
-export default async function RootPage() {
+export default async function RootPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ page?: string | string[] }>;
+}) {
   const slug = await hostSlug();
   if (!slug) {
     return <LandingPage />;
@@ -90,5 +97,14 @@ export default async function RootPage() {
   if (!catalog) {
     notFound();
   }
-  return <GymLandingPage catalog={catalog} />;
+  const pageParam = (await searchParams).page;
+  const parsedPage =
+    typeof pageParam === 'string' && /^[1-9]\d*$/.test(pageParam)
+      ? Number(pageParam)
+      : 1;
+  const page = Number.isSafeInteger(parsedPage) ? parsedPage : 1;
+  const products = catalog.hasProducts
+    ? await fetchPublicProducts(slug, page)
+    : null;
+  return <GymLandingPage catalog={catalog} products={products} />;
 }

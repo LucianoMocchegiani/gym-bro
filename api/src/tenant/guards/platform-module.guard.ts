@@ -20,7 +20,7 @@ export class PlatformModuleGuard implements CanActivate {
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
-    const required = this.reflector.getAllAndOverride<string>(
+    const required = this.reflector.getAllAndOverride<string | string[]>(
       REQUIRED_PLATFORM_MODULE,
       [context.getHandler(), context.getClass()],
     );
@@ -28,11 +28,15 @@ export class PlatformModuleGuard implements CanActivate {
 
     const user = context.switchToHttp().getRequest<RequestWithUser>().user;
     if (!user?.tenantId || user.impersonatedBy) return true;
-    if ((await this.plans.getTenantModules(user.tenantId)).includes(required)) {
+    const requiredModules = Array.isArray(required) ? required : [required];
+    const tenantModules = await this.plans.getTenantModules(user.tenantId);
+    if (requiredModules.some((module) => tenantModules.includes(module))) {
       return true;
     }
-    throw new ForbiddenException(
-      `El plan contratado no incluye el módulo ${required}.`,
-    );
+    const message =
+      requiredModules.length === 1
+        ? `El plan contratado no incluye el módulo ${requiredModules[0]}.`
+        : `El plan contratado no incluye ninguno de los módulos ${requiredModules.join(', ')}.`;
+    throw new ForbiddenException(message);
   }
 }

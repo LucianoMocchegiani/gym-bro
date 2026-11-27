@@ -22,7 +22,6 @@ import {
  */
 @Controller()
 @RequireTenantAuth()
-@RequirePlatformModule('club')
 export class MemberCatalogController {
   constructor(
     private readonly sessions: SessionsService,
@@ -31,6 +30,7 @@ export class MemberCatalogController {
   ) {}
 
   @Get('me/sessions')
+  @RequirePlatformModule('club')
   listSessions(
     @CurrentTenant() tenantId: string,
     @CurrentUser() user: AuthUser,
@@ -43,6 +43,7 @@ export class MemberCatalogController {
   }
 
   @Get('me/packs')
+  @RequirePlatformModule('club')
   listPacks(
     @CurrentTenant() tenantId: string,
     @CurrentUser() user: AuthUser,
@@ -54,6 +55,7 @@ export class MemberCatalogController {
   }
 
   @Get('me/mp-status')
+  @RequirePlatformModule(['club', 'ecommerce'])
   async mpStatus(
     @CurrentTenant() tenantId: string,
     @CurrentUser() user: AuthUser,

@@ -1,10 +1,16 @@
 import { AdSlot } from '@/components/ads/AdSlot';
 import { GymSiteShell } from '@/components/gym-site/GymSiteShell';
+import { PublicProductCatalog } from '@/components/gym-site/PublicProductCatalog';
 import { SiteHeroView, SiteSlideView } from '@/components/gym-site/site/SiteViews';
 import { Carousel } from '@/components/marketing/Carousel';
 import { MktShell } from '@/components/marketing/MktShell';
 import { PackPlanCard } from '@/components/marketing/PackPlanCard';
-import { storePackItems, type PublicTenantCatalog } from '@/lib/api/public-tenant-catalog';
+import {
+  storePackItems,
+  type PublicProduct,
+  type PublicTenantCatalog,
+} from '@/lib/api/public-tenant-catalog';
+import type { ListResult } from '@/lib/api/list';
 import {
   SITE_DEFAULT_PRIMARY_COLOR,
   type SiteButton,
@@ -12,8 +18,14 @@ import {
 } from '@/lib/api/tenant-site';
 import { siteButtonLink } from '@/lib/site-buttons';
 
-function HeroActions() {
-  return <><a className="mkt-btn-primary" href="#planes">Ver planes</a><a className="mkt-btn-ghost" href="/login?next=/portal">Ya soy socio</a></>;
+function HeroActions({ hasPlans, hasProducts }: { hasPlans: boolean; hasProducts: boolean }) {
+  return (
+    <>
+      {hasProducts ? <a className="mkt-btn-primary" href="#productos">Ver productos</a> : null}
+      {hasPlans ? <a className={hasProducts ? 'mkt-btn-ghost' : 'mkt-btn-primary'} href="#planes">Ver planes</a> : null}
+      <a className="mkt-btn-ghost" href="/login?next=/portal">Ya soy socio</a>
+    </>
+  );
 }
 
 function SlideButton({ button, packIds, onlineCheckout }: { button: SiteButton; packIds: ReadonlySet<string>; onlineCheckout: boolean }) {
@@ -35,8 +47,14 @@ function SliderSection({ slider, position, packIds, onlineCheckout }: { slider: 
   );
 }
 
-export function GymLandingPage({ catalog }: { catalog: PublicTenantCatalog }) {
-  const { tenant, packs, onlineCheckout, site } = catalog;
+export function GymLandingPage({
+  catalog,
+  products,
+}: {
+  catalog: PublicTenantCatalog;
+  products: ListResult<PublicProduct> | null;
+}) {
+  const { tenant, packs, onlineCheckout, site, hasPlans, hasProducts } = catalog;
   const packIds = new Set(packs.map((p) => p.id));
   const hasCustomLanding = site?.landingCustomized !== false;
   return (
@@ -47,28 +65,40 @@ export function GymLandingPage({ catalog }: { catalog: PublicTenantCatalog }) {
       brandIcon={site?.brandIcon ?? null}
       socialLinks={site?.socialLinks}
       contactEmail={site?.contactEmail ?? null}
+      showPlans={hasPlans}
+      showProducts={hasProducts}
     >
       {site && hasCustomLanding ? (
-        <MktShell as="section" className="site-hero-section"><SiteHeroView hero={site.hero} actions={<HeroActions />} /></MktShell>
+        <MktShell as="section" className="site-hero-section"><SiteHeroView hero={site.hero} actions={<HeroActions hasPlans={hasPlans} hasProducts={hasProducts} />} /></MktShell>
       ) : (
         <MktShell as="section" className="mkt-hero">
           <div className="mkt-hero-copy">
-            <p className="mkt-kicker">Planes y precios</p><h1>{tenant.name}</h1>
-            <p className="mkt-lead">{onlineCheckout ? 'Elegí tu plan y pagalo online con Mercado Pago. Queda activo apenas se acredita.' : 'Elegí tu plan y contratalo en el mostrador del gym.'}</p>
-            <div className="mkt-hero-actions"><HeroActions /></div>
+            <p className="mkt-kicker">{hasPlans ? 'Planes y productos' : 'Productos'}</p>
+            <h1>{tenant.name}</h1>
+            <p className="mkt-lead">
+              {hasPlans
+                ? onlineCheckout
+                  ? 'Elegí tu plan y pagalo online con Mercado Pago. Queda activo apenas se acredita.'
+                  : 'Elegí tu plan y contratalo en el mostrador del gym.'
+                : 'Conocé los productos disponibles.'}
+            </p>
+            <div className="mkt-hero-actions"><HeroActions hasPlans={hasPlans} hasProducts={hasProducts} /></div>
           </div>
         </MktShell>
       )}
       <AdSlot tenantSlug={tenant.slug} placement="GYM_SITE" />
       {hasCustomLanding ? site?.sliders.map((slider, i) => <SliderSection key={slider.id} slider={slider} position={i + 1} packIds={packIds} onlineCheckout={onlineCheckout} />) : null}
-      <section id="planes" className="mkt-inner mkt-section">
-        <h2 className="mkt-h2">Planes</h2>
-        {packs.length === 0 ? <p className="muted">Todavía no hay planes publicados.</p> : (
-          <div className="mkt-plans">
-            {packs.map((pack) => <PackPlanCard key={pack.id} name={pack.name} price={pack.price} billingPeriod={pack.billingPeriod} description={pack.description} items={storePackItems(pack)} action={onlineCheckout ? <a className="mkt-btn-primary" href={`/comprar?pack=${encodeURIComponent(pack.id)}`}>Comprar</a> : <p className="muted small">Se contrata en el gym.</p>} />)}
-          </div>
-        )}
-      </section>
+      {hasPlans ? (
+        <section id="planes" className="mkt-inner mkt-section">
+          <h2 className="mkt-h2">Planes</h2>
+          {packs.length === 0 ? <p className="muted">Todavía no hay planes publicados.</p> : (
+            <div className="mkt-plans">
+              {packs.map((pack) => <PackPlanCard key={pack.id} name={pack.name} price={pack.price} billingPeriod={pack.billingPeriod} description={pack.description} items={storePackItems(pack)} action={onlineCheckout ? <a className="mkt-btn-primary" href={`/comprar?pack=${encodeURIComponent(pack.id)}`}>Comprar</a> : <p className="muted small">Se contrata en el gym.</p>} />)}
+            </div>
+          )}
+        </section>
+      ) : null}
+      {hasProducts ? <PublicProductCatalog result={products} /> : null}
     </GymSiteShell>
   );
 }

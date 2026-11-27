@@ -5,19 +5,21 @@ import type { MpCheckoutKind } from '@/lib/api/mercadopago';
 import type { MemberSessionSlot } from '@/lib/api/member-portal';
 import {
   storeComponentLabel,
+  type PublicProduct,
   type StorePack,
 } from '@/lib/api/public-tenant-catalog';
 import { formatSessionWhen } from '@/lib/format-session';
 import { createLocalStore } from '@/lib/local-store';
 
-/** Pack del catálogo o drop-in de una sesión (cantidad 1). */
+/** Pack, drop-in o producto (una unidad por defecto). */
 export type MemberCartLine = {
   kind: MpCheckoutKind;
-  /** `packId` o `sessionId`. */
+  /** `packId`, `sessionId` o `productId`. */
   id: string;
   label: string;
   sub: string;
   price: number;
+  quantity?: number;
 };
 
 type StoredCart = {
@@ -47,13 +49,21 @@ function linesOf(owner: string): MemberCartLine[] {
 /** Vacía el carrito (salir del gym o checkout iniciado). */
 export const clearMemberCart = store.clear;
 
-/** Agrega una línea; `false` si ya estaba (mismo `kind` + `id`). */
+/** Agrega una línea; acumula unidades del mismo producto. */
 export function addToMemberCart(owner: string, line: MemberCartLine): boolean {
   const lines = linesOf(owner);
-  if (lines.some((l) => l.kind === line.kind && l.id === line.id)) {
-    return false;
-  }
-  store.write({ owner, lines: [...lines, line] });
+  const existing = lines.find((item) => item.kind === line.kind && item.id === line.id);
+  if (existing && line.kind !== 'PRODUCT') return false;
+  store.write({
+    owner,
+    lines: existing
+      ? lines.map((item) =>
+          item === existing
+            ? { ...item, quantity: (item.quantity ?? 1) + (line.quantity ?? 1) }
+            : item,
+        )
+      : [...lines, line],
+  });
   return true;
 }
 
@@ -79,6 +89,17 @@ export function packCartLine(pack: StorePack): MemberCartLine {
     label: pack.name,
     sub: pack.components.map(storeComponentLabel).join(' · '),
     price: pack.price,
+  };
+}
+
+export function productCartLine(product: PublicProduct): MemberCartLine {
+  return {
+    kind: 'PRODUCT',
+    id: product.id,
+    label: product.name,
+    sub: product.description ?? '',
+    price: product.price,
+    quantity: 1,
   };
 }
 
@@ -114,16 +135,14 @@ export function useMemberCart(owner: string | null) {
 
   return {
     lines,
-    count: lines.length,
-    total: lines.reduce((sum, l) => sum + l.price, 0),
+    count: lines.reduce((sum, line) => sum + (line.quantity ?? 1), 0),
+    total: lines.reduce((sum, line) => sum + line.price * (line.quantity ?? 1), 0),
     has: (kind: MpCheckoutKind, id: string) =>
       lines.some((l) => l.kind === kind && l.id === id),
     add: (line: MemberCartLine) =>
       owner ? addToMemberCart(owner, line) : false,
     remove: (kind: MpCheckoutKind, id: string) => {
-      if (owner) {
-        removeFromMemberCart(owner, kind, id);
-      }
+      if (owner) removeFromMemberCart(owner, kind, id);
     },
     clear: clearMemberCart,
   };

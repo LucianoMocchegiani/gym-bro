@@ -30,11 +30,13 @@ import { DebitModule } from '../debit/debit.module';
 import { NotificationsModule } from '../notifications/notifications.module';
 import { MembersModule } from '../members/members.module';
 import { TenantSettingsModule } from '../tenant-settings/tenant-settings.module';
+import { PlatformPlansModule } from '../platform-plans/platform-plans.module';
 
 @Module({
   imports: [
     AuditModule,
     TenantSettingsModule,
+    PlatformPlansModule,
     PaymentRegisterModule,
     forwardRef(() => ReceiptsModule),
     forwardRef(() => ContractsModule),
