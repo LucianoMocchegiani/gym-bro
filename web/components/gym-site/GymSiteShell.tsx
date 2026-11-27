@@ -88,6 +88,8 @@ export function GymSiteShell({
   brandIcon,
   socialLinks,
   contactEmail,
+  showPlans = true,
+  showProducts = false,
 }: {
   slug: string;
   gymName: string;
@@ -96,6 +98,8 @@ export function GymSiteShell({
   brandIcon?: string | null;
   socialLinks?: SiteSocialLinks;
   contactEmail?: string | null;
+  showPlans?: boolean;
+  showProducts?: boolean;
 }) {
   const configuredSocials = SOCIALS.flatMap(([key, label]) =>
     socialLinks?.[key] ? [{ key, label, href: socialLinks[key]! }] : [],
@@ -123,7 +127,8 @@ export function GymSiteShell({
           {gymName}
         </Link>
         <nav className="mkt-nav-links" aria-label="Secciones">
-          <Link href="/#planes">Planes</Link>
+          {showPlans ? <Link href="/#planes">Planes</Link> : null}
+          {showProducts ? <Link href="/#productos">Productos</Link> : null}
         </nav>
         <GymHeaderActions slug={slug} />
       </header>

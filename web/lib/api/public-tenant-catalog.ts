@@ -4,6 +4,7 @@
 
 import { fetchPublicApi } from '@/lib/api/public-fetch';
 import type { TenantSiteContent } from '@/lib/api/tenant-site';
+import type { ListResult } from '@/lib/api/list';
 
 export type StorePackComponent = {
   serviceId: string;
@@ -25,11 +26,21 @@ export type StorePack = {
   components: StorePackComponent[];
 };
 
+export type PublicProduct = {
+  id: string;
+  name: string;
+  description: string | null;
+  price: number;
+  imageUrl: string | null;
+};
+
 export type PublicTenantCatalog = {
   tenant: { name: string; slug: string };
   /** true = MP conectado: se compra online. */
   onlineCheckout: boolean;
   packs: StorePack[];
+  hasPlans: boolean;
+  hasProducts: boolean;
   /** Hero y sliders editables (RN-CTA-010); null = vidriera por defecto. */
   site: TenantSiteContent | null;
 };
@@ -42,6 +53,16 @@ export function fetchPublicTenantCatalog(
 ): Promise<PublicTenantCatalog | null> {
   return fetchPublicApi<PublicTenantCatalog>(
     `/public/tenants/by-slug/${encodeURIComponent(slug)}/packs`,
+    0,
+  );
+}
+
+export function fetchPublicProducts(
+  slug: string,
+  page: number,
+): Promise<ListResult<PublicProduct> | null> {
+  return fetchPublicApi<ListResult<PublicProduct>>(
+    `/public/tenants/by-slug/${encodeURIComponent(slug)}/products?page=${page}`,
     0,
   );
 }

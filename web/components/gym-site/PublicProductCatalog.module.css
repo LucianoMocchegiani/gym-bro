@@ -1,0 +1,70 @@
+.section {
+  width: min(1100px, 100%);
+  margin: 0 auto;
+  padding: 2.5rem clamp(1rem, 3vw, 1.5rem);
+}
+
+.section h2 {
+  margin-bottom: 0.5rem;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 15rem), 1fr));
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.card {
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, currentColor 18%, transparent);
+  border-radius: 1rem;
+  background: color-mix(in srgb, currentColor 4%, transparent);
+}
+
+.image,
+.placeholder {
+  display: block;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+}
+
+.placeholder {
+  display: grid;
+  place-items: center;
+  background: color-mix(in srgb, currentColor 8%, transparent);
+  color: inherit;
+}
+
+.detail {
+  display: grid;
+  gap: 0.5rem;
+  padding: 1rem;
+}
+
+.detail h3 {
+  font-size: 1.05rem;
+  line-height: 1.3;
+}
+
+.detail p {
+  color: color-mix(in srgb, currentColor 72%, transparent);
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.detail strong {
+  margin-top: 0.25rem;
+  font-size: 1.1rem;
+}
+
+.count,
+.muted {
+  color: color-mix(in srgb, currentColor 72%, transparent);
+}
+
+.count {
+  font-size: 0.9rem;
+}
