@@ -119,7 +119,10 @@ describe('MpPointQrService', () => {
       .fn()
       .mockResolvedValue({ id: 'transaction-item-1' });
     type PrismaTransaction = {
-      transaction: { create: typeof transactionCreate; findUniqueOrThrow: jest.Mock };
+      transaction: {
+        create: typeof transactionCreate;
+        findUniqueOrThrow: jest.Mock;
+      };
       transactionItem: { create: typeof transactionItemCreate };
       $queryRaw: jest.Mock;
       $executeRaw: jest.Mock;
@@ -151,8 +154,8 @@ describe('MpPointQrService', () => {
       transaction: { findUnique: jest.fn().mockResolvedValue(null) },
       $transaction: jest
         .fn()
-        .mockImplementation((callback: (client: PrismaTransaction) => unknown) =>
-          callback(tx),
+        .mockImplementation(
+          (callback: (client: PrismaTransaction) => unknown) => callback(tx),
         ),
       mercadoPagoAccount: {
         findUnique: jest.fn().mockResolvedValue({ mpUserId: 'mp-user' }),
@@ -206,6 +209,7 @@ describe('MpPointQrService', () => {
           sessionId: null,
           amount: 95,
           listAmount: 100,
+          discountBps: 500,
         }),
       }),
     );
