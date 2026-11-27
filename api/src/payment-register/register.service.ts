@@ -18,8 +18,8 @@ import { CashDayDetail, CashReconciliationDetail } from './register.types';
 import {
   LEDGER_MOVEMENT_INCLUDE,
   buildLedgerRows,
+  type LedgerMovementRow,
 } from '../payment/ledger-row';
-import type { LedgerMovementRow } from '../payment/ledger-row';
 
 export const CASH_REGISTER_TIMEZONE = 'America/Argentina/Buenos_Aires' as const;
 
@@ -35,8 +35,10 @@ export function attachProductSalesToLedger(
   rows: LedgerMovementRow[],
   sales: ProductSaleLedgerRow[],
 ): LedgerMovementRow[] {
-  const salesByItem = new Map(
-    sales.map((sale) => [sale.transaction_item_id, sale]),
+  const salesByItem = new Map<string, ProductSaleLedgerRow>(
+    sales.map(
+      (sale): [string, ProductSaleLedgerRow] => [sale.transaction_item_id, sale],
+    ),
   );
   return rows.map((row) => ({
     ...row,
