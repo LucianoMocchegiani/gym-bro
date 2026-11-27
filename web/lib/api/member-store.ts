@@ -1,4 +1,4 @@
-import { apiRequest, newIdempotencyKey } from '@/lib/api/client';
+import { apiRequest } from '@/lib/api/client';
 import type { ListResult } from '@/lib/api/list';
 import type { PublicProduct } from '@/lib/api/public-tenant-catalog';
 

@@ -3,12 +3,13 @@
 import { useEffect, useState } from 'react';
 import { ListPagination } from '@/components/AdminList';
 import { PackPlanCard } from '@/components/marketing/PackPlanCard';
-import { ApiClientError, apiRequest } from '@/lib/api/client';
+import { ApiClientError } from '@/lib/api/client';
 import type { ListResult } from '@/lib/api/list';
 import {
   getMyGymMpConnected,
   listMyStorePacks,
 } from '@/lib/api/member-portal';
+import { listPublicStoreProducts } from '@/lib/api/member-store';
 import {
   storePackItems,
   type PublicProduct,
@@ -35,12 +36,7 @@ export function MemberStore() {
         const [connected, storePacks, storeProducts] = await Promise.all([
           getMyGymMpConnected(),
           hasPlans ? listMyStorePacks() : Promise.resolve([]),
-          hasProducts
-            ? apiRequest<ListResult<PublicProduct>>(
-                `/public/tenants/by-slug/${encodeURIComponent(slug)}/products?page=${productPage}&pageSize=12`,
-                { auth: false },
-              )
-            : Promise.resolve(null),
+          hasProducts ? listPublicStoreProducts(slug, productPage) : Promise.resolve(null),
         ]);
         if (!cancelled) {
           setPacks(storePacks);
@@ -64,7 +60,7 @@ export function MemberStore() {
   }, [hasPlans, hasProducts, productPage, slug]);
 
   function packAction(pack: StorePack) {
-    if (!mpConnected || pack.price < 1) {
+    if (mpConnected !== true || pack.price < 1) {
       return <p className="muted small">Se contrata en el gym.</p>;
     }
     if (cart.has('PACK', pack.id)) {
@@ -86,7 +82,7 @@ export function MemberStore() {
   }
 
   function productAction(product: PublicProduct) {
-    if (!mpConnected || product.price < 1) {
+    if (mpConnected !== true || product.price < 1) {
       return <p className="muted small">El pago online no está disponible.</p>;
     }
     return (
