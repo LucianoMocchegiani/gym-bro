@@ -4,7 +4,9 @@ describe('PublicTenantCatalogController', () => {
   const tenant = { id: 'tenant-id', name: 'Shop', slug: 'shop' };
   const tenants = { findPublicBySlug: jest.fn().mockResolvedValue(tenant) };
   const packs = { listForMember: jest.fn().mockResolvedValue([]) };
-  const visibility = { visiblePackIds: jest.fn().mockResolvedValue(new Set()) };
+  const visibility = {
+    visiblePackIds: jest.fn().mockResolvedValue(new Set()),
+  };
   const mp = { getStatus: jest.fn().mockResolvedValue({ connected: false }) };
   const site = { getPublicContent: jest.fn().mockResolvedValue(null) };
   const products = { list: jest.fn().mockResolvedValue({ items: [] }) };
@@ -34,17 +36,20 @@ describe('PublicTenantCatalogController', () => {
     expect(result.hasProducts).toBe(false);
   });
 
-  it('allows an ecommerce-only tenant to load its public storefront without exposing Club packs', async () => {
-    const result = await create(['ecommerce']).listPacks('shop');
-    expect(result).toMatchObject({
-      packs: [],
-      hasPlans: false,
-      hasProducts: true,
-      onlineCheckout: false,
-      site: null,
-    });
-    expect(packs.listForMember).not.toHaveBeenCalled();
-  });
+  it(
+    'allows an ecommerce-only tenant to load its public storefront without exposing Club packs',
+    async () => {
+      const result = await create(['ecommerce']).listPacks('shop');
+      expect(result).toMatchObject({
+        packs: [],
+        hasPlans: false,
+        hasProducts: true,
+        onlineCheckout: false,
+        site: null,
+      });
+      expect(packs.listForMember).not.toHaveBeenCalled();
+    },
+  );
 
   it('serves products only when the tenant has E-commerce', async () => {
     const controller = create(['ecommerce']);

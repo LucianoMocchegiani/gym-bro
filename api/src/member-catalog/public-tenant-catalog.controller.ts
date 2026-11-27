@@ -1,18 +1,25 @@
-import { Controller, Get, NotFoundException, Param, Query } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  NotFoundException,
+  Param,
+  Query,
+} from '@nestjs/common';
 import { ListQueryDto } from '../common/list';
+import { PublicProductsService } from '../products/public-products.service';
 import { MercadoPagoAccountService } from '../payment/mercadopago-account.service';
 import { PackLandingVisibilityService } from '../packs/pack-landing-visibility.service';
 import { PacksService } from '../packs/packs.service';
 import { PlatformPlansService } from '../platform-plans/platform-plans.service';
 import { TenantSiteService } from '../tenant-site/tenant-site.service';
 import { TenantsService } from '../tenants/tenants.service';
-import { PublicProductsService } from '../products/public-products.service';
 import { PublicTenantCatalog } from './member-catalog.types';
 
 /**
  * Web pública del gym (`{slug}/`): packs, productos y contenido editable.
  *
- * @remarks Sin auth. `site` = hero y sliders del gym (RN-CTA-010); null = vidriera por defecto.
+ * @remarks Sin auth. `site` = hero y sliders del gym (RN-CTA-010); null =
+ * vidriera por defecto.
  */
 @Controller('public/tenants')
 export class PublicTenantCatalogController {
