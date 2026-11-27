@@ -18,8 +18,8 @@ import { CashDayDetail, CashReconciliationDetail } from './register.types';
 import {
   LEDGER_MOVEMENT_INCLUDE,
   buildLedgerRows,
-  LedgerMovementRow,
 } from '../payment/ledger-row';
+import type { LedgerMovementRow } from '../payment/ledger-row';
 
 export const CASH_REGISTER_TIMEZONE = 'America/Argentina/Buenos_Aires' as const;
 
@@ -45,7 +45,7 @@ export function attachProductSalesToLedger(
       return sale
         ? {
             ...item,
-            kind: 'PRODUCT',
+            kind: 'PRODUCT' as const,
             title: sale.name,
             productQuantity: sale.quantity,
           }

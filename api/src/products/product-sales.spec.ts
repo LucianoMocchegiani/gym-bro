@@ -53,7 +53,7 @@ describe('reserveProductSale', () => {
     expect(calls).toHaveLength(1);
   });
 
-  it('decrements stock and persists a reservation for a pending payment', async () => {
+  it('decrements stock and records a pending reservation', async () => {
     const { tx, calls } = txFor(4);
     await reserveProductSale(tx, sale, true);
     expect(calls).toHaveLength(3);
@@ -70,7 +70,7 @@ describe('reserveProductSale', () => {
 });
 
 describe('validateProductRestockDecisions', () => {
-  it('requires exactly one explicit restock choice per returned product', () => {
+  it('requires an explicit restock choice for each returned product', () => {
     expect(
       validateProductRestockDecisions(['item-1', 'item-2'], [
         { transactionItemId: 'item-1', restock: true },
@@ -84,7 +84,7 @@ describe('validateProductRestockDecisions', () => {
     );
   });
 
-  it('rejects missing, duplicate, or unrelated product decisions', () => {
+  it('rejects missing, duplicate, or unrelated decisions', () => {
     for (const decisions of [
       [],
       [
@@ -128,7 +128,7 @@ describe('refundProductSale', () => {
     return { tx, calls };
   }
 
-  it('restocks and records a movement when requested', async () => {
+  it('restocks and records a movement', async () => {
     const { tx, calls } = refundTx(null, true);
     await refundProductSale(tx, 'tenant', 'item', true, 'staff');
     expect(
@@ -139,10 +139,10 @@ describe('refundProductSale', () => {
         call.includes('INSERT INTO product_stock_movements'),
       ),
     ).toHaveLength(1);
-    expect(calls.at(-1)).toContain('restocked = ');
+    expect(calls[calls.length - 1]).toContain('restocked = ');
   });
 
-  it('records the choice without changing stock when restocking is declined', async () => {
+  it('records a no-restock choice without changing inventory', async () => {
     const { tx, calls } = refundTx(null, false);
     await refundProductSale(tx, 'tenant', 'item', false, 'staff');
     expect(calls.some((call) => call.includes('UPDATE products'))).toBe(false);
@@ -151,10 +151,10 @@ describe('refundProductSale', () => {
         call.includes('INSERT INTO product_stock_movements'),
       ),
     ).toBe(false);
-    expect(calls.at(-1)).toContain('restocked = ');
+    expect(calls[calls.length - 1]).toContain('restocked = ');
   });
 
-  it('does not restock again after the sale has been refunded', async () => {
+  it('does not restock again after a refund', async () => {
     const { tx, calls } = refundTx(new Date(), true);
     await refundProductSale(tx, 'tenant', 'item', true, 'staff');
     expect(calls).toHaveLength(1);
