@@ -18,6 +18,7 @@
     "test:docs-guide": "node --experimental-strip-types --test lib/docs/guide.test.mjs",
     "test:nav-permissions": "node --experimental-strip-types --test lib/nav-permissions.test.mjs",
     "test:chat-links": "node --experimental-strip-types --test lib/chat/links.test.mjs",
+    "test:chat-tool-label": "node --experimental-strip-types --test lib/chat/tool-label.test.mjs",
     "test:caja-catalog": "node --experimental-strip-types --test lib/caja-catalog.test.mjs"
   },
   "dependencies": {
