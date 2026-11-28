@@ -4,6 +4,7 @@ import { toolLineLabel } from './tool-label.ts';
 
 test('report tools have distinct user-facing labels', () => {
   assert.equal(toolLineLabel('get_reports_summary', false), 'Consultó reportes generales');
+  assert.equal(toolLineLabel('get_sumari_report', false), 'Consultó reportes generales');
   assert.equal(
     toolLineLabel('get_member_reports_summary', false),
     'Consultó reportes de un afiliado',
