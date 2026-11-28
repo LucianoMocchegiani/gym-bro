@@ -1,3 +1,9 @@
+.markdown {
+  min-width: 0;
+  max-width: 100%;
+  container-type: inline-size;
+}
+
 .markdown > :first-child {
   margin-top: 0;
 }
@@ -12,7 +18,7 @@
 .markdown blockquote,
 .markdown pre,
 .markdown table {
-  margin: 0.55rem 0;
+  margin: 0.3rem 0;
 }
 
 .markdown ul,
@@ -21,7 +27,7 @@
 }
 
 .markdown li + li {
-  margin-top: 0.2rem;
+  margin-top: 0.15rem;
 }
 
 .markdown h1,
@@ -30,7 +36,7 @@
 .markdown h4,
 .markdown h5,
 .markdown h6 {
-  margin: 0.8rem 0 0.4rem;
+  margin: 0.5rem 0 0.3rem;
   font: inherit;
   font-weight: 600;
 }
@@ -43,7 +49,7 @@
 
 .markdown pre {
   max-width: 100%;
-  padding: 0.75rem;
+  padding: 0.5rem;
   overflow-x: auto;
   border: 1px solid var(--line);
   border-radius: 0.5rem;
@@ -69,7 +75,7 @@
 
 .markdown th,
 .markdown td {
-  padding: 0.35rem 0.55rem;
+  padding: 0.25rem 0.4rem;
   border: 1px solid var(--line);
   text-align: left;
 }
@@ -89,4 +95,33 @@
   background: transparent;
   font: inherit;
   cursor: pointer;
+}
+
+@container (min-width: 38rem) {
+  .markdown p,
+  .markdown ul,
+  .markdown ol,
+  .markdown blockquote,
+  .markdown pre,
+  .markdown table {
+    margin-block: 0.55rem;
+  }
+
+  .markdown h1,
+  .markdown h2,
+  .markdown h3,
+  .markdown h4,
+  .markdown h5,
+  .markdown h6 {
+    margin: 0.8rem 0 0.4rem;
+  }
+
+  .markdown pre {
+    padding: 0.75rem;
+  }
+
+  .markdown th,
+  .markdown td {
+    padding: 0.35rem 0.55rem;
+  }
 }
