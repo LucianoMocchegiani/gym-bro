@@ -77,6 +77,7 @@ function bubbleNode(
   item: ThreadBubble,
   onOpen: (href: string) => void,
   proposals: ProposalHandlers,
+  expanded: boolean,
 ): ReactNode {
   if (item.role === 'tool' && item.proposal) {
     return (
@@ -119,7 +120,7 @@ function bubbleNode(
   }
   return (
     <li key={item.key} className={styles.assistant}>
-      <AssistantMarkdown text={item.content} onOpen={onOpen} />
+      <AssistantMarkdown text={item.content} onOpen={onOpen} expanded={expanded} />
     </li>
   );
 }
@@ -155,6 +156,7 @@ export function MessageThread({
   helloName,
   disclaimer,
   streaming = false,
+  expanded = false,
   onOpenLink,
   proposalBusy = false,
   onProposal,
@@ -163,6 +165,7 @@ export function MessageThread({
   helloName?: string | null;
   disclaimer?: string;
   streaming?: boolean;
+  expanded?: boolean;
   onOpenLink: (href: string) => void;
   proposalBusy?: boolean;
   onProposal: (card: ProposalCard, decision: ProposalDecision) => void;
@@ -189,7 +192,7 @@ export function MessageThread({
       {disclaimer ? <li className={styles.disclaimer}>{disclaimer}</li> : null}
       {turns.map((turn) => (
         <Fragment key={turn.key}>
-          {turn.items.map((item) => bubbleNode(item, onOpenLink, proposals))}
+          {turn.items.map((item) => bubbleNode(item, onOpenLink, proposals, expanded))}
           <ChipRow links={turn.links} onOpen={onOpenLink} />
         </Fragment>
       ))}
