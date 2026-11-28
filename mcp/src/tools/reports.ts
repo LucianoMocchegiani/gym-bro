@@ -108,7 +108,7 @@ export function registerReportsTools(server: McpServer): void {
     {
       title: 'Resumen general de reportes',
       description:
-        'Consulta los ingresos, devoluciones, descuentos y movimientos de todo el tenant, sin filtrar por afiliado. Usá esta herramienta para reportes generales. Si el usuario pide el reporte de un afiliado específico, usá get_member_reports_summary. Si no precisó período, omití period y from/to: se usa el mes calendario actual en horario de Buenos Aires. Si precisa un período, pasá period (today, yesterday, this_week, last_week, this_month, last_month, this_year) o from/to YYYY-MM-DD; from/to prevalecen sobre period. Para comparar meses, llamá dos veces. No cobra.',
+        'Consulta ingresos, devoluciones, descuentos y movimientos de todo el tenant, sin filtrar por afiliado; incluye el snapshot actual de afiliados y contratos del tenant. Usá esta herramienta para reportes generales. Si el usuario pide el reporte de un afiliado específico, usá get_member_reports_summary. Si no precisó período, omití period y from/to: se usa el mes calendario actual en horario de Buenos Aires. Si precisa un período, pasá period (today, yesterday, this_week, last_week, this_month, last_month, this_year) o from/to YYYY-MM-DD; from/to prevalecen sobre period. Para comparar meses, llamá dos veces. No cobra.',
       inputSchema: {
         period: z
           .enum(REPORT_PERIODS)
@@ -129,7 +129,7 @@ export function registerReportsTools(server: McpServer): void {
     {
       title: 'Resumen de reportes de un afiliado',
       description:
-        'Consulta los ingresos, devoluciones, descuentos y movimientos de un afiliado específico. memberId es obligatorio: si el usuario menciona al afiliado por nombre, primero buscálo con search_members y usá el id de una coincidencia clara. Si hay varios posibles, preguntá cuál; nunca inventes un id. Si no precisó período, omití period y from/to: se usa el mes calendario actual en horario de Buenos Aires. Si precisa un período, pasá period (today, yesterday, this_week, last_week, this_month, last_month, this_year) o from/to YYYY-MM-DD; from/to prevalecen sobre period. Para comparar meses, llamá dos veces. No cobra.',
+        'Consulta ingresos, devoluciones, descuentos y movimientos filtrados por un afiliado específico; los conteos de afiliados y contratos del resultado siguen siendo el snapshot actual de todo el tenant. memberId es obligatorio: si el usuario menciona al afiliado por nombre, primero buscálo con search_members y usá el id de una coincidencia clara. Si hay varios posibles, preguntá cuál; nunca inventes un id. Si no precisó período, omití period y from/to: se usa el mes calendario actual en horario de Buenos Aires. Si precisa un período, pasá period (today, yesterday, this_week, last_week, this_month, last_month, this_year) o from/to YYYY-MM-DD; from/to prevalecen sobre period. Para comparar meses, llamá dos veces. No cobra.',
       inputSchema: {
         period: z
           .enum(REPORT_PERIODS)
