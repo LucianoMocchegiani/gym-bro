@@ -6,7 +6,8 @@ const TOOL_DONE: Record<string, string> = {
   get_session: 'Consultó una sesión',
   get_cash_day: 'Consultó la caja',
   suggest_nav: 'Sugirió una pantalla',
-  get_reports_summary: 'Consultó reportes',
+  get_reports_summary: 'Consultó reportes generales',
+  get_member_reports_summary: 'Consultó reportes de un afiliado',
   get_expenses_summary: 'Consultó gastos',
   list_expenses: 'Listó gastos',
   list_refund_requests: 'Listó devoluciones',
@@ -30,7 +31,8 @@ const TOOL_PENDING: Record<string, string> = {
   get_session: 'Consultando sesión…',
   get_cash_day: 'Consultando caja…',
   suggest_nav: 'Buscando una pantalla…',
-  get_reports_summary: 'Consultando reportes…',
+  get_reports_summary: 'Consultando reportes generales…',
+  get_member_reports_summary: 'Consultando reporte del afiliado…',
   get_expenses_summary: 'Consultando gastos…',
   list_expenses: 'Listando gastos…',
   list_refund_requests: 'Listando devoluciones…',
@@ -46,12 +48,10 @@ const TOOL_PENDING: Record<string, string> = {
   get_assistant_limits: 'Revisando qué puede hacer…',
 };
 
-/**
- * Una línea para el hilo (C5/C6). Sin JSON ni chips (C7). `propose_*` sin tarjeta = no se armó.
- */
+/** Una línea legible para cada tool en el hilo, sin mostrar sus argumentos. */
 export function toolLineLabel(toolName: string, pending: boolean): string {
-  const key = toolName.trim();
-  const proposal = key.startsWith('propose_') || key.includes('.propose_');
+  const key = toolName.trim().split(/(?:__|[.:])/).at(-1) ?? toolName.trim();
+  const proposal = key.startsWith('propose_');
   if (pending) {
     return TOOL_PENDING[key] ?? (proposal ? 'Armando la propuesta…' : `Usando ${key}…`);
   }
