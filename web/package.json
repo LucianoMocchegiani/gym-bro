@@ -17,6 +17,7 @@
     "test:kuatia-wallet-link": "node --experimental-strip-types --test lib/kuatia-wallet.test.mjs",
     "test:docs-guide": "node --experimental-strip-types --test lib/docs/guide.test.mjs",
     "test:nav-permissions": "node --experimental-strip-types --test lib/nav-permissions.test.mjs",
+    "test:chat-links": "node --experimental-strip-types --test lib/chat/links.test.mjs",
     "test:caja-catalog": "node --experimental-strip-types --test lib/caja-catalog.test.mjs"
   },
   "dependencies": {
@@ -40,7 +41,7 @@
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
     "eslint": "^9",
-    "eslint-config-next": "^16.4.3",
+    "eslint-config-next": "^16",
     "typescript": "^5.9.3"
   }
 }
