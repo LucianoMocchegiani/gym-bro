@@ -9,11 +9,9 @@ import styles from './assistant-markdown.module.css';
 export function AssistantMarkdown({
   text,
   onOpen,
-  expanded = false,
 }: {
   text: string;
   onOpen: (href: string) => void;
-  expanded?: boolean;
 }) {
   const components: Components = {
     a: ({ href, children }) =>
@@ -31,7 +29,7 @@ export function AssistantMarkdown({
   };
 
   return (
-    <div className={`${styles.markdown} ${expanded ? styles.expanded : ''}`}>
+    <div className={styles.markdown}>
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
         rehypePlugins={[rehypeSanitize]}

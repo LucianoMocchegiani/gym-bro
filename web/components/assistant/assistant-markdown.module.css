@@ -1,3 +1,9 @@
+.markdown {
+  min-width: 0;
+  max-width: 100%;
+  container-type: inline-size;
+}
+
 .markdown > :first-child {
   margin-top: 0;
 }
@@ -91,29 +97,31 @@
   cursor: pointer;
 }
 
-.expanded p,
-.expanded ul,
-.expanded ol,
-.expanded blockquote,
-.expanded pre,
-.expanded table {
-  margin-block: 0.55rem;
-}
+@container (min-width: 38rem) {
+  .markdown p,
+  .markdown ul,
+  .markdown ol,
+  .markdown blockquote,
+  .markdown pre,
+  .markdown table {
+    margin-block: 0.55rem;
+  }
 
-.expanded h1,
-.expanded h2,
-.expanded h3,
-.expanded h4,
-.expanded h5,
-.expanded h6 {
-  margin: 0.8rem 0 0.4rem;
-}
+  .markdown h1,
+  .markdown h2,
+  .markdown h3,
+  .markdown h4,
+  .markdown h5,
+  .markdown h6 {
+    margin: 0.8rem 0 0.4rem;
+  }
 
-.expanded pre {
-  padding: 0.75rem;
-}
+  .markdown pre {
+    padding: 0.75rem;
+  }
 
-.expanded th,
-.expanded td {
-  padding: 0.35rem 0.55rem;
+  .markdown th,
+  .markdown td {
+    padding: 0.35rem 0.55rem;
+  }
 }
