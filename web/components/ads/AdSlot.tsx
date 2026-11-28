@@ -2,7 +2,6 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { getAds, trackAd, type AdCreative, type AdPlacement } from '@/lib/api/ads';
-import { platformOrigin } from '@/lib/tenant-host';
 
 export function AdSlot({ tenantSlug, placement }: { tenantSlug: string; placement: AdPlacement }) {
   const [ads, setAds] = useState<AdCreative[]>([]);
@@ -105,6 +104,8 @@ export function AdSlot({ tenantSlug, placement }: { tenantSlug: string; placemen
     : ads;
   const trackOffset = hasMoreAds ? visibleCount + startIndex : 0;
 
+  if (!ads.length) return null;
+
   return (
     <aside
       className="mkt-inner mkt-section"
@@ -129,23 +130,21 @@ export function AdSlot({ tenantSlug, placement }: { tenantSlug: string; placemen
             }}
             onTransitionEnd={resetLoop}
           >
-            {(trackAds.length ? trackAds : [null]).map((ad, index) => (
+            {trackAds.map((ad, index) => (
               <a
-                key={`${ad?.id ?? 'fallback'}-${index}`}
+                key={`${ad.id}-${index}`}
                 className="ad-slot-card"
-                href={ad?.targetUrl ?? platformOrigin()}
+                href={ad.targetUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                aria-label={ad ? `${ad.name}. ${ad.body}` : 'Conocé Faciliter. Herramientas simples para gestionar tu gimnasio.'}
-                onClick={() => {
-                  if (ad) void trackAd(tenantSlug, ad.id, placement, 'CLICK').catch(() => undefined);
-                }}
+                aria-label={`${ad.name}. ${ad.body}`}
+                onClick={() => void trackAd(tenantSlug, ad.id, placement, 'CLICK').catch(() => undefined)}
               >
-                {ad?.imageUrl ? <img src={ad.imageUrl} alt="" loading="lazy" referrerPolicy="no-referrer" /> : null}
+                {ad.imageUrl ? <img src={ad.imageUrl} alt="" loading="lazy" referrerPolicy="no-referrer" /> : null}
                 <span>
                   <span className="eyebrow">Publicidad</span>
-                  <strong>{ad?.name ?? 'Conocé Faciliter'}</strong>
-                  <span>{ad?.body ?? 'Herramientas simples para gestionar tu gimnasio.'}</span>
+                  <strong>{ad.name}</strong>
+                  <span>{ad.body}</span>
                 </span>
               </a>
             ))}
