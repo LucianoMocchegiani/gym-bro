@@ -1,11 +1,10 @@
-import { ADMIN_NAV_PERMISSIONS } from '@/lib/nav-permissions';
+import { ADMIN_NAV_PERMISSIONS } from '../nav-permissions.ts';
 
 export type ChatNavLink = { href: string; label: string };
 
 const ADMIN_HREF = new Set(ADMIN_NAV_PERMISSIONS.map((item) => item.href));
 
 const MD_LINK = /\[([^\]]+)\]\((\/[^)\s]+)\)/g;
-
 
 function asRecord(value: unknown): Record<string, unknown> | null {
   if (typeof value !== 'object' || value === null || Array.isArray(value)) {
@@ -128,23 +127,23 @@ function labelForHref(href: string, fallback?: string): string {
 }
 
 /**
- * Rutas Admin escritas en el texto del asistente (`/dashboard/afiliados` o `[Afiliados](/dashboard/afiliados)`).
+ * Extrae rutas Admin sueltas; los enlaces Markdown quedan visibles en el texto.
  */
 export function parseLinksFromAssistantText(text: string): ChatNavLink[] {
   if (!text.trim()) {
     return [];
   }
   const found: ChatNavLink[] = [];
+  const markdownHrefs = new Set<string>();
   const markdown = text.matchAll(new RegExp(MD_LINK.source, 'g'));
   for (const match of markdown) {
     const href = match[2]?.trim() ?? '';
-    if (!ADMIN_HREF.has(href) || !isSafeAdminHref(href)) {
-      continue;
+    if (ADMIN_HREF.has(href) && isSafeAdminHref(href)) {
+      markdownHrefs.add(href);
     }
-    found.push({ href, label: labelForHref(href, match[1]) });
   }
   for (const href of ADMIN_HREF) {
-    if (href === '/dashboard') {
+    if (href === '/dashboard' || markdownHrefs.has(href)) {
       continue;
     }
     const escaped = href.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
