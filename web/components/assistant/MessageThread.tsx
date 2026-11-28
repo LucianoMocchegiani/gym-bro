@@ -5,8 +5,9 @@ import {
   ProposalCardView,
   type ProposalDecision,
 } from '@/components/assistant/ProposalCardView';
+import { AssistantMarkdown } from '@/components/assistant/AssistantMarkdown';
 import { toolLineLabel } from '@/lib/chat/tool-label';
-import { mergeLinks, isSafeAdminHref, type ChatNavLink } from '@/lib/chat/links';
+import { mergeLinks, type ChatNavLink } from '@/lib/chat/links';
 import type { ProposalCard, ProposalOutcome } from '@/lib/chat/proposal';
 import styles from '@/components/assistant/assistant.module.css';
 
@@ -42,43 +43,6 @@ function clockOf(iso?: string): string | null {
     minute: '2-digit',
     hour12: false,
   }).format(date);
-}
-
-function AssistantMarkdown({
-  text,
-  onOpen,
-}: {
-  text: string;
-  onOpen: (href: string) => void;
-}) {
-  const chunks = text.split(/(\[[^\]]+\]\([^)]+\)|\*\*[^*]+\*\*)/g);
-  return (
-    <p className={styles.md}>
-      {chunks.map((part, index) => {
-        const md = part.match(/^\[([^\]]+)\]\((\/[^)]+)\)$/);
-        if (md) {
-          const href = md[2];
-          const label = md[1];
-          if (isSafeAdminHref(href)) {
-            return (
-              <button
-                key={index}
-                type="button"
-                className={styles.mdLink}
-                onClick={() => onOpen(href)}
-              >
-                {label}
-              </button>
-            );
-          }
-        }
-        if (part.startsWith('**') && part.endsWith('**') && part.length > 4) {
-          return <strong key={index}>{part.slice(2, -2)}</strong>;
-        }
-        return <span key={index}>{part}</span>;
-      })}
-    </p>
-  );
 }
 
 function ChipRow({
